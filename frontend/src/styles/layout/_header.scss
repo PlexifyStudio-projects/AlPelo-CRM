@@ -1,0 +1,944 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Header Component
+// Premium glass header with notification system
+// and profile dropdown
+// ============================================
+
+.header {
+  @include flex-between;
+  height: $header-height;
+  padding: 0 $spacing-2xl;
+  background: $glass-bg-heavy;
+  backdrop-filter: blur($glass-blur-heavy);
+  -webkit-backdrop-filter: blur($glass-blur-heavy);
+  border-bottom: $border-width solid $border-color;
+  position: sticky;
+  top: 0;
+  z-index: $z-sticky;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.02),
+    0 4px 20px rgba(0, 0, 0, 0.02);
+  transition: box-shadow 300ms $ease-out-quart, background 300ms $ease-out-quart;
+
+  // Intensify shadow when scrolled (via JS class or natural state)
+  &--scrolled {
+    box-shadow:
+      0 1px 0 rgba(0, 0, 0, 0.03),
+      0 8px 32px rgba(0, 0, 0, 0.04);
+  }
+
+  // Subtle inner highlight for glass effect
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 30%,
+      rgba(255, 255, 255, 0.8) 50%,
+      rgba(255, 255, 255, 0.6) 70%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
+
+  // -----------------------------------------------
+  // LEFT SECTION (breadcrumb / context)
+  // -----------------------------------------------
+  &__context {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+
+    &-item {
+      transition: color 200ms $ease-out-quart;
+
+      &:hover {
+        color: $color-gray-600;
+      }
+
+      &--active {
+        color: $color-secondary;
+        font-weight: $font-weight-medium;
+      }
+    }
+
+    &-separator {
+      color: $color-gray-200;
+      font-size: $font-size-xs;
+      user-select: none;
+    }
+  }
+
+  // -----------------------------------------------
+  // SEARCH BAR (if present)
+  // -----------------------------------------------
+  &__search {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  &__search-input {
+    width: 240px;
+    height: 38px;
+    padding: 0 $spacing-md 0 36px;
+    background: rgba(0, 0, 0, 0.03);
+    border: $border-width solid transparent;
+    border-radius: $border-radius-full;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    transition:
+      width 300ms $ease-out-expo,
+      background 200ms $ease-out-quart,
+      border-color 200ms $ease-out-quart,
+      box-shadow 200ms $ease-out-quart;
+
+    &::placeholder {
+      color: $color-gray-400;
+      font-weight: $font-weight-regular;
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    &:focus {
+      outline: none;
+      width: 320px;
+      background: $color-white;
+      border-color: rgba(45, 90, 61, 0.2);
+      box-shadow:
+        0 0 0 3px rgba(45, 90, 61, 0.08),
+        $shadow-md;
+    }
+  }
+
+  &__search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $color-gray-400;
+    pointer-events: none;
+    transition: color 200ms $ease-out-quart;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .header__search-input:focus ~ & {
+      color: $color-primary;
+    }
+  }
+
+  // -----------------------------------------------
+  // ACTIONS
+  // -----------------------------------------------
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-left: auto;
+  }
+
+  // -----------------------------------------------
+  // NOTIFICATION BELL + DROPDOWN
+  // -----------------------------------------------
+  &__notification {
+    position: relative;
+  }
+
+  &__notification-btn {
+    position: relative;
+    @include flex-center;
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-md;
+    font-size: $font-size-md;
+    transition:
+      background 200ms $ease-out-quart,
+      transform 200ms $ease-out-quart,
+      box-shadow 200ms $ease-out-quart;
+    color: $color-gray-500;
+    @include focus-ring;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      transition: color 200ms $ease-out-quart;
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+      transform: scale(1.05);
+
+      svg {
+        animation: bellShake 600ms $ease-out-expo both;
+      }
+    }
+
+    &:active {
+      transform: scale(0.95);
+      transition-duration: 100ms;
+    }
+
+    &--active {
+      background: rgba(0, 0, 0, 0.06);
+      color: $color-primary;
+    }
+  }
+
+  // --- Badge with gentle pulse ring ---
+  &__badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    @include flex-center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: linear-gradient(135deg, $color-error, $color-error-dark);
+    color: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    border-radius: $border-radius-full;
+    box-shadow: 0 2px 8px rgba(248, 113, 113, 0.35);
+    font-variant-numeric: tabular-nums;
+    animation: bounceIn 400ms $ease-spring both;
+
+    // Pulsing ring for unread emphasis
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: $border-radius-full;
+      border: 2px solid rgba(248, 113, 113, 0.35);
+      animation: pulseRing 2.5s ease-in-out infinite;
+    }
+  }
+
+  // -----------------------------------------------
+  // NOTIFICATION PANEL — Premium Glass Dropdown
+  // -----------------------------------------------
+  &__notif-panel {
+    position: absolute;
+    top: calc(100% + $spacing-sm);
+    right: -$spacing-md;
+    width: 400px;
+    max-height: 500px;
+    @include glass($glass-bg-ultra, $glass-blur-heavy);
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-2xl, $glass-inner-glow;
+    z-index: $z-dropdown;
+    animation: dropdownIn 280ms $ease-out-expo both;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    // Arrow pointer
+    &::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      right: 28px;
+      width: 12px;
+      height: 12px;
+      background: $glass-bg-ultra;
+      border: $border-width solid $glass-border;
+      border-bottom: none;
+      border-right: none;
+      transform: rotate(45deg);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      width: 320px;
+      right: -$spacing-sm;
+    }
+  }
+
+  &__notif-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: $border-width solid $border-color-light;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+  }
+
+  &__notif-title-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__notif-title {
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+  }
+
+  &__notif-unread-badge {
+    @include flex-center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 $spacing-xs;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    border-radius: $border-radius-full;
+    animation: bounceIn 300ms $ease-spring both 0.1s;
+  }
+
+  &__notif-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__notif-mark-read {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2xs;
+    font-size: $font-size-xs;
+    color: $color-primary;
+    font-weight: $font-weight-medium;
+    transition: all 200ms $ease-out-quart;
+    white-space: nowrap;
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    @include focus-ring;
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      color: $color-primary-dark;
+      background: $color-primary-ghost;
+    }
+
+    &:active {
+      transform: scale(0.96);
+      transition-duration: 80ms;
+    }
+  }
+
+  &__notif-clear {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2xs;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    transition: all 200ms $ease-out-quart;
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    @include focus-ring;
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      color: $color-error;
+      background: $color-error-bg;
+    }
+
+    &:active {
+      transform: scale(0.96);
+      transition-duration: 80ms;
+    }
+  }
+
+  // --- Notification List ---
+  &__notif-list {
+    overflow-y: auto;
+    flex: 1;
+    @include custom-scrollbar;
+  }
+
+  // --- Individual Notification Item ---
+  &__notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
+    border-bottom: $border-width solid $border-color-light;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+    animation: fadeInUp 250ms $ease-out-expo both;
+    position: relative;
+    overflow: hidden;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.02);
+
+      .header__notif-dismiss {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    // --- Unread state: subtle glow ---
+    &--unread {
+      background: rgba(45, 90, 61, 0.03);
+
+      // Soft glow overlay
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(45, 90, 61, 0.03), transparent 60%);
+        pointer-events: none;
+      }
+
+      &:hover {
+        background: rgba(45, 90, 61, 0.06);
+      }
+
+      .header__notif-message {
+        font-weight: $font-weight-semibold;
+      }
+    }
+  }
+
+  // --- Colored left border by type ---
+  &__notif-border {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 0 $border-radius-xs $border-radius-xs 0;
+
+    &--info {
+      background: linear-gradient(180deg, $color-info, rgba(96, 165, 250, 0.3));
+    }
+
+    &--success {
+      background: linear-gradient(180deg, $color-success, rgba(52, 211, 153, 0.3));
+    }
+
+    &--warning {
+      background: linear-gradient(180deg, $color-warning, rgba(251, 191, 36, 0.3));
+    }
+
+    &--error {
+      background: linear-gradient(180deg, $color-error, rgba(248, 113, 113, 0.3));
+    }
+  }
+
+  // --- Type-colored icon circle ---
+  &__notif-icon {
+    @include flex-center;
+    width: 34px;
+    height: 34px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+    margin-top: 2px;
+    transition: transform 200ms $ease-out-quart;
+
+    .header__notif-item:hover & {
+      transform: scale(1.08);
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &--info {
+      background: $color-info-bg;
+      color: $color-info;
+      box-shadow: 0 2px 6px rgba(96, 165, 250, 0.1);
+    }
+
+    &--success {
+      background: $color-success-bg;
+      color: $color-success;
+      box-shadow: 0 2px 6px rgba(52, 211, 153, 0.1);
+    }
+
+    &--warning {
+      background: $color-warning-bg;
+      color: $color-warning;
+      box-shadow: 0 2px 6px rgba(251, 191, 36, 0.1);
+    }
+
+    &--error {
+      background: $color-error-bg;
+      color: $color-error;
+      box-shadow: 0 2px 6px rgba(248, 113, 113, 0.1);
+    }
+  }
+
+  &__notif-content {
+    flex: 1;
+    min-width: 0;
+    padding-left: $spacing-2xs;
+  }
+
+  &__notif-message {
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+    line-height: $line-height-snug;
+    font-weight: $font-weight-regular;
+    margin-bottom: 2px;
+  }
+
+  &__notif-time {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-regular;
+  }
+
+  // --- Dismiss button (slides in from right on hover) ---
+  &__notif-dismiss {
+    @include flex-center;
+    width: 26px;
+    height: 26px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+    color: $color-gray-300;
+    opacity: 0;
+    transform: translateX(8px);
+    transition:
+      opacity 200ms $ease-out-quart,
+      transform 200ms $ease-out-quart,
+      background 200ms $ease-out-quart,
+      color 200ms $ease-out-quart;
+    margin-top: 2px;
+
+    // Always visible on touch devices
+    @media (hover: none) {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    &:hover {
+      background: $color-error-bg;
+      color: $color-error;
+    }
+  }
+
+  // --- Empty State — Elegant ---
+  &__notif-empty {
+    @include flex-column-center;
+    gap: $spacing-sm;
+    padding: $spacing-3xl $spacing-lg;
+  }
+
+  &__notif-empty-icon {
+    @include flex-center;
+    width: 64px;
+    height: 64px;
+    border-radius: $border-radius-full;
+    background: $color-gray-50;
+    margin-bottom: $spacing-xs;
+
+    svg {
+      color: $color-gray-300;
+      opacity: 0.5;
+    }
+  }
+
+  &__notif-empty-title {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+  }
+
+  &__notif-empty-desc {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+  }
+
+  // -----------------------------------------------
+  // DIVIDER
+  // -----------------------------------------------
+  &__divider {
+    width: 1px;
+    height: 28px;
+    background: linear-gradient(180deg, transparent, $border-color-medium, transparent);
+    flex-shrink: 0;
+  }
+
+  // -----------------------------------------------
+  // PROFILE DROPDOWN
+  // -----------------------------------------------
+  &__profile {
+    position: relative;
+  }
+
+  &__profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-md;
+    cursor: pointer;
+    transition:
+      background 200ms $ease-out-quart,
+      box-shadow 200ms $ease-out-quart,
+      transform 200ms $ease-out-quart;
+    @include focus-ring;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    &:active {
+      background: rgba(0, 0, 0, 0.06);
+      transform: scale(0.97);
+      transition-duration: 100ms;
+    }
+  }
+
+  &__avatar {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    color: $color-white;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    letter-spacing: $letter-spacing-wide;
+    flex-shrink: 0;
+    transition:
+      box-shadow 300ms $ease-out-quart,
+      transform 300ms $ease-out-quart;
+
+    .header__profile-trigger:hover & {
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.15);
+    }
+  }
+
+  &__user-info {
+    @include flex-column;
+    gap: 1px;
+  }
+
+  &__user-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    line-height: 1.2;
+  }
+
+  &__user-role {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-regular;
+  }
+
+  &__chevron {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    transition: transform 250ms $ease-out-quart;
+    margin-left: $spacing-xs;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+
+  // -----------------------------------------------
+  // DROPDOWN (profile)
+  // -----------------------------------------------
+  &__dropdown {
+    position: absolute;
+    top: calc(100% + $spacing-sm);
+    right: 0;
+    min-width: 240px;
+    @include glass($glass-bg-ultra, $glass-blur-heavy);
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-xl, $glass-inner-glow;
+    padding: $spacing-sm;
+    z-index: $z-dropdown;
+    animation: dropdownIn 250ms $ease-out-expo both;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      right: 20px;
+      width: 12px;
+      height: 12px;
+      background: $glass-bg-ultra;
+      border: $border-width solid $glass-border;
+      border-bottom: none;
+      border-right: none;
+      transform: rotate(45deg);
+    }
+  }
+
+  &__dropdown-header {
+    padding: $spacing-sm $spacing-md;
+    border-bottom: $border-width solid $border-color-light;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__dropdown-email {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    @include truncate;
+  }
+
+  &__dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+    cursor: pointer;
+    transition:
+      background 200ms $ease-out-quart,
+      color 200ms $ease-out-quart,
+      padding-left 200ms $ease-out-quart,
+      transform 200ms $ease-out-quart;
+    @include focus-ring;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: $color-gray-700;
+      padding-left: calc(#{$spacing-md} + 4px);
+    }
+
+    &:active {
+      transform: scale(0.98);
+      transition-duration: 80ms;
+    }
+
+    &--danger {
+      color: $color-error;
+
+      &:hover {
+        background: $color-error-bg;
+        color: $color-error;
+      }
+    }
+  }
+
+  &__dropdown-icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.65;
+    font-size: $font-size-base;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  &__dropdown-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, $border-color, transparent);
+    margin: $spacing-xs 0;
+  }
+
+  // -----------------------------------------------
+  // PREMIUM ENHANCEMENTS
+  // -----------------------------------------------
+
+  // Notification bell: idle micro-animation
+  &__notification-btn {
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      transition: background 200ms $ease-out-quart;
+    }
+
+    &:hover::before {
+      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.02), transparent 70%);
+    }
+  }
+
+  // Badge: enhanced layered shadow
+  &__badge {
+    border: 2px solid $glass-bg-heavy;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  // Notification panel: scroll shadows
+  &__notif-list {
+    position: relative;
+    mask-image: linear-gradient(
+      180deg,
+      black 0%,
+      black calc(100% - 16px),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      black 0%,
+      black calc(100% - 16px),
+      transparent 100%
+    );
+  }
+
+  // Notification item: staggered entrance
+  &__notif-item {
+    @include stagger-children(0.04s, 10);
+  }
+
+  // Notification icon: type-specific glow on hover
+  &__notif-item:hover &__notif-icon--info {
+    box-shadow: 0 2px 12px rgba(96, 165, 250, 0.2);
+  }
+
+  &__notif-item:hover &__notif-icon--success {
+    box-shadow: 0 2px 12px rgba(52, 211, 153, 0.2);
+  }
+
+  &__notif-item:hover &__notif-icon--warning {
+    box-shadow: 0 2px 12px rgba(251, 191, 36, 0.2);
+  }
+
+  &__notif-item:hover &__notif-icon--error {
+    box-shadow: 0 2px 12px rgba(248, 113, 113, 0.2);
+  }
+
+  // Unread indicator dot
+  &__notif-item--unread {
+    .header__notif-content::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: $border-radius-full;
+      background: $color-primary;
+      animation: pulseRingPrimary 2.5s ease-in-out infinite;
+    }
+  }
+
+  // Profile avatar: ring glow on hover
+  &__avatar {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: $border-radius-full;
+      border: 2px solid transparent;
+      transition: border-color 300ms $ease-out-quart;
+    }
+  }
+
+  &__profile-trigger:hover &__avatar::after {
+    border-color: rgba(45, 90, 61, 0.15);
+  }
+
+  // Dropdown items: icon transition on hover
+  &__dropdown-item:hover &__dropdown-icon {
+    opacity: 1;
+    transform: scale(1.05);
+    transition: all 200ms $ease-spring;
+  }
+
+  // Dropdown danger: icon color shift
+  &__dropdown-item--danger:hover &__dropdown-icon {
+    color: $color-error;
+  }
+
+  // Profile panel: enter from scale
+  &__dropdown {
+    transform-origin: top right;
+  }
+
+  // Breadcrumb: animated separator
+  &__breadcrumb-separator {
+    transition: transform 200ms $ease-out-quart;
+  }
+
+  &__breadcrumb:hover &__breadcrumb-separator {
+    transform: scale(1.2);
+  }
+
+  // Breadcrumb active: subtle underline
+  &__breadcrumb-item--active {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: $color-secondary;
+      opacity: 0.15;
+      border-radius: $border-radius-full;
+    }
+  }
+
+  // Empty notification: floating icon
+  &__notif-empty-icon {
+    animation: floatSlow 4s ease-in-out infinite;
+  }
+
+  // Search expand: smooth width transition
+  &__search-input {
+    will-change: width;
+  }
+
+  // Mark read / clear: press feedback
+  &__notif-mark-read,
+  &__notif-clear {
+    &:active {
+      transition-duration: 80ms;
+    }
+  }
+
+  // Header keyboard navigation
+  &__notification-btn:focus-visible,
+  &__profile-trigger:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.2), 0 0 0 4px rgba(45, 90, 61, 0.08);
+  }
+}

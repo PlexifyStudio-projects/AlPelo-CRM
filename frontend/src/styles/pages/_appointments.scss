@@ -1,0 +1,1798 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Appointments Page
+// Premium barbershop appointment management
+// World-class Calendar UI
+// ============================================
+
+.appointments {
+  @include page-enter;
+
+  // ===========================================
+  // HEADER
+  // ===========================================
+  &__header {
+    margin-bottom: $spacing-xl;
+    animation: fadeInLeft 500ms $ease-out-expo both;
+    animation-delay: 0.02s;
+  }
+
+  &__header-content {
+    @include flex-between;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+  }
+
+  &__header-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    @include heading($font-size-2xl);
+    margin-bottom: $spacing-xs;
+
+    svg {
+      color: $color-primary;
+      flex-shrink: 0;
+    }
+  }
+
+  &__subtitle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+    font-weight: $font-weight-regular;
+    text-transform: capitalize;
+
+    svg {
+      color: $color-accent;
+    }
+  }
+
+  &__today-date {
+    text-transform: capitalize;
+  }
+
+  // ===========================================
+  // STATS PILLS
+  // ===========================================
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-md;
+    margin-bottom: $spacing-xl;
+
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr 1fr;
+      gap: $spacing-sm;
+    }
+  }
+
+  &__stat-pill {
+    @include glass-card;
+    padding: $spacing-lg $spacing-lg;
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    animation: fadeInUp 400ms $ease-out-expo both;
+    @include transition;
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      opacity: 0.04;
+      transform: translate(20px, -20px);
+      transition: opacity 400ms $ease-out-quart, transform 400ms $ease-out-quart;
+    }
+
+    &:hover {
+      transform: translateY(-3px) scale(1.005);
+      box-shadow: $shadow-lg, $glass-inner-glow;
+
+      &::after {
+        opacity: 0.08;
+        transform: translate(10px, -10px);
+      }
+    }
+
+    &:nth-child(1) { animation-delay: 0.06s; }
+    &:nth-child(2) { animation-delay: 0.12s; }
+    &:nth-child(3) { animation-delay: 0.18s; }
+    &:nth-child(4) { animation-delay: 0.24s; }
+
+    &--total {
+      &::after { background: $color-primary; }
+
+      .appointments__stat-pill-icon {
+        background: $color-primary-ghost;
+        color: $color-primary;
+      }
+
+      .appointments__stat-pill-number {
+        color: $color-primary-dark;
+      }
+    }
+
+    &--confirmed {
+      &::after { background: $color-success; }
+
+      .appointments__stat-pill-icon {
+        background: $color-success-bg;
+        color: $color-success-dark;
+      }
+
+      .appointments__stat-pill-number {
+        color: $color-success-dark;
+      }
+    }
+
+    &--pending {
+      &::after { background: $color-warning; }
+
+      .appointments__stat-pill-icon {
+        background: $color-warning-bg;
+        color: $color-warning-dark;
+      }
+
+      .appointments__stat-pill-number {
+        color: $color-warning-dark;
+      }
+    }
+
+    &--revenue {
+      &::after { background: $color-accent; }
+
+      .appointments__stat-pill-icon {
+        background: $color-accent-ghost;
+        color: $color-accent;
+      }
+
+      .appointments__stat-pill-number {
+        color: $color-accent-dark;
+      }
+    }
+  }
+
+  &__stat-pill-icon {
+    @include flex-center;
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-md;
+    flex-shrink: 0;
+    transition: transform 300ms $ease-spring-gentle;
+
+    .appointments__stat-pill:hover & {
+      transform: scale(1.1);
+    }
+  }
+
+  &__stat-pill-data {
+    @include flex-column;
+    min-width: 0;
+  }
+
+  &__stat-pill-number {
+    font-family: $font-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    line-height: $line-height-none;
+    letter-spacing: $letter-spacing-tight;
+    @include counter-roll-in;
+  }
+
+  &__stat-pill-label {
+    @include caption-text;
+    margin-top: 2px;
+  }
+
+  // ===========================================
+  // TOOLBAR
+  // ===========================================
+  &__toolbar {
+    @include flex-between;
+    margin-bottom: $spacing-lg;
+    animation: fadeIn 400ms $ease-out-expo both 0.2s;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+  }
+
+  &__toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+  }
+
+  &__toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  // --- View Toggle (segmented control with sliding indicator) ---
+  &__view-toggle {
+    display: flex;
+    position: relative;
+    @include glass;
+    border-radius: $border-radius-full;
+    padding: 3px;
+  }
+
+  &__view-slider {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: calc(50% - 3px);
+    height: calc(100% - 6px);
+    background: $color-primary;
+    border-radius: $border-radius-full;
+    box-shadow: $shadow-sm, $shadow-glow-primary;
+    transition: transform 350ms $ease-spring;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &__view-btn {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px $spacing-lg;
+    border: none;
+    background: transparent;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-400;
+    border-radius: $border-radius-full;
+    cursor: pointer;
+    transition: color 300ms $ease-out-quart;
+    @include focus-ring;
+    white-space: nowrap;
+
+    &:hover {
+      color: $color-gray-600;
+    }
+
+    &--active {
+      color: $color-white;
+
+      &:hover {
+        color: $color-white;
+      }
+    }
+  }
+
+  // --- Date Navigation ---
+  &__date-nav {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__date-nav-btn {
+    @include flex-center;
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: transparent;
+    border-radius: $border-radius-full;
+    color: $color-gray-400;
+    cursor: pointer;
+    @include transition;
+    @include focus-ring;
+
+    &:hover {
+      background: $color-primary-ghost;
+      color: $color-primary;
+    }
+  }
+
+  &__date-nav-today {
+    padding: 6px $spacing-md;
+    border: $border-width solid $border-color;
+    background: transparent;
+    border-radius: $border-radius-full;
+    font-family: $font-primary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+    cursor: pointer;
+    @include transition;
+    @include focus-ring;
+    letter-spacing: $letter-spacing-wide;
+
+    &:hover {
+      background: $color-primary-ghost;
+      border-color: $color-primary;
+    }
+  }
+
+  &__date-nav-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-600;
+    text-transform: capitalize;
+    margin-left: $spacing-xs;
+
+    @media (max-width: $breakpoint-sm) {
+      display: none;
+    }
+  }
+
+  // --- Barber Filter (Custom Dropdown) ---
+  &__barber-filter {
+    position: relative;
+  }
+
+  &__barber-filter-trigger {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: 7px $spacing-md 7px 7px;
+    @include glass;
+    border-radius: $border-radius-full;
+    cursor: pointer;
+    @include transition;
+    @include focus-ring;
+    font-family: $font-primary;
+
+    &:hover {
+      box-shadow: $shadow-sm;
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    svg:last-child {
+      color: $color-gray-400;
+      transition: transform 200ms $ease-out-quart;
+    }
+
+    &:hover svg:last-child {
+      transform: translateY(1px);
+    }
+  }
+
+  &__barber-filter-avatar {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    color: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wide;
+    flex-shrink: 0;
+
+    svg {
+      color: $color-white;
+    }
+  }
+
+  &__barber-filter-text {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-600;
+    max-width: 150px;
+    @include truncate;
+
+    @media (max-width: $breakpoint-sm) {
+      display: none;
+    }
+  }
+
+  &__barber-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: $z-modal;
+    background: $glass-bg-ultra;
+    backdrop-filter: blur($glass-blur-heavy);
+    -webkit-backdrop-filter: blur($glass-blur-heavy);
+    border: $border-width solid $glass-border;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-2xl, $glass-inner-glow;
+    min-width: 280px;
+    max-width: 320px;
+    max-height: 360px;
+    overflow-y: auto;
+    @include custom-scrollbar;
+    animation: dropdownIn 250ms $ease-out-expo both;
+    padding: $spacing-xs;
+  }
+
+  &__barber-dropdown-header {
+    padding: $spacing-sm $spacing-md;
+    @include label-text;
+    font-size: $font-size-2xs;
+    border-bottom: $border-width solid $border-color-light;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__barber-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: none;
+    background: transparent;
+    text-align: left;
+    border-radius: $border-radius-md;
+    cursor: pointer;
+    @include transition;
+    font-family: $font-primary;
+
+    &:hover {
+      background: $color-primary-ghost;
+    }
+
+    &--active {
+      background: $color-primary-ghost;
+      box-shadow: inset 3px 0 0 $color-primary;
+    }
+  }
+
+  &__barber-dropdown-avatar {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-primary-light, $color-primary);
+    color: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+
+    svg {
+      color: $color-white;
+    }
+  }
+
+  &__barber-dropdown-info {
+    @include flex-column;
+    min-width: 0;
+    gap: 1px;
+  }
+
+  &__barber-dropdown-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-700;
+    @include truncate;
+  }
+
+  &__barber-dropdown-meta {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    @include truncate;
+
+    svg {
+      color: $color-accent;
+    }
+  }
+
+  // ===========================================
+  // TIMELINE (Day View) - The heart of the page
+  // ===========================================
+  &__timeline {
+    @include glass-card;
+    animation: fadeInUp 400ms $ease-out-expo both 0.25s;
+    overflow: hidden;
+    position: relative;
+  }
+
+  &__timeline-header {
+    @include flex-between;
+    padding: $spacing-md $spacing-xl;
+    border-bottom: $border-width solid $border-color-light;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  &__timeline-header-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-600;
+    text-transform: capitalize;
+
+    svg {
+      color: $color-primary;
+    }
+  }
+
+  &__timeline-count {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-400;
+    padding: 4px $spacing-sm;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: $border-radius-full;
+  }
+
+  &__timeline-body {
+    padding: $spacing-sm 0;
+    max-height: 65vh;
+    overflow-y: auto;
+    @include custom-scrollbar;
+    position: relative;
+  }
+
+  &__timeline-slot {
+    display: flex;
+    align-items: flex-start;
+    padding: $spacing-2xs $spacing-xl $spacing-2xs $spacing-lg;
+    min-height: 44px;
+    position: relative;
+    animation: fadeIn 300ms $ease-out-expo both;
+
+    &--active {
+      // Slight highlight for slots with appointments
+    }
+
+    &--current {
+      // Red current-time indicator
+      &::before {
+        content: '';
+        position: absolute;
+        left: 80px;
+        right: $spacing-xl;
+        top: 50%;
+        height: 2px;
+        background: linear-gradient(90deg, $color-error, transparent);
+        z-index: 2;
+        opacity: 0.6;
+        animation: pulseGlow 2s ease-in-out infinite;
+      }
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 76px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: $color-error;
+        box-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+        z-index: 3;
+      }
+    }
+
+    &--past {
+      opacity: 0.55;
+    }
+  }
+
+  &__timeline-time {
+    width: 52px;
+    flex-shrink: 0;
+    padding-top: 6px;
+    font-family: $font-primary;
+    font-variant-numeric: tabular-nums;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-300;
+    text-align: right;
+
+    .appointments__timeline-slot--active & {
+      color: $color-primary;
+      font-weight: $font-weight-bold;
+    }
+
+    .appointments__timeline-slot--current & {
+      color: $color-error;
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  &__timeline-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 24px;
+    align-self: stretch;
+    flex-shrink: 0;
+    position: relative;
+    margin: 0 $spacing-sm;
+  }
+
+  &__timeline-line {
+    width: 2px;
+    flex: 1;
+    background: linear-gradient(180deg, $border-color-light, $border-color);
+    border-radius: $border-radius-full;
+
+    .appointments__timeline-slot--active & {
+      background: linear-gradient(180deg, $color-primary, rgba(45, 90, 61, 0.3));
+    }
+
+    .appointments__timeline-slot--current & {
+      background: linear-gradient(180deg, $color-error, rgba(248, 113, 113, 0.3));
+    }
+  }
+
+  &__timeline-dot {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $border-color-light;
+    flex-shrink: 0;
+    transition: all 300ms $ease-out-quart;
+
+    .appointments__timeline-slot--active & {
+      width: 10px;
+      height: 10px;
+      background: $color-primary;
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.12), $shadow-xs;
+    }
+
+    .appointments__timeline-slot--current & {
+      background: $color-error;
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
+      animation: pulseGlow 2s ease-in-out infinite;
+    }
+  }
+
+  &__timeline-cards {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    padding: 2px 0;
+    min-width: 0;
+  }
+
+  &__timeline-empty {
+    padding: $spacing-xs 0;
+  }
+
+  &__timeline-empty-dash {
+    width: 32px;
+    height: 1px;
+    background: $border-color-light;
+    border-radius: $border-radius-full;
+  }
+
+  // ===========================================
+  // APPOINTMENT CARD
+  // ===========================================
+  &__card {
+    @include glass(rgba(255, 255, 255, 0.7));
+    border-radius: $border-radius-md;
+    padding: $spacing-md $spacing-md $spacing-md calc($spacing-md + 4px);
+    box-shadow: $shadow-xs;
+    @include transition;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInScale 350ms $ease-out-expo both;
+
+    &:hover {
+      box-shadow: $shadow-md;
+      transform: translateY(-2px) scale(1.003);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    &--confirmed {
+      .appointments__card-accent { background: $color-success; }
+
+      &:hover {
+        box-shadow: $shadow-md, $shadow-glow-success;
+      }
+    }
+
+    &--pending {
+      .appointments__card-accent { background: $color-warning; }
+
+      &:hover {
+        box-shadow: $shadow-md, 0 0 24px rgba(251, 191, 36, 0.12);
+      }
+    }
+
+    &--completed {
+      .appointments__card-accent { background: $color-primary; }
+      opacity: 0.85;
+
+      &:hover {
+        opacity: 1;
+        box-shadow: $shadow-md, $shadow-glow-primary;
+      }
+    }
+
+    &--cancelled {
+      .appointments__card-accent { background: $color-error; }
+      opacity: 0.6;
+
+      &:hover {
+        opacity: 0.8;
+        box-shadow: $shadow-md, $shadow-glow-error;
+      }
+    }
+
+    &--compact {
+      padding: $spacing-sm $spacing-sm $spacing-sm calc($spacing-sm + 4px);
+    }
+  }
+
+  &__card-accent {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3.5px;
+    border-radius: $border-radius-full 0 0 $border-radius-full;
+  }
+
+  &__card-top {
+    @include flex-between;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__card-time-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    svg {
+      color: $color-gray-400;
+    }
+  }
+
+  &__card-time {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__card-duration {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-400;
+    padding: 2px 8px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: $border-radius-full;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  &__card-status-wrap {
+    position: relative;
+  }
+
+  &__card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: $border-radius-full;
+    font-family: $font-primary;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    letter-spacing: $letter-spacing-wide;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    @include transition;
+    @include focus-ring;
+
+    span {
+      line-height: 1;
+    }
+
+    &--confirmed {
+      background: $color-success-bg;
+      color: $color-success-dark;
+      border: 1px solid $color-success-border;
+    }
+
+    &--pending {
+      background: $color-warning-bg;
+      color: $color-warning-dark;
+      border: 1px solid $color-warning-border;
+    }
+
+    &--completed {
+      background: $color-primary-ghost;
+      color: $color-primary;
+      border: 1px solid rgba(45, 90, 61, 0.2);
+    }
+
+    &--cancelled {
+      background: $color-error-bg;
+      color: $color-error-dark;
+      border: 1px solid $color-error-border;
+    }
+
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: $shadow-xs;
+    }
+  }
+
+  // --- Status Dropdown ---
+  &__status-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: $z-dropdown;
+    background: $glass-bg-ultra;
+    backdrop-filter: blur($glass-blur);
+    border: $border-width solid $glass-border;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl, $glass-inner-glow;
+    padding: $spacing-xs;
+    min-width: 180px;
+    animation: dropdownIn 200ms $ease-out-quart both;
+  }
+
+  &__status-dropdown-header {
+    padding: $spacing-xs $spacing-sm;
+    @include label-text;
+    font-size: $font-size-2xs;
+    border-bottom: $border-width solid $border-color-light;
+    margin-bottom: $spacing-2xs;
+  }
+
+  &__status-option {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: 8px $spacing-sm;
+    border: none;
+    background: transparent;
+    text-align: left;
+    font-family: $font-primary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-600;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    @include transition;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    &--current {
+      background: $color-primary-ghost;
+      color: $color-primary;
+      font-weight: $font-weight-semibold;
+    }
+
+    &--confirmed svg { color: $color-success-dark; }
+    &--pending svg { color: $color-warning-dark; }
+    &--completed svg { color: $color-primary; }
+    &--cancelled svg { color: $color-error-dark; }
+
+    &--confirmed:hover { background: $color-success-bg; color: $color-success-dark; }
+    &--pending:hover { background: $color-warning-bg; color: $color-warning-dark; }
+    &--completed:hover { background: $color-primary-ghost; color: $color-primary; }
+    &--cancelled:hover { background: $color-error-bg; color: $color-error-dark; }
+  }
+
+  &__status-option-check {
+    margin-left: auto;
+    font-size: $font-size-xs;
+    color: $color-primary;
+  }
+
+  // --- Card Body (Avatar + Info) ---
+  &__card-body {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__card-avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  &__card-avatar {
+    @include flex-center;
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    color: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wide;
+    position: relative;
+    z-index: 1;
+
+    .appointments__card--compact & {
+      width: 32px;
+      height: 32px;
+      font-size: 9px;
+    }
+  }
+
+  &__card-avatar-ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: $border-radius-full;
+    border: 2px solid transparent;
+    z-index: 0;
+
+    &--confirmed { border-color: $color-success; }
+    &--pending { border-color: $color-warning; }
+    &--completed { border-color: $color-primary; opacity: 0.5; }
+    &--cancelled { border-color: $color-error; opacity: 0.4; }
+  }
+
+  &__card-info {
+    @include flex-column;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  &__card-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    @include truncate;
+    line-height: $line-height-snug;
+  }
+
+  &__card-phone {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-2xs;
+    color: $color-gray-300;
+    font-variant-numeric: tabular-nums;
+
+    svg {
+      flex-shrink: 0;
+    }
+  }
+
+  &__card-service {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    @include truncate;
+
+    svg {
+      flex-shrink: 0;
+      color: $color-accent;
+    }
+  }
+
+  &__card-footer {
+    @include flex-between;
+    padding-top: $spacing-sm;
+    border-top: $border-width solid $border-color-light;
+  }
+
+  &__card-barber {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+    @include truncate;
+
+    svg {
+      color: $color-gray-400;
+      flex-shrink: 0;
+    }
+  }
+
+  &__card-price {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: $letter-spacing-tight;
+  }
+
+  // ===========================================
+  // WEEK VIEW
+  // ===========================================
+  &__week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: $spacing-sm;
+    animation: fadeInUp 400ms $ease-out-expo both 0.25s;
+
+    @media (max-width: $breakpoint-xl) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__week-col {
+    @include glass-card;
+    overflow: hidden;
+    animation: fadeInUp 300ms $ease-out-expo both;
+    @include transition;
+
+    @for $i from 1 through 7 {
+      &:nth-child(#{$i}) {
+        animation-delay: calc(0.04s * #{$i});
+      }
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-glass-hover, $glass-inner-glow;
+    }
+
+    &--today {
+      border-color: rgba(45, 90, 61, 0.25);
+      box-shadow: $shadow-glass, $shadow-glow-primary;
+
+      &:hover {
+        box-shadow: $shadow-glass-hover, $shadow-glow-primary;
+      }
+    }
+
+    &--selected {
+      border-color: rgba(201, 168, 76, 0.3);
+    }
+  }
+
+  &__week-col-header {
+    @include flex-column;
+    align-items: center;
+    gap: $spacing-2xs;
+    padding: $spacing-sm $spacing-sm;
+    border-bottom: $border-width solid $border-color-light;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    @include transition;
+    font-family: $font-primary;
+
+    &:hover {
+      background: $color-primary-ghost;
+    }
+
+    .appointments__week-col--today & {
+      background: $color-primary-ghost;
+    }
+  }
+
+  &__week-col-dayname {
+    @include label-text;
+    font-size: 9px;
+    letter-spacing: $letter-spacing-caps;
+  }
+
+  &__week-col-daynum {
+    font-family: $font-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-gray-600;
+    line-height: $line-height-none;
+
+    &--today {
+      @include flex-center;
+      width: 36px;
+      height: 36px;
+      border-radius: $border-radius-full;
+      background: $color-primary;
+      color: $color-white;
+    }
+  }
+
+  &__week-col-count {
+    font-size: $font-size-2xs;
+    color: $color-gray-300;
+    font-weight: $font-weight-medium;
+  }
+
+  &__week-col-body {
+    padding: $spacing-xs;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2xs;
+    max-height: 350px;
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  &__week-pill {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-sm;
+    border-left: 3px solid transparent;
+    cursor: default;
+    @include transition;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    &--confirmed {
+      border-left-color: $color-success;
+      background: rgba(52, 211, 153, 0.04);
+    }
+
+    &--pending {
+      border-left-color: $color-warning;
+      background: rgba(251, 191, 36, 0.04);
+    }
+
+    &--completed {
+      border-left-color: $color-primary;
+      background: rgba(45, 90, 61, 0.03);
+      opacity: 0.7;
+    }
+
+    &--cancelled {
+      border-left-color: $color-error;
+      background: rgba(248, 113, 113, 0.03);
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+  }
+
+  &__week-pill-time {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__week-pill-name {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    @include truncate;
+    line-height: $line-height-snug;
+  }
+
+  &__week-pill-service {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    @include truncate;
+  }
+
+  &__week-empty {
+    @include flex-center;
+    padding: $spacing-xl $spacing-sm;
+    font-size: $font-size-2xs;
+    color: $color-gray-300;
+    font-style: italic;
+    @include dot-grid;
+    border-radius: $border-radius-sm;
+  }
+
+  // ===========================================
+  // EMPTY STATE
+  // ===========================================
+  &__empty {
+    @include flex-column-center;
+    padding: $spacing-3xl;
+    gap: $spacing-md;
+    @include glass-card;
+    animation: fadeIn 400ms $ease-out-quart both 0.3s;
+    text-align: center;
+  }
+
+  &__empty-icon {
+    @include flex-center;
+    width: 80px;
+    height: 80px;
+    border-radius: $border-radius-full;
+    background: $color-primary-ghost;
+    color: $color-gray-300;
+    margin-bottom: $spacing-sm;
+
+    svg {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  &__empty-title {
+    font-family: $font-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-gray-600;
+  }
+
+  &__empty-text {
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+    max-width: 300px;
+  }
+
+  // ===========================================
+  // MODAL - New Appointment
+  // ===========================================
+  &__modal {
+    @include flex-column;
+    gap: $spacing-lg;
+  }
+
+  &__modal-section {
+    @include flex-column;
+    gap: $spacing-sm;
+
+    &--half {
+      flex: 1;
+    }
+  }
+
+  &__modal-row {
+    display: flex;
+    gap: $spacing-lg;
+
+    @media (max-width: $breakpoint-sm) {
+      flex-direction: column;
+    }
+  }
+
+  &__modal-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-600;
+    letter-spacing: $letter-spacing-wide;
+
+    svg {
+      color: $color-primary;
+    }
+  }
+
+  &__modal-input {
+    width: 100%;
+    padding: 12px $spacing-md;
+    background: $bg-input;
+    backdrop-filter: blur(8px);
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    font-size: $font-size-base;
+    font-family: $font-primary;
+    color: $color-gray-700;
+    transition:
+      border-color 280ms $ease-out-quart,
+      background 280ms $ease-out-quart,
+      box-shadow 280ms $ease-out-quart;
+    @include focus-ring;
+
+    &::placeholder {
+      color: $color-gray-300;
+      font-weight: $font-weight-light;
+    }
+
+    &:hover {
+      border-color: $border-color-medium;
+    }
+
+    &:focus {
+      outline: none;
+      background: $color-white;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08), $shadow-sm;
+    }
+
+    &--date {
+      cursor: pointer;
+    }
+  }
+
+  &__modal-search {
+    position: relative;
+
+    svg {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      color: $color-gray-400;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .appointments__modal-input {
+      padding-left: 40px;
+    }
+  }
+
+  &__modal-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: $z-dropdown;
+    background: $glass-bg-ultra;
+    backdrop-filter: blur($glass-blur);
+    border: $border-width solid $glass-border;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl, $glass-inner-glow;
+    max-height: 260px;
+    overflow-y: auto;
+    @include custom-scrollbar;
+    animation: dropdownIn 200ms $ease-out-quart both;
+    padding: $spacing-xs;
+  }
+
+  &__modal-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: none;
+    background: transparent;
+    text-align: left;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    @include transition;
+    font-family: $font-primary;
+
+    &:hover {
+      background: $color-primary-ghost;
+    }
+
+    &--selected {
+      background: $color-primary-ghost;
+      box-shadow: inset 3px 0 0 $color-primary;
+    }
+  }
+
+  &__modal-dropdown-avatar {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    color: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+  }
+
+  &__modal-dropdown-info {
+    @include flex-column;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  &__modal-dropdown-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-700;
+    @include truncate;
+  }
+
+  &__modal-dropdown-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    flex-wrap: wrap;
+  }
+
+  &__modal-dropdown-tag {
+    display: inline-flex;
+    padding: 1px 6px;
+    background: $color-accent-ghost;
+    color: $color-accent-dark;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    border-radius: $border-radius-full;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  // --- Service Selection (Chips) ---
+  &__modal-services {
+    @include flex-column;
+    gap: $spacing-md;
+    max-height: 200px;
+    overflow-y: auto;
+    @include custom-scrollbar;
+    padding: $spacing-xs;
+    @include glass(rgba(255, 255, 255, 0.3));
+    border-radius: $border-radius-md;
+  }
+
+  &__modal-service-group {
+    @include flex-column;
+    gap: $spacing-xs;
+  }
+
+  &__modal-service-category {
+    @include label-text;
+    font-size: $font-size-2xs;
+    padding-left: $spacing-xs;
+  }
+
+  &__modal-service-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+  }
+
+  &__modal-service-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: $spacing-xs $spacing-sm;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    background: transparent;
+    cursor: pointer;
+    @include transition;
+    font-family: $font-primary;
+    text-align: left;
+
+    &:hover {
+      border-color: $color-primary;
+      background: $color-primary-ghost;
+    }
+
+    &--selected {
+      border-color: $color-primary;
+      background: $color-primary-ghost;
+      box-shadow: 0 0 0 1px $color-primary, $shadow-xs;
+    }
+  }
+
+  &__modal-service-chip-name {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    line-height: $line-height-snug;
+  }
+
+  &__modal-service-chip-meta {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  // --- Barber Selection (Cards) ---
+  &__modal-barbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: $spacing-xs;
+    max-height: 180px;
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  &__modal-barber-card {
+    @include flex-column;
+    align-items: center;
+    gap: $spacing-2xs;
+    padding: $spacing-sm;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    background: transparent;
+    cursor: pointer;
+    @include transition;
+    font-family: $font-primary;
+    text-align: center;
+
+    &:hover {
+      border-color: $color-primary;
+      background: $color-primary-ghost;
+      transform: translateY(-1px);
+    }
+
+    &--selected {
+      border-color: $color-primary;
+      background: $color-primary-ghost;
+      box-shadow: 0 0 0 1px $color-primary, $shadow-xs;
+    }
+  }
+
+  &__modal-barber-avatar {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-primary-light, $color-primary);
+    color: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  &__modal-barber-name {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    @include truncate;
+    max-width: 100%;
+    line-height: $line-height-snug;
+  }
+
+  &__modal-barber-specialty {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    @include truncate;
+    max-width: 100%;
+  }
+
+  &__modal-barber-rating {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    font-size: $font-size-2xs;
+    color: $color-accent;
+    font-weight: $font-weight-semibold;
+
+    svg {
+      color: $color-accent;
+    }
+  }
+
+  // --- Time Slot Grid ---
+  &__modal-time-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-2xs;
+    max-height: 160px;
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  &__modal-time-slot {
+    @include flex-center;
+    padding: $spacing-xs;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-sm;
+    background: transparent;
+    font-family: $font-primary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    font-variant-numeric: tabular-nums;
+    color: $color-gray-600;
+    cursor: pointer;
+    @include transition;
+
+    &:hover {
+      border-color: $color-primary;
+      background: $color-primary-ghost;
+      color: $color-primary;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: scale(0.96);
+      transition-duration: $duration-instant;
+    }
+
+    &--selected {
+      border-color: $color-primary;
+      background: $color-primary;
+      color: $color-white;
+      box-shadow: $shadow-sm, $shadow-glow-primary;
+
+      &:hover {
+        background: $color-primary-light;
+        color: $color-white;
+      }
+    }
+  }
+
+  // --- Summary Card ---
+  &__modal-summary {
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    @include border-gradient(linear-gradient(135deg, rgba(45, 90, 61, 0.3), rgba(201, 168, 76, 0.3)));
+    animation: fadeInUp 300ms $ease-out-expo both;
+  }
+
+  &__modal-summary-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: $color-primary-ghost;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+    letter-spacing: $letter-spacing-wide;
+
+    svg {
+      color: $color-accent;
+    }
+  }
+
+  &__modal-summary-body {
+    padding: $spacing-md;
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  &__modal-summary-row {
+    @include flex-between;
+    padding: $spacing-xs 0;
+    font-size: $font-size-sm;
+
+    span {
+      color: $color-gray-400;
+    }
+
+    strong {
+      color: $color-gray-700;
+      font-weight: $font-weight-medium;
+    }
+
+    &--total {
+      padding-top: $spacing-sm;
+
+      span {
+        font-weight: $font-weight-semibold;
+        color: $color-gray-600;
+      }
+
+      strong {
+        color: $color-primary;
+        font-weight: $font-weight-bold;
+        font-size: $font-size-md;
+        font-family: $font-heading;
+      }
+    }
+  }
+
+  &__modal-summary-divider {
+    @include gradient-divider;
+    margin: $spacing-xs 0;
+  }
+
+  // --- Modal Actions ---
+  &__modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: $border-width solid $border-color-light;
+  }
+}
+
+// ============================================
+// KEYFRAME ANIMATIONS
+// ============================================
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// ============================================
+// PREMIUM APPOINTMENT ENHANCEMENTS
+// ============================================
+
+// Stat pill press feedback
+.appointments__stat-pill {
+  @include press-effect;
+}
+
+// Timeline slot hover: smooth highlight
+.appointments__timeline-slot {
+  @include stagger-children($stagger-fast, 20);
+}
+
+// Modal barber card: press effect
+.appointments__modal-barber-card {
+  @include press-effect;
+}
+
+// Modal service chip: press effect
+.appointments__modal-service-chip {
+  @include press-effect;
+}
+
+// View toggle buttons: press effect
+.appointments__view-btn {
+  @include press-effect;
+}
+
+// Calendar day cells: interactive hover
+.appointments__calendar-day {
+  @include transition;
+
+  &:hover:not(&--empty):not(&--disabled) {
+    transform: translateY(-1px);
+    box-shadow: $shadow-sm;
+  }
+
+  &:active:not(&--empty):not(&--disabled) {
+    transform: scale(0.97);
+    transition-duration: $duration-instant;
+  }
+}

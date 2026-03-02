@@ -1,0 +1,115 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Profile Page
+// Avatar effects, form layout
+// ============================================
+
+.profile {
+  @include page-enter;
+  max-width: 640px;
+
+  // -----------------------------------------------
+  // HEADER
+  // -----------------------------------------------
+  &__header {
+    margin-bottom: $spacing-xl;
+    animation: fadeInLeft 400ms $ease-out-expo both;
+    animation-delay: 0.05s;
+  }
+
+  &__title {
+    @include heading($font-size-2xl);
+    margin-bottom: 0;
+  }
+
+  &__subtitle {
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+    margin-top: $spacing-xs;
+  }
+
+  // -----------------------------------------------
+  // CARD
+  // -----------------------------------------------
+  &__card {
+    padding: $spacing-2xl;
+    animation: fadeInUp 400ms $ease-out-expo both;
+    animation-delay: 0.15s;
+  }
+
+  // -----------------------------------------------
+  // AVATAR SECTION
+  // -----------------------------------------------
+  &__avatar-section {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-2xl;
+    padding-bottom: $spacing-xl;
+    border-bottom: none;
+    position: relative;
+
+    // Gradient divider
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      @include gradient-divider;
+    }
+  }
+
+  &__avatar {
+    @include flex-center;
+    width: 72px;
+    height: 72px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    color: $color-white;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wide;
+    box-shadow: $shadow-md, $shadow-glow-primary;
+    flex-shrink: 0;
+    position: relative;
+    transition: box-shadow 350ms $ease-out-quart;
+
+    // Hover ring pulse
+    &:hover {
+      box-shadow:
+        $shadow-lg,
+        $shadow-glow-primary,
+        0 0 0 4px rgba(45, 90, 61, 0.12);
+    }
+  }
+
+  &__name {
+    font-family: $font-primary;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+  }
+
+  &__role {
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+    margin-top: 3px;
+  }
+
+  // -----------------------------------------------
+  // FORM
+  // -----------------------------------------------
+  &__form {
+    @include flex-column;
+    gap: $spacing-lg;
+
+    // Stagger form fields
+    > * {
+      animation: fadeInUp 300ms $ease-out-quart both;
+      @include stagger-children(0.06s, 8);
+    }
+  }
+}

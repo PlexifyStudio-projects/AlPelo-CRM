@@ -1,0 +1,295 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Client Filters (Premium CRM)
+// Stripe/Linear quality filter bar
+// ============================================
+
+.client-filters {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  flex-wrap: wrap;
+  animation: fadeIn 0.35s $ease-out-expo both;
+  animation-delay: 0.05s;
+
+  // --- Search ---
+  &__search {
+    position: relative;
+    flex: 1;
+    min-width: 240px;
+    max-width: 420px;
+  }
+
+  &__search-icon {
+    position: absolute;
+    left: $spacing-md;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $color-gray-300;
+    pointer-events: none;
+    transition: color $transition-fast;
+  }
+
+  &__search-input {
+    width: 100%;
+    padding: 10px $spacing-xl 10px 42px;
+    background: $glass-bg-heavy;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-full;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    outline: none;
+    transition: all $transition-base;
+    box-shadow: $shadow-xs;
+
+    &::placeholder {
+      color: $color-gray-300;
+    }
+
+    &:focus {
+      border-color: rgba(45, 90, 61, 0.35);
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08), $shadow-sm;
+      background: $color-white;
+
+      + .client-filters__search-icon {
+        color: $color-primary;
+      }
+    }
+  }
+
+  &__search-clear {
+    position: absolute;
+    right: $spacing-sm;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    background: rgba(0, 0, 0, 0.06);
+    border: none;
+    border-radius: $border-radius-full;
+    color: $color-gray-400;
+    cursor: pointer;
+    @include flex-center;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.1);
+      color: $color-gray-700;
+      transform: translateY(-50%) scale(1.08);
+    }
+
+    &:active {
+      transform: translateY(-50%) scale(0.95);
+    }
+  }
+
+  // --- Status tabs ---
+  &__status-tabs {
+    display: flex;
+    gap: $spacing-2xs;
+    background: $glass-bg;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: $border-radius-full;
+    padding: 3px;
+    border: $border-width solid $border-color-light;
+    box-shadow: $shadow-xs, $glass-inner-glow-subtle;
+  }
+
+  &__status-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: 7px $spacing-md;
+    background: none;
+    border: none;
+    border-radius: $border-radius-full;
+    font-family: $font-primary;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    cursor: pointer;
+    transition: all 250ms $ease-out-quart;
+    white-space: nowrap;
+    letter-spacing: $letter-spacing-wide;
+
+    &:hover {
+      color: $color-gray-600;
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    &--active {
+      color: $color-white;
+      background: $color-primary;
+      box-shadow: $shadow-sm, 0 0 12px rgba(45, 90, 61, 0.15);
+
+      &:hover {
+        color: $color-white;
+        background: $color-primary-light;
+      }
+
+      .client-filters__tab-count {
+        background: rgba(255, 255, 255, 0.25);
+        color: $color-white;
+      }
+    }
+
+    // VIP active: gold gradient
+    &--vip.client-filters__status-tab--active {
+      background: linear-gradient(135deg, $color-accent-dark, $color-accent);
+      box-shadow: $shadow-sm, 0 0 14px rgba(201, 168, 76, 0.2);
+    }
+
+    // En Riesgo active: orange
+    &--en_riesgo.client-filters__status-tab--active {
+      background: linear-gradient(135deg, #A85D1A, #D4851A);
+      box-shadow: $shadow-sm, 0 0 14px rgba(168, 93, 26, 0.2);
+    }
+
+    // Nuevo active: blue
+    &--nuevo.client-filters__status-tab--active {
+      background: linear-gradient(135deg, #1D5DAB, #3B7CD4);
+      box-shadow: $shadow-sm, 0 0 14px rgba(59, 124, 212, 0.2);
+    }
+  }
+
+  &__tab-icon {
+    flex-shrink: 0;
+  }
+
+  &__tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: $border-radius-full;
+    background: rgba(0, 0, 0, 0.06);
+    font-size: 0.55rem;
+    font-weight: $font-weight-bold;
+    color: $color-gray-500;
+    line-height: 1;
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+    transition: all 250ms $ease-out-quart;
+  }
+
+  // --- Responsive ---
+  @media (max-width: $breakpoint-md) {
+    flex-direction: column;
+    align-items: stretch;
+
+    &__search {
+      max-width: 100%;
+    }
+
+    &__status-tabs {
+      overflow-x: auto;
+      @include custom-scrollbar;
+    }
+  }
+
+  // -----------------------------------------------
+  // PREMIUM ENHANCEMENTS
+  // -----------------------------------------------
+
+  // Search input: focus glow ring with animated expansion
+  &__search-input:focus {
+    transform: scaleX(1.01);
+    transition:
+      all $transition-base,
+      transform 300ms $ease-spring;
+  }
+
+  // Search icon animated bounce on focus
+  &__search-input:focus + .client-filters__search-icon,
+  &__search-input:focus ~ .client-filters__search-icon {
+    animation: searchIconPulse 400ms $ease-spring both;
+  }
+
+  // Status tab: spring-animated active state transition
+  &__status-tab {
+    position: relative;
+    overflow: hidden;
+
+    // Shine sweep on active tabs
+    &--active::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      animation: tabShineSweep 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.96);
+      transition: transform 100ms $ease-smooth;
+    }
+  }
+
+  // Tab count: bounce on value change (pair with JS)
+  &__tab-count {
+    position: relative;
+
+    &--updated {
+      animation: bounceIn 400ms $ease-spring both;
+    }
+  }
+
+  // Focus ring for keyboard navigation
+  &__status-tab:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.25);
+  }
+
+  &__search-clear:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.25);
+  }
+
+  // Status tabs container: scroll shadow indicators
+  &__status-tabs {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 32px;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6));
+      pointer-events: none;
+      border-radius: 0 $border-radius-full $border-radius-full 0;
+      opacity: 0;
+      transition: opacity $transition-fast;
+    }
+  }
+
+  @media (max-width: $breakpoint-md) {
+    &__status-tabs::after {
+      opacity: 1;
+    }
+  }
+}
+
+@keyframes searchIconPulse {
+  0% { transform: translateY(-50%) scale(1); }
+  50% { transform: translateY(-50%) scale(1.15); }
+  100% { transform: translateY(-50%) scale(1); }
+}
+
+@keyframes tabShineSweep {
+  0%, 100% { left: -100%; }
+  50% { left: 200%; }
+}

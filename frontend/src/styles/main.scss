@@ -1,0 +1,46 @@
+// ============================================
+// AlPelo CRM - Premium Design System v2.0
+// World-class SaaS Quality
+// Methodology: BEM (Block Element Modifier)
+// ============================================
+
+// --- Abstracts (no CSS output) ---
+@use 'abstracts/variables';
+@use 'abstracts/mixins';
+@use 'abstracts/functions';
+
+// --- Base ---
+@use 'base/reset';
+@use 'base/typography';
+@use 'base/animations';
+@use 'base/base';
+@use 'base/utilities';
+
+// --- Layout ---
+@use 'layout/sidebar';
+@use 'layout/header';
+@use 'layout/main-layout';
+
+// --- Components ---
+@use 'components/button';
+@use 'components/input';
+@use 'components/card';
+@use 'components/modal';
+@use 'components/notification';
+@use 'components/client-table';
+@use 'components/client-detail';
+@use 'components/client-filters';
+@use 'components/add-client-modal';
+@use 'components/barber-rating';
+
+// --- Pages ---
+@use 'pages/login';
+@use 'pages/dashboard';
+@use 'pages/clients';
+@use 'pages/appointments';
+@use 'pages/messaging';
+@use 'pages/chat-ai';
+@use 'pages/not-found';
+@use 'pages/profile';
+@use 'pages/settings';
+@use 'pages/change-password';

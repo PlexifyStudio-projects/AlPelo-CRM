@@ -1,0 +1,203 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Typography System
+// Inter + Playfair Display
+// Perfect vertical rhythm on 8px baseline
+// ============================================
+
+body {
+  font-family: $font-primary;
+  font-size: $font-size-base;
+  font-weight: $font-weight-regular;
+  line-height: $line-height-base;
+  color: $color-gray-600;
+  letter-spacing: $letter-spacing-normal;
+  font-optical-sizing: auto;
+  font-feature-settings: 'cv01', 'cv02';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+// -----------------------------------------------
+// HEADINGS - Playfair Display
+// -----------------------------------------------
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-heading;
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  letter-spacing: $letter-spacing-tight;
+  color: $color-secondary;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: $font-size-4xl;
+  letter-spacing: $letter-spacing-tighter;
+  line-height: $line-height-none;
+  margin-bottom: $spacing-lg;
+}
+
+h2 {
+  font-size: $font-size-2xl;
+  letter-spacing: $letter-spacing-tight;
+  margin-bottom: $spacing-md;
+}
+
+h3 {
+  font-size: $font-size-xl;
+  margin-bottom: $spacing-md;
+}
+
+h4 {
+  font-size: $font-size-lg;
+  margin-bottom: $spacing-sm;
+}
+
+h5 {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  margin-bottom: $spacing-sm;
+}
+
+h6 {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  margin-bottom: $spacing-xs;
+}
+
+// -----------------------------------------------
+// BODY TEXT
+// -----------------------------------------------
+p {
+  margin-bottom: $spacing-md;
+  text-wrap: pretty;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+strong, b {
+  font-weight: $font-weight-semibold;
+  color: $color-gray-700;
+}
+
+em, i {
+  font-style: italic;
+}
+
+small {
+  font-size: $font-size-sm;
+  color: $color-gray-400;
+}
+
+// -----------------------------------------------
+// LINKS — Underline animation on hover
+// -----------------------------------------------
+a {
+  color: $color-primary;
+  text-decoration: none;
+  position: relative;
+  transition:
+    color $transition-fast;
+
+  &:hover {
+    color: $color-primary-light;
+  }
+}
+
+// Utility: animated underline for inline links
+.link--underline {
+  position: relative;
+  display: inline;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 300ms $ease-out-expo;
+  }
+
+  &:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+}
+
+// -----------------------------------------------
+// CODE / MONO
+// -----------------------------------------------
+code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.9em;
+  padding: $spacing-2xs $spacing-xs;
+  background: $color-gray-50;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-xs;
+  color: $color-primary-dark;
+  font-variant-ligatures: none;
+}
+
+// -----------------------------------------------
+// EMPHASIS WITH PLAYFAIR ITALIC
+// -----------------------------------------------
+.text-emphasis {
+  font-family: $font-heading;
+  font-style: italic;
+  font-weight: $font-weight-medium;
+}
+
+// -----------------------------------------------
+// LABEL UTILITY — uppercase micro label
+// -----------------------------------------------
+.text-label {
+  @include label-text;
+}
+
+// -----------------------------------------------
+// CAPTION UTILITY
+// -----------------------------------------------
+.text-caption {
+  @include caption-text;
+}
+
+// -----------------------------------------------
+// NUMERIC DISPLAY — Premium stat counters
+// -----------------------------------------------
+.text-stat {
+  font-family: $font-heading;
+  font-weight: $font-weight-bold;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: $letter-spacing-tight;
+  line-height: $line-height-none;
+  color: $color-secondary;
+}
+
+// -----------------------------------------------
+// GRADIENT HEADLINE — For hero/accent headings
+// -----------------------------------------------
+.text-gradient-primary {
+  @include gradient-text(linear-gradient(135deg, $color-primary, $color-primary-light));
+}
+
+.text-gradient-accent {
+  @include gradient-text(linear-gradient(135deg, $color-accent, $color-accent-light));
+}
+
+// -----------------------------------------------
+// SMOOTH FONT RENDERING FOR DARK BACKGROUNDS
+// -----------------------------------------------
+.text-on-dark {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}

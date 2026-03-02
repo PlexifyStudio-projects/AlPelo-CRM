@@ -1,0 +1,151 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Base Styles
+// Global defaults, selection, focus, scroll
+// ============================================
+
+body {
+  background: $bg-main;
+  position: relative;
+
+  // Subtle animated gradient mesh background
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(45, 90, 61, 0.035) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(201, 168, 76, 0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(45, 90, 61, 0.02) 0%, transparent 50%),
+    radial-gradient(ellipse at 10% 10%, rgba(96, 165, 250, 0.015) 0%, transparent 40%);
+  background-attachment: fixed;
+
+  // Noise texture overlay
+  &::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.025;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    z-index: 9999;
+  }
+}
+
+// -----------------------------------------------
+// ROOT ELEMENT
+// -----------------------------------------------
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+// -----------------------------------------------
+// SELECTION — Brand green highlight
+// -----------------------------------------------
+::selection {
+  background-color: rgba(45, 90, 61, 0.18);
+  color: $color-primary-dark;
+}
+
+::-moz-selection {
+  background-color: rgba(45, 90, 61, 0.18);
+  color: $color-primary-dark;
+}
+
+// -----------------------------------------------
+// FOCUS — Accessible green ring
+// -----------------------------------------------
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.2), 0 0 0 4px rgba(45, 90, 61, 0.08);
+  border-radius: $border-radius-sm;
+}
+
+// -----------------------------------------------
+// GLOBAL INTERACTIVE RESETS
+// -----------------------------------------------
+button,
+[role="button"] {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  @include focus-ring;
+}
+
+input,
+textarea,
+select {
+  @include focus-ring;
+}
+
+// -----------------------------------------------
+// IMAGE POLISH
+// -----------------------------------------------
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+// -----------------------------------------------
+// TABULAR NUMBERS on money and data
+// -----------------------------------------------
+[data-numeric],
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+// -----------------------------------------------
+// SMOOTH SCROLL WITH REDUCED MOTION RESPECT
+// -----------------------------------------------
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+// -----------------------------------------------
+// GLOBAL SCROLLBAR
+// -----------------------------------------------
+html {
+  @include custom-scrollbar;
+}
+
+// -----------------------------------------------
+// SMOOTH VIEW TRANSITIONS (browser-native)
+// -----------------------------------------------
+@supports (view-transition-name: root) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 300ms;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+// -----------------------------------------------
+// PREMIUM CONTENT CONTAINMENT (perf)
+// -----------------------------------------------
+main {
+  contain: layout style;
+}
+
+// -----------------------------------------------
+// INTERACTIVE ELEMENT DEFAULTS
+// -----------------------------------------------
+button,
+[role="button"],
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+// -----------------------------------------------
+// SAFE AREA PADDING (mobile notch support)
+// -----------------------------------------------
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

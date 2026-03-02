@@ -1,0 +1,126 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Main Layout
+// Content area with smooth sidebar transitions,
+// warm background, proper z-index stacking
+// ============================================
+
+.main-layout {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: $bg-main;
+
+  // -----------------------------------------------
+  // CONTENT AREA
+  // -----------------------------------------------
+  &__content {
+    flex: 1;
+    margin-left: $sidebar-width;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 380ms $ease-out-expo;
+    min-height: 100vh;
+    min-height: 100dvh;
+    will-change: margin-left;
+    position: relative;
+    z-index: $z-base;
+  }
+
+  // -----------------------------------------------
+  // MAIN CONTENT
+  // -----------------------------------------------
+  &__main {
+    flex: 1;
+    padding: $spacing-xl $spacing-2xl $spacing-2xl;
+    overflow-y: auto;
+    width: 100%;
+    max-width: $max-content-width;
+    @include custom-scrollbar;
+    position: relative;
+
+    // Subtle warm gradient overlay
+    background:
+      linear-gradient(
+        180deg,
+        rgba(240, 237, 232, 0) 0%,
+        rgba(232, 228, 221, 0.3) 100%
+      );
+
+    // Page content enter animation
+    > * {
+      @include page-enter;
+
+      @include reduced-motion {
+        animation: none;
+        opacity: 1;
+      }
+    }
+  }
+
+  // -----------------------------------------------
+  // COLLAPSED SIDEBAR ADJUSTMENT
+  // -----------------------------------------------
+  &--collapsed &__content {
+    margin-left: $sidebar-collapsed-width;
+  }
+
+  // -----------------------------------------------
+  // RESPONSIVE
+  // -----------------------------------------------
+  @include respond-to(lg) {
+    &__main {
+      padding: $spacing-xl $spacing-2xl;
+    }
+  }
+
+  @include respond-to(2xl) {
+    &__main {
+      padding: $spacing-xl $spacing-3xl $spacing-2xl;
+    }
+  }
+
+  @media (max-width: $breakpoint-md) {
+    &__content {
+      margin-left: 0;
+    }
+
+    &__main {
+      padding: $spacing-md $spacing-md $spacing-xl;
+    }
+  }
+
+  // -----------------------------------------------
+  // SMOOTH CONTENT TRANSITIONS
+  // -----------------------------------------------
+  &__main {
+    // Stagger children on page load
+    > *:nth-child(1) { animation-delay: 0s; }
+    > *:nth-child(2) { animation-delay: 0.04s; }
+    > *:nth-child(3) { animation-delay: 0.08s; }
+    > *:nth-child(4) { animation-delay: 0.12s; }
+    > *:nth-child(5) { animation-delay: 0.16s; }
+  }
+
+  // -----------------------------------------------
+  // COLLAPSED TRANSITION POLISH
+  // -----------------------------------------------
+  &--collapsed &__content {
+    // Smooth easing for content expansion on collapse
+    transition: margin-left 380ms $ease-out-expo;
+  }
+
+  // -----------------------------------------------
+  // CONTENT AREA AMBIENT DEPTH
+  // -----------------------------------------------
+  &__content {
+    // Subtle inner shadow for depth when sidebar is present
+    box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.03);
+
+    @media (max-width: $breakpoint-md) {
+      box-shadow: none;
+    }
+  }
+}

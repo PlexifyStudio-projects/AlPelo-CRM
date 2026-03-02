@@ -1,0 +1,162 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Settings Page
+// Toggle switches with overshoot, option rows
+// ============================================
+
+.settings {
+  @include page-enter;
+  max-width: 720px;
+
+  // -----------------------------------------------
+  // HEADER
+  // -----------------------------------------------
+  &__header {
+    margin-bottom: $spacing-xl;
+    animation: fadeInLeft 400ms $ease-out-expo both;
+    animation-delay: 0.05s;
+  }
+
+  &__title {
+    @include heading($font-size-2xl);
+    margin-bottom: 0;
+  }
+
+  &__subtitle {
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+    margin-top: $spacing-xs;
+  }
+
+  // -----------------------------------------------
+  // CONTENT
+  // -----------------------------------------------
+  &__content {
+    @include flex-column;
+    gap: $spacing-lg;
+  }
+
+  &__card {
+    padding: $spacing-xl;
+
+    // Stagger cards
+    @include stagger-children(0.1s, 4);
+    animation: fadeInUp 400ms $ease-out-expo both;
+  }
+
+  // -----------------------------------------------
+  // OPTION ROWS
+  // -----------------------------------------------
+  &__option {
+    @include flex-between;
+    padding: $spacing-md 0;
+    transition: background 200ms $ease-out-quart;
+    border-radius: $border-radius-sm;
+    margin: 0 #{-$spacing-sm};
+    padding-left: $spacing-sm;
+    padding-right: $spacing-sm;
+
+    & + & {
+      border-top: $border-width solid $border-color-light;
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.015);
+    }
+  }
+
+  &__option-info {
+    @include flex-column;
+    gap: 3px;
+  }
+
+  &__option-label {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $color-gray-700;
+  }
+
+  &__option-desc {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    line-height: $line-height-snug;
+  }
+
+  // -----------------------------------------------
+  // TOGGLE SWITCH (premium, with overshoot)
+  // -----------------------------------------------
+  &__toggle {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    background: $color-gray-200;
+    border-radius: $border-radius-full;
+    cursor: pointer;
+    transition: background 300ms $ease-out-quart;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+
+    &--active {
+      background: $color-primary;
+      border-color: rgba(45, 90, 61, 0.2);
+      box-shadow: $shadow-glow-primary;
+    }
+  }
+
+  &__toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: $color-white;
+    border-radius: $border-radius-full;
+    box-shadow: $shadow-sm;
+    // Spring overshoot on toggle
+    transition: transform 400ms $ease-spring;
+
+    .settings__toggle--active & {
+      transform: translateX(22px);
+    }
+  }
+
+  // -----------------------------------------------
+  // STATUS BADGES
+  // -----------------------------------------------
+  &__status {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-full;
+    letter-spacing: $letter-spacing-wide;
+
+    &--pending {
+      background: $color-warning-bg;
+      color: $color-warning-dark;
+      border: 1px solid $color-warning-border;
+    }
+
+    &--connected {
+      background: $color-success-bg;
+      color: $color-success;
+      border: 1px solid $color-success-border;
+    }
+
+    &--disconnected {
+      background: $color-error-bg;
+      color: $color-error;
+      border: 1px solid $color-error-border;
+    }
+  }
+
+  // -----------------------------------------------
+  // SECTION LABEL
+  // -----------------------------------------------
+  &__section-label {
+    @include label-text;
+    margin-bottom: $spacing-sm;
+    padding-top: $spacing-sm;
+  }
+}

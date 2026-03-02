@@ -1,0 +1,379 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Add Client Modal (Premium CRM)
+// Stripe/Linear quality form
+// ============================================
+
+.add-client-modal {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+
+  // --- Section ---
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    animation: acmSectionFadeIn 0.3s $ease-out-expo both;
+
+    &:nth-child(1) { animation-delay: 0.05s; }
+    &:nth-child(2) { animation-delay: 0.1s; }
+    &:nth-child(3) { animation-delay: 0.15s; }
+  }
+
+  &__section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    @include label-text;
+    font-size: $font-size-2xs;
+    color: $color-gray-500;
+    padding-bottom: $spacing-xs;
+    border-bottom: $border-width solid $border-color-light;
+    margin-bottom: 0;
+
+    svg {
+      color: $color-primary;
+      flex-shrink: 0;
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  // --- Grid ---
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-md;
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // --- Gender radio group ---
+  &__gender-group {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-600;
+  }
+
+  &__radio-row {
+    display: flex;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+  }
+
+  &__radio-option {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-md;
+    border: $border-width solid $border-color-medium;
+    border-radius: $border-radius-full;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    transition: all $transition-base;
+
+    input[type="radio"] { display: none; }
+
+    &:hover {
+      border-color: rgba(45, 90, 61, 0.3);
+      color: $color-primary;
+      transform: translateY(-1px);
+      box-shadow: $shadow-xs;
+    }
+
+    &--selected {
+      background: linear-gradient(135deg, $color-primary-ghost, rgba(45, 90, 61, 0.03));
+      border-color: rgba(45, 90, 61, 0.3);
+      color: $color-primary;
+      font-weight: $font-weight-semibold;
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.06);
+    }
+  }
+
+  // --- Select ---
+  &__select-group {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__select {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background: $bg-input;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    outline: none;
+    cursor: pointer;
+    transition: border-color $transition-base, box-shadow $transition-base, background $transition-base;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238E8E85' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right $spacing-md center;
+    padding-right: 36px;
+
+    &:focus {
+      border-color: rgba(45, 90, 61, 0.3);
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08);
+      background-color: $color-white;
+    }
+
+    &:hover:not(:focus) {
+      border-color: $border-color-medium;
+    }
+  }
+
+  // --- Textarea ---
+  &__textarea-group {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__textarea {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background: $bg-input;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    outline: none;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color $transition-base, box-shadow $transition-base, background $transition-base;
+
+    &::placeholder {
+      color: $color-gray-300;
+    }
+
+    &:focus {
+      border-color: rgba(45, 90, 61, 0.3);
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08);
+      background: $color-white;
+    }
+
+    &:hover:not(:focus) {
+      border-color: $border-color-medium;
+    }
+
+    &--sm {
+      min-height: 50px;
+    }
+  }
+
+  // --- Toggle ---
+  &__toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-md;
+    background: $color-gray-50;
+    border-radius: $border-radius-sm;
+    border: $border-width solid $border-color;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-gray-100;
+    }
+  }
+
+  &__toggle-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-600;
+  }
+
+  &__toggle {
+    width: 44px;
+    height: 24px;
+    background: $color-gray-200;
+    border: none;
+    border-radius: $border-radius-full;
+    cursor: pointer;
+    position: relative;
+    transition: background 300ms $ease-out-quart;
+    flex-shrink: 0;
+
+    &--on {
+      background: $color-primary;
+      box-shadow: 0 0 8px rgba(45, 90, 61, 0.2);
+    }
+  }
+
+  &__toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: $color-white;
+    border-radius: $border-radius-full;
+    box-shadow: $shadow-sm;
+    transition: transform 300ms $ease-spring;
+
+    .add-client-modal__toggle--on & {
+      transform: translateX(20px);
+    }
+  }
+
+  // --- Actions ---
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-md;
+    padding-top: $spacing-lg;
+    border-top: $border-width solid $border-color-light;
+    animation: acmSectionFadeIn 0.3s $ease-out-expo 0.2s both;
+  }
+
+  // -----------------------------------------------
+  // PREMIUM ENHANCEMENTS
+  // -----------------------------------------------
+
+  // Section label icon pulse on section focus
+  &__section-label svg {
+    transition: transform 200ms $ease-spring, color 200ms $ease-out-quart;
+  }
+
+  &__section:focus-within &__section-label svg {
+    transform: scale(1.15);
+    color: $color-primary-light;
+  }
+
+  // Section label: animated underline on focus-within
+  &__section-label {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: linear-gradient(90deg, $color-primary, transparent);
+      transition: width 350ms $ease-out-expo;
+    }
+  }
+
+  &__section:focus-within &__section-label::after {
+    width: 100%;
+  }
+
+  // Radio option: spring press feedback
+  &__radio-option:active {
+    transform: scale(0.97);
+    transition: transform 100ms $ease-smooth;
+  }
+
+  // Radio selected: subtle glow
+  &__radio-option--selected {
+    transition: all $transition-base;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      box-shadow: 0 0 12px rgba(45, 90, 61, 0.08);
+      pointer-events: none;
+    }
+  }
+
+  // Select hover arrow animation
+  &__select {
+    transition:
+      border-color $transition-base,
+      box-shadow $transition-base,
+      background $transition-base,
+      background-position 200ms $ease-out-quart;
+  }
+
+  // Textarea auto-grow visual feedback
+  &__textarea:focus {
+    min-height: 100px;
+    transition:
+      border-color $transition-base,
+      box-shadow $transition-base,
+      background $transition-base,
+      min-height 300ms $ease-spring;
+  }
+
+  // Toggle: enhanced thumb with inner shadow
+  &__toggle-thumb {
+    box-shadow: $shadow-sm, inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  // Toggle row: subtle border glow when on
+  &__toggle-row:has(.add-client-modal__toggle--on) {
+    border-color: rgba(45, 90, 61, 0.15);
+    background: $color-primary-ghost;
+  }
+
+  // Grid items stagger inside sections
+  &__grid > * {
+    animation: acmFieldFadeIn 0.3s $ease-out-expo both;
+  }
+
+  &__grid > *:nth-child(1) { animation-delay: 0.05s; }
+  &__grid > *:nth-child(2) { animation-delay: 0.1s; }
+  &__grid > *:nth-child(3) { animation-delay: 0.15s; }
+  &__grid > *:nth-child(4) { animation-delay: 0.2s; }
+
+  // Focus ring for all interactive elements
+  &__select:focus-visible,
+  &__textarea:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.15), 0 0 0 4px rgba(45, 90, 61, 0.06);
+  }
+
+  &__radio-option:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.2);
+  }
+
+  &__toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.15);
+  }
+}
+
+@keyframes acmSectionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes acmFieldFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

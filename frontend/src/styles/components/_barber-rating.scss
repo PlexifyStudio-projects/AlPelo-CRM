@@ -1,0 +1,931 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// BarberRating Component - BEM
+// Premium barber performance & feedback panel
+// ============================================
+
+.barber-rating {
+  @include page-enter;
+
+  // ---- Header ----
+  &__header {
+    @include flex-between;
+    margin-bottom: $spacing-xl;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+  }
+
+  &__header-left {
+    @include flex-column;
+    gap: $spacing-xs;
+  }
+
+  &__title {
+    @include heading($font-size-xl);
+  }
+
+  &__subtitle {
+    @include caption-text;
+    font-size: $font-size-sm;
+  }
+
+  // ---- Barber Cards Grid ----
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: $spacing-lg;
+    margin-bottom: $spacing-2xl;
+
+    @include respond-to(xl) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  &__card {
+    @include interactive-card;
+    padding: $spacing-lg;
+    cursor: pointer;
+    @include smooth-reveal;
+
+    &--selected {
+      border-color: rgba($color-primary, 0.35);
+      box-shadow: $shadow-colored-primary, $glass-inner-glow;
+
+      &:hover {
+        border-color: rgba($color-primary, 0.5);
+      }
+    }
+
+    &--unavailable {
+      opacity: 0.65;
+    }
+
+    &--expanded {
+      grid-column: 1 / -1;
+    }
+  }
+
+  &__card-top {
+    @include flex-between;
+    margin-bottom: $spacing-md;
+  }
+
+  &__card-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    @include flex-center;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    letter-spacing: $letter-spacing-wide;
+    position: relative;
+    flex-shrink: 0;
+
+    &:hover {
+      .barber-rating__avatar-upload {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+  }
+
+  // ---- Avatar Photo ----
+  &__avatar-photo {
+    width: 100%;
+    height: 100%;
+    border-radius: $border-radius-full;
+    object-fit: cover;
+    display: block;
+  }
+
+  // ---- Avatar Upload Button ----
+  &__avatar-upload {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 20px;
+    height: 20px;
+    border-radius: $border-radius-full;
+    background: $color-primary;
+    border: 2px solid $color-white;
+    color: $color-white;
+    @include flex-center;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity $transition-fast, transform $transition-fast, background $transition-fast;
+    z-index: $z-base;
+    padding: 0;
+
+    &:hover {
+      background: $color-primary-light;
+      transform: scale(1.15);
+    }
+  }
+
+  &__avatar-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &__card-dot {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    width: 10px;
+    height: 10px;
+    border-radius: $border-radius-full;
+    border: 2px solid $color-white;
+    z-index: $z-base + 1;
+
+    // When upload overlay is showing, move dot out of the way
+    .barber-rating__card-avatar:hover & {
+      opacity: 0;
+    }
+
+    &--active {
+      background: $color-success;
+    }
+
+    &--inactive {
+      background: $color-gray-300;
+    }
+  }
+
+  &__card-info {
+    @include flex-column;
+    flex: 1;
+    margin-left: $spacing-md;
+    min-width: 0;
+  }
+
+  &__card-name {
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-base;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__card-specialty {
+    @include caption-text;
+    font-size: $font-size-xs;
+    @include truncate;
+  }
+
+  &__card-chevron {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-sm;
+    color: $color-gray-400;
+    transition: transform $transition-base, color $transition-base;
+    flex-shrink: 0;
+
+    &--open {
+      transform: rotate(180deg);
+      color: $color-primary;
+    }
+  }
+
+  &__card-rating {
+    margin-bottom: $spacing-md;
+  }
+
+  // ---- Star Rating ----
+  &__stars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  &__stars-value {
+    margin-left: $spacing-xs;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-accent-dark;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  // ---- Card Metrics (summary) ----
+  &__card-metrics {
+    display: flex;
+    gap: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: 1px solid $border-color;
+  }
+
+  &__metric {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__metric-icon {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-sm;
+    background: $color-primary-ghost;
+    color: $color-primary;
+    flex-shrink: 0;
+  }
+
+  &__metric-data {
+    @include flex-column;
+    min-width: 0;
+  }
+
+  &__metric-value {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__metric-label {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  // ---- Expandable Detail Section ----
+  &__detail {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows $transition-slow, margin-top $transition-slow, opacity $transition-base;
+    opacity: 0;
+
+    > * {
+      overflow: hidden;
+    }
+
+    &--open {
+      grid-template-rows: 1fr;
+      margin-top: $spacing-lg;
+      border-top: 1px solid $border-color;
+      padding-top: $spacing-lg;
+      opacity: 1;
+    }
+  }
+
+  // ---- Detail Section ----
+  &__detail-section {
+    margin-bottom: $spacing-xl;
+
+    &:last-of-type {
+      margin-bottom: $spacing-md;
+    }
+  }
+
+  &__detail-section-title {
+    font-family: $font-heading;
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    margin-bottom: $spacing-md;
+  }
+
+  // ---- Info Grid (Professional Info) ----
+  &__info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__info-item {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-sm;
+    background: rgba($color-primary, 0.03);
+    @include transition;
+
+    &:hover {
+      background: rgba($color-primary, 0.06);
+    }
+  }
+
+  &__info-icon {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-sm;
+    background: $color-primary-ghost;
+    color: $color-primary;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__info-content {
+    @include flex-column;
+    gap: $spacing-2xs;
+    min-width: 0;
+  }
+
+  &__info-label {
+    @include label-text;
+    font-size: $font-size-2xs;
+  }
+
+  &__info-value {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+    word-break: break-word;
+  }
+
+  &__info-bio {
+    font-size: $font-size-sm;
+    line-height: $line-height-base;
+    color: $color-gray-500;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-sm;
+    background: rgba($color-primary, 0.03);
+    border-left: 3px solid rgba($color-primary, 0.2);
+    font-style: italic;
+  }
+
+  // ---- Performance Metrics Grid ----
+  &__metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+  }
+
+  &__metric-card {
+    @include flex-column;
+    align-items: center;
+    text-align: center;
+    padding: $spacing-md;
+    border-radius: $border-radius-md;
+    background: rgba($color-primary, 0.04);
+    border: $border-width solid rgba($color-primary, 0.08);
+    @include transition;
+    gap: $spacing-xs;
+
+    &:hover {
+      background: rgba($color-primary, 0.07);
+      border-color: rgba($color-primary, 0.15);
+      transform: translateY(-2px);
+    }
+  }
+
+  &__metric-card-icon {
+    @include flex-center;
+    width: 32px;
+    height: 32px;
+    border-radius: $border-radius-sm;
+    background: $color-primary-ghost;
+    color: $color-primary;
+  }
+
+  &__metric-card-value {
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    letter-spacing: $letter-spacing-tight;
+  }
+
+  &__metric-card-label {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    letter-spacing: $letter-spacing-wide;
+    text-transform: uppercase;
+    font-weight: $font-weight-semibold;
+  }
+
+  // ---- Top Services ----
+  &__top-services {
+    @include flex-column;
+    gap: $spacing-sm;
+  }
+
+  &__top-services-label {
+    @include label-text;
+    font-size: $font-size-2xs;
+  }
+
+  &__top-services-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+  }
+
+  &__top-services-tag {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-primary;
+    background: $color-primary-ghost;
+    border: $border-width solid rgba($color-primary, 0.12);
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-full;
+    white-space: nowrap;
+  }
+
+  // ---- Detail Header (inside expanded) ----
+  &__detail-header {
+    @include flex-between;
+    margin-bottom: $spacing-md;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+  }
+
+  &__detail-header-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  &__detail-title {
+    font-family: $font-heading;
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+  }
+
+  &__detail-count {
+    @include label-text;
+    background: $color-primary-ghost;
+    color: $color-primary;
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-full;
+    font-size: $font-size-2xs;
+  }
+
+  &__detail-actions {
+    display: flex;
+    gap: $spacing-sm;
+  }
+
+  &__feedback-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
+    border: none;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    @include transition;
+    @include press-effect;
+
+    &:hover {
+      background: linear-gradient(135deg, $color-primary-light, $color-primary-lighter);
+      box-shadow: $shadow-colored-primary;
+    }
+  }
+
+  // ---- History Button ----
+  &__history-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    background: transparent;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+    cursor: pointer;
+    @include transition;
+    @include press-effect;
+
+    &:hover {
+      border-color: rgba($color-primary, 0.25);
+      color: $color-primary;
+      background: $color-primary-ghost;
+    }
+  }
+
+  // ---- Actions Row ----
+  &__actions {
+    display: flex;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+    padding-top: $spacing-md;
+    border-top: 1px solid $border-color;
+  }
+
+  // ---- Filters ----
+  &__detail-filters {
+    @include flex-between;
+    margin-bottom: $spacing-md;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+  }
+
+  &__search {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    background: $bg-input;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    padding: $spacing-sm $spacing-md;
+    color: $color-gray-400;
+    @include transition;
+    flex: 1;
+    max-width: 320px;
+
+    &:focus-within {
+      border-color: rgba($color-primary, 0.3);
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
+    }
+  }
+
+  &__search-input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    width: 100%;
+
+    &::placeholder {
+      color: $color-gray-300;
+    }
+  }
+
+  &__sort {
+    display: flex;
+    gap: $spacing-xs;
+  }
+
+  &__sort-btn {
+    padding: $spacing-xs $spacing-md;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-full;
+    background: transparent;
+    font-family: $font-primary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+    cursor: pointer;
+    @include transition;
+
+    &:hover {
+      border-color: rgba($color-primary, 0.2);
+      color: $color-primary;
+    }
+
+    &--active {
+      background: $color-primary;
+      border-color: $color-primary;
+      color: $color-white;
+
+      &:hover {
+        background: $color-primary-light;
+        border-color: $color-primary-light;
+        color: $color-white;
+      }
+    }
+  }
+
+  // ---- Client List (inside expanded card) ----
+  &__clients-list {
+    @include flex-column;
+    gap: $spacing-xs;
+    @include custom-scrollbar;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  &__client-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-md;
+    @include transition;
+    @include smooth-reveal;
+    cursor: pointer;
+
+    &:nth-child(even) {
+      background: rgba($color-primary, 0.02);
+    }
+
+    &:hover {
+      background: rgba($color-primary, 0.06);
+    }
+  }
+
+  &__client-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-accent, $color-accent-light);
+    color: $color-white;
+    @include flex-center;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    letter-spacing: $letter-spacing-wide;
+    flex-shrink: 0;
+  }
+
+  &__client-info {
+    @include flex-column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__client-name {
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__client-phone {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+  }
+
+  &__client-stat {
+    @include flex-column;
+    align-items: center;
+    min-width: 72px;
+    text-align: center;
+  }
+
+  &__client-stat-value {
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+
+    &--date {
+      font-size: $font-size-xs;
+      font-weight: $font-weight-medium;
+    }
+  }
+
+  &__client-stat-label {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  &__empty {
+    @include flex-center;
+    padding: $spacing-2xl;
+    color: $color-gray-400;
+    font-size: $font-size-sm;
+  }
+
+  // ---- Modal Content ----
+  &__modal {
+    max-width: 580px;
+  }
+
+  &__modal-content {
+    @include flex-column;
+    gap: $spacing-lg;
+  }
+
+  // ---- Message Preview ----
+  &__message-preview {
+    @include flex-column;
+    gap: $spacing-sm;
+  }
+
+  &__message-preview-label {
+    @include label-text;
+  }
+
+  &__message-bubble {
+    background: linear-gradient(135deg, rgba($color-primary, 0.08), rgba($color-primary, 0.04));
+    border: $border-width solid rgba($color-primary, 0.12);
+    border-radius: $border-radius-md;
+    padding: $spacing-md $spacing-lg;
+    position: relative;
+
+    p {
+      font-size: $font-size-sm;
+      line-height: $line-height-base;
+      color: $color-secondary;
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 20px;
+      width: 12px;
+      height: 12px;
+      background: rgba($color-primary, 0.06);
+      border-left: $border-width solid rgba($color-primary, 0.12);
+      border-top: $border-width solid rgba($color-primary, 0.12);
+      transform: rotate(45deg);
+    }
+  }
+
+  // ---- Client Selection ----
+  &__client-selection {
+    @include flex-column;
+    gap: $spacing-sm;
+  }
+
+  &__client-selection-header {
+    @include flex-between;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $border-color;
+  }
+
+  &__selected-count {
+    @include caption-text;
+  }
+
+  &__client-check-list {
+    @include flex-column;
+    gap: $spacing-2xs;
+    max-height: 280px;
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  &__client-check-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    @include transition;
+
+    &:hover {
+      background: rgba($color-primary, 0.04);
+    }
+
+    &--selected {
+      background: rgba($color-primary, 0.06);
+    }
+  }
+
+  // ---- Checkbox ----
+  &__checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    cursor: pointer;
+  }
+
+  &__checkbox {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  &__checkbox-custom {
+    @include flex-center;
+    width: 18px;
+    height: 18px;
+    border-radius: $border-radius-xs;
+    border: 2px solid $color-gray-300;
+    background: $color-white;
+    @include transition;
+    flex-shrink: 0;
+    color: $color-white;
+
+    .barber-rating__checkbox:checked + & {
+      background: $color-primary;
+      border-color: $color-primary;
+    }
+  }
+
+  &__checkbox-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+  }
+
+  &__client-check-info {
+    @include flex-column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__client-check-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+  }
+
+  &__client-check-phone {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+  }
+
+  &__client-check-badge {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-warning-dark;
+    background: $color-warning-bg;
+    border: 1px solid $color-warning-border;
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-full;
+    white-space: nowrap;
+  }
+
+  // ---- Modal Footer ----
+  &__modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    padding-top: $spacing-md;
+    border-top: 1px solid $border-color;
+  }
+
+  &__cancel-btn {
+    padding: $spacing-sm $spacing-lg;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    background: transparent;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+    cursor: pointer;
+    @include transition;
+
+    &:hover {
+      border-color: $border-color-medium;
+      color: $color-secondary;
+    }
+  }
+
+  &__send-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-xl;
+    border: none;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    @include transition;
+    @include press-effect;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, $color-primary-light, $color-primary-lighter);
+      box-shadow: $shadow-colored-primary;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &--sending {
+      pointer-events: none;
+    }
+  }
+
+  &__send-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba($color-white, 0.3);
+    border-top-color: $color-white;
+    border-radius: $border-radius-full;
+    animation: spin 0.6s linear infinite;
+  }
+}
+
+// ---- Team Page wrapper ----
+.team-page {
+  @include page-enter;
+}
+
+// ---- Spinner keyframe ----
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

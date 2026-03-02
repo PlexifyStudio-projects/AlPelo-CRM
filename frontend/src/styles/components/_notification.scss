@@ -1,0 +1,149 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Notification (inline variant)
+// Floating toasts removed — notifications now
+// live in the Header bell dropdown.
+// ============================================
+
+.notification {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-md;
+  font-size: $font-size-sm;
+
+  &--info {
+    background: $color-info-bg;
+    color: $color-info-dark;
+    border: 1px solid $color-info-border;
+  }
+
+  &--success {
+    background: $color-success-bg;
+    color: $color-success-dark;
+    border: 1px solid $color-success-border;
+  }
+
+  &--warning {
+    background: $color-warning-bg;
+    color: $color-warning-dark;
+    border: 1px solid $color-warning-border;
+  }
+
+  &--error {
+    background: $color-error-bg;
+    color: $color-error-dark;
+    border: 1px solid $color-error-border;
+  }
+
+  &__message {
+    font-weight: $font-weight-medium;
+    line-height: $line-height-snug;
+  }
+
+  // -----------------------------------------------
+  // PREMIUM ENHANCEMENTS
+  // -----------------------------------------------
+
+  // Entrance animation
+  animation: notifSlideIn 350ms $ease-out-expo both;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform $transition-fast,
+    box-shadow $transition-fast,
+    border-color $transition-fast;
+
+  // Subtle left accent bar
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: $border-radius-md 0 0 $border-radius-md;
+  }
+
+  &--info::before { background: linear-gradient(180deg, $color-info, rgba(96, 165, 250, 0.4)); }
+  &--success::before { background: linear-gradient(180deg, $color-success, rgba(52, 211, 153, 0.4)); }
+  &--warning::before { background: linear-gradient(180deg, $color-warning, rgba(251, 191, 36, 0.4)); }
+  &--error::before { background: linear-gradient(180deg, $color-error, rgba(248, 113, 113, 0.4)); }
+
+  // Hover lift
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: $shadow-sm;
+  }
+
+  // Icon container enhancement
+  &__icon {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+    transition: transform 200ms $ease-spring;
+  }
+
+  &:hover &__icon {
+    transform: scale(1.1);
+  }
+
+  &--info &__icon { background: $color-info-bg; color: $color-info; }
+  &--success &__icon { background: $color-success-bg; color: $color-success; }
+  &--warning &__icon { background: $color-warning-bg; color: $color-warning; }
+  &--error &__icon { background: $color-error-bg; color: $color-error; }
+
+  // Dismiss button
+  &__dismiss {
+    @include flex-center;
+    width: 24px;
+    height: 24px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+    color: inherit;
+    opacity: 0.4;
+    transition: opacity $transition-fast, background $transition-fast, transform 200ms $ease-spring;
+    margin-left: auto;
+
+    &:hover {
+      opacity: 0.8;
+      background: rgba(0, 0, 0, 0.06);
+      transform: scale(1.1);
+    }
+
+    &:active {
+      transform: scale(0.9);
+    }
+  }
+
+  // Pulsing dot for urgent errors
+  &--error &__pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: $border-radius-full;
+    background: $color-error;
+    animation: notifPulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+}
+
+@keyframes notifSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes notifPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(248, 113, 113, 0); }
+}

@@ -1,0 +1,622 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Client Table (Premium CRM)
+// Stripe/Linear/Notion quality table
+// ============================================
+
+.client-table {
+  margin-top: $spacing-lg;
+  animation: fadeInUp 0.4s $ease-out-expo both;
+  animation-delay: 0.1s;
+
+  &__wrapper {
+    @include glass-card;
+    overflow: hidden;
+    overflow-x: auto;
+    @include custom-scrollbar;
+    position: relative;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 780px;
+  }
+
+  // --- Table head (sticky glass with scroll shadow) ---
+  &__head {
+    position: sticky;
+    top: 0;
+    z-index: $z-base;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0);
+    transition: box-shadow $transition-fast;
+
+    .client-table__wrapper:hover & {
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  &__th {
+    padding: $spacing-sm $spacing-lg;
+    text-align: left;
+    @include label-text;
+    font-size: 0.6rem;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: color $transition-fast;
+    letter-spacing: $letter-spacing-caps;
+    color: $color-gray-400;
+
+    &:hover {
+      color: $color-primary;
+    }
+
+    &--right { text-align: right; }
+
+    &--hide-sm {
+      @media (max-width: $breakpoint-md) { display: none; }
+    }
+
+    &--hide-md {
+      @media (max-width: $breakpoint-lg) { display: none; }
+    }
+  }
+
+  &__th-content {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  // --- Sort icon (smooth rotation on direction change) ---
+  &__sort-icon {
+    color: $color-gray-300;
+    flex-shrink: 0;
+    transition: color $transition-fast, transform 350ms $ease-spring;
+
+    &--active {
+      color: $color-primary;
+      transform: scale(1.1);
+    }
+
+    &--desc {
+      transform: rotate(180deg) scale(1.1);
+    }
+  }
+
+  // --- Table body ---
+  &__body {
+    .client-table__row {
+      &:nth-child(even) {
+        background: rgba(0, 0, 0, 0.012);
+      }
+    }
+  }
+
+  // --- Table row ---
+  &__row {
+    border-bottom: $border-width solid $border-color-light;
+    cursor: pointer;
+    transition: all 280ms $ease-out-quart;
+    animation: tableRowFadeIn 0.4s $ease-out-expo both;
+    position: relative;
+
+    &:hover {
+      background: rgba(45, 90, 61, 0.025);
+      box-shadow: inset 3px 0 0 $color-primary, 0 1px 3px rgba(0, 0, 0, 0.04);
+
+      .client-table__avatar {
+        transform: scale(1.08);
+      }
+
+      // Glow rings on hover per status
+      .client-table__avatar--activo {
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(45, 90, 61, 0.3), 0 0 12px rgba(45, 90, 61, 0.15);
+      }
+
+      .client-table__avatar--vip {
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(201, 168, 76, 0.35), 0 0 14px rgba(201, 168, 76, 0.15);
+      }
+
+      .client-table__avatar--en_riesgo {
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(212, 133, 26, 0.3), 0 0 12px rgba(212, 133, 26, 0.15);
+      }
+
+      .client-table__avatar--nuevo {
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(59, 124, 212, 0.3), 0 0 12px rgba(59, 124, 212, 0.15);
+      }
+
+      .client-table__avatar--inactivo {
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(142, 142, 133, 0.25);
+      }
+
+      .client-table__client-name {
+        color: $color-primary-dark;
+      }
+    }
+
+    &:active {
+      background: rgba(45, 90, 61, 0.04);
+    }
+
+    &:last-child { border-bottom: none; }
+  }
+
+  // --- Table cell ---
+  &__td {
+    padding: $spacing-md $spacing-lg;
+    vertical-align: middle;
+
+    &--right { text-align: right; }
+
+    &--hide-sm {
+      @media (max-width: $breakpoint-md) { display: none; }
+    }
+
+    &--hide-md {
+      @media (max-width: $breakpoint-lg) { display: none; }
+    }
+  }
+
+  // --- Client cell (avatar + info) ---
+  &__client-cell {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  &__avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-full;
+    @include flex-center;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wide;
+    color: $color-white;
+    flex-shrink: 0;
+    transition: transform 300ms $ease-spring, box-shadow 300ms $ease-spring;
+
+    &--activo {
+      background: linear-gradient(135deg, $color-primary, $color-primary-light);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(45, 90, 61, 0.25);
+    }
+
+    &--vip {
+      background: linear-gradient(135deg, $color-accent-dark, $color-accent);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(201, 168, 76, 0.3);
+    }
+
+    &--inactivo {
+      background: linear-gradient(135deg, $color-gray-400, $color-gray-300);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(142, 142, 133, 0.2);
+    }
+
+    &--en_riesgo {
+      background: linear-gradient(135deg, #B5651D, #D4851A);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(212, 133, 26, 0.25);
+    }
+
+    &--nuevo {
+      background: linear-gradient(135deg, #2B6CB0, #3B7CD4);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(59, 124, 212, 0.25);
+    }
+
+    // Legacy support
+    &--active { @extend .client-table__avatar--activo; }
+    &--inactive { @extend .client-table__avatar--inactivo; }
+  }
+
+  &__client-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__client-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    @include truncate;
+    transition: color $transition-fast;
+  }
+
+  &__client-phone {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    @include truncate;
+    letter-spacing: $letter-spacing-wide;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // --- Visit cell ---
+  &__visit-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__date {
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+  }
+
+  &__days {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    border-radius: $border-radius-full;
+    padding: 2px $spacing-sm;
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    letter-spacing: $letter-spacing-wide;
+    font-variant-numeric: tabular-nums;
+
+    &--ok {
+      color: #1B7A4A;
+      background: $color-success-bg;
+      border: $border-width solid $color-success-border;
+    }
+
+    &--caution {
+      color: #8A6D14;
+      background: $color-warning-bg;
+      border: $border-width solid $color-warning-border;
+    }
+
+    &--warning {
+      color: #A85D1A;
+      background: rgba(245, 158, 66, 0.1);
+      border: $border-width solid rgba(245, 158, 66, 0.2);
+    }
+
+    &--danger {
+      color: #C23B3B;
+      background: $color-error-bg;
+      border: $border-width solid $color-error-border;
+      animation: daysDangerPulse 2.5s ease-in-out infinite;
+    }
+  }
+
+  // --- Visits count ---
+  &__visits-count {
+    font-family: $font-heading;
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    display: block;
+    line-height: $line-height-tight;
+  }
+
+  // --- Spent ---
+  &__spent {
+    font-family: $font-heading;
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: $color-primary-dark;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    display: block;
+    white-space: nowrap;
+    line-height: $line-height-tight;
+  }
+
+  &__avg-ticket {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    display: block;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+
+  // --- Source tag ---
+  &__source-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-medium;
+    padding: 3px $spacing-sm;
+    border-radius: $border-radius-full;
+    white-space: nowrap;
+    transition: transform $transition-fast, box-shadow $transition-fast;
+
+    &--instagram {
+      color: #C026D3;
+      background: rgba(192, 38, 211, 0.06);
+      border: 1px solid rgba(192, 38, 211, 0.15);
+    }
+
+    &--referido {
+      color: #1B7A4A;
+      background: $color-success-bg;
+      border: 1px solid $color-success-border;
+    }
+
+    &--google {
+      color: #3B7CD4;
+      background: $color-info-bg;
+      border: 1px solid $color-info-border;
+    }
+
+    &--paso {
+      color: $color-gray-500;
+      background: rgba(107, 107, 99, 0.06);
+      border: 1px solid rgba(107, 107, 99, 0.15);
+    }
+
+    &--tiktok {
+      color: #0A0A0A;
+      background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    &--other {
+      color: $color-gray-500;
+      background: rgba(107, 107, 99, 0.06);
+      border: 1px solid rgba(107, 107, 99, 0.15);
+    }
+
+    // Micro hover: darken background slightly
+    &:hover {
+      filter: brightness(0.96);
+      transform: translateY(-1px);
+      box-shadow: $shadow-xs;
+    }
+  }
+
+  // --- Status badge ---
+  &__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wider;
+    text-transform: uppercase;
+    border-radius: $border-radius-full;
+    padding: $spacing-2xs $spacing-sm;
+    white-space: nowrap;
+    transition: transform $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+      transform: scale(1.02);
+    }
+
+    &--activo {
+      color: #1B7A4A;
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(52, 211, 153, 0.05));
+      border: $border-width solid $color-success-border;
+      box-shadow: 0 1px 3px rgba(52, 211, 153, 0.08);
+    }
+
+    &--vip {
+      color: #8A6D14;
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.12), rgba(201, 168, 76, 0.04));
+      border: $border-width solid rgba(201, 168, 76, 0.3);
+      box-shadow: 0 1px 3px rgba(201, 168, 76, 0.1);
+    }
+
+    &--inactivo {
+      color: $color-gray-500;
+      background: rgba(107, 107, 99, 0.08);
+      border: $border-width solid rgba(107, 107, 99, 0.15);
+    }
+
+    &--en_riesgo {
+      color: #A85D1A;
+      background: linear-gradient(135deg, rgba(245, 158, 66, 0.12), rgba(245, 158, 66, 0.04));
+      border: $border-width solid rgba(245, 158, 66, 0.25);
+      box-shadow: 0 1px 3px rgba(245, 158, 66, 0.08);
+    }
+
+    &--nuevo {
+      color: #1D5DAB;
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.12), rgba(96, 165, 250, 0.04));
+      border: $border-width solid $color-info-border;
+      box-shadow: 0 1px 3px rgba(96, 165, 250, 0.08);
+    }
+
+    // Legacy
+    &--active { @extend .client-table__status--activo; }
+    &--inactive { @extend .client-table__status--inactivo; }
+  }
+
+  &__status-icon {
+    flex-shrink: 0;
+  }
+
+  // -----------------------------------------------
+  // PREMIUM TABLE ENHANCEMENTS
+  // -----------------------------------------------
+
+  // Staggered row entrance
+  &__row {
+    @include stagger-children(0.03s, 20);
+  }
+
+  // Row focus for keyboard navigation
+  &__row:focus-visible {
+    outline: none;
+    background: rgba(45, 90, 61, 0.04);
+    box-shadow: inset 3px 0 0 $color-primary, 0 0 0 1px rgba(45, 90, 61, 0.1);
+  }
+
+  // VIP row shimmer effect
+  &__row--vip {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.03), transparent);
+      pointer-events: none;
+      animation: tableVipShimmer 4s ease-in-out infinite;
+    }
+  }
+
+  // Smooth column highlight on header hover
+  &__th-content {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -$spacing-sm;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: $color-primary;
+      border-radius: $border-radius-full;
+      transition: width 250ms $ease-out-expo;
+    }
+  }
+
+  &__th:hover &__th-content::after {
+    width: 100%;
+  }
+
+  // Source tag micro-animation on row hover
+  &__row:hover &__source-tag {
+    transform: translateY(-1px);
+    box-shadow: $shadow-xs;
+  }
+
+  // Status badge pulse for important statuses
+  &__status--vip {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      animation: statusGlow 3s ease-in-out infinite;
+    }
+  }
+
+  &__status--en_riesgo {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: inherit;
+      border: 1px solid rgba(245, 158, 66, 0.15);
+      animation: statusGlowWarn 3s ease-in-out infinite;
+    }
+  }
+
+  // Wrapper scroll shadow
+  &__wrapper {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 40px;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6));
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity $transition-fast;
+    }
+
+    &:hover::after {
+      opacity: 1;
+    }
+  }
+
+  // Money values: subtle green tint on hover
+  &__row:hover &__spent {
+    color: $color-primary;
+  }
+
+  // Visits count counter feel
+  &__visits-count {
+    transition: color $transition-fast, transform $transition-fast;
+  }
+
+  &__row:hover &__visits-count {
+    transform: scale(1.05);
+    color: $color-primary-dark;
+  }
+
+  // Empty state
+  &__empty {
+    @include flex-column-center;
+    padding: $spacing-3xl $spacing-xl;
+    gap: $spacing-md;
+    animation: fadeInUp 400ms $ease-out-expo both;
+
+    &-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: $border-radius-full;
+      background: $color-gray-50;
+      @include flex-center;
+      color: $color-gray-300;
+      margin-bottom: $spacing-sm;
+    }
+
+    &-text {
+      font-size: $font-size-sm;
+      color: $color-gray-400;
+      text-align: center;
+    }
+  }
+}
+
+@keyframes tableVipShimmer {
+  0%, 100% { left: -100%; }
+  50% { left: 200%; }
+}
+
+@keyframes statusGlow {
+  0%, 100% { border-color: rgba(201, 168, 76, 0.15); }
+  50% { border-color: rgba(201, 168, 76, 0.35); }
+}
+
+@keyframes statusGlowWarn {
+  0%, 100% { border-color: rgba(245, 158, 66, 0.1); }
+  50% { border-color: rgba(245, 158, 66, 0.3); }
+}
+
+@keyframes tableRowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes daysDangerPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(248, 113, 113, 0);
+  }
+}

@@ -1,0 +1,344 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Card Component
+// Glass morphism, hover effects, skeletons
+// ============================================
+
+.card {
+  @include glass-card;
+  padding: $spacing-lg;
+  position: relative;
+  transition:
+    transform 350ms $ease-out-expo,
+    box-shadow 350ms $ease-out-expo,
+    border-color 350ms $ease-out-expo;
+  animation: fadeInUp 400ms $ease-out-expo both;
+
+  // Inner glow
+  box-shadow: $shadow-glass, $glass-inner-glow;
+
+  // Hover: subtle scale + deeper shadow + brighter border
+  &:hover {
+    transform: scale(1.008) translateY(-1px);
+    box-shadow: $shadow-glass-hover, $glass-inner-glow;
+    border-color: $glass-border-bright;
+  }
+
+  // -----------------------------------------------
+  // HEADER
+  // -----------------------------------------------
+  &__header {
+    @include flex-between;
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-md;
+    border-bottom: $border-width solid $border-color-light;
+  }
+
+  &__title {
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    letter-spacing: $letter-spacing-wide;
+    font-feature-settings: 'cv01', 'cv02';
+  }
+
+  &__actions {
+    @include flex-center;
+    gap: $spacing-sm;
+  }
+
+  &__body {
+    color: $color-gray-500;
+  }
+
+  // -----------------------------------------------
+  // ACCENT BORDER VARIANTS
+  // -----------------------------------------------
+  &--accent-primary {
+    border-top: 3px solid $color-primary;
+    box-shadow: $shadow-glass, $shadow-primary-colored;
+
+    &:hover {
+      box-shadow: $shadow-glass-hover, $shadow-primary-colored;
+    }
+  }
+
+  &--accent-info {
+    border-top: 3px solid $color-info;
+    box-shadow: $shadow-glass, $shadow-info-colored;
+
+    &:hover {
+      box-shadow: $shadow-glass-hover, $shadow-info-colored;
+    }
+  }
+
+  &--accent-accent {
+    border-top: 3px solid $color-accent;
+    box-shadow: $shadow-glass, $shadow-accent-colored;
+
+    &:hover {
+      box-shadow: $shadow-glass-hover, $shadow-accent-colored;
+    }
+  }
+
+  &--accent-success {
+    border-top: 3px solid $color-success;
+    box-shadow: $shadow-glass, $shadow-success-colored;
+
+    &:hover {
+      box-shadow: $shadow-glass-hover, $shadow-success-colored;
+    }
+  }
+
+  // -----------------------------------------------
+  // STAT CARD (large numbers, dashboard)
+  // -----------------------------------------------
+  &--stat {
+    text-align: center;
+    padding: $spacing-xl $spacing-lg;
+    position: relative;
+    overflow: hidden;
+
+    // Light leak on hover
+    @include light-leak;
+
+    .card__stat-label {
+      @include label-text;
+      margin-bottom: $spacing-sm;
+    }
+
+    .card__stat-number {
+      font-family: $font-heading;
+      font-size: $font-size-3xl;
+      font-weight: $font-weight-bold;
+      color: $color-secondary;
+      line-height: $line-height-none;
+      letter-spacing: $letter-spacing-tight;
+      margin-bottom: $spacing-sm;
+      animation: counterRoll 600ms $ease-out-expo both;
+    }
+
+    .card__stat-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-xs;
+      font-size: $font-size-xs;
+      font-weight: $font-weight-medium;
+      color: $color-gray-400;
+      padding: 3px $spacing-sm;
+      border-radius: $border-radius-full;
+      background: rgba(0, 0, 0, 0.03);
+
+      &--up {
+        color: $color-success;
+        background: $color-success-bg;
+      }
+
+      &--down {
+        color: $color-error;
+        background: $color-error-bg;
+      }
+    }
+  }
+
+  // -----------------------------------------------
+  // SHIMMER SKELETON LOADING
+  // -----------------------------------------------
+  &--skeleton {
+    pointer-events: none;
+
+    .card__skeleton-line {
+      height: 12px;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.04) 0%,
+        rgba(0, 0, 0, 0.08) 40%,
+        rgba(0, 0, 0, 0.04) 80%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      border-radius: $border-radius-xs;
+      margin-bottom: $spacing-sm;
+
+      &:nth-child(1) { width: 60%; }
+      &:nth-child(2) { width: 100%; }
+      &:nth-child(3) { width: 80%; }
+      &:nth-child(4) { width: 45%; }
+    }
+
+    .card__skeleton-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: $border-radius-full;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.04) 0%,
+        rgba(0, 0, 0, 0.08) 40%,
+        rgba(0, 0, 0, 0.04) 80%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      margin-bottom: $spacing-md;
+    }
+
+    .card__skeleton-stat {
+      height: 40px;
+      width: 120px;
+      margin: $spacing-md auto $spacing-sm;
+      border-radius: $border-radius-sm;
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.04) 0%,
+        rgba(0, 0, 0, 0.08) 40%,
+        rgba(0, 0, 0, 0.04) 80%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  }
+
+  // -----------------------------------------------
+  // FLAT VARIANT (no glass)
+  // -----------------------------------------------
+  &--flat {
+    background: $color-white;
+    backdrop-filter: none;
+    border: $border-width solid $border-color;
+  }
+
+  // -----------------------------------------------
+  // INTERACTIVE / CLICKABLE
+  // -----------------------------------------------
+  &--interactive {
+    cursor: pointer;
+
+    &:hover {
+      transform: scale(1.01) translateY(-2px);
+    }
+
+    &:active {
+      transform: scale(0.995);
+      transition: transform 100ms $ease-smooth;
+    }
+  }
+
+  // -----------------------------------------------
+  // STAGGER CHILDREN
+  // -----------------------------------------------
+  @include stagger-children(0.06s, 8);
+
+  // -----------------------------------------------
+  // PREMIUM ENHANCEMENTS
+  // -----------------------------------------------
+
+  // Noise texture for premium matte feel
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0.015;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    z-index: 0;
+  }
+
+  // Ensure content above noise
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  // Focus ring for interactive cards
+  &--interactive:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(45, 90, 61, 0.2), $shadow-lg;
+  }
+
+  // Stat card: value counter animation
+  &--stat .card__stat-number {
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Stat trend: micro entrance
+  &--stat .card__stat-trend {
+    animation: fadeInUp 300ms $ease-out-expo 0.3s both;
+  }
+
+  // Skeleton shimmer: improved wave
+  &--skeleton .card__skeleton-line {
+    border-radius: $border-radius-sm;
+  }
+
+  // Accent cards: subtle top bar glow
+  &--accent-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 4px;
+    background: radial-gradient(ellipse, rgba(45, 90, 61, 0.15), transparent);
+    filter: blur(4px);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &--accent-accent::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 4px;
+    background: radial-gradient(ellipse, rgba(201, 168, 76, 0.12), transparent);
+    filter: blur(4px);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &--accent-info::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 4px;
+    background: radial-gradient(ellipse, rgba(96, 165, 250, 0.12), transparent);
+    filter: blur(4px);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  &--accent-success::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 20%;
+    right: 20%;
+    height: 4px;
+    background: radial-gradient(ellipse, rgba(52, 211, 153, 0.12), transparent);
+    filter: blur(4px);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  // Header divider: gradient fade
+  &__header {
+    border-bottom-color: transparent;
+    background-image: linear-gradient(to right, transparent, $border-color-light, transparent);
+    background-size: 100% 1px;
+    background-position: bottom;
+    background-repeat: no-repeat;
+  }
+
+  // Card title: improved letter spacing
+  &__title {
+    letter-spacing: $letter-spacing-normal;
+  }
+}

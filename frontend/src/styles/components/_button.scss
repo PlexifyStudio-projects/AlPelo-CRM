@@ -1,0 +1,289 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Button Component
+// Premium interactions: ripple, loading, spring
+// ============================================
+
+.button {
+  @include flex-center;
+  display: inline-flex;
+  gap: $spacing-sm;
+  font-family: $font-primary;
+  font-weight: $font-weight-semibold;
+  font-feature-settings: 'cv01', 'cv02';
+  letter-spacing: $letter-spacing-wide;
+  border-radius: $border-radius-md;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 200ms $ease-spring,
+    box-shadow 280ms $ease-out-quart,
+    background 280ms $ease-out-quart,
+    border-color 280ms $ease-out-quart;
+  @include focus-ring;
+  user-select: none;
+  white-space: nowrap;
+
+  // Light leak / shine sweep
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 280ms $ease-out-quart;
+    pointer-events: none;
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+
+  // Spring press
+  &:active:not(:disabled) {
+    transform: scale(0.975);
+    transition: transform 100ms $ease-smooth;
+  }
+
+  // -----------------------------------------------
+  // SIZES
+  // -----------------------------------------------
+  &--sm {
+    padding: 6px $spacing-md;
+    font-size: $font-size-xs;
+    border-radius: $border-radius-sm;
+    gap: 6px;
+  }
+
+  &--md {
+    padding: 10px $spacing-xl;
+    font-size: $font-size-sm;
+  }
+
+  &--lg {
+    padding: 14px $spacing-2xl;
+    font-size: $font-size-base;
+    border-radius: $border-radius-lg;
+  }
+
+  // -----------------------------------------------
+  // VARIANTS
+  // -----------------------------------------------
+  &--primary {
+    background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+    color: $color-white;
+    box-shadow: $shadow-sm, $shadow-glow-primary;
+
+    &:hover {
+      box-shadow: $shadow-md, 0 0 48px rgba(45, 90, 61, 0.25);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0) scale(0.975);
+      box-shadow: $shadow-xs;
+    }
+  }
+
+  &--secondary {
+    @include glass(rgba(255, 255, 255, 0.55));
+    color: $color-primary;
+    box-shadow: $shadow-sm, $glass-inner-glow-subtle;
+
+    &:hover {
+      background: rgba(45, 90, 61, 0.07);
+      border-color: rgba(45, 90, 61, 0.2);
+      transform: translateY(-1px);
+      box-shadow: $shadow-md, $glass-inner-glow;
+    }
+  }
+
+  &--danger {
+    background: linear-gradient(135deg, $color-error 0%, $color-error-dark 100%);
+    color: $color-white;
+    box-shadow: $shadow-sm;
+
+    &:hover {
+      box-shadow: $shadow-md, $shadow-glow-error;
+      transform: translateY(-1px);
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    color: $color-gray-500;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: $color-gray-700;
+    }
+
+    &::before {
+      display: none;
+    }
+  }
+
+  &--accent {
+    background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
+    color: $color-white;
+    box-shadow: $shadow-sm, $shadow-glow-accent;
+
+    &:hover {
+      box-shadow: $shadow-md, 0 0 48px rgba(201, 168, 76, 0.25);
+      transform: translateY(-1px);
+    }
+  }
+
+  // -----------------------------------------------
+  // ICON BUTTON (square, centered icon)
+  // -----------------------------------------------
+  &--icon {
+    padding: 0;
+    border-radius: $border-radius-md;
+    aspect-ratio: 1;
+
+    &.button--sm {
+      width: 32px;
+      height: 32px;
+    }
+
+    &.button--md {
+      width: 40px;
+      height: 40px;
+    }
+
+    &.button--lg {
+      width: 48px;
+      height: 48px;
+    }
+  }
+
+  // -----------------------------------------------
+  // LOADING STATE
+  // -----------------------------------------------
+  &--loading {
+    pointer-events: none;
+    color: transparent !important;
+
+    &::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: $color-white;
+      border-radius: $border-radius-full;
+      animation: spin 600ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    // Dark spinner for secondary/ghost
+    &.button--secondary::after,
+    &.button--ghost::after {
+      border-color: rgba(45, 90, 61, 0.15);
+      border-top-color: $color-primary;
+    }
+  }
+
+  // -----------------------------------------------
+  // RIPPLE EFFECT (CSS only)
+  // -----------------------------------------------
+  &__ripple {
+    position: absolute;
+    border-radius: $border-radius-full;
+    background: rgba(255, 255, 255, 0.35);
+    animation: ripple 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    pointer-events: none;
+    width: 10px;
+    height: 10px;
+    transform: scale(0);
+
+    .button--secondary &,
+    .button--ghost & {
+      background: rgba(45, 90, 61, 0.12);
+    }
+  }
+
+  // -----------------------------------------------
+  // DISABLED
+  // -----------------------------------------------
+  &:disabled,
+  &--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+    transform: none;
+  }
+
+  // -----------------------------------------------
+  // FULL WIDTH
+  // -----------------------------------------------
+  &--full {
+    width: 100%;
+  }
+
+  // -----------------------------------------------
+  // FOCUS-VISIBLE ENHANCEMENT (keyboard nav)
+  // -----------------------------------------------
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-primary, 0 0 16px rgba(45, 90, 61, 0.15);
+  }
+
+  &--danger:focus-visible {
+    box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-error, 0 0 16px rgba(248, 113, 113, 0.15);
+  }
+
+  &--accent:focus-visible {
+    box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-accent, 0 0 16px rgba(201, 168, 76, 0.15);
+  }
+
+  // -----------------------------------------------
+  // ICON SPIN ON HOVER (for icon-only buttons)
+  // -----------------------------------------------
+  &--icon svg {
+    transition: transform 300ms $ease-spring;
+  }
+
+  &--icon:hover svg {
+    transform: rotate(15deg) scale(1.05);
+  }
+
+  &--icon:active svg {
+    transform: rotate(0deg) scale(0.95);
+  }
+
+  // -----------------------------------------------
+  // SUBTLE GRADIENT SHIFT ON HOVER
+  // -----------------------------------------------
+  &--primary {
+    background-size: 200% 200%;
+    background-position: 0% 0%;
+
+    &:hover {
+      background-position: 100% 100%;
+    }
+  }
+
+  &--accent {
+    background-size: 200% 200%;
+    background-position: 0% 0%;
+
+    &:hover {
+      background-position: 100% 100%;
+    }
+  }
+
+  &--danger {
+    background-size: 200% 200%;
+    background-position: 0% 0%;
+
+    &:hover {
+      background-position: 100% 100%;
+    }
+  }
+}

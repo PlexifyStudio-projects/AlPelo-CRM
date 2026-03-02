@@ -1,0 +1,153 @@
+import { daysSince, formatCurrency, formatDate } from '../../../utils/formatters';
+import { STATUS_META } from '../../../utils/clientStatus';
+
+const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
+  const b = 'client-table';
+
+  const getStatusLabel = (status) => STATUS_META[status]?.label || status;
+
+  const getInitials = (name) =>
+    name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+
+  const getDaysClass = (lastVisit) => {
+    const days = daysSince(lastVisit);
+    if (days > 60) return `${b}__days--danger`;
+    if (days > 45) return `${b}__days--warning`;
+    if (days >= 30) return `${b}__days--caution`;
+    return `${b}__days--ok`;
+  };
+
+  const getSourceKey = (source) => {
+    if (!source) return 'other';
+    const s = source.toLowerCase();
+    if (s.includes('instagram')) return 'instagram';
+    if (s.includes('referido')) return 'referido';
+    if (s.includes('google')) return 'google';
+    if (s.includes('tiktok')) return 'tiktok';
+    if (s.includes('pasó') || s.includes('paso')) return 'paso';
+    return 'other';
+  };
+
+  const SortIcon = ({ column }) => {
+    if (sortConfig?.key !== column) {
+      return (
+        <svg className={`${b}__sort-icon`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M7 15l5 5 5-5" />
+          <path d="M7 9l5-5 5 5" />
+        </svg>
+      );
+    }
+    return (
+      <svg className={`${b}__sort-icon ${b}__sort-icon--active`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+        {sortConfig.direction === 'asc'
+          ? <path d="M7 14l5-5 5 5" />
+          : <path d="M7 10l5 5 5-5" />
+        }
+      </svg>
+    );
+  };
+
+  return (
+    <div className={b}>
+      <div className={`${b}__wrapper`}>
+        <table className={`${b}__table`}>
+          <thead className={`${b}__head`}>
+            <tr>
+              <th className={`${b}__th`} onClick={() => onSort('name')}>
+                <span className={`${b}__th-content`}>
+                  Cliente <SortIcon column="name" />
+                </span>
+              </th>
+              <th className={`${b}__th`} onClick={() => onSort('lastVisit')}>
+                <span className={`${b}__th-content`}>
+                  Última visita <SortIcon column="lastVisit" />
+                </span>
+              </th>
+              <th className={`${b}__th ${b}__th--right ${b}__th--hide-sm`} onClick={() => onSort('totalVisits')}>
+                <span className={`${b}__th-content`}>
+                  Visitas <SortIcon column="totalVisits" />
+                </span>
+              </th>
+              <th className={`${b}__th ${b}__th--right ${b}__th--hide-sm`} onClick={() => onSort('totalSpent')}>
+                <span className={`${b}__th-content`}>
+                  Total gastado <SortIcon column="totalSpent" />
+                </span>
+              </th>
+              <th className={`${b}__th ${b}__th--hide-md`}>
+                <span className={`${b}__th-content`}>Origen</span>
+              </th>
+              <th className={`${b}__th`} onClick={() => onSort('status')}>
+                <span className={`${b}__th-content`}>
+                  Estado <SortIcon column="status" />
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody className={`${b}__body`}>
+            {clients.map((client, index) => (
+              <tr
+                key={client.id}
+                className={`${b}__row`}
+                onClick={() => onClientClick(client)}
+                style={{ animationDelay: `${index * 0.03}s` }}
+              >
+                <td className={`${b}__td`}>
+                  <div className={`${b}__client-cell`}>
+                    <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
+                      {getInitials(client.name)}
+                    </div>
+                    <div className={`${b}__client-info`}>
+                      <span className={`${b}__client-name`}>{client.name}</span>
+                      <span className={`${b}__client-phone`}>{client.phone}</span>
+                    </div>
+                  </div>
+                </td>
+                <td className={`${b}__td`}>
+                  <div className={`${b}__visit-cell`}>
+                    <span className={`${b}__date`}>{formatDate(client.lastVisit)}</span>
+                    <span className={`${b}__days ${getDaysClass(client.lastVisit)}`}>
+                      hace {daysSince(client.lastVisit)}d
+                    </span>
+                  </div>
+                </td>
+                <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
+                  <span className={`${b}__visits-count`}>{client.totalVisits}</span>
+                </td>
+                <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
+                  <span className={`${b}__spent`}>{formatCurrency(client.totalSpent)}</span>
+                  {client.avgTicket > 0 && (
+                    <span className={`${b}__avg-ticket`}>prom. {formatCurrency(client.avgTicket)}</span>
+                  )}
+                </td>
+                <td className={`${b}__td ${b}__td--hide-md`}>
+                  {client.source && (
+                    <span className={`${b}__source-tag ${b}__source-tag--${getSourceKey(client.source)}`}>
+                      {client.source}
+                    </span>
+                  )}
+                </td>
+                <td className={`${b}__td`}>
+                  <span className={`${b}__status ${b}__status--${client.status}`}>
+                    {client.status === 'vip' && (
+                      <svg className={`${b}__status-icon`} width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                      </svg>
+                    )}
+                    {client.status === 'en_riesgo' && (
+                      <svg className={`${b}__status-icon`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                      </svg>
+                    )}
+                    {getStatusLabel(client.status)}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+export default ClientTable;

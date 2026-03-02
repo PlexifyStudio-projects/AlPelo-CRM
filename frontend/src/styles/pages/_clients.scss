@@ -1,0 +1,233 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// AlPelo - Clients Page (Premium CRM)
+// World-class design: Stripe/Linear quality
+// ============================================
+
+.clients {
+  @include page-enter;
+
+  // --- Header ---
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
+    animation: fadeInLeft 400ms $ease-out-expo both;
+    animation-delay: 0.05s;
+  }
+
+  &__header-top {
+    @include flex-between;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+  }
+
+  &__header-left {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__title {
+    @include heading($font-size-2xl);
+    margin-bottom: 0;
+    position: relative;
+
+    &::after {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 3px;
+      background: linear-gradient(90deg, $color-primary, $color-primary-light);
+      border-radius: $border-radius-full;
+      margin-top: $spacing-xs;
+    }
+  }
+
+  // --- KPI Bar ---
+  &__kpi-bar {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: $spacing-sm;
+    animation: fadeInUp 0.4s $ease-out-expo both;
+    animation-delay: 0.1s;
+
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &__kpi-card {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: $spacing-sm $spacing-lg;
+    background: $glass-bg-heavy;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: $border-width solid $glass-border;
+    border-radius: $border-radius-md;
+    min-width: 90px;
+    position: relative;
+    overflow: hidden;
+    transition: all $transition-base;
+    box-shadow: $shadow-xs, $glass-inner-glow-subtle;
+
+    &::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: $color-primary;
+      opacity: 0;
+      transition: opacity $transition-fast;
+    }
+
+    &:hover {
+      box-shadow: $shadow-md, $glass-inner-glow;
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.35);
+
+      &::before {
+        opacity: 1;
+      }
+    }
+
+    &--urgent {
+      border-color: rgba(248, 113, 113, 0.3);
+      background: $color-error-bg;
+      animation: kpiPulse 2s ease-in-out infinite;
+
+      &::before {
+        background: $color-error;
+        opacity: 1;
+      }
+
+      &:hover {
+        box-shadow: $shadow-glow-error;
+      }
+    }
+
+    @include stagger-children(0.05s, 6);
+  }
+
+  &__kpi-value {
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+
+    &--success { color: #1B7A4A; }
+    &--warning { color: #A85D1A; }
+    &--danger  { color: #C23B3B; }
+    &--accent  { color: $color-accent-dark; }
+  }
+
+  &__kpi-label {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-caps;
+    white-space: nowrap;
+  }
+
+  // --- Empty state ---
+  &__empty {
+    @include glass-card;
+    @include flex-center;
+    flex-direction: column;
+    padding: $spacing-3xl $spacing-xl;
+    margin-top: $spacing-lg;
+    text-align: center;
+    @include dot-grid;
+    animation: fadeInUp 400ms $ease-out-expo both;
+    animation-delay: 0.15s;
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 20%;
+      width: 60%;
+      height: 100%;
+      background: radial-gradient(ellipse, rgba(45, 90, 61, 0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+  }
+
+  &__empty-icon {
+    @include flex-center;
+    width: 80px;
+    height: 80px;
+    border-radius: $border-radius-full;
+    background: $color-primary-ghost;
+    color: $color-primary;
+    margin-bottom: $spacing-lg;
+    box-shadow: 0 0 0 8px rgba(45, 90, 61, 0.04), 0 0 0 16px rgba(45, 90, 61, 0.02);
+    animation: emptyPulse 3s ease-in-out infinite;
+    position: relative;
+    z-index: 1;
+  }
+
+  &__empty-text {
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    margin-bottom: $spacing-xs;
+    position: relative;
+    z-index: 1;
+  }
+
+  &__empty-hint {
+    font-size: $font-size-sm;
+    color: $color-gray-300;
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@keyframes kpiPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.15); }
+  50%      { box-shadow: 0 0 0 6px rgba(248, 113, 113, 0); }
+}
+
+@keyframes emptyPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 8px rgba(45, 90, 61, 0.04), 0 0 0 16px rgba(45, 90, 61, 0.02);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(45, 90, 61, 0.06), 0 0 0 24px rgba(45, 90, 61, 0.02);
+  }
+}
+
+// ============================================
+// PREMIUM ENHANCEMENTS
+// ============================================
+
+// KPI card stagger entrance
+.clients__kpi-bar {
+  @include stagger-fade-in($stagger-fast, 6);
+}
+
+// KPI value counter animation
+.clients__kpi-value {
+  @include counter-roll-in(0.15s);
+}
+
+// KPI card press feedback
+.clients__kpi-card {
+  @include press-effect;
+}
