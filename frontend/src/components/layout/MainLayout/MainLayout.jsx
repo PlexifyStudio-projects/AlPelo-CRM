@@ -9,6 +9,9 @@ const MENU_ITEMS = [
   { id: 'team', label: 'Equipo', description: 'RENDIMIENTO Y FEEDBACK', section: 'GESTION PRINCIPAL' },
   { id: 'messaging', label: 'Mensajeria', description: 'WHATSAPP Y META', section: 'COMUNICACION' },
   { id: 'chat-ai', label: 'Chat IA', description: 'ASISTENTE INTELIGENTE', section: 'COMUNICACION' },
+  { id: 'reports', label: 'Reportes', description: 'ANALITICAS Y METRICAS', section: 'PROXIMAMENTE', disabled: true },
+  { id: 'inventory', label: 'Inventario', description: 'STOCK Y PRODUCTOS', section: 'PROXIMAMENTE', disabled: true },
+  { id: 'billing', label: 'Facturacion', description: 'POS Y CAJA', section: 'PROXIMAMENTE', disabled: true },
 ];
 
 const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => {

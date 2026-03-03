@@ -509,6 +509,30 @@
       border: 2px solid rgba(15, 15, 15, 0.9);
       animation: pulseRingAccent 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
+
+    // "Pronto" badge for maintenance items
+    &--soon {
+      background: $color-gray-100;
+      color: $color-gray-400;
+      box-shadow: none;
+      font-size: 9px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      animation: none;
+    }
+  }
+
+  // -----------------------------------------------
+  // DISABLED ITEMS (maintenance / coming soon)
+  // -----------------------------------------------
+  &__item--disabled {
+    opacity: 0.45;
+    cursor: default;
+    pointer-events: none;
+
+    &:hover {
+      background: transparent;
+    }
   }
 
   // -----------------------------------------------

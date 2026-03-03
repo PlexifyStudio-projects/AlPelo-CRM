@@ -51,6 +51,26 @@ const SVG_ICONS = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   ),
+  reports: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  ),
+  inventory: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+      <line x1="12" y1="22.08" x2="12" y2="12" />
+    </svg>
+  ),
+  billing: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
+    </svg>
+  ),
 };
 
 // Mock badge counts for navigation items
@@ -141,12 +161,12 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
                 {items.map((item, index) => (
                   <li
                     key={item.id}
-                    className={`${b}__item ${activeItem === item.id ? `${b}__item--active` : ''}`}
-                    onClick={() => onItemClick(item.id)}
+                    className={`${b}__item ${activeItem === item.id ? `${b}__item--active` : ''} ${item.disabled ? `${b}__item--disabled` : ''}`}
+                    onClick={() => !item.disabled && onItemClick(item.id)}
                     data-tooltip={item.label}
                     role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && onItemClick(item.id)}
+                    tabIndex={item.disabled ? -1 : 0}
+                    onKeyDown={(e) => e.key === 'Enter' && !item.disabled && onItemClick(item.id)}
                     style={{ '--item-index': index }}
                   >
                     <span className={`${b}__icon`}>
@@ -160,14 +180,16 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
                             <span className={`${b}__description`}>{item.description}</span>
                           )}
                         </div>
-                        {BADGE_COUNTS[item.id] && (
+                        {item.disabled ? (
+                          <span className={`${b}__badge ${b}__badge--soon`}>Pronto</span>
+                        ) : BADGE_COUNTS[item.id] ? (
                           <span className={`${b}__badge`}>
                             {BADGE_COUNTS[item.id]}
                           </span>
-                        )}
+                        ) : null}
                       </>
                     )}
-                    {isCollapsed && BADGE_COUNTS[item.id] && (
+                    {isCollapsed && BADGE_COUNTS[item.id] && !item.disabled && (
                       <span className={`${b}__badge ${b}__badge--dot`} />
                     )}
                   </li>

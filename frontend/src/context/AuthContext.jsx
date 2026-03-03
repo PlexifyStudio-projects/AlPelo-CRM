@@ -6,7 +6,7 @@ const STORAGE_KEY = 'alpelo_auth';
 
 const defaultUser = {
   id: 1,
-  name: 'Alejandro Ruiz',
+  name: 'Jaime Ruiz',
   email: 'admin@alpelo.com',
   role: 'admin',
   avatar: null,

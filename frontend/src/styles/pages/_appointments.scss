@@ -2,16 +2,15 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Appointments Page
-// Premium barbershop appointment management
-// World-class Calendar UI
+// AlPelo - Appointments Page (Rewrite)
+// Dense, premium design — BEM strict
 // ============================================
 
 .appointments {
   @include page-enter;
 
   // ===========================================
-  // HEADER
+  // 1. HEADER
   // ===========================================
   &__header {
     margin-bottom: $spacing-xl;
@@ -52,9 +51,7 @@
     font-weight: $font-weight-regular;
     text-transform: capitalize;
 
-    svg {
-      color: $color-accent;
-    }
+    svg { color: $color-accent; }
   }
 
   &__today-date {
@@ -62,157 +59,118 @@
   }
 
   // ===========================================
-  // STATS PILLS
+  // 2. STATS PILLS (flex row)
   // ===========================================
   &__stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    display: flex;
     gap: $spacing-md;
     margin-bottom: $spacing-xl;
-
-    @media (max-width: $breakpoint-lg) {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    flex-wrap: wrap;
 
     @media (max-width: $breakpoint-sm) {
-      grid-template-columns: 1fr 1fr;
       gap: $spacing-sm;
     }
   }
 
   &__stat-pill {
     @include glass-card;
-    padding: $spacing-lg $spacing-lg;
     display: flex;
     align-items: center;
-    gap: $spacing-md;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    flex: 1;
+    min-width: 160px;
+    transition: all 300ms $ease-out-quart;
     animation: fadeInUp 400ms $ease-out-expo both;
-    @include transition;
     position: relative;
     overflow: hidden;
 
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      opacity: 0.04;
-      transform: translate(20px, -20px);
-      transition: opacity 400ms $ease-out-quart, transform 400ms $ease-out-quart;
-    }
+    &:nth-child(1) { animation-delay: 0.08s; }
+    &:nth-child(2) { animation-delay: 0.12s; }
+    &:nth-child(3) { animation-delay: 0.16s; }
+    &:nth-child(4) { animation-delay: 0.20s; }
 
     &:hover {
-      transform: translateY(-3px) scale(1.005);
-      box-shadow: $shadow-lg, $glass-inner-glow;
-
-      &::after {
-        opacity: 0.08;
-        transform: translate(10px, -10px);
-      }
+      transform: translateY(-2px);
+      box-shadow: $shadow-lg;
     }
 
-    &:nth-child(1) { animation-delay: 0.06s; }
-    &:nth-child(2) { animation-delay: 0.12s; }
-    &:nth-child(3) { animation-delay: 0.18s; }
-    &:nth-child(4) { animation-delay: 0.24s; }
-
     &--total {
-      &::after { background: $color-primary; }
-
       .appointments__stat-pill-icon {
         background: $color-primary-ghost;
         color: $color-primary;
       }
-
-      .appointments__stat-pill-number {
-        color: $color-primary-dark;
-      }
     }
 
     &--confirmed {
-      &::after { background: $color-success; }
-
       .appointments__stat-pill-icon {
         background: $color-success-bg;
-        color: $color-success-dark;
-      }
-
-      .appointments__stat-pill-number {
         color: $color-success-dark;
       }
     }
 
     &--pending {
-      &::after { background: $color-warning; }
-
       .appointments__stat-pill-icon {
         background: $color-warning-bg;
-        color: $color-warning-dark;
-      }
-
-      .appointments__stat-pill-number {
         color: $color-warning-dark;
       }
     }
 
     &--revenue {
-      &::after { background: $color-accent; }
-
       .appointments__stat-pill-icon {
         background: $color-accent-ghost;
         color: $color-accent;
-      }
-
-      .appointments__stat-pill-number {
-        color: $color-accent-dark;
       }
     }
   }
 
   &__stat-pill-icon {
     @include flex-center;
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: $border-radius-md;
     flex-shrink: 0;
-    transition: transform 300ms $ease-spring-gentle;
+    transition: transform 300ms $ease-out-quart;
 
     .appointments__stat-pill:hover & {
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
   }
 
   &__stat-pill-data {
     @include flex-column;
+    gap: 1px;
     min-width: 0;
   }
 
   &__stat-pill-number {
     font-family: $font-heading;
-    font-size: $font-size-xl;
+    font-size: $font-size-lg;
     font-weight: $font-weight-bold;
-    line-height: $line-height-none;
-    letter-spacing: $letter-spacing-tight;
+    color: $color-secondary;
+    line-height: $line-height-tight;
+    font-variant-numeric: tabular-nums;
     @include counter-roll-in;
   }
 
   &__stat-pill-label {
-    @include caption-text;
-    margin-top: 2px;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
   }
 
   // ===========================================
-  // TOOLBAR
+  // 3. TOOLBAR
   // ===========================================
   &__toolbar {
     @include flex-between;
-    margin-bottom: $spacing-lg;
-    animation: fadeIn 400ms $ease-out-expo both 0.2s;
     flex-wrap: wrap;
     gap: $spacing-md;
+    margin-bottom: $spacing-xl;
+    animation: fadeInUp 400ms $ease-out-expo both 0.22s;
+    position: relative;
+    z-index: $z-dropdown + 1;
   }
 
   &__toolbar-left {
@@ -225,65 +183,61 @@
   &__toolbar-right {
     display: flex;
     align-items: center;
-    gap: $spacing-md;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
   }
 
-  // --- View Toggle (segmented control with sliding indicator) ---
+  // --- 3a. View Toggle (3 buttons + animated slider) ---
   &__view-toggle {
     display: flex;
+    align-items: center;
     position: relative;
-    @include glass;
+    background: $color-gray-50;
     border-radius: $border-radius-full;
     padding: 3px;
+    border: 1px solid $border-color;
   }
 
   &__view-slider {
     position: absolute;
     top: 3px;
     left: 3px;
-    width: calc(50% - 3px);
+    width: calc(33.333% - 2px);
     height: calc(100% - 6px);
-    background: $color-primary;
+    background: $color-white;
     border-radius: $border-radius-full;
-    box-shadow: $shadow-sm, $shadow-glow-primary;
-    transition: transform 350ms $ease-spring;
+    box-shadow: $shadow-sm;
+    transition: transform 300ms $ease-spring;
     z-index: 0;
-    pointer-events: none;
   }
 
   &__view-btn {
-    position: relative;
-    z-index: 1;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px $spacing-lg;
-    border: none;
-    background: transparent;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
     color: $color-gray-400;
-    border-radius: $border-radius-full;
+    background: none;
+    border: none;
     cursor: pointer;
-    transition: color 300ms $ease-out-quart;
-    @include focus-ring;
+    border-radius: $border-radius-full;
+    position: relative;
+    z-index: 1;
+    transition: color $transition-fast;
     white-space: nowrap;
 
-    &:hover {
-      color: $color-gray-600;
+    &--active {
+      color: $color-primary;
     }
 
-    &--active {
-      color: $color-white;
-
-      &:hover {
-        color: $color-white;
-      }
+    &:hover:not(&--active) {
+      color: $color-gray-600;
     }
   }
 
-  // --- Date Navigation ---
+  // --- 3b. Date Navigation ---
   &__date-nav {
     display: flex;
     align-items: center;
@@ -292,55 +246,139 @@
 
   &__date-nav-btn {
     @include flex-center;
-    width: 34px;
-    height: 34px;
-    border: none;
-    background: transparent;
+    width: 32px;
+    height: 32px;
     border-radius: $border-radius-full;
-    color: $color-gray-400;
+    border: 1px solid $border-color;
+    background: $color-white;
+    color: $color-gray-500;
     cursor: pointer;
-    @include transition;
-    @include focus-ring;
+    transition: all $transition-fast;
 
     &:hover {
-      background: $color-primary-ghost;
-      color: $color-primary;
+      background: $color-gray-50;
+      color: $color-secondary;
+      border-color: $border-color-medium;
     }
   }
 
   &__date-nav-today {
-    padding: 6px $spacing-md;
-    border: $border-width solid $border-color;
-    background: transparent;
-    border-radius: $border-radius-full;
-    font-family: $font-primary;
+    padding: $spacing-xs $spacing-sm;
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
     color: $color-primary;
+    background: $color-primary-ghost;
+    border: 1px solid rgba(45, 90, 61, 0.15);
+    border-radius: $border-radius-full;
     cursor: pointer;
-    @include transition;
-    @include focus-ring;
-    letter-spacing: $letter-spacing-wide;
+    transition: all $transition-fast;
 
     &:hover {
-      background: $color-primary-ghost;
-      border-color: $color-primary;
+      background: rgba(45, 90, 61, 0.12);
     }
   }
 
   &__date-nav-label {
     font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-gray-600;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
     text-transform: capitalize;
     margin-left: $spacing-xs;
+    white-space: nowrap;
+  }
 
-    @media (max-width: $breakpoint-sm) {
-      display: none;
+  // --- 3c. Service Filter Dropdown ---
+  &__service-filter {
+    position: relative;
+  }
+
+  &__service-filter-trigger {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: 6px $spacing-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    background: $color-white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-full;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover {
+      border-color: $border-color-medium;
+      color: $color-secondary;
+    }
+
+    &--active {
+      background: $color-primary-ghost;
+      color: $color-primary;
+      border-color: rgba(45, 90, 61, 0.2);
     }
   }
 
-  // --- Barber Filter (Custom Dropdown) ---
+  &__service-dropdown {
+    position: absolute;
+    top: calc(100% + $spacing-xs);
+    right: 0;
+    width: 240px;
+    @include glass($glass-bg-heavy, $glass-blur-heavy);
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl;
+    z-index: $z-dropdown;
+    overflow: hidden;
+    animation: fadeInUp 200ms $ease-out-expo both;
+  }
+
+  &__service-dropdown-header {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-caps;
+    border-bottom: 1px solid $border-color;
+  }
+
+  &__service-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: rgba(45, 90, 61, 0.04);
+    }
+
+    &--active {
+      background: $color-primary-ghost;
+      color: $color-primary;
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  &__service-dropdown-count {
+    margin-left: auto;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-400;
+    background: $color-gray-50;
+    padding: 1px 6px;
+    border-radius: $border-radius-full;
+  }
+
+  // --- 3d. Barber Filter Dropdown ---
   &__barber-filter {
     position: relative;
   }
@@ -348,85 +386,61 @@
   &__barber-filter-trigger {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
-    padding: 7px $spacing-md 7px 7px;
-    @include glass;
+    gap: $spacing-xs;
+    padding: 4px $spacing-sm 4px 4px;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    background: $color-white;
+    border: 1px solid $border-color;
     border-radius: $border-radius-full;
     cursor: pointer;
-    @include transition;
-    @include focus-ring;
-    font-family: $font-primary;
+    transition: all $transition-fast;
 
     &:hover {
-      box-shadow: $shadow-sm;
-      border-color: rgba(255, 255, 255, 0.35);
-    }
-
-    svg:last-child {
-      color: $color-gray-400;
-      transition: transform 200ms $ease-out-quart;
-    }
-
-    &:hover svg:last-child {
-      transform: translateY(1px);
+      border-color: $border-color-medium;
+      color: $color-secondary;
     }
   }
 
   &__barber-filter-avatar {
     @include flex-center;
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
-    color: $color-white;
+    background: linear-gradient(135deg, $color-primary-ghost, rgba(45, 90, 61, 0.12));
+    color: $color-primary;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
-    letter-spacing: $letter-spacing-wide;
     flex-shrink: 0;
-
-    svg {
-      color: $color-white;
-    }
   }
 
   &__barber-filter-text {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-gray-600;
-    max-width: 150px;
     @include truncate;
-
-    @media (max-width: $breakpoint-sm) {
-      display: none;
-    }
+    max-width: 120px;
   }
 
   &__barber-dropdown {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + $spacing-xs);
     right: 0;
-    z-index: $z-modal;
-    background: $glass-bg-ultra;
-    backdrop-filter: blur($glass-blur-heavy);
-    -webkit-backdrop-filter: blur($glass-blur-heavy);
-    border: $border-width solid $glass-border;
-    border-radius: $border-radius-lg;
-    box-shadow: $shadow-2xl, $glass-inner-glow;
-    min-width: 280px;
-    max-width: 320px;
-    max-height: 360px;
-    overflow-y: auto;
-    @include custom-scrollbar;
-    animation: dropdownIn 250ms $ease-out-expo both;
-    padding: $spacing-xs;
+    width: 300px;
+    @include glass($glass-bg-heavy, $glass-blur-heavy);
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl;
+    z-index: $z-dropdown;
+    overflow: hidden;
+    animation: fadeInUp 200ms $ease-out-expo both;
   }
 
   &__barber-dropdown-header {
     padding: $spacing-sm $spacing-md;
-    @include label-text;
     font-size: $font-size-2xs;
-    border-bottom: $border-width solid $border-color-light;
-    margin-bottom: $spacing-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-caps;
+    border-bottom: 1px solid $border-color;
   }
 
   &__barber-dropdown-item {
@@ -435,686 +449,355 @@
     gap: $spacing-sm;
     width: 100%;
     padding: $spacing-sm $spacing-md;
+    background: none;
     border: none;
-    background: transparent;
-    text-align: left;
-    border-radius: $border-radius-md;
     cursor: pointer;
-    @include transition;
-    font-family: $font-primary;
+    text-align: left;
+    transition: background $transition-fast;
 
     &:hover {
-      background: $color-primary-ghost;
+      background: rgba(45, 90, 61, 0.04);
     }
 
     &--active {
       background: $color-primary-ghost;
-      box-shadow: inset 3px 0 0 $color-primary;
     }
   }
 
   &__barber-dropdown-avatar {
     @include flex-center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary-light, $color-primary);
-    color: $color-white;
+    background: linear-gradient(135deg, $color-primary-ghost, rgba(45, 90, 61, 0.12));
+    color: $color-primary;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     flex-shrink: 0;
-
-    svg {
-      color: $color-white;
-    }
   }
 
   &__barber-dropdown-info {
     @include flex-column;
+    gap: 2px;
+    flex: 1;
     min-width: 0;
-    gap: 1px;
   }
 
   &__barber-dropdown-name {
     font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-gray-700;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
     @include truncate;
   }
 
   &__barber-dropdown-meta {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: $spacing-2xs;
     font-size: $font-size-xs;
     color: $color-gray-400;
     @include truncate;
+  }
 
-    svg {
-      color: $color-accent;
+  // ===========================================
+  // 4. DAY VIEW — Dense Flex Rows
+  // ===========================================
+  &__day {
+    @include glass-card;
+    padding: 0;
+    animation: fadeInUp 400ms $ease-out-expo both 0.28s;
+  }
+
+  &__day-header {
+    @include flex-between;
+    padding: $spacing-sm $spacing-md;
+    border-bottom: 1px solid $border-color;
+
+    &-left {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-semibold;
+      color: $color-secondary;
+      text-transform: capitalize;
     }
   }
 
-  // ===========================================
-  // TIMELINE (Day View) - The heart of the page
-  // ===========================================
-  &__timeline {
-    @include glass-card;
-    animation: fadeInUp 400ms $ease-out-expo both 0.25s;
-    overflow: hidden;
-    position: relative;
+  &__day-count {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    padding: $spacing-2xs $spacing-sm;
+    background: $color-gray-50;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color;
   }
 
-  &__timeline-header {
-    @include flex-between;
-    padding: $spacing-md $spacing-xl;
-    border-bottom: $border-width solid $border-color-light;
-    background: rgba(255, 255, 255, 0.3);
+  &__day-body {
+    @include flex-column;
   }
 
-  &__timeline-header-left {
+  &__day-row {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-600;
-    text-transform: capitalize;
-
-    svg {
-      color: $color-primary;
-    }
-  }
-
-  &__timeline-count {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-400;
-    padding: 4px $spacing-sm;
-    background: rgba(0, 0, 0, 0.03);
-    border-radius: $border-radius-full;
-  }
-
-  &__timeline-body {
-    padding: $spacing-sm 0;
-    max-height: 65vh;
-    overflow-y: auto;
-    @include custom-scrollbar;
+    padding: 10px $spacing-md;
+    border-bottom: 1px solid $border-color-light;
+    transition: background $transition-fast;
+    animation: fadeInUp 280ms $ease-out-expo both;
     position: relative;
-  }
+    z-index: $z-base;
 
-  &__timeline-slot {
-    display: flex;
-    align-items: flex-start;
-    padding: $spacing-2xs $spacing-xl $spacing-2xs $spacing-lg;
-    min-height: 44px;
-    position: relative;
-    animation: fadeIn 300ms $ease-out-expo both;
+    &:last-child { border-bottom: none; }
 
-    &--active {
-      // Slight highlight for slots with appointments
+    &:hover {
+      background: rgba(45, 90, 61, 0.018);
     }
 
-    &--current {
-      // Red current-time indicator
+    // Row with open dropdown floats above siblings
+    &:has(.appointments__status-dropdown) {
+      z-index: $z-dropdown + 1;
+    }
+
+    &--next {
+      background: rgba(45, 90, 61, 0.035);
+
       &::before {
         content: '';
         position: absolute;
-        left: 80px;
-        right: $spacing-xl;
-        top: 50%;
-        height: 2px;
-        background: linear-gradient(90deg, $color-error, transparent);
-        z-index: 2;
-        opacity: 0.6;
-        animation: pulseGlow 2s ease-in-out infinite;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: $color-primary;
+        border-radius: 0 2px 2px 0;
       }
 
-      &::after {
-        content: '';
-        position: absolute;
-        left: 76px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: $color-error;
-        box-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
-        z-index: 3;
-      }
-    }
-
-    &--past {
-      opacity: 0.55;
+      &:hover { background: rgba(45, 90, 61, 0.05); }
     }
   }
 
-  &__timeline-time {
+  &__day-time {
     width: 52px;
     flex-shrink: 0;
-    padding-top: 6px;
-    font-family: $font-primary;
-    font-variant-numeric: tabular-nums;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-300;
-    text-align: right;
-
-    .appointments__timeline-slot--active & {
-      color: $color-primary;
-      font-weight: $font-weight-bold;
-    }
-
-    .appointments__timeline-slot--current & {
-      color: $color-error;
-      font-weight: $font-weight-bold;
-    }
-  }
-
-  &__timeline-connector {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 24px;
-    align-self: stretch;
-    flex-shrink: 0;
-    position: relative;
-    margin: 0 $spacing-sm;
-  }
-
-  &__timeline-line {
-    width: 2px;
-    flex: 1;
-    background: linear-gradient(180deg, $border-color-light, $border-color);
-    border-radius: $border-radius-full;
-
-    .appointments__timeline-slot--active & {
-      background: linear-gradient(180deg, $color-primary, rgba(45, 90, 61, 0.3));
-    }
-
-    .appointments__timeline-slot--current & {
-      background: linear-gradient(180deg, $color-error, rgba(248, 113, 113, 0.3));
-    }
-  }
-
-  &__timeline-dot {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: $border-color-light;
-    flex-shrink: 0;
-    transition: all 300ms $ease-out-quart;
-
-    .appointments__timeline-slot--active & {
-      width: 10px;
-      height: 10px;
-      background: $color-primary;
-      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.12), $shadow-xs;
-    }
-
-    .appointments__timeline-slot--current & {
-      background: $color-error;
-      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
-      animation: pulseGlow 2s ease-in-out infinite;
-    }
-  }
-
-  &__timeline-cards {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
-    padding: 2px 0;
-    min-width: 0;
-  }
-
-  &__timeline-empty {
-    padding: $spacing-xs 0;
-  }
-
-  &__timeline-empty-dash {
-    width: 32px;
-    height: 1px;
-    background: $border-color-light;
-    border-radius: $border-radius-full;
-  }
-
-  // ===========================================
-  // APPOINTMENT CARD
-  // ===========================================
-  &__card {
-    @include glass(rgba(255, 255, 255, 0.7));
-    border-radius: $border-radius-md;
-    padding: $spacing-md $spacing-md $spacing-md calc($spacing-md + 4px);
-    box-shadow: $shadow-xs;
-    @include transition;
-    position: relative;
-    overflow: hidden;
-    animation: fadeInScale 350ms $ease-out-expo both;
-
-    &:hover {
-      box-shadow: $shadow-md;
-      transform: translateY(-2px) scale(1.003);
-      border-color: rgba(255, 255, 255, 0.4);
-    }
-
-    &--confirmed {
-      .appointments__card-accent { background: $color-success; }
-
-      &:hover {
-        box-shadow: $shadow-md, $shadow-glow-success;
-      }
-    }
-
-    &--pending {
-      .appointments__card-accent { background: $color-warning; }
-
-      &:hover {
-        box-shadow: $shadow-md, 0 0 24px rgba(251, 191, 36, 0.12);
-      }
-    }
-
-    &--completed {
-      .appointments__card-accent { background: $color-primary; }
-      opacity: 0.85;
-
-      &:hover {
-        opacity: 1;
-        box-shadow: $shadow-md, $shadow-glow-primary;
-      }
-    }
-
-    &--cancelled {
-      .appointments__card-accent { background: $color-error; }
-      opacity: 0.6;
-
-      &:hover {
-        opacity: 0.8;
-        box-shadow: $shadow-md, $shadow-glow-error;
-      }
-    }
-
-    &--compact {
-      padding: $spacing-sm $spacing-sm $spacing-sm calc($spacing-sm + 4px);
-    }
-  }
-
-  &__card-accent {
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3.5px;
-    border-radius: $border-radius-full 0 0 $border-radius-full;
-  }
-
-  &__card-top {
-    @include flex-between;
-    margin-bottom: $spacing-sm;
-  }
-
-  &__card-time-group {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    svg {
-      color: $color-gray-400;
-    }
-  }
-
-  &__card-time {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-700;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
     font-variant-numeric: tabular-nums;
+
+    .appointments__day-row--next & {
+      color: $color-primary;
+    }
   }
 
-  &__card-duration {
+  &__day-avatar {
+    @include flex-center;
+    width: 34px;
+    height: 34px;
+    border-radius: $border-radius-sm;
     font-size: $font-size-2xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-400;
-    padding: 2px 8px;
-    background: rgba(0, 0, 0, 0.03);
-    border-radius: $border-radius-full;
-    letter-spacing: $letter-spacing-wide;
-  }
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+    transition: transform 200ms $ease-out-quart;
 
-  &__card-status-wrap {
-    position: relative;
-  }
-
-  &__card-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: $border-radius-full;
-    font-family: $font-primary;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    letter-spacing: $letter-spacing-wide;
-    text-transform: uppercase;
-    border: none;
-    cursor: pointer;
-    @include transition;
-    @include focus-ring;
-
-    span {
-      line-height: 1;
+    .appointments__day-row:hover & {
+      transform: scale(1.05);
     }
 
     &--confirmed {
       background: $color-success-bg;
       color: $color-success-dark;
-      border: 1px solid $color-success-border;
     }
 
     &--pending {
       background: $color-warning-bg;
       color: $color-warning-dark;
-      border: 1px solid $color-warning-border;
     }
 
     &--completed {
       background: $color-primary-ghost;
       color: $color-primary;
-      border: 1px solid rgba(45, 90, 61, 0.2);
     }
 
     &--cancelled {
       background: $color-error-bg;
       color: $color-error-dark;
-      border: 1px solid $color-error-border;
-    }
-
-    &:hover {
-      transform: scale(1.05);
-      box-shadow: $shadow-xs;
     }
   }
 
-  // --- Status Dropdown ---
-  &__status-dropdown {
-    position: absolute;
-    top: calc(100% + 6px);
-    right: 0;
-    z-index: $z-dropdown;
-    background: $glass-bg-ultra;
-    backdrop-filter: blur($glass-blur);
-    border: $border-width solid $glass-border;
-    border-radius: $border-radius-md;
-    box-shadow: $shadow-xl, $glass-inner-glow;
-    padding: $spacing-xs;
-    min-width: 180px;
-    animation: dropdownIn 200ms $ease-out-quart both;
-  }
-
-  &__status-dropdown-header {
-    padding: $spacing-xs $spacing-sm;
-    @include label-text;
-    font-size: $font-size-2xs;
-    border-bottom: $border-width solid $border-color-light;
-    margin-bottom: $spacing-2xs;
-  }
-
-  &__status-option {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    width: 100%;
-    padding: 8px $spacing-sm;
-    border: none;
-    background: transparent;
-    text-align: left;
-    font-family: $font-primary;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-600;
-    border-radius: $border-radius-sm;
-    cursor: pointer;
-    @include transition;
-
-    &:hover {
-      background: rgba(0, 0, 0, 0.04);
-    }
-
-    &--current {
-      background: $color-primary-ghost;
-      color: $color-primary;
-      font-weight: $font-weight-semibold;
-    }
-
-    &--confirmed svg { color: $color-success-dark; }
-    &--pending svg { color: $color-warning-dark; }
-    &--completed svg { color: $color-primary; }
-    &--cancelled svg { color: $color-error-dark; }
-
-    &--confirmed:hover { background: $color-success-bg; color: $color-success-dark; }
-    &--pending:hover { background: $color-warning-bg; color: $color-warning-dark; }
-    &--completed:hover { background: $color-primary-ghost; color: $color-primary; }
-    &--cancelled:hover { background: $color-error-bg; color: $color-error-dark; }
-  }
-
-  &__status-option-check {
-    margin-left: auto;
-    font-size: $font-size-xs;
-    color: $color-primary;
-  }
-
-  // --- Card Body (Avatar + Info) ---
-  &__card-body {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    margin-bottom: $spacing-sm;
-  }
-
-  &__card-avatar-wrap {
-    position: relative;
-    flex-shrink: 0;
-  }
-
-  &__card-avatar {
-    @include flex-center;
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
-    color: $color-white;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    letter-spacing: $letter-spacing-wide;
-    position: relative;
-    z-index: 1;
-
-    .appointments__card--compact & {
-      width: 32px;
-      height: 32px;
-      font-size: 9px;
-    }
-  }
-
-  &__card-avatar-ring {
-    position: absolute;
-    inset: -3px;
-    border-radius: $border-radius-full;
-    border: 2px solid transparent;
-    z-index: 0;
-
-    &--confirmed { border-color: $color-success; }
-    &--pending { border-color: $color-warning; }
-    &--completed { border-color: $color-primary; opacity: 0.5; }
-    &--cancelled { border-color: $color-error; opacity: 0.4; }
-  }
-
-  &__card-info {
+  &__day-info {
     @include flex-column;
+    gap: 1px;
+    flex: 1;
     min-width: 0;
-    gap: 2px;
   }
 
-  &__card-name {
+  &__day-name {
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
-    color: $color-gray-700;
+    color: $color-secondary;
     @include truncate;
     line-height: $line-height-snug;
   }
 
-  &__card-phone {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: $font-size-2xs;
-    color: $color-gray-300;
-    font-variant-numeric: tabular-nums;
-
-    svg {
-      flex-shrink: 0;
-    }
-  }
-
-  &__card-service {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  &__day-service {
     font-size: $font-size-xs;
     color: $color-gray-400;
     @include truncate;
-
-    svg {
-      flex-shrink: 0;
-      color: $color-accent;
-    }
   }
 
-  &__card-footer {
-    @include flex-between;
-    padding-top: $spacing-sm;
-    border-top: $border-width solid $border-color-light;
-  }
-
-  &__card-barber {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  &__day-barber {
+    width: 140px;
+    flex-shrink: 0;
     font-size: $font-size-xs;
     color: $color-gray-500;
     font-weight: $font-weight-medium;
     @include truncate;
 
-    svg {
-      color: $color-gray-400;
-      flex-shrink: 0;
+    @media (max-width: $breakpoint-md) {
+      display: none;
     }
   }
 
-  &__card-price {
+  &__day-price {
+    width: 80px;
+    flex-shrink: 0;
+    text-align: right;
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
-    color: $color-primary;
+    color: $color-secondary;
     font-variant-numeric: tabular-nums;
-    letter-spacing: $letter-spacing-tight;
+
+    @media (max-width: $breakpoint-sm) {
+      display: none;
+    }
+  }
+
+  &__day-status-wrap {
+    position: relative;
+    flex-shrink: 0;
+    z-index: $z-dropdown;
+  }
+
+  &__day-status {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2xs;
+    padding: 3px $spacing-sm;
+    border-radius: $border-radius-full;
+    font-size: 9px;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wider;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover { filter: brightness(0.95); }
+
+    &--confirmed {
+      background: $color-success-bg;
+      color: $color-success-dark;
+    }
+
+    &--pending {
+      background: $color-warning-bg;
+      color: $color-warning-dark;
+    }
+
+    &--completed {
+      background: $color-primary-ghost;
+      color: $color-primary;
+    }
+
+    &--cancelled {
+      background: $color-error-bg;
+      color: $color-error-dark;
+    }
   }
 
   // ===========================================
-  // WEEK VIEW
+  // 5. WEEK VIEW — 7 Columns
   // ===========================================
   &__week {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    display: flex;
     gap: $spacing-sm;
-    animation: fadeInUp 400ms $ease-out-expo both 0.25s;
+    animation: fadeInUp 400ms $ease-out-expo both 0.28s;
 
-    @media (max-width: $breakpoint-xl) {
-      grid-template-columns: repeat(4, 1fr);
-    }
-
-    @media (max-width: $breakpoint-md) {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @media (max-width: $breakpoint-sm) {
-      grid-template-columns: 1fr;
+    @media (max-width: $breakpoint-lg) {
+      flex-wrap: wrap;
     }
   }
 
   &__week-col {
     @include glass-card;
+    flex: 1;
+    min-width: 130px;
+    padding: 0;
     overflow: hidden;
-    animation: fadeInUp 300ms $ease-out-expo both;
-    @include transition;
-
-    @for $i from 1 through 7 {
-      &:nth-child(#{$i}) {
-        animation-delay: calc(0.04s * #{$i});
-      }
-    }
+    animation: fadeInUp 280ms $ease-out-expo both;
+    transition: all 200ms $ease-out-quart;
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: $shadow-glass-hover, $glass-inner-glow;
+      box-shadow: $shadow-md;
     }
 
     &--today {
-      border-color: rgba(45, 90, 61, 0.25);
-      box-shadow: $shadow-glass, $shadow-glow-primary;
-
-      &:hover {
-        box-shadow: $shadow-glass-hover, $shadow-glow-primary;
-      }
+      border-color: rgba(45, 90, 61, 0.2);
+      box-shadow: $shadow-sm, $shadow-primary-colored;
     }
 
-    &--selected {
-      border-color: rgba(201, 168, 76, 0.3);
+    @media (max-width: $breakpoint-lg) {
+      min-width: calc(25% - $spacing-sm);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      min-width: calc(50% - $spacing-sm);
     }
   }
 
   &__week-col-header {
-    @include flex-column;
+    display: flex;
+    flex-direction: column;
     align-items: center;
     gap: $spacing-2xs;
-    padding: $spacing-sm $spacing-sm;
-    border-bottom: $border-width solid $border-color-light;
-    cursor: pointer;
+    padding: $spacing-sm;
+    background: none;
     border: none;
-    background: transparent;
+    border-bottom: 1px solid $border-color-light;
+    cursor: pointer;
     width: 100%;
-    @include transition;
-    font-family: $font-primary;
+    transition: background $transition-fast;
 
     &:hover {
-      background: $color-primary-ghost;
-    }
-
-    .appointments__week-col--today & {
-      background: $color-primary-ghost;
+      background: rgba(45, 90, 61, 0.03);
     }
   }
 
   &__week-col-dayname {
     @include label-text;
-    font-size: 9px;
-    letter-spacing: $letter-spacing-caps;
+    font-size: 8px;
+    text-transform: uppercase;
+
+    .appointments__week-col--today & {
+      color: $color-primary;
+    }
   }
 
   &__week-col-daynum {
     font-family: $font-heading;
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
-    color: $color-gray-600;
-    line-height: $line-height-none;
+    color: $color-secondary;
+    line-height: 1;
 
     &--today {
       @include flex-center;
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
       border-radius: $border-radius-full;
       background: $color-primary;
       color: $color-white;
@@ -1123,16 +806,16 @@
 
   &__week-col-count {
     font-size: $font-size-2xs;
-    color: $color-gray-300;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
   }
 
   &__week-col-body {
+    @include flex-column;
     padding: $spacing-xs;
-    display: flex;
-    flex-direction: column;
     gap: $spacing-2xs;
-    max-height: 350px;
+    min-height: 60px;
+    max-height: 400px;
     overflow-y: auto;
     @include custom-scrollbar;
   }
@@ -1143,111 +826,283 @@
     gap: 1px;
     padding: $spacing-xs $spacing-sm;
     border-radius: $border-radius-sm;
+    font-size: $font-size-2xs;
     border-left: 3px solid transparent;
-    cursor: default;
-    @include transition;
+    transition: background $transition-fast;
 
-    &:hover {
-      background: rgba(0, 0, 0, 0.02);
-    }
+    &:hover { filter: brightness(0.97); }
 
     &--confirmed {
+      background: $color-success-bg;
       border-left-color: $color-success;
-      background: rgba(52, 211, 153, 0.04);
     }
 
     &--pending {
+      background: $color-warning-bg;
       border-left-color: $color-warning;
-      background: rgba(251, 191, 36, 0.04);
     }
 
     &--completed {
+      background: $color-primary-ghost;
       border-left-color: $color-primary;
-      background: rgba(45, 90, 61, 0.03);
-      opacity: 0.7;
     }
 
     &--cancelled {
+      background: $color-error-bg;
       border-left-color: $color-error;
-      background: rgba(248, 113, 113, 0.03);
-      opacity: 0.5;
-      text-decoration: line-through;
+      opacity: 0.7;
     }
   }
 
   &__week-pill-time {
-    font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
-    color: $color-gray-500;
+    color: $color-secondary;
     font-variant-numeric: tabular-nums;
   }
 
   &__week-pill-name {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-700;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
     @include truncate;
-    line-height: $line-height-snug;
   }
 
   &__week-pill-service {
-    font-size: $font-size-2xs;
     color: $color-gray-400;
     @include truncate;
   }
 
   &__week-empty {
     @include flex-center;
-    padding: $spacing-xl $spacing-sm;
+    padding: $spacing-md $spacing-xs;
     font-size: $font-size-2xs;
     color: $color-gray-300;
     font-style: italic;
-    @include dot-grid;
-    border-radius: $border-radius-sm;
   }
 
   // ===========================================
-  // EMPTY STATE
+  // 6. MONTH VIEW — Calendar Grid
+  // ===========================================
+  &__month {
+    @include glass-card;
+    padding: 0;
+    overflow: hidden;
+    animation: fadeInUp 400ms $ease-out-expo both 0.28s;
+  }
+
+  &__month-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid $border-color;
+  }
+
+  &__month-dayname {
+    @include label-text;
+    font-size: $font-size-2xs;
+    text-align: center;
+    padding: $spacing-sm $spacing-xs;
+  }
+
+  &__month-grid {
+    @include flex-column;
+  }
+
+  &__month-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid $border-color-light;
+
+    &:last-child { border-bottom: none; }
+  }
+
+  &__month-cell {
+    @include flex-column;
+    align-items: center;
+    gap: $spacing-2xs;
+    padding: $spacing-sm;
+    min-height: 80px;
+    background: none;
+    border: none;
+    border-right: 1px solid $border-color-light;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:last-child { border-right: none; }
+
+    &:hover:not(&--empty) {
+      background: rgba(45, 90, 61, 0.03);
+    }
+
+    &--empty {
+      cursor: default;
+      background: $color-gray-50;
+      opacity: 0.4;
+    }
+
+    &--today {
+      background: rgba(45, 90, 61, 0.04);
+
+      .appointments__month-cell-day {
+        @include flex-center;
+        width: 28px;
+        height: 28px;
+        border-radius: $border-radius-full;
+        background: $color-primary;
+        color: $color-white;
+      }
+    }
+
+    &--has-appts {
+      &:hover {
+        background: rgba(45, 90, 61, 0.06);
+      }
+    }
+  }
+
+  &__month-cell-day {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    line-height: 1;
+  }
+
+  &__month-cell-count {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    background: $color-primary-ghost;
+    padding: 1px 6px;
+    border-radius: $border-radius-full;
+    line-height: 1.4;
+  }
+
+  &__month-cell-dots {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+  }
+
+  &__month-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: $border-radius-full;
+
+    &--confirmed { background: $color-success; }
+    &--pending { background: $color-warning; }
+    &--completed { background: $color-primary; }
+  }
+
+  // ===========================================
+  // 7. EMPTY STATE
   // ===========================================
   &__empty {
     @include flex-column-center;
-    padding: $spacing-3xl;
     gap: $spacing-md;
+    padding: $spacing-3xl $spacing-xl;
     @include glass-card;
-    animation: fadeIn 400ms $ease-out-quart both 0.3s;
-    text-align: center;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 400ms $ease-out-expo both 0.28s;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      @include dot-grid;
+      pointer-events: none;
+    }
   }
 
   &__empty-icon {
     @include flex-center;
     width: 80px;
     height: 80px;
-    border-radius: $border-radius-full;
-    background: $color-primary-ghost;
+    border-radius: $border-radius-xl;
+    background: $color-gray-50;
     color: $color-gray-300;
-    margin-bottom: $spacing-sm;
-
-    svg {
-      width: 40px;
-      height: 40px;
-    }
+    position: relative;
+    z-index: 1;
   }
 
   &__empty-title {
     font-family: $font-heading;
-    font-size: $font-size-lg;
+    font-size: $font-size-md;
     font-weight: $font-weight-bold;
-    color: $color-gray-600;
+    color: $color-secondary;
+    position: relative;
+    z-index: 1;
   }
 
   &__empty-text {
     font-size: $font-size-sm;
     color: $color-gray-400;
-    max-width: 300px;
+    font-style: italic;
+    position: relative;
+    z-index: 1;
   }
 
   // ===========================================
-  // MODAL - New Appointment
+  // 8. STATUS DROPDOWN (shared)
+  // ===========================================
+  &__status-dropdown {
+    position: absolute;
+    top: calc(100% + $spacing-xs);
+    right: 0;
+    width: 200px;
+    @include glass($glass-bg-heavy, $glass-blur-heavy);
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl;
+    z-index: $z-dropdown;
+    overflow: hidden;
+    animation: fadeInUp 200ms $ease-out-expo both;
+  }
+
+  &__status-dropdown-header {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-caps;
+    border-bottom: 1px solid $border-color;
+  }
+
+  &__status-option {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    &--confirmed { color: $color-success-dark; }
+    &--pending { color: $color-warning-dark; }
+    &--completed { color: $color-primary; }
+    &--cancelled { color: $color-error-dark; }
+
+    &--current {
+      font-weight: $font-weight-bold;
+      background: $color-gray-50;
+    }
+  }
+
+  &__status-check {
+    margin-left: auto;
+    font-size: $font-size-sm;
+    color: $color-primary;
+  }
+
+  // ===========================================
+  // 9. MODAL — New Appointment Form
   // ===========================================
   &__modal {
     @include flex-column;
@@ -1260,6 +1115,7 @@
 
     &--half {
       flex: 1;
+      min-width: 0;
     }
   }
 
@@ -1275,88 +1131,68 @@
   &__modal-label {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-family: $font-primary;
+    gap: $spacing-xs;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
-    color: $color-gray-600;
-    letter-spacing: $letter-spacing-wide;
+    color: $color-secondary;
 
-    svg {
-      color: $color-primary;
+    svg { color: $color-primary; }
+  }
+
+  // --- 9a. Client search ---
+  &__modal-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    > svg {
+      position: absolute;
+      left: $spacing-sm;
+      color: $color-gray-400;
+      pointer-events: none;
+      z-index: 1;
     }
   }
 
   &__modal-input {
     width: 100%;
-    padding: 12px $spacing-md;
-    background: $bg-input;
-    backdrop-filter: blur(8px);
-    border: $border-width solid $border-color;
-    border-radius: $border-radius-md;
-    font-size: $font-size-base;
+    padding: $spacing-sm $spacing-sm $spacing-sm $spacing-xl;
+    font-size: $font-size-sm;
     font-family: $font-primary;
-    color: $color-gray-700;
-    transition:
-      border-color 280ms $ease-out-quart,
-      background 280ms $ease-out-quart,
-      box-shadow 280ms $ease-out-quart;
+    color: $color-secondary;
+    background: $bg-input;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    transition: all $transition-fast;
     @include focus-ring;
 
     &::placeholder {
       color: $color-gray-300;
-      font-weight: $font-weight-light;
-    }
-
-    &:hover {
-      border-color: $border-color-medium;
     }
 
     &:focus {
-      outline: none;
+      border-color: rgba(45, 90, 61, 0.3);
       background: $color-white;
-      border-color: $color-primary;
-      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08), $shadow-sm;
     }
 
     &--date {
+      padding-left: $spacing-sm;
       cursor: pointer;
-    }
-  }
-
-  &__modal-search {
-    position: relative;
-
-    svg {
-      position: absolute;
-      left: 14px;
-      top: 14px;
-      color: $color-gray-400;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .appointments__modal-input {
-      padding-left: 40px;
     }
   }
 
   &__modal-dropdown {
     position: absolute;
-    top: calc(100% + 4px);
+    top: calc(100% + $spacing-2xs);
     left: 0;
     right: 0;
-    z-index: $z-dropdown;
-    background: $glass-bg-ultra;
-    backdrop-filter: blur($glass-blur);
-    border: $border-width solid $glass-border;
-    border-radius: $border-radius-md;
-    box-shadow: $shadow-xl, $glass-inner-glow;
-    max-height: 260px;
+    max-height: 280px;
     overflow-y: auto;
+    @include glass($glass-bg-heavy, $glass-blur-heavy);
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl;
+    z-index: $z-dropdown;
     @include custom-scrollbar;
-    animation: dropdownIn 200ms $ease-out-quart both;
-    padding: $spacing-xs;
   }
 
   &__modal-dropdown-item {
@@ -1365,31 +1201,26 @@
     gap: $spacing-sm;
     width: 100%;
     padding: $spacing-sm $spacing-md;
+    background: none;
     border: none;
-    background: transparent;
-    text-align: left;
-    border-radius: $border-radius-sm;
     cursor: pointer;
-    @include transition;
-    font-family: $font-primary;
+    text-align: left;
+    transition: background $transition-fast;
 
-    &:hover {
-      background: $color-primary-ghost;
-    }
+    &:hover { background: rgba(45, 90, 61, 0.04); }
 
     &--selected {
       background: $color-primary-ghost;
-      box-shadow: inset 3px 0 0 $color-primary;
     }
   }
 
   &__modal-dropdown-avatar {
     @include flex-center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
-    color: $color-white;
+    background: linear-gradient(135deg, $color-primary-ghost, rgba(45, 90, 61, 0.12));
+    color: $color-primary;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     flex-shrink: 0;
@@ -1397,47 +1228,38 @@
 
   &__modal-dropdown-info {
     @include flex-column;
-    min-width: 0;
     gap: 2px;
+    min-width: 0;
   }
 
   &__modal-dropdown-name {
     font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-gray-700;
-    @include truncate;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
   }
 
   &__modal-dropdown-meta {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: $spacing-2xs;
     font-size: $font-size-xs;
     color: $color-gray-400;
     flex-wrap: wrap;
   }
 
   &__modal-dropdown-tag {
-    display: inline-flex;
-    padding: 1px 6px;
-    background: $color-accent-ghost;
-    color: $color-accent-dark;
     font-size: $font-size-2xs;
     font-weight: $font-weight-semibold;
+    color: $color-accent;
+    background: $color-accent-ghost;
+    padding: 1px 5px;
     border-radius: $border-radius-full;
-    letter-spacing: $letter-spacing-wide;
   }
 
-  // --- Service Selection (Chips) ---
+  // --- 9b. Service chips ---
   &__modal-services {
     @include flex-column;
     gap: $spacing-md;
-    max-height: 200px;
-    overflow-y: auto;
-    @include custom-scrollbar;
-    padding: $spacing-xs;
-    @include glass(rgba(255, 255, 255, 0.3));
-    border-radius: $border-radius-md;
   }
 
   &__modal-service-group {
@@ -1448,7 +1270,6 @@
   &__modal-service-category {
     @include label-text;
     font-size: $font-size-2xs;
-    padding-left: $spacing-xs;
   }
 
   &__modal-service-options {
@@ -1458,35 +1279,32 @@
   }
 
   &__modal-service-chip {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
+    @include flex-column;
+    gap: 2px;
     padding: $spacing-xs $spacing-sm;
-    border: $border-width solid $border-color;
     border-radius: $border-radius-md;
-    background: transparent;
+    background: $color-gray-50;
+    border: 1px solid $border-color;
     cursor: pointer;
-    @include transition;
-    font-family: $font-primary;
     text-align: left;
+    transition: all $transition-fast;
 
     &:hover {
-      border-color: $color-primary;
-      background: $color-primary-ghost;
+      border-color: $border-color-medium;
+      background: $color-white;
     }
 
     &--selected {
-      border-color: $color-primary;
       background: $color-primary-ghost;
-      box-shadow: 0 0 0 1px $color-primary, $shadow-xs;
+      border-color: rgba(45, 90, 61, 0.3);
+      box-shadow: 0 0 0 1px rgba(45, 90, 61, 0.1);
     }
   }
 
   &__modal-service-chip-name {
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
-    color: $color-gray-700;
-    line-height: $line-height-snug;
+    color: $color-secondary;
   }
 
   &__modal-service-chip-meta {
@@ -1495,68 +1313,61 @@
     font-weight: $font-weight-medium;
   }
 
-  // --- Barber Selection (Cards) ---
+  // --- 9c. Barber cards ---
   &__modal-barbers {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: $spacing-xs;
-    max-height: 180px;
-    overflow-y: auto;
-    @include custom-scrollbar;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
   }
 
   &__modal-barber-card {
     @include flex-column;
     align-items: center;
-    gap: $spacing-2xs;
-    padding: $spacing-sm;
-    border: $border-width solid $border-color;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-md;
     border-radius: $border-radius-md;
-    background: transparent;
+    background: $color-gray-50;
+    border: 1px solid $border-color;
     cursor: pointer;
-    @include transition;
-    font-family: $font-primary;
     text-align: center;
+    min-width: 100px;
+    transition: all $transition-fast;
 
     &:hover {
-      border-color: $color-primary;
-      background: $color-primary-ghost;
+      border-color: $border-color-medium;
+      background: $color-white;
       transform: translateY(-1px);
     }
 
     &--selected {
-      border-color: $color-primary;
       background: $color-primary-ghost;
-      box-shadow: 0 0 0 1px $color-primary, $shadow-xs;
+      border-color: rgba(45, 90, 61, 0.3);
+      box-shadow: 0 0 0 1px rgba(45, 90, 61, 0.1);
     }
   }
 
   &__modal-barber-avatar {
     @include flex-center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary-light, $color-primary);
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
     color: $color-white;
-    font-size: $font-size-2xs;
+    font-size: $font-size-xs;
     font-weight: $font-weight-bold;
-    letter-spacing: $letter-spacing-wide;
   }
 
   &__modal-barber-name {
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
-    color: $color-gray-700;
+    color: $color-secondary;
     @include truncate;
     max-width: 100%;
-    line-height: $line-height-snug;
   }
 
   &__modal-barber-specialty {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    @include truncate;
-    max-width: 100%;
   }
 
   &__modal-barber-rating {
@@ -1564,69 +1375,56 @@
     align-items: center;
     gap: 2px;
     font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
     color: $color-accent;
-    font-weight: $font-weight-semibold;
-
-    svg {
-      color: $color-accent;
-    }
   }
 
-  // --- Time Slot Grid ---
+  // --- 9d. Time grid ---
   &__modal-time-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: $spacing-2xs;
-    max-height: 160px;
-    overflow-y: auto;
-    @include custom-scrollbar;
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   &__modal-time-slot {
     @include flex-center;
     padding: $spacing-xs;
-    border: $border-width solid $border-color;
-    border-radius: $border-radius-sm;
-    background: transparent;
-    font-family: $font-primary;
     font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     font-variant-numeric: tabular-nums;
-    color: $color-gray-600;
+    color: $color-gray-500;
+    background: $color-gray-50;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
     cursor: pointer;
-    @include transition;
+    transition: all $transition-fast;
 
     &:hover {
-      border-color: $color-primary;
-      background: $color-primary-ghost;
-      color: $color-primary;
-      transform: translateY(-1px);
-    }
-
-    &:active {
-      transform: scale(0.96);
-      transition-duration: $duration-instant;
+      border-color: $border-color-medium;
+      color: $color-secondary;
     }
 
     &--selected {
-      border-color: $color-primary;
       background: $color-primary;
       color: $color-white;
-      box-shadow: $shadow-sm, $shadow-glow-primary;
+      border-color: $color-primary;
 
       &:hover {
         background: $color-primary-light;
+        border-color: $color-primary-light;
         color: $color-white;
       }
     }
   }
 
-  // --- Summary Card ---
+  // --- 9e. Summary card ---
   &__modal-summary {
-    border-radius: $border-radius-md;
+    @include glass-card;
     overflow: hidden;
-    @include border-gradient(linear-gradient(135deg, rgba(45, 90, 61, 0.3), rgba(201, 168, 76, 0.3)));
-    animation: fadeInUp 300ms $ease-out-expo both;
   }
 
   &__modal-summary-header {
@@ -1635,48 +1433,37 @@
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-md;
     background: $color-primary-ghost;
+    border-bottom: 1px solid rgba(45, 90, 61, 0.1);
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     color: $color-primary;
-    letter-spacing: $letter-spacing-wide;
 
-    svg {
-      color: $color-accent;
-    }
+    svg { color: $color-primary; }
   }
 
   &__modal-summary-body {
+    @include flex-column;
+    gap: $spacing-xs;
     padding: $spacing-md;
-    background: rgba(255, 255, 255, 0.5);
   }
 
   &__modal-summary-row {
     @include flex-between;
-    padding: $spacing-xs 0;
     font-size: $font-size-sm;
-
-    span {
-      color: $color-gray-400;
-    }
+    color: $color-gray-500;
 
     strong {
-      color: $color-gray-700;
-      font-weight: $font-weight-medium;
+      color: $color-secondary;
+      font-weight: $font-weight-semibold;
     }
 
     &--total {
-      padding-top: $spacing-sm;
-
-      span {
-        font-weight: $font-weight-semibold;
-        color: $color-gray-600;
-      }
+      padding-top: $spacing-xs;
 
       strong {
-        color: $color-primary;
-        font-weight: $font-weight-bold;
         font-size: $font-size-md;
-        font-family: $font-heading;
+        font-weight: $font-weight-bold;
+        color: $color-primary;
       }
     }
   }
@@ -1686,113 +1473,12 @@
     margin: $spacing-xs 0;
   }
 
-  // --- Modal Actions ---
+  // --- 9f. Actions ---
   &__modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: $spacing-md;
-    padding-top: $spacing-md;
-    border-top: $border-width solid $border-color-light;
-  }
-}
-
-// ============================================
-// KEYFRAME ANIMATIONS
-// ============================================
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes dropdownIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-// ============================================
-// PREMIUM APPOINTMENT ENHANCEMENTS
-// ============================================
-
-// Stat pill press feedback
-.appointments__stat-pill {
-  @include press-effect;
-}
-
-// Timeline slot hover: smooth highlight
-.appointments__timeline-slot {
-  @include stagger-children($stagger-fast, 20);
-}
-
-// Modal barber card: press effect
-.appointments__modal-barber-card {
-  @include press-effect;
-}
-
-// Modal service chip: press effect
-.appointments__modal-service-chip {
-  @include press-effect;
-}
-
-// View toggle buttons: press effect
-.appointments__view-btn {
-  @include press-effect;
-}
-
-// Calendar day cells: interactive hover
-.appointments__calendar-day {
-  @include transition;
-
-  &:hover:not(&--empty):not(&--disabled) {
-    transform: translateY(-1px);
-    box-shadow: $shadow-sm;
-  }
-
-  &:active:not(&--empty):not(&--disabled) {
-    transform: scale(0.97);
-    transition-duration: $duration-instant;
+    gap: $spacing-sm;
+    padding-top: $spacing-sm;
+    border-top: 1px solid $border-color;
   }
 }

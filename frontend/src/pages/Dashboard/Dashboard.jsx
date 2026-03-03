@@ -1,93 +1,83 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { mockClients as rawClients, mockAppointments, mockBarbers, mockVisitHistory } from '../../data/mockData';
-import { formatCurrency, daysSince, formatDate } from '../../utils/formatters';
+import { mockClients as rawClients, mockAppointments, mockBarbers, mockVisitHistory, mockServices } from '../../data/mockData';
+import { formatCurrency, daysSince } from '../../utils/formatters';
 import { enrichClients, computeKPIs, STATUS } from '../../utils/clientStatus';
 
 const mockClients = enrichClients(rawClients, mockVisitHistory);
 const kpis = computeKPIs(mockClients);
 
-// ===== ICON COMPONENTS =====
+// ===== ICONS =====
 
-const StatIcon = ({ type }) => {
-  const icons = {
-    clients: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
-    appointments: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
-      </svg>
-    ),
-    messages: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />
-      </svg>
-    ),
-    revenue: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
-    ),
-  };
-  return icons[type] || null;
-};
-
-const WhatsAppIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-  </svg>
-);
-
-const PhoneIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-  </svg>
-);
-
-const TrendUpIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-    <polyline points="17 6 23 6 23 12" />
-  </svg>
-);
-
-const TrendDownIcon = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
-    <polyline points="17 18 23 18 23 12" />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const StarRating = ({ rating }) => {
-  const fullStars = Math.floor(rating);
-  const hasHalf = rating - fullStars >= 0.5;
-  return (
-    <div className="dashboard__barber-stars">
-      {Array.from({ length: 5 }, (_, i) => (
-        <svg key={i} width="12" height="12" viewBox="0 0 24 24" fill={i < fullStars ? '#C9A84C' : (i === fullStars && hasHalf ? '#C9A84C' : 'none')} stroke="#C9A84C" strokeWidth="1.5">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-        </svg>
-      ))}
-      <span className="dashboard__barber-rating-value">{rating}</span>
-    </div>
-  );
+const Icons = {
+  calendar: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  ),
+  revenue: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  ),
+  clients: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  clock: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  person: (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+  team: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  scissors: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="6" r="3" />
+      <circle cx="6" cy="18" r="3" />
+      <line x1="20" y1="4" x2="8.12" y2="15.88" />
+      <line x1="14.47" y1="14.48" x2="20" y2="20" />
+      <line x1="8.12" y1="8.12" x2="12" y2="12" />
+    </svg>
+  ),
+  trophy: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+    </svg>
+  ),
+  chart: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="12" width="4" height="9" rx="1" />
+      <rect x="10" y="7" width="4" height="14" rx="1" />
+      <rect x="17" y="3" width="4" height="18" rx="1" />
+    </svg>
+  ),
 };
 
 // ===== HELPERS =====
@@ -99,35 +89,6 @@ const getInitials = (name) => {
     : parts[0].substring(0, 2).toUpperCase();
 };
 
-const getDaysSeverity = (days) => {
-  if (days < 15) return 'green';
-  if (days <= 30) return 'yellow';
-  if (days <= 60) return 'orange';
-  return 'red';
-};
-
-const getStatusLabel = (status) => {
-  const labels = {
-    [STATUS.VIP]: 'VIP',
-    [STATUS.NUEVO]: 'Nuevo',
-    [STATUS.ACTIVO]: 'Activo',
-    [STATUS.EN_RIESGO]: 'En Riesgo',
-    [STATUS.INACTIVO]: 'Inactivo',
-  };
-  return labels[status] || status;
-};
-
-const getStatusColor = (status) => {
-  const colors = {
-    [STATUS.VIP]: 'accent',
-    [STATUS.NUEVO]: 'info',
-    [STATUS.ACTIVO]: 'success',
-    [STATUS.EN_RIESGO]: 'warning',
-    [STATUS.INACTIVO]: 'danger',
-  };
-  return colors[status] || 'info';
-};
-
 const getGreeting = () => {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) return 'Buenos dias';
@@ -135,7 +96,7 @@ const getGreeting = () => {
   return 'Buenas noches';
 };
 
-// ===== ANIMATED NUMBER COMPONENT =====
+// ===== ANIMATED NUMBER =====
 
 const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
   const [displayValue, setDisplayValue] = useState(0);
@@ -145,25 +106,17 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
       ? parseInt(value.replace(/[^0-9]/g, ''), 10) || 0
       : value;
 
-    if (numericValue === 0) {
-      setDisplayValue(0);
-      return;
-    }
+    if (numericValue === 0) { setDisplayValue(0); return; }
 
     const duration = 1200;
     const startTime = performance.now();
-    const startValue = 0;
 
     const animate = (currentTime) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out expo
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      const current = Math.round(startValue + (numericValue - startValue) * eased);
-      setDisplayValue(current);
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
+      setDisplayValue(Math.round(numericValue * eased));
+      if (progress < 1) requestAnimationFrame(animate);
     };
 
     requestAnimationFrame(animate);
@@ -176,64 +129,189 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
   return <span>{formatted}</span>;
 };
 
-// ===== MAIN DASHBOARD COMPONENT =====
+// ===== MAIN DASHBOARD =====
 
 const Dashboard = () => {
   const { user } = useAuth();
   const firstName = user?.name?.split(' ')[0] || 'Admin';
 
-  const today = new Date();
+  // Fecha fija para demo (mock data esta en 2026-03-02)
+  const today = new Date(2026, 2, 2); // 2 de marzo de 2026
   const dateStr = today.toLocaleDateString('es-CO', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
   const greeting = useMemo(() => getGreeting(), []);
 
-  // --- Stat computations ---
-  const activeClients = mockClients.filter(
-    (c) => c.status === STATUS.ACTIVO || c.status === STATUS.VIP || c.status === STATUS.NUEVO
-  ).length;
-  const totalClients = mockClients.length;
+  // --- Computed stats ---
+  const todayDateStr = '2026-03-02';
+  const currentMonth = '2026-03';
 
-  const todayDateStr = today.toISOString().split('T')[0];
   const todayAppts = mockAppointments
     .filter((a) => a.date === todayDateStr)
     .sort((a, b) => a.time.localeCompare(b.time));
-  const todayAppointmentsCount = todayAppts.length;
-  const pendingAppointments = mockAppointments.filter((a) => a.status === 'pending').length;
 
-  // --- Clients for follow-up (20+ days since last visit) ---
-  const followUpClients = mockClients
-    .map((c) => ({ ...c, daysSinceVisit: daysSince(c.lastVisit) }))
-    .filter((c) => c.daysSinceVisit >= 20)
-    .sort((a, b) => b.daysSinceVisit - a.daysSinceVisit);
+  const pendingAppointments = todayAppts.filter((a) => a.status === 'pending').length;
 
-  // --- Helper to find client/barber names ---
+  const todayRevenue = mockVisitHistory
+    .filter((v) => v.date === todayDateStr && v.status === 'completed')
+    .reduce((sum, v) => sum + v.amount, 0);
+
+  const completedThisMonth = mockVisitHistory.filter(
+    (v) => v.date.startsWith(currentMonth) && v.status === 'completed'
+  );
+  const monthRevenue = completedThisMonth.reduce((sum, v) => sum + v.amount, 0);
+
+  const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+  const lastMonthRevenue = mockVisitHistory
+    .filter((v) => v.date.startsWith(lastMonthStr) && v.status === 'completed')
+    .reduce((sum, v) => sum + v.amount, 0);
+
+  const monthChange = lastMonthRevenue > 0
+    ? Math.round(((monthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100)
+    : 0;
+
+  const avgTicket = completedThisMonth.length > 0
+    ? Math.round(monthRevenue / completedThisMonth.length)
+    : 0;
+
+  const activeClients = mockClients.filter(
+    (c) => c.status === STATUS.ACTIVO || c.status === STATUS.VIP || c.status === STATUS.NUEVO
+  ).length;
+
+  const atRiskCount = mockClients.filter((c) => c.status === STATUS.EN_RIESGO).length;
+  const inactiveCount = mockClients.filter((c) => c.status === STATUS.INACTIVO).length;
+  const vipCount = mockClients.filter((c) => c.status === STATUS.VIP).length;
+
+  // --- Top 5 profesionales del mes ---
+  const getStaffStats = (staffId) => {
+    const staffAppts = todayAppts.filter((a) => a.barberId === staffId);
+    const monthVisits = mockVisitHistory
+      .filter((v) => v.date.startsWith(currentMonth) && v.barberId === staffId && v.status === 'completed');
+    return {
+      todayAppts: staffAppts.length,
+      monthRevenue: monthVisits.reduce((sum, v) => sum + v.amount, 0),
+      monthServices: monthVisits.length,
+    };
+  };
+
+  const top5Staff = mockBarbers
+    .map((s) => ({ ...s, stats: getStaffStats(s.id) }))
+    .filter((s) => s.stats.monthRevenue > 0)
+    .sort((a, b) => b.stats.monthRevenue - a.stats.monthRevenue)
+    .slice(0, 5);
+
+  const maxStaffRevenue = top5Staff.length > 0 ? top5Staff[0].stats.monthRevenue : 1;
+
+  // --- Top services ---
+  const serviceCounts = {};
+  completedThisMonth.forEach((v) => {
+    if (!serviceCounts[v.service]) serviceCounts[v.service] = { count: 0, revenue: 0 };
+    serviceCounts[v.service].count++;
+    serviceCounts[v.service].revenue += v.amount;
+  });
+
+  const topServices = Object.entries(serviceCounts)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+
+  const maxServiceRevenue = topServices.length > 0 ? topServices[0].revenue : 1;
+
+  // --- Revenue by category ---
+  const categoryStats = {};
+  completedThisMonth.forEach((v) => {
+    const svc = mockServices.find((s) => s.name === v.service);
+    let cat = svc ? svc.category : 'Otro';
+    if (cat === 'Uñas Premium') cat = 'Uñas';
+    if (!categoryStats[cat]) categoryStats[cat] = { count: 0, revenue: 0 };
+    categoryStats[cat].count++;
+    categoryStats[cat].revenue += v.amount;
+  });
+
+  const categories = Object.entries(categoryStats)
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.revenue - a.revenue);
+
+  const totalCategoryRevenue = categories.reduce((sum, c) => sum + c.revenue, 0);
+
+  // --- Lookups ---
+  const getServicePrice = (serviceName) => {
+    const svc = mockServices.find((s) => s.name === serviceName);
+    return svc ? svc.price : 0;
+  };
+
   const getClientName = (clientId) => {
     const client = mockClients.find((c) => c.id === clientId);
     return client ? client.name : 'Cliente';
   };
+
   const getBarberName = (barberId) => {
     const barber = mockBarbers.find((b) => b.id === barberId);
     return barber ? barber.name : 'Barbero';
   };
 
-  // --- Quick status counts for the mini KPI row ---
-  const vipCount = mockClients.filter((c) => c.status === STATUS.VIP).length;
-  const atRiskCount = mockClients.filter((c) => c.status === STATUS.EN_RIESGO).length;
-  const retentionRate = kpis.retentionRate;
-
-  // --- Barber appointment counts for today ---
-  const getBarberTodayCount = (barberId) => {
-    return todayAppts.filter((a) => a.barberId === barberId).length;
+  const getSpecialtyShort = (specialty) => {
+    if (specialty.includes('Barbero') || specialty.includes('Barbera')) return 'Barberia';
+    if (specialty.includes('Estilista')) return 'Estilismo';
+    if (specialty.includes('Manicurista')) return 'Uñas';
+    return specialty;
   };
+
+  const getCategoryColor = (name) => {
+    if (name === 'Barbería') return 'primary';
+    if (name.includes('Uñas')) return 'info';
+    if (name === 'Facial') return 'accent';
+    return 'primary';
+  };
+
+  // --- Week overview (next 7 days) ---
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dateKey = d.toISOString().split('T')[0];
+    const appts = mockAppointments.filter((a) => a.date === dateKey);
+    const revenue = appts.reduce((s, a) => s + getServicePrice(a.service), 0);
+    return {
+      date: d,
+      dateKey,
+      dayName: d.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', ''),
+      dayNum: d.getDate(),
+      isToday: i === 0,
+      count: appts.length,
+      revenue,
+      confirmed: appts.filter((a) => a.status === 'confirmed').length,
+      pending: appts.filter((a) => a.status === 'pending').length,
+    };
+  });
+
+  // --- Staff working today ---
+  const todayStaffIds = [...new Set(todayAppts.map((a) => a.barberId))];
+  const staffToday = todayStaffIds.map((id) => {
+    const staff = mockBarbers.find((b) => b.id === id);
+    const appts = todayAppts.filter((a) => a.barberId === id);
+    const revenue = appts.reduce((s, a) => s + getServicePrice(a.service), 0);
+    return { ...staff, todayAppts: appts.length, todayRevenue: revenue };
+  }).sort((a, b) => b.todayRevenue - a.todayRevenue);
+
+  // --- Services catalog grouped by category ---
+  const servicesByCategory = {};
+  mockServices.forEach((svc) => {
+    let cat = svc.category;
+    if (cat === 'Uñas Premium') cat = 'Uñas';
+    if (!servicesByCategory[cat]) servicesByCategory[cat] = [];
+    servicesByCategory[cat].push(svc);
+  });
+
+  const categoryOrder = ['Barbería', 'Uñas', 'Facial'];
+  const sortedCatalog = categoryOrder
+    .filter((c) => servicesByCategory[c])
+    .map((c) => ({ name: c, services: servicesByCategory[c] }));
 
   return (
     <div className="dashboard">
-      {/* ===== KPI HEADER ===== */}
+      {/* ===== HEADER ===== */}
       <div className="dashboard__header">
         <div className="dashboard__welcome">
           <p className="dashboard__greeting">{greeting}</p>
@@ -243,16 +321,6 @@ const Dashboard = () => {
           <p className="dashboard__subtitle">{dateStr}</p>
         </div>
         <div className="dashboard__header-right">
-          <div className="dashboard__quick-actions">
-            <button className="dashboard__quick-btn dashboard__quick-btn--primary">
-              <PlusIcon />
-              <span>Nueva Cita</span>
-            </button>
-            <button className="dashboard__quick-btn dashboard__quick-btn--outline">
-              <PlusIcon />
-              <span>Nuevo Cliente</span>
-            </button>
-          </div>
           <div className="dashboard__kpi-pills">
             <div className="dashboard__kpi-pill dashboard__kpi-pill--accent">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -260,56 +328,59 @@ const Dashboard = () => {
               </svg>
               <span>{vipCount} VIP</span>
             </div>
+            <div className="dashboard__kpi-pill dashboard__kpi-pill--success">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              <span>{kpis.retentionRate}% retencion</span>
+            </div>
             <div className="dashboard__kpi-pill dashboard__kpi-pill--warning">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" />
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
-              <span>{atRiskCount} en riesgo</span>
-            </div>
-            <div className="dashboard__kpi-pill dashboard__kpi-pill--success">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-              <span>{retentionRate}% retencion</span>
+              <span>{atRiskCount + inactiveCount} requieren atencion</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ===== STAT CARDS ===== */}
+      {/* ===== 4 STAT CARDS ===== */}
       <div className="dashboard__stats">
-        {/* Card 1: Clientes Activos */}
-        <div className="dashboard__stat-card dashboard__stat-card--primary">
+        {/* Ingresos del Mes */}
+        <div className="dashboard__stat-card dashboard__stat-card--success">
           <div className="dashboard__stat-accent" />
           <div className="dashboard__stat-header">
-            <div className="dashboard__stat-icon dashboard__stat-icon--primary">
-              <StatIcon type="clients" />
+            <div className="dashboard__stat-icon dashboard__stat-icon--success">
+              {Icons.revenue}
             </div>
-            <span className="dashboard__stat-trend dashboard__stat-trend--up">
-              <TrendUpIcon />
-              <span>+8%</span>
-            </span>
+            {monthChange !== 0 && (
+              <span className={`dashboard__stat-trend dashboard__stat-trend--${monthChange >= 0 ? 'up' : 'down'}`}>
+                <span>{monthChange >= 0 ? '+' : ''}{monthChange}% vs mes ant.</span>
+              </span>
+            )}
           </div>
           <p className="dashboard__stat-number">
-            <AnimatedNumber value={activeClients} />
+            <AnimatedNumber value={monthRevenue} prefix="$" />
           </p>
-          <span className="dashboard__stat-label">Clientes Activos</span>
+          <span className="dashboard__stat-label">Ingresos del Mes</span>
           <div className="dashboard__stat-footer">
-            <span className="dashboard__stat-sub">{totalClients} en total</span>
-            <div className="dashboard__stat-bar">
-              <div className="dashboard__stat-bar-fill dashboard__stat-bar-fill--primary" style={{ width: `${Math.round((activeClients / totalClients) * 100)}%` }} />
-            </div>
+            <span className="dashboard__stat-sub">
+              {todayRevenue > 0
+                ? `Hoy: ${formatCurrency(todayRevenue)}`
+                : `${completedThisMonth.length} servicios completados`
+              }
+            </span>
           </div>
         </div>
 
-        {/* Card 2: Citas Hoy */}
+        {/* Citas Hoy */}
         <div className="dashboard__stat-card dashboard__stat-card--info">
           <div className="dashboard__stat-accent" />
           <div className="dashboard__stat-header">
             <div className="dashboard__stat-icon dashboard__stat-icon--info">
-              <StatIcon type="appointments" />
+              {Icons.calendar}
             </div>
             {pendingAppointments > 0 && (
               <span className="dashboard__stat-trend dashboard__stat-trend--pending">
@@ -319,270 +390,290 @@ const Dashboard = () => {
             )}
           </div>
           <p className="dashboard__stat-number">
-            <AnimatedNumber value={todayAppointmentsCount} />
+            <AnimatedNumber value={todayAppts.length} />
           </p>
           <span className="dashboard__stat-label">Citas Hoy</span>
           <div className="dashboard__stat-footer">
-            <span className="dashboard__stat-sub dashboard__stat-sub--warning">
-              <span className="dashboard__stat-dot dashboard__stat-dot--warning" />
-              {pendingAppointments} pendientes
+            <span className="dashboard__stat-sub">
+              {todayAppts.filter((a) => a.status === 'confirmed').length} confirmadas
             </span>
           </div>
         </div>
 
-        {/* Card 3: Mensajes Enviados */}
+        {/* Clientes Activos */}
+        <div className="dashboard__stat-card dashboard__stat-card--primary">
+          <div className="dashboard__stat-accent" />
+          <div className="dashboard__stat-header">
+            <div className="dashboard__stat-icon dashboard__stat-icon--primary">
+              {Icons.clients}
+            </div>
+          </div>
+          <p className="dashboard__stat-number">
+            <AnimatedNumber value={activeClients} />
+          </p>
+          <span className="dashboard__stat-label">Clientes Activos</span>
+          <div className="dashboard__stat-footer">
+            <span className="dashboard__stat-sub">{mockClients.length} en total</span>
+            <div className="dashboard__stat-bar">
+              <div className="dashboard__stat-bar-fill dashboard__stat-bar-fill--primary" style={{ width: `${Math.round((activeClients / mockClients.length) * 100)}%` }} />
+            </div>
+          </div>
+        </div>
+
+        {/* Ticket Promedio */}
         <div className="dashboard__stat-card dashboard__stat-card--accent">
           <div className="dashboard__stat-accent" />
           <div className="dashboard__stat-header">
             <div className="dashboard__stat-icon dashboard__stat-icon--accent">
-              <StatIcon type="messages" />
+              {Icons.revenue}
             </div>
-            <span className="dashboard__stat-trend dashboard__stat-trend--active">
-              <span className="dashboard__stat-pulse" />
-              <span>Activa</span>
-            </span>
+            {completedThisMonth.length > 0 && (
+              <span className="dashboard__stat-trend dashboard__stat-trend--up">
+                <span>{completedThisMonth.length} servicios</span>
+              </span>
+            )}
           </div>
           <p className="dashboard__stat-number">
-            <AnimatedNumber value={1240} />
+            <AnimatedNumber value={avgTicket} prefix="$" />
           </p>
-          <span className="dashboard__stat-label">Mensajes Enviados</span>
+          <span className="dashboard__stat-label">Ticket Promedio</span>
           <div className="dashboard__stat-footer">
-            <span className="dashboard__stat-sub dashboard__stat-sub--success">Campana activa</span>
-          </div>
-        </div>
-
-        {/* Card 4: Ingresos del Mes */}
-        <div className="dashboard__stat-card dashboard__stat-card--success">
-          <div className="dashboard__stat-accent" />
-          <div className="dashboard__stat-header">
-            <div className="dashboard__stat-icon dashboard__stat-icon--success">
-              <StatIcon type="revenue" />
-            </div>
-            <span className="dashboard__stat-trend dashboard__stat-trend--up">
-              <TrendUpIcon />
-              <span>+12.5%</span>
+            <span className="dashboard__stat-sub">
+              Promedio por servicio este mes
             </span>
-          </div>
-          <p className="dashboard__stat-number">
-            <AnimatedNumber value={4850000} prefix="$" />
-          </p>
-          <span className="dashboard__stat-label">Ingresos del Mes</span>
-          <div className="dashboard__stat-footer">
-            <span className="dashboard__stat-sub dashboard__stat-sub--success">+12.5% vs. mes anterior</span>
           </div>
         </div>
       </div>
 
-      {/* ===== TWO-COLUMN MAIN SECTION ===== */}
-      <div className="dashboard__columns">
-        {/* --- LEFT: Citas de Hoy --- */}
-        <div className="dashboard__col-left">
+      {/* ===== WEEK OVERVIEW ===== */}
+      <div className="dashboard__section">
+        <div className="dashboard__section-header">
+          <h3 className="dashboard__section-title">
+            <span className="dashboard__section-icon">{Icons.calendar}</span>
+            Semana
+          </h3>
+        </div>
+        <div className="dashboard__week">
+          {weekDays.map((day) => (
+            <div key={day.dateKey} className={`dashboard__week-day ${day.isToday ? 'dashboard__week-day--today' : ''} ${day.count === 0 ? 'dashboard__week-day--empty' : ''}`}>
+              <span className="dashboard__week-label">{day.dayName}</span>
+              <span className="dashboard__week-num">{day.dayNum}</span>
+              {day.count > 0 ? (
+                <>
+                  <span className="dashboard__week-count">{day.count} citas</span>
+                  <span className="dashboard__week-rev">{formatCurrency(day.revenue)}</span>
+                  <div className="dashboard__week-dots">
+                    {day.confirmed > 0 && <span className="dashboard__week-dot dashboard__week-dot--ok" title={`${day.confirmed} confirmadas`}>{day.confirmed}</span>}
+                    {day.pending > 0 && <span className="dashboard__week-dot dashboard__week-dot--pend" title={`${day.pending} pendientes`}>{day.pending}</span>}
+                  </div>
+                </>
+              ) : (
+                <span className="dashboard__week-free">Libre</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== MAIN GRID: Agenda + Sidebar ===== */}
+      <div className="dashboard__grid">
+        {/* LEFT — Agenda + Servicios Top */}
+        <div className="dashboard__grid-main">
           <div className="dashboard__section">
             <div className="dashboard__section-header">
               <h3 className="dashboard__section-title">
-                <span className="dashboard__section-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                </span>
+                <span className="dashboard__section-icon">{Icons.clock}</span>
                 Agenda de Hoy
               </h3>
-              <span className="dashboard__section-count">{todayAppts.length} citas</span>
+              <div className="dashboard__agenda-summary">
+                <span className="dashboard__agenda-total">{formatCurrency(todayAppts.reduce((s, a) => s + getServicePrice(a.service), 0))} proyectado</span>
+                <span className="dashboard__section-count">{todayAppts.length} citas</span>
+              </div>
             </div>
-            <div className="dashboard__schedule">
-              {todayAppts.length > 0 ? (
-                todayAppts.map((appt, index) => (
+            <div className="dashboard__agenda">
+              {todayAppts.length > 0 ? todayAppts.map((appt, index) => {
+                const clientName = getClientName(appt.clientId);
+                const barberName = getBarberName(appt.barberId);
+                const price = getServicePrice(appt.service);
+                const isNext = index === 0;
+                return (
                   <div
                     key={appt.id}
-                    className={`dashboard__appt-item ${index === 0 ? 'dashboard__appt-item--next' : ''}`}
-                    style={{ animationDelay: `${0.06 * (index + 1)}s` }}
+                    className={`dashboard__agenda-row ${isNext ? 'dashboard__agenda-row--next' : ''}`}
+                    style={{ animationDelay: `${0.04 * (index + 1)}s` }}
                   >
-                    {index === 0 && <div className="dashboard__appt-now-label">Siguiente</div>}
-                    <div className="dashboard__appt-time-block">
-                      <span className="dashboard__appt-time">{appt.time}</span>
+                    <span className="dashboard__agenda-time">
+                      {appt.time}
+                      {isNext && <span className="dashboard__agenda-now">Prox</span>}
+                    </span>
+                    <div className={`dashboard__agenda-avatar ${isNext ? 'dashboard__agenda-avatar--active' : ''}`}>
+                      {getInitials(clientName)}
                     </div>
-                    <div className="dashboard__appt-line">
-                      <div className={`dashboard__appt-dot ${index === 0 ? 'dashboard__appt-dot--active' : ''}`} />
-                      {index < todayAppts.length - 1 && <div className="dashboard__appt-connector" />}
+                    <div className="dashboard__agenda-info">
+                      <span className="dashboard__agenda-name">{clientName}</span>
+                      <span className="dashboard__agenda-service">{appt.service}</span>
                     </div>
-                    <div className="dashboard__appt-details">
-                      <div className="dashboard__appt-top">
-                        <div className="dashboard__appt-client-info">
-                          <div className="dashboard__appt-avatar">
-                            {getInitials(getClientName(appt.clientId))}
-                          </div>
-                          <span className="dashboard__appt-client">{getClientName(appt.clientId)}</span>
-                        </div>
-                        <div className={`dashboard__appt-status dashboard__appt-status--${appt.status}`}>
-                          {appt.status === 'confirmed' ? 'Confirmada' : appt.status === 'cancelled' ? 'Cancelada' : 'Pendiente'}
-                        </div>
-                      </div>
-                      <span className="dashboard__appt-service">{appt.service}</span>
-                      <span className="dashboard__appt-barber">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                        {getBarberName(appt.barberId)}
-                      </span>
-                    </div>
+                    <span className="dashboard__agenda-barber">{barberName}</span>
+                    <span className="dashboard__agenda-price">{formatCurrency(price)}</span>
+                    <span className={`dashboard__agenda-status dashboard__agenda-status--${appt.status}`}>
+                      {appt.status === 'confirmed' ? 'Confirmada' : appt.status === 'cancelled' ? 'Cancelada' : 'Pendiente'}
+                    </span>
                   </div>
-                ))
-              ) : (
+                );
+              }) : (
                 <div className="dashboard__empty">
-                  <div className="dashboard__empty-icon">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
-                      <rect x="3" y="4" width="18" height="18" rx="2" />
-                      <line x1="16" y1="2" x2="16" y2="6" />
-                      <line x1="8" y1="2" x2="8" y2="6" />
-                      <line x1="3" y1="10" x2="21" y2="10" />
-                    </svg>
-                  </div>
                   <p>No hay citas programadas para hoy</p>
-                  <span className="dashboard__empty-hint">Las citas apareceran aqui automaticamente</span>
                 </div>
               )}
             </div>
           </div>
-        </div>
 
-        {/* --- RIGHT: Clientes para Seguimiento --- */}
-        <div className="dashboard__col-right">
+          {/* Servicios Top del Mes */}
           <div className="dashboard__section">
             <div className="dashboard__section-header">
-              <h3 className="dashboard__section-title dashboard__section-title--urgent">
-                <span className="dashboard__section-icon dashboard__section-icon--urgent">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                    <line x1="12" y1="9" x2="12" y2="13" />
-                    <line x1="12" y1="17" x2="12.01" y2="17" />
-                  </svg>
-                </span>
-                Requieren Seguimiento
+              <h3 className="dashboard__section-title">
+                <span className="dashboard__section-icon">{Icons.chart}</span>
+                Servicios Top
               </h3>
-              <span className="dashboard__section-count dashboard__section-count--urgent">{followUpClients.length}</span>
+              <span className="dashboard__section-count">{completedThisMonth.length} este mes</span>
             </div>
-            <div className="dashboard__followup">
-              {followUpClients.length > 0 ? (
-                followUpClients.map((client, index) => {
-                  const severity = getDaysSeverity(client.daysSinceVisit);
-                  const statusColor = getStatusColor(client.status);
-                  return (
-                    <div
-                      key={client.id}
-                      className={`dashboard__followup-item ${severity === 'red' || severity === 'orange' ? 'dashboard__followup-item--critical' : ''}`}
-                      style={{ animationDelay: `${0.06 * (index + 1)}s` }}
-                    >
-                      {(severity === 'red' || severity === 'orange') && (
-                        <span className="dashboard__followup-pulse" />
-                      )}
-                      <div className={`dashboard__followup-avatar dashboard__followup-avatar--${severity}`}>
-                        {getInitials(client.name)}
-                      </div>
-                      <div className="dashboard__followup-info">
-                        <div className="dashboard__followup-top">
-                          <span className="dashboard__followup-name">{client.name}</span>
-                          <span className={`dashboard__followup-status dashboard__followup-status--${statusColor}`}>
-                            {getStatusLabel(client.status)}
-                          </span>
-                        </div>
-                        <span className="dashboard__followup-phone">{client.phone}</span>
-                      </div>
-                      <div className={`dashboard__followup-days dashboard__followup-days--${severity}`}>
-                        {client.daysSinceVisit}d
-                      </div>
-                      <div className="dashboard__followup-actions">
-                        <button
-                          className="dashboard__followup-action dashboard__followup-action--whatsapp"
-                          title={`Enviar WhatsApp a ${client.name}`}
-                          aria-label={`Enviar WhatsApp a ${client.name}`}
-                        >
-                          <WhatsAppIcon />
-                        </button>
-                        <button
-                          className="dashboard__followup-action dashboard__followup-action--call"
-                          title={`Llamar a ${client.name}`}
-                          aria-label={`Llamar a ${client.name}`}
-                        >
-                          <PhoneIcon />
-                        </button>
-                      </div>
+            <div className="dashboard__svc-list">
+              {topServices.map((svc, index) => (
+                <div key={svc.name} className="dashboard__svc-item" style={{ animationDelay: `${0.05 * (index + 1)}s` }}>
+                  <span className="dashboard__svc-pos">{index + 1}</span>
+                  <div className="dashboard__svc-info">
+                    <span className="dashboard__svc-name">{svc.name}</span>
+                    <div className="dashboard__svc-bar">
+                      <div className="dashboard__svc-bar-fill" style={{ width: `${Math.round((svc.revenue / maxServiceRevenue) * 100)}%` }} />
                     </div>
-                  );
-                })
-              ) : (
-                <div className="dashboard__empty">
-                  <div className="dashboard__empty-icon">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                      <polyline points="22 4 12 14.01 9 11.01" />
-                    </svg>
                   </div>
-                  <p>Todos los clientes estan al dia</p>
+                  <span className="dashboard__svc-count">{svc.count}x</span>
+                  <span className="dashboard__svc-revenue">{formatCurrency(svc.revenue)}</span>
                 </div>
-              )}
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT — Sidebar panels */}
+        <div className="dashboard__grid-side">
+          {/* Equipo Hoy */}
+          <div className="dashboard__section">
+            <div className="dashboard__section-header">
+              <h3 className="dashboard__section-title">
+                <span className="dashboard__section-icon">{Icons.team}</span>
+                Equipo Hoy
+              </h3>
+              <span className="dashboard__section-count">{staffToday.length} activos</span>
+            </div>
+            <div className="dashboard__staff-today">
+              {staffToday.map((s) => (
+                <div key={s.id} className="dashboard__staff-row">
+                  <div className="dashboard__staff-avatar">{getInitials(s.name)}</div>
+                  <div className="dashboard__staff-info">
+                    <span className="dashboard__staff-name">{s.name.split(' ').slice(0, 2).join(' ')}</span>
+                    <span className="dashboard__staff-spec">{getSpecialtyShort(s.specialty)}</span>
+                  </div>
+                  <span className="dashboard__staff-count">{s.todayAppts} citas</span>
+                  <span className="dashboard__staff-rev">{formatCurrency(s.todayRevenue)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Top Profesionales del Mes */}
+          <div className="dashboard__section">
+            <div className="dashboard__section-header">
+              <h3 className="dashboard__section-title">
+                <span className="dashboard__section-icon dashboard__section-icon--accent">{Icons.trophy}</span>
+                Top del Mes
+              </h3>
+            </div>
+            <div className="dashboard__ranking">
+              {top5Staff.map((staff, index) => (
+                <div
+                  key={staff.id}
+                  className={`dashboard__ranking-item ${index === 0 ? 'dashboard__ranking-item--first' : ''}`}
+                  style={{ animationDelay: `${0.06 * (index + 1)}s` }}
+                >
+                  <span className={`dashboard__ranking-pos ${index < 3 ? 'dashboard__ranking-pos--top' : ''}`}>{index + 1}</span>
+                  <div className={`dashboard__ranking-avatar ${index === 0 ? 'dashboard__ranking-avatar--gold' : ''}`}>
+                    {getInitials(staff.name)}
+                  </div>
+                  <div className="dashboard__ranking-content">
+                    <div className="dashboard__ranking-top">
+                      <span className="dashboard__ranking-name">{staff.name.split(' ').slice(0, 2).join(' ')}</span>
+                      <span className="dashboard__ranking-revenue">{formatCurrency(staff.stats.monthRevenue)}</span>
+                    </div>
+                    <span className="dashboard__ranking-meta">
+                      {getSpecialtyShort(staff.specialty)} · {staff.stats.monthServices} svcs
+                    </span>
+                    <div className="dashboard__ranking-bar">
+                      <div className="dashboard__ranking-bar-fill" style={{ width: `${Math.round((staff.stats.monthRevenue / maxStaffRevenue) * 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Ingresos por Área */}
+          <div className="dashboard__section">
+            <div className="dashboard__section-header">
+              <h3 className="dashboard__section-title">
+                <span className="dashboard__section-icon">{Icons.revenue}</span>
+                Ingresos por Area
+              </h3>
+              <span className="dashboard__section-count">{formatCurrency(totalCategoryRevenue)}</span>
+            </div>
+            <div className="dashboard__categories">
+              {categories.map((cat, index) => {
+                const pct = totalCategoryRevenue > 0 ? Math.round((cat.revenue / totalCategoryRevenue) * 100) : 0;
+                return (
+                  <div key={cat.name} className="dashboard__cat-row" style={{ animationDelay: `${0.06 * (index + 1)}s` }}>
+                    <div className={`dashboard__cat-dot dashboard__cat-dot--${getCategoryColor(cat.name)}`} />
+                    <span className="dashboard__cat-name">{cat.name}</span>
+                    <div className="dashboard__cat-bar">
+                      <div className={`dashboard__cat-bar-fill dashboard__cat-bar-fill--${getCategoryColor(cat.name)}`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="dashboard__cat-pct">{pct}%</span>
+                    <span className="dashboard__cat-amount">{formatCurrency(cat.revenue)}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ===== EQUIPO DEL DIA ===== */}
-      <div className="dashboard__team-section">
+      {/* ===== CATALOGO DE SERVICIOS ===== */}
+      <div className="dashboard__section">
         <div className="dashboard__section-header">
           <h3 className="dashboard__section-title">
-            <span className="dashboard__section-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
-            </span>
-            Equipo del Dia
+            <span className="dashboard__section-icon">{Icons.scissors}</span>
+            Nuestros Servicios
           </h3>
-          <span className="dashboard__section-count">
-            {mockBarbers.filter((b) => b.available).length} disponibles
-          </span>
+          <span className="dashboard__section-count">{mockServices.length} servicios</span>
         </div>
-        <div className="dashboard__team-grid">
-          {mockBarbers.filter((b) => b.specialty === 'Barbero' || b.specialty === 'Barbera').map((barber, index) => {
-            const todayCount = getBarberTodayCount(barber.id);
-            return (
-              <div
-                key={barber.id}
-                className={`dashboard__barber-card ${!barber.available ? 'dashboard__barber-card--unavailable' : ''}`}
-                style={{ animationDelay: `${0.06 * (index + 1)}s` }}
-              >
-                <div className="dashboard__barber-left">
-                  <div className="dashboard__barber-avatar">
-                    {getInitials(barber.name)}
-                    <span className={`dashboard__barber-dot ${barber.available ? 'dashboard__barber-dot--active' : 'dashboard__barber-dot--inactive'}`} />
-                  </div>
-                </div>
-                <div className="dashboard__barber-info">
-                  <span className="dashboard__barber-name">{barber.name}</span>
-                  <StarRating rating={barber.rating} />
-                </div>
-                <div className="dashboard__barber-meta">
-                  {todayCount > 0 && (
-                    <span className="dashboard__barber-count">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <rect x="3" y="4" width="18" height="18" rx="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                      {todayCount} hoy
-                    </span>
-                  )}
-                  <span className={`dashboard__barber-availability ${barber.available ? 'dashboard__barber-availability--active' : 'dashboard__barber-availability--inactive'}`}>
-                    {barber.available ? 'Disponible' : 'No disponible'}
-                  </span>
-                </div>
+        <div className="dashboard__catalog">
+          {sortedCatalog.map((cat) => (
+            <div key={cat.name} className="dashboard__catalog-group">
+              <div className="dashboard__catalog-header">
+                <div className={`dashboard__catalog-dot dashboard__catalog-dot--${getCategoryColor(cat.name)}`} />
+                <span className="dashboard__catalog-cat">{cat.name}</span>
+                <span className="dashboard__catalog-count">{cat.services.length}</span>
               </div>
-            );
-          })}
+              <div className="dashboard__catalog-items">
+                {cat.services.map((svc) => (
+                  <div key={svc.id} className="dashboard__catalog-svc">
+                    <span className="dashboard__catalog-name">{svc.name}</span>
+                    <span className="dashboard__catalog-dur">{svc.duration} min</span>
+                    <span className="dashboard__catalog-price">{formatCurrency(svc.price)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

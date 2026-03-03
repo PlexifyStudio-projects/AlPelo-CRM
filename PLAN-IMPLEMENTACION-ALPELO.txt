@@ -1,0 +1,538 @@
+# AlPelo CRM — Plan Completo: De Prototipo a Producción
+
+## Contexto
+El frontend de AlPelo CRM está construido (React 19 + Vite + SCSS). Tiene 3 módulos sólidos (Login, Dashboard, CRM Clientes) y 3 funcionales como demo (Citas, Mensajería, Chat IA). Todo corre con datos mock y localStorage. No hay backend, ni base de datos, ni APIs reales.
+
+**Objetivo:** Llevar el proyecto a producción con backend real, base de datos, IA, integración WhatsApp/Meta, y deploy en VPS con Docker.
+
+**Stack elegido:**
+- Backend: Python + FastAPI
+- Base de datos: PostgreSQL
+- IA: Claude API (Anthropic)
+- Mensajería: WhatsApp Business API (Meta)
+- Deploy: VPS + Docker Compose
+
+---
+
+## FASE 1: Backend + Base de Datos (Semanas 1-3)
+
+### 1.1 — Estructura del Backend
+
+```
+backend/
+├── app/
+│   ├── main.py                  # Entry point FastAPI
+│   ├── config.py                # Variables de entorno, settings
+│   ├── database.py              # Conexión a PostgreSQL
+│   ├── models/                  # Modelos SQLAlchemy (tablas)
+│   │   ├── user.py
+│   │   ├── client.py
+│   │   ├── appointment.py
+│   │   ├── service.py
+│   │   ├── staff.py
+│   │   ├── visit.py
+│   │   ├── campaign.py
+│   │   └── message.py
+│   ├── schemas/                 # Pydantic schemas (validación)
+│   │   ├── user.py
+│   │   ├── client.py
+│   │   ├── appointment.py
+│   │   └── ...
+│   ├── routers/                 # Endpoints por módulo
+│   │   ├── auth.py
+│   │   ├── clients.py
+│   │   ├── appointments.py
+│   │   ├── messaging.py
+│   │   ├── chat.py
+│   │   ├── staff.py
+│   │   └── dashboard.py
+│   ├── services/                # Lógica de negocio
+│   │   ├── auth_service.py
+│   │   ├── client_service.py
+│   │   ├── appointment_service.py
+│   │   ├── messaging_service.py
+│   │   ├── ai_service.py
+│   │   └── status_engine.py     # Motor de estados (migrar de clientStatus.js)
+│   ├── middleware/
+│   │   ├── auth.py              # JWT middleware
+│   │   └── cors.py
+│   └── utils/
+│       ├── security.py          # Hashing, JWT tokens
+│       ├── whatsapp.py          # WhatsApp Business API client
+│       └── formatters.py
+├── alembic/                     # Migraciones de BD
+│   ├── versions/
+│   └── env.py
+├── tests/
+├── requirements.txt
+├── Dockerfile
+└── alembic.ini
+```
+
+### 1.2 — Diseño de Base de Datos PostgreSQL
+
+**Tablas principales:**
+
+| Tabla | Campos clave | Relaciones |
+|-------|-------------|------------|
+| `users` | id, name, email, password_hash, role (admin/barber), phone, avatar_url, is_active | → appointments, → visits |
+| `clients` | id, name, phone, email, birthday, gender, source, accepts_whatsapp, tags[], notes, loyalty_points, created_at | → visits, → appointments |
+| `staff` | id, user_id (nullable), name, role (barbero/estilista/manicurista), specialty, phone, is_active, rating | → appointments, → visits |
+| `services` | id, name, category, price, duration_minutes, is_active | → visits, → appointments |
+| `appointments` | id, client_id, staff_id, service_id, date, start_time, end_time, status (pending/confirmed/cancelled/completed), notes | FK → clients, staff, services |
+| `visits` | id, client_id, staff_id, service_id, date, amount, tip, rating, notes | FK → clients, staff, services |
+| `campaigns` | id, name, template, segment, status (draft/sent/scheduled), sent_count, created_by, created_at | → messages |
+| `messages` | id, campaign_id, client_id, content, channel (whatsapp/sms), status (sent/delivered/read/failed), sent_at | FK → campaigns, clients |
+| `chat_history` | id, user_id, role (user/assistant), content, created_at | FK → users |
+| `notifications` | id, user_id, type, title, message, is_read, created_at | FK → users |
+
+**Índices importantes:**
+- `clients(phone)` — UNIQUE, búsqueda rápida
+- `appointments(date, staff_id)` — Agenda por barbero por día
+- `visits(client_id, date)` — Historial por cliente
+- `messages(campaign_id, status)` — Tracking de campañas
+
+### 1.3 — Endpoints API (lo que hay que crear)
+
+**Auth:**
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| POST | `/api/auth/login` | Login con email+password, retorna JWT |
+| POST | `/api/auth/refresh` | Refrescar token |
+| POST | `/api/auth/change-password` | Cambiar contraseña |
+| GET | `/api/auth/me` | Datos del usuario autenticado |
+
+**Clientes:**
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| GET | `/api/clients` | Listar clientes con filtros (status, search, page) |
+| GET | `/api/clients/{id}` | Detalle de un cliente con historial |
+| POST | `/api/clients` | Crear cliente |
+| PUT | `/api/clients/{id}` | Editar cliente |
+| DELETE | `/api/clients/{id}` | Eliminar cliente (soft delete) |
+| GET | `/api/clients/kpis` | KPIs del CRM (retención, ticket promedio, etc.) |
+| GET | `/api/clients/{id}/visits` | Historial de visitas de un cliente |
+
+**Citas:**
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| GET | `/api/appointments` | Listar citas (filtro por fecha, barbero) |
+| POST | `/api/appointments` | Crear cita |
+| PUT | `/api/appointments/{id}` | Mover/editar cita |
+| PATCH | `/api/appointments/{id}/status` | Confirmar/cancelar cita |
+| GET | `/api/appointments/today` | Citas de hoy |
+
+**Staff:**
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| GET | `/api/staff` | Listar todo el personal |
+| GET | `/api/staff/{id}` | Detalle con métricas |
+| POST | `/api/staff/{id}/rate` | Calificar barbero |
+
+**Mensajería:**
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| POST | `/api/messaging/send` | Enviar mensaje individual WhatsApp |
+| POST | `/api/messaging/bulk` | Enviar campaña masiva |
+| GET | `/api/messaging/campaigns` | Listar campañas |
+| GET | `/api/messaging/templates` | Plantillas disponibles |
+| POST | `/api/messaging/campaigns` | Crear campaña |
+
+**Chat IA:**
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| POST | `/api/chat/message` | Enviar pregunta al asistente IA |
+| GET | `/api/chat/history` | Historial de conversación |
+| DELETE | `/api/chat/history` | Limpiar historial |
+
+**Dashboard:**
+| Método | Ruta | Qué hace |
+|--------|------|----------|
+| GET | `/api/dashboard/stats` | Métricas generales (clientes activos, ingresos, citas hoy) |
+| GET | `/api/dashboard/followup` | Clientes que necesitan seguimiento |
+| GET | `/api/dashboard/team` | Estado del equipo hoy |
+
+### 1.4 — Herramientas necesarias
+
+| Herramienta | Para qué | Instalación |
+|-------------|----------|-------------|
+| Python 3.11+ | Runtime del backend | python.org |
+| FastAPI | Framework web | `pip install fastapi` |
+| Uvicorn | Servidor ASGI | `pip install uvicorn` |
+| SQLAlchemy 2.0 | ORM para PostgreSQL | `pip install sqlalchemy` |
+| Alembic | Migraciones de BD | `pip install alembic` |
+| Pydantic v2 | Validación de datos | Viene con FastAPI |
+| python-jose | JWT tokens | `pip install python-jose[cryptography]` |
+| passlib + bcrypt | Hashing de contraseñas | `pip install passlib[bcrypt]` |
+| asyncpg | Driver async PostgreSQL | `pip install asyncpg` |
+| httpx | Cliente HTTP (para APIs externas) | `pip install httpx` |
+| python-dotenv | Variables de entorno | `pip install python-dotenv` |
+
+### 1.5 — Pasos concretos
+
+1. **Instalar PostgreSQL** localmente o usar Docker (`docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=secret postgres:16`)
+2. **Crear el proyecto FastAPI** con la estructura de arriba
+3. **Definir los modelos SQLAlchemy** — empezar por `users`, `clients`, `services`, `staff`
+4. **Configurar Alembic** para migraciones (`alembic init alembic`, configurar `database.py`)
+5. **Crear la primera migración** (`alembic revision --autogenerate -m "initial tables"`)
+6. **Implementar auth** (login, JWT, middleware) — esto es lo primero porque todo lo demás lo necesita
+7. **Implementar endpoints de clientes** — conectar con la página de CRM que ya funciona
+8. **Migrar el motor de estados** (`clientStatus.js` → `status_engine.py`) — misma lógica, en Python
+9. **Implementar endpoints de citas** — conectar con la página de Appointments
+10. **Implementar endpoints de staff y dashboard**
+11. **Semillar la BD** con los datos que ya están en `mockData.js` (30 clientes, 18 staff, 20 servicios, 127 visitas)
+
+**Tiempo estimado: 2-3 semanas** (trabajando a buen ritmo)
+
+---
+
+## FASE 2: Conectar Frontend con Backend (Semana 3-4)
+
+### 2.1 — Qué hay que modificar en el frontend
+
+Los archivos `frontend/src/services/` ya existen como stubs. Hay que reemplazar su contenido para que hagan fetch reales al backend.
+
+| Archivo | Estado actual | Qué hacer |
+|---------|--------------|-----------|
+| `services/api.js` | Fetch wrapper básico | Agregar interceptor JWT, refresh token, manejo de errores |
+| `services/authService.js` | Mock login (800ms delay) | Conectar a `POST /api/auth/login`, guardar JWT |
+| `services/clientService.js` | Retorna datos vacíos | Conectar a todos los endpoints de `/api/clients` |
+| `services/appointmentService.js` | Retorna datos vacíos | Conectar a `/api/appointments` |
+| `services/chatService.js` | Mock response 1000ms | Conectar a `/api/chat/message` |
+| `services/messagingService.js` | Retorna datos vacíos | Conectar a `/api/messaging` |
+
+### 2.2 — Cambios en los componentes
+
+| Componente | Cambio necesario |
+|-----------|-----------------|
+| `AuthContext.jsx` | Usar JWT real, guardar token en httpOnly cookie o localStorage |
+| `Clients.jsx` | Reemplazar localStorage por fetch a API |
+| `Dashboard.jsx` | Reemplazar datos hardcodeados por `GET /api/dashboard/stats` |
+| `Appointments.jsx` | Reemplazar localStorage por API |
+| `Messaging.jsx` | Conectar envío real a WhatsApp API vía backend |
+| `ChatAI.jsx` | Conectar a endpoint que habla con Claude API |
+| `Settings.jsx` | Conectar toggles a API de preferencias de usuario |
+| `ChangePassword.jsx` | Conectar a `POST /api/auth/change-password` |
+
+### 2.3 — Manejo de estado
+
+Opción recomendada: **React Query (TanStack Query)**
+- Cacheo automático de datos del servidor
+- Refetch en segundo plano
+- Estados de loading/error automáticos
+- Instalación: `npm install @tanstack/react-query`
+
+No necesitan Redux. React Query + Context (auth/notifications) es suficiente para este proyecto.
+
+**Tiempo estimado: 1 semana**
+
+---
+
+## FASE 3: Integración WhatsApp Business API (Semana 4-5)
+
+### 3.1 — Qué necesitas
+
+| Requisito | Detalle |
+|-----------|---------|
+| **Cuenta Meta Business** | Crear en business.facebook.com |
+| **App en Meta Developers** | Crear en developers.facebook.com |
+| **WhatsApp Business API** | Activar en la app de Meta |
+| **Número de teléfono** | Un número dedicado para el negocio (no puede ser el personal) |
+| **Verificación del negocio** | Meta verifica que AlPelo es un negocio real |
+
+### 3.2 — Proceso paso a paso
+
+1. **Crear cuenta Meta Business Manager** en business.facebook.com
+   - Necesitas: nombre del negocio, dirección, documento de identidad del dueño
+   - Tiempo de verificación: 2-7 días
+
+2. **Crear app en Meta for Developers** (developers.facebook.com)
+   - Tipo: Business
+   - Agregar producto: WhatsApp
+   - Te dan un **Phone Number ID** y un **Access Token** temporal
+
+3. **Registrar número de teléfono**
+   - Puedes usar el número de prueba gratuito de Meta (para desarrollo)
+   - Para producción: registrar el número real de AlPelo
+   - Verificación por SMS o llamada
+
+4. **Crear plantillas de mensaje**
+   - Meta EXIGE que los mensajes de inicio de conversación usen plantillas aprobadas
+   - Las plantillas se crean en Meta Business Manager
+   - Tiempo de aprobación: 24-48 horas
+   - Ejemplo de plantilla para confirmación de cita:
+     ```
+     Hola {{1}}, tu cita en AlPelo para {{2}} el {{3}} a las {{4}}
+     ha sido actualizada. ¿Confirmas? Responde SI o NO.
+     ```
+
+5. **Configurar Webhook** en el backend
+   - Meta envía notificaciones cuando el cliente responde
+   - Endpoint: `POST /api/webhooks/whatsapp`
+   - Verificación: `GET /api/webhooks/whatsapp` (challenge de Meta)
+   - Esto permite: saber cuando el cliente lee el mensaje, cuando responde "SI" para confirmar
+
+### 3.3 — Flujo de mensajería
+
+```
+[Admin crea campaña en frontend]
+       ↓
+[Frontend envía a POST /api/messaging/bulk]
+       ↓
+[Backend recibe lista de clientes + plantilla]
+       ↓
+[Backend envía a WhatsApp Cloud API por cada cliente]
+  POST https://graph.facebook.com/v21.0/{phone_number_id}/messages
+       ↓
+[Meta entrega el mensaje al WhatsApp del cliente]
+       ↓
+[Cliente responde → Meta envía webhook al backend]
+       ↓
+[Backend actualiza estado del mensaje/cita]
+       ↓
+[Frontend muestra estado actualizado]
+```
+
+### 3.4 — Costos de WhatsApp Business API
+
+| Concepto | Costo |
+|----------|-------|
+| Conversaciones de servicio (cliente inicia) | GRATIS (primeras 1,000/mes) |
+| Conversaciones de marketing (negocio inicia) | ~$0.015 USD por mensaje (Colombia) |
+| 500 mensajes masivos/mes | ~$7.50 USD/mes |
+| 2,000 mensajes masivos/mes | ~$30 USD/mes |
+
+### 3.5 — Librería Python recomendada
+
+Usar `httpx` directamente con la API REST de Meta. No necesitas librería especial, la API es sencilla:
+- Enviar mensaje: `POST` a `graph.facebook.com`
+- Recibir respuesta: webhook `POST` a tu servidor
+
+**Tiempo estimado: 1-2 semanas** (incluye aprobación de Meta)
+
+---
+
+## FASE 4: Integración IA con Claude API (Semana 5-6)
+
+### 4.1 — Qué necesitas
+
+| Requisito | Detalle |
+|-----------|---------|
+| **Cuenta Anthropic** | Crear en console.anthropic.com |
+| **API Key** | Se genera en la consola |
+| **Créditos** | Prepago, empezar con $5-10 USD |
+
+### 4.2 — Cómo funciona la integración
+
+El chat de IA NO habla directamente con Claude. El backend actúa de intermediario y le da CONTEXTO sobre el negocio:
+
+```
+[Usuario pregunta: "¿Cuáles clientes están en riesgo?"]
+       ↓
+[Frontend envía a POST /api/chat/message]
+       ↓
+[Backend recibe la pregunta]
+       ↓
+[Backend consulta la BD: clientes en_riesgo, sus datos, historial]
+       ↓
+[Backend construye el PROMPT para Claude:]
+  "Eres el asistente de AlPelo Peluquería en Bucaramanga.
+   Datos del negocio: 30 clientes, 18 staff, 20 servicios...
+
+   Clientes en riesgo actualmente:
+   - Juan Pérez: 52 días sin visita, 8 visitas totales, $450,000 gastados
+   - María López: 48 días sin visita, 3 visitas totales, $120,000 gastados
+
+   El usuario pregunta: ¿Cuáles clientes están en riesgo?
+
+   Responde en español colombiano, sé específico con los datos."
+       ↓
+[Claude API responde con análisis contextualizado]
+       ↓
+[Backend guarda en chat_history y retorna al frontend]
+       ↓
+[Frontend muestra la respuesta con formato]
+```
+
+### 4.3 — Modelo recomendado
+
+| Modelo | Costo (input/output por millón tokens) | Uso |
+|--------|---------------------------------------|-----|
+| **Claude Haiku 4.5** | $0.80 / $4.00 | Consultas rápidas, día a día — RECOMENDADO |
+| Claude Sonnet 4.6 | $3.00 / $15.00 | Análisis complejos (opcional) |
+
+Con Haiku: una consulta típica cuesta ~$0.001-0.003 USD. Con 100 consultas/día = ~$0.30 USD/día = ~$9 USD/mes.
+
+### 4.4 — Tipos de consultas que el asistente debe manejar
+
+1. **Consultas sobre clientes**: "¿Quiénes no vienen hace más de 30 días?"
+2. **Análisis de negocio**: "¿Cuál es mi servicio más rentable?"
+3. **Recomendaciones**: "¿Qué campaña debería enviar esta semana?"
+4. **Datos específicos**: "¿Cuánto ha gastado Carlos Mendoza este año?"
+5. **Tendencias**: "¿Cómo van los ingresos comparado con el mes pasado?"
+
+El backend consulta la BD según el tipo de pregunta y le pasa los datos relevantes a Claude. Claude analiza y responde.
+
+### 4.5 — Librería Python
+
+```
+pip install anthropic
+```
+
+**Tiempo estimado: 1 semana**
+
+---
+
+## FASE 5: Docker Compose (Semana 6-7)
+
+### 5.1 — Arquitectura Docker
+
+```
+docker-compose.yml
+├── frontend      (Nginx sirviendo el build de React)
+├── backend       (FastAPI + Uvicorn)
+├── postgres      (PostgreSQL 16)
+├── redis         (Cache + colas de mensajes) [opcional pero recomendado]
+└── nginx         (Reverse proxy + SSL)
+```
+
+### 5.2 — Servicios y puertos
+
+| Servicio | Puerto interno | Puerto externo | Imagen |
+|----------|---------------|----------------|--------|
+| frontend | 80 | — | nginx:alpine + build de React |
+| backend | 8000 | — | python:3.11-slim + FastAPI |
+| postgres | 5432 | — | postgres:16-alpine |
+| redis | 6379 | — | redis:7-alpine |
+| nginx (proxy) | 80, 443 | 80, 443 | nginx:alpine |
+
+Solo nginx expone puertos al exterior. Todo lo demás es interno.
+
+### 5.3 — Archivos Docker necesarios
+
+**`frontend/Dockerfile`** — Multi-stage build:
+- Stage 1: `node:20-alpine` → `npm ci && npm run build`
+- Stage 2: `nginx:alpine` → copia el `dist/` y un `nginx.conf`
+
+**`backend/Dockerfile`**:
+- Base: `python:3.11-slim`
+- Copia `requirements.txt`, instala dependencias
+- Copia código, expone 8000
+- CMD: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+
+**`nginx/nginx.conf`** — Reverse proxy:
+- `/` → frontend (archivos estáticos)
+- `/api/` → backend:8000
+- SSL con Let's Encrypt (certbot)
+
+**`docker-compose.yml`** — Orquesta todo:
+- Define los 4-5 servicios
+- Red interna entre contenedores
+- Volúmenes para datos de PostgreSQL (persistencia)
+- Variables de entorno desde `.env`
+- Health checks
+- Restart policies
+
+### 5.4 — Variables de entorno (.env)
+
+```
+# Database
+POSTGRES_USER=alpelo
+POSTGRES_PASSWORD=<contraseña_segura>
+POSTGRES_DB=alpelo_crm
+
+# Backend
+DATABASE_URL=postgresql+asyncpg://alpelo:<password>@postgres:5432/alpelo_crm
+SECRET_KEY=<clave_jwt_segura>
+CORS_ORIGINS=https://tudominio.com
+
+# WhatsApp
+WHATSAPP_PHONE_ID=<tu_phone_number_id>
+WHATSAPP_TOKEN=<tu_access_token>
+WHATSAPP_VERIFY_TOKEN=<tu_webhook_verify_token>
+
+# Claude AI
+ANTHROPIC_API_KEY=sk-ant-<tu_clave>
+
+# Frontend
+VITE_API_URL=https://tudominio.com/api
+```
+
+### 5.5 — Pasos de deploy en VPS
+
+1. **Comprar VPS** — DigitalOcean o Hetzner ($5-10 USD/mes, 2GB RAM mínimo)
+2. **Apuntar dominio** — Configurar DNS A record al IP del VPS
+3. **Instalar Docker + Docker Compose** en el VPS
+4. **Clonar el repo** desde GitHub
+5. **Crear archivo `.env`** con las variables reales
+6. **`docker compose up -d`** — Levanta todo
+7. **Configurar SSL** con certbot/Let's Encrypt
+8. **Configurar backup automático** de PostgreSQL (cron + pg_dump)
+
+**Tiempo estimado: 1 semana**
+
+---
+
+## FASE 6: Pulir y completar el frontend (En paralelo)
+
+### 6.1 — Páginas que necesitan trabajo
+
+| Página | Qué falta |
+|--------|-----------|
+| **Dashboard** | Reemplazar datos hardcodeados por API real, botones de acción rápida funcionales |
+| **Settings** | Que los toggles persistan, integración status real |
+| **Profile** | Validaciones, upload de avatar |
+| **Team** | Página propia (no solo BarberRating wrapper) |
+| **Appointments** | Dividir en subcomponentes (archivo de 2000+ líneas) |
+| **Messaging** | Dividir en subcomponentes (archivo de 2000+ líneas) |
+| **ChatAI** | Dividir en subcomponentes (archivo de 1200+ líneas) |
+
+### 6.2 — Mejoras técnicas pendientes
+
+- Agregar React Query para manejo de estado del servidor
+- Agregar manejo de errores global (error boundary)
+- Implementar loading skeletons (los estilos ya existen en SCSS)
+- Agregar tests básicos (al menos para utils y servicios)
+- Optimizar re-renders (React.memo donde sea necesario)
+- Recalcular `totalSpent` desde el historial de visitas
+
+---
+
+## RESUMEN DE COSTOS MENSUALES (Producción)
+
+| Concepto | Costo USD/mes |
+|----------|--------------|
+| VPS (2GB RAM) | $5-10 |
+| Dominio (.com) | ~$1 (anual ~$12) |
+| WhatsApp Business API (~500 msgs) | ~$7.50 |
+| Claude API (~100 consultas/día) | ~$9 |
+| SSL (Let's Encrypt) | GRATIS |
+| PostgreSQL (self-hosted) | GRATIS |
+| **TOTAL** | **~$22-27 USD/mes** |
+
+---
+
+## TIMELINE COMPLETO
+
+| Semana | Fase | Entregable |
+|--------|------|-----------|
+| 1-2 | Backend base | FastAPI + PostgreSQL + Auth + Modelos |
+| 2-3 | Endpoints API | CRUD completo de clientes, citas, staff |
+| 3-4 | Conectar frontend | Services reales, React Query, JWT |
+| 4-5 | WhatsApp API | Registro Meta, plantillas, envío real |
+| 5-6 | IA con Claude | Chat contextual funcionando |
+| 6-7 | Docker + Deploy | VPS corriendo con todo |
+| En paralelo | Frontend polish | Dividir archivos grandes, completar páginas |
+
+**Total estimado: 6-7 semanas** para tener todo funcionando en producción.
+
+---
+
+## ORDEN DE PRIORIDAD (qué hacer primero)
+
+1. **Backend + BD** — Sin esto no hay nada real
+2. **Conectar frontend** — Para que deje de ser un prototipo
+3. **WhatsApp API** — El feature más valioso para el negocio
+4. **IA con Claude** — Diferenciador del producto
+5. **Docker + Deploy** — Ponerlo en producción
+6. **Pulir frontend** — Se puede hacer en paralelo con cualquier fase

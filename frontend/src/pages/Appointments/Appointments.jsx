@@ -8,6 +8,7 @@ import { formatCurrency } from '../../utils/formatters';
 // Helpers
 // ============================================
 const STORAGE_KEY = 'alpelo_appointments';
+const FIXED_NOW = new Date(2026, 2, 2, 10, 0);
 
 const loadAppointments = () => {
   try {
@@ -28,7 +29,6 @@ const getClientPhone = (clientId) => getClient(clientId)?.phone || '';
 
 const getBarber = (barberId) => mockBarbers.find((b) => b.id === barberId);
 const getBarberName = (barberId) => getBarber(barberId)?.name || 'Sin asignar';
-const getBarberSpecialty = (barberId) => getBarber(barberId)?.specialty || '';
 
 const getServiceData = (serviceName) => {
   const service = mockServices.find((s) => s.name === serviceName);
@@ -43,10 +43,10 @@ const getInitials = (name) => {
 };
 
 const STATUS_CONFIG = {
-  confirmed: { label: 'Confirmada', icon: 'check', color: 'success' },
-  pending: { label: 'Pendiente', icon: 'clock', color: 'warning' },
-  completed: { label: 'Completada', icon: 'done', color: 'primary' },
-  cancelled: { label: 'Cancelada', icon: 'x', color: 'error' },
+  confirmed: { label: 'Confirmada', color: 'success' },
+  pending: { label: 'Pendiente', color: 'warning' },
+  completed: { label: 'Completada', color: 'primary' },
+  cancelled: { label: 'Cancelada', color: 'error' },
 };
 
 const STATUS_CYCLE = ['pending', 'confirmed', 'completed', 'cancelled'];
@@ -61,6 +61,11 @@ const formatDateFull = (dateStr) => {
   return date.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 };
 
+const formatMonthYear = (dateStr) => {
+  const date = new Date(dateStr + 'T12:00:00');
+  return date.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+};
+
 const formatWeekDayShort = (dateStr) => {
   const date = new Date(dateStr + 'T12:00:00');
   return date.toLocaleDateString('es-CO', { weekday: 'short' }).toUpperCase().replace('.', '');
@@ -71,10 +76,10 @@ const formatWeekDayNum = (dateStr) => {
   return date.getDate();
 };
 
-const getTodayStr = () => new Date().toISOString().split('T')[0];
+const getTodayStr = () => FIXED_NOW.toISOString().split('T')[0];
 
 const getWeekDates = (baseDate) => {
-  const base = baseDate ? new Date(baseDate + 'T12:00:00') : new Date();
+  const base = baseDate ? new Date(baseDate + 'T12:00:00') : new Date(FIXED_NOW);
   const dayOfWeek = base.getDay();
   const monday = new Date(base);
   monday.setDate(base.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
@@ -95,11 +100,12 @@ const TIME_SLOTS = [
 ];
 
 const getCurrentTimeSlot = () => {
-  const now = new Date();
-  const h = now.getHours();
-  const m = now.getMinutes();
+  const h = FIXED_NOW.getHours();
+  const m = FIXED_NOW.getMinutes();
   return `${String(h).padStart(2, '0')}:${m < 30 ? '00' : '30'}`;
 };
+
+const MONTH_DAY_NAMES = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'];
 
 // ============================================
 // SVG Icons
@@ -191,25 +197,11 @@ const ChevronRightIcon = () => (
   </svg>
 );
 
-const PhoneIcon = ({ size = 12 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-  </svg>
-);
-
 const LayersIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="12 2 2 7 12 12 22 7 12 2" />
     <polyline points="2 17 12 22 22 17" />
     <polyline points="2 12 12 17 22 12" />
-  </svg>
-);
-
-const XCircleIcon = ({ size = 14 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <line x1="15" y1="9" x2="9" y2="15" />
-    <line x1="9" y1="9" x2="15" y2="15" />
   </svg>
 );
 
@@ -250,6 +242,22 @@ const ListIcon = ({ size = 16 }) => (
     <line x1="3" y1="6" x2="3.01" y2="6" />
     <line x1="3" y1="12" x2="3.01" y2="12" />
     <line x1="3" y1="18" x2="3.01" y2="18" />
+  </svg>
+);
+
+const CalendarGridIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="3" y1="9" x2="21" y2="9" />
+    <line x1="3" y1="15" x2="21" y2="15" />
+    <line x1="9" y1="3" x2="9" y2="21" />
+    <line x1="15" y1="3" x2="15" y2="21" />
+  </svg>
+);
+
+const FilterIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
   </svg>
 );
 
@@ -298,12 +306,14 @@ const Appointments = () => {
   const [view, setView] = useState('day');
   const [selectedDate, setSelectedDate] = useState(getTodayStr());
   const [barberFilter, setBarberFilter] = useState('all');
+  const [serviceFilter, setServiceFilter] = useState('all');
   const [showBarberDropdown, setShowBarberDropdown] = useState(false);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [statusMenu, setStatusMenu] = useState(null);
-  const [currentTime, setCurrentTime] = useState(getCurrentTimeSlot());
+  const [currentTime] = useState(getCurrentTimeSlot());
   const barberDropdownRef = useRef(null);
-  const timelineRef = useRef(null);
+  const serviceDropdownRef = useRef(null);
 
   // New appointment form
   const [formData, setFormData] = useState({
@@ -315,20 +325,11 @@ const Appointments = () => {
   });
   const [clientSearch, setClientSearch] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
 
   // Persist
   useEffect(() => {
     saveAppointments(appointments);
   }, [appointments]);
-
-  // Update current time every minute
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(getCurrentTimeSlot());
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -337,22 +338,13 @@ const Appointments = () => {
       if (showBarberDropdown && barberDropdownRef.current && !barberDropdownRef.current.contains(e.target)) {
         setShowBarberDropdown(false);
       }
+      if (showServiceDropdown && serviceDropdownRef.current && !serviceDropdownRef.current.contains(e.target)) {
+        setShowServiceDropdown(false);
+      }
     };
     document.addEventListener('click', handleClick);
     return () => document.removeEventListener('click', handleClick);
-  }, [statusMenu, showBarberDropdown]);
-
-  // Scroll to current time on mount
-  useEffect(() => {
-    if (view === 'day' && timelineRef.current) {
-      const currentSlotEl = timelineRef.current.querySelector('.appointments__timeline-slot--current');
-      if (currentSlotEl) {
-        setTimeout(() => {
-          currentSlotEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 500);
-      }
-    }
-  }, [view, selectedDate]);
+  }, [statusMenu, showBarberDropdown, showServiceDropdown]);
 
   // ---- Derived data ----
   const todayStr = getTodayStr();
@@ -362,17 +354,31 @@ const Appointments = () => {
     let result = appointments;
     if (view === 'day') {
       result = result.filter((a) => a.date === selectedDate);
-    } else {
+    } else if (view === 'week') {
       result = result.filter((a) => weekDates.includes(a.date));
+    } else {
+      const d = new Date(selectedDate + 'T12:00:00');
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      result = result.filter((a) => {
+        const ad = new Date(a.date + 'T12:00:00');
+        return ad.getFullYear() === year && ad.getMonth() === month;
+      });
     }
     if (barberFilter !== 'all') {
       result = result.filter((a) => a.barberId === Number(barberFilter));
+    }
+    if (serviceFilter !== 'all') {
+      result = result.filter((a) => {
+        const svc = mockServices.find((s) => s.name === a.service);
+        return svc && svc.category === serviceFilter;
+      });
     }
     return result.sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       return a.time.localeCompare(b.time);
     });
-  }, [appointments, view, barberFilter, selectedDate, weekDates]);
+  }, [appointments, view, barberFilter, serviceFilter, selectedDate, weekDates]);
 
   // ---- Stats for selected day ----
   const stats = useMemo(() => {
@@ -383,6 +389,65 @@ const Appointments = () => {
     const revenue = dayAppts.reduce((sum, a) => sum + getServiceData(a.service).price, 0);
     return { total: dayAppts.length, confirmed, pending, completed, revenue };
   }, [appointments, selectedDate]);
+
+  // ---- Next appointment ID (for day view highlight) ----
+  const nextApptId = useMemo(() => {
+    if (view !== 'day' || selectedDate !== todayStr) return null;
+    const upcoming = filteredAppointments.find((a) => a.time >= currentTime);
+    return upcoming?.id || null;
+  }, [filteredAppointments, view, selectedDate, todayStr, currentTime]);
+
+  // ---- Month view data ----
+  const monthData = useMemo(() => {
+    if (view !== 'month') return [];
+    const d = new Date(selectedDate + 'T12:00:00');
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    let startOffset = firstDay.getDay() - 1;
+    if (startOffset < 0) startOffset = 6;
+
+    const totalDays = lastDay.getDate();
+    const weeks = [];
+    let currentWeek = [];
+
+    for (let i = 0; i < startOffset; i++) {
+      currentWeek.push({ day: null, dateStr: null, appointments: [] });
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayAppts = filteredAppointments.filter((a) => a.date === dateStr);
+      currentWeek.push({ day, dateStr, appointments: dayAppts });
+
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+    }
+
+    if (currentWeek.length > 0) {
+      while (currentWeek.length < 7) {
+        currentWeek.push({ day: null, dateStr: null, appointments: [] });
+      }
+      weeks.push(currentWeek);
+    }
+
+    return weeks;
+  }, [view, selectedDate, filteredAppointments]);
+
+  // ---- Week view grouping ----
+  const groupedByDate = useMemo(() => {
+    if (view !== 'week') return {};
+    const groups = {};
+    weekDates.forEach((d) => { groups[d] = []; });
+    filteredAppointments.forEach((a) => {
+      if (groups[a.date]) groups[a.date].push(a);
+    });
+    return groups;
+  }, [filteredAppointments, view, weekDates]);
 
   // ---- Actions ----
   const handleStatusChange = useCallback((appointmentId, newStatus) => {
@@ -408,7 +473,6 @@ const Appointments = () => {
     setShowModal(false);
     setFormData({ clientId: '', barberId: '', serviceId: '', date: getTodayStr(), time: '10:00' });
     setClientSearch('');
-    setSelectedTimeSlot(null);
   }, [formData]);
 
   const handleSelectClient = useCallback((client) => {
@@ -419,7 +483,13 @@ const Appointments = () => {
 
   const navigateDate = useCallback((direction) => {
     const d = new Date(selectedDate + 'T12:00:00');
-    d.setDate(d.getDate() + (view === 'day' ? direction : direction * 7));
+    if (view === 'day') {
+      d.setDate(d.getDate() + direction);
+    } else if (view === 'week') {
+      d.setDate(d.getDate() + direction * 7);
+    } else {
+      d.setMonth(d.getMonth() + direction);
+    }
     setSelectedDate(d.toISOString().split('T')[0]);
   }, [selectedDate, view]);
 
@@ -447,7 +517,7 @@ const Appointments = () => {
     ? mockServices.find((s) => s.id === Number(formData.serviceId))
     : null;
 
-  // ---- Group by service category ----
+  // ---- Group services by category ----
   const servicesByCategory = useMemo(() => {
     const groups = {};
     mockServices.forEach((s) => {
@@ -457,114 +527,35 @@ const Appointments = () => {
     return groups;
   }, []);
 
-  // ---- Week view grouping ----
-  const groupedByDate = useMemo(() => {
-    if (view !== 'week') return {};
-    const groups = {};
-    weekDates.forEach((d) => { groups[d] = []; });
-    filteredAppointments.forEach((a) => {
-      if (groups[a.date]) groups[a.date].push(a);
-    });
-    return groups;
-  }, [filteredAppointments, view, weekDates]);
+  const serviceCategories = useMemo(() => Object.keys(servicesByCategory), [servicesByCategory]);
 
-  // ---- Timeline slots for day view ----
-  const timelineSlots = useMemo(() => {
-    if (view !== 'day') return [];
-    return TIME_SLOTS.map((slot) => ({
-      time: slot,
-      appointments: filteredAppointments.filter((a) => a.time === slot),
-      isCurrent: selectedDate === todayStr && slot === currentTime,
-      isPast: selectedDate === todayStr && slot < currentTime,
-    }));
-  }, [filteredAppointments, view, currentTime, selectedDate, todayStr]);
+  // ---- View toggle slider position ----
+  const sliderTransform = view === 'day' ? 'translateX(0)' : view === 'week' ? 'translateX(100%)' : 'translateX(200%)';
 
-  // ---- Appointment card renderer ----
-  const renderAppointmentCard = (appt, isCompact = false) => {
-    const svc = getServiceData(appt.service);
-    const clientName = getClientName(appt.clientId);
-    const clientPhone = getClientPhone(appt.clientId);
-    const barberName = getBarberName(appt.barberId);
-    const statusCfg = STATUS_CONFIG[appt.status];
+  // ---- Date nav label ----
+  const dateNavLabel = useMemo(() => {
+    if (view === 'day') return formatDateDisplay(selectedDate);
+    if (view === 'week') return `${formatDateDisplay(weekDates[0])} — ${formatDateDisplay(weekDates[6])}`;
+    return formatMonthYear(selectedDate);
+  }, [view, selectedDate, weekDates]);
 
-    return (
-      <div
-        key={appt.id}
-        className={`appointments__card ${isCompact ? 'appointments__card--compact' : ''} appointments__card--${appt.status}`}
-      >
-        {/* Status colored accent */}
-        <div className="appointments__card-accent" />
-
-        <div className="appointments__card-top">
-          <div className="appointments__card-time-group">
-            <ClockIcon size={13} />
-            <span className="appointments__card-time">{appt.time}</span>
-            <span className="appointments__card-duration">
-              {svc.duration} min
-            </span>
-          </div>
-          <div className="appointments__card-status-wrap">
-            <button
-              className={`appointments__card-status appointments__card-status--${appt.status}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setStatusMenu(statusMenu === appt.id ? null : appt.id);
-              }}
-            >
-              <StatusIcon status={appt.status} size={11} />
-              <span>{statusCfg?.label || appt.status}</span>
-            </button>
-            {statusMenu === appt.id && (
-              <div className="appointments__status-dropdown" onClick={(e) => e.stopPropagation()}>
-                <div className="appointments__status-dropdown-header">Cambiar estado</div>
-                {STATUS_CYCLE.map((s) => (
-                  <button
-                    key={s}
-                    className={`appointments__status-option appointments__status-option--${s} ${s === appt.status ? 'appointments__status-option--current' : ''}`}
-                    onClick={() => handleStatusChange(appt.id, s)}
-                  >
-                    <StatusIcon status={s} size={13} />
-                    <span>{STATUS_CONFIG[s].label}</span>
-                    {s === appt.status && <span className="appointments__status-option-check">&#10003;</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="appointments__card-body">
-          <div className="appointments__card-avatar-wrap">
-            <div className={`appointments__card-avatar appointments__card-avatar--${appt.status}`}>
-              {getInitials(clientName)}
-            </div>
-            <div className={`appointments__card-avatar-ring appointments__card-avatar-ring--${appt.status}`} />
-          </div>
-          <div className="appointments__card-info">
-            <span className="appointments__card-name">{clientName}</span>
-            {!isCompact && clientPhone && (
-              <span className="appointments__card-phone">
-                <PhoneIcon size={11} />
-                {clientPhone}
-              </span>
-            )}
-            <span className="appointments__card-service">
-              <ScissorsIcon size={12} />
-              {appt.service}
-            </span>
-          </div>
-        </div>
-
-        <div className="appointments__card-footer">
-          <span className="appointments__card-barber">
-            <UserIcon size={12} />
-            {barberName}
-          </span>
-          <span className="appointments__card-price">{formatCurrency(svc.price)}</span>
-        </div>
-      </div>
-    );
-  };
+  // ---- Status dropdown renderer ----
+  const renderStatusDropdown = (apptId) => (
+    <div className="appointments__status-dropdown" onClick={(e) => e.stopPropagation()}>
+      <div className="appointments__status-dropdown-header">Cambiar estado</div>
+      {STATUS_CYCLE.map((s) => (
+        <button
+          key={s}
+          className={`appointments__status-option appointments__status-option--${s} ${s === appointments.find((a) => a.id === apptId)?.status ? 'appointments__status-option--current' : ''}`}
+          onClick={() => handleStatusChange(apptId, s)}
+        >
+          <StatusIcon status={s} size={13} />
+          <span>{STATUS_CONFIG[s].label}</span>
+          {s === appointments.find((a) => a.id === apptId)?.status && <span className="appointments__status-check">&#10003;</span>}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="appointments">
@@ -634,11 +625,11 @@ const Appointments = () => {
       {/* ===== TOOLBAR ===== */}
       <div className="appointments__toolbar">
         <div className="appointments__toolbar-left">
-          {/* View Toggle */}
+          {/* View Toggle — 3 buttons */}
           <div className="appointments__view-toggle">
             <div
               className="appointments__view-slider"
-              style={{ transform: view === 'day' ? 'translateX(0)' : 'translateX(100%)' }}
+              style={{ transform: sliderTransform }}
             />
             <button
               className={`appointments__view-btn ${view === 'day' ? 'appointments__view-btn--active' : ''}`}
@@ -654,6 +645,13 @@ const Appointments = () => {
               <GridIcon size={14} />
               <span>Semana</span>
             </button>
+            <button
+              className={`appointments__view-btn ${view === 'month' ? 'appointments__view-btn--active' : ''}`}
+              onClick={() => setView('month')}
+            >
+              <CalendarGridIcon size={14} />
+              <span>Mes</span>
+            </button>
           </div>
 
           {/* Date Navigation */}
@@ -667,14 +665,52 @@ const Appointments = () => {
             <button className="appointments__date-nav-btn" onClick={() => navigateDate(1)}>
               <ChevronRightIcon />
             </button>
-            <span className="appointments__date-nav-label">
-              {view === 'day' ? formatDateDisplay(selectedDate) : `${formatDateDisplay(weekDates[0])} - ${formatDateDisplay(weekDates[6])}`}
-            </span>
+            <span className="appointments__date-nav-label">{dateNavLabel}</span>
           </div>
         </div>
 
         <div className="appointments__toolbar-right">
-          {/* Barber Filter - Custom Dropdown */}
+          {/* Service Filter */}
+          <div className="appointments__service-filter" ref={serviceDropdownRef}>
+            <button
+              className={`appointments__service-filter-trigger ${serviceFilter !== 'all' ? 'appointments__service-filter-trigger--active' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowServiceDropdown(!showServiceDropdown);
+              }}
+            >
+              <FilterIcon size={14} />
+              <span>{serviceFilter === 'all' ? 'Servicios' : serviceFilter}</span>
+              <ChevronDownIcon />
+            </button>
+            {showServiceDropdown && (
+              <div className="appointments__service-dropdown" onClick={(e) => e.stopPropagation()}>
+                <div className="appointments__service-dropdown-header">Filtrar por servicio</div>
+                <button
+                  className={`appointments__service-dropdown-item ${serviceFilter === 'all' ? 'appointments__service-dropdown-item--active' : ''}`}
+                  onClick={() => { setServiceFilter('all'); setShowServiceDropdown(false); }}
+                >
+                  <LayersIcon size={14} />
+                  <span>Todos los servicios</span>
+                </button>
+                {serviceCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    className={`appointments__service-dropdown-item ${serviceFilter === cat ? 'appointments__service-dropdown-item--active' : ''}`}
+                    onClick={() => { setServiceFilter(cat); setShowServiceDropdown(false); }}
+                  >
+                    <ScissorsIcon size={13} />
+                    <span>{cat}</span>
+                    <span className="appointments__service-dropdown-count">
+                      {servicesByCategory[cat].length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Barber Filter */}
           <div className="appointments__barber-filter" ref={barberDropdownRef}>
             <button
               className="appointments__barber-filter-trigger"
@@ -742,47 +778,60 @@ const Appointments = () => {
         </div>
       </div>
 
-      {/* ===== DAY VIEW: TIMELINE ===== */}
-      {view === 'day' && (
-        <div className="appointments__timeline">
-          <div className="appointments__timeline-header">
-            <div className="appointments__timeline-header-left">
+      {/* ===== DAY VIEW: Dense Rows ===== */}
+      {view === 'day' && filteredAppointments.length > 0 && (
+        <div className="appointments__day">
+          <div className="appointments__day-header">
+            <div className="appointments__day-header-left">
               <CalendarIcon size={16} />
               <span>Agenda &mdash; {formatDateDisplay(selectedDate)}</span>
             </div>
-            <div className="appointments__timeline-header-right">
-              <span className="appointments__timeline-count">
-                {filteredAppointments.length} cita{filteredAppointments.length !== 1 ? 's' : ''}
-              </span>
-            </div>
+            <span className="appointments__day-count">
+              {filteredAppointments.length} cita{filteredAppointments.length !== 1 ? 's' : ''}
+            </span>
           </div>
-          <div className="appointments__timeline-body" ref={timelineRef}>
-            {timelineSlots.map((slot, index) => (
-              <div
-                key={slot.time}
-                className={`appointments__timeline-slot ${
-                  slot.appointments.length > 0 ? 'appointments__timeline-slot--active' : ''
-                } ${slot.isCurrent ? 'appointments__timeline-slot--current' : ''} ${
-                  slot.isPast ? 'appointments__timeline-slot--past' : ''
-                }`}
-                style={{ animationDelay: `${0.02 * index}s` }}
-              >
-                <div className="appointments__timeline-time">{slot.time}</div>
-                <div className="appointments__timeline-connector">
-                  <div className="appointments__timeline-line" />
-                  <div className="appointments__timeline-dot" />
+          <div className="appointments__day-body">
+            {filteredAppointments.map((appt, index) => {
+              const svc = getServiceData(appt.service);
+              const clientName = getClientName(appt.clientId);
+              const barberName = getBarberName(appt.barberId);
+              const statusCfg = STATUS_CONFIG[appt.status];
+              const isNext = appt.id === nextApptId;
+
+              return (
+                <div
+                  key={appt.id}
+                  className={`appointments__day-row ${isNext ? 'appointments__day-row--next' : ''}`}
+                  style={{ animationDelay: `${0.03 * index}s` }}
+                >
+                  <span className="appointments__day-time">{appt.time}</span>
+                  <div className={`appointments__day-avatar appointments__day-avatar--${appt.status}`}>
+                    {getInitials(clientName)}
+                  </div>
+                  <div className="appointments__day-info">
+                    <span className="appointments__day-name">{clientName}</span>
+                    <span className="appointments__day-service">
+                      {appt.service} &middot; {svc.duration} min
+                    </span>
+                  </div>
+                  <span className="appointments__day-barber">{barberName}</span>
+                  <span className="appointments__day-price">{formatCurrency(svc.price)}</span>
+                  <div className="appointments__day-status-wrap">
+                    <button
+                      className={`appointments__day-status appointments__day-status--${appt.status}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setStatusMenu(statusMenu === appt.id ? null : appt.id);
+                      }}
+                    >
+                      <StatusIcon status={appt.status} size={11} />
+                      <span>{statusCfg?.label}</span>
+                    </button>
+                    {statusMenu === appt.id && renderStatusDropdown(appt.id)}
+                  </div>
                 </div>
-                <div className="appointments__timeline-cards">
-                  {slot.appointments.length > 0 ? (
-                    slot.appointments.map((appt) => renderAppointmentCard(appt))
-                  ) : (
-                    <div className="appointments__timeline-empty">
-                      <div className="appointments__timeline-empty-dash" />
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -814,20 +863,17 @@ const Appointments = () => {
                 </button>
                 <div className="appointments__week-col-body">
                   {dayAppts.length > 0 ? (
-                    dayAppts.map((appt) => {
-                      const svc = getServiceData(appt.service);
-                      return (
-                        <div
-                          key={appt.id}
-                          className={`appointments__week-pill appointments__week-pill--${appt.status}`}
-                          title={`${appt.time} - ${getClientName(appt.clientId)} - ${appt.service}`}
-                        >
-                          <span className="appointments__week-pill-time">{appt.time}</span>
-                          <span className="appointments__week-pill-name">{getClientName(appt.clientId)}</span>
-                          <span className="appointments__week-pill-service">{appt.service}</span>
-                        </div>
-                      );
-                    })
+                    dayAppts.map((appt) => (
+                      <div
+                        key={appt.id}
+                        className={`appointments__week-pill appointments__week-pill--${appt.status}`}
+                        title={`${appt.time} - ${getClientName(appt.clientId)} - ${appt.service}`}
+                      >
+                        <span className="appointments__week-pill-time">{appt.time}</span>
+                        <span className="appointments__week-pill-name">{getClientName(appt.clientId)}</span>
+                        <span className="appointments__week-pill-service">{appt.service}</span>
+                      </div>
+                    ))
                   ) : (
                     <div className="appointments__week-empty">
                       <span>Sin citas</span>
@@ -840,16 +886,68 @@ const Appointments = () => {
         </div>
       )}
 
+      {/* ===== MONTH VIEW ===== */}
+      {view === 'month' && (
+        <div className="appointments__month">
+          <div className="appointments__month-header">
+            {MONTH_DAY_NAMES.map((name) => (
+              <span key={name} className="appointments__month-dayname">{name}</span>
+            ))}
+          </div>
+          <div className="appointments__month-grid">
+            {monthData.map((week, wi) => (
+              <div key={wi} className="appointments__month-week">
+                {week.map((cell, ci) => {
+                  const isToday = cell.dateStr === todayStr;
+                  const hasAppts = cell.appointments.length > 0;
+                  return (
+                    <button
+                      key={ci}
+                      className={`appointments__month-cell ${!cell.day ? 'appointments__month-cell--empty' : ''} ${isToday ? 'appointments__month-cell--today' : ''} ${hasAppts ? 'appointments__month-cell--has-appts' : ''}`}
+                      onClick={() => {
+                        if (cell.dateStr) {
+                          setSelectedDate(cell.dateStr);
+                          setView('day');
+                        }
+                      }}
+                      disabled={!cell.day}
+                    >
+                      {cell.day && (
+                        <>
+                          <span className="appointments__month-cell-day">{cell.day}</span>
+                          {hasAppts && (
+                            <>
+                              <span className="appointments__month-cell-count">{cell.appointments.length}</span>
+                              <div className="appointments__month-cell-dots">
+                                {cell.appointments.some((a) => a.status === 'confirmed') && <span className="appointments__month-dot appointments__month-dot--confirmed" />}
+                                {cell.appointments.some((a) => a.status === 'pending') && <span className="appointments__month-dot appointments__month-dot--pending" />}
+                                {cell.appointments.some((a) => a.status === 'completed') && <span className="appointments__month-dot appointments__month-dot--completed" />}
+                              </div>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ===== EMPTY STATE ===== */}
       {filteredAppointments.length === 0 && (
         <div className="appointments__empty">
           <div className="appointments__empty-icon">
             <CalendarIcon size={48} />
           </div>
-          <h3 className="appointments__empty-title">No hay citas {view === 'day' ? 'para este d\u00EDa' : 'esta semana'}</h3>
+          <h3 className="appointments__empty-title">
+            No hay citas {view === 'day' ? 'para este d\u00EDa' : view === 'week' ? 'esta semana' : 'este mes'}
+          </h3>
           <p className="appointments__empty-text">
-            {barberFilter !== 'all'
-              ? 'Intenta cambiar el filtro de profesional'
+            {barberFilter !== 'all' || serviceFilter !== 'all'
+              ? 'Intenta cambiar los filtros aplicados'
               : 'Crea una nueva cita para empezar'}
           </p>
           <Button variant="primary" size="sm" onClick={() => setShowModal(true)}>
@@ -873,7 +971,7 @@ const Appointments = () => {
               <input
                 type="text"
                 className="appointments__modal-input"
-                placeholder="Buscar por nombre o tel\u00E9fono..."
+                placeholder="Buscar por nombre o tel&eacute;fono..."
                 value={clientSearch}
                 onChange={(e) => {
                   setClientSearch(e.target.value);

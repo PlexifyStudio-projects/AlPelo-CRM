@@ -835,6 +835,12 @@ export const mockAppointments = [
   { id: 10, clientId: 7, barberId: 1, service: 'Corte + Barba', date: '2026-03-02', time: '12:00', status: 'pending' },
   { id: 11, clientId: 16, barberId: 10, service: 'Lifting de Pestañas', date: '2026-03-02', time: '10:00', status: 'confirmed' },
   { id: 12, clientId: 2, barberId: 2, service: 'Corte Hipster', date: '2026-03-03', time: '16:00', status: 'pending' },
+  { id: 13, clientId: 6, barberId: 4, service: 'Corte + Barba', date: '2026-03-02', time: '09:00', status: 'confirmed' },
+  { id: 14, clientId: 9, barberId: 2, service: 'Corte + Cejas', date: '2026-03-02', time: '11:00', status: 'confirmed' },
+  { id: 15, clientId: 15, barberId: 13, service: 'Semipermanente Manicure', date: '2026-03-02', time: '10:30', status: 'pending' },
+  { id: 16, clientId: 3, barberId: 1, service: 'Corte + Barba + Cejas', date: '2026-03-02', time: '14:00', status: 'confirmed' },
+  { id: 17, clientId: 12, barberId: 6, service: 'Corte Hipster', date: '2026-03-02', time: '15:00', status: 'pending' },
+  { id: 18, clientId: 5, barberId: 14, service: 'Spa Manicure', date: '2026-03-02', time: '16:00', status: 'confirmed' },
 ];
 
 export const mockVisitHistory = [
@@ -1236,6 +1242,22 @@ export const mockVisitHistory = [
   { id: 126, clientId: 30, barberId: 6, service: 'Corte Hipster', date: '2025-11-20', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 127, clientId: 30, barberId: 6, service: 'Corte + Cejas', date: '2025-11-05', amount: 45000, rating: 4, notes: 'Primera visita', status: 'completed' },
   { id: 217, clientId: 30, barberId: 6, service: 'Corte + Barba', date: '2026-01-02', amount: 55000, rating: null, notes: 'No vino, resaca de año nuevo', status: 'no_show' },
+  // ==========================================
+  // Marzo 2026 — Servicios completados
+  // ==========================================
+  { id: 219, clientId: 10, barberId: 5, service: 'Corte + Barba', date: '2026-03-01', amount: 55000, rating: 5, notes: '', status: 'completed' },
+  { id: 220, clientId: 12, barberId: 13, service: 'Manicure + Pedicure Tradicional', date: '2026-03-01', amount: 55000, rating: 4, notes: '', status: 'completed' },
+  { id: 221, clientId: 13, barberId: 1, service: 'Corte + Barba', date: '2026-03-01', amount: 55000, rating: 5, notes: 'Gran servicio', status: 'completed' },
+  { id: 222, clientId: 15, barberId: 5, service: 'Corte + Barba', date: '2026-03-01', amount: 55000, rating: 5, notes: '', status: 'completed' },
+  { id: 223, clientId: 6, barberId: 4, service: 'Corte + Barba', date: '2026-03-01', amount: 55000, rating: 4, notes: '', status: 'completed' },
+  { id: 224, clientId: 16, barberId: 10, service: 'Lifting de Pestañas', date: '2026-03-01', amount: 60000, rating: 5, notes: 'Quedó encantada', status: 'completed' },
+  { id: 225, clientId: 9, barberId: 2, service: 'Corte + Cejas', date: '2026-03-01', amount: 45000, rating: 5, notes: '', status: 'completed' },
+  { id: 226, clientId: 7, barberId: 6, service: 'Corte Hipster', date: '2026-03-01', amount: 40000, rating: 4, notes: '', status: 'completed' },
+  { id: 227, clientId: 1, barberId: 1, service: 'Corte + Barba', date: '2026-03-02', amount: 55000, rating: 5, notes: 'Como siempre, perfecto', status: 'completed' },
+  { id: 228, clientId: 29, barberId: 7, service: 'Corte + Barba', date: '2026-03-01', amount: 55000, rating: 5, notes: '', status: 'completed' },
+  { id: 229, clientId: 26, barberId: 8, service: 'Corte Hipster', date: '2026-03-01', amount: 40000, rating: 4, notes: '', status: 'completed' },
+  { id: 230, clientId: 28, barberId: 14, service: 'Spa Manicure', date: '2026-03-01', amount: 50000, rating: 5, notes: 'Excelente atención', status: 'completed' },
+  { id: 231, clientId: 27, barberId: 15, service: 'Semipermanente Manicure', date: '2026-03-01', amount: 50000, rating: 5, notes: '', status: 'completed' },
 ];
 
 export const mockNotifications = [
