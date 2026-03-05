@@ -139,6 +139,17 @@
     margin: 0;
   }
 
+  &__client-id {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: $letter-spacing-wide;
+    background: $color-primary-ghost;
+    padding: 1px $spacing-xs;
+    border-radius: $border-radius-sm;
+  }
+
   &__status {
     display: inline-flex;
     align-items: center;

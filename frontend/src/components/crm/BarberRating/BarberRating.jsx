@@ -265,8 +265,10 @@ const BarberRating = () => {
   const [sortBy, setSortBy] = useState('visits');
   const [clientFilter, setClientFilter] = useState('');
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showRetentionModal, setShowRetentionModal] = useState(false);
   const [selectedClientIds, setSelectedClientIds] = useState(new Set());
   const [isSending, setIsSending] = useState(false);
+  const [retentionOffer, setRetentionOffer] = useState('20% de descuento en tu próximo servicio');
   const [barberPhotos, setBarberPhotos] = useState({});
 
   const fileInputRefs = useRef({});
@@ -377,6 +379,26 @@ const BarberRating = () => {
     setShowFeedbackModal(true);
   };
 
+  const handleOpenRetention = (event) => {
+    event.stopPropagation();
+    const whatsappClients = barberClients.filter((c) => c.acceptsWhatsApp);
+    setSelectedClientIds(new Set(whatsappClients.map((c) => c.id)));
+    setRetentionOffer('20% de descuento en tu próximo servicio');
+    setShowRetentionModal(true);
+  };
+
+  const handleSendRetention = () => {
+    setIsSending(true);
+    setTimeout(() => {
+      setIsSending(false);
+      setShowRetentionModal(false);
+      addNotification(
+        `Campaña de retención enviada a ${selectedClientIds.size} clientes de ${expandedBarber?.name}`,
+        'success'
+      );
+    }, 1500);
+  };
+
   const toggleClientSelection = (clientId) => {
     setSelectedClientIds((prev) => {
       const next = new Set(prev);
@@ -415,6 +437,14 @@ const BarberRating = () => {
 
   const getMessagePreview = (clientName) => {
     return messageTemplate.replace('{nombre}', clientName);
+  };
+
+  const retentionTemplate = expandedBarber
+    ? `Hola {nombre}, soy Lina de Al Pelo. Queremos invitarte esta semana a Al Pelo con un ${retentionOffer}. Te esperamos! Agenda aquí: https://book.weibook.co/alpelo-peluqueria`
+    : '';
+
+  const getRetentionPreview = (clientName) => {
+    return retentionTemplate.replace('{nombre}', clientName);
   };
 
   return (
@@ -697,6 +727,14 @@ const BarberRating = () => {
                         <span>Enviar encuesta de experiencia</span>
                       </button>
                       <button
+                        className={`${b}__retention-btn`}
+                        onClick={handleOpenRetention}
+                        type="button"
+                      >
+                        <UsersIcon />
+                        <span>Campaña de retención</span>
+                      </button>
+                      <button
                         className={`${b}__history-btn`}
                         onClick={(e) => e.stopPropagation()}
                         type="button"
@@ -794,6 +832,111 @@ const BarberRating = () => {
                 <>
                   <span className={`${b}__send-spinner`} />
                   <span>Enviando...</span>
+                </>
+              ) : (
+                <>
+                  <SendIcon />
+                  <span>Enviar a {selectedClientIds.size} clientes</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Retention Campaign Modal */}
+      <Modal
+        isOpen={showRetentionModal}
+        onClose={() => setShowRetentionModal(false)}
+        title="Campaña de retención"
+        className={`${b}__modal`}
+      >
+        <div className={`${b}__modal-content`}>
+          {/* Offer Input */}
+          <div className={`${b}__retention-offer`}>
+            <label className={`${b}__retention-offer-label`}>Oferta personalizada</label>
+            <input
+              type="text"
+              className={`${b}__retention-offer-input`}
+              value={retentionOffer}
+              onChange={(e) => setRetentionOffer(e.target.value)}
+              placeholder="Ej: 20% de descuento en tu próximo corte"
+            />
+          </div>
+
+          {/* Message Preview */}
+          <div className={`${b}__message-preview`}>
+            <span className={`${b}__message-preview-label`}>Vista previa del mensaje</span>
+            <div className={`${b}__message-bubble ${b}__message-bubble--retention`}>
+              <p>{getRetentionPreview('Carlos')}</p>
+            </div>
+          </div>
+
+          {/* Client Selection */}
+          <div className={`${b}__client-selection`}>
+            <div className={`${b}__client-selection-header`}>
+              <label className={`${b}__checkbox-wrapper`}>
+                <input
+                  type="checkbox"
+                  className={`${b}__checkbox`}
+                  checked={selectedClientIds.size === barberClients.length && barberClients.length > 0}
+                  onChange={toggleAllClients}
+                />
+                <span className={`${b}__checkbox-custom`}>
+                  {selectedClientIds.size === barberClients.length && barberClients.length > 0 && <CheckIcon />}
+                </span>
+                <span className={`${b}__checkbox-label`}>
+                  Seleccionar todos ({barberClients.length})
+                </span>
+              </label>
+              <span className={`${b}__selected-count`}>
+                {selectedClientIds.size} seleccionados
+              </span>
+            </div>
+            <div className={`${b}__client-check-list`}>
+              {barberClients.map((client) => (
+                <label
+                  key={client.id}
+                  className={`${b}__client-check-item ${selectedClientIds.has(client.id) ? `${b}__client-check-item--selected` : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    className={`${b}__checkbox`}
+                    checked={selectedClientIds.has(client.id)}
+                    onChange={() => toggleClientSelection(client.id)}
+                  />
+                  <span className={`${b}__checkbox-custom`}>
+                    {selectedClientIds.has(client.id) && <CheckIcon />}
+                  </span>
+                  <div className={`${b}__client-check-info`}>
+                    <span className={`${b}__client-check-name`}>{client.name}</span>
+                    <span className={`${b}__client-check-phone`}>{client.phone}</span>
+                  </div>
+                  {!client.acceptsWhatsApp && (
+                    <span className={`${b}__client-check-badge`}>Sin WhatsApp</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Send Button */}
+          <div className={`${b}__modal-footer`}>
+            <button
+              className={`${b}__cancel-btn`}
+              onClick={() => setShowRetentionModal(false)}
+            >
+              Cancelar
+            </button>
+            <button
+              className={`${b}__send-btn ${b}__send-btn--retention ${isSending ? `${b}__send-btn--sending` : ''}`}
+              onClick={handleSendRetention}
+              disabled={selectedClientIds.size === 0 || isSending}
+            >
+              {isSending ? (
+                <>
+                  <span className={`${b}__send-spinner`} />
+                  <span>Enviando campaña...</span>
                 </>
               ) : (
                 <>

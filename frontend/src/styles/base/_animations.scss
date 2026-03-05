@@ -570,6 +570,31 @@
 }
 
 // -----------------------------------------------
+// WHATSAPP ANIMATIONS
+// -----------------------------------------------
+@keyframes typingDots {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes messageAppear {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+// -----------------------------------------------
 // REDUCED MOTION - disable all animations
 // -----------------------------------------------
 @media (prefers-reduced-motion: reduce) {

@@ -495,6 +495,71 @@
     }
   }
 
+  // ---- Retention Button ----
+  &__retention-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
+    border: none;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, $color-accent-dark, $color-accent);
+    color: $color-white;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    @include transition;
+    @include press-effect;
+
+    &:hover {
+      background: linear-gradient(135deg, $color-accent, $color-accent-light);
+      box-shadow: 0 4px 16px rgba(139, 105, 20, 0.25);
+    }
+  }
+
+  &__retention-offer {
+    @include flex-column;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-md;
+  }
+
+  &__retention-offer-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+  }
+
+  &__retention-offer-input {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    background: $color-white;
+    @include transition;
+
+    &:focus {
+      outline: none;
+      border-color: $color-accent;
+      box-shadow: 0 0 0 3px rgba(139, 105, 20, 0.1);
+    }
+  }
+
+  &__message-bubble--retention {
+    border-left: 3px solid $color-accent;
+  }
+
+  &__send-btn--retention {
+    background: linear-gradient(135deg, $color-accent-dark, $color-accent) !important;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, $color-accent, $color-accent-light) !important;
+    }
+  }
+
   // ---- History Button ----
   &__history-btn {
     display: flex;

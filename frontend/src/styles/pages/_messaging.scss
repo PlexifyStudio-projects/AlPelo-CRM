@@ -2,1266 +2,130 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Messaging Page (WhatsApp Business)
-// BEM: .messaging
-// Premium glassmorphism + WhatsApp compliance
+// Messaging — Plantillas WhatsApp
 // ============================================
 
-// WhatsApp palette
-$wa-green: #25D366;
-$wa-green-dark: #1DA851;
-$wa-green-ghost: rgba(37, 211, 102, 0.08);
-$wa-green-glow: rgba(37, 211, 102, 0.2);
-$wa-chat-bg: #E5DDD5;
-$wa-bubble-out: #DCF8C6;
-$wa-header-bg: #075E54;
-$wa-blue-check: #53BDEB;
-
-// ============================================
-// Root
-// ============================================
 .messaging {
   @include page-enter;
-  @include stagger-children(0.05s, 8);
 
-  // ============================================
-  // Header
-  // ============================================
+  // --- Header ---
   &__header {
     @include flex-between;
     flex-wrap: wrap;
     gap: $spacing-md;
-    margin-bottom: $spacing-md;
-    animation: fadeInLeft 400ms $ease-out-expo both;
-    animation-delay: 0.05s;
+    margin-bottom: $spacing-lg;
+    animation: fadeIn 400ms $ease-out-expo both;
   }
 
   &__header-left {
     display: flex;
     align-items: center;
     gap: $spacing-md;
-    flex: 1;
-    min-width: 200px;
-  }
-
-  &__header-icon {
-    @include flex-center;
-    width: 48px;
-    height: 48px;
-    border-radius: $border-radius-md;
-    background: $wa-green-ghost;
-    color: $wa-green;
-    flex-shrink: 0;
-  }
-
-  &__header-text {
-    @include flex-column;
-    gap: $spacing-2xs;
   }
 
   &__title {
     @include heading($font-size-2xl);
-    margin-bottom: 0;
   }
 
-  &__subtitle {
-    font-size: $font-size-sm;
-    color: $color-gray-400;
-  }
-
-  // ============================================
-  // Navigation tabs
-  // ============================================
-  &__nav {
-    display: flex;
-    gap: $spacing-2xs;
-    background: $glass-bg;
-    border: $border-width solid $glass-border;
-    border-radius: $border-radius-full;
-    padding: $spacing-2xs;
-  }
-
-  &__nav-btn {
-    @include flex-center;
-    gap: $spacing-xs;
-    padding: $spacing-xs $spacing-md;
-    border: none;
-    border-radius: $border-radius-full;
-    background: transparent;
-    color: $color-gray-500;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    cursor: pointer;
-    @include transition;
-    white-space: nowrap;
-
-    &:hover {
-      color: $color-primary;
-      background: $color-primary-ghost;
-    }
-
-    &--active {
-      background: $color-primary;
-      color: $color-white;
-      box-shadow: $shadow-sm;
-
-      &:hover {
-        background: $color-primary-light;
-        color: $color-white;
-      }
-    }
-
-    @media (max-width: $breakpoint-md) {
-      span {
-        display: none;
-      }
-      padding: $spacing-sm;
-    }
-  }
-
-  // ============================================
-  // Compliance strip
-  // ============================================
-  &__compliance {
-    @include glass-card;
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-sm $spacing-lg;
-    margin-bottom: $spacing-lg;
-    animation: fadeInUp 400ms $ease-out-expo both;
-    animation-delay: 0.1s;
-    flex-wrap: wrap;
-  }
-
-  &__compliance-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-
-    svg {
-      color: $color-gray-400;
-      flex-shrink: 0;
-    }
-  }
-
-  &__compliance-label {
-    font-size: $font-size-2xs;
-    color: $color-gray-500;
-    white-space: nowrap;
-
-    strong {
-      color: $color-secondary;
-      font-weight: $font-weight-semibold;
-    }
-  }
-
-  &__compliance-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: $border-radius-full;
-    flex-shrink: 0;
-
-    &--green {
-      background: $wa-green;
-      box-shadow: 0 0 8px $wa-green-glow;
-      animation: compliancePulse 2s ease-in-out infinite;
-    }
-  }
-
-  &__compliance-divider {
-    width: 1px;
-    height: 16px;
-    background: $border-color-medium;
-    flex-shrink: 0;
-
-    @media (max-width: $breakpoint-md) {
-      display: none;
-    }
-  }
-
-  &__compliance-bar {
-    width: 60px;
-    height: 4px;
-    border-radius: $border-radius-full;
-    background: $color-gray-100;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-
-  &__compliance-bar-fill {
-    height: 100%;
-    border-radius: $border-radius-full;
-    background: $wa-green;
-    @include transition;
-  }
-
-  // ============================================
-  // Two-panel layout
-  // ============================================
-  &__layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: $spacing-md;
-    min-height: calc(100vh - 320px);
-    animation: fadeInUp 400ms $ease-out-expo both;
-    animation-delay: 0.15s;
-
-    @media (max-width: $breakpoint-lg) {
-      grid-template-columns: 1fr;
-      min-height: auto;
-    }
-  }
-
-  &__panel {
-    @include glass-card;
-    @include flex-column;
-    overflow: hidden;
-
-    &--left {
-      padding: $spacing-lg;
-      gap: $spacing-lg;
-      overflow-y: auto;
-      @include custom-scrollbar;
-    }
-
-    &--right {
-      padding: $spacing-lg;
-      gap: $spacing-lg;
-      overflow-y: auto;
-      @include custom-scrollbar;
-    }
-  }
-
-  // ============================================
-  // Section headers
-  // ============================================
-  &__section {
-    @include flex-column;
-    gap: $spacing-xs;
-  }
-
-  &__section-title {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
+  &__count {
+    font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
-    color: $color-secondary;
-
-    svg {
-      color: $color-primary;
-      flex-shrink: 0;
-    }
-  }
-
-  &__section-desc {
-    font-size: $font-size-2xs;
     color: $color-gray-400;
-    line-height: $line-height-base;
-  }
-
-  // ============================================
-  // Template cards
-  // ============================================
-  &__templates {
-    @include flex-column;
-    gap: $spacing-xs;
-  }
-
-  &__template {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-md;
-    border: $border-width solid $border-color;
-    border-radius: $border-radius-md;
-    background: $color-white;
-    cursor: pointer;
-    @include transition;
-    font-family: $font-primary;
-    text-align: left;
-    animation: fadeInUp 300ms $ease-out-expo both;
-    @include stagger-children(0.04s, 6);
-
-    &:hover {
-      border-color: $color-primary;
-      box-shadow: $shadow-sm;
-      transform: translateY(-1px);
-    }
-
-    &--active {
-      border-color: $color-primary;
-      background: $color-primary-ghost;
-      box-shadow: $shadow-primary-colored;
-
-      &:hover {
-        background: $color-primary-ghost;
-      }
-    }
-  }
-
-  &__template-icon {
-    @include flex-center;
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-md;
-    flex-shrink: 0;
-
-    &--warning {
-      background: $color-warning-bg;
-      color: $color-warning-dark;
-    }
-
-    &--info {
-      background: $color-info-bg;
-      color: $color-info-dark;
-    }
-
-    &--success {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--accent {
-      background: $color-accent-ghost;
-      color: $color-accent-dark;
-    }
-  }
-
-  &__template-content {
-    @include flex-column;
-    gap: $spacing-2xs;
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__template-name {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
-  }
-
-  &__template-desc {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    line-height: $line-height-base;
-    @include line-clamp(2);
-  }
-
-  &__template-meta {
-    @include flex-column;
-    align-items: flex-end;
-    gap: $spacing-2xs;
-    flex-shrink: 0;
-  }
-
-  &__template-audience {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2xs;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-500;
+    padding: $spacing-2xs $spacing-sm;
     background: $color-gray-50;
-    padding: $spacing-2xs $spacing-xs;
     border-radius: $border-radius-full;
-
-    svg {
-      width: 12px;
-      height: 12px;
-    }
+    border: 1px solid $border-color;
   }
 
-  // ============================================
-  // Audience selector
-  // ============================================
-  &__audience {
-    @include flex-column;
-    gap: $spacing-md;
-    padding-top: $spacing-md;
-    border-top: $border-width solid $border-color-light;
-    animation: fadeInUp 300ms $ease-out-expo both;
-  }
-
-  &__audience-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $spacing-xs;
-  }
-
-  &__audience-chip {
-    @include flex-center;
-    gap: $spacing-xs;
-    padding: $spacing-xs $spacing-md;
-    border: $border-width solid $border-color-medium;
-    border-radius: $border-radius-full;
-    background: transparent;
-    font-family: $font-primary;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-500;
-    cursor: pointer;
-    @include transition;
-    white-space: nowrap;
-
-    &:hover {
-      border-color: $color-primary;
-      color: $color-primary;
-      background: $color-primary-ghost;
-    }
-
-    &--active {
-      background: $color-primary;
-      border-color: $color-primary;
-      color: $color-white;
-
-      &:hover {
-        background: $color-primary-light;
-        border-color: $color-primary-light;
-        color: $color-white;
-      }
-    }
-  }
-
-  &__audience-chip-name {
-    font-weight: $font-weight-semibold;
-  }
-
-  &__audience-chip-count {
-    opacity: 0.8;
-    font-size: $font-size-2xs;
-  }
-
-  &__audience-chip-total {
-    opacity: 0.6;
-  }
-
-  &__audience-summary {
-    @include flex-column;
-    gap: $spacing-xs;
-  }
-
-  &__audience-ready {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-    padding: $spacing-sm $spacing-md;
-    background: rgba(37, 211, 102, 0.06);
-    border: $border-width solid rgba(37, 211, 102, 0.15);
-    border-radius: $border-radius-sm;
-    font-size: $font-size-sm;
-    color: $wa-green-dark;
-
-    strong {
-      font-weight: $font-weight-bold;
-    }
-
-    svg {
-      color: $wa-green;
-      flex-shrink: 0;
-    }
-  }
-
-  &__audience-no-consent {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-    padding: $spacing-sm $spacing-md;
-    background: $color-error-bg;
-    border: $border-width solid $color-error-border;
-    border-radius: $border-radius-sm;
-    font-size: $font-size-2xs;
-    color: $color-error-dark;
-
-    strong {
-      font-weight: $font-weight-bold;
-    }
-
-    svg {
-      flex-shrink: 0;
-    }
-  }
-
-  &__consent-notice {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-sm;
-    padding: $spacing-md;
-    background: $color-info-bg;
-    border: $border-width solid $color-info-border;
-    border-radius: $border-radius-sm;
-    font-size: $font-size-2xs;
-    color: $color-info-dark;
-    line-height: $line-height-base;
-
-    svg {
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-  }
-
-  // ============================================
-  // Compose area
-  // ============================================
-  &__compose {
-    @include flex-column;
-    gap: $spacing-md;
-  }
-
-  &__compose-header {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-  }
-
-  &__compose-icon {
-    @include flex-center;
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-md;
-    flex-shrink: 0;
-  }
-
-  &__compose-title-group {
-    @include flex-column;
-    gap: $spacing-2xs;
-  }
-
-  &__compose-title {
-    font-family: $font-heading;
-    font-size: $font-size-md;
-    font-weight: $font-weight-bold;
-    color: $color-secondary;
-    line-height: $line-height-tight;
-  }
-
-  &__compose-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: $spacing-2xs;
-    padding: $spacing-2xs $spacing-sm;
-    background: $color-success-bg;
-    color: $color-success-dark;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    border-radius: $border-radius-full;
-    width: fit-content;
-  }
-
-  &__compose-variables {
-    @include flex-column;
-    gap: $spacing-xs;
-  }
-
-  &__compose-variables-label {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    font-weight: $font-weight-medium;
-  }
-
-  &__compose-variables-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $spacing-xs;
-  }
-
-  &__variable-pill {
-    padding: $spacing-2xs $spacing-sm;
-    border: $border-width dashed $color-accent;
-    border-radius: $border-radius-full;
-    background: $color-accent-ghost;
-    font-family: 'Menlo', 'Consolas', monospace;
-    font-size: $font-size-2xs;
-    color: $color-accent-dark;
-    cursor: pointer;
-    @include transition;
-
-    &:hover {
-      background: rgba(201, 168, 76, 0.15);
-      border-color: $color-accent-dark;
-      transform: translateY(-1px);
-    }
-  }
-
-  &__compose-editor {
-    @include flex-column;
-    gap: $spacing-xs;
-  }
-
-  &__compose-textarea {
-    width: 100%;
-    padding: $spacing-md;
-    border: $border-width solid $border-color-medium;
-    border-radius: $border-radius-md;
-    background: $bg-input;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    color: $color-secondary;
-    resize: vertical;
-    min-height: 100px;
-    line-height: $line-height-base;
-    @include transition;
-    @include focus-ring;
-    box-sizing: border-box;
-
-    &::placeholder {
-      color: $color-gray-300;
-    }
-
-    &:focus {
-      border-color: $color-primary;
-      background: $color-white;
-    }
-  }
-
-  &__compose-meta {
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  &__compose-chars {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-
-    &--over {
-      color: $color-error;
-      font-weight: $font-weight-semibold;
-    }
-  }
-
-  // ============================================
-  // WhatsApp Preview
-  // ============================================
-  &__preview {
-    @include flex-column;
-    gap: $spacing-sm;
-  }
-
-  &__preview-label {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-400;
-    text-transform: uppercase;
-    letter-spacing: $letter-spacing-caps;
-  }
-
-  &__preview-phone {
-    border-radius: $border-radius-lg;
-    overflow: hidden;
-    border: $border-width solid $border-color-medium;
-    box-shadow: $shadow-md;
-  }
-
-  &__preview-bar {
-    display: flex;
-    align-items: center;
-    padding: $spacing-sm $spacing-md;
-    background: $wa-header-bg;
-    color: $color-white;
-  }
-
-  &__preview-bar-left {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-  }
-
-  &__preview-avatar-wa {
-    @include flex-center;
-    width: 28px;
-    height: 28px;
-    border-radius: $border-radius-full;
-    background: rgba(255, 255, 255, 0.15);
-    color: $color-white;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-  }
-
-  &__preview-name {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-  }
-
-  &__preview-chat {
+  // --- Search ---
+  &__search {
     position: relative;
-    min-height: 120px;
-    padding: $spacing-md;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    width: 280px;
+
+    @media (max-width: $breakpoint-sm) {
+      width: 100%;
+    }
   }
 
-  &__preview-bg {
+  &__search-icon {
     position: absolute;
-    inset: 0;
-    background-color: $wa-chat-bg;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c5bfb2' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    opacity: 0.7;
-  }
-
-  &__preview-empty {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-    padding: $spacing-xl $spacing-md;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
     color: $color-gray-400;
-    font-size: $font-size-sm;
-    font-style: italic;
-  }
-
-  &__preview-hint {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    text-align: center;
-    font-style: italic;
-  }
-
-  // ============================================
-  // WhatsApp bubble
-  // ============================================
-  &__bubble {
-    position: relative;
-    z-index: 1;
-    max-width: 90%;
-    padding: $spacing-sm $spacing-md;
-    padding-bottom: $spacing-lg;
-    background: $wa-bubble-out;
-    border-radius: $border-radius-sm;
-    border-top-right-radius: 0;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    align-self: flex-end;
-    animation: bubbleIn 300ms $ease-spring both;
-
-    &--modal {
-      max-width: 100%;
-    }
-  }
-
-  &__bubble-text {
-    font-size: $font-size-sm;
-    color: $color-secondary;
-    line-height: $line-height-base;
-    word-break: break-word;
-    margin: 0;
-  }
-
-  &__bubble-time {
-    position: absolute;
-    bottom: $spacing-xs;
-    right: $spacing-sm;
-    display: flex;
-    align-items: center;
-    gap: $spacing-2xs;
-    font-size: 0.625rem;
-    color: $color-gray-400;
-  }
-
-  // ============================================
-  // Send button
-  // ============================================
-  &__send-btn {
-    @include flex-center;
-    gap: $spacing-sm;
-    width: 100%;
-    padding: $spacing-md $spacing-lg;
-    border: none;
-    border-radius: $border-radius-md;
-    background: $wa-green;
-    color: $color-white;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    cursor: pointer;
-    @include transition;
-    box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
-    margin-top: auto;
-
-    &:hover:not(:disabled) {
-      background: $wa-green-dark;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
-    }
-
-    &:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    &--quick {
-      margin-top: $spacing-md;
-    }
-  }
-
-  // ============================================
-  // Empty compose state
-  // ============================================
-  &__empty-compose {
-    @include flex-column-center;
-    flex: 1;
-    gap: $spacing-md;
-    padding: $spacing-3xl;
-    text-align: center;
-  }
-
-  &__empty-compose-icon {
-    @include flex-center;
-    width: 64px;
-    height: 64px;
-    border-radius: $border-radius-full;
-    background: $color-primary-ghost;
-    color: $color-primary;
-
-    svg {
-      width: 28px;
-      height: 28px;
-    }
-  }
-
-  &__empty-compose-title {
-    font-family: $font-heading;
-    font-size: $font-size-md;
-    font-weight: $font-weight-bold;
-    color: $color-secondary;
-  }
-
-  &__empty-compose-text {
-    font-size: $font-size-sm;
-    color: $color-gray-400;
-    line-height: $line-height-base;
-    max-width: 280px;
-  }
-
-  // ============================================
-  // Quick message - Search
-  // ============================================
-  &__quick-search {
-    position: relative;
-  }
-
-  &__search-wrapper {
-    position: relative;
-
-    > svg:first-child {
-      position: absolute;
-      left: $spacing-md;
-      top: 50%;
-      transform: translateY(-50%);
-      color: $color-gray-300;
-      pointer-events: none;
-    }
+    pointer-events: none;
   }
 
   &__search-input {
     width: 100%;
-    padding: $spacing-sm $spacing-xl $spacing-sm $spacing-2xl;
-    border: $border-width solid $border-color-medium;
+    padding: $spacing-sm $spacing-sm $spacing-sm 38px;
     border-radius: $border-radius-md;
-    background: $bg-input;
-    font-family: $font-primary;
+    border: 1px solid $border-color;
+    background: $glass-bg;
     font-size: $font-size-sm;
     color: $color-secondary;
-    @include transition;
-    @include focus-ring;
-    box-sizing: border-box;
+    font-family: $font-primary;
+    transition: all 200ms $ease-out-quart;
 
     &::placeholder {
       color: $color-gray-300;
     }
 
     &:focus {
+      outline: none;
       border-color: $color-primary;
-      background: $color-white;
+      box-shadow: 0 0 0 3px $color-primary-ghost;
     }
   }
 
-  &__search-clear {
-    position: absolute;
-    right: $spacing-sm;
-    top: 50%;
-    transform: translateY(-50%);
-    @include flex-center;
-    width: 22px;
-    height: 22px;
-    border: none;
-    border-radius: $border-radius-full;
-    background: $color-gray-200;
-    color: $color-gray-500;
-    cursor: pointer;
-    @include transition;
-
-    &:hover {
-      background: $color-gray-300;
-    }
-  }
-
-  // ============================================
-  // Dropdown
-  // ============================================
-  &__dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
-    z-index: $z-dropdown;
-    @include glass($glass-bg-ultra);
-    border-radius: $border-radius-md;
-    box-shadow: $shadow-xl;
-    max-height: 320px;
-    overflow-y: auto;
-    @include custom-scrollbar;
-    animation: fadeInUp 200ms $ease-out-expo both;
-  }
-
-  &__dropdown-item {
+  // --- Category Filters ---
+  &__categories {
     display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    width: 100%;
-    padding: $spacing-sm $spacing-md;
-    border: none;
-    border-bottom: $border-width solid $border-color-light;
-    background: transparent;
-    cursor: pointer;
-    @include transition;
-    font-family: $font-primary;
-    text-align: left;
-
-    &:hover {
-      background: $color-primary-ghost;
-    }
-
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-
-  &__dropdown-avatar {
-    @include flex-center;
-    width: 32px;
-    height: 32px;
-    border-radius: $border-radius-full;
-    background: $color-primary;
-    color: $color-white;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    flex-shrink: 0;
-  }
-
-  &__dropdown-info {
-    @include flex-column;
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__dropdown-name {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-secondary;
-    @include truncate;
-  }
-
-  &__dropdown-phone {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-  }
-
-  &__dropdown-right {
-    display: flex;
-    align-items: center;
     gap: $spacing-xs;
-    flex-shrink: 0;
-  }
-
-  // ============================================
-  // Status & consent badges
-  // ============================================
-  &__status-badge {
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    padding: $spacing-2xs $spacing-xs;
-    border-radius: $border-radius-full;
-    white-space: nowrap;
-
-    &--accent {
-      background: $color-accent-ghost;
-      color: $color-accent-dark;
-    }
-
-    &--success {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--info {
-      background: $color-info-bg;
-      color: $color-info-dark;
-    }
-
-    &--warning {
-      background: $color-warning-bg;
-      color: $color-warning-dark;
-    }
-
-    &--danger {
-      background: $color-error-bg;
-      color: $color-error-dark;
-    }
-  }
-
-  &__consent-badge {
-    @include flex-center;
-    width: 20px;
-    height: 20px;
-    border-radius: $border-radius-full;
-    flex-shrink: 0;
-
-    &--yes {
-      background: $wa-green-ghost;
-      color: $wa-green;
-    }
-
-    &--no {
-      background: $color-error-bg;
-      color: $color-error;
-    }
-  }
-
-  // ============================================
-  // Client card (quick message)
-  // ============================================
-  &__client-card {
-    @include flex-column;
-    gap: $spacing-sm;
-    padding: $spacing-md;
-    border: $border-width solid rgba(37, 211, 102, 0.2);
-    border-radius: $border-radius-md;
-    background: rgba(37, 211, 102, 0.03);
-    animation: fadeInUp 300ms $ease-out-expo both;
-
-    &--no-consent {
-      border-color: $color-error-border;
-      background: $color-error-bg;
-    }
-  }
-
-  &__client-card-top {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-  }
-
-  &__client-card-avatar {
-    @include flex-center;
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-full;
-    background: $color-primary;
-    color: $color-white;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
-    flex-shrink: 0;
-  }
-
-  &__client-card-info {
-    @include flex-column;
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__client-card-name {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
-    @include truncate;
-  }
-
-  &__client-card-phone {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-  }
-
-  &__client-card-details {
-    display: flex;
     flex-wrap: wrap;
-    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+    padding-bottom: $spacing-md;
+    border-bottom: 1px solid $border-color-light;
+    animation: fadeIn 400ms $ease-out-expo both 0.1s;
   }
 
-  &__client-card-detail {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2xs;
-    font-size: $font-size-2xs;
+  &__cat-pill {
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color;
+    background: transparent;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
     color: $color-gray-500;
-
-    svg {
-      color: $color-gray-300;
-      flex-shrink: 0;
-    }
-  }
-
-  &__client-card-consent {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-    padding: $spacing-xs $spacing-sm;
-    border-radius: $border-radius-sm;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-medium;
-
-    svg {
-      flex-shrink: 0;
-    }
-
-    &--yes {
-      background: rgba(37, 211, 102, 0.08);
-      color: $wa-green-dark;
-    }
-
-    &--no {
-      background: $color-error-bg;
-      color: $color-error-dark;
-    }
-  }
-
-  // ============================================
-  // Quick template suggestions
-  // ============================================
-  &__quick-templates {
-    @include flex-column;
-    gap: $spacing-xs;
-    padding-top: $spacing-md;
-    border-top: $border-width solid $border-color-light;
-    animation: fadeInUp 300ms $ease-out-expo both;
-  }
-
-  &__quick-templates-label {
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-400;
-    text-transform: uppercase;
-    letter-spacing: $letter-spacing-caps;
-  }
-
-  &__quick-template-btn {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
-    border: $border-width solid $border-color;
-    border-radius: $border-radius-sm;
-    background: $color-white;
-    font-family: $font-primary;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-600;
     cursor: pointer;
-    @include transition;
-    text-align: left;
-
-    svg {
-      color: $color-primary;
-      flex-shrink: 0;
-    }
+    white-space: nowrap;
+    font-family: $font-primary;
+    @include press-effect;
 
     &:hover {
+      background: $color-gray-50;
+      color: $color-secondary;
+      border-color: $color-gray-200;
+    }
+
+    &--active {
+      background: $color-primary;
+      color: $color-white;
       border-color: $color-primary;
-      background: $color-primary-ghost;
-      color: $color-primary;
+
+      &:hover {
+        color: $color-white;
+      }
     }
   }
 
-  // ============================================
-  // Quick compose
-  // ============================================
-  &__quick-compose {
-    @include flex-column;
-    gap: $spacing-lg;
-    flex: 1;
-  }
-
-  &__quick-compose-header {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $wa-green-dark;
-  }
-
-  // ============================================
-  // No consent state
-  // ============================================
-  &__no-consent-state {
-    @include flex-column-center;
-    flex: 1;
-    gap: $spacing-md;
-    padding: $spacing-3xl;
-    text-align: center;
-  }
-
-  &__no-consent-icon {
-    @include flex-center;
-    width: 64px;
-    height: 64px;
-    border-radius: $border-radius-full;
-    background: $color-error-bg;
-    color: $color-error;
-
-    svg {
-      width: 28px;
-      height: 28px;
-    }
-  }
-
-  &__no-consent-title {
-    font-family: $font-heading;
-    font-size: $font-size-md;
-    font-weight: $font-weight-bold;
-    color: $color-secondary;
-  }
-
-  &__no-consent-text {
-    font-size: $font-size-sm;
-    color: $color-gray-400;
-    line-height: $line-height-base;
-    max-width: 320px;
-  }
-
-  &__no-consent-action {
-    padding: $spacing-sm $spacing-md;
-    background: $color-info-bg;
-    border-radius: $border-radius-sm;
-    font-size: $font-size-2xs;
-    color: $color-info-dark;
-  }
-
-  // ============================================
-  // History view
-  // ============================================
-  &__history {
-    @include flex-column;
-    gap: $spacing-lg;
-    animation: fadeInUp 400ms $ease-out-expo both;
-    animation-delay: 0.15s;
-  }
-
-  &__history-stats {
+  // --- Template Grid ---
+  &__grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: $spacing-md;
 
-    @media (max-width: $breakpoint-lg) {
+    @media (max-width: $breakpoint-xl) {
       grid-template-columns: repeat(2, 1fr);
     }
 
@@ -1270,451 +134,393 @@ $wa-blue-check: #53BDEB;
     }
   }
 
-  &__history-stat {
+  // --- Template Card ---
+  &__card {
     @include glass-card;
-    @include flex-center;
-    gap: $spacing-md;
-    padding: $spacing-md $spacing-lg;
-    justify-content: flex-start;
-  }
-
-  &__history-stat-icon {
-    @include flex-center;
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-md;
-    flex-shrink: 0;
-
-    &--sent {
-      background: $wa-green-ghost;
-      color: $wa-green;
-    }
-
-    &--delivered {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--opened {
-      background: $color-info-bg;
-      color: $color-info-dark;
-    }
-
-    &--contacts {
-      background: $wa-green-ghost;
-      color: $wa-green;
-    }
-  }
-
-  &__history-stat-content {
+    padding: 0;
+    overflow: hidden;
     @include flex-column;
-    gap: $spacing-2xs;
-  }
-
-  &__history-stat-value {
-    font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
-    color: $color-secondary;
-    line-height: $line-height-none;
-  }
-
-  &__history-stat-label {
-    @include caption-text;
-    font-size: $font-size-2xs;
-  }
-
-  // Campaign history list
-  &__history-list {
-    @include glass-card;
-    @include flex-column;
-    gap: $spacing-md;
-    padding: $spacing-lg;
-  }
-
-  &__history-items {
-    @include flex-column;
-    gap: $spacing-xs;
-  }
-
-  &__history-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-md;
-    border: $border-width solid $border-color;
-    border-radius: $border-radius-md;
-    background: $color-white;
-    @include transition;
     animation: fadeInUp 300ms $ease-out-expo both;
+    transition: all 250ms $ease-out-quart;
+
+    @for $i from 1 through 12 {
+      &:nth-child(#{$i}) {
+        animation-delay: #{$i * 0.04}s;
+      }
+    }
 
     &:hover {
-      border-color: $color-primary;
-      box-shadow: $shadow-sm;
-    }
-
-    @media (max-width: $breakpoint-md) {
-      flex-direction: column;
-      align-items: flex-start;
+      transform: translateY(-4px);
+      box-shadow: $shadow-lg;
     }
   }
 
-  &__history-item-left {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__history-item-icon {
-    @include flex-center;
-    width: 36px;
-    height: 36px;
-    border-radius: $border-radius-sm;
+  &__card-accent {
+    height: 3px;
+    width: 100%;
     flex-shrink: 0;
   }
 
-  &__history-item-info {
-    @include flex-column;
-    gap: $spacing-2xs;
-    min-width: 0;
+  &__card-header {
+    @include flex-between;
+    padding: $spacing-sm $spacing-md 0;
   }
 
-  &__history-item-name {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
-    @include truncate;
+  &__card-cat {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
   }
 
-  &__history-item-date {
+  &__card-stats {
+    display: flex;
+    gap: $spacing-sm;
+  }
+
+  &__card-sent {
     font-size: $font-size-2xs;
     color: $color-gray-400;
+    font-weight: $font-weight-medium;
   }
 
-  &__history-item-stats {
-    display: flex;
-    gap: $spacing-lg;
-    flex-shrink: 0;
-
-    @media (max-width: $breakpoint-md) {
-      gap: $spacing-md;
-      flex-wrap: wrap;
-    }
+  &__card-rate {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-success-dark;
   }
 
-  &__history-item-metric {
-    @include flex-column;
-    align-items: center;
-    gap: $spacing-2xs;
-  }
-
-  &__history-item-metric-value {
+  &__card-name {
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     color: $color-secondary;
+    padding: $spacing-xs $spacing-md 0;
   }
 
-  &__history-item-metric-label {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-  }
-
-  &__history-item-badge {
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    padding: $spacing-2xs $spacing-sm;
-    border-radius: $border-radius-full;
-    white-space: nowrap;
-    flex-shrink: 0;
-
-    &--success {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--info {
-      background: $color-info-bg;
-      color: $color-info-dark;
-    }
-
-    &--neutral {
-      background: $color-gray-50;
-      color: $color-gray-500;
-    }
-  }
-
-  // ============================================
-  // Confirmation Modal
-  // ============================================
-  &__modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: $z-modal-backdrop;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    @include flex-center;
-    animation: fadeIn 200ms $ease-smooth both;
-  }
-
-  &__modal {
-    @include glass($glass-bg-ultra);
-    border-radius: $border-radius-xl;
-    box-shadow: $shadow-2xl;
-    width: 90%;
-    max-width: 520px;
-    animation: fadeInUp 300ms $ease-out-expo both;
-    overflow: hidden;
-  }
-
-  &__modal-header {
-    @include flex-center;
-    gap: $spacing-sm;
-    padding: $spacing-lg $spacing-xl;
-    background: $wa-green;
-    color: $color-white;
-  }
-
-  &__modal-title {
-    font-family: $font-primary;
-    font-size: $font-size-md;
-    font-weight: $font-weight-semibold;
-    color: $color-white;
-  }
-
-  &__modal-body {
-    @include flex-column;
-    gap: $spacing-lg;
-    padding: $spacing-xl;
-  }
-
-  &__modal-summary {
-    @include flex-column;
-    gap: $spacing-xs;
-    padding: $spacing-md;
-    background: $color-gray-50;
-    border-radius: $border-radius-md;
-  }
-
-  &__modal-summary-row {
-    @include flex-between;
-    gap: $spacing-sm;
-
-    &--warning {
-      color: $color-error;
-    }
-  }
-
-  &__modal-summary-label {
-    font-size: $font-size-sm;
+  &__card-body {
+    font-size: $font-size-xs;
     color: $color-gray-500;
-  }
-
-  &__modal-summary-value {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
-  }
-
-  &__modal-preview-section {
-    @include flex-column;
-    gap: $spacing-sm;
-  }
-
-  &__modal-preview-label {
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-400;
-    text-transform: uppercase;
-    letter-spacing: $letter-spacing-caps;
-  }
-
-  &__modal-preview-bubble {
-    padding: $spacing-md;
-    background: $wa-chat-bg;
-    border-radius: $border-radius-md;
-  }
-
-  &__modal-consent-notice {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-sm;
-    padding: $spacing-md;
-    background: $color-info-bg;
-    border: $border-width solid $color-info-border;
-    border-radius: $border-radius-sm;
-    font-size: $font-size-2xs;
-    color: $color-info-dark;
     line-height: $line-height-base;
-
-    svg {
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
+    padding: $spacing-xs $spacing-md;
+    flex: 1;
   }
 
-  &__modal-actions {
+  &__card-vars {
     display: flex;
-    gap: $spacing-sm;
-    padding: $spacing-md $spacing-xl;
-    border-top: $border-width solid $border-color;
-    justify-content: flex-end;
+    gap: $spacing-2xs;
+    flex-wrap: wrap;
+    padding: 0 $spacing-md $spacing-sm;
   }
 
-  &__modal-btn {
-    @include flex-center;
-    gap: $spacing-xs;
-    padding: $spacing-sm $spacing-xl;
-    border: none;
-    border-radius: $border-radius-md;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    cursor: pointer;
-    @include transition;
+  &__card-var {
+    font-size: 9px;
+    font-weight: $font-weight-semibold;
+    padding: 1px $spacing-xs;
+    border-radius: $border-radius-xs;
+    background: $color-primary-ghost;
+    color: $color-primary;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
 
-    &--cancel {
-      background: transparent;
+  &__card-actions {
+    display: flex;
+    border-top: 1px solid $border-color-light;
+  }
+
+  &__card-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm;
+    border: none;
+    background: transparent;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    font-family: $font-primary;
+    @include press-effect;
+
+    &--preview {
       color: $color-gray-500;
-      border: $border-width solid $border-color-medium;
+      border-right: 1px solid $border-color-light;
 
       &:hover {
         background: $color-gray-50;
+        color: $color-secondary;
       }
     }
 
-    &--confirm {
-      background: $wa-green;
-      color: $color-white;
-      box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+    &--send {
+      color: $wa-green;
 
       &:hover {
-        background: $wa-green-dark;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+        background: rgba($wa-green, 0.06);
+        color: $wa-green-dark;
       }
     }
   }
-}
 
-// ============================================
-// Animations
-// ============================================
-@keyframes compliancePulse {
-  0%, 100% {
-    box-shadow: 0 0 4px rgba(37, 211, 102, 0.2);
-  }
-  50% {
-    box-shadow: 0 0 12px rgba(37, 211, 102, 0.5);
-  }
-}
-
-@keyframes bubbleIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.9) translateY(8px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-// ============================================
-// PREMIUM MESSAGING ENHANCEMENTS
-// ============================================
-
-// Template card press feedback
-.messaging__template {
-  @include press-effect;
-}
-
-// Audience chip press feedback
-.messaging__audience-chip {
-  @include press-effect;
-}
-
-// Send button: enhanced active state with scale spring
-.messaging__send-btn {
-  @include press-effect;
-
-  // Ripple effect on click
-  position: relative;
-  overflow: hidden;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    transform: translate(-50%, -50%);
-    transition: width 400ms $ease-out-expo, height 400ms $ease-out-expo, opacity 400ms $ease-out-expo;
-    pointer-events: none;
-    opacity: 0;
+  // --- Empty State ---
+  &__empty {
+    @include flex-column-center;
+    padding: $spacing-3xl;
+    color: $color-gray-400;
+    font-size: $font-size-sm;
+    font-style: italic;
   }
 
-  &:active::after {
-    width: 200px;
-    height: 200px;
-    opacity: 1;
-    transition-duration: 0ms;
+  // --- Modal Overlay ---
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    @include flex-center;
+    z-index: $z-modal;
+    animation: fadeIn 200ms $ease-out-quart both;
+    backdrop-filter: blur(4px);
   }
-}
 
-// Nav button: press and active glow
-.messaging__nav-btn {
-  @include press-effect;
+  // --- Modal ---
+  &__modal {
+    background: $color-white;
+    border-radius: $border-radius-lg;
+    width: 520px;
+    max-width: 90vw;
+    max-height: 85vh;
+    @include flex-column;
+    box-shadow: $shadow-2xl;
+    animation: fadeInScale 300ms $ease-out-expo both;
+    overflow: hidden;
 
-  &--active {
-    position: relative;
-
-    // Subtle glow below active tab
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 20%;
-      right: 20%;
-      height: 4px;
-      background: radial-gradient(ellipse, rgba(45, 90, 61, 0.2) 0%, transparent 70%);
-      filter: blur(2px);
-      pointer-events: none;
+    &--send {
+      width: 580px;
     }
   }
-}
 
-// Modal: enhanced backdrop and entrance
-.messaging__modal-overlay {
-  // Already has blur - add subtle vignette
-  background: radial-gradient(
-    ellipse at center,
-    rgba(0, 0, 0, 0.4) 0%,
-    rgba(0, 0, 0, 0.6) 100%
-  );
-}
-
-// Quick template button: hover lift
-.messaging__quick-template-btn {
-  @include press-effect;
-}
-
-// Variable pill: bounce on hover
-.messaging__variable-pill {
-  &:hover {
-    animation: elasticPop 400ms $ease-spring both;
+  &__modal-header {
+    @include flex-between;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
   }
-}
 
-// History item: stagger entrance
-.messaging__history-items {
-  @include stagger-fade-in($stagger-base, 10);
-}
+  &__modal-title {
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+  }
 
-// History stat: counter animation
-.messaging__history-stat-value {
-  @include counter-roll-in(0.2s);
+  &__modal-close {
+    @include flex-center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: $color-gray-400;
+    cursor: pointer;
+    border-radius: $border-radius-full;
+
+    &:hover {
+      background: $color-gray-50;
+      color: $color-secondary;
+    }
+  }
+
+  &__modal-body {
+    padding: $spacing-lg;
+    overflow-y: auto;
+    flex: 1;
+    @include custom-scrollbar;
+  }
+
+  &__modal-cat {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+    margin-bottom: $spacing-xs;
+    display: block;
+  }
+
+  &__modal-name {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    margin-bottom: $spacing-md;
+  }
+
+  // --- Preview Bubble ---
+  &__preview-bubble {
+    background: $wa-sent-bubble;
+    padding: $spacing-md;
+    border-radius: $border-radius-md;
+    border-bottom-right-radius: 4px;
+    margin-bottom: $spacing-md;
+
+    p {
+      font-size: $font-size-sm;
+      color: $color-secondary;
+      line-height: $line-height-base;
+    }
+  }
+
+  &__modal-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+
+    span {
+      font-size: $font-size-xs;
+      color: $color-gray-400;
+    }
+  }
+
+  // --- Send Modal: Segment Filters ---
+  &__segment-filters {
+    display: flex;
+    gap: $spacing-xs;
+    flex-wrap: wrap;
+    margin-bottom: $spacing-md;
+  }
+
+  &__segment-btn {
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color;
+    background: transparent;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+    cursor: pointer;
+    font-family: $font-primary;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover {
+      background: $color-gray-50;
+    }
+
+    &--active {
+      background: $color-primary;
+      color: $color-white;
+      border-color: $color-primary;
+    }
+  }
+
+  // --- Send Modal: Client List ---
+  &__client-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    margin-bottom: $spacing-md;
+    @include custom-scrollbar;
+  }
+
+  &__client-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-bottom: 1px solid $border-color-light;
+    cursor: pointer;
+    transition: background 150ms $ease-out-quart;
+    animation: fadeInUp 200ms $ease-out-expo both;
+
+    @for $i from 1 through 20 {
+      &:nth-child(#{$i}) {
+        animation-delay: #{$i * 0.025}s;
+      }
+    }
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: $color-gray-50;
+    }
+
+    &--selected {
+      background: $color-primary-ghost;
+
+      &:hover {
+        background: rgba(45, 90, 61, 0.06);
+      }
+    }
+  }
+
+  &__client-check {
+    accent-color: $color-primary;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  &__client-avatar {
+    @include flex-center;
+    width: 32px;
+    height: 32px;
+    border-radius: $border-radius-full;
+    background: $color-gray-100;
+    color: $color-gray-500;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+  }
+
+  &__client-info {
+    @include flex-column;
+    gap: 1px;
+    flex: 1;
+  }
+
+  &__client-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+  }
+
+  &__client-phone {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+  }
+
+  // --- Send Modal: Footer ---
+  &__send-footer {
+    @include flex-between;
+    padding-top: $spacing-md;
+    border-top: 1px solid $border-color;
+  }
+
+  &__send-count {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+  }
+
+  &__send-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-lg;
+    border: none;
+    border-radius: $border-radius-md;
+    background: $wa-green;
+    color: $color-white;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    cursor: pointer;
+    font-family: $font-primary;
+    @include press-effect;
+
+    &:hover {
+      background: $wa-green-dark;
+      transform: translateY(-1px);
+    }
+  }
 }

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { mockClients, mockBarbers, mockVisitHistory, mockServices, mockAppointments } from '../../data/mockData';
+import { mockClients, mockBarbers, mockVisitHistory, mockServices, mockAppointments, mockWhatsAppStats, mockWhatsAppTemplates, mockWhatsAppConversations } from '../../data/mockData';
 import { enrichClients, computeKPIs, STATUS, STATUS_META, getStatusExplanation } from '../../utils/clientStatus';
 import { formatCurrency, formatDate, daysSince } from '../../utils/formatters';
 
@@ -17,40 +17,40 @@ const MONTH_NAMES = [
 
 const SUGGESTED_PROMPTS = [
   {
+    icon: '📨',
+    text: 'Dame los clientes de Victor en los últimos 6 meses',
+    description: 'Clientes por barbero',
+    category: 'clientes',
+  },
+  {
+    icon: '📊',
+    text: '¿Cuántos mensajes se enviaron esta semana?',
+    description: 'Stats de WhatsApp',
+    category: 'whatsapp',
+  },
+  {
+    icon: '🏆',
+    text: '¿Qué plantilla tiene mejor tasa de respuesta?',
+    description: 'Rendimiento de plantillas',
+    category: 'whatsapp',
+  },
+  {
+    icon: '⚠️',
+    text: 'Clientes que no responden hace 7+ días',
+    description: 'Seguimiento pendiente',
+    category: 'whatsapp',
+  },
+  {
     icon: '👑',
     text: '¿Quiénes son mis clientes VIP?',
     description: 'Clientes estrella del negocio',
     category: 'clientes',
   },
   {
-    icon: '⚠️',
-    text: '¿Cuántos clientes están en riesgo?',
-    description: 'Clientes que podrían perderse',
-    category: 'clientes',
-  },
-  {
-    icon: '💰',
-    text: '¿Cuál es mi ticket promedio?',
-    description: 'Gasto promedio por visita',
-    category: 'finanzas',
-  },
-  {
-    icon: '📅',
-    text: '¿Qué clientes no vienen hace más de un mes?',
-    description: 'Clientes ausentes 30+ días',
-    category: 'clientes',
-  },
-  {
-    icon: '📊',
-    text: 'Resumen del negocio',
-    description: 'KPIs y estado general',
-    category: 'finanzas',
-  },
-  {
-    icon: '💈',
-    text: '¿Cuál barbero tiene más clientes?',
-    description: 'Ranking de profesionales',
-    category: 'equipo',
+    icon: '📋',
+    text: 'Resumen de conversaciones de hoy',
+    description: 'Actividad WhatsApp del dia',
+    category: 'whatsapp',
   },
 ];
 
@@ -255,24 +255,25 @@ const generateAIResponse = (message, enrichedClients, kpis, conversationContext)
   // ==========================================
   // 0. GREETINGS
   // ==========================================
-  if (/^(hola|hey|buenas|buenos dias|buenas tardes|buenas noches|que tal|ey|saludos|hi)\b/.test(lower)) {
+  if (/^(hola|hey|buenas|buenos dias|buenas tardes|buenas noches|que tal|ey|saludos|hi|quiubo|parce)\b/.test(lower)) {
     const hour = now.getHours();
     const greeting = hour < 12 ? 'Buenos dias' : hour < 18 ? 'Buenas tardes' : 'Buenas noches';
     return {
-      content: `<strong>${greeting}!</strong> Soy el asistente de inteligencia de AlPelo.
+      content: `<strong>${greeting}, parce!</strong> Soy <strong>Jarvis</strong>, el cerebro de Al Pelo.
 
-Tengo acceso a toda la informacion de tus <strong>${kpis.total} clientes</strong>, el equipo de <strong>${mockBarbers.length} profesionales</strong>, historial de visitas, ingresos y mucho mas.
+Manejo toda la info de tus <strong>${kpis.total} clientes</strong>, el equipo de <strong>${mockBarbers.length} profesionales</strong>, las conversaciones de WhatsApp, plantillas y mucho mas.
 
-<strong>Preguntame lo que necesites, por ejemplo:</strong>
+<strong>Preguntame lo que necesites:</strong>
 <ul>
-<li>"Quienes son mis clientes VIP?"</li>
-<li>"Cuanto ha gastado Carlos Mendoza?"</li>
-<li>"Que clientes no vienen hace mas de un mes?"</li>
+<li>"¿Cuantos mensajes se enviaron esta semana?"</li>
+<li>"¿Que plantilla tiene mejor respuesta?"</li>
+<li>"Clientes que no responden hace 7+ dias"</li>
+<li>"Dame los clientes de Victor"</li>
+<li>"¿Quienes son mis VIP?"</li>
 <li>"Resumen del negocio"</li>
-<li>"Genera campana de reactivacion"</li>
 </ul>
 
-Estoy listo para ayudarte a tomar decisiones inteligentes para el negocio.`,
+Listo pa' lo que necesites!`,
       context: newContext,
     };
   }
@@ -282,7 +283,7 @@ Estoy listo para ayudarte a tomar decisiones inteligentes para el negocio.`,
   // ==========================================
   if (/^(gracias|thanks|genial|excelente|perfecto|listo|vale|ok|buenisimo|chevere|bacano)\b/.test(lower)) {
     return {
-      content: `Con gusto! Si necesitas algo mas, aqui estoy. Puedo ayudarte con informacion de clientes, finanzas, el equipo, campanas de marketing y mucho mas.`,
+      content: `Con mucho gusto, parce! Aqui sigo pa' lo que necesites. Preguntame sobre clientes, WhatsApp, plantillas, el equipo o lo que se te ocurra.`,
       context: newContext,
     };
   }
@@ -1548,6 +1549,107 @@ ${clientProfileHTML(contextClient)}`,
   }
 
   // ==========================================
+  // WA-1. WHATSAPP MESSAGE STATS
+  // ==========================================
+  if ((lower.includes('mensaje') || lower.includes('whatsapp')) && (lower.includes('cuantos') || lower.includes('enviaron') || lower.includes('semana') || lower.includes('hoy') || lower.includes('stats') || lower.includes('estadisticas'))) {
+    const stats = mockWhatsAppStats;
+    const metrics = [
+      metricHTML('Hoy', stats.messagesToday, '#22B07E'),
+      metricHTML('Esta semana', stats.messagesThisWeek, '#4B8FE0'),
+      metricHTML('Este mes', stats.messagesThisMonth, '#1A1A1A'),
+      metricHTML('Conversaciones activas', stats.conversationsActive, '#A8873A'),
+      metricHTML('Tasa de respuesta', stats.responseRate + '%', '#22B07E'),
+      metricHTML('Tiempo promedio', stats.avgResponseTime, '#6B6B63'),
+    ];
+
+    return {
+      content: `<strong>📊 Estadisticas de WhatsApp</strong>
+
+${metricsGridHTML(metrics)}
+
+Se han enviado <strong>${stats.templatesSentWeek} plantillas</strong> esta semana (<strong>${stats.templatesSentToday} hoy</strong>). Hay <strong>${stats.clientsWithoutContact7Days} clientes</strong> sin contacto en los ultimos 7 dias.`,
+      context: newContext,
+    };
+  }
+
+  // ==========================================
+  // WA-2. TEMPLATE PERFORMANCE
+  // ==========================================
+  if ((lower.includes('plantilla') || lower.includes('template')) && (lower.includes('mejor') || lower.includes('tasa') || lower.includes('respuesta') || lower.includes('rendimiento') || lower.includes('top'))) {
+    const sorted = [...mockWhatsAppTemplates].sort((a, b) => b.responseRate - a.responseRate).slice(0, 10);
+
+    const rows = sorted.map((t, i) => [
+      `<strong>${i + 1}.</strong>`,
+      `<strong>${t.name}</strong>`,
+      t.category,
+      `${t.timesSent} env.`,
+      `<strong style="color:#22B07E">${t.responseRate}%</strong>`,
+    ]);
+
+    return {
+      content: `<strong>🏆 Top 10 plantillas por tasa de respuesta:</strong>
+
+${dataTableHTML(['#', 'Plantilla', 'Categoria', 'Enviadas', 'Respuesta'], rows)}
+
+La plantilla <strong>"${sorted[0].name}"</strong> lidera con <strong>${sorted[0].responseRate}%</strong> de respuesta. Las plantillas VIP y de fidelizacion tienden a tener las mejores tasas.`,
+      context: newContext,
+    };
+  }
+
+  // ==========================================
+  // WA-3. CONVERSATIONS TODAY / RECENT
+  // ==========================================
+  if ((lower.includes('conversacion') || lower.includes('chat')) && (lower.includes('hoy') || lower.includes('reciente') || lower.includes('resumen') || lower.includes('actividad'))) {
+    const today = mockWhatsAppConversations
+      .filter((c) => c.lastMessageTime.startsWith('2026-03-04'))
+      .sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+
+    const rows = today.map((c) => {
+      const time = new Date(c.lastMessageTime).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+      return [
+        `<strong>${c.clientName}</strong>`,
+        c.unreadCount > 0 ? `<strong style="color:#E05252">${c.unreadCount} sin leer</strong>` : '✅ Leido',
+        c.lastMessageFrom === 'client' ? '📥 Cliente' : '📤 Negocio',
+        time,
+      ];
+    });
+
+    return {
+      content: `<strong>📋 Conversaciones de hoy (${today.length}):</strong>
+
+${rows.length > 0 ? dataTableHTML(['Cliente', 'Estado', 'Ultimo msg', 'Hora'], rows) : '<p>No hay conversaciones registradas hoy.</p>'}
+
+${today.filter((c) => c.unreadCount > 0).length > 0 ? `⚠️ Hay <strong>${today.filter((c) => c.unreadCount > 0).length} conversaciones</strong> con mensajes sin leer.` : '✅ Todas las conversaciones estan al dia.'}`,
+      context: newContext,
+    };
+  }
+
+  // ==========================================
+  // WA-4. CLIENTS NOT RESPONDING
+  // ==========================================
+  if ((lower.includes('no responde') || lower.includes('sin respuesta') || lower.includes('sin contacto') || lower.includes('no contesta')) && (lower.includes('7') || lower.includes('dia') || lower.includes('semana'))) {
+    const stats = mockWhatsAppStats;
+    return {
+      content: `<strong>⚠️ Clientes sin contacto reciente:</strong>
+
+${metricsGridHTML([
+  metricHTML('Sin contacto 7+ dias', stats.clientsWithoutContact7Days, '#D4A017'),
+  metricHTML('Sin contacto 30+ dias', stats.clientsWithoutContact30Days, '#E05252'),
+])}
+
+Te recomiendo enviar plantillas de <strong>reactivacion</strong> a estos clientes. Las mas efectivas son:
+<ul>
+<li><strong>Reactivacion 30 Dias</strong> (45% respuesta)</li>
+<li><strong>Reactivacion 45 Dias</strong> (35% respuesta)</li>
+<li><strong>Reactivacion 60 Dias + Oferta</strong> (28% respuesta)</li>
+</ul>
+
+¿Quieres que te muestre el detalle de alguna plantilla?`,
+      context: newContext,
+    };
+  }
+
+  // ==========================================
   // 28. DIRECT CLIENT NAME LOOKUP (last resort before default)
   // ==========================================
   const possibleClient = extractClientName(message, enrichedClients);
@@ -1565,20 +1667,24 @@ ${clientProfileHTML(possibleClient)}`,
   // DEFAULT RESPONSE
   // ==========================================
   return {
-    content: `No estoy seguro de como responder a eso, pero como asistente de AlPelo puedo ayudarte con muchas cosas. Aqui tienes una guia rapida:
+    content: `Ey parce, no pille bien esa pregunta, pero como Jarvis de AlPelo te puedo ayudar con un monton de cosas. Aqui va la guia:
 
 <div class="chat-ai__help-grid">
   <div class="chat-ai__help-item">
-    <strong>👥 Clientes</strong>
-    <span>VIPs, en riesgo, inactivos, perfiles por nombre, busqueda por letra, fuente de adquisicion, WhatsApp</span>
+    <strong>💬 WhatsApp</strong>
+    <span>Mensajes enviados, conversaciones activas, clientes sin respuesta, estadisticas de mensajeria</span>
   </div>
   <div class="chat-ai__help-item">
-    <strong>💰 Finanzas</strong>
-    <span>Ingresos del mes, ticket promedio, mejor/peor mes, desglose por servicio</span>
+    <strong>📋 Plantillas</strong>
+    <span>Mejor tasa de respuesta, mas enviadas, rendimiento por categoria</span>
+  </div>
+  <div class="chat-ai__help-item">
+    <strong>👥 Clientes</strong>
+    <span>VIPs, en riesgo, inactivos, perfiles por nombre, busqueda por letra</span>
   </div>
   <div class="chat-ai__help-item">
     <strong>💈 Equipo</strong>
-    <span>Ranking de barberos, clientes por barbero, disponibilidad, especialidades</span>
+    <span>Ranking de barberos, clientes por barbero, especialidades</span>
   </div>
   <div class="chat-ai__help-item">
     <strong>✂️ Servicios</strong>
@@ -1588,18 +1694,15 @@ ${clientProfileHTML(possibleClient)}`,
     <strong>🎂 Cumpleanos</strong>
     <span>Hoy, este mes, proximos, por mes especifico</span>
   </div>
-  <div class="chat-ai__help-item">
-    <strong>📣 Acciones</strong>
-    <span>Campanas de reactivacion, mensajes, agendar citas</span>
-  </div>
 </div>
 
-<strong>Algunas ideas para empezar:</strong>
+<strong>Preguntame cosas como:</strong>
 <ul>
-<li>"Quienes son mis clientes VIP?"</li>
-<li>"Info de Carlos Mendoza" (y luego pregunta "cuanto gasto?" como seguimiento)</li>
-<li>"Que clientes no vienen hace mas de un mes?"</li>
-<li>"Resumen del negocio"</li>
+<li>"¿Cuantos mensajes se enviaron esta semana?"</li>
+<li>"¿Que plantilla tiene mejor tasa de respuesta?"</li>
+<li>"Resumen de conversaciones de hoy"</li>
+<li>"Clientes que no responden hace 7+ dias"</li>
+<li>"¿Quienes son mis clientes VIP?"</li>
 </ul>`,
     context: newContext,
   };
@@ -1610,12 +1713,12 @@ ${clientProfileHTML(possibleClient)}`,
 // ============================================
 
 const QUICK_CHIPS = [
+  { icon: '📊', text: '¿Cuántos mensajes se enviaron esta semana?' },
+  { icon: '📋', text: '¿Qué plantilla tiene mejor tasa de respuesta?' },
+  { icon: '💬', text: 'Resumen de conversaciones de hoy' },
+  { icon: '⚠️', text: 'Clientes que no responden hace 7+ días' },
   { icon: '👑', text: '¿Quiénes son mis clientes VIP?' },
-  { icon: '⚠️', text: '¿Cuántos clientes están en riesgo?' },
-  { icon: '💰', text: '¿Cuál es mi ticket promedio?' },
-  { icon: '📅', text: '¿Qué clientes no vienen hace más de un mes?' },
-  { icon: '📊', text: 'Resumen del negocio' },
-  { icon: '💈', text: '¿Cuál barbero tiene más clientes?' },
+  { icon: '💈', text: 'Resumen del negocio' },
 ];
 
 const ChatAI = () => {
@@ -1758,7 +1861,7 @@ const ChatAI = () => {
               </svg>
             </div>
             <div>
-              <h2 className="chat-ai__title">Asistente AlPelo</h2>
+              <h2 className="chat-ai__title">Jarvis IA</h2>
               <p className="chat-ai__subtitle">
                 <span className="chat-ai__status-dot" />
                 En linea
@@ -1812,9 +1915,9 @@ const ChatAI = () => {
                     <line x1="12" y1="6" x2="12" y2="12" />
                   </svg>
                 </div>
-                <h3 className="chat-ai__welcome-title">¿En que puedo ayudarte hoy?</h3>
+                <h3 className="chat-ai__welcome-title">Jarvis, a tu servicio</h3>
                 <p className="chat-ai__welcome-text">
-                  Conozco a todos tus clientes, sus preferencias y el estado de tu negocio. Preguntame lo que necesites.
+                  Conozco a todos tus clientes, las conversaciones de WhatsApp, las plantillas y el estado del negocio. Preguntame lo que necesites, parce.
                 </p>
                 <div className="chat-ai__prompts">
                   {SUGGESTED_PROMPTS.map((prompt, index) => (
@@ -1937,15 +2040,15 @@ const ChatAI = () => {
         {sidebarOpen && (
           <aside className="chat-ai__sidebar">
             <div className="chat-ai__sidebar-section">
-              <h4 className="chat-ai__sidebar-title">Resumen rapido</h4>
+              <h4 className="chat-ai__sidebar-title">WhatsApp hoy</h4>
               <div className="chat-ai__stats">
                 <div className="chat-ai__stat">
-                  <span className="chat-ai__stat-value">{kpis.total}</span>
-                  <span className="chat-ai__stat-label">Clientes totales</span>
+                  <span className="chat-ai__stat-value">{mockWhatsAppStats.messagesToday}</span>
+                  <span className="chat-ai__stat-label">Mensajes hoy</span>
                 </div>
                 <div className="chat-ai__stat">
-                  <span className="chat-ai__stat-value chat-ai__stat-value--success">{kpis.active}</span>
-                  <span className="chat-ai__stat-label">Activos</span>
+                  <span className="chat-ai__stat-value chat-ai__stat-value--success">{mockWhatsAppStats.conversationsActive}</span>
+                  <span className="chat-ai__stat-label">Chats activos</span>
                 </div>
                 <div className="chat-ai__stat">
                   <span className="chat-ai__stat-value chat-ai__stat-value--warning">{atRiskCount}</span>
@@ -1959,16 +2062,16 @@ const ChatAI = () => {
             </div>
 
             <div className="chat-ai__sidebar-section">
-              <h4 className="chat-ai__sidebar-title">Retencion</h4>
+              <h4 className="chat-ai__sidebar-title">Tasa de respuesta</h4>
               <div className="chat-ai__retention">
                 <div className="chat-ai__retention-bar">
                   <div
                     className="chat-ai__retention-fill"
-                    style={{ width: `${kpis.retentionRate}%` }}
+                    style={{ width: `${mockWhatsAppStats.responseRate}%` }}
                   />
                 </div>
                 <span className="chat-ai__retention-label">
-                  {kpis.retentionRate}% tasa de retencion
+                  {mockWhatsAppStats.responseRate}% respuesta WhatsApp
                 </span>
               </div>
             </div>
@@ -1976,26 +2079,26 @@ const ChatAI = () => {
             <div className="chat-ai__sidebar-section">
               <h4 className="chat-ai__sidebar-title">Temas sugeridos</h4>
               <div className="chat-ai__topics">
-                <button className="chat-ai__topic" onClick={() => handlePromptClick('Resumen del negocio')}>
-                  📊 Resumen del negocio
+                <button className="chat-ai__topic" onClick={() => handlePromptClick('¿Cuántos mensajes se enviaron esta semana?')}>
+                  📊 Stats de WhatsApp
+                </button>
+                <button className="chat-ai__topic" onClick={() => handlePromptClick('¿Qué plantilla tiene mejor tasa de respuesta?')}>
+                  📋 Mejor plantilla
+                </button>
+                <button className="chat-ai__topic" onClick={() => handlePromptClick('Resumen de conversaciones de hoy')}>
+                  💬 Conversaciones hoy
+                </button>
+                <button className="chat-ai__topic" onClick={() => handlePromptClick('Clientes que no responden hace 7+ días')}>
+                  ⚠️ Sin respuesta 7+ dias
                 </button>
                 <button className="chat-ai__topic" onClick={() => handlePromptClick('¿Quiénes son mis clientes VIP?')}>
                   👑 Clientes VIP
                 </button>
-                <button className="chat-ai__topic" onClick={() => handlePromptClick('¿Cuántos clientes están en riesgo?')}>
-                  ⚠️ Clientes en riesgo
-                </button>
-                <button className="chat-ai__topic" onClick={() => handlePromptClick('¿Qué clientes no vienen hace más de un mes?')}>
-                  📅 Ausentes +30 dias
-                </button>
-                <button className="chat-ai__topic" onClick={() => handlePromptClick('¿Cuál es mi ticket promedio?')}>
-                  💰 Ticket promedio
-                </button>
-                <button className="chat-ai__topic" onClick={() => handlePromptClick('¿Cuál barbero tiene más clientes?')}>
-                  💈 Ranking barberos
+                <button className="chat-ai__topic" onClick={() => handlePromptClick('Resumen del negocio')}>
+                  💈 Resumen negocio
                 </button>
                 <button className="chat-ai__topic" onClick={() => handlePromptClick('Genera campaña de reactivación')}>
-                  📣 Campana de reactivacion
+                  📣 Campana reactivacion
                 </button>
                 <button className="chat-ai__topic" onClick={() => handlePromptClick('¿Quiénes cumplen años este mes?')}>
                   🎂 Cumpleanos del mes

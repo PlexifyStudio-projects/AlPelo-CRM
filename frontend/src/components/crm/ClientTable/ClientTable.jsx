@@ -49,10 +49,14 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
 
   return (
     <div className={b}>
+      {/* Desktop: Table view */}
       <div className={`${b}__wrapper`}>
         <table className={`${b}__table`}>
           <thead className={`${b}__head`}>
             <tr>
+              <th className={`${b}__th ${b}__th--id`}>
+                <span className={`${b}__th-content`}>ID</span>
+              </th>
               <th className={`${b}__th`} onClick={() => onSort('name')}>
                 <span className={`${b}__th-content`}>
                   Cliente <SortIcon column="name" />
@@ -91,6 +95,9 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
                 onClick={() => onClientClick(client)}
                 style={{ animationDelay: `${index * 0.03}s` }}
               >
+                <td className={`${b}__td ${b}__td--id`}>
+                  <span className={`${b}__client-id`}>{client.clientId}</span>
+                </td>
                 <td className={`${b}__td`}>
                   <div className={`${b}__client-cell`}>
                     <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
@@ -145,6 +152,52 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile: Card view */}
+      <div className={`${b}__cards`}>
+        {clients.map((client, index) => (
+          <div
+            key={client.id}
+            className={`${b}__card`}
+            onClick={() => onClientClick(client)}
+            style={{ animationDelay: `${index * 0.04}s` }}
+          >
+            <div className={`${b}__card-top`}>
+              <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
+                {getInitials(client.name)}
+              </div>
+              <div className={`${b}__card-info`}>
+                <span className={`${b}__client-name`}>{client.name}</span>
+                <span className={`${b}__client-phone`}>{client.clientId} &middot; {client.phone}</span>
+              </div>
+              <span className={`${b}__status ${b}__status--${client.status}`}>
+                {client.status === 'vip' && (
+                  <svg className={`${b}__status-icon`} width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                  </svg>
+                )}
+                {getStatusLabel(client.status)}
+              </span>
+            </div>
+            <div className={`${b}__card-stats`}>
+              <div className={`${b}__card-stat`}>
+                <span className={`${b}__card-stat-label`}>Ultima visita</span>
+                <span className={`${b}__days ${getDaysClass(client.lastVisit)}`}>
+                  hace {daysSince(client.lastVisit)}d
+                </span>
+              </div>
+              <div className={`${b}__card-stat`}>
+                <span className={`${b}__card-stat-label`}>Visitas</span>
+                <span className={`${b}__visits-count`}>{client.totalVisits}</span>
+              </div>
+              <div className={`${b}__card-stat`}>
+                <span className={`${b}__card-stat-label`}>Total</span>
+                <span className={`${b}__spent`}>{formatCurrency(client.totalSpent)}</span>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

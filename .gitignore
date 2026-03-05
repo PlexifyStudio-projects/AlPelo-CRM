@@ -12,3 +12,5 @@ npm-debug.log*
 *.sw?
 .idea
 .vscode
+.env
+.env.*

@@ -237,6 +237,24 @@
     font-variant-numeric: tabular-nums;
   }
 
+  &__client-id {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  &__th--id,
+  &__td--id {
+    width: 80px;
+    min-width: 80px;
+
+    @media (max-width: $breakpoint-md) {
+      display: none;
+    }
+  }
+
   // --- Visit cell ---
   &__visit-cell {
     display: flex;
@@ -559,6 +577,83 @@
   &__row:hover &__visits-count {
     transform: scale(1.05);
     color: $color-primary-dark;
+  }
+
+  // -----------------------------------------------
+  // MOBILE CARD VIEW
+  // -----------------------------------------------
+  &__cards {
+    display: none;
+
+    @media (max-width: $breakpoint-md) {
+      display: flex;
+      flex-direction: column;
+      gap: $spacing-sm;
+    }
+  }
+
+  &__wrapper {
+    @media (max-width: $breakpoint-md) {
+      display: none;
+    }
+  }
+
+  &__card {
+    @include glass-card;
+    padding: $spacing-md;
+    cursor: pointer;
+    transition: all 250ms $ease-out-quart;
+    animation: fadeInUp 300ms $ease-out-expo both;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-md;
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  &__card-top {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+    padding-bottom: $spacing-sm;
+    border-bottom: $border-width solid $border-color-light;
+  }
+
+  &__card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-sm;
+  }
+
+  &__card-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-2xs;
+    padding: $spacing-xs;
+    background: $color-gray-50;
+    border-radius: $border-radius-sm;
+  }
+
+  &__card-stat-label {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
   }
 
   // Empty state

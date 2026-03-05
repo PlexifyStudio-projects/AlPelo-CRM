@@ -161,6 +161,7 @@ const ClientDetail = ({ client, onClose, onEdit, onNotesSave, visitHistory = [] 
             </div>
             <div className={`${b}__header-info`}>
               <h2 className={`${b}__name`}>{client.name}</h2>
+              {client.clientId && <span className={`${b}__client-id`}>{client.clientId}</span>}
               <span className={`${b}__status ${b}__status--${client.status}`}>
                 {client.status === 'vip' && (
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
