@@ -321,9 +321,36 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     msg_type = msg_data.get("type", "text")
                     wa_msg_id = msg_data.get("id", "")
 
-                    # Extract text content
+                    # Extract content based on message type
+                    media_url = None
                     if msg_type == "text":
                         content = msg_data.get("text", {}).get("body", "")
+                    elif msg_type in ("image", "video", "audio", "document", "sticker"):
+                        media_data = msg_data.get(msg_type, {})
+                        media_id = media_data.get("id")
+                        content = media_data.get("caption", "")
+                        # Fetch media URL from WhatsApp API
+                        if media_id:
+                            try:
+                                async with httpx.AsyncClient(timeout=10) as http_client:
+                                    media_resp = await http_client.get(
+                                        f"https://graph.facebook.com/{WA_API_VERSION}/{media_id}",
+                                        headers={"Authorization": f"Bearer {WA_TOKEN}"},
+                                    )
+                                    if media_resp.status_code == 200:
+                                        media_url = media_resp.json().get("url")
+                            except Exception:
+                                pass
+                        if not content:
+                            type_labels = {"image": "Foto", "video": "Video", "audio": "Audio", "document": "Documento", "sticker": "Sticker"}
+                            content = f"📎 {type_labels.get(msg_type, msg_type)}"
+                    elif msg_type == "location":
+                        loc = msg_data.get("location", {})
+                        content = f"📍 Ubicacion: {loc.get('latitude')}, {loc.get('longitude')}"
+                    elif msg_type == "contacts":
+                        content = "👤 Contacto compartido"
+                    elif msg_type == "reaction":
+                        content = msg_data.get("reaction", {}).get("emoji", "")
                     else:
                         content = f"[{msg_type}]"
 
