@@ -597,3 +597,14 @@ def get_stats(db: Session = Depends(get_db)):
         "total_outbound": total_outbound,
         "unread_conversations": unread,
     }
+
+
+# ============================================================================
+# CLEANUP — Delete failed messages
+# ============================================================================
+@router.delete("/messages/failed")
+def delete_failed_messages(db: Session = Depends(get_db)):
+    """Delete all messages with status 'failed'."""
+    count = db.query(WhatsAppMessage).filter(WhatsAppMessage.status == "failed").delete()
+    db.commit()
+    return {"deleted": count}
