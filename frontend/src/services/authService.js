@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:8001/api/auth';
+const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+const API_BASE = `${_API}/auth`;
 
 const authService = {
   verifyCredentials: async (username, password) => {

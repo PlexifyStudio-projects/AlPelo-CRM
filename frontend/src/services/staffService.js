@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:8001/api/staff';
+const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+const API_BASE = `${_API}/staff`;
 
 const staffService = {
   list: async (params = {}) => {

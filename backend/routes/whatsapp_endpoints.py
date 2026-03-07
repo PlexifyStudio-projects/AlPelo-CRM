@@ -8,6 +8,7 @@ import asyncio
 import httpx
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session, joinedload
 from database.connection import get_db, SessionLocal
 from database.models import WhatsAppConversation, WhatsAppMessage, Client
@@ -298,7 +299,7 @@ def verify_webhook(
 ):
     """Webhook verification endpoint for Meta."""
     if hub_mode == "subscribe" and hub_verify_token == WA_WEBHOOK_VERIFY_TOKEN:
-        return int(hub_challenge)
+        return PlainTextResponse(content=hub_challenge, status_code=200)
     raise HTTPException(status_code=403, detail="Verificacion fallida")
 
 
