@@ -437,13 +437,15 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     if contact_name and not conv.wa_contact_name:
                         conv.wa_contact_name = contact_name
 
-                    # Queue AI auto-reply if active
+                    # Queue AI auto-reply if active (only 1 per conversation per webhook batch)
                     if conv.is_ai_active and msg_type == "text" and content.strip():
-                        conversations_to_reply.append({
-                            "conv_id": conv.id,
-                            "from_phone": from_phone,
-                            "inbound_text": content,
-                        })
+                        already_queued = any(r["conv_id"] == conv.id for r in conversations_to_reply)
+                        if not already_queued:
+                            conversations_to_reply.append({
+                                "conv_id": conv.id,
+                                "from_phone": from_phone,
+                                "inbound_text": content,
+                            })
 
                 # Process status updates (sent -> delivered -> read)
                 for status_data in value.get("statuses", []):
@@ -479,34 +481,37 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
 # ============================================================================
 async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str):
     """Background task: show typing, wait ~15s, generate AI response, send."""
-    try:
-        # Step 1: Send "typing" indicator via WhatsApp API
-        async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(
-                f"{WA_BASE_URL}/messages",
-                headers=wa_headers(),
-                json={
-                    "messaging_product": "whatsapp",
-                    "to": to_phone.replace("+", "").replace(" ", ""),
-                    "type": "reaction",
-                    "status": "typing",
-                },
-            )
+    import random
 
-        # Step 2: Wait 12-18 seconds (natural delay)
-        import random
+    try:
+        # Step 1: Wait 12-18 seconds (natural delay)
         delay = random.uniform(12, 18)
         print(f"[Lina IA] Waiting {delay:.0f}s before replying to conv {conv_id}...")
         await asyncio.sleep(delay)
 
-        # Step 3: Get conversation history and generate AI response
+        # Step 2: Check cooldown — skip if Lina already replied in last 60 seconds
         db = SessionLocal()
         try:
             conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
             if not conv or not conv.is_ai_active:
                 return
 
-            # Get last 20 messages for context
+            last_ai_msg = (
+                db.query(WhatsAppMessage)
+                .filter(
+                    WhatsAppMessage.conversation_id == conv_id,
+                    WhatsAppMessage.sent_by == "lina_ia",
+                )
+                .order_by(WhatsAppMessage.created_at.desc())
+                .first()
+            )
+            if last_ai_msg and last_ai_msg.created_at:
+                seconds_since = (datetime.utcnow() - last_ai_msg.created_at).total_seconds()
+                if seconds_since < 60:
+                    print(f"[Lina IA] Cooldown active for conv {conv_id} ({seconds_since:.0f}s ago). Skipping.")
+                    return
+
+            # Step 3: Get conversation history and generate AI response
             recent_msgs = (
                 db.query(WhatsAppMessage)
                 .filter(WhatsAppMessage.conversation_id == conv_id)
@@ -521,20 +526,16 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str):
                 role = "user" if m.direction == "inbound" else "assistant"
                 history.append({"role": role, "content": m.content})
 
-            # Call AI service (same as chat endpoint)
             from routes.ai_endpoints import _build_system_prompt, _call_ai
 
             system_prompt = _build_system_prompt(db, is_whatsapp=True)
             ai_response = await _call_ai(system_prompt, history, inbound_text)
 
             if not ai_response or not ai_response.strip():
-                print(f"[Lina IA] No response generated for conv {conv_id}, staying on hold.")
+                print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")
                 return
 
             # Step 4: Send AI response via WhatsApp
-            wa_message_id = None
-            status = "sent"
-
             async with httpx.AsyncClient(timeout=15) as client:
                 resp = await client.post(
                     f"{WA_BASE_URL}/messages",
@@ -550,17 +551,17 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str):
                 if resp.status_code == 200 and "messages" in data:
                     wa_message_id = data["messages"][0].get("id")
                 else:
-                    status = "failed"
-                    print(f"[Lina IA] Send failed: {data}")
+                    print(f"[Lina IA] Send failed for conv {conv_id}: {data}")
+                    return  # Don't store failed messages
 
-            # Step 5: Store AI response in DB
+            # Step 5: Store AI response in DB (only if sent successfully)
             msg = WhatsAppMessage(
                 conversation_id=conv_id,
                 wa_message_id=wa_message_id,
                 direction="outbound",
                 content=ai_response,
                 message_type="text",
-                status=status,
+                status="sent",
                 sent_by="lina_ia",
             )
             db.add(msg)
