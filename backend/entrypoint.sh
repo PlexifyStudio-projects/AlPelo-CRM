@@ -13,15 +13,16 @@ if [ "$WAIT_FOR_DB" = "true" ]; then
   echo "PostgreSQL ready"
 fi
 
-echo "Starting API..."
+APP_PORT="${PORT:-8000}"
+echo "Starting API on port $APP_PORT..."
 if [ "$ENVIRONMENT" = "production" ]; then
   echo "Mode: Production (4 workers, proxy headers)"
-  exec uvicorn main:app --host 0.0.0.0 --port 8000 \
+  exec uvicorn main:app --host 0.0.0.0 --port "$APP_PORT" \
     --workers 4 \
     --proxy-headers \
     --forwarded-allow-ips="*" \
     --log-level warning
 else
   echo "Mode: Development (auto-reload enabled)"
-  exec uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+  exec uvicorn main:app --host 0.0.0.0 --port "$APP_PORT" --reload
 fi
