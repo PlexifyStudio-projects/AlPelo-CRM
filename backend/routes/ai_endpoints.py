@@ -550,9 +550,14 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
                 api_key, model, system_prompt, messages, temperature, max_tokens
             )
     except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"Error del proveedor de IA: {e.response.text}")
+        error_body = e.response.text
+        print(f"[AI] Provider error: {error_body}")
+        if "rate_limit" in error_body.lower() or "429" in str(e.response.status_code):
+            raise HTTPException(status_code=429, detail="Se agotaron los tokens de IA por hoy. El limite se reinicia en unas horas. Intenta mas tarde.")
+        raise HTTPException(status_code=502, detail="No pude conectarme al proveedor de IA. Intenta de nuevo en unos minutos.")
     except httpx.RequestError as e:
-        raise HTTPException(status_code=502, detail=f"Error de conexion: {str(e)}")
+        print(f"[AI] Connection error: {e}")
+        raise HTTPException(status_code=502, detail="Error de conexion con el proveedor de IA. Intenta de nuevo.")
 
     # Parse and execute any action blocks
     action_matches = ACTION_PATTERN.findall(text)
