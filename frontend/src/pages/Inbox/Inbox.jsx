@@ -666,6 +666,17 @@ const Inbox = () => {
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
+  // --- Polling: refresh conversations every 5s ---
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const data = await whatsappService.getConversations();
+        setConversations(data);
+      } catch { /* silent */ }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   // --- Load messages ---
   const loadMessages = useCallback(async (convId) => {
     if (!convId) return;
@@ -689,6 +700,18 @@ const Inbox = () => {
       setReplyingTo(null);
     }
   }, [selectedConvId, loadMessages]);
+
+  // --- Polling: refresh messages every 3s for active conversation ---
+  useEffect(() => {
+    if (!selectedConvId) return;
+    const interval = setInterval(async () => {
+      try {
+        const data = await whatsappService.getMessages(selectedConvId);
+        setMessages(data);
+      } catch { /* silent */ }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [selectedConvId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

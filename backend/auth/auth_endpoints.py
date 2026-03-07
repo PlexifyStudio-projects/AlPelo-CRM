@@ -23,8 +23,8 @@ IS_PRODUCTION = os.getenv("ENVIRONMENT", "development") == "production"
 COOKIE_CONFIG = {
     "key": "access_token",
     "httponly": True,
-    "secure": IS_PRODUCTION,
-    "samesite": "strict" if IS_PRODUCTION else "lax",
+    "secure": True,
+    "samesite": "none",
     "max_age": 3600,
     "path": "/",
 }
