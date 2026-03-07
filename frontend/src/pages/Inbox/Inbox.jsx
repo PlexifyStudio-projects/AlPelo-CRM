@@ -271,16 +271,23 @@ const getAvatarColor = (name = '') => {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 };
 
+const parseUTC = (dateStr) => {
+  if (!dateStr) return null;
+  // Ensure UTC timestamps from backend are parsed as UTC
+  const s = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z';
+  return new Date(s);
+};
+
 const formatTime = (dateStr) => {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
+  const d = parseUTC(dateStr);
+  if (!d) return '';
   return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
 const formatConvTime = (dateStr) => {
-  if (!dateStr) return '';
+  const d = parseUTC(dateStr);
+  if (!d) return '';
   const now = new Date();
-  const d = new Date(dateStr);
   const diffMs = now - d;
   const diffDays = Math.floor(diffMs / 86400000);
   if (diffDays === 0) return formatTime(dateStr);
@@ -290,13 +297,15 @@ const formatConvTime = (dateStr) => {
 };
 
 const formatFullDate = (dateStr) => {
-  if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+  const d = parseUTC(dateStr);
+  if (!d) return '';
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 const getDateLabel = (dateStr) => {
   const now = new Date();
-  const d = new Date(dateStr);
+  const d = parseUTC(dateStr);
+  if (!d) return '';
   const diffDays = Math.floor((now - d) / 86400000);
   if (diffDays === 0) return 'Hoy';
   if (diffDays === 1) return 'Ayer';

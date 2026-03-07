@@ -6,9 +6,27 @@ from routes import create_router, search_router, update_router, delete_router, a
 from database.connection import engine, Base
 
 
+def _run_migrations(engine):
+    """Add columns that create_all doesn't handle (new columns on existing tables)."""
+    from sqlalchemy import text, inspect
+    inspector = inspect(engine)
+
+    # WhatsApp message: media_url, media_mime_type
+    if "whatsapp_message" in inspector.get_table_names(schema="public"):
+        existing = [c["name"] for c in inspector.get_columns("whatsapp_message", schema="public")]
+        with engine.begin() as conn:
+            if "media_url" not in existing:
+                conn.execute(text("ALTER TABLE public.whatsapp_message ADD COLUMN media_url TEXT"))
+                print("[MIGRATION] Added media_url to whatsapp_message")
+            if "media_mime_type" not in existing:
+                conn.execute(text("ALTER TABLE public.whatsapp_message ADD COLUMN media_mime_type VARCHAR"))
+                print("[MIGRATION] Added media_mime_type to whatsapp_message")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    _run_migrations(engine)
     print("[STARTUP] AlPelo API ready")
     yield
     print("[SHUTDOWN] Stopped")

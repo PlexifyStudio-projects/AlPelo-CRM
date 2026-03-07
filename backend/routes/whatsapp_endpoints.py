@@ -73,7 +73,7 @@ def list_conversations(db: Session = Depends(get_db)):
                 "name": cl.name,
                 "phone": cl.phone,
                 "email": cl.email,
-                "status": computed.get("status", "activo"),
+                "status": computed.status if hasattr(computed, 'status') else "activo",
                 "total_visits": total_visits,
                 "total_spent": total_spent,
                 "last_visit": str(last_visit) if last_visit else None,
@@ -575,27 +575,6 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str):
     except Exception as e:
         print(f"[Lina IA] Auto-reply error: {e}")
 
-
-# ============================================================================
-# MARK AS READ
-# ============================================================================
-@router.put("/conversations/{conv_id}/read")
-def mark_as_read(conv_id: int, db: Session = Depends(get_db)):
-    """Mark a conversation as read (reset unread count to 0)."""
-    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
-    if not conv:
-        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
-    conv.unread_count = 0
-    db.commit()
-    return {"success": True, "conversation_id": conv_id}
-
-
-@router.get("/unread-count")
-def get_unread_count(db: Session = Depends(get_db)):
-    """Get total unread messages across all conversations."""
-    from sqlalchemy import func
-    total = db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0)).scalar()
-    return {"total_unread": total}
 
 
 # ============================================================================
