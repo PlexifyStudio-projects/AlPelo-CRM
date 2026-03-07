@@ -815,7 +815,7 @@ const Inbox = () => {
     setAiMode((prev) => ({ ...prev, [selectedConvId]: !prev[selectedConvId] }));
   };
 
-  const handleSelectConv = (convId) => {
+  const handleSelectConv = async (convId) => {
     setSelectedConvId(convId);
     setShowBlast(false);
     setShowClientInfo(false);
@@ -823,6 +823,19 @@ const Inbox = () => {
     setSearchInChatQuery('');
     setReplyingTo(null);
     setMsgContextMenu(null);
+
+    // Mark conversation as read — update local state immediately, then API
+    const conv = conversations.find((c) => c.id === convId);
+    if (conv && conv.unread_count > 0) {
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, unread_count: 0 } : c))
+      );
+      try {
+        await whatsappService.markAsRead(convId);
+      } catch (err) {
+        console.error('[Inbox] Error marking as read:', err);
+      }
+    }
   };
 
   // --- Pin/Unpin ---
@@ -1319,7 +1332,22 @@ const Inbox = () => {
                               </div>
                             )}
 
-                            <p className={`${b}__message-text`}>{msg.content || msg.text}</p>
+                            {/* Media content */}
+                            {msg.media_url && msg.message_type === 'sticker' && (
+                              <img src={msg.media_url} alt="Sticker" className={`${b}__message-sticker`} />
+                            )}
+                            {msg.media_url && msg.message_type === 'image' && (
+                              <img src={msg.media_url} alt="Imagen" className={`${b}__message-image`} />
+                            )}
+                            {msg.media_url && msg.message_type === 'video' && (
+                              <video src={msg.media_url} controls className={`${b}__message-video`} />
+                            )}
+                            {msg.media_url && msg.message_type === 'audio' && (
+                              <audio src={msg.media_url} controls className={`${b}__message-audio`} />
+                            )}
+                            {(!msg.media_url || (msg.content && msg.message_type !== 'sticker')) && (
+                              <p className={`${b}__message-text`}>{msg.content || msg.text}</p>
+                            )}
                             <div className={`${b}__message-meta`}>
                               {isStarred && <span className={`${b}__message-star`}>{Icons.star}</span>}
                               <span className={`${b}__message-time`}>{formatTime(msg.created_at || msg.time)}</span>

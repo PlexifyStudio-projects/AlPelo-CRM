@@ -111,6 +111,33 @@ def get_conversation(conv_id: int, db: Session = Depends(get_db)):
 
 
 # ============================================================================
+# MARK AS READ — Reset unread count for a conversation
+# ============================================================================
+@router.put("/conversations/{conv_id}/read")
+def mark_conversation_read(conv_id: int, db: Session = Depends(get_db)):
+    """Mark a conversation as read by setting unread_count to 0."""
+    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
+
+    conv.unread_count = 0
+    db.commit()
+
+    return {"id": conv.id, "unread_count": 0}
+
+
+# ============================================================================
+# TOTAL UNREAD — Sum of all unread counts across conversations
+# ============================================================================
+@router.get("/unread-count")
+def get_total_unread(db: Session = Depends(get_db)):
+    """Get total unread message count across all conversations."""
+    from sqlalchemy import func
+    total = db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0)).scalar()
+    return {"total_unread": total}
+
+
+# ============================================================================
 # MESSAGES — List & Send
 # ============================================================================
 @router.get("/conversations/{conv_id}/messages")
@@ -137,6 +164,8 @@ def list_messages(conv_id: int, db: Session = Depends(get_db)):
             "message_type": m.message_type,
             "status": m.status,
             "sent_by": m.sent_by,
+            "media_url": m.media_url,
+            "media_mime_type": m.media_mime_type,
             "created_at": m.created_at.isoformat() if m.created_at else None,
         }
         for m in messages
@@ -384,6 +413,11 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     if existing_msg:
                         continue
 
+                    # Resolve media mime type
+                    media_mime = None
+                    if msg_type in ("image", "video", "audio", "document", "sticker"):
+                        media_mime = msg_data.get(msg_type, {}).get("mime_type")
+
                     # Store message
                     message = WhatsAppMessage(
                         conversation_id=conv.id,
@@ -392,6 +426,8 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                         content=content,
                         message_type=msg_type,
                         status="delivered",
+                        media_url=media_url,
+                        media_mime_type=media_mime,
                     )
                     db.add(message)
 
@@ -492,7 +528,8 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str):
             ai_response = await _call_ai(system_prompt, history, inbound_text)
 
             if not ai_response or not ai_response.strip():
-                ai_response = "Hola! Gracias por escribirnos. En un momento te atendemos."
+                print(f"[Lina IA] No response generated for conv {conv_id}, staying on hold.")
+                return
 
             # Step 4: Send AI response via WhatsApp
             wa_message_id = None
@@ -537,6 +574,28 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str):
 
     except Exception as e:
         print(f"[Lina IA] Auto-reply error: {e}")
+
+
+# ============================================================================
+# MARK AS READ
+# ============================================================================
+@router.put("/conversations/{conv_id}/read")
+def mark_as_read(conv_id: int, db: Session = Depends(get_db)):
+    """Mark a conversation as read (reset unread count to 0)."""
+    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
+    conv.unread_count = 0
+    db.commit()
+    return {"success": True, "conversation_id": conv_id}
+
+
+@router.get("/unread-count")
+def get_unread_count(db: Session = Depends(get_db)):
+    """Get total unread messages across all conversations."""
+    from sqlalchemy import func
+    total = db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0)).scalar()
+    return {"total_unread": total}
 
 
 # ============================================================================

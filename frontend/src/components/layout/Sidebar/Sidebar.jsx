@@ -54,14 +54,7 @@ const SVG_ICONS = {
   ),
 };
 
-// Mock badge counts for navigation items
-const BADGE_COUNTS = {
-  inbox: 7,
-  messaging: null,
-  'chat-ai': null,
-};
-
-const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout, isMobileOpen, onCloseMobile }) => {
+const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout, isMobileOpen, onCloseMobile, badgeCounts = {} }) => {
   const [openSections, setOpenSections] = useState({});
   const b = 'sidebar';
 
@@ -174,14 +167,14 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
                         </div>
                         {item.disabled ? (
                           <span className={`${b}__badge ${b}__badge--soon`}>Pronto</span>
-                        ) : BADGE_COUNTS[item.id] ? (
+                        ) : badgeCounts[item.id] ? (
                           <span className={`${b}__badge`}>
-                            {BADGE_COUNTS[item.id]}
+                            {badgeCounts[item.id]}
                           </span>
                         ) : null}
                       </>
                     )}
-                    {isCollapsed && BADGE_COUNTS[item.id] && !item.disabled && (
+                    {isCollapsed && badgeCounts[item.id] && !item.disabled && (
                       <span className={`${b}__badge ${b}__badge--dot`} />
                     )}
                   </li>

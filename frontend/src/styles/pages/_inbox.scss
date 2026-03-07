@@ -847,6 +847,36 @@
     white-space: pre-wrap;
   }
 
+  &__message-sticker {
+    max-width: 150px;
+    max-height: 150px;
+    display: block;
+    margin: 2px 0;
+  }
+
+  &__message-image {
+    max-width: 330px;
+    max-height: 330px;
+    border-radius: 6px;
+    display: block;
+    margin: 2px 0;
+    cursor: pointer;
+  }
+
+  &__message-video {
+    max-width: 330px;
+    max-height: 260px;
+    border-radius: 6px;
+    display: block;
+    margin: 2px 0;
+  }
+
+  &__message-audio {
+    max-width: 300px;
+    display: block;
+    margin: 4px 0;
+  }
+
   &__message-meta {
     display: flex;
     align-items: center;

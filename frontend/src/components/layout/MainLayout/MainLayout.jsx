@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../Sidebar/Sidebar';
 import Header from '../Header/Header';
+import whatsappService from '../../../services/whatsappService';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', description: 'PANEL EJECUTIVO', section: 'GESTION PRINCIPAL' },
@@ -17,6 +18,7 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
+  const [inboxUnread, setInboxUnread] = useState(0);
 
   useEffect(() => {
     const handleResize = () => {
@@ -26,6 +28,19 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Fetch inbox unread count on mount and poll every 10s
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const data = await whatsappService.getUnreadCount();
+        setInboxUnread(data.total_unread || 0);
+      } catch { /* silent */ }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleNavigate = useCallback((section) => {
@@ -56,6 +71,7 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
         onLogout={onLogout}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={handleCloseMobileMenu}
+        badgeCounts={{ inbox: inboxUnread || null }}
       />
       <div className="main-layout__content">
         <Header

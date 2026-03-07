@@ -134,6 +134,8 @@ class WhatsAppMessage(Base):
     message_type = Column(String, nullable=False, default="text")  # text, template, image, audio
     status = Column(String, nullable=False, default="sent")  # sent, delivered, read, failed
     sent_by = Column(String, nullable=True)  # staff name or 'lina_ia' or null (client)
+    media_url = Column(Text, nullable=True)  # URL for images, stickers, videos, audio, documents
+    media_mime_type = Column(String, nullable=True)  # e.g. image/jpeg, video/mp4, image/webp
     created_at = Column(DateTime, default=datetime.utcnow)
 
     conversation = relationship("WhatsAppConversation", back_populates="messages")

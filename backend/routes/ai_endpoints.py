@@ -607,4 +607,4 @@ async def _call_ai(system_prompt: str, history: list, user_message: str) -> str:
         return clean
     except Exception as e:
         print(f"[AI Call] Error: {e}")
-        return "Hola! Disculpa la demora. En este momento estoy un poco saturada, pero ya te atiendo. Puedes agendar tu cita en https://book.weibook.co/alpelo-peluqueria"
+        return None

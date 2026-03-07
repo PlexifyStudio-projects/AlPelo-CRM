@@ -52,6 +52,21 @@ const whatsappService = {
     return handleResponse(res);
   },
 
+  // ========================= MARK AS READ =========================
+  markAsRead: async (conversationId) => {
+    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/read`, {
+      method: 'PUT',
+      headers,
+    });
+    return handleResponse(res);
+  },
+
+  // ========================= UNREAD COUNT =========================
+  getUnreadCount: async () => {
+    const res = await fetch(`${API}/whatsapp/unread-count`, { headers });
+    return handleResponse(res);
+  },
+
   // ========================= STATS =========================
   getStats: async () => {
     const res = await fetch(`${API}/whatsapp/stats`, { headers });
