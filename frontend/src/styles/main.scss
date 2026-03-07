@@ -32,6 +32,7 @@
 @use 'components/client-filters';
 @use 'components/add-client-modal';
 @use 'components/barber-rating';
+@use 'components/add-visit-modal';
 
 // --- Pages ---
 @use 'pages/login';
@@ -44,3 +45,4 @@
 @use 'pages/profile';
 @use 'pages/settings';
 @use 'pages/change-password';
+@use 'pages/team';

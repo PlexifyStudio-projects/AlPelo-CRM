@@ -2,8 +2,8 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Jarvis IA v4.0
-// WhatsApp + Business intelligence assistant
+// AlPelo - Lina IA v6.0
+// Executive assistant — corporate UI
 // BEM: .chat-ai
 // ============================================
 
@@ -14,573 +14,382 @@
   max-height: calc(100vh - #{$header-height} - #{$spacing-2xl});
 
   // ------------------------------------------
-  // Header (glass background)
+  // Header
   // ------------------------------------------
   &__header {
     @include flex-between;
-    margin-bottom: $spacing-lg;
-    animation: fadeInLeft 400ms $ease-out-expo both;
-    animation-delay: 0.05s;
-    flex-shrink: 0;
-    padding: $spacing-md $spacing-lg;
+    padding: $spacing-sm $spacing-lg;
     border-radius: $border-radius-lg;
-    @include glass(rgba(255, 255, 255, 0.55), 16px);
-    border-color: rgba(45, 90, 61, 0.06);
-    box-shadow: $shadow-sm, $glass-inner-glow-subtle;
+    @include glass(rgba(255, 255, 255, 0.6), 16px);
+    border: 1px solid rgba(45, 90, 61, 0.06);
+    box-shadow: $shadow-sm;
+    flex-shrink: 0;
+    margin-bottom: $spacing-md;
+    animation: fadeInLeft 300ms $ease-out-expo both;
   }
 
   &__header-left {
-    display: flex;
-    flex-direction: column;
-  }
-
-  &__header-title-row {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-  }
-
-  &__header-icon {
-    @include flex-center;
-    width: 48px;
-    height: 48px;
-    border-radius: $border-radius-lg;
-    background: linear-gradient(135deg, $color-primary, $color-primary-light);
-    color: $color-white;
-    box-shadow: $shadow-glow-primary;
-    flex-shrink: 0;
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -3px;
-      border-radius: inherit;
-      border: 2px solid rgba(45, 90, 61, 0.15);
-      animation: chatHeaderIconPulse 3s ease-in-out infinite;
-    }
-  }
-
-  &__header-actions {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
   }
 
+  &__header-icon {
+    @include flex-center;
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
+  }
+
   &__title {
-    @include heading($font-size-xl);
-    margin-bottom: 0;
+    font-family: $font-heading;
+    font-size: 18px;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    margin: 0;
     letter-spacing: $letter-spacing-tight;
+    line-height: 1.2;
   }
 
   &__subtitle {
-    font-size: $font-size-xs;
-    color: $color-gray-400;
-    margin-top: $spacing-2xs;
     display: flex;
     align-items: center;
-    gap: $spacing-xs;
-    font-weight: $font-weight-medium;
+    gap: 5px;
+    font-size: 12px;
+    color: $color-gray-400;
+    margin: 0;
   }
 
   &__status-dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: $border-radius-full;
     background: $color-success;
-    box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
-    animation: chatStatusPulse 2s ease-in-out infinite;
-    flex-shrink: 0;
+    animation: livePulse 2s ease-in-out infinite;
   }
 
-  &__clear-btn {
+  &__header-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-2xs;
+  }
+
+  &__header-btn {
     @include flex-center;
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-md;
-    border: $border-width solid $border-color;
-    background: $glass-bg;
+    width: 34px;
+    height: 34px;
+    border: none;
+    background: transparent;
     color: $color-gray-400;
     cursor: pointer;
-    @include transition;
-
-    &:hover {
-      background: $color-error-bg;
-      color: $color-error-dark;
-      border-color: $color-error-border;
-    }
-  }
-
-  &__sidebar-toggle {
-    @include flex-center;
-    width: 40px;
-    height: 40px;
     border-radius: $border-radius-md;
-    border: $border-width solid $border-color;
-    background: $glass-bg;
-    color: $color-gray-500;
-    cursor: pointer;
-    @include transition;
+    transition: all 150ms ease;
 
     &:hover {
-      background: $glass-bg-heavy;
-      color: $color-primary;
-      border-color: $border-color-medium;
+      background: $color-gray-100;
+      color: $color-secondary;
     }
 
     &--active {
       background: $color-primary-ghost;
       color: $color-primary;
-      border-color: rgba(45, 90, 61, 0.15);
     }
   }
 
   // ------------------------------------------
-  // Body
+  // Body layout
   // ------------------------------------------
   &__body {
     display: flex;
-    gap: $spacing-lg;
     flex: 1;
+    gap: $spacing-md;
     min-height: 0;
-    animation: fadeInUp 400ms $ease-out-expo both;
-    animation-delay: 0.1s;
   }
 
   &__main {
-    @include flex-column;
     flex: 1;
+    @include flex-column;
     min-width: 0;
-    @include glass-card;
-    overflow: hidden;
     position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      opacity: 0.015;
-      pointer-events: none;
-      background-image: radial-gradient(circle, rgba(45, 90, 61, 1) 1px, transparent 1px);
-      background-size: 32px 32px;
-      z-index: 0;
-      border-radius: inherit;
-    }
   }
 
-  &__messages-fade-top {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 48px;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
-    z-index: 2;
-    pointer-events: none;
-    border-radius: $border-radius-lg $border-radius-lg 0 0;
-  }
-
+  // ------------------------------------------
+  // Messages
+  // ------------------------------------------
   &__messages {
     flex: 1;
     overflow-y: auto;
-    padding: $spacing-xl;
-    padding-top: $spacing-2xl;
     @include custom-scrollbar;
-    position: relative;
-    z-index: 1;
-    scroll-behavior: smooth;
+    padding: $spacing-md $spacing-lg;
+    border-radius: $border-radius-lg;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
   }
 
-  &__scroll-bottom {
-    @include flex-center;
-    position: absolute;
-    bottom: 140px;
-    right: $spacing-xl;
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-full;
-    border: $border-width solid $border-color-medium;
-    background: $glass-bg-heavy;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: $color-gray-500;
-    cursor: pointer;
-    z-index: 5;
-    box-shadow: $shadow-md;
-    animation: chatScrollBtnIn 250ms $ease-out-expo both;
-    transition: transform 200ms $ease-spring, background 200ms $ease-out-quart, box-shadow 200ms $ease-out-quart, color 200ms $ease-out-quart;
+  &__message {
+    display: flex;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-sm;
+    animation: fadeInUp 200ms $ease-out-expo both;
 
-    &:hover {
-      background: $color-white;
-      color: $color-primary;
-      box-shadow: $shadow-lg, $shadow-glow-primary;
-      transform: translateY(-2px);
+    &--user {
+      justify-content: flex-end;
     }
 
-    &:active {
-      transform: translateY(0) scale(0.92);
-      transition: transform 80ms $ease-smooth;
+    &--error .chat-ai__bubble {
+      background: $color-error-bg;
+      border-color: $color-error-border;
+      color: $color-error-dark;
+    }
+  }
+
+  &__avatar {
+    @include flex-center;
+    width: 30px;
+    height: 30px;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__bubble-wrap {
+    @include flex-column;
+    gap: 3px;
+    max-width: 70%;
+    min-width: 60px;
+
+    .chat-ai__message--user & {
+      align-items: flex-end;
+    }
+  }
+
+  &__bubble {
+    padding: $spacing-sm $spacing-md;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    &--user {
+      background: $color-primary;
+      color: $color-white;
+      border-bottom-right-radius: 4px;
+    }
+
+    &--assistant {
+      background: $color-gray-50;
+      color: $color-secondary;
+      border: 1px solid $color-gray-100;
+      border-bottom-left-radius: 4px;
+    }
+
+    &--typing {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 18px;
+    }
+  }
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: $border-radius-full;
+    background: $color-gray-300;
+    animation: typingPulse 1.4s ease-in-out infinite;
+
+    &:nth-child(2) { animation-delay: 0.2s; }
+    &:nth-child(3) { animation-delay: 0.4s; }
+  }
+
+  &__time {
+    font-size: 10px;
+    color: $color-gray-300;
+    padding: 0 $spacing-xs;
+  }
+
+  // ------------------------------------------
+  // Scroll button
+  // ------------------------------------------
+  &__scroll-btn {
+    position: absolute;
+    bottom: 130px;
+    left: 50%;
+    transform: translateX(-50%);
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    border: 1px solid $color-gray-200;
+    background: $color-white;
+    color: $color-gray-500;
+    cursor: pointer;
+    box-shadow: $shadow-md;
+    transition: all 200ms ease;
+    z-index: 5;
+
+    &:hover {
+      background: $color-gray-50;
+      color: $color-primary;
     }
   }
 
   // ------------------------------------------
-  // Welcome state
+  // Welcome
   // ------------------------------------------
   &__welcome {
     @include flex-column-center;
-    height: 100%;
     padding: $spacing-2xl $spacing-xl;
     text-align: center;
-    position: relative;
+    animation: fadeInUp 400ms $ease-out-expo both;
   }
 
-  &__welcome-glow {
-    position: absolute;
-    width: 340px;
-    height: 340px;
-    border-radius: $border-radius-full;
-    background: radial-gradient(circle, rgba(45, 90, 61, 0.1) 0%, rgba(201, 168, 76, 0.04) 40%, transparent 70%);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -60%);
-    pointer-events: none;
-    animation: chatPulseGlow 4s ease-in-out infinite;
-  }
-
-  &__welcome-icon {
+  &__welcome-badge {
     @include flex-center;
-    width: 96px;
-    height: 96px;
-    border-radius: $border-radius-2xl;
-    background: linear-gradient(135deg, $color-primary-ghost, rgba(45, 90, 61, 0.14));
-    color: $color-primary;
-    margin-bottom: $spacing-xl;
-    animation: chatWelcomeFloat 5s ease-in-out infinite;
-    position: relative;
-    z-index: 1;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -5px;
-      border-radius: inherit;
-      background: linear-gradient(135deg, rgba(45, 90, 61, 0.15), rgba(201, 168, 76, 0.1));
-      z-index: -1;
-      opacity: 0.5;
-      animation: chatPulseGlow 3s ease-in-out infinite alternate;
-    }
-
-    svg { opacity: 0.9; }
+    width: 64px;
+    height: 64px;
+    border-radius: $border-radius-xl;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    margin-bottom: $spacing-lg;
+    box-shadow: 0 4px 20px rgba(45, 90, 61, 0.2);
   }
 
   &__welcome-title {
-    @include heading($font-size-2xl);
-    margin-bottom: $spacing-sm;
-    position: relative;
-    z-index: 1;
+    font-family: $font-heading;
+    font-size: 22px;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    margin: 0 0 $spacing-xs;
+    letter-spacing: $letter-spacing-tight;
   }
 
   &__welcome-text {
-    @include body-text($font-size-sm);
+    font-size: 14px;
     color: $color-gray-400;
-    max-width: 480px;
-    margin-bottom: $spacing-2xl;
-    position: relative;
-    z-index: 1;
-    line-height: $line-height-relaxed;
+    line-height: 1.6;
+    max-width: 420px;
+    margin: 0 0 $spacing-xl;
   }
 
   &__prompts {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: $spacing-md;
+    gap: $spacing-sm;
     width: 100%;
-    max-width: 720px;
-    position: relative;
-    z-index: 1;
+    max-width: 600px;
 
-    @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(2, 1fr); }
-    @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
   }
 
   &__prompt-card {
     display: flex;
     align-items: flex-start;
     gap: $spacing-sm;
-    padding: $spacing-md $spacing-lg;
-    border-radius: $border-radius-lg;
-    border: $border-width solid $border-color;
-    background: $glass-bg-light;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-md;
+    border: 1px solid $color-gray-100;
+    background: $color-white;
     cursor: pointer;
     text-align: left;
-    @include transition;
-    @include light-leak;
-    animation: fadeInUp 400ms $ease-out-expo both;
+    font-family: inherit;
+    transition: all 200ms $ease-out-quart;
 
     &:hover {
-      background: $glass-bg-heavy;
-      border-color: rgba(45, 90, 61, 0.2);
-      box-shadow: $shadow-md, $shadow-glow-primary;
-      transform: translateY(-4px) scale(1.008);
+      border-color: $color-primary-ghost;
+      background: rgba(45, 90, 61, 0.02);
+      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.06);
     }
 
-    &:active {
-      transform: translateY(0) scale(0.97);
-      transition: transform 100ms $ease-smooth;
-    }
+    &:active { transform: scale(0.98); }
   }
 
   &__prompt-icon {
-    font-size: $font-size-lg;
-    flex-shrink: 0;
+    font-size: 18px;
     line-height: 1;
-    margin-top: 2px;
-  }
-
-  &__prompt-content {
-    @include flex-column;
-    gap: $spacing-2xs;
+    flex-shrink: 0;
+    margin-top: 1px;
   }
 
   &__prompt-text {
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    display: block;
+    font-size: 13px;
+    font-weight: $font-weight-medium;
     color: $color-secondary;
-    line-height: $line-height-snug;
+    line-height: 1.3;
   }
 
   &__prompt-desc {
-    @include caption-text;
-    font-size: $font-size-2xs;
-  }
-
-  // ------------------------------------------
-  // Suggested query chips (above input)
-  // ------------------------------------------
-  &__chips {
-    display: flex;
-    gap: $spacing-sm;
-    overflow-x: auto;
-    padding-bottom: $spacing-sm;
-    margin-bottom: $spacing-xs;
-    @include custom-scrollbar;
-    scroll-snap-type: x mandatory;
-
-    &::-webkit-scrollbar { height: 3px; }
-  }
-
-  &__chip {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2xs;
-    padding: $spacing-xs $spacing-md;
-    border-radius: $border-radius-full;
-    border: $border-width solid $border-color;
-    background: $glass-bg-light;
-    font-family: $font-primary;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-600;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    scroll-snap-align: start;
-    animation: chatChipIn 300ms $ease-out-expo both;
-    transition: transform 200ms $ease-spring, background 200ms $ease-out-quart, border-color 200ms $ease-out-quart, box-shadow 200ms $ease-out-quart, color 200ms $ease-out-quart;
-
-    &:hover {
-      background: $color-primary-ghost;
-      border-color: rgba(45, 90, 61, 0.18);
-      color: $color-primary;
-      transform: translateY(-2px);
-      box-shadow: $shadow-sm, 0 0 12px rgba(45, 90, 61, 0.08);
-    }
-
-    &:active {
-      transform: translateY(0) scale(0.96);
-      transition: transform 80ms $ease-smooth;
-    }
-  }
-
-  &__chip-icon { font-size: $font-size-xs; line-height: 1; }
-  &__chip-text { line-height: 1; }
-
-  // ------------------------------------------
-  // Message bubbles
-  // ------------------------------------------
-  &__message {
-    display: flex;
-    align-items: flex-start;
-    gap: $spacing-sm;
-    margin-bottom: $spacing-lg;
-    animation: fadeInUp 300ms $ease-out-expo both;
-
-    &--user { justify-content: flex-end; }
-    &--assistant { justify-content: flex-start; }
-  }
-
-  &__avatar {
-    @include flex-center;
-    width: 38px;
-    height: 38px;
-    border-radius: $border-radius-full;
-    flex-shrink: 0;
-    position: sticky;
-    top: $spacing-xl;
-
-    &--ai {
-      background: linear-gradient(135deg, $color-primary, $color-primary-light);
-      color: $color-white;
-      box-shadow: $shadow-glow-primary, 0 2px 8px rgba(45, 90, 61, 0.2);
-      border: 2px solid rgba(45, 90, 61, 0.1);
-    }
-
-    &--user {
-      background: linear-gradient(135deg, $color-gray-700, $color-gray-600);
-      color: $color-white;
-      font-family: $font-primary;
-      font-size: $font-size-xs;
-      font-weight: $font-weight-semibold;
-      letter-spacing: $letter-spacing-wide;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
-  }
-
-  &__bubble-wrapper {
-    @include flex-column;
-    max-width: 75%;
-    min-width: 60px;
-
-    @media (max-width: $breakpoint-md) { max-width: 88%; }
-  }
-
-  &__bubble {
-    padding: $spacing-md $spacing-lg;
-    border-radius: $border-radius-xl;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    line-height: $line-height-base;
-    overflow-x: auto;
-
-    &--user {
-      background: linear-gradient(135deg, $color-primary, $color-primary-dark);
-      color: $color-white;
-      border-bottom-right-radius: $border-radius-xs;
-      border-top-right-radius: $border-radius-2xl;
-      box-shadow: $shadow-md, $shadow-glow-primary, inset 0 1px 0 rgba(255, 255, 255, 0.1);
-
-      a {
-        color: $color-accent-light;
-        text-decoration: underline;
-        text-underline-offset: 2px;
-        &:hover { color: $color-accent; }
-      }
-    }
-
-    &--assistant {
-      background: rgba(255, 255, 255, 0.55);
-      color: $color-secondary;
-      border: $border-width solid rgba(45, 90, 61, 0.1);
-      border-bottom-left-radius: $border-radius-xs;
-      border-top-left-radius: $border-radius-2xl;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      box-shadow: $shadow-sm, inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -1px 0 rgba(255, 255, 255, 0.2);
-
-      strong { color: $color-primary-dark; font-weight: $font-weight-semibold; }
-      ul { margin: $spacing-sm 0; padding-left: $spacing-lg; }
-      li { margin-bottom: $spacing-xs; line-height: $line-height-base; &::marker { color: $color-primary; } }
-      em { color: $color-gray-500; }
-    }
-
-    &--typing {
-      padding: $spacing-md $spacing-xl;
-      min-width: 80px;
-      background: rgba(255, 255, 255, 0.55);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-    }
-  }
-
-  &__timestamp {
-    @include caption-text;
-    font-size: $font-size-2xs;
-    margin-top: $spacing-2xs;
-    padding: 0 $spacing-xs;
-    color: $color-gray-300;
-  }
-
-  &__typing-dots {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    height: 20px;
-  }
-
-  &__typing-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: $border-radius-full;
-    background: $color-primary;
-    opacity: 0.3;
-    animation: chatTypingPulse 1.4s ease-in-out infinite;
-
-    &:nth-child(1) { animation-delay: 0s; }
-    &:nth-child(2) { animation-delay: 0.2s; }
-    &:nth-child(3) { animation-delay: 0.4s; }
+    display: block;
+    font-size: 11px;
+    color: $color-gray-400;
+    margin-top: 2px;
   }
 
   // ------------------------------------------
   // Input area
   // ------------------------------------------
   &__input-area {
-    padding: $spacing-sm $spacing-xl $spacing-md;
-    border-top: $border-width solid $border-color-light;
+    @include flex-column;
+    gap: $spacing-xs;
+    padding-top: $spacing-sm;
     flex-shrink: 0;
-    @include glass(rgba(255, 255, 255, 0.6), 16px);
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-    border-radius: 0;
-    position: relative;
-    z-index: 1;
   }
 
-  &__input-wrapper {
+  &__chips {
     display: flex;
-    align-items: flex-end;
-    gap: $spacing-xs;
-    padding: $spacing-xs $spacing-xs $spacing-xs $spacing-sm;
-    border-radius: $border-radius-xl;
-    border: $border-width solid $border-color-medium;
-    background: $bg-input;
-    box-shadow: $shadow-inner;
-    @include transition;
+    gap: $spacing-2xs;
+    flex-wrap: wrap;
+    padding-bottom: $spacing-2xs;
+  }
 
-    &:focus-within {
-      border-color: rgba(45, 90, 61, 0.35);
-      box-shadow: $shadow-inner, 0 0 0 3px rgba(45, 90, 61, 0.08), 0 0 20px rgba(45, 90, 61, 0.06);
-      background: $color-white;
+  &__chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: $border-radius-full;
+    border: 1px solid $color-gray-100;
+    background: $color-white;
+    font-size: 11px;
+    font-family: $font-primary;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all 150ms ease;
+    white-space: nowrap;
+
+    &:hover {
+      border-color: rgba(45, 90, 61, 0.2);
+      color: $color-primary;
+      background: $color-primary-ghost;
     }
   }
 
-  &__attach-btn {
-    @include flex-center;
-    width: 36px;
-    height: 36px;
-    border-radius: $border-radius-md;
-    border: none;
-    background: transparent;
-    color: $color-gray-300;
-    cursor: pointer;
-    flex-shrink: 0;
-    @include transition;
+  &__input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: $spacing-xs;
+    border-radius: $border-radius-lg;
+    border: 1px solid $color-gray-200;
+    background: $color-white;
+    padding: $spacing-xs $spacing-xs $spacing-xs $spacing-md;
+    transition: border-color 200ms ease, box-shadow 200ms ease;
 
-    &:hover {
-      color: $color-primary;
-      background: $color-primary-ghost;
+    &:focus-within {
+      border-color: $color-primary-light;
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.06);
     }
   }
 
@@ -589,669 +398,155 @@
     border: none;
     background: none;
     font-family: $font-primary;
-    font-size: $font-size-sm;
+    font-size: 14px;
     color: $color-secondary;
-    line-height: $line-height-base;
     resize: none;
-    outline: none;
-    min-height: 24px;
+    min-height: 20px;
     max-height: 120px;
-    padding: $spacing-xs 0;
+    outline: none;
+    line-height: 1.5;
+    padding: $spacing-2xs 0;
 
     &::placeholder { color: $color-gray-300; }
-    &:disabled { opacity: 0.6; }
+    &:disabled { opacity: 0.5; }
   }
 
-  &__send-btn {
+  &__send {
     @include flex-center;
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-lg;
+    width: 34px;
+    height: 34px;
+    border-radius: $border-radius-md;
     border: none;
-    background: $color-gray-200;
-    color: $color-gray-400;
-    cursor: not-allowed;
+    background: $color-gray-100;
+    color: $color-gray-300;
+    cursor: default;
+    transition: all 200ms $ease-out-quart;
     flex-shrink: 0;
-    transition: transform 200ms $ease-spring, background 200ms $ease-out-quart, box-shadow 280ms $ease-out-quart, color 200ms $ease-out-quart;
 
     &--active {
-      background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+      background: $color-primary;
       color: $color-white;
       cursor: pointer;
-      box-shadow: $shadow-glow-primary;
+      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
 
-      &:hover {
-        background: linear-gradient(135deg, $color-primary-light, $color-primary);
-        transform: scale(1.08);
-        box-shadow: $shadow-glow-primary, 0 0 24px rgba(45, 90, 61, 0.25), 0 0 48px rgba(45, 90, 61, 0.1);
-      }
-
-      &:active {
-        transform: scale(0.92);
-        transition: transform 80ms $ease-smooth;
-      }
+      &:hover { background: $color-primary-light; }
     }
 
-    &:disabled { cursor: not-allowed; opacity: 0.6; }
+    &:disabled { cursor: default; }
   }
 
-  &__input-hint {
-    @include caption-text;
-    font-size: $font-size-2xs;
-    text-align: center;
-    margin-top: $spacing-sm;
+  &__hint {
+    font-size: 10px;
     color: $color-gray-300;
-
-    kbd {
-      display: inline-block;
-      padding: 1px 5px;
-      border-radius: $border-radius-xs;
-      background: $color-gray-50;
-      border: $border-width solid $border-color;
-      font-family: $font-primary;
-      font-size: $font-size-2xs;
-      color: $color-gray-400;
-    }
+    text-align: center;
+    padding: 0;
+    margin: 0;
   }
 
   // ------------------------------------------
   // Sidebar
   // ------------------------------------------
   &__sidebar {
-    width: 280px;
-    flex-shrink: 0;
-    @include glass-card;
+    width: 240px;
+    min-width: 240px;
     @include flex-column;
-    padding: $spacing-lg;
+    gap: $spacing-sm;
     overflow-y: auto;
     @include custom-scrollbar;
-    animation: slideInRight 400ms $ease-out-expo both;
-    animation-delay: 0.15s;
-    gap: 0;
+    animation: fadeInRight 250ms $ease-out-expo both;
 
-    @media (max-width: $breakpoint-lg) { display: none; }
+    @media (max-width: $breakpoint-lg) {
+      display: none;
+    }
   }
 
   &__sidebar-section {
-    padding-bottom: $spacing-lg;
-    margin-bottom: $spacing-lg;
-    border-bottom: $border-width solid $border-color-light;
-
-    &:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    @include flex-column;
+    gap: $spacing-xs;
+    padding: $spacing-md;
+    border-radius: $border-radius-lg;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
   }
 
   &__sidebar-title {
-    @include label-text;
-    margin-bottom: $spacing-md;
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 0;
   }
 
-  &__stats {
+  &__sidebar-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
   }
 
-  &__stat {
-    @include flex-column;
-    align-items: center;
-    padding: $spacing-md $spacing-sm;
+  &__sidebar-stat {
+    @include flex-column-center;
+    padding: $spacing-sm $spacing-xs;
     border-radius: $border-radius-md;
     background: $color-gray-50;
-    border: $border-width solid $border-color-light;
-    @include transition;
-
-    &:hover {
-      background: $color-white;
-      border-color: $border-color-medium;
-      box-shadow: $shadow-sm;
-      transform: translateY(-1px);
-    }
   }
 
-  &__stat-value {
-    font-family: $font-heading;
-    font-size: $font-size-lg;
+  &__sidebar-stat-val {
+    font-size: 18px;
     font-weight: $font-weight-bold;
     color: $color-secondary;
-    line-height: $line-height-none;
-
-    &--success { color: $color-success-dark; }
-    &--warning { color: $color-warning-dark; }
-    &--accent { color: $color-accent-dark; }
+    font-family: $font-heading;
+    line-height: 1;
   }
 
-  &__stat-label {
-    @include caption-text;
-    font-size: $font-size-2xs;
-    margin-top: $spacing-2xs;
-    text-align: center;
+  &__sidebar-stat-lbl {
+    font-size: 10px;
+    color: $color-gray-400;
+    margin-top: 2px;
   }
 
-  &__topics {
+  &__sidebar-caps {
     @include flex-column;
-    gap: $spacing-xs;
+    gap: 4px;
+
+    span {
+      font-size: 12px;
+      color: $color-gray-500;
+      line-height: 1.4;
+    }
   }
 
-  &__topic {
+  &__sidebar-history {
+    @include flex-column;
+    gap: 2px;
+  }
+
+  &__sidebar-history-item {
     display: block;
     width: 100%;
-    padding: $spacing-sm $spacing-md;
-    border-radius: $border-radius-sm;
-    border: $border-width solid $border-color-light;
-    background: transparent;
-    font-family: $font-primary;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-600;
-    text-align: left;
-    cursor: pointer;
-    transition: background 200ms $ease-out-quart, color 200ms $ease-out-quart, border-color 200ms $ease-out-quart, transform 200ms $ease-out-quart, box-shadow 200ms $ease-out-quart;
-
-    &:hover {
-      background: $color-primary-ghost;
-      color: $color-primary;
-      border-color: rgba(45, 90, 61, 0.15);
-      transform: translateY(-2px);
-      box-shadow: $shadow-sm;
-    }
-
-    &:active { transform: translateY(0); }
-  }
-
-  &__retention {
-    @include flex-column;
-    gap: $spacing-sm;
-  }
-
-  &__retention-bar {
-    width: 100%;
-    height: 8px;
-    border-radius: $border-radius-full;
-    background: $color-gray-100;
-    overflow: hidden;
-  }
-
-  &__retention-fill {
-    height: 100%;
-    border-radius: $border-radius-full;
-    background: linear-gradient(90deg, $color-primary, $color-primary-light);
-    transition: width 800ms $ease-out-expo;
-    position: relative;
-    overflow: hidden;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 60%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
-      animation: chatRetentionShimmer 2.5s ease-in-out infinite;
-    }
-  }
-
-  &__retention-label {
-    @include caption-text;
-    font-size: $font-size-2xs;
-  }
-
-  &__history {
-    @include flex-column;
-    gap: $spacing-xs;
-  }
-
-  &__history-item {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    width: 100%;
-    padding: $spacing-xs $spacing-sm;
-    border-radius: $border-radius-sm;
+    padding: 5px $spacing-xs;
     border: none;
     background: transparent;
     font-family: $font-primary;
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
+    font-size: 12px;
+    color: $color-gray-500;
     text-align: left;
     cursor: pointer;
-    transition: background 200ms $ease-out-quart, color 200ms $ease-out-quart;
+    border-radius: $border-radius-sm;
+    transition: all 100ms ease;
     @include truncate;
 
-    svg {
-      flex-shrink: 0;
-      opacity: 0.5;
-      transition: opacity 200ms $ease-out-quart, transform 300ms $ease-out-expo;
-    }
-
-    span { @include truncate; }
-
     &:hover {
-      background: $color-primary-ghost;
-      color: $color-gray-600;
-      svg { opacity: 0.9; transform: rotate(-15deg); }
+      background: $color-gray-50;
+      color: $color-primary;
     }
-  }
-
-  &__badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: $border-radius-full;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    letter-spacing: $letter-spacing-wide;
-    vertical-align: middle;
-    white-space: nowrap;
-  }
-
-  &__client-card {
-    @include glass(rgba(255, 255, 255, 0.6), 10px);
-    border-color: rgba(45, 90, 61, 0.1);
-    border-radius: $border-radius-lg;
-    padding: $spacing-lg;
-    margin: $spacing-md 0;
-    box-shadow: $shadow-sm;
-    @include transition;
-
-    &:hover { box-shadow: $shadow-md; border-color: rgba(45, 90, 61, 0.18); }
-  }
-
-  &__client-card-header {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    margin-bottom: $spacing-md;
-    padding-bottom: $spacing-md;
-    border-bottom: $border-width solid $border-color-light;
-  }
-
-  &__client-card-avatar {
-    @include flex-center;
-    width: 44px;
-    height: 44px;
-    border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary, $color-primary-light);
-    color: $color-white;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
-    flex-shrink: 0;
-    box-shadow: 0 0 16px rgba(45, 90, 61, 0.2);
-    border: 2px solid rgba(45, 90, 61, 0.15);
-  }
-
-  &__client-card-info {
-    flex: 1;
-    min-width: 0;
-    strong { display: inline; font-size: $font-size-base; margin-right: $spacing-xs; }
-  }
-
-  &__client-card-sub {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    margin-top: $spacing-2xs;
-    @include truncate;
-  }
-
-  &__client-card-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: $spacing-sm;
-    margin-bottom: $spacing-md;
-
-    @media (max-width: $breakpoint-md) { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  &__client-card-item {
-    @include flex-column;
-    gap: $spacing-2xs;
-    padding: $spacing-sm;
-    background: $color-gray-50;
-    border-radius: $border-radius-sm;
-    border: $border-width solid $border-color-light;
-    @include transition;
-
-    &:hover { background: $color-white; border-color: $border-color-medium; }
-  }
-
-  &__client-card-label {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    font-weight: $font-weight-medium;
-    text-transform: uppercase;
-    letter-spacing: $letter-spacing-caps;
-  }
-
-  &__client-card-value {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
-  }
-
-  &__client-card-notes {
-    font-size: $font-size-xs;
-    color: $color-gray-500;
-    padding: $spacing-sm $spacing-md;
-    background: rgba(201, 168, 76, 0.06);
-    border-radius: $border-radius-sm;
-    border-left: 3px solid $color-accent;
-    margin-bottom: $spacing-sm;
-    line-height: $line-height-base;
-  }
-
-  &__client-card-status {
-    font-size: $font-size-xs;
-    color: $color-gray-500;
-    font-style: italic;
-    line-height: $line-height-base;
-
-    .chat-ai__badge { font-size: $font-size-2xs; padding: 3px 10px; box-shadow: $shadow-xs; }
-  }
-
-  &__data-table-wrapper {
-    margin: $spacing-md 0;
-    overflow-x: auto;
-    border-radius: $border-radius-md;
-    border: $border-width solid $border-color;
-    @include custom-scrollbar;
-    box-shadow: $shadow-sm;
-  }
-
-  &__data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: $font-primary;
-    font-size: $font-size-xs;
-
-    th {
-      padding: $spacing-sm $spacing-md;
-      background: rgba(45, 90, 61, 0.06);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      font-weight: $font-weight-semibold;
-      color: $color-primary-dark;
-      text-align: left;
-      white-space: nowrap;
-      font-size: $font-size-2xs;
-      text-transform: uppercase;
-      letter-spacing: $letter-spacing-caps;
-      border-bottom: $border-width solid rgba(45, 90, 61, 0.12);
-      position: relative;
-
-      &::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(45, 90, 61, 0.08), transparent);
-      }
-    }
-
-    td {
-      padding: $spacing-sm $spacing-md;
-      border-bottom: $border-width solid $border-color-light;
-      vertical-align: middle;
-      color: $color-gray-600;
-      white-space: nowrap;
-      transition: background 150ms $ease-out-quart;
-    }
-
-    tr:nth-child(even) td { background: rgba(0, 0, 0, 0.015); }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: rgba(45, 90, 61, 0.035); }
-  }
-
-  &__data-table-more {
-    padding: $spacing-sm $spacing-md;
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    text-align: center;
-    border-top: $border-width solid $border-color-light;
-    font-style: italic;
-  }
-
-  &__metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: $spacing-sm;
-    margin: $spacing-md 0;
-  }
-
-  &__metric {
-    @include flex-column-center;
-    padding: $spacing-md $spacing-sm;
-    @include glass(rgba(255, 255, 255, 0.7), 8px);
-    border-radius: $border-radius-md;
-    text-align: center;
-    box-shadow: $shadow-xs, $glass-inner-glow-subtle;
-    @include transition;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: $shadow-md, $glass-inner-glow;
-      border-color: $glass-border-bright;
-    }
-  }
-
-  &__metric-value {
-    font-family: $font-heading;
-    font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
-    line-height: $line-height-none;
-  }
-
-  &__metric-label {
-    font-family: $font-primary;
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    margin-top: $spacing-2xs;
-    font-weight: $font-weight-medium;
-  }
-
-  &__action-card {
-    margin: $spacing-md 0;
-    padding: $spacing-lg;
-    border-radius: $border-radius-lg;
-    border-left: 4px solid;
-    @include transition;
-    position: relative;
-
-    &:hover { transform: translateY(-2px); box-shadow: $shadow-md; }
-
-    &--info {
-      background: rgba(96, 165, 250, 0.06);
-      border-left-color: $color-info;
-      &:hover { background: rgba(96, 165, 250, 0.09); box-shadow: $shadow-md, $shadow-glow-info; }
-    }
-
-    &--success {
-      background: rgba(52, 211, 153, 0.06);
-      border-left-color: $color-success;
-      &:hover { background: rgba(52, 211, 153, 0.09); box-shadow: $shadow-md, $shadow-glow-success; }
-    }
-
-    &--warning {
-      background: rgba(251, 191, 36, 0.06);
-      border-left-color: $color-warning;
-      &:hover { background: rgba(251, 191, 36, 0.09); }
-    }
-
-    &--danger {
-      background: rgba(248, 113, 113, 0.06);
-      border-left-color: $color-error;
-      &:hover { background: rgba(248, 113, 113, 0.09); box-shadow: $shadow-md, $shadow-glow-error; }
-    }
-  }
-
-  &__action-card-title {
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
-    margin-bottom: $spacing-sm;
-  }
-
-  &__action-card-desc {
-    font-family: $font-primary;
-    font-size: $font-size-xs;
-    color: $color-gray-600;
-    line-height: $line-height-base;
-
-    ul { margin: $spacing-sm 0; padding-left: $spacing-lg; }
-    li { margin-bottom: $spacing-xs; }
-  }
-
-  &__message-preview {
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: $border-radius-md;
-    padding: $spacing-md;
-    border: $border-width solid $border-color;
-    margin-top: $spacing-sm;
-  }
-
-  &__help-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: $spacing-sm;
-    margin: $spacing-md 0;
-
-    @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
-  }
-
-  &__help-item {
-    @include flex-column;
-    gap: $spacing-2xs;
-    padding: $spacing-md;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: $border-radius-md;
-    border: $border-width solid $border-color;
-    @include transition;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.75);
-      border-color: $border-color-medium;
-      transform: translateY(-1px);
-      box-shadow: $shadow-sm;
-    }
-
-    strong { font-size: $font-size-sm; color: $color-primary; }
-    span { font-size: $font-size-2xs; color: $color-gray-400; line-height: $line-height-base; }
   }
 }
 
 // ============================================
 // Animations
 // ============================================
-
-@keyframes chatStatusPulse {
-  0%, 100% { box-shadow: 0 0 4px rgba(52, 211, 153, 0.3); opacity: 1; }
-  50% { box-shadow: 0 0 12px rgba(52, 211, 153, 0.6); opacity: 0.8; }
-}
-
-@keyframes chatHeaderIconPulse {
-  0%, 100% { opacity: 0.4; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.04); }
-}
-
-@keyframes chatTypingPulse {
-  0%, 100% { transform: scale(1); opacity: 0.3; }
-  50% { transform: scale(1.3); opacity: 1; }
-}
-
-@keyframes chatChipIn {
-  0% { opacity: 0; transform: translateY(6px) scale(0.95); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes chatScrollBtnIn {
-  0% { opacity: 0; transform: translateY(8px) scale(0.9); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes chatTypingBounce {
-  0%, 100% { transform: translateY(0); opacity: 0.3; }
-  15% { opacity: 0.5; }
-  30% { transform: translateY(-6px); opacity: 1; }
-  45% { opacity: 0.7; }
-  60% { transform: translateY(0); opacity: 0.3; }
-}
-
-@keyframes chatWelcomeFloat {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-6px) rotate(1deg); }
-  50% { transform: translateY(-2px) rotate(0deg); }
-  75% { transform: translateY(-8px) rotate(-1deg); }
-}
-
-@keyframes chatPulseGlow {
-  0%, 100% { opacity: 0.5; transform: translate(-50%, -60%) scale(1); }
-  50% { opacity: 0.8; transform: translate(-50%, -60%) scale(1.1); }
-}
-
-@keyframes chatRetentionShimmer {
-  0% { left: -100%; }
-  50%, 100% { left: 200%; }
-}
-
-// ============================================
-// PREMIUM ENHANCEMENTS
-// ============================================
-
-.chat-ai__message--assistant {
-  .chat-ai__bubble {
-    animation: chatAiResponseIn 400ms $ease-out-expo both;
-  }
-}
-
-@keyframes chatAiResponseIn {
-  0% { opacity: 0; transform: translateY(8px) scale(0.97); filter: blur(3px); }
-  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-}
-
-.chat-ai__message--user {
-  .chat-ai__bubble {
-    animation: chatUserMessageIn 300ms $ease-out-expo both;
-  }
-}
-
-@keyframes chatUserMessageIn {
-  0% { opacity: 0; transform: translateX(16px) scale(0.97); }
-  100% { opacity: 1; transform: translateX(0) scale(1); }
-}
-
-.chat-ai__send-btn { @include press-effect; }
-.chat-ai__prompt-card { @include press-effect; }
-.chat-ai__topic { @include press-effect; }
-.chat-ai__action-card { @include press-effect; }
-.chat-ai__clear-btn { @include press-effect; }
-.chat-ai__chip { @include press-effect; }
-.chat-ai__scroll-bottom { @include press-effect; }
-.chat-ai__stat { @include press-effect; }
-
-.chat-ai__stat-value { @include counter-roll-in(0.1s); }
-.chat-ai__metric-value { @include counter-roll-in(0.15s); }
-
-.chat-ai__typing-dot {
-  &:nth-child(1) { background: $color-primary; }
-  &:nth-child(2) { background: $color-primary-light; }
-  &:nth-child(3) { background: $color-primary-lighter; }
-}
-
-.chat-ai__client-card { @include animated-border(6s); }
-.chat-ai__history { @include stagger-fade-in($stagger-fast, 8); }
-
-.chat-ai__input-wrapper:focus-within {
-  animation: chatInputGlow 2s ease-in-out infinite;
-}
-
-@keyframes chatInputGlow {
-  0%, 100% { box-shadow: $shadow-inner, 0 0 0 3px rgba(45, 90, 61, 0.08), 0 0 20px rgba(45, 90, 61, 0.06); }
-  50% { box-shadow: $shadow-inner, 0 0 0 3px rgba(45, 90, 61, 0.12), 0 0 28px rgba(45, 90, 61, 0.1); }
-}
-
-.chat-ai__welcome-icon {
-  transition: transform 600ms $ease-spring;
-  &:hover { transform: scale(1.05) rotate(-3deg); }
+@keyframes typingPulse {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
 }

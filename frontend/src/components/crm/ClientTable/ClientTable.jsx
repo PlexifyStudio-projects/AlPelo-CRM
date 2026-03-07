@@ -10,22 +10,12 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
     name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   const getDaysClass = (lastVisit) => {
+    if (!lastVisit) return '';
     const days = daysSince(lastVisit);
     if (days > 60) return `${b}__days--danger`;
     if (days > 45) return `${b}__days--warning`;
     if (days >= 30) return `${b}__days--caution`;
     return `${b}__days--ok`;
-  };
-
-  const getSourceKey = (source) => {
-    if (!source) return 'other';
-    const s = source.toLowerCase();
-    if (s.includes('instagram')) return 'instagram';
-    if (s.includes('referido')) return 'referido';
-    if (s.includes('google')) return 'google';
-    if (s.includes('tiktok')) return 'tiktok';
-    if (s.includes('pasó') || s.includes('paso')) return 'paso';
-    return 'other';
   };
 
   const SortIcon = ({ column }) => {
@@ -62,23 +52,20 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
                   Cliente <SortIcon column="name" />
                 </span>
               </th>
-              <th className={`${b}__th`} onClick={() => onSort('lastVisit')}>
+              <th className={`${b}__th`} onClick={() => onSort('last_visit')}>
                 <span className={`${b}__th-content`}>
-                  Última visita <SortIcon column="lastVisit" />
+                  Última visita <SortIcon column="last_visit" />
                 </span>
               </th>
-              <th className={`${b}__th ${b}__th--right ${b}__th--hide-sm`} onClick={() => onSort('totalVisits')}>
+              <th className={`${b}__th ${b}__th--right ${b}__th--hide-sm`} onClick={() => onSort('total_visits')}>
                 <span className={`${b}__th-content`}>
-                  Visitas <SortIcon column="totalVisits" />
+                  Visitas <SortIcon column="total_visits" />
                 </span>
               </th>
-              <th className={`${b}__th ${b}__th--right ${b}__th--hide-sm`} onClick={() => onSort('totalSpent')}>
+              <th className={`${b}__th ${b}__th--right ${b}__th--hide-sm`} onClick={() => onSort('total_spent')}>
                 <span className={`${b}__th-content`}>
-                  Total gastado <SortIcon column="totalSpent" />
+                  Total gastado <SortIcon column="total_spent" />
                 </span>
-              </th>
-              <th className={`${b}__th ${b}__th--hide-md`}>
-                <span className={`${b}__th-content`}>Origen</span>
               </th>
               <th className={`${b}__th`} onClick={() => onSort('status')}>
                 <span className={`${b}__th-content`}>
@@ -96,7 +83,7 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
                 style={{ animationDelay: `${index * 0.03}s` }}
               >
                 <td className={`${b}__td ${b}__td--id`}>
-                  <span className={`${b}__client-id`}>{client.clientId}</span>
+                  <span className={`${b}__client-id`}>{client.client_id}</span>
                 </td>
                 <td className={`${b}__td`}>
                   <div className={`${b}__client-cell`}>
@@ -110,27 +97,24 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
                   </div>
                 </td>
                 <td className={`${b}__td`}>
-                  <div className={`${b}__visit-cell`}>
-                    <span className={`${b}__date`}>{formatDate(client.lastVisit)}</span>
-                    <span className={`${b}__days ${getDaysClass(client.lastVisit)}`}>
-                      hace {daysSince(client.lastVisit)}d
-                    </span>
-                  </div>
-                </td>
-                <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
-                  <span className={`${b}__visits-count`}>{client.totalVisits}</span>
-                </td>
-                <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
-                  <span className={`${b}__spent`}>{formatCurrency(client.totalSpent)}</span>
-                  {client.avgTicket > 0 && (
-                    <span className={`${b}__avg-ticket`}>prom. {formatCurrency(client.avgTicket)}</span>
+                  {client.last_visit ? (
+                    <div className={`${b}__visit-cell`}>
+                      <span className={`${b}__date`}>{formatDate(client.last_visit)}</span>
+                      <span className={`${b}__days ${getDaysClass(client.last_visit)}`}>
+                        hace {daysSince(client.last_visit)}d
+                      </span>
+                    </div>
+                  ) : (
+                    <span className={`${b}__no-visit`}>Sin visitas</span>
                   )}
                 </td>
-                <td className={`${b}__td ${b}__td--hide-md`}>
-                  {client.source && (
-                    <span className={`${b}__source-tag ${b}__source-tag--${getSourceKey(client.source)}`}>
-                      {client.source}
-                    </span>
+                <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
+                  <span className={`${b}__visits-count`}>{client.total_visits}</span>
+                </td>
+                <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
+                  <span className={`${b}__spent`}>{formatCurrency(client.total_spent)}</span>
+                  {client.avg_ticket > 0 && (
+                    <span className={`${b}__avg-ticket`}>prom. {formatCurrency(client.avg_ticket)}</span>
                   )}
                 </td>
                 <td className={`${b}__td`}>
@@ -169,7 +153,7 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
               </div>
               <div className={`${b}__card-info`}>
                 <span className={`${b}__client-name`}>{client.name}</span>
-                <span className={`${b}__client-phone`}>{client.clientId} &middot; {client.phone}</span>
+                <span className={`${b}__client-phone`}>{client.client_id} &middot; {client.phone}</span>
               </div>
               <span className={`${b}__status ${b}__status--${client.status}`}>
                 {client.status === 'vip' && (
@@ -183,17 +167,21 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
             <div className={`${b}__card-stats`}>
               <div className={`${b}__card-stat`}>
                 <span className={`${b}__card-stat-label`}>Ultima visita</span>
-                <span className={`${b}__days ${getDaysClass(client.lastVisit)}`}>
-                  hace {daysSince(client.lastVisit)}d
-                </span>
+                {client.last_visit ? (
+                  <span className={`${b}__days ${getDaysClass(client.last_visit)}`}>
+                    hace {daysSince(client.last_visit)}d
+                  </span>
+                ) : (
+                  <span className={`${b}__no-visit`}>--</span>
+                )}
               </div>
               <div className={`${b}__card-stat`}>
                 <span className={`${b}__card-stat-label`}>Visitas</span>
-                <span className={`${b}__visits-count`}>{client.totalVisits}</span>
+                <span className={`${b}__visits-count`}>{client.total_visits}</span>
               </div>
               <div className={`${b}__card-stat`}>
                 <span className={`${b}__card-stat-label`}>Total</span>
-                <span className={`${b}__spent`}>{formatCurrency(client.totalSpent)}</span>
+                <span className={`${b}__spent`}>{formatCurrency(client.total_spent)}</span>
               </div>
             </div>
           </div>

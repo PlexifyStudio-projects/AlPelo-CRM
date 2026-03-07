@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-Base = declarative_base()
+metadata = MetaData(schema='public')
+Base = declarative_base(metadata=metadata)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -34,14 +35,14 @@ def wait_for_db(retries=5, delay=5):
             with engine.connect() as conn:
                 conn.execute(text("SET client_encoding TO 'UTF8'"))
                 conn.execute(text("SET search_path TO public"))
-                result = conn.execute(text("SELECT current_database()"))
-                db_name = result.scalar()
-                print(f"[DB] Connected to: {db_name}")
+                conn.execute(text("SET timezone TO 'UTC'"))
 
-            return engine
+                result = conn.execute(text("SELECT current_database(), current_schema, current_timestamp;"))
+                db_info = result.fetchone()
+
+                return engine
 
         except Exception as e:
-            print(f"[DB] Attempt {attempt + 1}/{retries} failed: {e}")
             if attempt < retries - 1:
                 time.sleep(delay)
             else:

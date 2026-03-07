@@ -61,7 +61,7 @@ const BADGE_COUNTS = {
   'chat-ai': null,
 };
 
-const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout }) => {
+const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout, isMobileOpen, onCloseMobile }) => {
   const [openSections, setOpenSections] = useState({});
   const b = 'sidebar';
 
@@ -83,7 +83,7 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
   const userRole = user?.role === 'admin' ? 'Administrador' : 'Barbero';
 
   return (
-    <aside className={`${b} ${isCollapsed ? `${b}--collapsed` : ''}`}>
+    <aside className={`${b} ${isCollapsed ? `${b}--collapsed` : ''} ${isMobileOpen ? `${b}--mobile-open` : ''}`}>
       {/* Brand */}
       <div className={`${b}__brand`}>
         <div className={`${b}__brand-inner`}>
@@ -101,7 +101,18 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
             </div>
           )}
         </div>
-        {!isCollapsed && (
+        {isMobileOpen ? (
+          <button
+            className={`${b}__close-mobile`}
+            onClick={onCloseMobile}
+            aria-label="Cerrar menu"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        ) : !isCollapsed && (
           <button
             className={`${b}__toggle`}
             onClick={onToggleCollapse}

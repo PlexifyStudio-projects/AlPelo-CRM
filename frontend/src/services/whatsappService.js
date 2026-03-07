@@ -1,55 +1,61 @@
-import {
-  mockWhatsAppConversations,
-  mockWhatsAppMessages,
-  mockWhatsAppTemplates,
-  mockWhatsAppStats,
-} from '../data/mockData';
+const API = 'http://localhost:8001/api';
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const headers = { 'Content-Type': 'application/json' };
+
+const handleResponse = async (res) => {
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Error de servidor' }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+};
 
 const whatsappService = {
+  // ========================= CONVERSATIONS =========================
   getConversations: async () => {
-    await delay(300);
-    return [...mockWhatsAppConversations].sort(
-      (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime)
-    );
+    const res = await fetch(`${API}/whatsapp/conversations`, { headers });
+    return handleResponse(res);
   },
 
+  getConversation: async (id) => {
+    const res = await fetch(`${API}/whatsapp/conversations/${id}`, { headers });
+    return handleResponse(res);
+  },
+
+  // ========================= MESSAGES =========================
   getMessages: async (conversationId) => {
-    await delay(200);
-    return mockWhatsAppMessages[conversationId] || [];
+    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/messages`, { headers });
+    return handleResponse(res);
   },
 
   sendMessage: async (conversationId, text) => {
-    await delay(500);
-    const newMsg = {
-      id: `msg-${Date.now()}`,
-      from: 'business',
-      text,
-      time: new Date().toISOString(),
-      status: 'sent',
-    };
-    return newMsg;
+    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ conversation_id: conversationId, content: text }),
+    });
+    return handleResponse(res);
+  },
+
+  // ========================= TEMPLATES =========================
+  getTemplates: async () => {
+    const res = await fetch(`${API}/whatsapp/templates`, { headers });
+    return handleResponse(res);
   },
 
   sendTemplate: async (templateId, clientIds) => {
-    await delay(800);
-    return {
-      success: true,
-      sent: clientIds.length,
-      templateId,
-      timestamp: new Date().toISOString(),
-    };
+    const res = await fetch(`${API}/whatsapp/templates/send`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ template_id: templateId, client_ids: clientIds }),
+    });
+    return handleResponse(res);
   },
 
-  getTemplates: async () => {
-    await delay(300);
-    return mockWhatsAppTemplates;
-  },
-
+  // ========================= STATS =========================
   getStats: async () => {
-    await delay(200);
-    return mockWhatsAppStats;
+    const res = await fetch(`${API}/whatsapp/stats`, { headers });
+    return handleResponse(res);
   },
 };
 

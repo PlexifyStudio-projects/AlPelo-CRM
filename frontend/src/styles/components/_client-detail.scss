@@ -161,6 +161,11 @@
     border-radius: $border-radius-full;
     padding: 2px $spacing-sm;
     width: fit-content;
+    cursor: pointer;
+    font-family: $font-primary;
+    transition: opacity $transition-fast;
+
+    &:hover { opacity: 0.8; }
 
     &--activo {
       color: #1B7A4A;
@@ -194,6 +199,64 @@
 
     &--active  { @extend .client-detail__status--activo; }
     &--inactive { @extend .client-detail__status--inactivo; }
+  }
+
+  &__status-wrapper {
+    position: relative;
+  }
+
+  &__status-menu {
+    position: absolute;
+    top: calc(100% + $spacing-xs);
+    left: 0;
+    min-width: 160px;
+    background: $color-white;
+    border: $border-width solid $border-color-medium;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-lg;
+    z-index: 10;
+    padding: $spacing-xs 0;
+    animation: cdFadeIn 150ms $ease-out-expo both;
+  }
+
+  &__status-menu-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: none;
+    background: transparent;
+    font-family: $font-primary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-600;
+    cursor: pointer;
+    text-align: left;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-gray-50;
+    }
+
+    &--active {
+      color: $color-primary;
+      font-weight: $font-weight-semibold;
+      background: $color-primary-ghost;
+    }
+  }
+
+  &__status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+
+    &--activo { background: $color-primary; }
+    &--vip { background: $color-accent; }
+    &--en_riesgo { background: #F59E42; }
+    &--inactivo { background: $color-gray-400; }
+    &--nuevo { background: #60A5FA; }
   }
 
   // --- Close button ---
@@ -878,6 +941,8 @@
 
   // --- Notes ---
   &__notes {
+    @include flex-column;
+    gap: $spacing-md;
     padding: $spacing-sm 0;
   }
 
@@ -885,15 +950,49 @@
     background: $color-gray-50;
     border: $border-width solid $border-color;
     border-radius: $border-radius-md;
-    padding: $spacing-lg;
+    padding: $spacing-md $spacing-lg;
     transition: box-shadow $transition-fast;
 
     &:hover { box-shadow: $shadow-xs; }
   }
 
-  &__notes-icon {
-    color: $color-gray-300;
+  &__notes-card-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
     margin-bottom: $spacing-sm;
+    padding-bottom: $spacing-sm;
+    border-bottom: $border-width solid $border-color;
+  }
+
+  &__notes-author {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+  }
+
+  &__notes-date {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    margin-left: auto;
+  }
+
+  &__notes-delete {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: $color-gray-300;
+    cursor: pointer;
+    border-radius: $border-radius-full;
+    @include flex-center;
+    flex-shrink: 0;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-error-bg;
+      color: $color-error;
+    }
   }
 
   &__notes-text {
@@ -907,7 +1006,7 @@
   &__notes-edit {
     textarea {
       width: 100%;
-      min-height: 120px;
+      min-height: 100px;
       padding: $spacing-md;
       background: $color-gray-50;
       border: $border-width solid $border-color;
@@ -935,7 +1034,7 @@
   }
 
   &__notes-edit-btn {
-    margin-top: $spacing-md;
+    margin-bottom: $spacing-sm;
   }
 
   // --- Empty state ---
@@ -1136,6 +1235,37 @@
 
   &__empty:hover svg {
     transform: scale(1.1);
+  }
+
+  // -----------------------------------------------
+  // RESPONSIVE
+  // -----------------------------------------------
+  @media (max-width: $breakpoint-md) {
+    width: 85vw;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    width: 100vw;
+
+    &__stats-grid,
+    &__info-grid,
+    &__pref-grid {
+      grid-template-columns: 1fr;
+    }
+
+    &__analytics-row {
+      grid-template-columns: 1fr;
+      gap: $spacing-sm;
+    }
+
+    &__header-main {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    &__actions {
+      justify-content: center;
+    }
   }
 }
 

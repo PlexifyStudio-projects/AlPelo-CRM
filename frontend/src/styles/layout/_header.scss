@@ -30,6 +30,58 @@
       0 8px 32px rgba(0, 0, 0, 0.04);
   }
 
+  // -----------------------------------------------
+  // HAMBURGER BUTTON (mobile only)
+  // -----------------------------------------------
+  &__hamburger {
+    @include flex-center;
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-md;
+    color: $color-gray-600;
+    flex-shrink: 0;
+    transition:
+      background 200ms $ease-out-quart,
+      color 200ms $ease-out-quart;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: $color-secondary;
+    }
+
+    &:active {
+      transform: scale(0.93);
+    }
+  }
+
+  // -----------------------------------------------
+  // MOBILE RESPONSIVE
+  // -----------------------------------------------
+  @media (max-width: $breakpoint-md) {
+    padding: 0 $spacing-md;
+    gap: $spacing-xs;
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    padding: 0 $spacing-sm;
+
+    .header__user-info {
+      display: none;
+    }
+
+    .header__chevron {
+      display: none;
+    }
+
+    .header__profile-trigger {
+      padding: $spacing-xs;
+    }
+
+    .header__divider {
+      display: none;
+    }
+  }
+
   // Subtle inner highlight for glass effect
   &::after {
     content: '';

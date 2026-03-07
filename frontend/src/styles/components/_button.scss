@@ -90,15 +90,16 @@
   }
 
   &--secondary {
-    @include glass(rgba(255, 255, 255, 0.55));
+    background: rgba(45, 90, 61, 0.06);
+    border: $border-width solid rgba(45, 90, 61, 0.2);
     color: $color-primary;
-    box-shadow: $shadow-sm, $glass-inner-glow-subtle;
+    box-shadow: $shadow-xs;
 
     &:hover {
-      background: rgba(45, 90, 61, 0.07);
-      border-color: rgba(45, 90, 61, 0.2);
+      background: rgba(45, 90, 61, 0.1);
+      border-color: rgba(45, 90, 61, 0.3);
       transform: translateY(-1px);
-      box-shadow: $shadow-md, $glass-inner-glow;
+      box-shadow: $shadow-sm;
     }
   }
 

@@ -25,6 +25,12 @@
     gap: $spacing-md;
   }
 
+  &__header-actions {
+    display: flex;
+    gap: $spacing-sm;
+    align-items: center;
+  }
+
   &__header-left {
     display: flex;
     flex-direction: column;
@@ -142,6 +148,24 @@
     white-space: nowrap;
   }
 
+  // --- Loading state ---
+  &__loading {
+    @include flex-column-center;
+    padding: $spacing-3xl;
+    gap: $spacing-md;
+    color: $color-gray-400;
+    font-size: $font-size-sm;
+  }
+
+  &__spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid $border-color;
+    border-top-color: $color-primary;
+    border-radius: $border-radius-full;
+    animation: clientsSpin 0.7s linear infinite;
+  }
+
   // --- Empty state ---
   &__empty {
     @include glass-card;
@@ -202,6 +226,10 @@
 @keyframes kpiPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.15); }
   50%      { box-shadow: 0 0 0 6px rgba(248, 113, 113, 0); }
+}
+
+@keyframes clientsSpin {
+  to { transform: rotate(360deg); }
 }
 
 @keyframes emptyPulse {

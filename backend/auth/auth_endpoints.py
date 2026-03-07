@@ -3,10 +3,10 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import List
 
 from database.connection import get_db
 from database.models import Admin
-from typing import List
 from schemas import (
     LoginRequest, UserCredentials, TokenRequest,
     AdminResponse, AdminProfileUpdate, ChangePasswordRequest,
@@ -34,13 +34,8 @@ CORS_HEADERS = {
 }
 
 
-# ============================================================================
-# INITIAL SETUP (one-time only)
-# ============================================================================
-
 @router.post("/setup", response_model=AdminResponse)
 def initial_setup(data: AdminSetupRequest, db: Session = Depends(get_db)):
-    """Create the admin account. Only works if no admin exists yet."""
     existing = db.query(Admin).first()
     if existing:
         raise HTTPException(status_code=403, detail="Admin already configured")
@@ -63,32 +58,21 @@ def initial_setup(data: AdminSetupRequest, db: Session = Depends(get_db)):
     return AdminResponse.model_validate(admin)
 
 
-# ============================================================================
-# ADMIN LISTING
-# ============================================================================
-
 @router.get("/users", response_model=List[AdminResponse])
 def list_users(db: Session = Depends(get_db)):
-    """List all admin users with their IDs."""
     return [AdminResponse.model_validate(a) for a in db.query(Admin).all()]
 
 
 @router.get("/users/{user_id}", response_model=AdminResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
-    """Get a specific admin user by ID."""
     user = db.query(Admin).filter(Admin.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return AdminResponse.model_validate(user)
 
 
-# ============================================================================
-# AUTHENTICATION
-# ============================================================================
-
 @router.post("/verify-credentials")
 def verify_credentials(login_data: LoginRequest, db: Session = Depends(get_db)):
-    """Verify username + password, return user info."""
     user = db.query(Admin).filter(Admin.username == login_data.username).first()
 
     if not user or not verify_password(login_data.password, user.password):
@@ -107,7 +91,6 @@ def verify_credentials(login_data: LoginRequest, db: Session = Depends(get_db)):
 
 @router.post("/create-token")
 def create_token(request: TokenRequest):
-    """Create JWT and set it as HttpOnly cookie."""
     token = create_access_token(data={
         "sub": request.username,
         "user_id": request.user_id,
@@ -133,7 +116,6 @@ def create_token(request: TokenRequest):
 
 @router.post("/refresh-token")
 def refresh_token(request: Request):
-    """Silent token rotation — issue new JWT if current one is valid."""
     token = request.cookies.get("access_token")
     if not token:
         return JSONResponse(status_code=401, content={"refreshed": False}, headers=CORS_HEADERS)
@@ -158,7 +140,6 @@ def refresh_token(request: Request):
 
 @router.post("/logout")
 def logout(request: Request):
-    """Clear the HttpOnly cookie."""
     token = request.cookies.get("access_token")
     username = "unknown"
 
@@ -181,13 +162,8 @@ def logout(request: Request):
     return response
 
 
-# ============================================================================
-# PROFILE MANAGEMENT
-# ============================================================================
-
 @router.get("/me", response_model=AdminResponse)
 def get_profile(current_user: Admin = Depends(get_current_user)):
-    """Get current admin profile."""
     return AdminResponse.model_validate(current_user)
 
 
@@ -197,7 +173,6 @@ def update_profile(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user)
 ):
-    """Update admin profile (name, email, phone, username)."""
     update_data = data.model_dump(exclude_unset=True)
 
     if "email" in update_data and update_data["email"] != current_user.email:
@@ -224,7 +199,6 @@ def change_password(
     data: ChangePasswordRequest,
     db: Session = Depends(get_db),
 ):
-    """Change password by user ID. Check GET /users to find the ID."""
     user = db.query(Admin).filter(Admin.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

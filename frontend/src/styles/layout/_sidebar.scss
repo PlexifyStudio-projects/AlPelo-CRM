@@ -855,6 +855,87 @@
     box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1);
     border-radius: $border-radius-sm;
   }
+
+  // -----------------------------------------------
+  // CLOSE BUTTON (mobile)
+  // -----------------------------------------------
+  &__close-mobile {
+    @include flex-center;
+    width: 32px;
+    height: 32px;
+    border-radius: $border-radius-sm;
+    color: $color-gray-400;
+    transition:
+      background 200ms $ease-out-quart,
+      color 200ms $ease-out-quart;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: $color-white;
+    }
+  }
+
+  // -----------------------------------------------
+  // MOBILE OVERLAY MODE
+  // -----------------------------------------------
+  @media (max-width: $breakpoint-md) {
+    transform: translateX(-100%);
+    transition: transform 350ms $ease-out-expo;
+    box-shadow: none;
+    width: $sidebar-width;
+
+    &--mobile-open {
+      transform: translateX(0);
+      box-shadow: $shadow-2xl;
+    }
+
+    &--collapsed {
+      width: $sidebar-width;
+      transform: translateX(-100%);
+
+      &.sidebar--mobile-open {
+        transform: translateX(0);
+      }
+
+      .sidebar__brand {
+        justify-content: space-between;
+        padding: $spacing-lg $spacing-lg $spacing-md;
+      }
+
+      .sidebar__brand-inner {
+        justify-content: flex-start;
+      }
+
+      .sidebar__label,
+      .sidebar__description,
+      .sidebar__brand-text,
+      .sidebar__user-info {
+        display: flex;
+      }
+
+      .sidebar__item {
+        justify-content: flex-start;
+        padding: 9px $spacing-md;
+        margin: 1px $spacing-xs;
+        width: auto;
+
+        &::after {
+          display: none;
+        }
+      }
+
+      .sidebar__section-title {
+        opacity: 1;
+        height: auto;
+        padding: $spacing-sm $spacing-lg $spacing-xs;
+      }
+
+      .sidebar__user {
+        justify-content: flex-start;
+        padding: $spacing-sm;
+      }
+    }
+  }
 }
 
 @keyframes sidebarLogoGlow {

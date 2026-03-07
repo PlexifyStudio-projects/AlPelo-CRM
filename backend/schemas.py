@@ -1,25 +1,22 @@
 from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
+from typing import Optional, List
+from datetime import datetime, date
 
 
-# ========================= AUTH =========================
+#========================= AUTH =========================#
 
 class LoginRequest(BaseModel):
     username: str
     password: str
 
-
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
-
 
 class TokenRequest(BaseModel):
     user_id: int
     username: str
     role: str
-
 
 class UserCredentials(BaseModel):
     user_id: int
@@ -27,7 +24,14 @@ class UserCredentials(BaseModel):
     role: str
 
 
-# ========================= ADMIN =========================
+#========================= ADMIN =========================#
+
+class AdminSetupRequest(BaseModel):
+    name: str
+    email: str
+    username: str
+    password: str
+    phone: Optional[str] = None
 
 class AdminResponse(BaseModel):
     id: int
@@ -43,21 +47,273 @@ class AdminResponse(BaseModel):
     class Config:
         from_attributes = True
 
-
 class AdminProfileUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     username: Optional[str] = None
 
-
 class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
-class AdminSetupRequest(BaseModel):
+#========================= STAFF =========================#
+
+class StaffCreate(BaseModel):
     name: str
-    email: str
-    username: str
-    password: str
     phone: Optional[str] = None
+    email: Optional[str] = None
+    role: str = "Barbero"
+    specialty: Optional[str] = None
+    bio: Optional[str] = None
+    hire_date: Optional[date] = None
+    is_active: bool = True
+    skills: List[str] = []
+    rating: Optional[float] = None
+
+class StaffUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[str] = None
+    specialty: Optional[str] = None
+    bio: Optional[str] = None
+    hire_date: Optional[date] = None
+    is_active: Optional[bool] = None
+    skills: Optional[List[str]] = None
+    rating: Optional[float] = None
+
+class StaffResponse(BaseModel):
+    id: int
+    name: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    role: str
+    specialty: Optional[str] = None
+    bio: Optional[str] = None
+    hire_date: Optional[date] = None
+    is_active: bool
+    skills: List[str] = []
+    rating: Optional[float] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+#========================= CLIENT =========================#
+
+class ClientCreate(BaseModel):
+    client_id: str                              # M20201 format, assigned manually
+    name: str
+    phone: str
+    email: Optional[str] = None
+    birthday: Optional[date] = None
+    favorite_service: Optional[str] = None
+    preferred_barber_id: Optional[int] = None
+    accepts_whatsapp: bool = True
+    tags: List[str] = []
+
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    birthday: Optional[date] = None
+    favorite_service: Optional[str] = None
+    preferred_barber_id: Optional[int] = None
+    accepts_whatsapp: Optional[bool] = None
+    tags: Optional[List[str]] = None
+    is_active: Optional[bool] = None
+    status_override: Optional[str] = None       # manual status: activo, vip, en_riesgo, inactivo, nuevo, or null to reset
+
+class ClientResponse(BaseModel):
+    id: int
+    client_id: str
+    name: str
+    phone: str
+    email: Optional[str] = None
+    birthday: Optional[date] = None
+    favorite_service: Optional[str] = None
+    preferred_barber_id: Optional[int] = None
+    preferred_barber_name: Optional[str] = None
+    accepts_whatsapp: bool
+    tags: List[str] = []
+    is_active: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    # Computed fields
+    total_visits: int = 0
+    total_spent: int = 0
+    avg_ticket: int = 0
+    last_visit: Optional[date] = None
+    days_since_last_visit: Optional[int] = None
+    no_show_count: int = 0
+    status: str = "nuevo"
+
+    class Config:
+        from_attributes = True
+
+class ClientListResponse(BaseModel):
+    id: int
+    client_id: str
+    name: str
+    phone: str
+    email: Optional[str] = None
+    is_active: bool
+    tags: List[str] = []
+    # Computed
+    total_visits: int = 0
+    total_spent: int = 0
+    avg_ticket: int = 0
+    last_visit: Optional[date] = None
+    days_since_last_visit: Optional[int] = None
+    status: str = "nuevo"
+
+    class Config:
+        from_attributes = True
+
+
+#========================= VISIT HISTORY =========================#
+
+class VisitHistoryCreate(BaseModel):
+    client_id: int
+    staff_id: int
+    service_name: str
+    amount: int                                 # COP sin decimales
+    visit_date: date
+    status: str = "completed"                   # completed, no_show, cancelled
+    notes: Optional[str] = None
+
+class VisitHistoryUpdate(BaseModel):
+    staff_id: Optional[int] = None
+    service_name: Optional[str] = None
+    amount: Optional[int] = None
+    visit_date: Optional[date] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+class VisitHistoryResponse(BaseModel):
+    id: int
+    client_id: int
+    staff_id: int
+    staff_name: Optional[str] = None
+    service_name: str
+    amount: int
+    visit_date: date
+    status: str
+    notes: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+#========================= CLIENT NOTES =========================#
+
+class ClientNoteCreate(BaseModel):
+    client_id: int
+    content: str
+    created_by: Optional[str] = None
+
+class ClientNoteResponse(BaseModel):
+    id: int
+    client_id: int
+    content: str
+    created_by: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+#========================= DASHBOARD =========================#
+
+class DashboardKPIs(BaseModel):
+    total_clients: int = 0
+    active_clients: int = 0
+    at_risk_clients: int = 0
+    inactive_clients: int = 0
+    vip_clients: int = 0
+    new_clients: int = 0
+    retention_rate: float = 0.0
+    total_revenue: int = 0
+    avg_ticket: int = 0
+
+
+#========================= AI CONFIG =========================#
+
+class AIConfigCreate(BaseModel):
+    name: str = "Lina IA"
+    system_prompt: str
+    model: str = "claude-sonnet-4-20250514"
+    provider: str = "anthropic"
+    temperature: float = 0.7
+    max_tokens: int = 1024
+
+class AIConfigUpdate(BaseModel):
+    name: Optional[str] = None
+    system_prompt: Optional[str] = None
+    model: Optional[str] = None
+    provider: Optional[str] = None
+    temperature: Optional[float] = None
+    max_tokens: Optional[int] = None
+    is_active: Optional[bool] = None
+
+class AIConfigResponse(BaseModel):
+    id: int
+    name: str
+    system_prompt: str
+    model: str
+    provider: str
+    temperature: float
+    max_tokens: int
+    is_active: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class AIChatRequest(BaseModel):
+    message: str
+    conversation_history: List[dict] = []
+
+class AIChatResponse(BaseModel):
+    response: str
+    tokens_used: int = 0
+
+
+#========================= WHATSAPP =========================#
+
+class WhatsAppConversationResponse(BaseModel):
+    id: int
+    client_id: Optional[int] = None
+    wa_contact_phone: str
+    wa_contact_name: Optional[str] = None
+    last_message_at: Optional[datetime] = None
+    is_ai_active: bool
+    unread_count: int
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+class WhatsAppMessageCreate(BaseModel):
+    conversation_id: int
+    content: str
+    message_type: str = "text"
+
+class WhatsAppMessageResponse(BaseModel):
+    id: int
+    conversation_id: int
+    wa_message_id: Optional[str] = None
+    direction: str
+    content: str
+    message_type: str
+    status: str
+    sent_by: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

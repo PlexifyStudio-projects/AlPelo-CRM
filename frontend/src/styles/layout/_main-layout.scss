@@ -82,13 +82,36 @@
     }
   }
 
+  // -----------------------------------------------
+  // MOBILE
+  // -----------------------------------------------
+  &--mobile &__content {
+    margin-left: 0;
+  }
+
+  &__backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: calc(#{$z-fixed} - 1);
+    animation: backdropFadeIn 250ms ease-out both;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+
   @media (max-width: $breakpoint-md) {
     &__content {
       margin-left: 0;
     }
 
     &__main {
-      padding: $spacing-md $spacing-md $spacing-xl;
+      padding: $spacing-md $spacing-sm $spacing-xl;
+    }
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    &__main {
+      padding: $spacing-sm $spacing-xs $spacing-lg;
     }
   }
 
@@ -102,6 +125,10 @@
     > *:nth-child(3) { animation-delay: 0.08s; }
     > *:nth-child(4) { animation-delay: 0.12s; }
     > *:nth-child(5) { animation-delay: 0.16s; }
+  }
+
+  &--collapsed#{&}--mobile &__content {
+    margin-left: 0;
   }
 
   // -----------------------------------------------
@@ -123,4 +150,9 @@
       box-shadow: none;
     }
   }
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

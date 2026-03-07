@@ -1,25 +1,36 @@
 // ============================================
-// AlPelo CRM - Mock Data v4.0
-// Comprehensive dataset for CRM system
+// AlPelo CRM - Mock Data v5.0
+// Comprehensive dataset synced from Weibook
 // Real data from AlPelo Peluquería, Bucaramanga
-// 30 clients, ~217 visit history entries
+// 30 clients, 20 staff, 45+ services, ~217 visit history entries
+// Services/staff/ratings synced from book.weibook.co/alpelo-peluqueria
 // totalSpent = sum of completed visit amounts
 // totalVisits = count of completed + no_show entries
 // loyaltyPoints = Math.round(totalSpent / 1000)
 // ============================================
 
+// ============================================
+// Business info — synced from Weibook (book.weibook.co/alpelo-peluqueria)
+// ============================================
 export const mockBusinessInfo = {
   name: 'ALPELO PELUQUERÍA',
-  address: 'Carrera 31 n 50-21, Bucaramanga',
+  address: 'Carrera 31 N 50-21, Bucaramanga, Colombia',
   phone: '3176608487',
   rating: 5.0,
-  totalServices: 102,
+  description: 'Descubre la excelencia en AlPelo! Nuestra peluquería en Bucaramanga cuenta con expertos en peluquería, manicure y barbería.',
+  bookingUrl: 'https://book.weibook.co/alpelo-peluqueria',
   hours: {
     weekdays: { open: '8:15 AM', close: '8:00 PM' },
     saturday: { open: '8:15 AM', close: '8:00 PM' },
     sunday: { open: '9:30 AM', close: '2:00 PM' },
   },
-  categories: ['Barbería', 'Belleza', 'Uñas', 'Spa'],
+  categories: ['Barbería', 'Salón de Belleza', 'Uñas', 'Spa'],
+  payment: {
+    nequi: '3163249763',
+    breve: '13741241',
+    bancolombia: '912-289228-17',
+    davivienda: '0478-7003-0302',
+  },
 };
 
 // ============================================
@@ -801,55 +812,89 @@ export const mockClients = [
   },
 ];
 
+// ============================================
+// Staff — ratings synced from Weibook (book.weibook.co/alpelo-peluqueria)
+// ============================================
 export const mockBarbers = [
   // Barberos
-  { id: 1, name: 'Victor Fernández', specialty: 'Barbero', available: true, rating: 4.9, totalClients: 120, phone: '+57 316 452 8901', email: 'victor.fernandez@alpelo.co', hireDate: '2022-03-15', bio: 'Barbero senior con más de 8 años de experiencia. Especialista en cortes clásicos y modernos con acabados impecables.' },
+  { id: 1, name: 'Victor Fernández', specialty: 'Barbero', available: true, rating: 4.85, totalClients: 120, phone: '+57 316 452 8901', email: 'victor.fernandez@alpelo.co', hireDate: '2022-03-15', bio: 'Barbero senior con más de 8 años de experiencia. Especialista en cortes clásicos y modernos con acabados impecables.' },
   { id: 2, name: 'Alexander Carballo', specialty: 'Barbero', available: true, rating: 4.9, totalClients: 95, phone: '+57 310 789 3456', email: 'alexander.carballo@alpelo.co', hireDate: '2022-06-01', bio: 'Apasionado por las tendencias urbanas y los degradados. Siempre buscando la perfección en cada detalle.' },
-  { id: 3, name: 'Daniel Núñez', specialty: 'Barbero', available: false, rating: 4.7, totalClients: 78, phone: '+57 315 234 6789', email: 'daniel.nunez@alpelo.co', hireDate: '2023-01-10', bio: 'Creativo y detallista, experto en diseños personalizados y cortes de tendencia internacional.' },
+  { id: 3, name: 'Daniel Núñez', specialty: 'Barbero', available: false, rating: 4.71, totalClients: 78, phone: '+57 315 234 6789', email: 'daniel.nunez@alpelo.co', hireDate: '2023-01-10', bio: 'Creativo y detallista, experto en diseños personalizados y cortes de tendencia internacional.' },
   { id: 4, name: 'Ángel Pabón', specialty: 'Barbero', available: true, rating: 5.0, totalClients: 65, phone: '+57 318 567 1234', email: 'angel.pabon@alpelo.co', hireDate: '2023-04-20', bio: 'Conocido por su precisión y trato excepcional. Cada cliente sale con una experiencia premium.' },
-  { id: 5, name: 'Anderson Bohórquez', specialty: 'Barbero', available: true, rating: 4.4, totalClients: 55, phone: '+57 312 890 4567', email: 'anderson.bohorquez@alpelo.co', hireDate: '2023-08-15', bio: 'Joven talento con gran habilidad en cortes modernos y técnicas de texturizado.' },
+  { id: 5, name: 'Anderson Bohórquez', specialty: 'Barbero', available: true, rating: 4.5, totalClients: 55, phone: '+57 312 890 4567', email: 'anderson.bohorquez@alpelo.co', hireDate: '2023-08-15', bio: 'Joven talento con gran habilidad en cortes modernos y técnicas de texturizado.' },
   { id: 6, name: 'Camilo Gutiérrez', specialty: 'Barbero', available: true, rating: 4.7, totalClients: 70, phone: '+57 317 123 7890', email: 'camilo.gutierrez@alpelo.co', hireDate: '2023-02-01', bio: 'Versátil y carismático. Domina tanto el estilo clásico como las tendencias más actuales.' },
   { id: 7, name: 'Yhon Estrada', specialty: 'Barbero', available: true, rating: 5.0, totalClients: 60, phone: '+57 314 456 2345', email: 'yhon.estrada@alpelo.co', hireDate: '2023-06-10', bio: 'Perfeccionista nato con un ojo artístico para los degradados y acabados limpios.' },
-  { id: 8, name: 'Astrid Carolina León', specialty: 'Barbera', available: true, rating: 5.0, totalClients: 45, phone: '+57 311 678 5678', email: 'astrid.leon@alpelo.co', hireDate: '2024-01-15', bio: 'Pionera en barbería femenina en la región. Combina técnica y sensibilidad artística.' },
-  { id: 9, name: 'Tatiana', specialty: 'Barbera', available: true, rating: 5.0, totalClients: 40, phone: '+57 319 901 8901', email: 'tatiana@alpelo.co', hireDate: '2024-03-01', bio: 'Especialista en cortes unisex con enfoque en la comodidad y estilo del cliente.' },
+  { id: 8, name: 'Astrid Carolina León', specialty: 'Barbera', available: true, rating: null, totalClients: 45, phone: '+57 311 678 5678', email: 'astrid.leon@alpelo.co', hireDate: '2024-01-15', bio: 'Pionera en barbería femenina en la región. Combina técnica y sensibilidad artística.' },
+  { id: 9, name: 'Tatiana', specialty: 'Barbera', available: true, rating: null, totalClients: 40, phone: '+57 319 901 8901', email: 'tatiana@alpelo.co', hireDate: '2024-03-01', bio: 'Especialista en cortes unisex con enfoque en la comodidad y estilo del cliente.' },
   // Estilistas
-  { id: 10, name: 'Josemith', specialty: 'Estilista - Especialista en color y recuperación', available: true, rating: 5.0, totalClients: 110, phone: '+57 316 234 1234', email: 'josemith@alpelo.co', hireDate: '2022-01-10', bio: 'Maestra del color con formación internacional. Transforma el cabello con técnicas de vanguardia.' },
-  { id: 11, name: 'Liliana Gisella Romero', specialty: 'Estilista', available: true, rating: 4.6, totalClients: 80, phone: '+57 313 567 4567', email: 'liliana.romero@alpelo.co', hireDate: '2022-09-01', bio: 'Estilista integral con pasión por los cambios de look y la asesoría de imagen.' },
-  { id: 12, name: 'Marcela Leal', specialty: 'Estilista - Especialista en recuperación capilar', available: true, rating: 4.7, totalClients: 85, phone: '+57 310 890 7890', email: 'marcela.leal@alpelo.co', hireDate: '2022-07-15', bio: 'Experta en tratamientos capilares y recuperación. Devuelve la vida al cabello dañado.' },
+  { id: 10, name: 'Josemith', specialty: 'Estilista - Especialista en color', available: true, rating: 5.0, totalClients: 110, phone: '+57 316 234 1234', email: 'josemith@alpelo.co', hireDate: '2022-01-10', bio: 'Más de 10 años de experiencia en técnicas innovadoras de color. Transforma el cabello con técnicas de vanguardia.' },
+  { id: 11, name: 'Liliana Gisella Romero', specialty: 'Estilista', available: true, rating: 4.57, totalClients: 80, phone: '+57 313 567 4567', email: 'liliana.romero@alpelo.co', hireDate: '2022-09-01', bio: 'Estilista integral con pasión por los cambios de look y la asesoría de imagen.' },
+  { id: 12, name: 'Marcela Leal', specialty: 'Estilista - Tricoterapeuta', available: true, rating: 4.66, totalClients: 85, phone: '+57 310 890 7890', email: 'marcela.leal@alpelo.co', hireDate: '2022-07-15', bio: 'Tricoterapeuta especialista en recuperación capilar. Devuelve la vida al cabello dañado.' },
+  { id: 19, name: 'Dulce Araque', specialty: 'Estilista', available: true, rating: 4.66, totalClients: 50, phone: '+57 315 901 3456', email: 'dulce.araque@alpelo.co', hireDate: '2023-10-01', bio: 'Estilista versátil con excelente ojo para el detalle y la armonía del look.' },
+  { id: 20, name: 'Fanny Lizarazo', specialty: 'Estilista', available: true, rating: null, totalClients: 30, phone: '+57 318 234 6789', email: 'fanny.lizarazo@alpelo.co', hireDate: '2024-06-01', bio: 'Nueva integrante del equipo con formación en las últimas tendencias de estilismo.' },
   // Manicuristas
-  { id: 13, name: 'Jazmín Aponte Montaño', specialty: 'Manicurista', available: true, rating: 4.9, totalClients: 90, phone: '+57 318 123 2345', email: 'jazmin.aponte@alpelo.co', hireDate: '2022-05-20', bio: 'Artista del nail art con técnicas avanzadas. Sus diseños son reconocidos en toda la ciudad.' },
+  { id: 13, name: 'Jazmín Aponte Montaño', specialty: 'Manicurista', available: true, rating: 4.92, totalClients: 90, phone: '+57 318 123 2345', email: 'jazmin.aponte@alpelo.co', hireDate: '2022-05-20', bio: 'Artista del nail art con técnicas avanzadas. Sus diseños son reconocidos en toda la ciudad.' },
   { id: 14, name: 'María José Bastos', specialty: 'Manicurista', available: true, rating: 5.0, totalClients: 75, phone: '+57 315 456 5678', email: 'mariajose.bastos@alpelo.co', hireDate: '2023-03-10', bio: 'Detallista y profesional. Especialista en técnicas de gel y acrílico de alta duración.' },
   { id: 15, name: 'Carolina Banderas', specialty: 'Manicurista', available: true, rating: 4.8, totalClients: 70, phone: '+57 312 789 8901', email: 'carolina.banderas@alpelo.co', hireDate: '2023-05-01', bio: 'Creativa y tendencia. Siempre actualizada con las últimas técnicas de manicure y pedicure.' },
-  { id: 16, name: 'Nicole Serrano', specialty: 'Manicurista', available: false, rating: 4.7, totalClients: 50, phone: '+57 317 012 1234', email: 'nicole.serrano@alpelo.co', hireDate: '2023-09-15', bio: 'Profesional dedicada con excelente atención al cliente y acabados impecables.' },
-  { id: 17, name: 'Zuleidy Yepes', specialty: 'Manicurista - 3 años exp', available: true, rating: 4.3, totalClients: 35, phone: '+57 314 345 4567', email: 'zuleidy.yepes@alpelo.co', hireDate: '2024-02-01', bio: 'Tres años de experiencia perfeccionando su técnica. En constante formación y crecimiento.' },
+  { id: 16, name: 'Nicole Serrano', specialty: 'Manicurista', available: false, rating: 4.66, totalClients: 50, phone: '+57 317 012 1234', email: 'nicole.serrano@alpelo.co', hireDate: '2023-09-15', bio: 'Profesional dedicada con excelente atención al cliente y acabados impecables.' },
+  { id: 17, name: 'Zuleidy Yepes', specialty: 'Manicurista', available: true, rating: 4.33, totalClients: 35, phone: '+57 314 345 4567', email: 'zuleidy.yepes@alpelo.co', hireDate: '2024-02-01', bio: '3 años de experiencia en todas las técnicas. En constante formación y crecimiento.' },
   { id: 18, name: 'Stefanía Bustamante', specialty: 'Manicurista', available: true, rating: 4.5, totalClients: 40, phone: '+57 311 678 7890', email: 'stefania.bustamante@alpelo.co', hireDate: '2024-04-15', bio: 'Joven profesional con gran talento natural y pasión por la belleza de las manos.' },
 ];
 
+// ============================================
+// Services — synced from Weibook (book.weibook.co/alpelo-peluqueria)
+// ============================================
 export const mockServices = [
   // Barbería
   { id: 1, name: 'Corte Hipster', duration: 40, price: 40000, category: 'Barbería' },
-  { id: 2, name: 'Corte + Cejas', duration: 40, price: 45000, category: 'Barbería' },
-  { id: 3, name: 'Corte Mujer', duration: 30, price: 45000, category: 'Barbería' },
-  { id: 4, name: 'Corte + Barba', duration: 60, price: 55000, category: 'Barbería' },
-  { id: 5, name: 'Corte + Barba + Cejas', duration: 60, price: 60000, category: 'Barbería' },
-  // Uñas Tradicional
-  { id: 6, name: 'Manicure Limpieza', duration: 15, price: 20000, category: 'Uñas' },
-  { id: 7, name: 'Manicure Secado Rápido', duration: 30, price: 30000, category: 'Uñas' },
-  { id: 8, name: 'Pedicure Tradicional', duration: 40, price: 30000, category: 'Uñas' },
-  { id: 9, name: 'Manicure + Pedicure Tradicional', duration: 80, price: 55000, category: 'Uñas' },
-  // Uñas Premium
-  { id: 10, name: 'Spa Manicure', duration: 60, price: 50000, category: 'Uñas Premium' },
-  { id: 11, name: 'Spa Pedicure', duration: 60, price: 65000, category: 'Uñas Premium' },
-  { id: 12, name: 'Semipermanente Manicure', duration: 40, price: 50000, category: 'Uñas Premium' },
-  { id: 13, name: 'Semipermanente Pedicure', duration: 40, price: 50000, category: 'Uñas Premium' },
-  { id: 14, name: 'Semi Mani + Pedi Tradicional', duration: 90, price: 75000, category: 'Uñas Premium' },
-  { id: 15, name: 'Semi Mani + Semi Pedi', duration: 90, price: 95000, category: 'Uñas Premium' },
-  // Facial/Belleza
-  { id: 16, name: 'Limpieza Facial', duration: 20, price: 15000, category: 'Facial' },
-  { id: 17, name: 'Lifting de Pestañas con Pigmento', duration: 60, price: 75000, category: 'Facial' },
-  { id: 18, name: 'Lifting de Pestañas', duration: 45, price: 60000, category: 'Facial' },
-  { id: 19, name: 'Laminado de Cejas con Pigmento', duration: 45, price: 75000, category: 'Facial' },
-  { id: 20, name: 'Crioterapia', duration: 60, price: 40000, category: 'Facial' },
+  { id: 2, name: 'Corte y Cejas', duration: 40, price: 45000, category: 'Barbería' },
+  { id: 3, name: 'Corte Dama', duration: 30, price: 45000, category: 'Barbería' },
+  { id: 4, name: 'Corte y Barba', duration: 60, price: 55000, category: 'Barbería' },
+  { id: 5, name: 'Corte Barba y Cejas', duration: 60, price: 60000, category: 'Barbería' },
+  { id: 6, name: 'Barba Premium', duration: 35, price: 25000, category: 'Barbería' },
+  { id: 7, name: 'Corte y Blower Combo', duration: 60, price: 90000, category: 'Barbería' },
+  // Uñas - Tradicional
+  { id: 10, name: 'Limpieza Manicure', duration: 15, price: 20000, category: 'Uñas' },
+  { id: 11, name: 'Manicure Secado Rápido', duration: 30, price: 30000, category: 'Uñas' },
+  { id: 12, name: 'Pedicure Trad. Secado Rápido', duration: 40, price: 30000, category: 'Uñas' },
+  { id: 13, name: 'Manicure o Pedicure con Polichada', duration: 45, price: 30000, category: 'Uñas' },
+  { id: 14, name: 'Combo Manicure + Pedicure Tradicional', duration: 80, price: 55000, category: 'Uñas' },
+  // Uñas - Semipermanente
+  { id: 20, name: 'Manicure Semipermanente', duration: 40, price: 50000, category: 'Uñas Semipermanente' },
+  { id: 21, name: 'Pedicure Semipermanente', duration: 40, price: 50000, category: 'Uñas Semipermanente' },
+  { id: 22, name: 'Manicure Semipermanente con Base Rubber', duration: 50, price: 60000, category: 'Uñas Semipermanente' },
+  { id: 23, name: 'Combo Mani Semi + Pedi Tradicional', duration: 90, price: 75000, category: 'Uñas Semipermanente' },
+  { id: 24, name: 'Combo Mani y Pedi Semipermanente', duration: 90, price: 95000, category: 'Uñas Semipermanente' },
+  // Uñas - Spa
+  { id: 30, name: 'Spa Manicure Tradicional', duration: 60, price: 50000, category: 'Uñas Spa' },
+  { id: 31, name: 'Pedi Spa Tradicional', duration: 60, price: 65000, category: 'Uñas Spa' },
+  { id: 32, name: 'Spa Manicure Semi Permanente', duration: 70, price: 70000, category: 'Uñas Spa' },
+  { id: 33, name: 'Pedi Spa Semi Permanente', duration: 60, price: 85000, category: 'Uñas Spa' },
+  // Uñas - Otros
+  { id: 35, name: 'Reparación de Uña Press On', duration: 10, price: 12000, category: 'Uñas' },
+  { id: 36, name: 'Retiro Higiene de Press On Insumos', duration: 15, price: 15000, category: 'Uñas' },
+  // Tratamientos Capilares
+  { id: 40, name: 'Cepillado Básico', duration: 15, price: 20000, category: 'Tratamientos' },
+  { id: 41, name: 'Tratamiento Alta Frecuencia', duration: 20, price: 25000, category: 'Tratamientos' },
+  { id: 42, name: 'Aplicación Matizante (Cliente Trae Producto)', duration: 20, price: 25000, category: 'Tratamientos' },
+  { id: 43, name: 'Crioterapia Solo Plancha', duration: 60, price: 40000, category: 'Tratamientos' },
+  { id: 44, name: 'Blower Medio', duration: 50, price: 55000, category: 'Tratamientos' },
+  { id: 45, name: 'Tratamiento Express', duration: 30, price: 60000, category: 'Tratamientos' },
+  { id: 46, name: 'Tratamiento Masocapiloterapia', duration: 30, price: 60000, category: 'Tratamientos' },
+  { id: 47, name: 'Tratamiento de Nutrición o Reconstrucción', duration: 30, price: 70000, category: 'Tratamientos' },
+  { id: 48, name: 'Tratamiento Scalp Protector', duration: 25, price: 70000, category: 'Tratamientos' },
+  { id: 49, name: 'Crioterapia con Tratamiento', duration: 25, price: 100000, category: 'Tratamientos' },
+  { id: 50, name: 'Tratamiento Capilar Fango Detox con Cepillado', duration: 60, price: 120000, category: 'Tratamientos' },
+  { id: 51, name: 'Tratamiento Spa Coreano Revitalizante', duration: 40, price: 120000, category: 'Tratamientos' },
+  { id: 52, name: 'Tratamiento Post Color', duration: 15, price: 0, category: 'Tratamientos' },
+  // Facial / Belleza
+  { id: 60, name: 'Limpieza Facial', duration: 20, price: 15000, category: 'Facial' },
+  { id: 61, name: 'Pestañas de Punto', duration: 20, price: 40000, category: 'Facial' },
+  { id: 62, name: 'Lifting de Pestañas', duration: 45, price: 60000, category: 'Facial' },
+  { id: 63, name: 'Lifting de Pestañas con Pigmento', duration: 60, price: 75000, category: 'Facial' },
+  { id: 64, name: 'Laminado de Cejas con Pigmento', duration: 45, price: 75000, category: 'Facial' },
+  // Otro
+  { id: 70, name: 'Abono Servicio', duration: 0, price: 50000, category: 'Otro' },
 ];
 
 export const mockAppointments = [
@@ -1792,13 +1837,13 @@ export const mockWhatsAppStats = {
 };
 
 // ============================================
-// Jarvis IA — Mock response patterns
+// Lina IA — Mock response patterns
 // ============================================
-export const mockJarvisResponses = {
+export const mockLinaResponses = {
   greetings: [
-    'Quiubo parce! Soy Jarvis, el asistente de Al Pelo. ¿En qué te puedo ayudar hoy?',
-    'Ey, ¿qué más? Aquí Jarvis listo pa\' lo que necesites.',
-    'Hola! Jarvis al servicio. Pregúntame lo que quieras sobre el negocio.',
+    'Quiubo parce! Soy Lina, la asistente de AlPelo. ¿En qué te puedo ayudar hoy?',
+    'Ey, ¿qué más? Aquí Lina lista pa\' lo que necesites.',
+    'Hola! Lina al servicio. Pregúntame lo que quieras sobre el negocio.',
   ],
   unknownQuery: [
     'Hmm, no estoy seguro de entender esa pregunta, parce. ¿Puedes reformularla?',

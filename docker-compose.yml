@@ -35,7 +35,7 @@ services:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - WAIT_FOR_DB=${WAIT_FOR_DB}
       - POSTGRES_HOST=${POSTGRES_HOST}
-      - ALLOWED_ORIGINS=http://localhost:3001
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3001}
     volumes:
       - ./backend:/app
     depends_on:

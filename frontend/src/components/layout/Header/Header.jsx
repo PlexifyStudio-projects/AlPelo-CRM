@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNotification } from '../../../context/NotificationContext';
 
-const Header = ({ user, onLogout, onNavigate }) => {
+const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const profileRef = useRef(null);
@@ -111,6 +111,19 @@ const Header = ({ user, onLogout, onNavigate }) => {
 
   return (
     <header className={b}>
+      {isMobile && (
+        <button
+          className={`${b}__hamburger`}
+          onClick={onOpenMobileMenu}
+          aria-label="Abrir menu"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+      )}
       <div className={`${b}__actions`}>
         {/* Notification Bell */}
         <div className={`${b}__notification`} ref={notifRef}>

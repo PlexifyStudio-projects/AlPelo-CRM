@@ -1,0 +1,391 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+.add-visit-modal {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-lg;
+
+  // --- Error banner ---
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: $color-error-bg;
+    border: $border-width solid $color-error-border;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    color: $color-error;
+    font-weight: $font-weight-medium;
+
+    svg { flex-shrink: 0; }
+  }
+
+  // --- Search step ---
+  &__instruction {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    margin: 0 0 $spacing-md 0;
+  }
+
+  &__search-box {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: $color-gray-50;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:focus-within {
+      border-color: rgba(45, 90, 61, 0.35);
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08);
+      background: $color-white;
+    }
+  }
+
+  &__search-icon {
+    color: $color-gray-300;
+    flex-shrink: 0;
+  }
+
+  &__search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-gray-700;
+    outline: none;
+
+    &::placeholder { color: $color-gray-300; }
+  }
+
+  &__spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid $border-color;
+    border-top-color: $color-primary;
+    border-radius: $border-radius-full;
+    animation: avm-spin 0.6s linear infinite;
+    flex-shrink: 0;
+  }
+
+  // --- Results list ---
+  &__results-label {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-caps;
+    padding: $spacing-sm $spacing-md;
+    background: $color-gray-50;
+    border-bottom: $border-width solid $border-color;
+  }
+
+  &__results {
+    display: flex;
+    flex-direction: column;
+    margin-top: $spacing-md;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    max-height: 240px;
+    overflow-y: auto;
+    @include custom-scrollbar;
+  }
+
+  &__result-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md;
+    border: none;
+    background: $color-white;
+    cursor: pointer;
+    text-align: left;
+    font-family: $font-primary;
+    transition: background $transition-fast;
+
+    &:not(:last-child) {
+      border-bottom: $border-width solid $border-color;
+    }
+
+    &:hover {
+      background: $color-gray-50;
+    }
+  }
+
+  &__result-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    @include flex-center;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wide;
+    flex-shrink: 0;
+  }
+
+  &__result-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__result-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__result-meta {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  &__result-status {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-400;
+    flex-shrink: 0;
+  }
+
+  &__no-results {
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+    text-align: center;
+    padding: $spacing-xl 0;
+    margin: 0;
+  }
+
+  &__new-client-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: $spacing-lg;
+    padding-top: $spacing-md;
+    border-top: $border-width solid $border-color;
+
+    span {
+      font-size: $font-size-sm;
+      color: $color-gray-400;
+    }
+  }
+
+  // --- Selected client card ---
+  &__selected-client {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md;
+    background: $color-primary-ghost;
+    border: $border-width solid rgba(45, 90, 61, 0.15);
+    border-radius: $border-radius-md;
+  }
+
+  // --- Shared date row ---
+  &__date-row {
+    max-width: 220px;
+  }
+
+  // --- Items list ---
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__item {
+    padding: $spacing-md;
+    background: $color-gray-50;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    transition: box-shadow $transition-fast;
+
+    &:hover {
+      box-shadow: $shadow-xs;
+    }
+  }
+
+  &__item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__item-number {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-caps;
+  }
+
+  &__item-remove {
+    width: 26px;
+    height: 26px;
+    border: none;
+    background: transparent;
+    color: $color-gray-300;
+    cursor: pointer;
+    border-radius: $border-radius-full;
+    @include flex-center;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-error-bg;
+      color: $color-error;
+    }
+  }
+
+  &__add-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: transparent;
+    border: $border-width dashed $border-color-medium;
+    border-radius: $border-radius-md;
+    color: $color-gray-400;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-primary;
+      color: $color-primary;
+      background: $color-primary-ghost;
+    }
+  }
+
+  // --- Form grid ---
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-md;
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // --- Select & Label (reuse add-client-modal patterns) ---
+  &__select-group {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__label {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-caps;
+  }
+
+  &__select {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background: $color-gray-50;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-gray-700;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238E8E85' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right $spacing-sm center;
+    padding-right: $spacing-xl;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:focus {
+      border-color: rgba(45, 90, 61, 0.35);
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08);
+      background-color: $color-white;
+    }
+  }
+
+  // --- Textarea ---
+  &__textarea-group {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__textarea {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    background: $color-gray-50;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-gray-700;
+    resize: vertical;
+    outline: none;
+    transition: border-color $transition-fast, box-shadow $transition-fast;
+
+    &:focus {
+      border-color: rgba(45, 90, 61, 0.35);
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08);
+      background: $color-white;
+    }
+
+    &::placeholder { color: $color-gray-300; }
+  }
+
+  // --- Actions ---
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: $border-width solid $border-color;
+  }
+
+  &__total {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+
+    span {
+      font-size: $font-size-sm;
+      color: $color-gray-400;
+      font-weight: $font-weight-medium;
+    }
+
+    strong {
+      font-size: $font-size-md;
+      font-weight: $font-weight-bold;
+      color: $color-primary-dark;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__actions-buttons {
+    display: flex;
+    gap: $spacing-sm;
+  }
+}
+
+@keyframes avm-spin {
+  to { transform: rotate(360deg); }
+}
