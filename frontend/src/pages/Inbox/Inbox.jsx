@@ -1220,7 +1220,7 @@ const Inbox = () => {
               <div className={`${b}__chat-info`} onClick={() => setShowClientInfo(!showClientInfo)}>
                 <span className={`${b}__chat-name`}>{getConvName(selectedConv)}</span>
                 <span className={`${b}__chat-status ${typingState[selectedConvId] ? `${b}__chat-status--typing` : ''}`}>
-                  {typingState[selectedConvId] ? 'escribiendo...' : 'en linea'}
+                  {typingState[selectedConvId] ? 'escribiendo...' : selectedConv?.last_message_at ? `ult. vez ${formatConvTime(selectedConv.last_message_at)}` : ''}
                 </span>
               </div>
 

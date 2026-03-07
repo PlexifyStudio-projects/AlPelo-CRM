@@ -258,6 +258,89 @@ def _execute_action(action: dict, db: Session) -> str:
         db.commit()
         return f"Visita registrada para {client.name}: {visit.service_name} (${visit.amount:,})"
 
+    # ---- WHATSAPP ----
+    elif action_type == "send_whatsapp":
+        import httpx
+        import asyncio
+        from database.models import WhatsAppConversation, WhatsAppMessage
+
+        search_name = action.get("search_name", "").strip()
+        phone = action.get("phone", "").strip()
+        message_text = action.get("message", "").strip()
+
+        if not message_text:
+            return "ERROR: Necesito el texto del mensaje."
+
+        # Find conversation by client name or phone
+        conv = None
+        if search_name:
+            client = db.query(Client).filter(Client.name.ilike(f"%{search_name}%")).first()
+            if client:
+                conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.client_id == client.id).first()
+                if not conv:
+                    conv = db.query(WhatsAppConversation).filter(
+                        WhatsAppConversation.wa_contact_phone.contains(client.phone[-10:])
+                    ).first()
+        if not conv and phone:
+            conv = db.query(WhatsAppConversation).filter(
+                WhatsAppConversation.wa_contact_phone.contains(phone[-10:])
+            ).first()
+        if not conv:
+            # Try matching by conversation contact name
+            if search_name:
+                conv = db.query(WhatsAppConversation).filter(
+                    WhatsAppConversation.wa_contact_name.ilike(f"%{search_name}%")
+                ).first()
+
+        if not conv:
+            return f"ERROR: No encontre una conversacion de WhatsApp para '{search_name or phone}'. Verifica que exista un chat activo."
+
+        # Send via Meta WhatsApp API
+        wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+        wa_phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+        wa_api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+        wa_base = f"https://graph.facebook.com/{wa_api_version}/{wa_phone_id}"
+
+        wa_message_id = None
+        status = "sent"
+        try:
+            resp = httpx.post(
+                f"{wa_base}/messages",
+                headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
+                json={
+                    "messaging_product": "whatsapp",
+                    "to": conv.wa_contact_phone.replace("+", "").replace(" ", ""),
+                    "type": "text",
+                    "text": {"body": message_text},
+                },
+                timeout=15,
+            )
+            data = resp.json()
+            if resp.status_code == 200 and "messages" in data:
+                wa_message_id = data["messages"][0].get("id")
+            else:
+                status = "failed"
+                return f"ERROR: No se pudo enviar el mensaje. {data.get('error', {}).get('message', '')}"
+        except Exception as e:
+            return f"ERROR: Fallo la conexion con WhatsApp: {str(e)}"
+
+        # Store in DB
+        msg = WhatsAppMessage(
+            conversation_id=conv.id,
+            wa_message_id=wa_message_id,
+            direction="outbound",
+            content=message_text,
+            message_type="text",
+            status=status,
+            sent_by="lina_ia",
+        )
+        db.add(msg)
+        conv.last_message_at = datetime.utcnow()
+        db.commit()
+
+        contact_name = conv.wa_contact_name or conv.wa_contact_phone
+        return f"Mensaje enviado a {contact_name} por WhatsApp: \"{message_text[:60]}...\""
+
     # ---- PERSONALITY ----
     elif action_type == "update_personality":
         new_prompt = action.get("system_prompt", "").strip()
@@ -429,6 +512,18 @@ Cuando necesites ejecutar una accion, incluye un bloque JSON al FINAL de tu resp
 ```action
 {{"action": "update_ai_config", "temperature": 0.5, "max_tokens": 1024}}
 ```
+```action
+{{"action": "send_whatsapp", "search_name": "nombre del cliente", "message": "Texto del mensaje"}}
+```
+```action
+{{"action": "send_whatsapp", "phone": "3001234567", "message": "Texto del mensaje"}}
+```
+
+WHATSAPP:
+- Puedes enviar mensajes por WhatsApp a cualquier cliente que tenga una conversacion activa
+- Busca por nombre del cliente o por telefono
+- El mensaje se envia en tiempo real por WhatsApp Business API
+- Usa esta capacidad cuando el admin te pida "mandale un mensaje a X"
 
 === REGLAS DE SEGURIDAD — NO NEGOCIABLES ===
 1. NUNCA expongas credenciales, passwords, tokens, API keys ni datos sensibles del sistema
