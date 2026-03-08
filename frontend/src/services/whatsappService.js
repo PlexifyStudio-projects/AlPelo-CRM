@@ -84,6 +84,16 @@ const whatsappService = {
     return handleResponse(res);
   },
 
+  // ========================= CREATE CONVERSATION =========================
+  createConversation: async (phone, name) => {
+    const res = await fetch(`${API}/whatsapp/conversations`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ phone, name }),
+    });
+    return handleResponse(res);
+  },
+
   // ========================= STATS =========================
   getStats: async () => {
     const res = await fetch(`${API}/whatsapp/stats`, { headers });

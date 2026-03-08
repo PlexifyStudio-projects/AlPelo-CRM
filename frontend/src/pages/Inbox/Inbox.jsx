@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import whatsappService from '../../services/whatsappService';
+import clientService from '../../services/clientService';
 import { formatCurrency } from '../../utils/formatters';
 
 // ============================================
@@ -255,6 +256,8 @@ const TEMPLATES = [
   { id: 'reactivation', label: 'Reactivacion', text: 'Hola{nombre}! Te extranamos! Hace rato no te vemos por aca. Ven a ponerte Al Pelo: https://book.weibook.co/alpelo-peluqueria' },
   { id: 'confirm', label: 'Confirmacion', text: 'Hola{nombre}! Te recordamos tu cita en Al Pelo. Te esperamos! Confirma respondiendo SI.' },
   { id: 'thanks', label: 'Agradecimiento', text: 'Hola{nombre}! Gracias por tu visita a Al Pelo. Esperamos verte pronto. Calificanos: https://g.page/r/alpelo' },
+  { id: 'survey', label: 'Encuesta', text: 'Hola{nombre}! Como te fue con tu ultimo servicio en Al Pelo? Califica del 1 al 5 y cuentanos como mejorar. Tu opinion es muy importante para nosotros!' },
+  { id: 'comeback', label: 'Te extrañamos', text: 'Hola{nombre}! Hace mucho no te vemos por Al Pelo. Tenemos novedades que te van a encantar. Agenda tu proxima cita: https://book.weibook.co/alpelo-peluqueria' },
 ];
 
 // ===== HELPERS =====
@@ -684,7 +687,13 @@ const Inbox = () => {
   const [showNewChat, setShowNewChat] = useState(false);
   const [newChatPhone, setNewChatPhone] = useState('');
   const [newChatName, setNewChatName] = useState('');
-  const [newChatStep, setNewChatStep] = useState('phone');
+  const [newChatStep, setNewChatStep] = useState('phone'); // 'phone' | 'template' | 'custom'
+  const [newChatLoading, setNewChatLoading] = useState(false);
+  const [newChatError, setNewChatError] = useState('');
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
+  const [clientSearchResults, setClientSearchResults] = useState([]);
+  const [clientSearchLoading, setClientSearchLoading] = useState(false);
+  const clientSearchTimer = useRef(null);
 
   // --- Enhanced features state ---
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -1065,44 +1074,77 @@ const Inbox = () => {
     inputRef.current?.focus();
   };
 
+  // --- Client search for new chat ---
+  const handleClientSearch = (query) => {
+    setClientSearchQuery(query);
+    if (clientSearchTimer.current) clearTimeout(clientSearchTimer.current);
+    if (!query.trim() || query.trim().length < 2) {
+      setClientSearchResults([]);
+      return;
+    }
+    setClientSearchLoading(true);
+    clientSearchTimer.current = setTimeout(async () => {
+      try {
+        const results = await clientService.list({ search: query.trim(), active: true });
+        setClientSearchResults(Array.isArray(results) ? results.slice(0, 8) : []);
+      } catch { setClientSearchResults([]); }
+      finally { setClientSearchLoading(false); }
+    }, 300);
+  };
+
+  const handleSelectClient = (client) => {
+    setNewChatPhone(client.phone || '');
+    setNewChatName(client.name || '');
+    setClientSearchQuery('');
+    setClientSearchResults([]);
+  };
+
   // --- New chat ---
   const handleNewChatNext = () => {
     if (!newChatPhone.trim()) return;
+    setNewChatError('');
     setNewChatStep('template');
   };
 
-  const handleCreateNewChat = (templateText) => {
-    const name = newChatName.trim() || newChatPhone.trim();
+  const handleCreateNewChat = async (templateText) => {
+    const phone = newChatPhone.trim();
+    const name = newChatName.trim() || phone;
     const nameTag = newChatName.trim() ? ` ${newChatName.trim().split(' ')[0]}` : '';
     const msgText = (templateText || '').replace('{nombre}', nameTag);
 
-    const tempConv = {
-      id: `temp-conv-${Date.now()}`,
-      wa_contact_phone: newChatPhone.trim(),
-      wa_contact_name: name,
-      last_message_at: new Date().toISOString(),
-      last_message_preview: msgText.slice(0, 50) + '...',
-      last_message_direction: 'outbound',
-      unread_count: 0,
-      is_ai_active: true,
-      client: null,
-    };
+    if (!phone) return;
+    setNewChatLoading(true);
+    setNewChatError('');
 
-    setConversations((prev) => [tempConv, ...prev]);
-    setMessages([{
-      id: `temp-msg-${Date.now()}`,
-      direction: 'outbound',
-      content: msgText,
-      message_type: 'text',
-      status: 'sent',
-      created_at: new Date().toISOString(),
-    }]);
-    setSelectedConvId(tempConv.id);
-    setAiMode((prev) => ({ ...prev, [tempConv.id]: true }));
-    setShowNewChat(false);
-    setNewChatPhone('');
-    setNewChatName('');
-    setNewChatStep('phone');
+    try {
+      // 1. Create or get existing conversation in backend
+      const convResult = await whatsappService.createConversation(phone, name);
+      const convId = convResult.id;
+
+      // 2. Send the actual WhatsApp message
+      const msgResult = await whatsappService.sendMessage(convId, msgText);
+
+      // 3. Refresh conversations and select the new one
+      await loadConversations();
+      setSelectedConvId(convId);
+
+      // 4. Load messages for this conversation
+      try {
+        const msgs = await whatsappService.getMessages(convId);
+        setMessages(msgs);
+      } catch { /* will load on next poll */ }
+
+      setShowNewChat(false);
+      setNewChatPhone('');
+      setNewChatName('');
+      setNewChatStep('phone');
+      setClientSearchQuery('');
+      setClientSearchResults([]);
+    } catch (err) {
+      setNewChatError(err.message || 'Error al enviar mensaje');
+    } finally {
+      setNewChatLoading(false);
+    }
   };
 
   // --- Group messages by date ---
@@ -1237,32 +1279,102 @@ const Inbox = () => {
           <div className={`${b}__new-chat-panel`}>
             <div className={`${b}__new-chat-header`}>
               <h3 className={`${b}__new-chat-title`}>
-                {newChatStep === 'phone' ? 'Nuevo chat' : 'Elegir plantilla'}
+                {newChatStep === 'phone' ? 'Nuevo chat' : newChatStep === 'custom' ? 'Mensaje personalizado' : 'Elegir plantilla'}
               </h3>
-              <button className={`${b}__new-chat-close`} onClick={() => { setShowNewChat(false); setNewChatStep('phone'); }}>
+              <button className={`${b}__new-chat-close`} onClick={() => { setShowNewChat(false); setNewChatStep('phone'); setClientSearchQuery(''); setClientSearchResults([]); setNewChatError(''); }}>
                 {Icons.close}
               </button>
             </div>
-            {newChatStep === 'phone' ? (
+
+            {newChatStep === 'phone' && (
               <div className={`${b}__new-chat-form`}>
-                <input type="text" className={`${b}__new-chat-input`} placeholder="Numero (ej: +573001234567)" value={newChatPhone} onChange={(e) => setNewChatPhone(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleNewChatNext()} autoFocus />
+                {/* Client search */}
+                <div className={`${b}__new-chat-search-wrap`}>
+                  <input
+                    type="text"
+                    className={`${b}__new-chat-input`}
+                    placeholder="Buscar cliente por nombre o telefono..."
+                    value={clientSearchQuery}
+                    onChange={(e) => handleClientSearch(e.target.value)}
+                    autoFocus
+                  />
+                  {clientSearchLoading && <span className={`${b}__new-chat-search-loading`}>Buscando...</span>}
+                  {clientSearchResults.length > 0 && (
+                    <div className={`${b}__new-chat-results`}>
+                      {clientSearchResults.map((cl) => (
+                        <button key={cl.id} className={`${b}__new-chat-result`} onClick={() => handleSelectClient(cl)}>
+                          <div className={`${b}__new-chat-result-avatar`} style={{ background: getAvatarColor(cl.name) }}>
+                            {getInitials(cl.name)}
+                          </div>
+                          <div className={`${b}__new-chat-result-info`}>
+                            <span className={`${b}__new-chat-result-name`}>{cl.name}</span>
+                            <span className={`${b}__new-chat-result-phone`}>{cl.phone}</span>
+                          </div>
+                          {cl.status && <span className={`${b}__new-chat-result-status ${b}__new-chat-result-status--${cl.status}`}>{cl.status}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className={`${b}__new-chat-divider`}><span>o escribe el numero directamente</span></div>
+
+                <input type="text" className={`${b}__new-chat-input`} placeholder="Numero (ej: +573001234567)" value={newChatPhone} onChange={(e) => setNewChatPhone(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleNewChatNext()} />
                 <input type="text" className={`${b}__new-chat-input`} placeholder="Nombre (opcional)" value={newChatName} onChange={(e) => setNewChatName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleNewChatNext()} />
+                {newChatPhone && <p className={`${b}__new-chat-selected`}>Contacto: <strong>{newChatName || newChatPhone}</strong> — {newChatPhone}</p>}
                 <button className={`${b}__new-chat-submit`} onClick={handleNewChatNext} disabled={!newChatPhone.trim()}>Siguiente</button>
               </div>
-            ) : (
+            )}
+
+            {newChatStep === 'template' && (
               <div className={`${b}__new-chat-templates`}>
-                <p className={`${b}__new-chat-templates-hint`}>Elige una plantilla para <strong>{newChatName || newChatPhone}</strong></p>
+                <p className={`${b}__new-chat-templates-hint`}>Enviando a <strong>{newChatName || newChatPhone}</strong></p>
+                {newChatError && <p className={`${b}__new-chat-error`}>{newChatError}</p>}
                 {TEMPLATES.map((tpl) => {
                   const nameTag = newChatName.trim() ? ` ${newChatName.trim().split(' ')[0]}` : '';
                   const preview = tpl.text.replace('{nombre}', nameTag);
                   return (
-                    <button key={tpl.id} className={`${b}__new-chat-tpl`} onClick={() => handleCreateNewChat(tpl.text)}>
+                    <button key={tpl.id} className={`${b}__new-chat-tpl`} onClick={() => handleCreateNewChat(tpl.text)} disabled={newChatLoading}>
                       <span className={`${b}__new-chat-tpl-label`}>{tpl.label}</span>
                       <span className={`${b}__new-chat-tpl-preview`}>{preview.length > 80 ? preview.slice(0, 80) + '...' : preview}</span>
                     </button>
                   );
                 })}
-                <button className={`${b}__new-chat-back`} onClick={() => setNewChatStep('phone')}>← Volver</button>
+                <button className={`${b}__new-chat-tpl ${b}__new-chat-tpl--custom`} onClick={() => setNewChatStep('custom')}>
+                  <span className={`${b}__new-chat-tpl-label`}>Personalizado</span>
+                  <span className={`${b}__new-chat-tpl-preview`}>Escribe tu propio mensaje...</span>
+                </button>
+                <div className={`${b}__new-chat-footer`}>
+                  <button className={`${b}__new-chat-back`} onClick={() => setNewChatStep('phone')}>← Volver</button>
+                  {newChatLoading && <span className={`${b}__new-chat-sending`}>Enviando...</span>}
+                </div>
+              </div>
+            )}
+
+            {newChatStep === 'custom' && (
+              <div className={`${b}__new-chat-custom`}>
+                <p className={`${b}__new-chat-templates-hint`}>Mensaje para <strong>{newChatName || newChatPhone}</strong></p>
+                {newChatError && <p className={`${b}__new-chat-error`}>{newChatError}</p>}
+                <textarea
+                  className={`${b}__new-chat-textarea`}
+                  placeholder="Escribe tu mensaje aqui..."
+                  rows={4}
+                  id="newChatCustomMsg"
+                  autoFocus
+                />
+                <div className={`${b}__new-chat-footer`}>
+                  <button className={`${b}__new-chat-back`} onClick={() => setNewChatStep('template')}>← Volver</button>
+                  <button
+                    className={`${b}__new-chat-submit`}
+                    disabled={newChatLoading}
+                    onClick={() => {
+                      const txt = document.getElementById('newChatCustomMsg')?.value?.trim();
+                      if (txt) handleCreateNewChat(txt);
+                    }}
+                  >
+                    {newChatLoading ? 'Enviando...' : 'Enviar'}
+                  </button>
+                </div>
               </div>
             )}
           </div>
