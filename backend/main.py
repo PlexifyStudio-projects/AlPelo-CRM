@@ -19,15 +19,23 @@ def _run_migrations(engine):
         ("whatsapp_conversation", "wa_profile_photo_url", "TEXT"),
     ]
 
-    with engine.begin() as conn:
-        for table, column, col_type in migrations:
-            try:
-                conn.execute(text(
-                    f"ALTER TABLE public.{table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
+    for table, column, col_type in migrations:
+        try:
+            with engine.begin() as conn:
+                # Check if column exists first
+                result = conn.execute(text(
+                    f"SELECT column_name FROM information_schema.columns "
+                    f"WHERE table_schema='public' AND table_name='{table}' AND column_name='{column}'"
                 ))
-                print(f"[MIGRATION] Ensured {table}.{column} exists")
-            except Exception as e:
-                print(f"[MIGRATION] Skipping {table}.{column}: {e}")
+                if result.fetchone() is None:
+                    conn.execute(text(
+                        f"ALTER TABLE public.{table} ADD COLUMN {column} {col_type}"
+                    ))
+                    print(f"[MIGRATION] Added {table}.{column}")
+                else:
+                    print(f"[MIGRATION] {table}.{column} already exists")
+        except Exception as e:
+            print(f"[MIGRATION] Error on {table}.{column}: {e}")
 
         # Activate Lina IA on ALL existing conversations
         try:
