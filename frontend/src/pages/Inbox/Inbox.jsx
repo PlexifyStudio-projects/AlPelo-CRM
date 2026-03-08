@@ -1408,7 +1408,17 @@ const Inbox = () => {
                     <p className={`${b}__new-chat-section-label`}>Plantillas disponibles</p>
                     {metaTemplates.map((tpl) => {
                       const friendlyNames = {
-                        hello_world: 'Mensaje de bienvenida (Meta)',
+                        hello_world: 'Bienvenida (Meta test)',
+                        bienvenida_alpelo: 'Bienvenida AlPelo',
+                        reactivacion_cliente: 'Reactivacion de cliente',
+                        encuesta_servicio: 'Encuesta de servicio',
+                        promocion_especial: 'Promocion especial',
+                        confirmacion_cita: 'Confirmacion de cita',
+                        agradecimiento_visita: 'Agradecimiento post-visita',
+                        nuevo_contacto: 'Nuevo contacto',
+                        servicios_premium: 'Servicios premium',
+                        referido: 'Cliente referido',
+                        seguimiento_cliente: 'Seguimiento',
                       };
                       return (
                         <button key={tpl.name} className={`${b}__new-chat-tpl`} onClick={() => handleSendTemplate(tpl)} disabled={newChatLoading}>
