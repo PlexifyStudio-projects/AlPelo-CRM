@@ -582,32 +582,38 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 return
 
             # Step 4: Send AI response via WhatsApp
-            async with httpx.AsyncClient(timeout=15) as client:
-                resp = await client.post(
-                    f"{WA_BASE_URL}/messages",
-                    headers=wa_headers(),
-                    json={
-                        "messaging_product": "whatsapp",
-                        "to": to_phone.replace("+", "").replace(" ", ""),
-                        "type": "text",
-                        "text": {"body": ai_response},
-                    },
-                )
-                data = resp.json()
-                if resp.status_code == 200 and "messages" in data:
-                    wa_message_id = data["messages"][0].get("id")
-                else:
-                    print(f"[Lina IA] Send failed for conv {conv_id}: {data}")
-                    return  # Don't store failed messages
+            wa_message_id = None
+            send_status = "sent"
+            try:
+                async with httpx.AsyncClient(timeout=15) as client:
+                    resp = await client.post(
+                        f"{WA_BASE_URL}/messages",
+                        headers=wa_headers(),
+                        json={
+                            "messaging_product": "whatsapp",
+                            "to": to_phone.replace("+", "").replace(" ", ""),
+                            "type": "text",
+                            "text": {"body": ai_response},
+                        },
+                    )
+                    data = resp.json()
+                    if resp.status_code == 200 and "messages" in data:
+                        wa_message_id = data["messages"][0].get("id")
+                    else:
+                        send_status = "failed"
+                        print(f"[Lina IA] WhatsApp send failed for conv {conv_id}: {data}")
+            except Exception as send_err:
+                send_status = "failed"
+                print(f"[Lina IA] WhatsApp send error for conv {conv_id}: {send_err}")
 
-            # Step 5: Store AI response in DB (only if sent successfully)
+            # Step 5: Store AI response in DB (even if WhatsApp send failed — visible in CRM)
             msg = WhatsAppMessage(
                 conversation_id=conv_id,
                 wa_message_id=wa_message_id,
                 direction="outbound",
                 content=ai_response,
                 message_type="text",
-                status="sent",
+                status=send_status,
                 sent_by="lina_ia",
             )
             db.add(msg)
@@ -691,61 +697,6 @@ async def proxy_media(media_id: str):
             raise HTTPException(status_code=404, detail="Media download failed")
 
     return Response(content=file_resp.content, media_type=mime_type)
-
-
-# ============================================================================
-# DIAGNOSTIC — Test auto-reply pipeline (TEMPORARY)
-# ============================================================================
-@router.post("/test-auto-reply/{conv_id}")
-async def test_auto_reply(conv_id: int, body: dict, db: Session = Depends(get_db)):
-    """Test the full auto-reply pipeline and return debug info."""
-    inbound_text = body.get("text", "Hola")
-    debug = []
-
-    try:
-        conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
-        if not conv:
-            return {"error": "Conversation not found"}
-        debug.append(f"Conv found: {conv.wa_contact_name}, is_ai_active={conv.is_ai_active}")
-
-        # Get history
-        recent_msgs = (
-            db.query(WhatsAppMessage)
-            .filter(WhatsAppMessage.conversation_id == conv_id)
-            .order_by(WhatsAppMessage.created_at.desc())
-            .limit(20)
-            .all()
-        )
-        recent_msgs.reverse()
-        history = []
-        for m in recent_msgs:
-            role = "user" if m.direction == "inbound" else "assistant"
-            history.append({"role": role, "content": m.content})
-        debug.append(f"History messages: {len(history)}")
-
-        # Build prompt
-        from routes.ai_endpoints import _build_system_prompt, _call_ai
-        system_prompt = _build_system_prompt(db, is_whatsapp=True)
-        debug.append(f"System prompt length: {len(system_prompt)} chars")
-
-        # Dedup check
-        if history and history[-1]["role"] == "user" and history[-1]["content"] == inbound_text:
-            call_history = history[:-1]
-        else:
-            call_history = history
-        debug.append(f"Call history messages: {len(call_history)}")
-
-        # Call AI
-        ai_response = await _call_ai(system_prompt, call_history, inbound_text)
-        debug.append(f"AI response: {ai_response[:200] if ai_response else 'NULL/EMPTY'}")
-
-        return {"debug": debug, "response": ai_response, "system_prompt_preview": system_prompt[:500]}
-
-    except Exception as e:
-        import traceback
-        debug.append(f"ERROR: {str(e)}")
-        debug.append(traceback.format_exc())
-        return {"debug": debug, "error": str(e)}
 
 
 # ============================================================================
