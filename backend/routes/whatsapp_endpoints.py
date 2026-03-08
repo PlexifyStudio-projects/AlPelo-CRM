@@ -782,6 +782,26 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     print(f"[Lina IA] Cooldown active for conv {conv_id} ({seconds_since:.0f}s ago). Skipping.")
                     return
 
+            # Step 2.5: Goodbye detection — if Lina already said goodbye, don't reply to farewell messages
+            GOODBYE_WORDS = [
+                "hasta luego", "nos vemos", "buen dia", "que estes bien", "que te vaya bien",
+                "que te quede", "cuídate", "cuidate", "fue un placer", "buena tarde",
+                "buenas noches", "hasta pronto", "un abrazo", "feliz dia", "feliz tarde",
+            ]
+            CLIENT_BYE_WORDS = [
+                "bye", "byee", "byeee", "chao", "adios", "adiós", "nos vemos", "hasta luego",
+                "gracias", "ok gracias", "listo gracias", "vale", "bueno", "dale", "igualmente",
+                "igual", "grax", "ty", "thanks", "tkm", "chau",
+            ]
+            if last_ai_msg and last_ai_msg.content:
+                last_ai_lower = last_ai_msg.content.lower()
+                inbound_lower = inbound_text.lower().strip() if inbound_text else ""
+                lina_said_bye = any(gw in last_ai_lower for gw in GOODBYE_WORDS)
+                client_says_bye = any(cw == inbound_lower or inbound_lower.startswith(cw + " ") or inbound_lower.endswith(" " + cw) or cw in inbound_lower.split() for cw in CLIENT_BYE_WORDS)
+                if lina_said_bye and client_says_bye:
+                    print(f"[Lina IA] Goodbye detected — Lina already said bye, client replied with farewell. Staying silent for conv {conv_id}.")
+                    return
+
             # Step 3: Get conversation history and generate AI response
             recent_msgs = (
                 db.query(WhatsAppMessage)
