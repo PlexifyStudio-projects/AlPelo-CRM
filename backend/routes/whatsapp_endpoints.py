@@ -694,6 +694,61 @@ async def proxy_media(media_id: str):
 
 
 # ============================================================================
+# DIAGNOSTIC — Test auto-reply pipeline (TEMPORARY)
+# ============================================================================
+@router.post("/test-auto-reply/{conv_id}")
+async def test_auto_reply(conv_id: int, body: dict, db: Session = Depends(get_db)):
+    """Test the full auto-reply pipeline and return debug info."""
+    inbound_text = body.get("text", "Hola")
+    debug = []
+
+    try:
+        conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+        if not conv:
+            return {"error": "Conversation not found"}
+        debug.append(f"Conv found: {conv.wa_contact_name}, is_ai_active={conv.is_ai_active}")
+
+        # Get history
+        recent_msgs = (
+            db.query(WhatsAppMessage)
+            .filter(WhatsAppMessage.conversation_id == conv_id)
+            .order_by(WhatsAppMessage.created_at.desc())
+            .limit(20)
+            .all()
+        )
+        recent_msgs.reverse()
+        history = []
+        for m in recent_msgs:
+            role = "user" if m.direction == "inbound" else "assistant"
+            history.append({"role": role, "content": m.content})
+        debug.append(f"History messages: {len(history)}")
+
+        # Build prompt
+        from routes.ai_endpoints import _build_system_prompt, _call_ai
+        system_prompt = _build_system_prompt(db, is_whatsapp=True)
+        debug.append(f"System prompt length: {len(system_prompt)} chars")
+
+        # Dedup check
+        if history and history[-1]["role"] == "user" and history[-1]["content"] == inbound_text:
+            call_history = history[:-1]
+        else:
+            call_history = history
+        debug.append(f"Call history messages: {len(call_history)}")
+
+        # Call AI
+        ai_response = await _call_ai(system_prompt, call_history, inbound_text)
+        debug.append(f"AI response: {ai_response[:200] if ai_response else 'NULL/EMPTY'}")
+
+        return {"debug": debug, "response": ai_response, "system_prompt_preview": system_prompt[:500]}
+
+    except Exception as e:
+        import traceback
+        debug.append(f"ERROR: {str(e)}")
+        debug.append(traceback.format_exc())
+        return {"debug": debug, "error": str(e)}
+
+
+# ============================================================================
 # MESSAGE SEARCH — Search messages across all conversations
 # ============================================================================
 @router.get("/messages/search")
