@@ -163,62 +163,85 @@ async def _fetch_profile_photo(conv_id: int, wa_phone: str):
 @router.get("/conversations")
 def list_conversations(db: Session = Depends(get_db)):
     """List all conversations with last message preview."""
-    convs = (
-        db.query(WhatsAppConversation)
-        .options(joinedload(WhatsAppConversation.client))
-        .order_by(WhatsAppConversation.last_message_at.desc().nullslast())
-        .all()
-    )
+    try:
+        convs = (
+            db.query(WhatsAppConversation)
+            .options(joinedload(WhatsAppConversation.client))
+            .order_by(WhatsAppConversation.last_message_at.desc().nullslast())
+            .all()
+        )
+    except Exception as e:
+        import traceback
+        print(f"[WA] list_conversations query error: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"DB query error: {str(e)}")
 
     results = []
     for c in convs:
-        # Get last message for preview
-        last_msg = (
-            db.query(WhatsAppMessage)
-            .filter(WhatsAppMessage.conversation_id == c.id)
-            .order_by(WhatsAppMessage.created_at.desc())
-            .first()
-        )
+        try:
+            # Get last message for preview
+            last_msg = (
+                db.query(WhatsAppMessage)
+                .filter(WhatsAppMessage.conversation_id == c.id)
+                .order_by(WhatsAppMessage.created_at.desc())
+                .first()
+            )
 
-        client_data = None
-        if c.client:
-            cl = c.client
-            total_visits = len(cl.visits) if cl.visits else 0
-            total_spent = sum(v.amount for v in cl.visits) if cl.visits else 0
-            last_visit = cl.visits[0].visit_date if cl.visits else None
-            days_since = (datetime.utcnow().date() - last_visit).days if last_visit else None
+            client_data = None
+            if c.client:
+                cl = c.client
+                total_visits = len(cl.visits) if cl.visits else 0
+                total_spent = sum(v.amount for v in cl.visits) if cl.visits else 0
+                last_visit = cl.visits[0].visit_date if cl.visits else None
+                days_since = (datetime.utcnow().date() - last_visit).days if last_visit else None
 
-            from routes._client_helpers import compute_client_fields
-            computed = compute_client_fields(cl, db)
+                from routes._client_helpers import compute_client_fields
+                computed = compute_client_fields(cl, db)
 
-            client_data = {
-                "id": cl.id,
-                "client_id": cl.client_id,
-                "name": cl.name,
-                "phone": cl.phone,
-                "email": cl.email,
-                "status": computed.status if hasattr(computed, 'status') else "activo",
-                "total_visits": total_visits,
-                "total_spent": total_spent,
-                "last_visit": str(last_visit) if last_visit else None,
-                "days_since_last_visit": days_since,
-                "favorite_service": cl.favorite_service,
-                "tags": cl.tags,
-            }
+                client_data = {
+                    "id": cl.id,
+                    "client_id": cl.client_id,
+                    "name": cl.name,
+                    "phone": cl.phone,
+                    "email": cl.email,
+                    "status": computed.status if hasattr(computed, 'status') else "activo",
+                    "total_visits": total_visits,
+                    "total_spent": total_spent,
+                    "last_visit": str(last_visit) if last_visit else None,
+                    "days_since_last_visit": days_since,
+                    "favorite_service": cl.favorite_service,
+                    "tags": cl.tags,
+                }
 
-        results.append({
-            "id": c.id,
-            "wa_contact_phone": c.wa_contact_phone,
-            "wa_contact_name": c.wa_contact_name,
-            "wa_profile_photo_url": c.wa_profile_photo_url,
-            "last_message_at": c.last_message_at.isoformat() if c.last_message_at else None,
-            "last_message_preview": last_msg.content[:80] if last_msg else None,
-            "last_message_direction": last_msg.direction if last_msg else None,
-            "is_ai_active": c.is_ai_active,
-            "unread_count": c.unread_count,
-            "tags": c.tags or [],
-            "client": client_data,
-        })
+            results.append({
+                "id": c.id,
+                "wa_contact_phone": c.wa_contact_phone,
+                "wa_contact_name": c.wa_contact_name,
+                "wa_profile_photo_url": getattr(c, 'wa_profile_photo_url', None),
+                "last_message_at": c.last_message_at.isoformat() if c.last_message_at else None,
+                "last_message_preview": last_msg.content[:80] if last_msg else None,
+                "last_message_direction": last_msg.direction if last_msg else None,
+                "is_ai_active": c.is_ai_active,
+                "unread_count": c.unread_count,
+                "tags": c.tags or [],
+                "client": client_data,
+            })
+        except Exception as e:
+            import traceback
+            print(f"[WA] Error building conv {c.id}: {e}\n{traceback.format_exc()}")
+            results.append({
+                "id": c.id,
+                "wa_contact_phone": getattr(c, 'wa_contact_phone', '?'),
+                "wa_contact_name": getattr(c, 'wa_contact_name', '?'),
+                "wa_profile_photo_url": None,
+                "last_message_at": None,
+                "last_message_preview": None,
+                "last_message_direction": None,
+                "is_ai_active": True,
+                "unread_count": 0,
+                "tags": [],
+                "client": None,
+                "_error": str(e),
+            })
 
     return results
 
