@@ -22,6 +22,15 @@ def _run_migrations(engine):
                 conn.execute(text("ALTER TABLE public.whatsapp_message ADD COLUMN media_mime_type VARCHAR"))
                 print("[MIGRATION] Added media_mime_type to whatsapp_message")
 
+    # Activate Lina IA on ALL existing conversations (fix for is_ai_active default=False)
+    if "whatsapp_conversation" in inspector.get_table_names(schema="public"):
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "UPDATE public.whatsapp_conversation SET is_ai_active = true WHERE is_ai_active = false"
+            ))
+            if result.rowcount > 0:
+                print(f"[MIGRATION] Activated Lina IA on {result.rowcount} conversations")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

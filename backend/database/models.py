@@ -114,7 +114,7 @@ class WhatsAppConversation(Base):
     wa_contact_phone = Column(String, nullable=False)
     wa_contact_name = Column(String, nullable=True)
     last_message_at = Column(DateTime, nullable=True)
-    is_ai_active = Column(Boolean, default=False)
+    is_ai_active = Column(Boolean, default=True)
     unread_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

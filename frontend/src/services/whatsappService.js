@@ -67,6 +67,12 @@ const whatsappService = {
     return handleResponse(res);
   },
 
+  // ========================= SEARCH MESSAGES =========================
+  searchMessages: async (query) => {
+    const res = await fetch(`${API}/whatsapp/messages/search?q=${encodeURIComponent(query)}`, { headers });
+    return handleResponse(res);
+  },
+
   // ========================= STATS =========================
   getStats: async () => {
     const res = await fetch(`${API}/whatsapp/stats`, { headers });

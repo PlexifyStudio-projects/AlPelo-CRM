@@ -414,25 +414,41 @@ Link de reservas: https://book.weibook.co/alpelo-peluqueria
 Direccion: Cabecera, Bucaramanga, Colombia."""
 
 
+def _build_whatsapp_context(db: Session) -> str:
+    """Build a LIGHT context for WhatsApp — just client names/phones and staff names."""
+    sections = []
+
+    # Client names + phones (compact)
+    clients = db.query(Client).filter(Client.is_active == True).order_by(Client.name).all()
+    if clients:
+        client_lines = [f"  {c.name} — tel:{c.phone}" for c in clients[:50]]
+        sections.append("CLIENTES REGISTRADOS:\n" + "\n".join(client_lines))
+
+    # Staff names + specialty
+    staff_all = db.query(Staff).filter(Staff.is_active == True).all()
+    if staff_all:
+        staff_lines = [f"  {s.name} ({s.specialty or s.role})" for s in staff_all]
+        sections.append("EQUIPO:\n" + "\n".join(staff_lines))
+
+    return "\n\n".join(sections)
+
+
 def _build_system_prompt(db: Session, is_whatsapp: bool = False) -> str:
     """Build the full system prompt with personality + tools + context."""
     config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
     personality = config.system_prompt if config else DEFAULT_PERSONALITY
 
     if is_whatsapp:
-        personality = """Eres Lina, la asistente de AlPelo Peluqueria en Cabecera, Bucaramanga. Respondes por WhatsApp a CLIENTES.
-
-TU FORMA DE SER:
-- Eres calida, cercana y genuinamente amable. Como una amiga que trabaja en la peluqueria.
-- Hablas en espanol colombiano natural, con confianza pero siempre respetuosa.
-- Eres servicial sin ser empalagosa. Cada respuesta se siente humana, no robotica.
-- Usas maximo 1 emoji por mensaje y solo cuando fluye natural. Nunca corazones.
+        whatsapp_instructions = """INSTRUCCIONES WHATSAPP — Estas respondiendo a un CLIENTE por WhatsApp.
 - Respuestas CORTAS: 1-3 lineas maximo. Como un mensaje real de WhatsApp.
+- Habla como una amiga que trabaja en la peluqueria, calida y cercana.
+- Usas maximo 1 emoji por mensaje y solo cuando fluye natural. Nunca corazones.
 - Si el cliente dice "gracias", NO digas "De nada". Di algo como "Un placer!", "Para eso estamos!", "Con gusto, [nombre]!".
 - Si se despide, despidete bonito: "Que estes muy bien!", "Te esperamos!", "Un abrazo!".
 - NUNCA repitas la misma frase dos veces en una conversacion.
 - NUNCA digas "como asistente virtual" ni "estoy aqui para ayudarte". Habla como humana.
 - Si mandan sticker, emoji o algo no textual, responde casual: "Jaja", "Ay que lindo", o simplemente continua la conversacion natural.
+- Usa el nombre del cliente si lo conoces.
 
 DATOS DE ALPELO:
 - Direccion: Cabecera, Bucaramanga
@@ -445,11 +461,18 @@ REGLAS:
 - NO ejecutes acciones ni modifiques datos. Solo informa y asiste.
 - Si preguntan por precios especificos, dales un rango aproximado e invitalos a agendar.
 - Si quieren cita, dales el link de reservas.
-- Si preguntan algo que no sabes, se honesta: "Dejame confirmar eso con el equipo y te cuento!"
-- Usa el nombre del cliente si lo conoces."""
+- Si preguntan algo que no sabes, se honesta: "Dejame confirmar eso con el equipo y te cuento!" """
 
-        # WhatsApp doesn't need the full business context (too many tokens)
-        return personality
+        wa_context = _build_whatsapp_context(db)
+
+        return f"""{personality}
+
+{whatsapp_instructions}
+
+=== DATOS DEL NEGOCIO ===
+Fecha: {date.today().strftime('%d de %B de %Y')}
+
+{wa_context}"""
 
     business_context = _build_business_context(db)
 

@@ -642,11 +642,20 @@ const Inbox = () => {
   const [showLabelPicker, setShowLabelPicker] = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
 
+  // --- Global search state ---
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [globalSearchResults, setGlobalSearchResults] = useState([]);
+  const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
+
   // --- Refs ---
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const searchInChatRef = useRef(null);
   const convMenuRef = useRef(null);
+  const lastKnownMsgCountRef = useRef({});
+  const initialLoadDoneRef = useRef(false);
+  const globalSearchRef = useRef(null);
 
   // --- Persist to localStorage ---
   useEffect(() => { localStorage.setItem(LS_PINNED, JSON.stringify(pinnedConvIds)); }, [pinnedConvIds]);
@@ -654,6 +663,40 @@ const Inbox = () => {
   useEffect(() => { localStorage.setItem(LS_LABELS, JSON.stringify(labels)); }, [labels]);
   useEffect(() => { localStorage.setItem(LS_ARCHIVED, JSON.stringify(archivedConvIds)); }, [archivedConvIds]);
   useEffect(() => { localStorage.setItem(LS_MUTED, JSON.stringify(mutedConvIds)); }, [mutedConvIds]);
+
+  // --- Notification sound ---
+  const playNotificationSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 830;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+    } catch { /* silent */ }
+  }, []);
+
+  // --- Global search handler ---
+  const handleGlobalSearch = useCallback(async (query) => {
+    if (!query.trim()) {
+      setGlobalSearchResults([]);
+      return;
+    }
+    try {
+      setGlobalSearchLoading(true);
+      const results = await whatsappService.searchMessages(query);
+      setGlobalSearchResults(results);
+    } catch {
+      setGlobalSearchResults([]);
+    } finally {
+      setGlobalSearchLoading(false);
+    }
+  }, []);
 
   // --- Load conversations ---
   const loadConversations = useCallback(async () => {
@@ -680,11 +723,26 @@ const Inbox = () => {
     const interval = setInterval(async () => {
       try {
         const data = await whatsappService.getConversations();
+        // Detect new inbound messages by comparing unread counts
+        if (initialLoadDoneRef.current) {
+          data.forEach((conv) => {
+            const prevUnread = lastKnownMsgCountRef.current[conv.id] || 0;
+            const newUnread = conv.unread_count || 0;
+            if (newUnread > prevUnread && conv.last_message_direction === 'inbound') {
+              playNotificationSound();
+            }
+          });
+        }
+        // Track unread counts
+        const counts = {};
+        data.forEach((c) => { counts[c.id] = c.unread_count || 0; });
+        lastKnownMsgCountRef.current = counts;
+        initialLoadDoneRef.current = true;
         setConversations(data);
       } catch { /* silent */ }
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [playNotificationSound]);
 
   // --- Load messages ---
   const loadMessages = useCallback(async (convId) => {
@@ -711,16 +769,26 @@ const Inbox = () => {
   }, [selectedConvId, loadMessages]);
 
   // --- Polling: refresh messages every 3s for active conversation ---
+  const lastMsgIdRef = useRef(null);
   useEffect(() => {
     if (!selectedConvId) return;
     const interval = setInterval(async () => {
       try {
         const data = await whatsappService.getMessages(selectedConvId);
+        // Detect new inbound message
+        if (data.length > 0) {
+          const lastMsg = data[data.length - 1];
+          if (lastMsgIdRef.current && lastMsg.id !== lastMsgIdRef.current) {
+            const isInbound = lastMsg.direction === 'inbound' || lastMsg.from === 'client';
+            if (isInbound) playNotificationSound();
+          }
+          lastMsgIdRef.current = lastMsg.id;
+        }
         setMessages(data);
       } catch { /* silent */ }
     }, 3000);
     return () => clearInterval(interval);
-  }, [selectedConvId]);
+  }, [selectedConvId, playNotificationSound]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -980,6 +1048,9 @@ const Inbox = () => {
         <div className={`${b}__list-header`}>
           <h2 className={`${b}__list-title`}>Chats</h2>
           <div className={`${b}__list-header-actions`}>
+            <button className={`${b}__new-chat-btn`} onClick={() => { setShowGlobalSearch(!showGlobalSearch); setGlobalSearchQuery(''); setGlobalSearchResults([]); }} title="Buscar mensajes">
+              {Icons.search}
+            </button>
             <button className={`${b}__new-chat-btn`} onClick={() => setShowNewChat(!showNewChat)} title="Nuevo chat">
               {Icons.newChat}
             </button>
@@ -1009,6 +1080,71 @@ const Inbox = () => {
                 El envio masivo estara disponible cuando se complete la integracion con Meta WhatsApp Business API.
                 Podras enviar campanas, promociones y mensajes personalizados a +500 clientes simultaneamente.
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Global Message Search Panel */}
+        {showGlobalSearch && (
+          <div className={`${b}__global-search-panel`}>
+            <div className={`${b}__global-search-header`}>
+              <div className={`${b}__global-search-input-wrap`}>
+                <span className={`${b}__global-search-icon`}>{Icons.search}</span>
+                <input
+                  ref={globalSearchRef}
+                  type="text"
+                  className={`${b}__global-search-input`}
+                  placeholder="Buscar en todos los mensajes..."
+                  value={globalSearchQuery}
+                  onChange={(e) => {
+                    setGlobalSearchQuery(e.target.value);
+                    if (e.target.value.length >= 3) handleGlobalSearch(e.target.value);
+                    else setGlobalSearchResults([]);
+                  }}
+                  autoFocus
+                />
+              </div>
+              <button className={`${b}__global-search-close`} onClick={() => { setShowGlobalSearch(false); setGlobalSearchQuery(''); setGlobalSearchResults([]); }}>
+                {Icons.close}
+              </button>
+            </div>
+            <div className={`${b}__global-search-results`}>
+              {globalSearchLoading ? (
+                <div className={`${b}__global-search-loading`}>
+                  <div className={`${b}__conv-loading-spinner`} />
+                  <p>Buscando...</p>
+                </div>
+              ) : globalSearchQuery.length >= 3 && globalSearchResults.length === 0 ? (
+                <div className={`${b}__global-search-empty`}>
+                  <p>No se encontraron mensajes</p>
+                </div>
+              ) : (
+                globalSearchResults.map((result) => (
+                  <div
+                    key={result.id}
+                    className={`${b}__global-search-item`}
+                    onClick={() => {
+                      setSelectedConvId(result.conversation_id);
+                      setShowGlobalSearch(false);
+                      setGlobalSearchQuery('');
+                      setGlobalSearchResults([]);
+                    }}
+                  >
+                    <div className={`${b}__global-search-item-header`}>
+                      <span className={`${b}__global-search-item-name`}>{result.contact_name || result.phone_number || 'Desconocido'}</span>
+                      <span className={`${b}__global-search-item-time`}>{formatConvTime(result.created_at)}</span>
+                    </div>
+                    <p className={`${b}__global-search-item-text`}>
+                      {(result.content || '').length > 100 ? (result.content || '').slice(0, 100) + '...' : (result.content || '')}
+                    </p>
+                  </div>
+                ))
+              )}
+              {globalSearchQuery.length < 3 && globalSearchQuery.length > 0 && (
+                <div className={`${b}__global-search-hint`}>
+                  <p>Escribe al menos 3 caracteres para buscar</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1341,17 +1477,25 @@ const Inbox = () => {
                               </div>
                             )}
 
+                            {/* Lina IA label */}
+                            {msg.sent_by === 'lina_ia' && (
+                              <div className={`${b}__lina-label`}>
+                                {Icons.robot}
+                                <span>Lina IA</span>
+                              </div>
+                            )}
+
                             {/* Media content */}
                             {msg.media_url && msg.message_type === 'sticker' && (
-                              <img src={msg.media_url} alt="Sticker" className={`${b}__message-sticker`} />
+                              <img src={msg.media_url} alt="Sticker" className={`${b}__message-sticker`} loading="lazy" />
                             )}
-                            {msg.media_url && msg.message_type === 'image' && (
-                              <img src={msg.media_url} alt="Imagen" className={`${b}__message-image`} />
+                            {msg.media_url && (msg.message_type === 'image' || msg.media_mime_type?.startsWith('image/')) && msg.message_type !== 'sticker' && (
+                              <img src={msg.media_url} alt="Imagen" className={`${b}__message-image`} loading="lazy" onClick={() => window.open(msg.media_url, '_blank')} />
                             )}
-                            {msg.media_url && msg.message_type === 'video' && (
+                            {msg.media_url && (msg.message_type === 'video' || msg.media_mime_type?.startsWith('video/')) && (
                               <video src={msg.media_url} controls className={`${b}__message-video`} />
                             )}
-                            {msg.media_url && msg.message_type === 'audio' && (
+                            {msg.media_url && (msg.message_type === 'audio' || msg.media_mime_type?.startsWith('audio/')) && (
                               <audio src={msg.media_url} controls className={`${b}__message-audio`} />
                             )}
                             {(!msg.media_url || (msg.content && msg.message_type !== 'sticker')) && (
