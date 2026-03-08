@@ -15,6 +15,9 @@ from database.models import WhatsAppConversation, WhatsAppMessage, Client
 
 router = APIRouter(prefix="/whatsapp", tags=["WhatsApp"])
 
+# Diagnostics — stores last webhook error for debugging
+_last_webhook_error: dict = {}
+
 # ============================================================================
 # Global AI reply rate limiter — max 10 replies per 60 seconds
 # ============================================================================
@@ -609,8 +612,14 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
 
         db.commit()
     except Exception as e:
-        print(f"[WA Webhook] Error: {e}")
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[WA Webhook] Error: {e}\n{tb}")
         db.rollback()
+        # Store error for diagnostics
+        _last_webhook_error["error"] = str(e)
+        _last_webhook_error["traceback"] = tb
+        _last_webhook_error["time"] = datetime.utcnow().isoformat()
 
     # Schedule AI auto-replies in background (with delay)
     for reply_info in conversations_to_reply:
@@ -846,6 +855,17 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
     except Exception as e:
         print(f"[Lina IA] Auto-reply error: {e}")
 
+
+
+# ============================================================================
+# DIAGNOSTICS — Temporary endpoint for debugging webhook issues
+# ============================================================================
+@router.get("/debug/last-error")
+def get_last_webhook_error():
+    """Return last webhook error for debugging. Remove in production."""
+    if not _last_webhook_error:
+        return {"status": "no errors"}
+    return _last_webhook_error
 
 
 # ============================================================================
