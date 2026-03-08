@@ -871,6 +871,38 @@ def get_last_webhook_error():
     return _last_webhook_error
 
 
+@router.post("/debug/fix-columns")
+def fix_columns(db: Session = Depends(get_db)):
+    """Force-add missing columns. Temporary debug endpoint."""
+    from sqlalchemy import text
+    results = []
+    migrations = [
+        ("whatsapp_conversation", "wa_profile_photo_url", "TEXT"),
+        ("whatsapp_conversation", "tags", "JSON DEFAULT '[]'"),
+        ("whatsapp_message", "media_url", "TEXT"),
+        ("whatsapp_message", "media_mime_type", "VARCHAR"),
+    ]
+    for table, column, col_type in migrations:
+        try:
+            db.execute(text(
+                f"SELECT column_name FROM information_schema.columns "
+                f"WHERE table_schema='public' AND table_name=:table AND column_name=:column"
+            ), {"table": table, "column": column})
+            row = db.execute(text(
+                f"SELECT column_name FROM information_schema.columns "
+                f"WHERE table_schema='public' AND table_name='{table}' AND column_name='{column}'"
+            )).fetchone()
+            if row is None:
+                db.execute(text(f"ALTER TABLE public.{table} ADD COLUMN {column} {col_type}"))
+                db.commit()
+                results.append(f"CREATED {table}.{column}")
+            else:
+                results.append(f"EXISTS {table}.{column}")
+        except Exception as e:
+            results.append(f"ERROR {table}.{column}: {str(e)}")
+    return {"results": results}
+
+
 # ============================================================================
 # STATS
 # ============================================================================
