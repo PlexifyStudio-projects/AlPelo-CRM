@@ -8,6 +8,15 @@ import { formatCurrency } from '../../utils/formatters';
 // ============================================
 
 const b = 'inbox';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+// Resolve media URLs: relative /api/... paths need the full backend domain
+const resolveMediaUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('/api/')) return API_BASE.replace('/api', '') + url;
+  return API_BASE + '/' + url;
+};
 
 // ===== LOCAL STORAGE KEYS =====
 const LS_PINNED = 'alpelo_wa_pinned';
@@ -1514,18 +1523,18 @@ const Inbox = () => {
 
                             {/* Media content */}
                             {msg.media_url && msg.message_type === 'sticker' && (
-                              <img src={msg.media_url} alt="Sticker" className={`${b}__message-sticker`} loading="lazy" />
+                              <img src={resolveMediaUrl(msg.media_url)} alt="Sticker" className={`${b}__message-sticker`} loading="lazy" />
                             )}
                             {msg.media_url && (msg.message_type === 'image' || msg.media_mime_type?.startsWith('image/')) && msg.message_type !== 'sticker' && (
-                              <img src={msg.media_url} alt="Imagen" className={`${b}__message-image`} loading="lazy" onClick={() => window.open(msg.media_url, '_blank')} />
+                              <img src={resolveMediaUrl(msg.media_url)} alt="Imagen" className={`${b}__message-image`} loading="lazy" onClick={() => window.open(resolveMediaUrl(msg.media_url), '_blank')} />
                             )}
                             {msg.media_url && (msg.message_type === 'video' || msg.media_mime_type?.startsWith('video/')) && (
-                              <video src={msg.media_url} controls className={`${b}__message-video`} />
+                              <video src={resolveMediaUrl(msg.media_url)} controls className={`${b}__message-video`} />
                             )}
                             {msg.media_url && (msg.message_type === 'audio' || msg.media_mime_type?.startsWith('audio/')) && (
-                              <audio src={msg.media_url} controls className={`${b}__message-audio`} />
+                              <audio src={resolveMediaUrl(msg.media_url)} controls className={`${b}__message-audio`} />
                             )}
-                            {(!msg.media_url || (msg.content && msg.message_type !== 'sticker')) && (
+                            {(!msg.media_url || (msg.content && !['sticker', 'image', 'video', 'audio', 'document'].includes(msg.message_type))) && (
                               <p className={`${b}__message-text`}>{msg.content || msg.text}</p>
                             )}
                             <div className={`${b}__message-meta`}>
