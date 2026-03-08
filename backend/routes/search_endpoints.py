@@ -81,7 +81,7 @@ def list_clients(
     sort_by: Optional[str] = Query("name"),
     db: Session = Depends(get_db),
 ):
-    from routes._client_helpers import compute_client_list_item
+    from routes._helpers import compute_client_list_item
 
     query = db.query(Client)
 
@@ -119,7 +119,7 @@ def list_clients(
 
 @router.get("/clients/{client_id}", response_model=ClientResponse)
 def get_client(client_id: int, db: Session = Depends(get_db)):
-    from routes._client_helpers import compute_client_fields
+    from routes._helpers import compute_client_fields
 
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
@@ -202,7 +202,7 @@ def list_client_notes(client_id: int, db: Session = Depends(get_db)):
 
 @router.get("/dashboard/kpis", response_model=DashboardKPIs)
 def get_dashboard_kpis(db: Session = Depends(get_db)):
-    from routes._client_helpers import compute_client_list_item
+    from routes._helpers import compute_client_list_item
 
     clients = db.query(Client).filter(Client.is_active == True).all()
     enriched = [compute_client_list_item(c, db) for c in clients]

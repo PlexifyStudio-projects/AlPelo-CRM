@@ -11,24 +11,59 @@ const STORAGE_TOKENS_KEY = 'alpelo_lina_tokens';
 const STORAGE_HISTORY_KEY = 'alpelo_lina_queries';
 
 const SUGGESTED_PROMPTS = [
-  { icon: '📊', text: 'Dame el resumen del dia', desc: 'KPIs y metricas actuales' },
+  { icon: '📊', text: 'Dame el resumen completo del negocio', desc: 'Dashboard: KPIs, ingresos, metricas' },
   { icon: '⚠️', text: 'Que clientes estan en riesgo?', desc: 'Clientes sin venir 30+ dias' },
-  { icon: '👥', text: 'Cuantos clientes VIP tenemos?', desc: 'Segmentacion de clientes' },
-  { icon: '💰', text: 'Cual es el ingreso total del negocio?', desc: 'Facturacion acumulada' },
-  { icon: '💈', text: 'Cual es el servicio mas vendido?', desc: 'Ranking de servicios' },
-  { icon: '👤', text: 'Quien es el barbero con mejor rating?', desc: 'Rendimiento del equipo' },
+  { icon: '📱', text: 'Como esta el inbox de WhatsApp?', desc: 'Conversaciones, sin leer, IA activa' },
+  { icon: '👥', text: 'Dame el estado completo del equipo', desc: 'Barberos, ratings, especialidades' },
+  { icon: '💰', text: 'Cuales son los servicios mas vendidos?', desc: 'Ranking de servicios y facturacion' },
+  { icon: '📋', text: 'Clientes que llevan mas de 40 dias sin venir', desc: 'Filtrar clientes inactivos' },
 ];
 
 const QUICK_ACTIONS = [
   { icon: '➕', text: 'Crear un cliente nuevo' },
   { icon: '📋', text: 'Listar clientes en riesgo' },
-  { icon: '📈', text: 'Resumen de ingresos' },
+  { icon: '📱', text: 'Resumen del inbox' },
   { icon: '👥', text: 'Estado del equipo' },
   { icon: '📝', text: 'Agregar nota a un cliente' },
+  { icon: '📨', text: 'Enviar plantilla a clientes inactivos' },
   { icon: '🔄', text: 'Ultimas visitas registradas' },
+  { icon: '⚙️', text: 'Ver configuracion de IA actual' },
 ];
 
 const generateId = () => `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+/**
+ * Parse AI response — strip action blocks and separate text from action results.
+ * Action results come after the text as "-> result" lines from the backend.
+ */
+const parseAIResponse = (text) => {
+  if (!text) return { message: '', actions: [] };
+
+  // The backend already strips ```action blocks and appends results as "-> ..."
+  // But sometimes the AI model leaks action blocks — strip them on frontend too
+  let clean = text
+    .replace(/[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}\s*action[\s\S]*?[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}/gi, '')
+    .replace(/[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}\s*action[\s\S]*/gi, '') // unclosed blocks
+    .trim();
+
+  // Separate action results (lines starting with "->") from the message
+  const lines = clean.split('\n');
+  const messageLines = [];
+  const actionLines = [];
+
+  for (const line of lines) {
+    if (line.trim().startsWith('->')) {
+      actionLines.push(line.trim().replace(/^->\s*/, ''));
+    } else {
+      messageLines.push(line);
+    }
+  }
+
+  return {
+    message: messageLines.join('\n').trim(),
+    actions: actionLines,
+  };
+};
 
 // Load from localStorage
 const loadMessages = () => {
@@ -193,7 +228,7 @@ const ChatAI = () => {
                 </div>
                 <h3 className="chat-ai__welcome-title">Hola, soy Lina</h3>
                 <p className="chat-ai__welcome-text">
-                  Tu asistente ejecutiva de AlPelo. Tengo acceso completo al sistema: clientes, equipo, metricas, visitas y configuracion.
+                  Tu asistente ejecutiva con control total de AlPelo. Dashboard, clientes, equipo, inbox, plantillas, configuracion — preguntame lo que necesites o pideme que haga cualquier cosa.
                 </p>
                 <div className="chat-ai__prompts">
                   {SUGGESTED_PROMPTS.map((p, i) => (
@@ -209,23 +244,42 @@ const ChatAI = () => {
               </div>
             ) : (
               <>
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`chat-ai__message chat-ai__message--${msg.role} ${msg.isError ? 'chat-ai__message--error' : ''}`}>
-                    {msg.role === 'assistant' && (
-                      <div className="chat-ai__avatar">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
-                        </svg>
+                {messages.map((msg) => {
+                  const parsed = msg.role === 'assistant' && !msg.isError ? parseAIResponse(msg.content) : null;
+                  return (
+                    <div key={msg.id} className={`chat-ai__message chat-ai__message--${msg.role} ${msg.isError ? 'chat-ai__message--error' : ''}`}>
+                      {msg.role === 'assistant' && (
+                        <div className="chat-ai__avatar">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="chat-ai__bubble-wrap">
+                        <div className={`chat-ai__bubble chat-ai__bubble--${msg.role}`}>
+                          {parsed ? (
+                            <>
+                              {parsed.message && <span className="chat-ai__text">{parsed.message}</span>}
+                              {parsed.actions.length > 0 && (
+                                <div className="chat-ai__action-results">
+                                  {parsed.actions.map((a, i) => (
+                                    <div key={i} className={`chat-ai__action-result ${a.startsWith('ERROR') ? 'chat-ai__action-result--error' : ''}`}>
+                                      <span className="chat-ai__action-icon">{a.startsWith('ERROR') ? '!' : '\u2713'}</span>
+                                      {a}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            msg.content
+                          )}
+                        </div>
+                        <span className="chat-ai__time">{formatTime(msg.timestamp)}</span>
                       </div>
-                    )}
-                    <div className="chat-ai__bubble-wrap">
-                      <div className={`chat-ai__bubble chat-ai__bubble--${msg.role}`}>
-                        {msg.content}
-                      </div>
-                      <span className="chat-ai__time">{formatTime(msg.timestamp)}</span>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {isTyping && (
                   <div className="chat-ai__message chat-ai__message--assistant">
@@ -306,9 +360,11 @@ const ChatAI = () => {
             <div className="chat-ai__sidebar-section">
               <h4 className="chat-ai__sidebar-title">Capacidades</h4>
               <div className="chat-ai__sidebar-caps">
-                <span>👥 Gestionar clientes</span>
+                <span>📊 Dashboard y KPIs</span>
+                <span>👥 CRM de clientes</span>
                 <span>💈 Equipo y staff</span>
-                <span>📊 KPIs y metricas</span>
+                <span>📱 Inbox WhatsApp</span>
+                <span>📨 Envio de plantillas</span>
                 <span>📝 Notas y visitas</span>
                 <span>⚙️ Configuracion IA</span>
                 <span>🔒 Seguridad integrada</span>

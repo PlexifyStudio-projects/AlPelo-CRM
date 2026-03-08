@@ -12,11 +12,9 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session, joinedload
 from database.connection import get_db, SessionLocal
 from database.models import WhatsAppConversation, WhatsAppMessage, Client
+from routes._helpers import normalize_phone
 
 router = APIRouter(prefix="/whatsapp", tags=["WhatsApp"])
-
-# Diagnostics — stores last webhook error for debugging
-_last_webhook_error: dict = {}
 
 # ============================================================================
 # Global AI reply rate limiter — max 10 replies per 60 seconds
@@ -107,7 +105,7 @@ async def _fetch_profile_photo(conv_id: int, wa_phone: str):
     access to contact profile photos — works best for business accounts.
     """
     photo_url = None
-    clean_phone = wa_phone.replace("+", "").replace(" ", "")
+    clean_phone = normalize_phone(wa_phone)
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -194,7 +192,7 @@ def list_conversations(db: Session = Depends(get_db)):
                 last_visit = cl.visits[0].visit_date if cl.visits else None
                 days_since = (datetime.utcnow().date() - last_visit).days if last_visit else None
 
-                from routes._client_helpers import compute_client_fields
+                from routes._helpers import compute_client_fields
                 computed = compute_client_fields(cl, db)
 
                 client_data = {
@@ -380,7 +378,7 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
                 headers=wa_headers(),
                 json={
                     "messaging_product": "whatsapp",
-                    "to": conv.wa_contact_phone.replace("+", "").replace(" ", ""),
+                    "to": normalize_phone(conv.wa_contact_phone),
                     "type": "text",
                     "text": {"body": text},
                 },
@@ -394,16 +392,6 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
                 status = "failed"
                 error_msg = data.get("error", {}).get("message", str(data))
                 print(f"[WA] Send failed ({resp.status_code}): {error_msg}")
-                # Store error for debugging
-                global _last_webhook_error
-                _last_webhook_error = {
-                    "type": "send_failed",
-                    "phone": conv.wa_contact_phone,
-                    "status_code": resp.status_code,
-                    "error": error_msg,
-                    "full_response": data,
-                    "timestamp": datetime.utcnow().isoformat(),
-                }
     except Exception as e:
         status = "failed"
         print(f"[WA] Send error: {e}")
@@ -486,7 +474,7 @@ async def list_templates():
 async def send_template(body: dict, db: Session = Depends(get_db)):
     """Send a template message to a phone number. Creates conversation + stores message."""
     phone_raw = body.get("phone", "").strip()
-    phone_clean = phone_raw.replace("+", "").replace(" ", "").replace("-", "")
+    phone_clean = normalize_phone(phone_raw)
     template_name = body.get("template_name", "hello_world")
     language_code = body.get("language_code", "en_US")
     contact_name = body.get("name", "").strip()
@@ -786,10 +774,6 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
         tb = traceback.format_exc()
         print(f"[WA Webhook] Error: {e}\n{tb}")
         db.rollback()
-        # Store error for diagnostics
-        _last_webhook_error["error"] = str(e)
-        _last_webhook_error["traceback"] = tb
-        _last_webhook_error["time"] = datetime.utcnow().isoformat()
 
     # Schedule AI auto-replies in background (with delay)
     for reply_info in conversations_to_reply:
@@ -1064,7 +1048,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         headers=wa_headers(),
                         json={
                             "messaging_product": "whatsapp",
-                            "to": to_phone.replace("+", "").replace(" ", ""),
+                            "to": normalize_phone(to_phone),
                             "type": "text",
                             "text": {"body": clean_response},
                         },
@@ -1104,65 +1088,6 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
     except Exception as e:
         print(f"[Lina IA] Auto-reply error: {e}")
 
-
-
-# ============================================================================
-# DIAGNOSTICS — Temporary endpoint for debugging webhook issues
-# ============================================================================
-@router.get("/debug/last-error")
-def get_last_webhook_error():
-    """Return last webhook error for debugging. Remove in production."""
-    if not _last_webhook_error:
-        return {"status": "no errors"}
-    return _last_webhook_error
-
-
-@router.delete("/debug/hard-delete-client/{phone}")
-def hard_delete_client(phone: str, db: Session = Depends(get_db)):
-    """Hard delete a client by phone. Temporary debug endpoint."""
-    from sqlalchemy import text
-    # Delete notes and visits first (foreign keys)
-    client = db.query(Client).filter(Client.phone == phone).first()
-    if not client:
-        return {"status": "not found"}
-    from database.models import ClientNote, VisitHistory
-    db.query(ClientNote).filter(ClientNote.client_id == client.id).delete()
-    db.query(VisitHistory).filter(VisitHistory.client_id == client.id).delete()
-    db.delete(client)
-    db.commit()
-    return {"status": "hard deleted", "name": client.name, "phone": phone}
-
-
-@router.post("/debug/fix-columns")
-def fix_columns(db: Session = Depends(get_db)):
-    """Force-add missing columns. Temporary debug endpoint."""
-    from sqlalchemy import text
-    results = []
-    migrations = [
-        ("whatsapp_conversation", "wa_profile_photo_url", "TEXT"),
-        ("whatsapp_conversation", "tags", "JSON DEFAULT '[]'"),
-        ("whatsapp_message", "media_url", "TEXT"),
-        ("whatsapp_message", "media_mime_type", "VARCHAR"),
-    ]
-    for table, column, col_type in migrations:
-        try:
-            db.execute(text(
-                f"SELECT column_name FROM information_schema.columns "
-                f"WHERE table_schema='public' AND table_name=:table AND column_name=:column"
-            ), {"table": table, "column": column})
-            row = db.execute(text(
-                f"SELECT column_name FROM information_schema.columns "
-                f"WHERE table_schema='public' AND table_name='{table}' AND column_name='{column}'"
-            )).fetchone()
-            if row is None:
-                db.execute(text(f"ALTER TABLE public.{table} ADD COLUMN {column} {col_type}"))
-                db.commit()
-                results.append(f"CREATED {table}.{column}")
-            else:
-                results.append(f"EXISTS {table}.{column}")
-        except Exception as e:
-            results.append(f"ERROR {table}.{column}: {str(e)}")
-    return {"results": results}
 
 
 # ============================================================================
@@ -1273,7 +1198,7 @@ async def refresh_profile_photo(conv_id: int, db: Session = Depends(get_db)):
     if not conv:
         raise HTTPException(status_code=404, detail="Conversacion no encontrada")
 
-    phone = conv.wa_contact_phone.replace("+", "").replace(" ", "")
+    phone = normalize_phone(conv.wa_contact_phone)
 
     # Try multiple Meta API approaches to get profile picture
     photo_url = None

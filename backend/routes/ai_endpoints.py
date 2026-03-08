@@ -9,11 +9,12 @@ from sqlalchemy import func
 from datetime import datetime, date, timedelta
 
 from database.connection import get_db
-from database.models import AIConfig, Staff, Client, VisitHistory, ClientNote
+from database.models import AIConfig, Staff, Client, VisitHistory, ClientNote, WhatsAppConversation, WhatsAppMessage
 from schemas import (
     AIConfigCreate, AIConfigUpdate, AIConfigResponse,
     AIChatRequest, AIChatResponse,
 )
+from routes._helpers import compute_client_list_item, compute_client_fields, find_client, find_conversation, normalize_phone
 
 router = APIRouter()
 
@@ -59,7 +60,6 @@ def update_ai_config(config_id: int, data: AIConfigUpdate, db: Session = Depends
 
 def _build_business_context(db: Session) -> str:
     """Build a rich context string from the database for the AI."""
-    from routes._client_helpers import compute_client_list_item
 
     sections = []
 
@@ -135,6 +135,69 @@ Ingreso total registrado: ${total_revenue:,} COP""")
     return "\n\n".join(sections)
 
 
+def _build_inbox_context(db: Session) -> str:
+    """Build WhatsApp inbox summary for AI context — includes last messages."""
+    convs = db.query(WhatsAppConversation).order_by(WhatsAppConversation.last_message_at.desc()).limit(20).all()
+    if not convs:
+        return "=== INBOX WHATSAPP ===\nNo hay conversaciones activas."
+
+    total_unread = sum(c.unread_count or 0 for c in convs)
+    ai_active = sum(1 for c in convs if c.is_ai_active)
+
+    lines = [f"=== INBOX WHATSAPP — TU PUEDES VER ESTO EN TIEMPO REAL ({len(convs)} conversaciones, {total_unread} sin leer, IA activa en {ai_active}) ==="]
+    lines.append("NOTA: Estos son los chats REALES de WhatsApp. Tu SI tienes acceso a ellos.")
+    lines.append("")
+
+    for c in convs:
+        name = c.wa_contact_name or "Sin nombre"
+        phone = c.wa_contact_phone
+        unread = f" [{c.unread_count} sin leer]" if c.unread_count else ""
+        ai = "IA:ON" if c.is_ai_active else "IA:OFF"
+        tags = f" | tags:{','.join(c.tags)}" if c.tags else ""
+        last = c.last_message_at.strftime("%d/%m %H:%M") if c.last_message_at else "nunca"
+
+        # Client link
+        client_info = ""
+        if c.client_id:
+            client = db.query(Client).filter(Client.id == c.client_id).first()
+            if client:
+                client_info = f" | CRM:{client.name} (ID:{client.client_id})"
+
+        # Last inbound message timestamp (for 24h window check)
+        last_inbound = db.query(WhatsAppMessage).filter(
+            WhatsAppMessage.conversation_id == c.id,
+            WhatsAppMessage.direction == "inbound"
+        ).order_by(WhatsAppMessage.created_at.desc()).first()
+
+        if last_inbound and last_inbound.created_at:
+            hours_since_client = (datetime.utcnow() - last_inbound.created_at).total_seconds() / 3600
+            if hours_since_client < 24:
+                window_status = f"VENTANA ABIERTA ({hours_since_client:.0f}h) — texto libre OK"
+            else:
+                days_since = hours_since_client / 24
+                window_status = f"VENTANA CERRADA ({days_since:.0f} dias) — SOLO PLANTILLA"
+        else:
+            window_status = "SIN MENSAJES DEL CLIENTE — SOLO PLANTILLA"
+
+        # Last 2 messages for context
+        last_msgs = db.query(WhatsAppMessage).filter(
+            WhatsAppMessage.conversation_id == c.id
+        ).order_by(WhatsAppMessage.created_at.desc()).limit(2).all()
+
+        msg_preview = ""
+        if last_msgs:
+            previews = []
+            for m in reversed(last_msgs):
+                direction = "CLIENTE" if m.direction == "inbound" else "LINA" if m.sent_by == "lina_ia" else "ADMIN"
+                content = m.content[:60] if m.content else "[media]"
+                previews.append(f"{direction}: {content}")
+            msg_preview = " | " + " / ".join(previews)
+
+        lines.append(f"  - Conv#{c.id}: {name} (tel:{phone}){unread} | {ai} | {window_status} | ultimo:{last}{client_info}{tags}{msg_preview}")
+
+    return "\n".join(lines)
+
+
 # ============================================================================
 # ACTION EXECUTOR — Executes actions requested by the AI
 # ============================================================================
@@ -172,7 +235,7 @@ def _execute_action(action: dict, db: Session) -> str:
         return f"Cliente creado: {client.name} (ID: {client.client_id}, Tel: {client.phone})"
 
     elif action_type == "update_client":
-        client = _find_client(action, db)
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
         if not client:
             return "ERROR: No encontre al cliente. Verifica el nombre o ID."
 
@@ -184,7 +247,7 @@ def _execute_action(action: dict, db: Session) -> str:
         return f"Cliente {client.name} actualizado."
 
     elif action_type == "delete_client":
-        client = _find_client(action, db)
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
         if not client:
             return "ERROR: No encontre al cliente."
         client.is_active = False
@@ -193,7 +256,7 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- NOTES ----
     elif action_type == "add_note":
-        client = _find_client(action, db)
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
         if not client:
             return "ERROR: No encontre al cliente."
         note = ClientNote(client_id=client.id, content=action.get("content", ""), created_by="Lina IA")
@@ -241,7 +304,7 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- VISITS ----
     elif action_type == "add_visit":
-        client = _find_client(action, db)
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
         if not client:
             return "ERROR: No encontre al cliente."
         staff_id = action.get("staff_id")
@@ -272,25 +335,7 @@ def _execute_action(action: dict, db: Session) -> str:
             return "ERROR: Necesito el texto del mensaje."
 
         # Find conversation by client name or phone
-        conv = None
-        if search_name:
-            client = db.query(Client).filter(Client.name.ilike(f"%{search_name}%")).first()
-            if client:
-                conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.client_id == client.id).first()
-                if not conv:
-                    conv = db.query(WhatsAppConversation).filter(
-                        WhatsAppConversation.wa_contact_phone.contains(client.phone[-10:])
-                    ).first()
-        if not conv and phone:
-            conv = db.query(WhatsAppConversation).filter(
-                WhatsAppConversation.wa_contact_phone.contains(phone[-10:])
-            ).first()
-        if not conv:
-            # Try matching by conversation contact name
-            if search_name:
-                conv = db.query(WhatsAppConversation).filter(
-                    WhatsAppConversation.wa_contact_name.ilike(f"%{search_name}%")
-                ).first()
+        conv = find_conversation(db, search_name=search_name, phone=phone)
 
         if not conv:
             return f"ERROR: No encontre una conversacion de WhatsApp para '{search_name or phone}'. Verifica que exista un chat activo."
@@ -309,7 +354,7 @@ def _execute_action(action: dict, db: Session) -> str:
                 headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
                 json={
                     "messaging_product": "whatsapp",
-                    "to": conv.wa_contact_phone.replace("+", "").replace(" ", ""),
+                    "to": normalize_phone(conv.wa_contact_phone),
                     "type": "text",
                     "text": {"body": message_text},
                 },
@@ -341,6 +386,293 @@ def _execute_action(action: dict, db: Session) -> str:
         contact_name = conv.wa_contact_name or conv.wa_contact_phone
         return f"Mensaje enviado a {contact_name} por WhatsApp: \"{message_text[:60]}...\""
 
+    # ---- SEND WHATSAPP TEMPLATE (for first contact / outside 24h window) ----
+    elif action_type == "send_whatsapp_template":
+        search_name = action.get("search_name", "").strip()
+        phone = action.get("phone", "").strip()
+        template_name = action.get("template_name", "hello_world")
+        language_code = action.get("language_code", "en_US")
+
+        # Find client phone
+        target_phone = phone
+        client_name = search_name
+        if search_name and not phone:
+            client = db.query(Client).filter(Client.name.ilike(f"%{search_name}%"), Client.is_active == True).first()
+            if client:
+                target_phone = client.phone
+                client_name = client.name
+            else:
+                return f"ERROR: No encontre al cliente '{search_name}'."
+
+        if not target_phone:
+            return "ERROR: Necesito el telefono o nombre del cliente."
+
+        phone_clean = normalize_phone(target_phone)
+        wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+        wa_phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+        wa_api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+        wa_base = f"https://graph.facebook.com/{wa_api_version}/{wa_phone_id}"
+
+        try:
+            resp = httpx.post(
+                f"{wa_base}/messages",
+                headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
+                json={
+                    "messaging_product": "whatsapp",
+                    "to": phone_clean,
+                    "type": "template",
+                    "template": {"name": template_name, "language": {"code": language_code}},
+                },
+                timeout=15,
+            )
+            data = resp.json()
+            if resp.status_code == 200 and "messages" in data:
+                wa_message_id = data["messages"][0].get("id")
+            else:
+                error_msg = data.get("error", {}).get("message", str(data))
+                return f"ERROR: No se pudo enviar la plantilla a {client_name}. {error_msg}"
+        except Exception as e:
+            return f"ERROR: Fallo la conexion con WhatsApp: {str(e)}"
+
+        # Get or create conversation
+        conv = db.query(WhatsAppConversation).filter(
+            WhatsAppConversation.wa_contact_phone.contains(phone_clean[-10:])
+        ).first()
+        if not conv:
+            cl = db.query(Client).filter(Client.phone.contains(phone_clean[-10:])).first()
+            conv = WhatsAppConversation(
+                wa_contact_phone=target_phone,
+                wa_contact_name=client_name or (cl.name if cl else None),
+                client_id=cl.id if cl else None,
+                is_ai_active=True,
+                unread_count=0,
+            )
+            db.add(conv)
+            db.flush()
+
+        msg = WhatsAppMessage(
+            conversation_id=conv.id,
+            wa_message_id=wa_message_id,
+            direction="outbound",
+            content=f"[Plantilla: {template_name}]",
+            message_type="template",
+            status="sent",
+            sent_by="lina_ia",
+        )
+        db.add(msg)
+        conv.last_message_at = datetime.utcnow()
+        db.commit()
+        return f"Plantilla '{template_name}' enviada a {client_name} ({target_phone})."
+
+    # ---- BULK SEND TEMPLATE ----
+    elif action_type == "bulk_send_template":
+        template_name = action.get("template_name", "hello_world")
+        language_code = action.get("language_code", "en_US")
+        min_days = action.get("min_days_since_visit")
+        max_days = action.get("max_days_since_visit")
+        status_filter = action.get("status")
+        limit = action.get("limit", 50)
+
+        # Build client query
+        clients_all = db.query(Client).filter(Client.is_active == True).all()
+        enriched = [compute_client_list_item(c, db) for c in clients_all]
+
+        # Apply filters
+        filtered = enriched
+        if status_filter:
+            filtered = [c for c in filtered if c.status == status_filter]
+        if min_days is not None:
+            filtered = [c for c in filtered if c.days_since_last_visit is not None and c.days_since_last_visit >= min_days]
+        if max_days is not None:
+            filtered = [c for c in filtered if c.days_since_last_visit is not None and c.days_since_last_visit <= max_days]
+
+        filtered = filtered[:limit]
+        if not filtered:
+            return "No encontre clientes que coincidan con esos filtros."
+
+        wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+        wa_phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+        wa_api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+        wa_base = f"https://graph.facebook.com/{wa_api_version}/{wa_phone_id}"
+
+        sent_count = 0
+        failed_count = 0
+        results_detail = []
+
+        for c in filtered:
+            phone_clean = normalize_phone(c.phone)
+            try:
+                resp = httpx.post(
+                    f"{wa_base}/messages",
+                    headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
+                    json={
+                        "messaging_product": "whatsapp",
+                        "to": phone_clean,
+                        "type": "template",
+                        "template": {"name": template_name, "language": {"code": language_code}},
+                    },
+                    timeout=15,
+                )
+                data = resp.json()
+                if resp.status_code == 200 and "messages" in data:
+                    wa_msg_id = data["messages"][0].get("id")
+                    sent_count += 1
+
+                    # Get or create conversation
+                    conv = db.query(WhatsAppConversation).filter(
+                        WhatsAppConversation.wa_contact_phone.contains(phone_clean[-10:])
+                    ).first()
+                    if not conv:
+                        real_client = db.query(Client).filter(Client.id == c.id).first()
+                        conv = WhatsAppConversation(
+                            wa_contact_phone=c.phone,
+                            wa_contact_name=c.name,
+                            client_id=real_client.id if real_client else None,
+                            is_ai_active=True,
+                            unread_count=0,
+                        )
+                        db.add(conv)
+                        db.flush()
+
+                    msg = WhatsAppMessage(
+                        conversation_id=conv.id,
+                        wa_message_id=wa_msg_id,
+                        direction="outbound",
+                        content=f"[Plantilla: {template_name}]",
+                        message_type="template",
+                        status="sent",
+                        sent_by="lina_ia",
+                    )
+                    db.add(msg)
+                    conv.last_message_at = datetime.utcnow()
+                    results_detail.append(f"OK: {c.name}")
+                else:
+                    failed_count += 1
+                    err = data.get("error", {}).get("message", "")
+                    results_detail.append(f"FALLO: {c.name} — {err[:50]}")
+            except Exception as e:
+                failed_count += 1
+                results_detail.append(f"FALLO: {c.name} — {str(e)[:50]}")
+
+        db.commit()
+        summary = f"Plantilla '{template_name}' enviada a {sent_count}/{len(filtered)} clientes."
+        if failed_count:
+            summary += f" {failed_count} fallaron."
+        return summary
+
+    # ---- LIST CLIENTS BY FILTER ----
+    elif action_type == "list_clients_by_filter":
+        min_days = action.get("min_days_since_visit")
+        max_days = action.get("max_days_since_visit")
+        status_filter = action.get("status")
+        limit = action.get("limit", 20)
+
+        clients_all = db.query(Client).filter(Client.is_active == True).all()
+        enriched = [compute_client_list_item(c, db) for c in clients_all]
+
+        filtered = enriched
+        if status_filter:
+            filtered = [c for c in filtered if c.status == status_filter]
+        if min_days is not None:
+            filtered = [c for c in filtered if c.days_since_last_visit is not None and c.days_since_last_visit >= min_days]
+        if max_days is not None:
+            filtered = [c for c in filtered if c.days_since_last_visit is not None and c.days_since_last_visit <= max_days]
+
+        filtered = sorted(filtered, key=lambda x: x.days_since_last_visit or 0, reverse=True)[:limit]
+        if not filtered:
+            return "No encontre clientes con esos filtros."
+
+        lines = [f"Encontre {len(filtered)} clientes:"]
+        for c in filtered:
+            days_str = f"{c.days_since_last_visit}d" if c.days_since_last_visit is not None else "nunca"
+            lines.append(f"  - {c.name} (tel:{c.phone}, estado:{c.status}, ultima:{days_str}, visitas:{c.total_visits}, gastado:${c.total_spent:,})")
+        return "\n".join(lines)
+
+    # ---- DELETE STAFF ----
+    elif action_type == "delete_staff":
+        staff = None
+        staff_id = action.get("staff_id")
+        if staff_id:
+            staff = db.query(Staff).filter(Staff.id == staff_id).first()
+        if not staff:
+            name = action.get("search_name", "")
+            if name:
+                staff = db.query(Staff).filter(Staff.name.ilike(f"%{name}%")).first()
+        if not staff:
+            return "ERROR: No encontre al miembro del equipo."
+        staff.is_active = False
+        db.commit()
+        return f"Staff {staff.name} desactivado."
+
+    # ---- DELETE CONVERSATION ----
+    elif action_type == "delete_conversation":
+        search_name = action.get("search_name", "").strip()
+        phone = action.get("phone", "").strip()
+
+        conv = find_conversation(db, search_name=search_name, phone=phone)
+
+        if not conv:
+            return f"ERROR: No encontre la conversacion de '{search_name or phone}'."
+
+        contact = conv.wa_contact_name or conv.wa_contact_phone
+        db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id == conv.id).delete()
+        db.delete(conv)
+        db.commit()
+        return f"Conversacion con {contact} eliminada."
+
+    # ---- INBOX SUMMARY ----
+    elif action_type == "get_inbox_summary":
+        convs = db.query(WhatsAppConversation).order_by(WhatsAppConversation.last_message_at.desc()).all()
+        if not convs:
+            return "No hay conversaciones de WhatsApp."
+
+        total_unread = sum(c.unread_count or 0 for c in convs)
+        ai_active = sum(1 for c in convs if c.is_ai_active)
+        ai_off = len(convs) - ai_active
+
+        lines = [f"Inbox: {len(convs)} conversaciones, {total_unread} sin leer, IA activa en {ai_active}, IA apagada en {ai_off}."]
+        for c in convs[:10]:
+            name = c.wa_contact_name or c.wa_contact_phone
+            unread = f" ({c.unread_count} sin leer)" if c.unread_count else ""
+            ai = "IA ON" if c.is_ai_active else "IA OFF"
+            tags = ", ".join(c.tags) if c.tags else ""
+            last = c.last_message_at.strftime("%d/%m %H:%M") if c.last_message_at else "nunca"
+            lines.append(f"  - {name}{unread} | {ai} | ultimo: {last}" + (f" | tags: {tags}" if tags else ""))
+        return "\n".join(lines)
+
+    # ---- TOGGLE AI FOR CONVERSATION ----
+    elif action_type == "toggle_conversation_ai":
+        search_name = action.get("search_name", "").strip()
+        phone = action.get("phone", "").strip()
+        enable = action.get("enable", True)
+
+        conv = find_conversation(db, search_name=search_name, phone=phone)
+
+        if not conv:
+            return f"ERROR: No encontre la conversacion de '{search_name or phone}'."
+
+        conv.is_ai_active = enable
+        db.commit()
+        state = "activada" if enable else "desactivada"
+        contact = conv.wa_contact_name or conv.wa_contact_phone
+        return f"IA {state} para la conversacion con {contact}."
+
+    # ---- TAG CONVERSATION ----
+    elif action_type == "tag_conversation":
+        search_name = action.get("search_name", "").strip()
+        phone = action.get("phone", "").strip()
+        tags = action.get("tags", [])
+
+        conv = find_conversation(db, search_name=search_name, phone=phone)
+
+        if not conv:
+            return f"ERROR: No encontre la conversacion de '{search_name or phone}'."
+
+        conv.tags = tags
+        db.commit()
+        contact = conv.wa_contact_name or conv.wa_contact_phone
+        return f"Etiquetas de {contact} actualizadas: {', '.join(tags) if tags else 'sin etiquetas'}."
+
     # ---- PERSONALITY ----
     elif action_type == "update_personality":
         new_prompt = action.get("system_prompt", "").strip()
@@ -371,18 +703,6 @@ def _execute_action(action: dict, db: Session) -> str:
 
     return f"ERROR: Accion desconocida '{action_type}'"
 
-
-def _find_client(action: dict, db: Session):
-    """Find a client by client_id or search_name."""
-    client_id = action.get("client_id")
-    if client_id:
-        c = db.query(Client).filter(Client.client_id == client_id).first()
-        if c:
-            return c
-    name = action.get("search_name", "")
-    if name:
-        return db.query(Client).filter(Client.name.ilike(f"%{name}%")).first()
-    return None
 
 
 # ============================================================================
@@ -425,7 +745,6 @@ def _build_whatsapp_context(db: Session, conv_id: int = None) -> str:
             # Linked CRM client — fetch full data
             client = db.query(Client).filter(Client.id == conv.client_id).first()
             if client:
-                from routes._client_helpers import compute_client_fields
                 computed = compute_client_fields(client, db)
 
                 total_visits = len(client.visits) if client.visits else 0
@@ -561,43 +880,83 @@ FORMATO DE ACCIONES (incluir al FINAL del mensaje, en bloque separado):
 
     business_context = _build_business_context(db)
 
+    # WhatsApp inbox summary for context
+    inbox_summary = _build_inbox_context(db)
+
     return f"""{personality}
 
-=== TUS CAPACIDADES ===
-Eres la asistente que controla todo el sistema del negocio. Puedes:
+=== TUS CAPACIDADES — CONTROL TOTAL DEL CRM ===
+Eres la asistente ejecutiva que controla TODO el sistema de AlPelo. Tienes acceso a todo.
+PERO: Tener acceso NO significa actuar sin permiso. SIEMPRE informa primero y pide confirmacion antes de ejecutar cualquier accion.
 
-CLIENTES:
+MODULO DASHBOARD:
+- Metricas en tiempo real: ingresos totales, clientes por estado, servicios populares
+- Identificar clientes en riesgo, VIPs, nuevos, inactivos
+- Analizar tendencias de visitas y facturacion
+- Resumen ejecutivo del dia
+
+MODULO CLIENTES (CRM):
 - Consultar cualquier dato de cualquier cliente (estado, visitas, gasto, telefono, etc.)
 - Crear clientes nuevos
-- Actualizar datos de clientes (telefono, email, servicio favorito, estado, etiquetas)
-- Desactivar clientes
-- Agregar notas al perfil de un cliente
+- Actualizar datos (telefono, email, servicio favorito, estado, etiquetas, barbero preferido)
+- Desactivar/eliminar clientes
+- Agregar notas al perfil
+- Filtrar clientes por estado, dias sin visita, gasto, etc.
 
-EQUIPO:
-- Ver datos del equipo completo (barberos, estilistas, ratings, especialidades)
+MODULO EQUIPO:
+- Ver datos completos del equipo (barberos, estilistas, ratings, especialidades)
 - Crear nuevos miembros del equipo
-- Actualizar datos del staff (rol, especialidad, rating, bio, skills, estado activo)
+- Actualizar datos del staff (rol, especialidad, rating, bio, skills)
+- Desactivar miembros del equipo
 
-DASHBOARD / KPIs:
-- Reportar metricas en tiempo real: ingresos, clientes por estado, servicios populares
-- Identificar clientes en riesgo, VIPs, nuevos
-- Analizar tendencias de visitas y facturacion
+MODULO INBOX (WhatsApp) — TU SI TIENES ACCESO A LOS CHATS:
+- IMPORTANTE: Mas abajo en "INBOX WHATSAPP" estan TODAS las conversaciones reales con sus ultimos mensajes. TU SI PUEDES VER LOS CHATS.
+- Si te preguntan por una conversacion, BUSCA en la seccion INBOX WHATSAPP de tus datos.
+- Puedes ver quien escribio, que dijo, cuando fue el ultimo mensaje, si la IA esta activa, etc.
+- Enviar mensajes directos a clientes que tengan conversacion activa (dentro de ventana 24h)
+- Enviar plantillas de WhatsApp a clientes nuevos o fuera de ventana 24h
+- Enviar plantillas en MASA a grupos filtrados de clientes
+- Activar/desactivar IA por conversacion
+- Etiquetar conversaciones
+- Eliminar conversaciones
+- NUNCA digas "no tengo acceso a los chats" porque SI los tienes. Revisa tus datos.
+
+MODULO PLANTILLAS:
+- Conoces las plantillas disponibles en el sistema
+- Puedes recomendar cual plantilla usar segun el contexto
+- Las plantillas son: post-servicio (feedback), reactivacion (descuentos), recordatorio (citas), promocion
+
+MODULO SETTINGS / CONFIGURACION:
+- Cambiar tu propia personalidad (como hablas con clientes por WhatsApp)
+- Ajustar parametros de IA (temperatura, tokens, modelo, proveedor)
 
 VISITAS:
-- Registrar una visita completada con servicio y monto
+- Registrar visitas completadas con servicio, monto y barbero
 
-CONFIGURACION:
-- Cambiar tu propia personalidad si el admin te lo pide
-- Ajustar parametros de IA (temperatura, tokens, modelo)
+=== REGLAS DE WHATSAPP — META BUSINESS API ===
+IMPORTANTE: WhatsApp tiene reglas estrictas que debes respetar:
+
+1. VENTANA DE 24 HORAS: Solo puedes enviar mensajes de texto libre a clientes que te hayan escrito en las ultimas 24 horas.
+2. FUERA DE 24H / PRIMER CONTACTO: Si el cliente NO ha escrito en 24h o es contacto nuevo, DEBES usar una plantilla aprobada por Meta. Usa la accion "send_whatsapp_template".
+3. PLANTILLAS DISPONIBLES: hello_world (en_US) es la plantilla basica aprobada. Las demas deben ser creadas en Meta Business Suite.
+4. ENVIO MASIVO: Cuando el admin te pida contactar multiples clientes, usa "bulk_send_template" con los filtros apropiados.
+5. NUMERO DE PRUEBA: Actualmente estamos con un numero de prueba de Meta. Solo se puede enviar a numeros pre-aprobados en la lista de destinatarios.
+
+DECISION DE ENVIO:
+- Si el cliente ya tiene conversacion Y escribio recientemente → usa "send_whatsapp" (texto libre)
+- Si es contacto nuevo O lleva mucho sin escribir → usa "send_whatsapp_template" (plantilla)
+- Si necesitas contactar VARIOS clientes → usa "bulk_send_template" con filtros
 
 === COMO EJECUTAR ACCIONES ===
-Cuando necesites ejecutar una accion, incluye un bloque JSON al FINAL de tu respuesta:
+Cuando necesites ejecutar una accion, incluye un bloque JSON al FINAL de tu respuesta.
+IMPORTANTE: El bloque de accion va SEPARADO de tu texto. Primero tu respuesta, luego el bloque.
 
+ACCIONES DE CLIENTES:
 ```action
-{{"action": "create_client", "name": "Nombre", "phone": "TELEFONO_DEL_CLIENTE"}}
+{{"action": "create_client", "name": "Nombre", "phone": "TELEFONO"}}
 ```
 ```action
-{{"action": "update_client", "search_name": "nombre", "phone": "nuevo", "email": "nuevo", "status_override": "vip"}}
+{{"action": "update_client", "search_name": "nombre", "phone": "nuevo", "email": "nuevo", "status_override": "vip", "favorite_service": "Corte", "tags": ["vip", "frecuente"]}}
 ```
 ```action
 {{"action": "delete_client", "search_name": "nombre"}}
@@ -606,54 +965,125 @@ Cuando necesites ejecutar una accion, incluye un bloque JSON al FINAL de tu resp
 {{"action": "add_note", "search_name": "nombre", "content": "texto de la nota"}}
 ```
 ```action
-{{"action": "create_staff", "name": "Nombre", "role": "Barbero", "specialty": "Fades"}}
+{{"action": "list_clients_by_filter", "status": "en_riesgo", "min_days_since_visit": 30, "max_days_since_visit": 90, "limit": 20}}
+```
+
+ACCIONES DE EQUIPO:
+```action
+{{"action": "create_staff", "name": "Nombre", "role": "Barbero", "specialty": "Fades", "phone": "tel"}}
 ```
 ```action
-{{"action": "update_staff", "search_name": "nombre", "role": "nuevo rol", "rating": 4.5, "is_active": true}}
+{{"action": "update_staff", "search_name": "nombre", "role": "nuevo rol", "rating": 4.5, "specialty": "nueva", "is_active": true}}
 ```
+```action
+{{"action": "delete_staff", "search_name": "nombre"}}
+```
+
+ACCIONES DE VISITAS:
 ```action
 {{"action": "add_visit", "search_name": "cliente", "staff_id": 1, "service_name": "Corte", "amount": 25000}}
 ```
-```action
-{{"action": "update_personality", "system_prompt": "Nuevo prompt completo..."}}
-```
-```action
-{{"action": "update_ai_config", "temperature": 0.5, "max_tokens": 1024}}
-```
+
+ACCIONES DE WHATSAPP:
 ```action
 {{"action": "send_whatsapp", "search_name": "nombre del cliente", "message": "Texto del mensaje"}}
 ```
 ```action
-{{"action": "send_whatsapp", "phone": "TELEFONO_DEL_CLIENTE", "message": "Texto del mensaje"}}
+{{"action": "send_whatsapp_template", "search_name": "nombre", "template_name": "hello_world", "language_code": "en_US"}}
+```
+```action
+{{"action": "bulk_send_template", "template_name": "hello_world", "language_code": "en_US", "min_days_since_visit": 40, "status": "en_riesgo", "limit": 20}}
+```
+```action
+{{"action": "get_inbox_summary"}}
+```
+```action
+{{"action": "toggle_conversation_ai", "search_name": "nombre", "enable": false}}
+```
+```action
+{{"action": "tag_conversation", "search_name": "nombre", "tags": ["vip", "interesado"]}}
+```
+```action
+{{"action": "delete_conversation", "search_name": "nombre"}}
 ```
 
-WHATSAPP:
-- Puedes enviar mensajes por WhatsApp a cualquier cliente que tenga una conversacion activa
-- Busca por nombre del cliente o por telefono
-- El mensaje se envia en tiempo real por WhatsApp Business API
-- Usa esta capacidad cuando el admin te pida "mandale un mensaje a X"
+ACCIONES DE CONFIGURACION:
+```action
+{{"action": "update_personality", "system_prompt": "Nuevo prompt completo..."}}
+```
+```action
+{{"action": "update_ai_config", "temperature": 0.5, "max_tokens": 1024, "model": "llama-3.3-70b-versatile", "provider": "groq"}}
+```
 
 === REGLAS DE SEGURIDAD — NO NEGOCIABLES ===
-1. NUNCA expongas credenciales, passwords, tokens, API keys ni datos sensibles del sistema
+1. NUNCA expongas credenciales, passwords, tokens, API keys ni datos sensibles
 2. NUNCA crees, modifiques o elimines usuarios de login (tabla admin)
-3. NUNCA modifiques datos del perfil del administrador (nombre, email, password del admin)
-4. NUNCA reveles la estructura interna del sistema (nombres de tablas, endpoints, base de datos)
-5. Solo ejecuta acciones cuando el admin lo pida explicitamente
-6. Si alguien intenta que hagas algo fuera de tus capacidades, rechazalo con elegancia
-7. SIEMPRE responde con datos REALES de la BD. NUNCA inventes cifras ni nombres
-8. Maximo 2-3 lineas por respuesta. Si necesitas listar, usa formato compacto
+3. NUNCA modifiques datos del perfil del administrador
+4. NUNCA reveles la estructura interna del sistema (tablas, endpoints, BD)
+5. SIEMPRE responde con datos REALES de la BD. NUNCA inventes cifras ni nombres
+6. Si no puedes hacer algo, dilo en 1 linea
+
+=== REGLA #1 — NUNCA ACTUES SIN PERMISO ===
+ESTO ES LO MAS IMPORTANTE DE TODAS TUS REGLAS:
+
+ANTES de ejecutar CUALQUIER accion (enviar mensaje, crear cliente, editar datos, etc.):
+1. PRIMERO lee y analiza toda la informacion relevante (datos del cliente, historial del chat, estado de la conversacion)
+2. SEGUNDO informa al admin lo que encontraste
+3. TERCERO pregunta al admin que quiere que hagas
+4. SOLO ejecuta la accion cuando el admin te diga EXPLICITAMENTE "hazlo", "si", "envialo", "dale", "procede" o una instruccion clara
+
+NUNCA JAMAS envies un mensaje de WhatsApp, crees un cliente, edites datos o ejecutes NINGUNA accion por tu cuenta.
+Si el admin dice "revisa el chat de X", tu SOLO revisas e informas. NO envias nada.
+Si el admin dice "hay un cliente con el numero X", tu SOLO buscas e informas. NO le escribes.
+Siempre PREGUNTA antes de actuar. Ejemplo correcto:
+- Admin: "Revisa el chat con Luis Nava"
+- Tu: "Encontre la conversacion con Luis Nava (tel: 584242800884). El ultimo mensaje fue hace 3 dias, el cliente pregunto por precios. La IA esta activa. Quieres que le envie un mensaje o que haga algo?"
+
+Ejemplo INCORRECTO (NUNCA hagas esto):
+- Admin: "Revisa el chat con Luis Nava"
+- Tu: "Listo, le envie un mensaje a Luis Nava" <-- ESTO ESTA MAL, nadie te pidio enviar nada
+
+=== REGLAS DE WHATSAPP — VENTANA DE 24 HORAS ===
+ANTES de enviar cualquier mensaje por WhatsApp, SIEMPRE verifica:
+
+1. Revisa el campo "ultimo" del chat en tus datos del INBOX
+2. Si el ULTIMO MENSAJE DEL CLIENTE (direction: inbound) fue hace MAS de 24 horas:
+   - NO puedes enviar texto libre (send_whatsapp). Meta lo rechazara.
+   - DEBES usar una plantilla aprobada (send_whatsapp_template).
+   - Informa al admin: "El ultimo mensaje de [nombre] fue hace X dias. Para contactarlo necesitamos usar una plantilla."
+3. Si NO hay conversacion activa o el chat lleva dias muerto:
+   - Solo se puede contactar con plantilla (send_whatsapp_template).
+   - Informa al admin que solo se puede con plantilla y pregunta cual usar.
+4. Si el ultimo mensaje del cliente fue hace MENOS de 24 horas:
+   - Puedes enviar texto libre (send_whatsapp). Pero IGUAL pregunta antes de enviar.
+
+RESUMEN:
+- Chat activo (<24h desde ultimo msg del cliente) → texto libre OK, pero PREGUNTA antes
+- Chat muerto (>24h) → SOLO plantilla, INFORMA al admin
+- Sin conversacion → SOLO plantilla, INFORMA al admin
+
+=== REGLAS DE COMPORTAMIENTO ===
+- NUNCA digas "no tengo acceso a los chats" o "no puedo ver las conversaciones". TU SI TIENES ACCESO. Los datos estan en la seccion INBOX WHATSAPP abajo.
+- NUNCA digas "no tengo acceso en tiempo real". Tus datos se actualizan cada vez que el admin te escribe.
+- Si te preguntan por un chat o conversacion, BUSCA en tus datos del INBOX antes de decir que no existe.
+- Si un numero parcial coincide con algun telefono del inbox o de clientes, conectalo. Ejemplo: "424280088" puede ser parte de "584242800884".
+- Cuando el admin dice "revisa los chats", revisa la seccion INBOX WHATSAPP de tus datos.
+- PIENSA antes de actuar. Lee toda la informacion disponible. Informa. Pregunta. Solo entonces ejecuta.
 
 === FORMATO DE RESPUESTA ===
-- Responde en texto plano, corto y directo. Maximo 2-3 lineas.
-- Para listas usa: nombre — dato clave — dato secundario (en una linea por item)
-- Para montos usa formato COP sin decimales: $25.000
+- Texto plano, corto y directo. Maximo 2-4 lineas.
+- Para listas: nombre — dato clave — dato secundario (una linea por item)
+- Montos en COP sin decimales: $25.000
 - NO uses HTML. NO uses markdown con ** ni ##. Solo texto limpio.
-- Si haces una accion, confirma en 1 linea. No repitas todos los datos.
+- Si haces una accion, confirma en 1 linea. No repitas todos los datos del bloque.
+- Puedes ejecutar MULTIPLES acciones en una sola respuesta (varios bloques ```action```).
 
 === DATOS ACTUALES DEL NEGOCIO ===
 Fecha: {date.today().strftime('%d de %B de %Y')}
 
-{business_context}"""
+{business_context}
+
+{inbox_summary}"""
 
 
 # ============================================================================
@@ -715,7 +1145,7 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
     provider = config.provider if config else "groq"
     model = config.model if config else None
     temperature = config.temperature if config else 0.4
-    max_tokens = config.max_tokens if config else 512
+    max_tokens = config.max_tokens if config else 1024
 
     if provider == "anthropic" and anthropic_key:
         api_key = anthropic_key

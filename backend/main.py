@@ -7,9 +7,7 @@ from database.connection import engine, Base
 
 
 def _run_migrations(engine):
-    """Add columns that create_all doesn't handle (new columns on existing tables).
-    Uses ADD COLUMN IF NOT EXISTS for idempotent migrations.
-    """
+    """Add columns that create_all doesn't handle (new columns on existing tables)."""
     from sqlalchemy import text
 
     migrations = [
@@ -22,7 +20,6 @@ def _run_migrations(engine):
     for table, column, col_type in migrations:
         try:
             with engine.begin() as conn:
-                # Check if column exists first
                 result = conn.execute(text(
                     f"SELECT column_name FROM information_schema.columns "
                     f"WHERE table_schema='public' AND table_name='{table}' AND column_name='{column}'"
@@ -32,20 +29,19 @@ def _run_migrations(engine):
                         f"ALTER TABLE public.{table} ADD COLUMN {column} {col_type}"
                     ))
                     print(f"[MIGRATION] Added {table}.{column}")
-                else:
-                    print(f"[MIGRATION] {table}.{column} already exists")
         except Exception as e:
             print(f"[MIGRATION] Error on {table}.{column}: {e}")
 
-        # Activate Lina IA on ALL existing conversations
-        try:
+    # Activate Lina IA on all existing conversations
+    try:
+        with engine.begin() as conn:
             result = conn.execute(text(
                 "UPDATE public.whatsapp_conversation SET is_ai_active = true WHERE is_ai_active = false"
             ))
             if result.rowcount > 0:
                 print(f"[MIGRATION] Activated Lina IA on {result.rowcount} conversations")
-        except Exception:
-            pass
+    except Exception:
+        pass
 
 
 @asynccontextmanager
@@ -60,7 +56,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="AlPelo API",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 setup_cors_middleware(app)

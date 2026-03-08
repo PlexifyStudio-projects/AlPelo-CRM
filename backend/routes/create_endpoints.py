@@ -32,7 +32,7 @@ def create_staff(data: StaffCreate, db: Session = Depends(get_db)):
 
 @router.post("/clients/", response_model=ClientResponse)
 def create_client(data: ClientCreate, db: Session = Depends(get_db)):
-    from routes._client_helpers import compute_client_fields
+    from routes._helpers import compute_client_fields
 
     existing = db.query(Client).filter(Client.client_id == data.client_id).first()
     if existing:

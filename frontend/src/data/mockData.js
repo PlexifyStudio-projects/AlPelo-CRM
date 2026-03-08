@@ -1729,38 +1729,31 @@ export const mockWhatsAppMessages = {
 // Todas empiezan con "Hola {{nombre}}, soy Lina de Al Pelo..."
 // ============================================
 export const mockWhatsAppTemplates = [
-  // --- BIENVENIDA (2) ---
-  { id: 'tpl-1', name: 'Bienvenida Nuevo Cliente', category: 'bienvenida', body: 'Hola {{nombre}}! Soy Lina de AlPelo Peluqueria en Cabecera, Bucaramanga. Bienvenido! En que te puedo ayudar? Si quieres agendar una cita: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-2', name: 'Presentacion con Servicios', category: 'bienvenida', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Te cuento nuestros servicios mas pedidos:\n\n- Corte desde $25.000\n- Barba desde $12.000\n- Corte + Barba desde $35.000\n- Keratina desde $80.000\n\nAgenda aqui: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  // --- POST-SERVICIO (3) ---
+  { id: 'tpl-1', name: 'Como te fue?', category: 'post-servicio', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Que tal te fue con tu {{servicio}}? Quedaste contento? Cuentanos, tu opinion nos importa mucho!', variables: ['nombre', 'servicio'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-2', name: 'Calificanos', category: 'post-servicio', body: 'Hola {{nombre}}! Gracias por visitarnos en AlPelo. Del 1 al 5, como calificas tu experiencia? Si hay algo que mejorar, cuentanos con confianza.', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-3', name: 'Dejanos tu reseña', category: 'post-servicio', body: 'Hola {{nombre}}! Si te gusto tu visita a AlPelo, nos ayudaria mucho una reseña en Google. Es rapido y nos ayuda a que mas gente nos conozca. Gracias!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+
+  // --- REACTIVACION (3) ---
+  { id: 'tpl-4', name: 'Hace rato no vienes', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Que tal estas? Vemos que llevas un tiempito sin venir. Queremos regalarte un 10% de descuento en el servicio que elijas. Te gustaria venir esta semana?', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-5', name: 'Te extrañamos + regalo', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Llevas bastante tiempo sin visitarnos y te extrañamos! Te regalamos un 10% de descuento al servicio que elijas mas una bebida gratis. Te gustaria venir esta semana?', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-6', name: 'Vuelve cuando quieras', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Hace mucho no te vemos por aca y la verdad te extrañamos. No importa cuanto tiempo haya pasado, siempre eres bienvenido. Tenemos novedades que te van a gustar!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+
   // --- RECORDATORIO (2) ---
-  { id: 'tpl-3', name: 'Recordatorio de Cita', category: 'recordatorio', body: 'Hola {{nombre}}! Te recordamos tu cita en AlPelo manana a las {{hora}} con {{barbero}}. Te esperamos! Confirma respondiendo SI a este mensaje.', variables: ['nombre', 'hora', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-4', name: 'Cita en 2 Horas', category: 'recordatorio', body: 'Hola {{nombre}}! Tu cita en AlPelo es en 2 horas. {{servicio}} a las {{hora}}. Recuerda llegar 5 minutos antes. Te esperamos!', variables: ['nombre', 'servicio', 'hora'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-7', name: 'Recordatorio de cita', category: 'recordatorio', body: 'Hola {{nombre}}! Te recordamos tu cita en AlPelo manana a las {{hora}} con {{barbero}}. Te esperamos! Confirma respondiendo SI.', variables: ['nombre', 'hora', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-8', name: 'Tu cita es hoy', category: 'recordatorio', body: 'Hola {{nombre}}! Hoy tienes cita en AlPelo a las {{hora}}. Recuerda llegar 5 minuticos antes para que {{barbero}} te atienda puntual. Te esperamos!', variables: ['nombre', 'hora', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
 
-  // --- REACTIVACION (2) ---
-  { id: 'tpl-5', name: 'Te Extrañamos', category: 'reactivacion', body: 'Hola {{nombre}}! Hace rato no te vemos por AlPelo y te extrañamos. Pasa cuando quieras, siempre eres bienvenido. Agenda tu cita: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-6', name: 'Oferta de Reactivacion', category: 'reactivacion', body: 'Hola {{nombre}}! Queremos verte de nuevo en AlPelo. Te ofrecemos 15% de descuento en tu proximo servicio. Solo muestra este mensaje al llegar. Te esperamos!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- ENCUESTA (1) ---
-  { id: 'tpl-7', name: 'Encuesta de Servicio', category: 'feedback', body: 'Hola {{nombre}}! Como te fue en tu ultima visita a AlPelo? Califica del 1 al 5 y cuentanos como mejorar. Tu opinion es muy importante para nosotros!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- CONFIRMACION (1) ---
-  { id: 'tpl-8', name: 'Cita Confirmada', category: 'confirmacion', body: 'Hola {{nombre}}! Tu cita en AlPelo esta confirmada. {{servicio}} el {{fecha}} a las {{hora}} con {{barbero}}. Te esperamos en Cabecera, Bucaramanga!', variables: ['nombre', 'servicio', 'fecha', 'hora', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- PROMOCION (1) ---
-  { id: 'tpl-9', name: 'Promocion Especial', category: 'promociones', body: 'Hola {{nombre}}! En AlPelo tenemos una promocion especial para ti esta semana. No te la pierdas! Agenda antes de que se acaben los cupos: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- REFERIDO (1) ---
-  { id: 'tpl-10', name: 'Bono Referido', category: 'bienvenida', body: 'Hola {{nombre}}! Nos recomendaron contigo desde AlPelo Peluqueria. Queremos invitarte a conocernos en Cabecera, Bucaramanga. Agenda tu primera cita: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  // --- PROMOCION Y REFERIDOS (2) ---
+  { id: 'tpl-9', name: 'Promo de la semana', category: 'promocion', body: 'Hola {{nombre}}! Esta semana en AlPelo tenemos promo especial: {{servicio}} con 15% de descuento. Solo hasta el sabado. Agenda antes de que se acaben los cupos: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'servicio'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-10', name: 'Trae un amigo', category: 'promocion', body: 'Hola {{nombre}}! En AlPelo tenemos algo para ti: trae a un amigo y los dos reciben 10% de descuento. Solo muestra este mensaje al llegar. Te esperamos!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
 ];
 
 // Template category metadata
 export const templateCategories = [
-  { id: 'bienvenida', name: 'Bienvenida', icon: 'heart', color: '#34D399', count: 3 },
+  { id: 'post-servicio', name: 'Post-Servicio', icon: 'star', color: '#34D399', count: 3 },
+  { id: 'reactivacion', name: 'Reactivación', icon: 'refresh', color: '#FBBF24', count: 3 },
   { id: 'recordatorio', name: 'Recordatorio', icon: 'clock', color: '#60A5FA', count: 2 },
-  { id: 'reactivacion', name: 'Reactivación', icon: 'refresh', color: '#FBBF24', count: 2 },
-  { id: 'confirmacion', name: 'Confirmación', icon: 'check', color: '#2D5A3D', count: 1 },
-  { id: 'promociones', name: 'Promociones', icon: 'tag', color: '#8B5CF6', count: 1 },
-  { id: 'feedback', name: 'Feedback', icon: 'message', color: '#6366F1', count: 1 },
+  { id: 'promocion', name: 'Promoción', icon: 'tag', color: '#8B5CF6', count: 2 },
 ];
 
 // ============================================
@@ -1776,9 +1769,9 @@ export const mockWhatsAppStats = {
   templatesSentToday: 0,
   templatesSentWeek: 0,
   topTemplates: [
-    { id: 'tpl-1', name: 'Bienvenida Nuevo Cliente', sent: 0, responses: 0 },
-    { id: 'tpl-3', name: 'Recordatorio de Cita', sent: 0, responses: 0 },
-    { id: 'tpl-5', name: 'Te Extrañamos', sent: 0, responses: 0 },
+    { id: 'tpl-1', name: 'Como te fue?', sent: 0, responses: 0 },
+    { id: 'tpl-4', name: 'Hace rato no vienes', sent: 0, responses: 0 },
+    { id: 'tpl-5', name: 'Te extrañamos + regalo', sent: 0, responses: 0 },
   ],
   clientsWithoutContact7Days: 0,
   clientsWithoutContact30Days: 0,

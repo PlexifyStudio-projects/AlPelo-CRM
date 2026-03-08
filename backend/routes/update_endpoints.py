@@ -51,7 +51,7 @@ def update_skills(staff_id: int, skills: List[str], db: Session = Depends(get_db
 
 @router.put("/clients/{client_id}", response_model=ClientResponse)
 def update_client(client_id: int, data: ClientUpdate, db: Session = Depends(get_db)):
-    from routes._client_helpers import compute_client_fields
+    from routes._helpers import compute_client_fields
 
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:

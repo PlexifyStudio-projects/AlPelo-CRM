@@ -1,0 +1,218 @@
+# ============================================================================
+# AlPelo — Shared helper functions for routes
+# Extracted from repeated patterns across ai_endpoints, whatsapp_endpoints, etc.
+# ============================================================================
+
+from datetime import date
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from database.models import Client, VisitHistory, Staff, WhatsAppConversation
+
+
+# ============================================================================
+# PHONE NORMALIZATION
+# ============================================================================
+
+def normalize_phone(phone: str) -> str:
+    """Strip +, spaces, and dashes from phone number."""
+    return phone.replace("+", "").replace(" ", "").replace("-", "")
+
+
+# ============================================================================
+# FIND CLIENT — By client_id, search_name, or phone
+# ============================================================================
+
+def find_client(db: Session, search_name: str = "", client_id: str = "", phone: str = ""):
+    """Find a client by client_id, name, or phone. Returns first match or None."""
+    if client_id:
+        c = db.query(Client).filter(Client.client_id == client_id, Client.is_active == True).first()
+        if c:
+            return c
+    if search_name:
+        c = db.query(Client).filter(Client.name.ilike(f"%{search_name}%"), Client.is_active == True).first()
+        if c:
+            return c
+    if phone:
+        clean = normalize_phone(phone)
+        if len(clean) >= 7:
+            c = db.query(Client).filter(Client.phone.contains(clean[-10:]), Client.is_active == True).first()
+            if c:
+                return c
+    return None
+
+
+# ============================================================================
+# FIND CONVERSATION — By name, phone, or client link
+# ============================================================================
+
+def find_conversation(db: Session, search_name: str = "", phone: str = ""):
+    """Find a WhatsApp conversation by contact name, linked client name, or phone."""
+    if search_name:
+        # Try by conversation contact name
+        conv = db.query(WhatsAppConversation).filter(
+            WhatsAppConversation.wa_contact_name.ilike(f"%{search_name}%")
+        ).first()
+        if conv:
+            return conv
+
+        # Try by linked CRM client name
+        client = db.query(Client).filter(Client.name.ilike(f"%{search_name}%")).first()
+        if client:
+            conv = db.query(WhatsAppConversation).filter(
+                WhatsAppConversation.client_id == client.id
+            ).first()
+            if conv:
+                return conv
+            # Try by client phone in conversation
+            if client.phone:
+                clean = normalize_phone(client.phone)
+                conv = db.query(WhatsAppConversation).filter(
+                    WhatsAppConversation.wa_contact_phone.contains(clean[-10:])
+                ).first()
+                if conv:
+                    return conv
+
+    if phone:
+        clean = normalize_phone(phone)
+        if len(clean) >= 7:
+            conv = db.query(WhatsAppConversation).filter(
+                WhatsAppConversation.wa_contact_phone.contains(clean[-10:])
+            ).first()
+            if conv:
+                return conv
+
+    return None
+
+
+# ============================================================================
+# CLIENT STATUS ENGINE
+# ============================================================================
+
+def compute_status(
+    total_visits: int,
+    days_since: int | None,
+    status_override: str | None = None,
+) -> str:
+    """
+    Status engine:
+    - Manual override takes priority
+    - VIP: 10+ completed services
+    - Nuevo: 0 visits (never came)
+    - Activo: <30 days since last visit (and 2+ services)
+    - En riesgo: 30-90 days since last visit
+    - Inactivo: >90 days since last visit
+    """
+    if status_override:
+        return status_override
+    if days_since is None:
+        return "nuevo"
+    if total_visits >= 10:
+        return "vip"
+    if days_since > 90:
+        return "inactivo"
+    if days_since >= 30:
+        return "en_riesgo"
+    if total_visits <= 1:
+        return "nuevo"
+    return "activo"
+
+
+# ============================================================================
+# CLIENT COMPUTED FIELDS — Full detail
+# ============================================================================
+
+def compute_client_fields(client: Client, db: Session):
+    """Compute all calculated fields for a single client response."""
+    from schemas import ClientResponse
+
+    visits = db.query(VisitHistory).filter(VisitHistory.client_id == client.id).all()
+
+    completed = [v for v in visits if v.status == "completed"]
+    total_visits = len(completed)
+    total_spent = sum(v.amount for v in completed)
+    avg_ticket = total_spent // total_visits if total_visits > 0 else 0
+    no_show_count = sum(1 for v in visits if v.status == "no_show")
+
+    last_visit = None
+    days_since = None
+    if completed:
+        last_visit = max(v.visit_date for v in completed)
+        days_since = (date.today() - last_visit).days
+
+    status = compute_status(total_visits, days_since, client.status_override)
+
+    barber_name = None
+    if client.preferred_barber_id:
+        barber = db.query(Staff).filter(Staff.id == client.preferred_barber_id).first()
+        if barber:
+            barber_name = barber.name
+
+    return ClientResponse(
+        id=client.id,
+        client_id=client.client_id,
+        name=client.name,
+        phone=client.phone,
+        email=client.email,
+        birthday=client.birthday,
+        favorite_service=client.favorite_service,
+        preferred_barber_id=client.preferred_barber_id,
+        preferred_barber_name=barber_name,
+        accepts_whatsapp=client.accepts_whatsapp,
+        tags=client.tags or [],
+        is_active=client.is_active,
+        created_at=client.created_at,
+        updated_at=client.updated_at,
+        total_visits=total_visits,
+        total_spent=total_spent,
+        avg_ticket=avg_ticket,
+        last_visit=last_visit,
+        days_since_last_visit=days_since,
+        no_show_count=no_show_count,
+        status=status,
+    )
+
+
+# ============================================================================
+# CLIENT COMPUTED FIELDS — Light (for lists)
+# ============================================================================
+
+def compute_client_list_item(client: Client, db: Session):
+    """Lighter version for list endpoints."""
+    from schemas import ClientListResponse
+
+    completed_agg = (
+        db.query(
+            func.count(VisitHistory.id),
+            func.coalesce(func.sum(VisitHistory.amount), 0),
+            func.max(VisitHistory.visit_date),
+        )
+        .filter(VisitHistory.client_id == client.id, VisitHistory.status == "completed")
+        .first()
+    )
+
+    total_visits = completed_agg[0] or 0
+    total_spent = completed_agg[1] or 0
+    last_visit = completed_agg[2]
+    avg_ticket = total_spent // total_visits if total_visits > 0 else 0
+
+    days_since = None
+    if last_visit:
+        days_since = (date.today() - last_visit).days
+
+    status = compute_status(total_visits, days_since, client.status_override)
+
+    return ClientListResponse(
+        id=client.id,
+        client_id=client.client_id,
+        name=client.name,
+        phone=client.phone,
+        email=client.email,
+        is_active=client.is_active,
+        tags=client.tags or [],
+        total_visits=total_visits,
+        total_spent=total_spent,
+        avg_ticket=avg_ticket,
+        last_visit=last_visit,
+        days_since_last_visit=days_since,
+        status=status,
+    )
