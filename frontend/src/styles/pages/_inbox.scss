@@ -2225,6 +2225,122 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  // ===========================================
+  // Conversation tags
+  // ===========================================
+  &__conv-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+
+    > span {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 8px;
+      background: rgba($color-primary, 0.1);
+      color: $color-primary;
+      font-weight: 500;
+      text-transform: capitalize;
+      letter-spacing: normal;
+    }
+  }
+
+  &__conv-tag {
+    &--vip {
+      background: rgba(#D4AF37, 0.15);
+      color: #B8860B;
+    }
+    &--nuevo {
+      background: rgba(#2196F3, 0.12);
+      color: #1565C0;
+    }
+    &--interesado {
+      background: rgba(#FF9800, 0.12);
+      color: #E65100;
+    }
+    &--agendado {
+      background: rgba($color-primary, 0.15);
+      color: $color-primary-dark;
+    }
+    &--en_riesgo {
+      background: rgba(#F44336, 0.12);
+      color: #C62828;
+    }
+    &--recurrente {
+      background: rgba(#9C27B0, 0.12);
+      color: #6A1B9A;
+    }
+    &--consulta_precio {
+      background: rgba(#607D8B, 0.1);
+      color: #37474F;
+    }
+  }
+
+  // ===========================================
+  // Client info bar
+  // ===========================================
+  &__client-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 16px;
+    background: rgba($color-primary, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    font-size: 12px;
+  }
+
+  &__client-bar-id {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-weight: 600;
+    color: $color-secondary;
+    font-size: 11px;
+  }
+
+  &__client-bar-status {
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+
+    &--vip {
+      background: rgba(#D4AF37, 0.15);
+      color: #B8860B;
+    }
+    &--activo {
+      background: rgba($color-primary, 0.12);
+      color: $color-primary;
+    }
+    &--nuevo {
+      background: rgba(#2196F3, 0.12);
+      color: #1565C0;
+    }
+    &--en_riesgo {
+      background: rgba(#F44336, 0.12);
+      color: #C62828;
+    }
+    &--inactivo {
+      background: rgba(#9E9E9E, 0.12);
+      color: #616161;
+    }
+  }
+
+  &__client-bar-visits {
+    color: rgba($color-secondary, 0.6);
+  }
+
+  &__client-bar-days {
+    color: rgba($color-secondary, 0.5);
+    font-style: italic;
+  }
+
+  &__client-bar-new {
+    color: rgba($color-secondary, 0.5);
+    font-style: italic;
+    font-size: 11px;
+  }
 }
 
 // ===========================================

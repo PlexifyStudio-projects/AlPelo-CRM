@@ -116,6 +116,7 @@ class WhatsAppConversation(Base):
     last_message_at = Column(DateTime, nullable=True)
     is_ai_active = Column(Boolean, default=True)
     unread_count = Column(Integer, default=0)
+    tags = Column(JSON, default=list)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -414,17 +414,72 @@ Link de reservas: https://book.weibook.co/alpelo-peluqueria
 Direccion: Cabecera, Bucaramanga, Colombia."""
 
 
-def _build_whatsapp_context(db: Session) -> str:
-    """Build a LIGHT context for WhatsApp — just client names/phones and staff names."""
+def _build_whatsapp_context(db: Session, conv_id: int = None) -> str:
+    """Build context for WhatsApp — client-specific data if conv_id provided, plus staff."""
+    from database.models import WhatsAppConversation
     sections = []
 
-    # Client names + phones (compact)
-    clients = db.query(Client).filter(Client.is_active == True).order_by(Client.name).all()
-    if clients:
-        client_lines = [f"  {c.name} — tel:{c.phone}" for c in clients[:50]]
-        sections.append("CLIENTES REGISTRADOS:\n" + "\n".join(client_lines))
+    if conv_id:
+        conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+        if conv and conv.client_id:
+            # Linked CRM client — fetch full data
+            client = db.query(Client).filter(Client.id == conv.client_id).first()
+            if client:
+                from routes._client_helpers import compute_client_fields
+                computed = compute_client_fields(client, db)
 
-    # Staff names + specialty
+                total_visits = len(client.visits) if client.visits else 0
+                total_spent = sum(v.amount for v in client.visits) if client.visits else 0
+                last_visit = client.visits[0].visit_date if client.visits else None
+                days_since = (datetime.now().date() - last_visit).days if last_visit else None
+
+                # Favorite service from visits
+                favorite_svc = client.favorite_service or "No definido"
+
+                # Preferred barber
+                preferred_barber = "No definido"
+                if client.preferred_barber:
+                    preferred_barber = client.preferred_barber.name
+
+                status = computed.status if hasattr(computed, 'status') else "activo"
+                tags = ", ".join(client.tags) if client.tags else "Sin etiquetas"
+
+                client_section = f"""=== CLIENTE EN ESTA CONVERSACION ===
+Nombre: {client.name}
+Telefono: {client.phone}
+ID: {client.client_id}
+Estado: {status}
+Etiquetas: {tags}
+Total visitas: {total_visits}
+Total gastado: ${total_spent:,} COP
+Ultima visita: {last_visit or 'Nunca'}
+Dias sin visita: {days_since if days_since is not None else 'N/A'}
+Servicio favorito: {favorite_svc}
+Barbero preferido: {preferred_barber}"""
+
+                # Last 5 visits
+                last_5 = client.visits[:5] if client.visits else []
+                if last_5:
+                    visit_lines = []
+                    for v in last_5:
+                        staff = db.query(Staff).filter(Staff.id == v.staff_id).first()
+                        visit_lines.append(f"  - {v.visit_date}: {v.service_name} | ${v.amount:,} | {staff.name if staff else '?'}")
+                    client_section += "\nUltimas visitas:\n" + "\n".join(visit_lines)
+
+                # Notes
+                notes = client.notes[:5] if client.notes else []
+                if notes:
+                    note_lines = [f"  - {n.created_at.strftime('%d/%m/%Y') if n.created_at else '?'}: {n.content[:100]}" for n in notes]
+                    client_section += "\nNotas:\n" + "\n".join(note_lines)
+
+                sections.append(client_section)
+
+        elif conv:
+            # No linked client
+            phone = conv.wa_contact_phone
+            sections.append(f"=== CONTACTO NO REGISTRADO ===\nEste numero ({phone}) NO esta en la base de datos de clientes. Es un contacto nuevo o no registrado.")
+
+    # Staff names + specialty (always include)
     staff_all = db.query(Staff).filter(Staff.is_active == True).all()
     if staff_all:
         staff_lines = [f"  {s.name} ({s.specialty or s.role})" for s in staff_all]
@@ -433,13 +488,13 @@ def _build_whatsapp_context(db: Session) -> str:
     return "\n\n".join(sections)
 
 
-def _build_system_prompt(db: Session, is_whatsapp: bool = False) -> str:
+def _build_system_prompt(db: Session, is_whatsapp: bool = False, conv_id: int = None) -> str:
     """Build the full system prompt with personality + tools + context."""
     config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
     personality = config.system_prompt if config else DEFAULT_PERSONALITY
 
     if is_whatsapp:
-        wa_context = _build_whatsapp_context(db)
+        wa_context = _build_whatsapp_context(db, conv_id=conv_id)
 
         return f"""Eres Lina, trabajas en AlPelo Peluqueria en Cabecera, Bucaramanga. Respondes por WhatsApp a clientes reales.
 
@@ -480,6 +535,23 @@ REGLAS IMPORTANTES:
 - NO inventes informacion. Si no sabes un precio exacto, da un rango.
 - NUNCA digas que eres IA, bot, asistente virtual ni nada por el estilo.
 - Fecha de hoy: {date.today().strftime('%d de %B de %Y')}
+
+INTELIGENCIA DE NEGOCIO:
+- Si el contacto NO esta registrado como cliente, eres amable y natural. Cuando en la conversacion ya sepas su nombre y que servicio busca, REGISTRALO como cliente nuevo usando la accion create_client.
+- Si el contacto YA es cliente registrado, usa sus datos para personalizar: "Hola [nombre]! La ultima vez te hiciste [servicio], quieres lo mismo?" o "Hace [X] dias no vienes, te esperamos!".
+- Si es un cliente VIP (10+ visitas), tratalo especial: "Que bueno verte de nuevo! Como siempre, te tenemos listo."
+- Si es un cliente en riesgo (30+ dias), motivalo: "Hey! Hace rato no te vemos, que tal si te programamos algo esta semana?"
+- Puedes poner etiquetas a la conversacion usando la accion tag_conversation para clasificar: "nuevo", "interesado", "agendado", "recurrente", "vip", "consulta_precio".
+
+COMO EJECUTAR ACCIONES:
+Cuando necesites ejecutar una accion, incluye un bloque JSON al FINAL de tu mensaje:
+```action
+{{"action": "create_client", "name": "Nombre", "phone": "3001234567", "favorite_service": "Corte"}}
+```
+```action
+{{"action": "tag_conversation", "tags": ["nuevo", "interesado"]}}
+```
+Solo ejecuta create_client cuando tengas al menos nombre Y sepas que servicio busca. No lo hagas en el primer mensaje.
 
 {wa_context}"""
 
@@ -734,9 +806,7 @@ async def _call_ai(system_prompt: str, history: list, user_message: str) -> str:
         else:
             return "Disculpa, no puedo responder en este momento. Contacta a Al Pelo directamente."
 
-        # Strip action blocks from auto-reply (don't execute actions via WhatsApp)
-        clean = ACTION_PATTERN.sub('', text).strip()
-        return clean
+        return text.strip()
     except Exception as e:
         print(f"[AI Call] Error: {e}")
         return None

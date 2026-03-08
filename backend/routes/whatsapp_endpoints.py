@@ -98,6 +98,7 @@ def list_conversations(db: Session = Depends(get_db)):
             "last_message_direction": last_msg.direction if last_msg else None,
             "is_ai_active": c.is_ai_active,
             "unread_count": c.unread_count,
+            "tags": c.tags or [],
             "client": client_data,
         })
 
@@ -568,7 +569,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             from routes.ai_endpoints import _build_system_prompt, _call_ai
 
-            system_prompt = _build_system_prompt(db, is_whatsapp=True)
+            system_prompt = _build_system_prompt(db, is_whatsapp=True, conv_id=conv_id)
 
             # The inbound message is already in history (from DB), so pass empty
             # to avoid duplication. _call_ai appends user_message to history.
@@ -579,6 +580,51 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             if not ai_response or not ai_response.strip():
                 print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")
+                return
+
+            # Step 3.5: Parse and execute actions from AI response
+            import re
+            import json
+            ACTION_PATTERN = re.compile(r'```action\s*\n(.*?)\n```', re.DOTALL)
+
+            action_matches = ACTION_PATTERN.findall(ai_response)
+            for action_json in action_matches:
+                try:
+                    action_data = json.loads(action_json.strip())
+                    action_type = action_data.get("action")
+
+                    if action_type == "tag_conversation":
+                        # Handle conversation tagging
+                        tags = action_data.get("tags", [])
+                        if tags:
+                            existing_tags = conv.tags or []
+                            conv.tags = list(set(existing_tags + tags))
+                            db.commit()
+                            print(f"[Lina IA] Tagged conv {conv_id}: {tags}")
+                    elif action_type in ("create_client", "add_note", "update_client"):
+                        # Use existing action executor
+                        from routes.ai_endpoints import _execute_action
+                        result = _execute_action(action_data, db)
+                        print(f"[Lina IA] Action {action_type}: {result}")
+
+                        # If client was created, link to conversation
+                        if action_type == "create_client" and "ERROR" not in result:
+                            phone = action_data.get("phone", "")
+                            if phone:
+                                from database.models import Client as ClientModel
+                                new_client = db.query(ClientModel).filter(ClientModel.phone == phone).first()
+                                if new_client and not conv.client_id:
+                                    conv.client_id = new_client.id
+                                    db.commit()
+                                    print(f"[Lina IA] Linked conv {conv_id} to client {new_client.client_id}")
+                except Exception as action_err:
+                    print(f"[Lina IA] Action error: {action_err}")
+
+            # Strip action blocks from the message text (don't show raw JSON to client)
+            clean_response = ACTION_PATTERN.sub('', ai_response).strip()
+
+            if not clean_response:
+                print(f"[Lina IA] Response was only actions, no text for conv {conv_id}.")
                 return
 
             # Step 4: Send AI response via WhatsApp
@@ -593,7 +639,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             "messaging_product": "whatsapp",
                             "to": to_phone.replace("+", "").replace(" ", ""),
                             "type": "text",
-                            "text": {"body": ai_response},
+                            "text": {"body": clean_response},
                         },
                     )
                     data = resp.json()
@@ -611,7 +657,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 conversation_id=conv_id,
                 wa_message_id=wa_message_id,
                 direction="outbound",
-                content=ai_response,
+                content=clean_response,
                 message_type="text",
                 status=send_status,
                 sent_by="lina_ia",
@@ -623,7 +669,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             # Track in global rate limiter
             _ai_reply_timestamps.append(time.time())
 
-            print(f"[Lina IA] Replied to conv {conv_id}: {ai_response[:60]}...")
+            print(f"[Lina IA] Replied to conv {conv_id}: {clean_response[:60]}...")
 
         finally:
             db.close()

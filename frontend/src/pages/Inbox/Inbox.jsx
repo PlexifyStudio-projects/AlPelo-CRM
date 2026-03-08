@@ -1286,6 +1286,13 @@ const Inbox = () => {
                         {unread > 0 && !isTyping && <span className={`${b}__conv-badge`}>{unread}</span>}
                       </div>
                     </div>
+                    {conv.tags && conv.tags.length > 0 && (
+                      <div className={`${b}__conv-tags`}>
+                        {conv.tags.map((tag, i) => (
+                          <span key={i} className={`${b}__conv-tag ${b}__conv-tag--${tag}`}>{tag}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -1384,6 +1391,26 @@ const Inbox = () => {
                 {showClientInfo ? Icons.close : Icons.info}
               </button>
             </div>
+
+            {/* Client info bar */}
+            {selectedConv && (
+              <div className={`${b}__client-bar`}>
+                {selectedConv.client ? (
+                  <>
+                    <span className={`${b}__client-bar-id`}>{selectedConv.client.client_id}</span>
+                    <span className={`${b}__client-bar-status ${b}__client-bar-status--${selectedConv.client.status}`}>
+                      {selectedConv.client.status}
+                    </span>
+                    <span className={`${b}__client-bar-visits`}>{selectedConv.client.total_visits} visitas</span>
+                    {selectedConv.client.days_since_last_visit !== null && (
+                      <span className={`${b}__client-bar-days`}>Ult. visita: hace {selectedConv.client.days_since_last_visit}d</span>
+                    )}
+                  </>
+                ) : (
+                  <span className={`${b}__client-bar-new`}>Contacto no registrado</span>
+                )}
+              </div>
+            )}
 
             {/* Search in chat bar */}
             {showSearchInChat && (

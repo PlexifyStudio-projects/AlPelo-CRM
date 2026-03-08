@@ -22,6 +22,14 @@ def _run_migrations(engine):
                 conn.execute(text("ALTER TABLE public.whatsapp_message ADD COLUMN media_mime_type VARCHAR"))
                 print("[MIGRATION] Added media_mime_type to whatsapp_message")
 
+    # WhatsApp conversation: tags
+    if "whatsapp_conversation" in inspector.get_table_names(schema="public"):
+        existing_conv = [c["name"] for c in inspector.get_columns("whatsapp_conversation", schema="public")]
+        with engine.begin() as conn:
+            if "tags" not in existing_conv:
+                conn.execute(text("ALTER TABLE public.whatsapp_conversation ADD COLUMN tags JSON DEFAULT '[]'"))
+                print("[MIGRATION] Added tags to whatsapp_conversation")
+
     # Activate Lina IA on ALL existing conversations (fix for is_ai_active default=False)
     if "whatsapp_conversation" in inspector.get_table_names(schema="public"):
         with engine.begin() as conn:
