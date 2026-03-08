@@ -585,7 +585,8 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             # Step 3.5: Parse and execute actions from AI response
             import re
             import json
-            ACTION_PATTERN = re.compile(r'```action\s*\n(.*?)\n```', re.DOTALL)
+            # Flexible pattern: handles newlines, no newlines, extra spaces
+            ACTION_PATTERN = re.compile(r'```action\s*(.*?)```', re.DOTALL)
 
             action_matches = ACTION_PATTERN.findall(ai_response)
             for action_json in action_matches:
