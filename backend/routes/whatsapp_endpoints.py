@@ -440,17 +440,64 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
 
 
 # ============================================================================
-# SEND TEMPLATE — Send a template message to a phone number
+# LIST TEMPLATES — Fetch approved templates from Meta Business Account
+# ============================================================================
+@router.get("/templates")
+async def list_templates():
+    """List all message templates from Meta Business Account."""
+    if not WA_BUSINESS_ID:
+        raise HTTPException(status_code=500, detail="WHATSAPP_BUSINESS_ACCOUNT_ID no configurado")
+
+    try:
+        url = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_BUSINESS_ID}/message_templates"
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(url, headers=wa_headers(), params={"limit": 50})
+            data = resp.json()
+
+            if "data" not in data:
+                raise HTTPException(status_code=400, detail=data.get("error", {}).get("message", "Error fetching templates"))
+
+            templates = []
+            for t in data["data"]:
+                # Extract body text from components
+                body_text = ""
+                for comp in t.get("components", []):
+                    if comp.get("type") == "BODY":
+                        body_text = comp.get("text", "")
+                        break
+
+                templates.append({
+                    "name": t["name"],
+                    "status": t["status"],
+                    "language": t.get("language", ""),
+                    "category": t.get("category", ""),
+                    "body": body_text,
+                })
+
+            return templates
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=f"Error de conexion: {str(e)}")
+
+
+# ============================================================================
+# SEND TEMPLATE — Send a template message to start a conversation
 # ============================================================================
 @router.post("/send-template")
 async def send_template(body: dict, db: Session = Depends(get_db)):
-    """Send a template message (e.g. hello_world) to a phone number."""
-    phone = body.get("phone", "").replace("+", "").replace(" ", "")
+    """Send a template message to a phone number. Creates conversation + stores message."""
+    phone_raw = body.get("phone", "").strip()
+    phone_clean = phone_raw.replace("+", "").replace(" ", "").replace("-", "")
     template_name = body.get("template_name", "hello_world")
     language_code = body.get("language_code", "en_US")
+    contact_name = body.get("name", "").strip()
 
-    if not phone:
+    if not phone_clean:
         raise HTTPException(status_code=400, detail="Numero de telefono requerido")
+
+    # Step 1: Send template via Meta API
+    wa_message_id = None
+    status = "sent"
+    body_text = body.get("body_text", f"[Plantilla: {template_name}]")
 
     try:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -459,7 +506,7 @@ async def send_template(body: dict, db: Session = Depends(get_db)):
                 headers=wa_headers(),
                 json={
                     "messaging_product": "whatsapp",
-                    "to": phone,
+                    "to": phone_clean,
                     "type": "template",
                     "template": {
                         "name": template_name,
@@ -470,11 +517,66 @@ async def send_template(body: dict, db: Session = Depends(get_db)):
             data = resp.json()
 
             if resp.status_code == 200 and "messages" in data:
-                return {"success": True, "wa_message_id": data["messages"][0].get("id")}
+                wa_message_id = data["messages"][0].get("id")
+                status = "sent"
             else:
-                raise HTTPException(status_code=400, detail=data.get("error", {}).get("message", "Error enviando template"))
+                status = "failed"
+                error_msg = data.get("error", {}).get("message", str(data))
+                print(f"[WA Template] Send failed ({resp.status_code}): {error_msg}")
+                raise HTTPException(status_code=400, detail=error_msg)
     except httpx.HTTPError as e:
         raise HTTPException(status_code=500, detail=f"Error de conexion: {str(e)}")
+
+    # Step 2: Get or create conversation
+    existing = db.query(WhatsAppConversation).filter(
+        WhatsAppConversation.wa_contact_phone == phone_raw
+    ).first()
+
+    if not existing:
+        # Also try without +
+        existing = db.query(WhatsAppConversation).filter(
+            WhatsAppConversation.wa_contact_phone == f"+{phone_clean}"
+        ).first()
+
+    if existing:
+        conv = existing
+        if contact_name and not conv.wa_contact_name:
+            conv.wa_contact_name = contact_name
+    else:
+        cl = db.query(Client).filter(Client.phone.contains(phone_clean[-10:])).first() if len(phone_clean) >= 10 else None
+        conv = WhatsAppConversation(
+            wa_contact_phone=phone_raw or f"+{phone_clean}",
+            wa_contact_name=contact_name or (cl.name if cl else None),
+            client_id=cl.id if cl else None,
+            is_ai_active=True,
+            unread_count=0,
+        )
+        db.add(conv)
+        db.flush()
+
+    # Step 3: Store the outbound template message in DB
+    msg = WhatsAppMessage(
+        conversation_id=conv.id,
+        wa_message_id=wa_message_id,
+        direction="outbound",
+        content=body_text,
+        message_type="template",
+        status=status,
+        sent_by="admin",
+    )
+    db.add(msg)
+    conv.last_message_at = datetime.utcnow()
+    conv.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(msg)
+
+    return {
+        "success": True,
+        "conversation_id": conv.id,
+        "message_id": msg.id,
+        "wa_message_id": wa_message_id,
+        "status": status,
+    }
 
 
 # ============================================================================

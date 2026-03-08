@@ -1099,13 +1099,88 @@ const Inbox = () => {
     setClientSearchResults([]);
   };
 
+  // --- Meta templates (for outbound to new contacts) ---
+  const [metaTemplates, setMetaTemplates] = useState([]);
+  const [metaTemplatesLoaded, setMetaTemplatesLoaded] = useState(false);
+
+  const loadMetaTemplates = useCallback(async () => {
+    if (metaTemplatesLoaded) return;
+    try {
+      const tpls = await whatsappService.getMetaTemplates();
+      setMetaTemplates(Array.isArray(tpls) ? tpls.filter((t) => t.status === 'APPROVED') : []);
+    } catch (err) {
+      console.error('[Inbox] Error loading Meta templates:', err);
+    }
+    setMetaTemplatesLoaded(true);
+  }, [metaTemplatesLoaded]);
+
   // --- New chat ---
   const handleNewChatNext = () => {
     if (!newChatPhone.trim()) return;
     setNewChatError('');
+    loadMetaTemplates();
+
+    // Check if this phone already has an active conversation (24h window open)
+    const existingConv = conversations.find((c) => {
+      const convPhone = (c.wa_contact_phone || '').replace(/[+\s-]/g, '');
+      const inputPhone = newChatPhone.trim().replace(/[+\s-]/g, '');
+      return convPhone === inputPhone || convPhone.endsWith(inputPhone) || inputPhone.endsWith(convPhone);
+    });
+
+    if (existingConv) {
+      // Existing conversation — can send free text, just open it
+      setSelectedConvId(existingConv.id);
+      setShowNewChat(false);
+      setNewChatPhone('');
+      setNewChatName('');
+      setNewChatStep('phone');
+      return;
+    }
+
     setNewChatStep('template');
   };
 
+  // Send via Meta template (for new outbound conversations)
+  const handleSendTemplate = async (tpl) => {
+    const phone = newChatPhone.trim();
+    const name = newChatName.trim();
+
+    if (!phone) return;
+    setNewChatLoading(true);
+    setNewChatError('');
+
+    try {
+      const result = await whatsappService.sendTemplate(
+        phone,
+        name,
+        tpl.name,
+        tpl.language || 'en_US',
+        tpl.body || `[Plantilla: ${tpl.name}]`
+      );
+
+      await loadConversations();
+      if (result.conversation_id) {
+        setSelectedConvId(result.conversation_id);
+        try {
+          const msgs = await whatsappService.getMessages(result.conversation_id);
+          setMessages(msgs);
+        } catch { /* will load on next poll */ }
+      }
+
+      setShowNewChat(false);
+      setNewChatPhone('');
+      setNewChatName('');
+      setNewChatStep('phone');
+      setClientSearchQuery('');
+      setClientSearchResults([]);
+    } catch (err) {
+      setNewChatError(err.message || 'Error al enviar plantilla');
+    } finally {
+      setNewChatLoading(false);
+    }
+  };
+
+  // Send free-text to existing conversation (within 24h window)
   const handleCreateNewChat = async (templateText) => {
     const phone = newChatPhone.trim();
     const name = newChatName.trim() || phone;
@@ -1117,18 +1192,11 @@ const Inbox = () => {
     setNewChatError('');
 
     try {
-      // 1. Create or get existing conversation in backend
       const convResult = await whatsappService.createConversation(phone, name);
       const convId = convResult.id;
-
-      // 2. Send the actual WhatsApp message
-      const msgResult = await whatsappService.sendMessage(convId, msgText);
-
-      // 3. Refresh conversations and select the new one
+      await whatsappService.sendMessage(convId, msgText);
       await loadConversations();
       setSelectedConvId(convId);
-
-      // 4. Load messages for this conversation
       try {
         const msgs = await whatsappService.getMessages(convId);
         setMessages(msgs);
@@ -1329,21 +1397,27 @@ const Inbox = () => {
             {newChatStep === 'template' && (
               <div className={`${b}__new-chat-templates`}>
                 <p className={`${b}__new-chat-templates-hint`}>Enviando a <strong>{newChatName || newChatPhone}</strong></p>
+                <p className={`${b}__new-chat-meta-note`}>Para contactos nuevos se requiere una plantilla aprobada por Meta.</p>
                 {newChatError && <p className={`${b}__new-chat-error`}>{newChatError}</p>}
-                {TEMPLATES.map((tpl) => {
-                  const nameTag = newChatName.trim() ? ` ${newChatName.trim().split(' ')[0]}` : '';
-                  const preview = tpl.text.replace('{nombre}', nameTag);
-                  return (
-                    <button key={tpl.id} className={`${b}__new-chat-tpl`} onClick={() => handleCreateNewChat(tpl.text)} disabled={newChatLoading}>
-                      <span className={`${b}__new-chat-tpl-label`}>{tpl.label}</span>
-                      <span className={`${b}__new-chat-tpl-preview`}>{preview.length > 80 ? preview.slice(0, 80) + '...' : preview}</span>
-                    </button>
-                  );
-                })}
-                <button className={`${b}__new-chat-tpl ${b}__new-chat-tpl--custom`} onClick={() => setNewChatStep('custom')}>
-                  <span className={`${b}__new-chat-tpl-label`}>Personalizado</span>
-                  <span className={`${b}__new-chat-tpl-preview`}>Escribe tu propio mensaje...</span>
-                </button>
+
+                {/* Meta approved templates */}
+                {metaTemplates.length > 0 ? (
+                  <>
+                    <p className={`${b}__new-chat-section-label`}>Plantillas aprobadas por Meta</p>
+                    {metaTemplates.map((tpl) => (
+                      <button key={tpl.name} className={`${b}__new-chat-tpl`} onClick={() => handleSendTemplate(tpl)} disabled={newChatLoading}>
+                        <span className={`${b}__new-chat-tpl-label`}>{tpl.name.replace(/_/g, ' ')}</span>
+                        <span className={`${b}__new-chat-tpl-preview`}>{(tpl.body || `Plantilla: ${tpl.name}`).slice(0, 100)}</span>
+                        <span className={`${b}__new-chat-tpl-meta`}>{tpl.language} · {tpl.category}</span>
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  <p className={`${b}__new-chat-no-templates`}>
+                    {metaTemplatesLoaded ? 'No hay plantillas aprobadas. Crea una en Meta Business Suite.' : 'Cargando plantillas...'}
+                  </p>
+                )}
+
                 <div className={`${b}__new-chat-footer`}>
                   <button className={`${b}__new-chat-back`} onClick={() => setNewChatStep('phone')}>← Volver</button>
                   {newChatLoading && <span className={`${b}__new-chat-sending`}>Enviando...</span>}

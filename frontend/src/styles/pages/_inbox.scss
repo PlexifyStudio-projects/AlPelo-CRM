@@ -2220,6 +2220,35 @@
     gap: $spacing-sm;
   }
 
+  &__new-chat-meta-note {
+    font-size: 11px;
+    color: $color-gray-400;
+    padding: 0 $spacing-md $spacing-xs;
+    line-height: 1.4;
+  }
+
+  &__new-chat-section-label {
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wide;
+    color: $color-gray-400;
+    padding: $spacing-xs $spacing-md 0;
+  }
+
+  &__new-chat-tpl-meta {
+    font-size: 10px;
+    color: $color-gray-400;
+    margin-top: 2px;
+  }
+
+  &__new-chat-no-templates {
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+    padding: $spacing-lg $spacing-md;
+    text-align: center;
+  }
+
   &__new-chat-textarea {
     width: 100%;
     padding: $spacing-sm $spacing-md;

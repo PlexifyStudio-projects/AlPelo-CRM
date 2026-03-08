@@ -38,16 +38,22 @@ const whatsappService = {
   },
 
   // ========================= TEMPLATES =========================
-  getTemplates: async () => {
+  getMetaTemplates: async () => {
     const res = await fetch(`${API}/whatsapp/templates`, { headers });
     return handleResponse(res);
   },
 
-  sendTemplate: async (templateId, clientIds) => {
-    const res = await fetch(`${API}/whatsapp/templates/send`, {
+  sendTemplate: async (phone, name, templateName, languageCode, bodyText) => {
+    const res = await fetch(`${API}/whatsapp/send-template`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ template_id: templateId, client_ids: clientIds }),
+      body: JSON.stringify({
+        phone,
+        name,
+        template_name: templateName,
+        language_code: languageCode,
+        body_text: bodyText,
+      }),
     });
     return handleResponse(res);
   },
