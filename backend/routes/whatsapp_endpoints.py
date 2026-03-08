@@ -33,11 +33,125 @@ WA_WEBHOOK_VERIFY_TOKEN = os.getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN", "alpelo_web
 WA_BASE_URL = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}"
 
 
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+
+
 def wa_headers():
     return {
         "Authorization": f"Bearer {WA_TOKEN}",
         "Content-Type": "application/json",
     }
+
+
+async def _transcribe_audio(media_id: str) -> str:
+    """Download audio from Meta and transcribe with Groq Whisper."""
+    if not GROQ_API_KEY:
+        return "[Audio recibido - transcripcion no disponible]"
+
+    try:
+        # Step 1: Get download URL from Meta
+        async with httpx.AsyncClient(timeout=15) as client:
+            meta_resp = await client.get(
+                f"https://graph.facebook.com/{WA_API_VERSION}/{media_id}",
+                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+            )
+            if meta_resp.status_code != 200:
+                return "[Audio recibido - no se pudo descargar]"
+            download_url = meta_resp.json().get("url")
+            mime_type = meta_resp.json().get("mime_type", "audio/ogg")
+
+        if not download_url:
+            return "[Audio recibido - URL no disponible]"
+
+        # Step 2: Download the audio file
+        async with httpx.AsyncClient(timeout=30) as client:
+            audio_resp = await client.get(
+                download_url,
+                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+            )
+            if audio_resp.status_code != 200:
+                return "[Audio recibido - descarga fallida]"
+
+        audio_bytes = audio_resp.content
+
+        # Step 3: Send to Groq Whisper for transcription
+        ext = "ogg" if "ogg" in mime_type else "mp4" if "mp4" in mime_type else "wav"
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(
+                "https://api.groq.com/openai/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                data={"model": "whisper-large-v3", "language": "es"},
+                files={"file": (f"audio.{ext}", audio_bytes, mime_type)},
+            )
+            if resp.status_code == 200:
+                transcript = resp.json().get("text", "").strip()
+                if transcript:
+                    return transcript
+                return "[Audio vacio o inaudible]"
+            else:
+                print(f"[Whisper] Transcription failed: {resp.status_code} {resp.text[:200]}")
+                return "[Audio recibido - transcripcion fallida]"
+
+    except Exception as e:
+        print(f"[Whisper] Error: {e}")
+        return "[Audio recibido - error de transcripcion]"
+
+
+async def _fetch_profile_photo(conv_id: int, wa_phone: str):
+    """Try to fetch WhatsApp profile photo URL from Meta Cloud API.
+
+    Attempts multiple Meta API approaches. Note: Cloud API has limited
+    access to contact profile photos — works best for business accounts.
+    """
+    photo_url = None
+    clean_phone = wa_phone.replace("+", "").replace(" ", "")
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            # Approach 1: Direct profile picture endpoint (works for some contacts)
+            resp = await client.get(
+                f"https://graph.facebook.com/{WA_API_VERSION}/{clean_phone}/profile_picture",
+                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+                params={"type": "large", "redirect": "false"},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                photo_url = (
+                    data.get("data", {}).get("url")
+                    or data.get("url")
+                    or data.get("profile_picture_url")
+                )
+
+            # Approach 2: Contacts endpoint with phone number
+            if not photo_url:
+                resp2 = await client.post(
+                    f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}/contacts",
+                    headers={"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"},
+                    json={"blocking": "wait", "contacts": [f"+{clean_phone}"], "force_check": True},
+                )
+                if resp2.status_code == 200:
+                    contacts = resp2.json().get("contacts", [])
+                    for contact in contacts:
+                        pic = contact.get("profile", {}).get("photo")
+                        if pic:
+                            photo_url = pic
+                            break
+
+        if photo_url:
+            db = SessionLocal()
+            try:
+                conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+                if conv:
+                    conv.wa_profile_photo_url = photo_url
+                    db.commit()
+                    print(f"[WA] Profile photo saved for conv {conv_id}: {photo_url[:60]}...")
+            finally:
+                db.close()
+        else:
+            print(f"[WA] No profile photo available for {clean_phone} (Cloud API limitation)")
+
+    except Exception as e:
+        print(f"[WA] Profile photo fetch failed for {wa_phone}: {e}")
 
 
 # ============================================================================
@@ -93,6 +207,7 @@ def list_conversations(db: Session = Depends(get_db)):
             "id": c.id,
             "wa_contact_phone": c.wa_contact_phone,
             "wa_contact_name": c.wa_contact_name,
+            "wa_profile_photo_url": c.wa_profile_photo_url,
             "last_message_at": c.last_message_at.isoformat() if c.last_message_at else None,
             "last_message_preview": last_msg.content[:80] if last_msg else None,
             "last_message_direction": last_msg.direction if last_msg else None,
@@ -413,6 +528,8 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                         )
                         db.add(conv)
                         db.flush()
+                        # Fetch profile photo in background
+                        background_tasks.add_task(_fetch_profile_photo, conv.id, from_phone)
 
                     # Check for duplicate message
                     existing_msg = db.query(WhatsAppMessage).filter(
@@ -445,19 +562,38 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     if contact_name and not conv.wa_contact_name:
                         conv.wa_contact_name = contact_name
 
+                    # Retry profile photo fetch if missing
+                    if not conv.wa_profile_photo_url:
+                        background_tasks.add_task(_fetch_profile_photo, conv.id, from_phone)
+
                     # Send read receipt to Meta (blue ticks)
                     background_tasks.add_task(_send_read_receipt, wa_msg_id)
 
                     # Queue AI auto-reply if active (only 1 per conversation per webhook batch)
-                    if conv.is_ai_active and msg_type == "text" and content.strip():
-                        already_queued = any(r["conv_id"] == conv.id for r in conversations_to_reply)
-                        if not already_queued:
-                            conversations_to_reply.append({
-                                "conv_id": conv.id,
-                                "from_phone": from_phone,
-                                "inbound_text": content,
-                                "wa_msg_id": wa_msg_id,
-                            })
+                    # Lina replies to: text, audio (transcribed), image/video WITH caption
+                    # Lina IGNORES: stickers, reactions, images/videos without caption
+                    if conv.is_ai_active and msg_type in ("text", "audio", "image", "video"):
+                        ai_text = content.strip() if content else ""
+                        # For audio, transcribe first (will be done in background)
+                        needs_transcription = msg_type == "audio" and media_url
+                        # For image/video: only reply if there's a real caption (not our placeholder)
+                        if msg_type in ("image", "video"):
+                            caption = msg_data.get(msg_type, {}).get("caption", "")
+                            if not caption:
+                                # No caption = casual media, skip AI reply
+                                ai_text = ""
+
+                        if ai_text or needs_transcription:
+                            already_queued = any(r["conv_id"] == conv.id for r in conversations_to_reply)
+                            if not already_queued:
+                                conversations_to_reply.append({
+                                    "conv_id": conv.id,
+                                    "from_phone": from_phone,
+                                    "inbound_text": ai_text,
+                                    "wa_msg_id": wa_msg_id,
+                                    "needs_transcription": needs_transcription,
+                                    "media_id": media_url if needs_transcription else None,
+                                })
 
                 # Process status updates (sent -> delivered -> read)
                 for status_data in value.get("statuses", []):
@@ -484,6 +620,8 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
             reply_info["from_phone"],
             reply_info["inbound_text"],
             reply_info.get("wa_msg_id"),
+            reply_info.get("needs_transcription", False),
+            reply_info.get("media_id"),
         )
 
     return {"status": "ok"}
@@ -509,7 +647,7 @@ async def _send_read_receipt(wa_msg_id: str):
         pass  # Don't fail on read receipt errors
 
 
-async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_wa_msg_id: str = None):
+async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_wa_msg_id: str = None, needs_transcription: bool = False, media_id: str = None):
     """Background task: mark as read, wait 10s, generate AI response, send."""
     import time
 
@@ -517,6 +655,32 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         # Step 0: Send read receipt immediately (blue ticks)
         if inbound_wa_msg_id:
             await _send_read_receipt(inbound_wa_msg_id)
+
+        # Step 0.5: Transcribe audio if needed
+        if needs_transcription and media_id:
+            print(f"[Lina IA] Transcribing audio for conv {conv_id}...")
+            transcript = await _transcribe_audio(media_id)
+            inbound_text = f"[Audio del cliente]: {transcript}"
+            print(f"[Lina IA] Transcript: {transcript[:100]}...")
+
+            # Update the stored message content with the transcription
+            db_temp = SessionLocal()
+            try:
+                last_inbound = (
+                    db_temp.query(WhatsAppMessage)
+                    .filter(
+                        WhatsAppMessage.conversation_id == conv_id,
+                        WhatsAppMessage.direction == "inbound",
+                        WhatsAppMessage.message_type == "audio",
+                    )
+                    .order_by(WhatsAppMessage.created_at.desc())
+                    .first()
+                )
+                if last_inbound and last_inbound.content.startswith("📎"):
+                    last_inbound.content = f"🎤 {transcript}"
+                    db_temp.commit()
+            finally:
+                db_temp.close()
 
         # Step 1: Wait exactly 10 seconds (natural delay)
         print(f"[Lina IA] Waiting 10s before replying to conv {conv_id}...")
@@ -727,6 +891,27 @@ def delete_message(msg_id: int, db: Session = Depends(get_db)):
     return {"deleted": msg_id}
 
 
+@router.delete("/conversations/{conv_id}")
+def delete_conversation(conv_id: int, db: Session = Depends(get_db)):
+    """Delete a conversation and all its messages."""
+    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
+    db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id == conv_id).delete()
+    db.delete(conv)
+    db.commit()
+    return {"deleted": conv_id}
+
+
+@router.delete("/conversations")
+def delete_all_conversations(db: Session = Depends(get_db)):
+    """Delete ALL conversations and messages. Used for clean testing."""
+    msg_count = db.query(WhatsAppMessage).delete()
+    conv_count = db.query(WhatsAppConversation).delete()
+    db.commit()
+    return {"deleted_conversations": conv_count, "deleted_messages": msg_count}
+
+
 # ============================================================================
 # MEDIA PROXY — Proxy media from Meta API (requires auth token)
 # ============================================================================
@@ -759,6 +944,53 @@ async def proxy_media(media_id: str):
             raise HTTPException(status_code=404, detail="Media download failed")
 
     return Response(content=file_resp.content, media_type=mime_type)
+
+
+# ============================================================================
+# PROFILE PHOTO — Fetch & update WhatsApp profile photo
+# ============================================================================
+@router.post("/conversations/{conv_id}/refresh-photo")
+async def refresh_profile_photo(conv_id: int, db: Session = Depends(get_db)):
+    """Attempt to fetch/refresh the WhatsApp profile photo for a conversation."""
+    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
+
+    phone = conv.wa_contact_phone.replace("+", "").replace(" ", "")
+
+    # Try multiple Meta API approaches to get profile picture
+    photo_url = None
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            # Approach 1: Business API contacts endpoint
+            resp = await client.get(
+                f"https://graph.facebook.com/{WA_API_VERSION}/{phone}/profile_picture",
+                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+                params={"type": "large"},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                photo_url = data.get("data", {}).get("url") or data.get("url") or data.get("profile_picture_url")
+    except Exception as e:
+        print(f"[WA] Profile photo fetch error: {e}")
+
+    if photo_url:
+        conv.wa_profile_photo_url = photo_url
+        db.commit()
+        return {"photo_url": photo_url}
+
+    return {"photo_url": None, "message": "No se pudo obtener la foto. Meta Cloud API tiene acceso limitado a fotos de perfil de contactos."}
+
+
+@router.put("/conversations/{conv_id}/photo")
+def set_profile_photo(conv_id: int, body: dict, db: Session = Depends(get_db)):
+    """Manually set a profile photo URL for a conversation."""
+    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
+    conv.wa_profile_photo_url = body.get("photo_url", "").strip() or None
+    db.commit()
+    return {"id": conv.id, "wa_profile_photo_url": conv.wa_profile_photo_url}
 
 
 # ============================================================================
