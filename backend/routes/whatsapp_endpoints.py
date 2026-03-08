@@ -392,7 +392,18 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
                 status = "sent"
             else:
                 status = "failed"
-                print(f"[WA] Send failed: {data}")
+                error_msg = data.get("error", {}).get("message", str(data))
+                print(f"[WA] Send failed ({resp.status_code}): {error_msg}")
+                # Store error for debugging
+                global _last_webhook_error
+                _last_webhook_error = {
+                    "type": "send_failed",
+                    "phone": conv.wa_contact_phone,
+                    "status_code": resp.status_code,
+                    "error": error_msg,
+                    "full_response": data,
+                    "timestamp": datetime.utcnow().isoformat(),
+                }
     except Exception as e:
         status = "failed"
         print(f"[WA] Send error: {e}")
