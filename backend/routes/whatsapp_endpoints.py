@@ -548,7 +548,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             )
             if last_ai_msg and last_ai_msg.created_at:
                 seconds_since = (datetime.utcnow() - last_ai_msg.created_at).total_seconds()
-                if seconds_since < 60:
+                if seconds_since < 20:
                     print(f"[Lina IA] Cooldown active for conv {conv_id} ({seconds_since:.0f}s ago). Skipping.")
                     return
 
