@@ -602,6 +602,10 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             db.commit()
                             print(f"[Lina IA] Tagged conv {conv_id}: {tags}")
                     elif action_type in ("create_client", "add_note", "update_client"):
+                        # Force real phone from conversation (never trust AI-generated phone)
+                        if action_type == "create_client":
+                            action_data["phone"] = conv.wa_contact_phone
+
                         # Use existing action executor
                         from routes.ai_endpoints import _execute_action
                         result = _execute_action(action_data, db)
@@ -609,14 +613,14 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
                         # If client was created, link to conversation
                         if action_type == "create_client" and "ERROR" not in result:
-                            phone = action_data.get("phone", "")
-                            if phone:
-                                from database.models import Client as ClientModel
-                                new_client = db.query(ClientModel).filter(ClientModel.phone == phone).first()
-                                if new_client and not conv.client_id:
-                                    conv.client_id = new_client.id
-                                    db.commit()
-                                    print(f"[Lina IA] Linked conv {conv_id} to client {new_client.client_id}")
+                            from database.models import Client as ClientModel
+                            new_client = db.query(ClientModel).filter(
+                                ClientModel.phone == conv.wa_contact_phone
+                            ).first()
+                            if new_client and not conv.client_id:
+                                conv.client_id = new_client.id
+                                db.commit()
+                                print(f"[Lina IA] Linked conv {conv_id} to client {new_client.client_id}")
                 except Exception as action_err:
                     print(f"[Lina IA] Action error: {action_err}")
 
