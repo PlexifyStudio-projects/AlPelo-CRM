@@ -1041,6 +1041,19 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 print(f"[Lina IA] Response was only actions, no text for conv {conv_id}.")
                 return
 
+            # Step 3.8: Block dismissive/rude responses
+            BLOCKED_PHRASES = [
+                "no hay nada que responder",
+                "no entiendo tu mensaje",
+                "no comprendo",
+                "mensaje vacio",
+                "no me has dicho nada",
+                "no has escrito nada",
+            ]
+            if any(bp in clean_response.lower() for bp in BLOCKED_PHRASES):
+                print(f"[Lina IA] Blocked dismissive response for conv {conv_id}: {clean_response[:60]}")
+                clean_response = "Hola! Soy Lina de AlPelo Peluqueria. En que te puedo ayudar?"
+
             # Step 4: Send AI response via WhatsApp
             wa_message_id = None
             send_status = "sent"
