@@ -715,6 +715,17 @@ def delete_failed_messages(db: Session = Depends(get_db)):
     return {"deleted": count}
 
 
+@router.delete("/messages/{msg_id}")
+def delete_message(msg_id: int, db: Session = Depends(get_db)):
+    """Delete a specific message by ID."""
+    msg = db.query(WhatsAppMessage).filter(WhatsAppMessage.id == msg_id).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Mensaje no encontrado")
+    db.delete(msg)
+    db.commit()
+    return {"deleted": msg_id}
+
+
 # ============================================================================
 # MEDIA PROXY — Proxy media from Meta API (requires auth token)
 # ============================================================================
