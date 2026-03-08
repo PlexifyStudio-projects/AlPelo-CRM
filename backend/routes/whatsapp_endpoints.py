@@ -260,6 +260,34 @@ def get_conversation(conv_id: int, db: Session = Depends(get_db)):
 
 
 # ============================================================================
+# TOGGLE AI — Enable/disable Lina IA auto-reply for a conversation
+# ============================================================================
+@router.put("/conversations/{conv_id}/ai")
+def toggle_ai(conv_id: int, body: dict, db: Session = Depends(get_db)):
+    """Toggle Lina IA auto-reply on/off for a specific conversation."""
+    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
+    conv.is_ai_active = body.get("is_ai_active", not conv.is_ai_active)
+    db.commit()
+    return {"id": conv.id, "is_ai_active": conv.is_ai_active}
+
+
+# ============================================================================
+# UPDATE TAGS — Set tags for a conversation
+# ============================================================================
+@router.put("/conversations/{conv_id}/tags")
+def update_tags(conv_id: int, body: dict, db: Session = Depends(get_db)):
+    """Update tags for a conversation."""
+    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
+    conv.tags = body.get("tags", [])
+    db.commit()
+    return {"id": conv.id, "tags": conv.tags}
+
+
+# ============================================================================
 # MARK AS READ — Reset unread count for a conversation
 # ============================================================================
 @router.put("/conversations/{conv_id}/read")
@@ -788,29 +816,24 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             import re
             import json
 
-            # Normalize curly/smart quotes to straight quotes (Llama often outputs these)
-            ai_response = ai_response.replace('\u201c', '"').replace('\u201d', '"')
-            ai_response = ai_response.replace('\u2018', "'").replace('\u2019', "'")
-            ai_response = ai_response.replace('\u00ab', '"').replace('\u00bb', '"')
+            # NUCLEAR CLEANUP: Normalize ALL quote variants to straight quotes
+            for ch in '\u201c\u201d\u00ab\u00bb\u201e\u201f':
+                ai_response = ai_response.replace(ch, '"')
+            for ch in '\u2018\u2019\u201a\u201b':
+                ai_response = ai_response.replace(ch, "'")
+            # Also normalize backtick variants
+            for ch in '\u0060\u2018\u2019\u02CB\u02CA':
+                ai_response = ai_response.replace(ch, '`')
 
-            # Multiple patterns to catch action blocks regardless of formatting
-            # Pattern 1: Standard ```action ... ```
-            # Pattern 2: ```action\n{...}\n``` with various whitespace
-            # Pattern 3: Fallback — any ```...action...{...}...```
-            ACTION_PATTERNS = [
-                re.compile(r'`{3,}action\s*(.*?)`{3,}', re.DOTALL),
-                re.compile(r'`{3,}\s*action\s*\n(.*?)\n\s*`{3,}', re.DOTALL),
-                re.compile(r'`{3,}[^\n]*action[^\n]*\n(.*?)`{3,}', re.DOTALL),
-            ]
+            # Extract action JSON blocks — try multiple patterns
+            ACTION_PATTERN = re.compile(r'`{1,3}\s*action\s*\n?\s*(\{.*?\})\s*\n?\s*`{0,3}', re.DOTALL)
+            # Fallback: bare JSON with "action" key (no backticks)
+            BARE_ACTION = re.compile(r'(\{"action"\s*:.*?\})', re.DOTALL)
 
-            action_matches = []
-            clean_ai = ai_response
-            for pattern in ACTION_PATTERNS:
-                matches = pattern.findall(clean_ai)
-                if matches:
-                    action_matches.extend(matches)
-                    clean_ai = pattern.sub('', clean_ai)
-                    break  # Use first pattern that matches
+            action_matches = ACTION_PATTERN.findall(ai_response)
+            if not action_matches:
+                action_matches = BARE_ACTION.findall(ai_response)
+
             for action_json in action_matches:
                 try:
                     action_data = json.loads(action_json.strip())
@@ -847,12 +870,22 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 except Exception as action_err:
                     print(f"[Lina IA] Action error: {action_err}")
 
-            # Strip action blocks from the message text (don't show raw JSON to client)
-            clean_response = clean_ai.strip()
-            # Extra safety: remove any remaining ```action...``` blocks with any pattern
-            clean_response = re.sub(r'`{1,3}\s*action.*?`{1,3}', '', clean_response, flags=re.DOTALL).strip()
-            # Also remove stray JSON objects that look like actions
-            clean_response = re.sub(r'\{["\u201c]action["\u201d]\s*:.*?\}', '', clean_response, flags=re.DOTALL).strip()
+            # NUCLEAR STRIP: Remove ALL traces of action blocks from client-facing text
+            clean_response = ai_response
+            # 1. Remove ```action...``` blocks (greedy — from ```action to the end or closing ```)
+            clean_response = re.sub(r'`{1,3}\s*action\s*\n?\s*\{.*?\}\s*\n?\s*`{0,3}', '', clean_response, flags=re.DOTALL)
+            # 2. Remove any bare JSON with "action" key
+            clean_response = re.sub(r'\{"action"\s*:.*?\}', '', clean_response, flags=re.DOTALL)
+            # 3. Remove ```action ... ``` blocks even WITHOUT JSON (action with anything after it until end or ```)
+            clean_response = re.sub(r'`{1,3}\s*action.*?(`{1,3}|$)', '', clean_response, flags=re.DOTALL)
+            # 4. Remove orphaned backtick lines (```, ```action, `action, etc)
+            clean_response = re.sub(r'^`{1,3}\s*action?.*$', '', clean_response, flags=re.MULTILINE)
+            # 5. Remove any line that contains "action": (JSON action keys)
+            clean_response = re.sub(r'^.*"action"\s*:.*$', '', clean_response, flags=re.MULTILINE)
+            # 6. Remove any remaining orphaned ``` lines
+            clean_response = re.sub(r'^`{1,3}\s*$', '', clean_response, flags=re.MULTILINE)
+            # 7. Clean up excessive whitespace left behind
+            clean_response = re.sub(r'\n{3,}', '\n\n', clean_response).strip()
 
             if not clean_response:
                 print(f"[Lina IA] Response was only actions, no text for conv {conv_id}.")

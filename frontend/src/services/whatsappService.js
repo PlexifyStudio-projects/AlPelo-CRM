@@ -73,9 +73,40 @@ const whatsappService = {
     return handleResponse(res);
   },
 
+  // ========================= DELETE =========================
+  deleteConversation: async (id) => {
+    const res = await fetch(`${API}/whatsapp/conversations/${id}`, { method: 'DELETE', headers });
+    return handleResponse(res);
+  },
+
+  deleteAllConversations: async () => {
+    const res = await fetch(`${API}/whatsapp/conversations`, { method: 'DELETE', headers });
+    return handleResponse(res);
+  },
+
   // ========================= STATS =========================
   getStats: async () => {
     const res = await fetch(`${API}/whatsapp/stats`, { headers });
+    return handleResponse(res);
+  },
+
+  // ========================= TOGGLE AI =========================
+  toggleAi: async (conversationId, isActive) => {
+    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/ai`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ is_ai_active: isActive }),
+    });
+    return handleResponse(res);
+  },
+
+  // ========================= TAGS =========================
+  updateTags: async (conversationId, tags) => {
+    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/tags`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ tags }),
+    });
     return handleResponse(res);
   },
 };

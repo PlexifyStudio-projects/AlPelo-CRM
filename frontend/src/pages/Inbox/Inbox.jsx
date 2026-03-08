@@ -947,9 +947,16 @@ const Inbox = () => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
   };
 
-  const toggleAiMode = () => {
+  const toggleAiMode = async () => {
     if (!selectedConvId) return;
-    setAiMode((prev) => ({ ...prev, [selectedConvId]: !prev[selectedConvId] }));
+    const newState = !(aiMode[selectedConvId] !== false);
+    setAiMode((prev) => ({ ...prev, [selectedConvId]: newState }));
+    try {
+      await whatsappService.toggleAi(selectedConvId, newState);
+    } catch (err) {
+      console.error('[Inbox] Error toggling AI:', err);
+      setAiMode((prev) => ({ ...prev, [selectedConvId]: !newState }));
+    }
   };
 
   const handleSelectConv = async (convId) => {
@@ -1004,7 +1011,7 @@ const Inbox = () => {
   };
 
   // --- Label ---
-  const setLabel = (convId, labelId) => {
+  const setLabel = async (convId, labelId) => {
     setLabels((prev) => {
       const next = { ...prev };
       if (labelId) next[convId] = labelId;
@@ -1012,6 +1019,22 @@ const Inbox = () => {
       return next;
     });
     setShowLabelPicker(null);
+    // Persist label to backend tags
+    const labelObj = LABEL_COLORS.find((l) => l.id === labelId);
+    const conv = conversations.find((c) => c.id === convId);
+    const currentTags = conv?.tags || [];
+    // Remove any existing label-color tags, then add the new one
+    const labelIds = LABEL_COLORS.map((l) => l.id);
+    const filtered = currentTags.filter((t) => !labelIds.includes(t));
+    const newTags = labelId ? [...filtered, labelId] : filtered;
+    try {
+      await whatsappService.updateTags(convId, newTags);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, tags: newTags } : c))
+      );
+    } catch (err) {
+      console.error('[Inbox] Error updating tags:', err);
+    }
   };
 
   // --- Message context menu actions ---
