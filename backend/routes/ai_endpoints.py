@@ -154,7 +154,7 @@ def _execute_action(action: dict, db: Session) -> str:
         next_num = (last.id + 1) if last else 1
         client_id = f"M{20200 + next_num}"
 
-        existing = db.query(Client).filter(Client.phone == phone).first()
+        existing = db.query(Client).filter(Client.phone == phone, Client.is_active == True).first()
         if existing:
             return f"Ya existe un cliente con ese telefono: {existing.name} ({existing.client_id})"
 

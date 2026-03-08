@@ -544,8 +544,11 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     ).first()
 
                     if not conv:
-                        # Try to match with existing client
-                        client = db.query(Client).filter(Client.phone.contains(from_phone[-10:])).first()
+                        # Try to match with existing ACTIVE client only
+                        client = db.query(Client).filter(
+                            Client.phone.contains(from_phone[-10:]),
+                            Client.is_active == True
+                        ).first()
                         conv = WhatsAppConversation(
                             wa_contact_phone=from_phone,
                             wa_contact_name=contact_name,
@@ -892,6 +895,22 @@ def get_last_webhook_error():
     if not _last_webhook_error:
         return {"status": "no errors"}
     return _last_webhook_error
+
+
+@router.delete("/debug/hard-delete-client/{phone}")
+def hard_delete_client(phone: str, db: Session = Depends(get_db)):
+    """Hard delete a client by phone. Temporary debug endpoint."""
+    from sqlalchemy import text
+    # Delete notes and visits first (foreign keys)
+    client = db.query(Client).filter(Client.phone == phone).first()
+    if not client:
+        return {"status": "not found"}
+    from database.models import ClientNote, VisitHistory
+    db.query(ClientNote).filter(ClientNote.client_id == client.id).delete()
+    db.query(VisitHistory).filter(VisitHistory.client_id == client.id).delete()
+    db.delete(client)
+    db.commit()
+    return {"status": "hard deleted", "name": client.name, "phone": phone}
 
 
 @router.post("/debug/fix-columns")
