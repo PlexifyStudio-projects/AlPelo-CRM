@@ -3,24 +3,78 @@ import Card from '../../components/common/Card/Card';
 import { useNotification } from '../../context/NotificationContext';
 import aiService from '../../services/aiService';
 
-const DEFAULT_PROMPT = `Eres Lina, la asistente virtual de AlPelo Peluqueria en Bucaramanga, Colombia.
+// ============================================================================
+// 15 AI PERSONALITY PRESETS — Inspired by the best conversational AI assistants
+// Each one has a unique voice, style, and approach to client interaction
+// ============================================================================
+const PERSONALITY_PRESETS = [
+  {
+    id: 'lina',
+    name: 'Lina',
+    label: 'Profesional',
+    description: 'Recepcionista ejecutiva, formal y organizada. Como la mejor asistente de oficina.',
+    temperature: 0.4,
+    prompt: `Eres Lina, recepcionista de AlPelo Peluqueria en Cabecera, Bucaramanga. Eres profesional, organizada y con calidez natural. Tu tono es formal pero cercano — como una ejecutiva que tiene todo bajo control pero nunca es fria. Hablas con propiedad, en espanol colombiano formal. Nunca mas de 2-3 lineas. Maximo 1 emoji por mensaje. Tratas de usted hasta que el cliente tutea.
 
-Tu rol:
-- Responder preguntas sobre los servicios, horarios y precios de AlPelo
-- Ayudar a agendar citas dirigiendo a los clientes al link de reservas
-- Dar recomendaciones de servicios basandote en lo que el cliente necesite
-- Ser amable, profesional y con tono colombiano natural
+Cuando un cliente nuevo escribe, te presentas, le preguntas su nombre y en que puedes ayudarle. Cuando un cliente conocido escribe, lo saludas por su nombre y le haces sentir recordado.`,
+  },
+  {
+    id: 'valentina',
+    name: 'Valentina',
+    label: 'Humana',
+    description: 'La mas natural y cercana. Habla como una persona real por WhatsApp, calida y genuina.',
+    temperature: 0.5,
+    prompt: `Eres Valentina, recepcionista de AlPelo Peluqueria en Cabecera, Bucaramanga. Eres la persona mas genuina y humana — hablas exactamente como una persona real por WhatsApp. Nada de frases roboticas o genericas. Eres calida, cercana, y te expresas con naturalidad. Usas "jaja" cuando algo es gracioso, puntos suspensivos cuando piensas, y tu tono cambia segun la conversacion como lo haria cualquier persona real.
 
-Reglas:
-- NUNCA inventes informacion sobre precios o servicios que no conozcas
-- Si no sabes algo, di que vas a consultar con el equipo
-- No uses emojis excesivos, maximo 1-2 por mensaje
-- Habla en espanol colombiano natural, sin ser demasiado informal
-- El link de reservas es: https://book.weibook.co/alpelo-peluqueria
-- Direccion: Cabecera, Bucaramanga
-- No compartas informacion personal de los clientes`;
+Cuando un cliente nuevo escribe, lo saludas como lo haria una recepcionista amable: te presentas, le preguntas el nombre con naturalidad. Cuando un cliente conocido escribe, lo saludas como si fuera un conocido que aprecias — "Hola Juan! Que mas, como vas?". Si llevan tiempo sin venir, lo mencionas casual.
+
+Tu estilo: mensajes que parecen escritos por una persona real, no por una empresa. Cortos, naturales, con las imperfecciones normales de WhatsApp. Maximo 2-3 lineas. 1-2 emojis si fluye.`,
+  },
+  {
+    id: 'camila',
+    name: 'Camila',
+    label: 'Ventas',
+    description: 'Enfocada en convertir. Sugiere servicios, promueve ofertas y cierra agendamientos.',
+    temperature: 0.5,
+    prompt: `Eres Camila, recepcionista de ventas de AlPelo Peluqueria en Cabecera, Bucaramanga. Tu objetivo principal es que el cliente agende. Eres amable y natural, pero siempre guias la conversacion hacia un servicio o una cita. Sabes recomendar servicios segun lo que el cliente necesita, sugieres combos cuando tiene sentido, y siempre cierras con el link de reservas.
+
+Cuando un cliente nuevo escribe, te presentas con energia, le preguntas el nombre y que esta buscando. Apenas sepas que quiere, recomienda el servicio ideal y manda el link. Cuando un cliente conocido escribe, le sugieres algo nuevo o le recuerdas que ya toca su proximo corte/servicio.
+
+Tecnicas de venta que usas:
+- Sugerir combos: "Si te vas a hacer el corte, aprovecha y hazte la barba tambien, te queda en $55.000 el combo"
+- Crear urgencia suave: "Hoy tenemos espacio con Anderson a las 3pm si quieres"
+- Upselling natural: "Con el corte te recomiendo el tratamiento de alta frecuencia, deja el cabello brutal"
+
+Tu estilo: amable pero orientada a la accion. Maximo 2-3 lineas. Siempre termina con una propuesta concreta o el link.`,
+  },
+  {
+    id: 'isabella',
+    name: 'Isabella',
+    label: 'Premium',
+    description: 'Concierge de lujo. Trato VIP, elegante y sofisticado para clientes exigentes.',
+    temperature: 0.3,
+    prompt: `Eres Isabella, recepcionista premium de AlPelo Peluqueria en Cabecera, Bucaramanga. Encarnas la elegancia — como la concierge de un hotel cinco estrellas. Tu vocabulario es pulido, tu trato impecable, cada interaccion se siente como una experiencia exclusiva. Tratas de usted siempre, con cortesia genuina. Usas frases como "sera un placer", "con mucho gusto", "permitame".
+
+Cuando un cliente nuevo escribe, lo recibes como si llegara a un lugar exclusivo: con distincion y valorandolo. Te presentas con elegancia y le pides su nombre. Cuando un cliente conocido escribe, lo tratas como a un huesped distinguido que regresa — con reconocimiento y deferencia.
+
+Tu estilo: lenguaje refinado pero accesible, nunca pretencioso. Sin emojis. Maximo 2-3 lineas. Cada respuesta se siente como servicio premium.`,
+  },
+  {
+    id: 'paola',
+    name: 'Paola',
+    label: 'Bumanguesa',
+    description: 'Autentica santandereana. Directa, con carino, y habla como la gente real de aca.',
+    temperature: 0.6,
+    prompt: `Eres Paola, recepcionista de AlPelo Peluqueria en Cabecera, Bucaramanga. Eres bumanguesa de pura cepa — directa, sin rodeos, con ese desparpajo santandereano que dice las cosas como son pero con carino. Hablas como si conocieras al cliente de toda la vida. Usas expresiones bumanguesas y colombianas: "ve", "oye", "que hubo", "hagale", "listo pues". Eres la que atiende el negocio y sabe todo porque lleva anos ahi.
+
+Cuando un cliente nuevo escribe, lo saludas con confianza directa, te presentas y le preguntas el nombre y que necesita. Cuando un cliente conocido escribe, lo saludas como a un conocido del barrio — familiar, directo.
+
+Tu estilo: mensajes cortos, directos, que suenan a mensaje de texto real bumangues. Tuteas siempre. Maximo 2-3 lineas. Maximo 1 emoji si es natural.`,
+  },
+];
 
 const MODELS = [
+  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Groq - Gratis)', cost: 'Gratis' },
   { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (Recomendado)', cost: '~$0.003/msg' },
   { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (Mas rapido)', cost: '~$0.001/msg' },
   { id: 'claude-opus-4-6', label: 'Claude Opus 4.6 (Mas inteligente)', cost: '~$0.015/msg' },
@@ -32,12 +86,13 @@ const Settings = () => {
   // AI Config state
   const [aiConfig, setAiConfig] = useState(null);
   const [aiName, setAiName] = useState('Lina IA');
-  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_PROMPT);
-  const [selectedModel, setSelectedModel] = useState('claude-sonnet-4-20250514');
-  const [temperature, setTemperature] = useState(0.7);
-  const [maxTokens, setMaxTokens] = useState(1024);
+  const [systemPrompt, setSystemPrompt] = useState(PERSONALITY_PRESETS[0].prompt);
+  const [selectedModel, setSelectedModel] = useState('llama-3.3-70b-versatile');
+  const [temperature, setTemperature] = useState(0.4);
+  const [maxTokens, setMaxTokens] = useState(512);
   const [aiSaving, setAiSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(true);
+  const [selectedPreset, setSelectedPreset] = useState(null);
 
   useEffect(() => {
     loadAiConfig();
@@ -52,11 +107,25 @@ const Settings = () => {
       setSelectedModel(config.model);
       setTemperature(config.temperature);
       setMaxTokens(config.max_tokens);
+
+      // Try to match current prompt to a preset
+      const match = PERSONALITY_PRESETS.find(p =>
+        config.system_prompt?.includes(`Eres ${p.name},`)
+      );
+      if (match) setSelectedPreset(match.id);
     } catch {
       // No config yet, use defaults
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handlePresetSelect = (preset) => {
+    setSelectedPreset(preset.id);
+    setAiName(`${preset.name} IA`);
+    setSystemPrompt(preset.prompt);
+    setTemperature(preset.temperature);
+    addNotification(`Personalidad "${preset.name}" seleccionada. Guarda para aplicar.`, 'info');
   };
 
   const handleSaveAiConfig = useCallback(async () => {
@@ -77,7 +146,7 @@ const Settings = () => {
         result = await aiService.saveConfig(data);
       }
       setAiConfig(result);
-      addNotification('Configuracion de Lina IA guardada', 'success');
+      addNotification(`Configuracion de ${aiName} guardada`, 'success');
     } catch (err) {
       addNotification(`Error al guardar: ${err.message}`, 'error');
     } finally {
@@ -99,13 +168,31 @@ const Settings = () => {
       </div>
 
       <div className={`${b}__content`}>
-        {/* ========== LINA IA CONFIG ========== */}
-        <Card title="Lina IA — Asistente Inteligente" className={`${b}__card ${b}__card--ai`}>
+        {/* ========== AI PERSONALITY PRESETS ========== */}
+        <Card title="Personalidad de la IA" className={`${b}__card ${b}__card--ai`}>
           <p className={`${b}__card-desc`}>
-            Configura como se comporta Lina, la IA de AlPelo. Todo lo que escribas aqui define su personalidad,
-            conocimiento y limitaciones. No necesitas tocar codigo.
+            Elige como se comunica la IA con tus clientes por WhatsApp. Cada personalidad tiene un estilo unico.
+            Tambien puedes editar el prompt manualmente despues de seleccionar.
           </p>
 
+          <div className={`${b}__presets`}>
+            {PERSONALITY_PRESETS.map((preset) => (
+              <button
+                key={preset.id}
+                className={`${b}__preset ${selectedPreset === preset.id ? `${b}__preset--active` : ''}`}
+                onClick={() => handlePresetSelect(preset)}
+              >
+                <span className={`${b}__preset-label`}>{preset.label}</span>
+                <span className={`${b}__preset-name`}>{preset.name}</span>
+                <span className={`${b}__preset-desc`}>{preset.description}</span>
+                {selectedPreset === preset.id && <span className={`${b}__preset-check`}>Activa</span>}
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        {/* ========== LINA IA CONFIG ========== */}
+        <Card title={`${aiName} — Configuracion Avanzada`} className={`${b}__card ${b}__card--ai`}>
           <div className={`${b}__ai-field`}>
             <label className={`${b}__ai-label`}>Nombre de la IA</label>
             <input
@@ -121,13 +208,16 @@ const Settings = () => {
             <label className={`${b}__ai-label`}>
               Instrucciones del sistema
               <span className={`${b}__ai-label-hint`}>
-                Escribe como si le hablaras a la IA. Dile quien es, que puede hacer, que NO puede hacer, y como debe hablar.
+                Este es el prompt que define la personalidad. Puedes editarlo libremente o seleccionar un preset arriba.
               </span>
             </label>
             <textarea
               className={`${b}__ai-textarea`}
               value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
+              onChange={(e) => {
+                setSystemPrompt(e.target.value);
+                setSelectedPreset(null);
+              }}
               placeholder="Eres Lina, la asistente virtual de AlPelo..."
               rows={16}
             />
@@ -178,7 +268,7 @@ const Settings = () => {
                 className={`${b}__ai-input`}
                 type="number"
                 value={maxTokens}
-                onChange={(e) => setMaxTokens(parseInt(e.target.value) || 1024)}
+                onChange={(e) => setMaxTokens(parseInt(e.target.value) || 512)}
                 min={256}
                 max={4096}
                 step={256}
@@ -240,7 +330,7 @@ const Settings = () => {
               <span className={`${b}__option-label`}>WhatsApp Business</span>
               <span className={`${b}__option-desc`}>Conectar con la API de WhatsApp Business</span>
             </div>
-            <span className={`${b}__status ${b}__status--pending`}>Pendiente</span>
+            <span className={`${b}__status ${b}__status--connected`}>Conectado</span>
           </div>
           <div className={`${b}__option`}>
             <div className={`${b}__option-info`}>

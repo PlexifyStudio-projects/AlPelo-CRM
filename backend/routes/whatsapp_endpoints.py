@@ -787,10 +787,30 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             # Step 3.5: Parse and execute actions from AI response
             import re
             import json
-            # Flexible pattern: handles newlines, no newlines, extra spaces
-            ACTION_PATTERN = re.compile(r'```action\s*(.*?)```', re.DOTALL)
 
-            action_matches = ACTION_PATTERN.findall(ai_response)
+            # Normalize curly/smart quotes to straight quotes (Llama often outputs these)
+            ai_response = ai_response.replace('\u201c', '"').replace('\u201d', '"')
+            ai_response = ai_response.replace('\u2018', "'").replace('\u2019', "'")
+            ai_response = ai_response.replace('\u00ab', '"').replace('\u00bb', '"')
+
+            # Multiple patterns to catch action blocks regardless of formatting
+            # Pattern 1: Standard ```action ... ```
+            # Pattern 2: ```action\n{...}\n``` with various whitespace
+            # Pattern 3: Fallback — any ```...action...{...}...```
+            ACTION_PATTERNS = [
+                re.compile(r'`{3,}action\s*(.*?)`{3,}', re.DOTALL),
+                re.compile(r'`{3,}\s*action\s*\n(.*?)\n\s*`{3,}', re.DOTALL),
+                re.compile(r'`{3,}[^\n]*action[^\n]*\n(.*?)`{3,}', re.DOTALL),
+            ]
+
+            action_matches = []
+            clean_ai = ai_response
+            for pattern in ACTION_PATTERNS:
+                matches = pattern.findall(clean_ai)
+                if matches:
+                    action_matches.extend(matches)
+                    clean_ai = pattern.sub('', clean_ai)
+                    break  # Use first pattern that matches
             for action_json in action_matches:
                 try:
                     action_data = json.loads(action_json.strip())
@@ -828,7 +848,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     print(f"[Lina IA] Action error: {action_err}")
 
             # Strip action blocks from the message text (don't show raw JSON to client)
-            clean_response = ACTION_PATTERN.sub('', ai_response).strip()
+            clean_response = clean_ai.strip()
+            # Extra safety: remove any remaining ```action...``` blocks with any pattern
+            clean_response = re.sub(r'`{1,3}\s*action.*?`{1,3}', '', clean_response, flags=re.DOTALL).strip()
+            # Also remove stray JSON objects that look like actions
+            clean_response = re.sub(r'\{["\u201c]action["\u201d]\s*:.*?\}', '', clean_response, flags=re.DOTALL).strip()
 
             if not clean_response:
                 print(f"[Lina IA] Response was only actions, no text for conv {conv_id}.")
