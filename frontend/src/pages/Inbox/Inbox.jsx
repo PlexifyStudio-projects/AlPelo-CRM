@@ -611,6 +611,52 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds }) => {
   );
 };
 
+// ===== AUDIO PLAYER — WhatsApp-style voice message player =====
+const AudioPlayer = ({ src }) => {
+  const audioRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const toggle = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (playing) { a.pause(); } else { a.play().catch(() => {}); }
+    setPlaying(!playing);
+  }, [playing]);
+
+  const formatDur = (s) => {
+    if (!s || !isFinite(s)) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className={`${b}__audio-player`}>
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="metadata"
+        onLoadedMetadata={(e) => setDuration(e.target.duration)}
+        onTimeUpdate={(e) => setProgress(e.target.duration ? (e.target.currentTime / e.target.duration) * 100 : 0)}
+        onEnded={() => { setPlaying(false); setProgress(0); }}
+      />
+      <button className={`${b}__audio-play`} onClick={toggle} type="button">
+        {playing ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+        )}
+      </button>
+      <div className={`${b}__audio-track`}>
+        <div className={`${b}__audio-progress`} style={{ width: `${progress}%` }} />
+      </div>
+      <span className={`${b}__audio-time`}>{playing ? formatDur(audioRef.current?.currentTime) : formatDur(duration)}</span>
+    </div>
+  );
+};
+
 // ===== MAIN INBOX COMPONENT =====
 const Inbox = () => {
   // --- Core state ---
@@ -1532,7 +1578,7 @@ const Inbox = () => {
                               <video src={resolveMediaUrl(msg.media_url)} controls className={`${b}__message-video`} />
                             )}
                             {msg.media_url && (msg.message_type === 'audio' || msg.media_mime_type?.startsWith('audio/')) && (
-                              <audio src={resolveMediaUrl(msg.media_url)} controls className={`${b}__message-audio`} />
+                              <AudioPlayer src={resolveMediaUrl(msg.media_url)} />
                             )}
                             {(!msg.media_url || (msg.content && !['sticker', 'image', 'video', 'audio', 'document'].includes(msg.message_type))) && (
                               <p className={`${b}__message-text`}>{msg.content || msg.text}</p>
