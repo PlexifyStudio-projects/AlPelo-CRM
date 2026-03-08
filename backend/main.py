@@ -7,37 +7,37 @@ from database.connection import engine, Base
 
 
 def _run_migrations(engine):
-    """Add columns that create_all doesn't handle (new columns on existing tables)."""
-    from sqlalchemy import text, inspect
-    inspector = inspect(engine)
+    """Add columns that create_all doesn't handle (new columns on existing tables).
+    Uses ADD COLUMN IF NOT EXISTS for idempotent migrations.
+    """
+    from sqlalchemy import text
 
-    # WhatsApp message: media_url, media_mime_type
-    if "whatsapp_message" in inspector.get_table_names(schema="public"):
-        existing = [c["name"] for c in inspector.get_columns("whatsapp_message", schema="public")]
-        with engine.begin() as conn:
-            if "media_url" not in existing:
-                conn.execute(text("ALTER TABLE public.whatsapp_message ADD COLUMN media_url TEXT"))
-                print("[MIGRATION] Added media_url to whatsapp_message")
-            if "media_mime_type" not in existing:
-                conn.execute(text("ALTER TABLE public.whatsapp_message ADD COLUMN media_mime_type VARCHAR"))
-                print("[MIGRATION] Added media_mime_type to whatsapp_message")
+    migrations = [
+        ("whatsapp_message", "media_url", "TEXT"),
+        ("whatsapp_message", "media_mime_type", "VARCHAR"),
+        ("whatsapp_conversation", "tags", "JSON DEFAULT '[]'"),
+        ("whatsapp_conversation", "wa_profile_photo_url", "TEXT"),
+    ]
 
-    # WhatsApp conversation: tags
-    if "whatsapp_conversation" in inspector.get_table_names(schema="public"):
-        existing_conv = [c["name"] for c in inspector.get_columns("whatsapp_conversation", schema="public")]
-        with engine.begin() as conn:
-            if "tags" not in existing_conv:
-                conn.execute(text("ALTER TABLE public.whatsapp_conversation ADD COLUMN tags JSON DEFAULT '[]'"))
-                print("[MIGRATION] Added tags to whatsapp_conversation")
+    with engine.begin() as conn:
+        for table, column, col_type in migrations:
+            try:
+                conn.execute(text(
+                    f"ALTER TABLE public.{table} ADD COLUMN IF NOT EXISTS {column} {col_type}"
+                ))
+                print(f"[MIGRATION] Ensured {table}.{column} exists")
+            except Exception as e:
+                print(f"[MIGRATION] Skipping {table}.{column}: {e}")
 
-    # Activate Lina IA on ALL existing conversations (fix for is_ai_active default=False)
-    if "whatsapp_conversation" in inspector.get_table_names(schema="public"):
-        with engine.begin() as conn:
+        # Activate Lina IA on ALL existing conversations
+        try:
             result = conn.execute(text(
                 "UPDATE public.whatsapp_conversation SET is_ai_active = true WHERE is_ai_active = false"
             ))
             if result.rowcount > 0:
                 print(f"[MIGRATION] Activated Lina IA on {result.rowcount} conversations")
+        except Exception:
+            pass
 
 
 @asynccontextmanager
