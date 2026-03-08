@@ -455,7 +455,7 @@ const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 const ClientSidebar = ({ conversation, onClose, starredMsgIds }) => {
   const [activeMediaTab, setActiveMediaTab] = useState('media');
   const client = conversation?.client || null;
-  const name = client?.name || conversation?.wa_contact_name || 'Contacto';
+  const name = conversation?.wa_contact_name || client?.name || 'Contacto';
   const phone = client?.phone || conversation?.wa_contact_phone || '';
   const starredCount = starredMsgIds?.length || 0;
 
@@ -469,8 +469,13 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds }) => {
 
       {/* Profile header */}
       <div className={`${b}__client-header`}>
-        <div className={`${b}__client-avatar-lg`} style={{ background: getAvatarColor(name) }}>
-          {getInitials(name)}
+        <div className={`${b}__client-avatar-lg`} style={!conversation?.wa_profile_photo_url ? { background: getAvatarColor(name) } : undefined}>
+          {conversation?.wa_profile_photo_url ? (
+            <img src={conversation.wa_profile_photo_url} alt={name} className={`${b}__client-avatar-lg-img`} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+          ) : null}
+          <span className={`${b}__client-avatar-lg-fallback`} style={conversation?.wa_profile_photo_url ? { display: 'none' } : { display: 'flex', background: getAvatarColor(name) }}>
+            {getInitials(name)}
+          </span>
         </div>
         <h3 className={`${b}__client-name-lg`}>{name}</h3>
         <span className={`${b}__client-phone-lg`}>{phone}</span>
@@ -1030,7 +1035,7 @@ const Inbox = () => {
 
   // --- Template select ---
   const handleTemplateSelect = (tpl) => {
-    const name = selectedConv?.client?.name || selectedConv?.wa_contact_name || '';
+    const name = selectedConv?.wa_contact_name || selectedConv?.client?.name || '';
     const nameTag = name ? ` ${name.split(' ')[0]}` : '';
     setMessageInput(tpl.text.replace('{nombre}', nameTag));
     setShowTemplates(false);
@@ -1092,7 +1097,7 @@ const Inbox = () => {
     return groups;
   }, [messages]);
 
-  const getConvName = (conv) => conv.client?.name || conv.wa_contact_name || conv.wa_contact_phone || 'Contacto';
+  const getConvName = (conv) => conv.wa_contact_name || conv.client?.name || conv.wa_contact_phone || 'Contacto';
   const getConvPreview = (conv) => conv.last_message_preview || 'Sin mensajes';
 
   // ===== RENDER =====
@@ -1310,8 +1315,13 @@ const Inbox = () => {
                     setShowConvMenu({ id: conv.id, x: e.clientX, y: e.clientY });
                   }}
                 >
-                  <div className={`${b}__conv-avatar ${isVip ? `${b}__conv-avatar--vip` : ''}`} style={!isVip ? { background: getAvatarColor(name) } : undefined}>
-                    {getInitials(name)}
+                  <div className={`${b}__conv-avatar ${isVip ? `${b}__conv-avatar--vip` : ''}`} style={!isVip && !conv.wa_profile_photo_url ? { background: getAvatarColor(name) } : undefined}>
+                    {conv.wa_profile_photo_url ? (
+                      <img src={conv.wa_profile_photo_url} alt={name} className={`${b}__conv-avatar-img`} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                    ) : null}
+                    <span className={`${b}__conv-avatar-fallback`} style={conv.wa_profile_photo_url ? { display: 'none' } : { display: 'flex', background: isVip ? undefined : getAvatarColor(name) }}>
+                      {getInitials(name)}
+                    </span>
                   </div>
                   <div className={`${b}__conv-content`}>
                     <div className={`${b}__conv-top`}>
@@ -1412,8 +1422,13 @@ const Inbox = () => {
               <button className={`${b}__back-btn`} onClick={() => setSelectedConvId(null)}>
                 {Icons.back}
               </button>
-              <div className={`${b}__chat-avatar`} style={{ background: getAvatarColor(getConvName(selectedConv)) }} onClick={() => setShowClientInfo(!showClientInfo)}>
-                {getInitials(getConvName(selectedConv))}
+              <div className={`${b}__chat-avatar`} style={!selectedConv.wa_profile_photo_url ? { background: getAvatarColor(getConvName(selectedConv)) } : undefined} onClick={() => setShowClientInfo(!showClientInfo)}>
+                {selectedConv.wa_profile_photo_url ? (
+                  <img src={selectedConv.wa_profile_photo_url} alt="" className={`${b}__chat-avatar-img`} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+                ) : null}
+                <span className={`${b}__chat-avatar-fallback`} style={selectedConv.wa_profile_photo_url ? { display: 'none' } : { display: 'flex', background: getAvatarColor(getConvName(selectedConv)) }}>
+                  {getInitials(getConvName(selectedConv))}
+                </span>
               </div>
               <div className={`${b}__chat-info`} onClick={() => setShowClientInfo(!showClientInfo)}>
                 <span className={`${b}__chat-name`}>{getConvName(selectedConv)}</span>
