@@ -566,8 +566,11 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                         conv.wa_contact_name = contact_name
 
                     # Retry profile photo fetch if missing
-                    if not conv.wa_profile_photo_url:
-                        background_tasks.add_task(_fetch_profile_photo, conv.id, from_phone)
+                    try:
+                        if not getattr(conv, 'wa_profile_photo_url', None):
+                            background_tasks.add_task(_fetch_profile_photo, conv.id, from_phone)
+                    except Exception:
+                        pass  # Column may not exist yet
 
                     # Send read receipt to Meta (blue ticks)
                     background_tasks.add_task(_send_read_receipt, wa_msg_id)
