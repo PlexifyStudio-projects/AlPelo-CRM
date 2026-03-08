@@ -5,6 +5,7 @@
 
 import os
 import asyncio
+import random
 import httpx
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
@@ -845,9 +846,10 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             finally:
                 db_temp.close()
 
-        # Step 1: Wait exactly 10 seconds (natural delay)
-        print(f"[Lina IA] Waiting 10s before replying to conv {conv_id}...")
-        await asyncio.sleep(10)
+        # Step 1: Wait random 20-90 seconds (natural human-like delay)
+        delay = random.randint(20, 90)
+        print(f"[Lina IA] Waiting {delay}s before replying to conv {conv_id}...")
+        await asyncio.sleep(delay)
 
         # Step 1.5: Check global rate limit — max 10 AI replies per 60 seconds
         now = time.time()
@@ -875,7 +877,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             )
             if last_ai_msg and last_ai_msg.created_at:
                 seconds_since = (datetime.utcnow() - last_ai_msg.created_at).total_seconds()
-                if seconds_since < 20:
+                if seconds_since < 30:
                     print(f"[Lina IA] Cooldown active for conv {conv_id} ({seconds_since:.0f}s ago). Skipping.")
                     return
 

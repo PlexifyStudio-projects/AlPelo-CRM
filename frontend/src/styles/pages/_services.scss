@@ -3,12 +3,12 @@
 .services {
   padding: $spacing-xl;
   max-width: $max-content-width;
-  animation: fadeInUp 0.4s $ease-out-expo;
+  animation: svc-fadeInUp 0.4s $ease-out-expo;
 
   // ===== HEADER =====
   &__header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     margin-bottom: $spacing-xl;
     gap: $spacing-md;
@@ -28,7 +28,7 @@
   }
 
   &__subtitle {
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     color: $color-gray-500;
     margin: 0;
     letter-spacing: $letter-spacing-wide;
@@ -37,24 +37,35 @@
   }
 
   &__add-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: $spacing-sm $spacing-lg;
+    padding: 10px 22px;
     background: $color-primary;
     color: $color-white;
     border: none;
     border-radius: $border-radius-md;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
+    font-family: $font-primary;
     cursor: pointer;
     transition: all $transition-base;
     white-space: nowrap;
+    line-height: 1.4;
+
+    svg {
+      flex-shrink: 0;
+    }
 
     &:hover {
       background: $color-primary-light;
       box-shadow: $shadow-colored-primary;
       transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: $shadow-sm;
     }
   }
 
@@ -67,7 +78,7 @@
   }
 
   &__stat {
-    background: $glass-bg;
+    background: $glass-bg-heavy;
     backdrop-filter: blur($glass-blur);
     border: $border-width solid $border-color;
     border-radius: $border-radius-lg;
@@ -76,6 +87,12 @@
     flex-direction: column;
     gap: $spacing-xs;
     box-shadow: $shadow-sm;
+    transition: all $transition-base;
+
+    &:hover {
+      box-shadow: $shadow-md;
+      transform: translateY(-1px);
+    }
   }
 
   &__stat-value {
@@ -86,11 +103,11 @@
   }
 
   &__stat-label {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-500;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wider;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
   }
 
   // ===== FILTERS =====
@@ -105,11 +122,11 @@
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    background: $glass-bg;
-    border: $border-width solid $border-color;
+    background: $glass-bg-heavy;
+    border: $border-width solid $border-color-medium;
     border-radius: $border-radius-md;
-    padding: $spacing-sm $spacing-md;
-    transition: border-color $transition-fast;
+    padding: 10px $spacing-md;
+    transition: all $transition-fast;
     max-width: 480px;
 
     svg {
@@ -131,6 +148,7 @@
     color: $color-secondary;
     outline: none;
     font-family: $font-primary;
+    line-height: 1.4;
 
     &::placeholder {
       color: $color-gray-400;
@@ -144,28 +162,37 @@
   }
 
   &__tab {
-    padding: $spacing-xs $spacing-md;
-    border: $border-width solid $border-color;
+    padding: 7px $spacing-md;
+    border: $border-width solid $border-color-medium;
     border-radius: $border-radius-full;
-    background: $glass-bg;
+    background: $glass-bg-heavy;
     font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
+    font-family: $font-primary;
     color: $color-gray-600;
     cursor: pointer;
     transition: all $transition-base;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: $spacing-xs;
+    line-height: 1.4;
 
     &:hover {
       border-color: $color-gray-300;
       background: $color-white;
+      color: $color-secondary;
     }
 
     &--active {
       background: var(--tab-color, $color-primary);
       color: $color-white;
       border-color: var(--tab-color, $color-primary);
+
+      &:hover {
+        background: var(--tab-color, $color-primary);
+        color: $color-white;
+        border-color: var(--tab-color, $color-primary);
+      }
 
       .services__tab-count {
         background: rgba(255, 255, 255, 0.25);
@@ -178,9 +205,10 @@
     font-size: $font-size-2xs;
     background: $color-gray-100;
     color: $color-gray-600;
-    padding: 1px 6px;
+    padding: 2px 7px;
     border-radius: $border-radius-full;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
+    line-height: 1.3;
   }
 
   // ===== CONTENT =====
@@ -207,7 +235,7 @@
 
   // ===== CATEGORY =====
   &__category {
-    animation: fadeInUp 0.4s $ease-out-expo both;
+    animation: svc-fadeInUp 0.4s $ease-out-expo both;
 
     @for $i from 1 through 6 {
       &:nth-child(#{$i}) {
@@ -234,6 +262,7 @@
     justify-content: center;
     color: $color-white;
     flex-shrink: 0;
+    box-shadow: $shadow-sm;
   }
 
   &__category-info {
@@ -260,7 +289,7 @@
   // ===== SERVICE CARDS =====
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: $spacing-md;
   }
 
@@ -272,6 +301,8 @@
     transition: all $transition-base;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 
     &::before {
       content: '';
@@ -293,10 +324,6 @@
       &::before {
         opacity: 1;
       }
-
-      .services__card-actions {
-        opacity: 1;
-      }
     }
   }
 
@@ -305,6 +332,7 @@
     align-items: flex-start;
     justify-content: space-between;
     margin-bottom: $spacing-sm;
+    gap: $spacing-sm;
   }
 
   &__card-name {
@@ -313,33 +341,33 @@
     color: $color-secondary;
     line-height: $line-height-snug;
     flex: 1;
-    padding-right: $spacing-sm;
   }
 
   &__card-actions {
     display: flex;
     gap: $spacing-2xs;
-    opacity: 0;
-    transition: opacity $transition-fast;
+    flex-shrink: 0;
   }
 
   &__card-edit,
   &__card-delete {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: $border-radius-sm;
-    border: $border-width solid $border-color;
+    border: $border-width solid $border-color-medium;
     background: $color-white;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all $transition-fast;
-    color: $color-gray-500;
+    color: $color-gray-400;
+    padding: 0;
 
     &:hover {
-      border-color: $color-gray-300;
-      color: $color-secondary;
+      border-color: $color-primary;
+      color: $color-primary;
+      background: $color-primary-ghost;
     }
   }
 
@@ -360,7 +388,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: $spacing-md;
+    margin-top: auto;
     padding: $spacing-sm $spacing-md;
     background: $color-gray-50;
     border-radius: $border-radius-sm;
@@ -386,6 +414,7 @@
     display: flex;
     flex-direction: column;
     gap: $spacing-xs;
+    margin-top: $spacing-sm;
   }
 
   &__card-staff-label {
@@ -404,11 +433,11 @@
 
   &__card-staff-tag {
     font-size: $font-size-2xs;
-    padding: 2px 8px;
+    padding: 3px 10px;
     background: $color-primary-ghost;
     color: $color-primary;
     border-radius: $border-radius-full;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     white-space: nowrap;
   }
 
@@ -416,14 +445,14 @@
   &__modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: $z-modal;
     padding: $spacing-lg;
-    animation: fadeIn 0.2s ease;
+    animation: svc-fadeIn 0.2s ease;
   }
 
   &__modal {
@@ -434,7 +463,7 @@
     max-height: 85vh;
     overflow-y: auto;
     box-shadow: $shadow-2xl;
-    animation: slideUp 0.3s $ease-out-expo;
+    animation: svc-slideUp 0.3s $ease-out-expo;
   }
 
   &__modal-header {
@@ -456,19 +485,21 @@
   &__modal-close {
     width: 36px;
     height: 36px;
-    border-radius: $border-radius-sm;
-    border: none;
-    background: none;
+    border-radius: $border-radius-md;
+    border: $border-width solid $border-color;
+    background: $color-white;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     color: $color-gray-500;
     transition: all $transition-fast;
+    padding: 0;
 
     &:hover {
-      background: $color-gray-100;
+      background: $color-gray-50;
       color: $color-secondary;
+      border-color: $border-color-medium;
     }
   }
 
@@ -476,7 +507,7 @@
     padding: $spacing-xl;
     display: flex;
     flex-direction: column;
-    gap: $spacing-md;
+    gap: $spacing-lg;
   }
 
   &__form-group {
@@ -495,15 +526,22 @@
     input,
     select,
     textarea {
-      padding: $spacing-sm $spacing-md;
+      width: 100%;
+      padding: 11px 14px;
       border: $border-width solid $border-color-medium;
-      border-radius: $border-radius-sm;
+      border-radius: $border-radius-md;
       font-size: $font-size-sm;
       font-family: $font-primary;
       color: $color-secondary;
       background: $color-white;
-      transition: border-color $transition-fast;
+      transition: all $transition-fast;
       outline: none;
+      line-height: 1.4;
+      box-sizing: border-box;
+
+      &:hover {
+        border-color: $color-gray-300;
+      }
 
       &:focus {
         border-color: $color-primary;
@@ -515,9 +553,18 @@
       }
     }
 
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B63' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+
     textarea {
       resize: vertical;
-      min-height: 60px;
+      min-height: 72px;
     }
   }
 
@@ -533,9 +580,9 @@
     gap: $spacing-xs;
     max-height: 200px;
     overflow-y: auto;
-    padding: $spacing-xs;
-    border: $border-width solid $border-color;
-    border-radius: $border-radius-sm;
+    padding: $spacing-sm;
+    border: $border-width solid $border-color-medium;
+    border-radius: $border-radius-md;
     background: $color-gray-50;
   }
 
@@ -543,22 +590,31 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    padding: $spacing-xs $spacing-sm;
-    border: $border-width solid $border-color;
-    border-radius: $border-radius-sm;
+    padding: 8px 12px;
+    border: $border-width solid $border-color-medium;
+    border-radius: $border-radius-md;
     background: $color-white;
     cursor: pointer;
     transition: all $transition-fast;
-    gap: 1px;
+    gap: 2px;
+    font-family: $font-primary;
 
     &:hover {
       border-color: $color-primary;
+      box-shadow: 0 0 0 2px $color-primary-ghost;
     }
 
     &--selected {
       background: $color-primary;
       border-color: $color-primary;
       color: $color-white;
+      box-shadow: $shadow-sm;
+
+      &:hover {
+        background: $color-primary-light;
+        border-color: $color-primary-light;
+        box-shadow: $shadow-sm;
+      }
 
       .services__staff-chip-role {
         color: rgba(255, 255, 255, 0.7);
@@ -568,43 +624,52 @@
 
   &__staff-chip-name {
     font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
+    line-height: 1.3;
   }
 
   &__staff-chip-role {
     font-size: $font-size-2xs;
     color: $color-gray-400;
+    line-height: 1.3;
   }
 
   &__modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: $spacing-sm;
-    padding-top: $spacing-md;
+    padding-top: $spacing-lg;
     border-top: $border-width solid $border-color;
   }
 
   &__btn-cancel {
-    padding: $spacing-sm $spacing-lg;
+    padding: 10px 22px;
     border: $border-width solid $border-color-medium;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     background: $color-white;
     font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     color: $color-gray-600;
     cursor: pointer;
     transition: all $transition-fast;
     font-family: $font-primary;
+    line-height: 1.4;
 
     &:hover {
       background: $color-gray-50;
+      border-color: $color-gray-300;
+      color: $color-secondary;
+    }
+
+    &:active {
+      background: $color-gray-100;
     }
   }
 
   &__btn-save {
-    padding: $spacing-sm $spacing-xl;
+    padding: 10px 28px;
     border: none;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     background: $color-primary;
     color: $color-white;
     font-size: $font-size-sm;
@@ -612,10 +677,17 @@
     cursor: pointer;
     transition: all $transition-base;
     font-family: $font-primary;
+    line-height: 1.4;
 
     &:hover {
       background: $color-primary-light;
       box-shadow: $shadow-colored-primary;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: $shadow-sm;
     }
   }
 
@@ -637,7 +709,7 @@
     border: 3px solid $border-color;
     border-top-color: $color-primary;
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: svc-spin 0.8s linear infinite;
   }
 
   // ===== RESPONSIVE =====
@@ -647,7 +719,7 @@
     }
 
     &__grid {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     }
 
     &__form-row {
@@ -660,6 +732,12 @@
 
     &__header {
       flex-direction: column;
+      align-items: flex-start;
+    }
+
+    &__add-btn {
+      width: 100%;
+      justify-content: center;
     }
 
     &__stats {
@@ -671,11 +749,43 @@
       overflow-x: auto;
       flex-wrap: nowrap;
       padding-bottom: $spacing-xs;
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+
+    &__tab {
+      flex-shrink: 0;
+    }
+
+    &__grid {
+      grid-template-columns: 1fr;
+    }
+
+    &__modal {
+      max-height: 90vh;
+      margin: $spacing-sm;
+    }
+
+    &__modal-form {
+      padding: $spacing-lg;
+    }
+
+    &__modal-actions {
+      flex-direction: column-reverse;
+    }
+
+    &__btn-cancel,
+    &__btn-save {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
     }
   }
 }
 
-@keyframes fadeInUp {
+@keyframes svc-fadeInUp {
   from {
     opacity: 0;
     transform: translateY(12px);
@@ -686,12 +796,12 @@
   }
 }
 
-@keyframes fadeIn {
+@keyframes svc-fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes slideUp {
+@keyframes svc-slideUp {
   from {
     opacity: 0;
     transform: translateY(20px) scale(0.98);
@@ -702,6 +812,6 @@
   }
 }
 
-@keyframes spin {
+@keyframes svc-spin {
   to { transform: rotate(360deg); }
 }

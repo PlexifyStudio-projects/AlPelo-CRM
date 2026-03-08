@@ -9,7 +9,7 @@ from sqlalchemy import func
 from datetime import datetime, date, timedelta
 
 from database.connection import get_db
-from database.models import AIConfig, Staff, Client, VisitHistory, ClientNote, WhatsAppConversation, WhatsAppMessage
+from database.models import AIConfig, Staff, Client, VisitHistory, ClientNote, WhatsAppConversation, WhatsAppMessage, Service
 from schemas import (
     AIConfigCreate, AIConfigUpdate, AIConfigResponse,
     AIChatRequest, AIChatResponse,
@@ -131,6 +131,25 @@ Ingreso total registrado: ${total_revenue:,} COP""")
     if top_services:
         svc_lines = [f"  - {s.service_name}: {s.cnt} veces, ${s.total:,} COP" for s in top_services]
         sections.append("=== SERVICIOS MAS POPULARES ===\n" + "\n".join(svc_lines))
+
+    # --- Service catalog ---
+    all_services = db.query(Service).filter(Service.is_active == True).order_by(Service.category, Service.name).all()
+    if all_services:
+        catalog_lines = []
+        current_cat = None
+        for svc in all_services:
+            if svc.category != current_cat:
+                current_cat = svc.category
+                catalog_lines.append(f"\n  [{current_cat}]")
+            duration = f", {svc.duration_minutes}min" if svc.duration_minutes else ""
+            staff_names = ""
+            if svc.staff_ids:
+                names = [s.name for s in db.query(Staff).filter(Staff.id.in_(svc.staff_ids)).all()]
+                if names:
+                    staff_names = f" | por: {', '.join(names)}"
+            desc = f" — {svc.description}" if svc.description else ""
+            catalog_lines.append(f"  - ID:{svc.id} {svc.name}: ${svc.price:,}{duration}{staff_names}{desc}")
+        sections.append(f"=== CATALOGO DE SERVICIOS ({len(all_services)} activos) ===\n" + "\n".join(catalog_lines))
 
     return "\n\n".join(sections)
 
@@ -701,6 +720,79 @@ def _execute_action(action: dict, db: Session) -> str:
         db.commit()
         return f"Configuracion de IA actualizada."
 
+    # ---- SERVICES ----
+    elif action_type == "list_services":
+        category_filter = action.get("category")
+        query = db.query(Service).filter(Service.is_active == True)
+        if category_filter:
+            query = query.filter(Service.category.ilike(f"%{category_filter}%"))
+        services = query.order_by(Service.category, Service.name).all()
+        if not services:
+            return "No encontre servicios con esos filtros."
+        lines = [f"Encontre {len(services)} servicios:"]
+        current_cat = None
+        for s in services:
+            if s.category != current_cat:
+                current_cat = s.category
+                lines.append(f"\n[{current_cat}]")
+            dur = f", {s.duration_minutes}min" if s.duration_minutes else ""
+            lines.append(f"  - ID:{s.id} {s.name}: ${s.price:,}{dur}")
+        return "\n".join(lines)
+
+    elif action_type == "create_service":
+        name = action.get("name", "").strip()
+        category = action.get("category", "").strip()
+        price = action.get("price", 0)
+        if not name or not category:
+            return "ERROR: Necesito al menos nombre y categoria."
+        svc = Service(
+            name=name,
+            category=category,
+            price=int(price),
+            duration_minutes=action.get("duration_minutes"),
+            description=action.get("description"),
+            staff_ids=action.get("staff_ids", []),
+        )
+        db.add(svc)
+        db.commit()
+        db.refresh(svc)
+        return f"Servicio creado: {svc.name} (ID:{svc.id}, {svc.category}, ${svc.price:,})"
+
+    elif action_type == "update_service":
+        svc = None
+        svc_id = action.get("service_id")
+        if svc_id:
+            svc = db.query(Service).filter(Service.id == svc_id).first()
+        if not svc:
+            name = action.get("search_name", "")
+            if name:
+                svc = db.query(Service).filter(Service.name.ilike(f"%{name}%"), Service.is_active == True).first()
+        if not svc:
+            return "ERROR: No encontre el servicio."
+        allowed = ("name", "category", "price", "duration_minutes", "description", "staff_ids", "is_active")
+        updates = {k: v for k, v in action.items() if k in allowed and v is not None}
+        if "price" in updates:
+            updates["price"] = int(updates["price"])
+        for key, value in updates.items():
+            setattr(svc, key, value)
+        db.commit()
+        return f"Servicio '{svc.name}' actualizado."
+
+    elif action_type == "delete_service":
+        svc = None
+        svc_id = action.get("service_id")
+        if svc_id:
+            svc = db.query(Service).filter(Service.id == svc_id).first()
+        if not svc:
+            name = action.get("search_name", "")
+            if name:
+                svc = db.query(Service).filter(Service.name.ilike(f"%{name}%"), Service.is_active == True).first()
+        if not svc:
+            return "ERROR: No encontre el servicio."
+        svc.is_active = False
+        db.commit()
+        return f"Servicio '{svc.name}' desactivado."
+
     return f"ERROR: Accion desconocida '{action_type}'"
 
 
@@ -804,6 +896,19 @@ Barbero preferido: {preferred_barber}"""
         staff_lines = [f"  {s.name} ({s.specialty or s.role})" for s in staff_all]
         sections.append("EQUIPO:\n" + "\n".join(staff_lines))
 
+    # Services catalog (compact for WhatsApp context)
+    all_services = db.query(Service).filter(Service.is_active == True).order_by(Service.category, Service.name).all()
+    if all_services:
+        svc_lines = []
+        current_cat = None
+        for svc in all_services:
+            if svc.category != current_cat:
+                current_cat = svc.category
+                svc_lines.append(f"\n[{current_cat}]")
+            dur = f" ({svc.duration_minutes}min)" if svc.duration_minutes else ""
+            svc_lines.append(f"  {svc.name}: ${svc.price:,}{dur}")
+        sections.append(f"SERVICIOS DISPONIBLES ({len(all_services)}):\n" + "\n".join(svc_lines))
+
     return "\n\n".join(sections)
 
 
@@ -823,7 +928,7 @@ Eres profesional pero cercana. Amable, atenta, con buena actitud. Hablas como un
 INFORMACION DEL NEGOCIO:
 - AlPelo Peluqueria, Cabecera, Bucaramanga
 - Horario: Lunes a Sabado, 9am a 7pm
-- Cortes desde $30.000, barba desde $15.000, tintes/keratina/mechas desde $60.000
+- Precios y servicios: CONSULTA la seccion "SERVICIOS DISPONIBLES" mas abajo. Tienes el catalogo completo con precios exactos. Usa esos datos reales.
 - Link para agendar: https://book.weibook.co/alpelo-peluqueria
 
 REGLAS:
@@ -902,6 +1007,14 @@ MODULO CLIENTES (CRM):
 - Desactivar/eliminar clientes
 - Agregar notas al perfil
 - Filtrar clientes por estado, dias sin visita, gasto, etc.
+
+MODULO SERVICIOS (CATALOGO):
+- Ver el catalogo completo de servicios (nombre, categoria, precio, duracion, profesionales)
+- Crear nuevos servicios
+- Actualizar datos de un servicio (nombre, precio, duracion, categoria, descripcion, profesionales)
+- Desactivar/eliminar servicios
+- Filtrar servicios por categoria
+- Los datos del catalogo estan mas abajo en "CATALOGO DE SERVICIOS"
 
 MODULO EQUIPO:
 - Ver datos completos del equipo (barberos, estilistas, ratings, especialidades)
@@ -982,6 +1095,26 @@ ACCIONES DE EQUIPO:
 ACCIONES DE VISITAS:
 ```action
 {{"action": "add_visit", "search_name": "cliente", "staff_id": 1, "service_name": "Corte", "amount": 25000}}
+```
+
+ACCIONES DE SERVICIOS:
+```action
+{{"action": "list_services", "category": "Barberia"}}
+```
+```action
+{{"action": "create_service", "name": "Corte Premium", "category": "Barberia", "price": 50000, "duration_minutes": 45, "description": "Corte con lavado y masaje", "staff_ids": [1, 2]}}
+```
+```action
+{{"action": "update_service", "service_id": 5, "price": 55000, "duration_minutes": 50}}
+```
+```action
+{{"action": "update_service", "search_name": "Corte Premium", "name": "Corte VIP", "price": 60000}}
+```
+```action
+{{"action": "delete_service", "service_id": 5}}
+```
+```action
+{{"action": "delete_service", "search_name": "Corte Premium"}}
 ```
 
 ACCIONES DE WHATSAPP:
@@ -1129,6 +1262,35 @@ async def _call_anthropic(api_key: str, model: str, system_prompt: str, messages
     return text, tokens
 
 
+async def _call_gemini(api_key: str, model: str, system_prompt: str, messages: list, temperature: float, max_tokens: int):
+    """Call Google Gemini API via REST (generateContent endpoint)."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+
+    # Build contents array: system instruction + conversation history
+    contents = []
+    for msg in messages:
+        role = "user" if msg["role"] == "user" else "model"
+        contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+
+    payload = {
+        "system_instruction": {"parts": [{"text": system_prompt}]},
+        "contents": contents,
+        "generationConfig": {
+            "temperature": temperature,
+            "maxOutputTokens": max_tokens,
+        },
+    }
+
+    async with httpx.AsyncClient(timeout=90.0) as client:
+        response = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
+        response.raise_for_status()
+
+    result = response.json()
+    text = result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+    tokens = result.get("usageMetadata", {}).get("totalTokenCount", 0)
+    return text, tokens
+
+
 # ============================================================================
 # AI CHAT — Main endpoint with context + action execution
 # ============================================================================
@@ -1138,29 +1300,43 @@ ACTION_PATTERN = re.compile(r'```action\s*(.*?)```', re.DOTALL)
 @router.post("/ai/chat", response_model=AIChatResponse)
 async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
     # Determine provider
+    gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key = os.getenv("GROQ_API_KEY")
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 
     config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
-    provider = config.provider if config else "groq"
+    provider = config.provider if config else "gemini"
     model = config.model if config else None
     temperature = config.temperature if config else 0.4
     max_tokens = config.max_tokens if config else 1024
 
-    if provider == "anthropic" and anthropic_key:
+    if provider == "gemini" and gemini_key:
+        api_key = gemini_key
+        model = model if model and "gemini" in (model or "") else "gemini-2.0-flash"
+        call_fn = "gemini"
+    elif provider == "anthropic" and anthropic_key:
         api_key = anthropic_key
         model = model or "claude-sonnet-4-20250514"
         call_fn = "anthropic"
+    elif provider == "groq" and groq_key:
+        api_key = groq_key
+        model = model if model and "llama" in (model or "") else "llama-3.3-70b-versatile"
+        call_fn = "openai"
+    # Fallback chain: gemini > groq > anthropic
+    elif gemini_key:
+        api_key = gemini_key
+        model = "gemini-2.0-flash"
+        call_fn = "gemini"
     elif groq_key:
         api_key = groq_key
-        model = "llama-3.3-70b-versatile" if not model or "llama" not in (model or "") else model
+        model = "llama-3.3-70b-versatile"
         call_fn = "openai"
     elif anthropic_key:
         api_key = anthropic_key
         model = model or "claude-sonnet-4-20250514"
         call_fn = "anthropic"
     else:
-        raise HTTPException(status_code=500, detail="No hay API key configurada. Agrega GROQ_API_KEY o ANTHROPIC_API_KEY.")
+        raise HTTPException(status_code=500, detail="No hay API key configurada. Agrega GEMINI_API_KEY, GROQ_API_KEY o ANTHROPIC_API_KEY.")
 
     # Build system prompt with live business data
     system_prompt = _build_system_prompt(db)
@@ -1173,7 +1349,11 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
 
     # Call AI
     try:
-        if call_fn == "openai":
+        if call_fn == "gemini":
+            text, tokens = await _call_gemini(
+                api_key, model, system_prompt, messages, temperature, max_tokens
+            )
+        elif call_fn == "openai":
             text, tokens = await _call_openai_format(
                 "https://api.groq.com/openai/v1/chat/completions",
                 api_key, model, system_prompt, messages, temperature, max_tokens
@@ -1220,13 +1400,19 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
 
 async def _call_ai(system_prompt: str, history: list, user_message: str) -> str:
     """Standalone AI call for WhatsApp auto-reply. Returns plain text response."""
+    gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key = os.getenv("GROQ_API_KEY")
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 
     messages = list(history) + [{"role": "user", "content": user_message}]
 
     try:
-        if groq_key:
+        if gemini_key:
+            text, _ = await _call_gemini(
+                gemini_key, "gemini-2.0-flash",
+                system_prompt, messages, 0.4, 512
+            )
+        elif groq_key:
             text, _ = await _call_openai_format(
                 "https://api.groq.com/openai/v1/chat/completions",
                 groq_key, "llama-3.3-70b-versatile",

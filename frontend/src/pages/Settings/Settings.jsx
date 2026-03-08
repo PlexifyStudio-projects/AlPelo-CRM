@@ -74,10 +74,9 @@ Tu estilo: mensajes cortos, directos, que suenan a mensaje de texto real bumangu
 ];
 
 const MODELS = [
-  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Groq - Gratis)', cost: 'Gratis' },
-  { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (Recomendado)', cost: '~$0.003/msg' },
-  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5 (Mas rapido)', cost: '~$0.001/msg' },
-  { id: 'claude-opus-4-6', label: 'Claude Opus 4.6 (Mas inteligente)', cost: '~$0.015/msg' },
+  { id: 'gemini-2.0-flash', provider: 'gemini', label: 'Gemini 2.0 Flash', cost: 'Gratis', tag: 'Recomendado' },
+  { id: 'gemini-2.5-flash-preview-05-20', provider: 'gemini', label: 'Gemini 2.5 Flash', cost: 'Gratis', tag: 'Nuevo' },
+  { id: 'llama-3.3-70b-versatile', provider: 'groq', label: 'Llama 3.3 70B (Groq)', cost: 'Gratis', tag: null },
 ];
 
 const Settings = () => {
@@ -87,7 +86,8 @@ const Settings = () => {
   const [aiConfig, setAiConfig] = useState(null);
   const [aiName, setAiName] = useState('Lina IA');
   const [systemPrompt, setSystemPrompt] = useState(PERSONALITY_PRESETS[0].prompt);
-  const [selectedModel, setSelectedModel] = useState('llama-3.3-70b-versatile');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash');
+  const [provider, setProvider] = useState('gemini');
   const [temperature, setTemperature] = useState(0.4);
   const [maxTokens, setMaxTokens] = useState(512);
   const [aiSaving, setAiSaving] = useState(false);
@@ -105,6 +105,7 @@ const Settings = () => {
       setAiName(config.name);
       setSystemPrompt(config.system_prompt);
       setSelectedModel(config.model);
+      setProvider(config.provider || 'gemini');
       setTemperature(config.temperature);
       setMaxTokens(config.max_tokens);
 
@@ -135,6 +136,7 @@ const Settings = () => {
         name: aiName,
         system_prompt: systemPrompt,
         model: selectedModel,
+        provider,
         temperature,
         max_tokens: maxTokens,
       };
@@ -152,7 +154,7 @@ const Settings = () => {
     } finally {
       setAiSaving(false);
     }
-  }, [aiName, systemPrompt, selectedModel, temperature, maxTokens, aiConfig, addNotification]);
+  }, [aiName, systemPrompt, selectedModel, provider, temperature, maxTokens, aiConfig, addNotification]);
 
   const handleToggle = (setting) => {
     addNotification(`${setting} actualizado`, 'info');
@@ -232,11 +234,15 @@ const Settings = () => {
               <select
                 className={`${b}__ai-select`}
                 value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
+                onChange={(e) => {
+                  const model = MODELS.find(m => m.id === e.target.value);
+                  setSelectedModel(e.target.value);
+                  if (model) setProvider(model.provider);
+                }}
               >
                 {MODELS.map((m) => (
                   <option key={m.id} value={m.id}>
-                    {m.label} ({m.cost})
+                    {m.label} — {m.cost}{m.tag ? ` (${m.tag})` : ''}
                   </option>
                 ))}
               </select>

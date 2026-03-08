@@ -16,7 +16,7 @@ const CATEGORY_META = {
     color: '#2D5A3D',
     gradient: 'linear-gradient(135deg, #2D5A3D 0%, #3D7A52 100%)',
   },
-  'Manicure y Pedicure': {
+  'Arte en Uñas': {
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2v6m0 8v6M2 12h6m8 0h6" /><circle cx="12" cy="12" r="3" />
@@ -25,7 +25,7 @@ const CATEGORY_META = {
     color: '#E05292',
     gradient: 'linear-gradient(135deg, #E05292 0%, #F472B6 100%)',
   },
-  'Estilismo': {
+  'Peluquería': {
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2C7 2 3 6 3 11c0 3 1.5 5.5 4 7v4h10v-4c2.5-1.5 4-4 4-7 0-5-4-9-9-9z" />
@@ -44,10 +44,10 @@ const CATEGORY_META = {
     color: '#60A5FA',
     gradient: 'linear-gradient(135deg, #60A5FA 0%, #93C5FD 100%)',
   },
-  'Facial y Pestañas': {
+  'Color': {
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" strokeWidth="2.5" /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth="2.5" />
+        <circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" />
       </svg>
     ),
     color: '#A78BFA',
@@ -373,7 +373,7 @@ const Services = () => {
                 <div className={`${b}__form-group`}>
                   <label>Categoría</label>
                   <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-                    {Object.keys(CATEGORY_META).map(cat => (
+                    {[...new Set([...Object.keys(CATEGORY_META), ...services.map(s => s.category)])].map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
