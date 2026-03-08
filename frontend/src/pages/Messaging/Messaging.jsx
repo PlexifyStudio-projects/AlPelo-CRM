@@ -74,24 +74,21 @@ const SEGMENTS = [
   { id: 'inactivo', label: 'Inactivos' },
 ];
 
+const SAMPLE_CLIENT = { name: 'Juan Perez', favoriteService: 'Corte', loyaltyPoints: 150, totalVisits: 8 };
+
 const SAMPLE_VARS = {
-  nombre: (c) => c.name.split(' ')[0],
-  servicio: (c) => c.favoriteService,
-  barbero: () => 'Victor',
+  nombre: (c) => (c?.name || 'Cliente').split(' ')[0],
+  servicio: (c) => c?.favoriteService || c?.favorite_service || 'tu servicio',
+  barbero: () => 'Anderson',
   hora: () => '10:00 AM',
-  fecha: () => '6 de marzo',
-  dia: () => 'viernes',
+  fecha: () => '10 de marzo',
+  dia: () => 'lunes',
   dias: () => '15',
-  puntos: (c) => String(c.loyaltyPoints),
-  visitas: (c) => String(c.totalVisits),
-  meses: () => '12',
+  puntos: (c) => String(c?.loyaltyPoints || 0),
+  visitas: (c) => String(c?.totalVisits || c?.total_visits || 0),
+  meses: () => '6',
   precio: () => '$45.000',
   producto: () => 'Pomada Mate Premium',
-  servicio1: () => 'Corte + Barba',
-  servicio2: () => 'Cejas',
-  servicio_favorito: (c) => c.favoriteService,
-  servicio_nuevo: () => 'Spa Capilar',
-  cantidad: () => '42',
 };
 
 const resolveTemplate = (body, client) => {
@@ -149,7 +146,7 @@ const TemplateCard = ({ template, onPreview, onSend }) => {
 
 const PreviewModal = ({ template, onClose }) => {
   const cat = getCategoryMeta(template.category);
-  const previewText = resolveTemplate(template.body, clients[0]);
+  const previewText = resolveTemplate(template.body, SAMPLE_CLIENT);
 
   return createPortal(
     <div className={`${B}__overlay`} onClick={onClose}>

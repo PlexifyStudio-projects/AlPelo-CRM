@@ -1729,111 +1729,59 @@ export const mockWhatsAppMessages = {
 // Todas empiezan con "Hola {{nombre}}, soy Lina de Al Pelo..."
 // ============================================
 export const mockWhatsAppTemplates = [
-  // --- BIENVENIDA (4) ---
-  { id: 'tpl-1', name: 'Bienvenida Primera Visita', category: 'bienvenida', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Fue un placer tenerte hoy con nosotros! Esperamos que hayas disfrutado tu {{servicio}}. Como nuevo cliente, en tu próxima visita tienes un 10% de descuento. Reserva: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'servicio'], timesSent: 45, responseRate: 72, lastSent: '2026-03-02' },
-  { id: 'tpl-2', name: 'Resumen de Servicio', category: 'bienvenida', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Gracias por visitarnos! Te hicimos {{servicio}} con {{barbero}}. Para mantener tu look perfecto, te recomendamos volver en {{dias}} días. Reserva aquí: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'servicio', 'barbero', 'dias'], timesSent: 38, responseRate: 65, lastSent: '2026-03-01' },
-  { id: 'tpl-3', name: 'Bono Referido', category: 'bienvenida', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Tienes un bono de referido! Si traes a un amigo, ambos reciben 15% de descuento. Solo muestra este mensaje al llegar.', variables: ['nombre'], timesSent: 25, responseRate: 48, lastSent: '2026-02-28' },
-  { id: 'tpl-4', name: 'Potencial VIP', category: 'bienvenida', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Vemos que te gusta cuidar tu imagen! Con unas visitas más podrías ser parte de nuestro programa VIP con beneficios exclusivos. Te cuento más en tu próxima visita!', variables: ['nombre'], timesSent: 15, responseRate: 55, lastSent: '2026-02-25' },
+  // --- BIENVENIDA (2) ---
+  { id: 'tpl-1', name: 'Bienvenida Nuevo Cliente', category: 'bienvenida', body: 'Hola {{nombre}}! Soy Lina de AlPelo Peluqueria en Cabecera, Bucaramanga. Bienvenido! En que te puedo ayudar? Si quieres agendar una cita: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-2', name: 'Presentacion con Servicios', category: 'bienvenida', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Te cuento nuestros servicios mas pedidos:\n\n- Corte desde $25.000\n- Barba desde $12.000\n- Corte + Barba desde $35.000\n- Keratina desde $80.000\n\nAgenda aqui: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  // --- RECORDATORIO (2) ---
+  { id: 'tpl-3', name: 'Recordatorio de Cita', category: 'recordatorio', body: 'Hola {{nombre}}! Te recordamos tu cita en AlPelo manana a las {{hora}} con {{barbero}}. Te esperamos! Confirma respondiendo SI a este mensaje.', variables: ['nombre', 'hora', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-4', name: 'Cita en 2 Horas', category: 'recordatorio', body: 'Hola {{nombre}}! Tu cita en AlPelo es en 2 horas. {{servicio}} a las {{hora}}. Recuerda llegar 5 minutos antes. Te esperamos!', variables: ['nombre', 'servicio', 'hora'], timesSent: 0, responseRate: 0, lastSent: null },
 
-  // --- RECORDATORIO (4) ---
-  { id: 'tpl-5', name: 'Recordatorio 24h', category: 'recordatorio', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Te recordamos que mañana tienes cita de {{servicio}} a las {{hora}} con {{barbero}}. Te esperamos! ¿Confirmas?', variables: ['nombre', 'servicio', 'hora', 'barbero'], timesSent: 120, responseRate: 85, lastSent: '2026-03-03' },
-  { id: 'tpl-6', name: 'Recordatorio 2h', category: 'recordatorio', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Tu cita es en 2 horas! {{servicio}} a las {{hora}}. Recuerda llegar 5 minutos antes para que {{barbero}} te atienda puntual.', variables: ['nombre', 'servicio', 'hora', 'barbero'], timesSent: 95, responseRate: 78, lastSent: '2026-03-04' },
-  { id: 'tpl-7', name: 'Recordatorio Mañana', category: 'recordatorio', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Buenos días! Hoy es tu día de Al Pelo. Tu cita de {{servicio}} es a las {{hora}}. Estamos listos para dejarte como nuevo!', variables: ['nombre', 'servicio', 'hora'], timesSent: 88, responseRate: 82, lastSent: '2026-03-04' },
-  { id: 'tpl-8', name: 'Recordatorio Semanal', category: 'recordatorio', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Esta semana tienes cita el {{dia}} a las {{hora}} para {{servicio}}. Si necesitas cambiar la hora, escríbenos con tiempo!', variables: ['nombre', 'dia', 'hora', 'servicio'], timesSent: 60, responseRate: 70, lastSent: '2026-03-02' },
+  // --- REACTIVACION (2) ---
+  { id: 'tpl-5', name: 'Te Extrañamos', category: 'reactivacion', body: 'Hola {{nombre}}! Hace rato no te vemos por AlPelo y te extrañamos. Pasa cuando quieras, siempre eres bienvenido. Agenda tu cita: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-6', name: 'Oferta de Reactivacion', category: 'reactivacion', body: 'Hola {{nombre}}! Queremos verte de nuevo en AlPelo. Te ofrecemos 15% de descuento en tu proximo servicio. Solo muestra este mensaje al llegar. Te esperamos!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
 
-  // --- CONFIRMACION (3) ---
-  { id: 'tpl-9', name: 'Cita Confirmada', category: 'confirmacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Tu cita está confirmada! {{servicio}} el {{fecha}} a las {{hora}} con {{barbero}}. Te esperamos en Carrera 31 n 50-21, Cabecera.', variables: ['nombre', 'servicio', 'fecha', 'hora', 'barbero'], timesSent: 150, responseRate: 45, lastSent: '2026-03-04' },
-  { id: 'tpl-10', name: 'Cita Reprogramada', category: 'confirmacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Tu cita ha sido reprogramada para el {{fecha}} a las {{hora}} con {{barbero}}. Si tienes algún inconveniente, escríbenos!', variables: ['nombre', 'fecha', 'hora', 'barbero'], timesSent: 30, responseRate: 60, lastSent: '2026-03-01' },
-  { id: 'tpl-11', name: 'Cita Cancelada', category: 'confirmacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Tu cita del {{fecha}} ha sido cancelada. Si deseas reagendar, estamos a tu disposición. Reserva: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'fecha'], timesSent: 12, responseRate: 35, lastSent: '2026-02-28' },
+  // --- ENCUESTA (1) ---
+  { id: 'tpl-7', name: 'Encuesta de Servicio', category: 'feedback', body: 'Hola {{nombre}}! Como te fue en tu ultima visita a AlPelo? Califica del 1 al 5 y cuentanos como mejorar. Tu opinion es muy importante para nosotros!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
 
-  // --- POST-VISITA (4) ---
-  { id: 'tpl-12', name: 'Agradecimiento Post-Visita', category: 'post-visita', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Gracias por visitarnos hoy! Esperamos que hayas salido como te gusta. ¿Nos regalas tu opinión del 1 al 5? Tu feedback nos ayuda a mejorar.', variables: ['nombre'], timesSent: 85, responseRate: 62, lastSent: '2026-03-03' },
-  { id: 'tpl-13', name: 'Feedback Servicio', category: 'post-visita', body: 'Hola {{nombre}}, soy Lina de Al Pelo. ¿Cómo te fue con tu {{servicio}} de ayer? Queremos asegurarnos de que todo haya quedado perfecto. Si algo no te gustó, cuéntanos para mejorar!', variables: ['nombre', 'servicio'], timesSent: 50, responseRate: 55, lastSent: '2026-03-02' },
-  { id: 'tpl-14', name: 'Tips de Mantenimiento', category: 'post-visita', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Tips para mantener tu {{servicio}} perfecto: lava con agua tibia, usa productos sin sulfato, y programa tu próxima visita en {{dias}} días. Reserva: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'servicio', 'dias'], timesSent: 35, responseRate: 42, lastSent: '2026-03-01' },
-  { id: 'tpl-15', name: 'Recomendación Producto', category: 'post-visita', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Basado en tu {{servicio}}, te recomendamos usar {{producto}} para mantener tu look por más tiempo. Pregunta por él en tu próxima visita!', variables: ['nombre', 'servicio', 'producto'], timesSent: 20, responseRate: 38, lastSent: '2026-02-25' },
+  // --- CONFIRMACION (1) ---
+  { id: 'tpl-8', name: 'Cita Confirmada', category: 'confirmacion', body: 'Hola {{nombre}}! Tu cita en AlPelo esta confirmada. {{servicio}} el {{fecha}} a las {{hora}} con {{barbero}}. Te esperamos en Cabecera, Bucaramanga!', variables: ['nombre', 'servicio', 'fecha', 'hora', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
 
-  // --- REACTIVACION (4) ---
-  { id: 'tpl-16', name: 'Reactivación 30 Días', category: 'reactivacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Ya pasaron 30 días desde tu última visita! Tu {{servicio}} debe estar necesitando un retoque. ¿Agendamos? https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'servicio'], timesSent: 65, responseRate: 45, lastSent: '2026-03-03' },
-  { id: 'tpl-17', name: 'Reactivación 45 Días', category: 'reactivacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Te extrañamos en la barbería! Hace más de un mes que no nos visitas. ¿Todo bien? Te guardamos tu horario favorito si quieres volver.', variables: ['nombre'], timesSent: 40, responseRate: 35, lastSent: '2026-03-01' },
-  { id: 'tpl-18', name: 'Reactivación 60 Días + Oferta', category: 'reactivacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Ya pasaron 2 meses sin verte! Como gesto especial, te ofrecemos 15% de descuento en tu próximo {{servicio}}. Solo muestra este mensaje al llegar. Válido esta semana.', variables: ['nombre', 'servicio'], timesSent: 30, responseRate: 28, lastSent: '2026-02-28' },
-  { id: 'tpl-19', name: 'Reactivación 90+ Días', category: 'reactivacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Hace mucho que no te vemos y la verdad te extrañamos! Te ofrecemos 20% en cualquier servicio. No importa cuánto tiempo haya pasado, siempre eres bienvenido en Al Pelo.', variables: ['nombre'], timesSent: 18, responseRate: 22, lastSent: '2026-02-20' },
+  // --- PROMOCION (1) ---
+  { id: 'tpl-9', name: 'Promocion Especial', category: 'promociones', body: 'Hola {{nombre}}! En AlPelo tenemos una promocion especial para ti esta semana. No te la pierdas! Agenda antes de que se acaben los cupos: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
 
-  // --- VIP (4) ---
-  { id: 'tpl-20', name: 'Bienvenida VIP', category: 'vip', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Felicitaciones! Has sido seleccionado como cliente VIP de Al Pelo. Esto significa reserva prioritaria, descuentos exclusivos y un servicio de primera. Gracias por tu fidelidad!', variables: ['nombre'], timesSent: 8, responseRate: 90, lastSent: '2026-02-15' },
-  { id: 'tpl-21', name: 'Promo Exclusiva VIP', category: 'vip', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Como cliente VIP, tienes acceso exclusivo a nuestro nuevo servicio de {{servicio}} con 20% de descuento antes que nadie. ¿Quieres ser de los primeros en probarlo?', variables: ['nombre', 'servicio'], timesSent: 12, responseRate: 75, lastSent: '2026-02-20' },
-  { id: 'tpl-22', name: 'Reserva Prioritaria VIP', category: 'vip', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Esta semana tenemos alta demanda, pero como VIP te hemos reservado tu horario habitual. ¿Confirmamos tu cita del {{dia}} a las {{hora}}?', variables: ['nombre', 'dia', 'hora'], timesSent: 10, responseRate: 88, lastSent: '2026-03-02' },
-  { id: 'tpl-23', name: 'Aniversario VIP', category: 'vip', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Hoy cumples {{meses}} meses como cliente VIP! Para celebrar, tu próximo servicio tiene 25% de descuento. Gracias por ser parte de la familia Al Pelo.', variables: ['nombre', 'meses'], timesSent: 5, responseRate: 85, lastSent: '2026-02-10' },
-
-  // --- CUMPLEAÑOS (3) ---
-  { id: 'tpl-24', name: 'Feliz Cumpleaños', category: 'cumpleanos', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Feliz cumpleaños! En tu día especial te regalamos 25% de descuento en cualquier servicio. Válido toda esta semana. Ven a celebrar con nosotros!', variables: ['nombre'], timesSent: 28, responseRate: 70, lastSent: '2026-03-01' },
-  { id: 'tpl-25', name: 'Semana del Cumpleaños', category: 'cumpleanos', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Tu semana de cumpleaños merece un look especial! Agenda tu servicio favorito con descuento de cumpleañero. Reserva: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 22, responseRate: 60, lastSent: '2026-02-28' },
-  { id: 'tpl-26', name: 'Mes del Cumpleaños', category: 'cumpleanos', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Este mes es tu cumpleaños y queremos celebrarlo! Tienes 15% en todos los servicios durante todo el mes. No dejes pasar la oportunidad.', variables: ['nombre'], timesSent: 18, responseRate: 50, lastSent: '2026-02-25' },
-
-  // --- PROMOCIONES (4) ---
-  { id: 'tpl-27', name: 'Flash Sale', category: 'promociones', body: 'Hola {{nombre}}, soy Lina de Al Pelo. OFERTA RELÁMPAGO! Solo hoy y mañana: {{servicio}} con 20% de descuento. Cupos limitados. Reserva ya: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'servicio'], timesSent: 55, responseRate: 40, lastSent: '2026-03-01' },
-  { id: 'tpl-28', name: 'Combo Especial', category: 'promociones', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Nuevo combo Al Pelo: {{servicio1}} + {{servicio2}} por solo {{precio}}. Ahorra más cuando te consientes más! Reserva: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'servicio1', 'servicio2', 'precio'], timesSent: 42, responseRate: 38, lastSent: '2026-02-28' },
-  { id: 'tpl-29', name: 'Programa Referidos', category: 'promociones', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Refiere a un amigo y ambos ganan! Tú recibes 15% de descuento y tu amigo 10% en su primera visita. Solo comparte este mensaje con él.', variables: ['nombre'], timesSent: 35, responseRate: 32, lastSent: '2026-02-20' },
-  { id: 'tpl-30', name: 'Nuevo Servicio', category: 'promociones', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Tenemos un nuevo servicio que te va a encantar: {{servicio}}. Precio de lanzamiento: {{precio}}. ¿Te animas a probarlo?', variables: ['nombre', 'servicio', 'precio'], timesSent: 25, responseRate: 45, lastSent: '2026-02-15' },
-
-  // --- TEMPORADA (4) ---
-  { id: 'tpl-31', name: 'Navidad', category: 'temporada', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Feliz Navidad! Empieza el año con el mejor look. Tenemos promos especiales de temporada. Agenda antes de que se llenen los cupos!', variables: ['nombre'], timesSent: 80, responseRate: 35, lastSent: '2025-12-20' },
-  { id: 'tpl-32', name: 'San Valentín', category: 'temporada', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Este San Valentín, regálate (o regala) un servicio Al Pelo. Tenemos paquetes especiales para parejas y amigos. Pregúntanos!', variables: ['nombre'], timesSent: 45, responseRate: 30, lastSent: '2026-02-12' },
-  { id: 'tpl-33', name: 'Día del Padre', category: 'temporada', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Este Día del Padre, regala el mejor look! Tenemos bonos de regalo disponibles para cualquier servicio. El mejor regalo es tiempo de calidad.', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-34', name: 'Regreso a Clases', category: 'temporada', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Empieza el semestre con todo! Corte estudiantil con 10% de descuento presentando tu carné. Solo esta semana. Reserva: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 30, responseRate: 42, lastSent: '2026-01-20' },
-
-  // --- FIDELIZACION (3) ---
-  { id: 'tpl-35', name: 'Milestone Puntos', category: 'fidelizacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Felicitaciones! Has acumulado {{puntos}} puntos de lealtad. Ya puedes canjearlos por descuentos o servicios gratis. Pregunta en tu próxima visita!', variables: ['nombre', 'puntos'], timesSent: 15, responseRate: 65, lastSent: '2026-02-28' },
-  { id: 'tpl-36', name: 'Milestone Visitas', category: 'fidelizacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Wow, ya llevas {{visitas}} visitas con nosotros! Para celebrar, tu próximo servicio tiene 20% de descuento. Gracias por confiar en Al Pelo.', variables: ['nombre', 'visitas'], timesSent: 10, responseRate: 72, lastSent: '2026-02-20' },
-  { id: 'tpl-37', name: 'Agradecimiento Lealtad', category: 'fidelizacion', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Queremos agradecerte por ser un cliente fiel desde {{fecha}}. Tu confianza nos motiva a dar lo mejor cada día. Eres parte de la familia Al Pelo!', variables: ['nombre', 'fecha'], timesSent: 8, responseRate: 80, lastSent: '2026-02-15' },
-
-  // --- SERVICIOS (3) ---
-  { id: 'tpl-38', name: 'Nuevo Servicio Disponible', category: 'servicios', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Tenemos novedades! Ahora ofrecemos {{servicio}} en nuestra carta. Precio: {{precio}}. ¿Te gustaría probarlo en tu próxima visita?', variables: ['nombre', 'servicio', 'precio'], timesSent: 20, responseRate: 40, lastSent: '2026-02-10' },
-  { id: 'tpl-39', name: 'Recomendación por Historial', category: 'servicios', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Como te gusta {{servicio_favorito}}, creemos que te encantará {{servicio_nuevo}}. Es el complemento perfecto para tu estilo. ¿Qué dices?', variables: ['nombre', 'servicio_favorito', 'servicio_nuevo'], timesSent: 12, responseRate: 52, lastSent: '2026-02-20' },
-  { id: 'tpl-40', name: 'Servicio Trending', category: 'servicios', body: 'Hola {{nombre}}, soy Lina de Al Pelo. El servicio más pedido este mes es {{servicio}}! Ya lo probaron {{cantidad}} clientes y todos salieron encantados. ¿Te animas?', variables: ['nombre', 'servicio', 'cantidad'], timesSent: 18, responseRate: 35, lastSent: '2026-02-28' },
-
-  // --- FEEDBACK (3) ---
-  { id: 'tpl-41', name: 'Rating Rápido', category: 'feedback', body: 'Hola {{nombre}}, soy Lina de Al Pelo. ¿Cómo calificas tu última visita del 1 al 5? Tu opinión nos ayuda a mejorar cada día. Solo responde con un número!', variables: ['nombre'], timesSent: 70, responseRate: 58, lastSent: '2026-03-03' },
-  { id: 'tpl-42', name: 'Feedback Detallado', category: 'feedback', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Queremos conocer tu opinión sobre tu experiencia con {{barbero}}. ¿Qué te gustó más? ¿Hay algo que podamos mejorar? Tu feedback es muy valioso para nosotros.', variables: ['nombre', 'barbero'], timesSent: 25, responseRate: 45, lastSent: '2026-03-01' },
-  { id: 'tpl-43', name: 'Review Google', category: 'feedback', body: 'Hola {{nombre}}, soy Lina de Al Pelo. Si te gustó tu experiencia en Al Pelo, nos ayudaría mucho que dejes una reseña en Google. Es rápido y nos ayuda a que más personas nos conozcan. Gracias!', variables: ['nombre'], timesSent: 40, responseRate: 25, lastSent: '2026-02-25' },
+  // --- REFERIDO (1) ---
+  { id: 'tpl-10', name: 'Bono Referido', category: 'bienvenida', body: 'Hola {{nombre}}! Nos recomendaron contigo desde AlPelo Peluqueria. Queremos invitarte a conocernos en Cabecera, Bucaramanga. Agenda tu primera cita: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
 ];
 
 // Template category metadata
 export const templateCategories = [
-  { id: 'bienvenida', name: 'Bienvenida', icon: 'heart', color: '#34D399', count: 4 },
-  { id: 'recordatorio', name: 'Recordatorio', icon: 'clock', color: '#60A5FA', count: 4 },
-  { id: 'confirmacion', name: 'Confirmación', icon: 'check', color: '#2D5A3D', count: 3 },
-  { id: 'post-visita', name: 'Post-visita', icon: 'star', color: '#C9A84C', count: 4 },
-  { id: 'reactivacion', name: 'Reactivación', icon: 'refresh', color: '#FBBF24', count: 4 },
-  { id: 'vip', name: 'VIP', icon: 'crown', color: '#A8873A', count: 4 },
-  { id: 'cumpleanos', name: 'Cumpleaños', icon: 'gift', color: '#F87171', count: 3 },
-  { id: 'promociones', name: 'Promociones', icon: 'tag', color: '#8B5CF6', count: 4 },
-  { id: 'temporada', name: 'Temporada', icon: 'calendar', color: '#EC4899', count: 4 },
-  { id: 'fidelizacion', name: 'Fidelización', icon: 'trophy', color: '#14B8A6', count: 3 },
-  { id: 'servicios', name: 'Servicios', icon: 'scissors', color: '#3D7A52', count: 3 },
-  { id: 'feedback', name: 'Feedback', icon: 'message', color: '#6366F1', count: 3 },
+  { id: 'bienvenida', name: 'Bienvenida', icon: 'heart', color: '#34D399', count: 3 },
+  { id: 'recordatorio', name: 'Recordatorio', icon: 'clock', color: '#60A5FA', count: 2 },
+  { id: 'reactivacion', name: 'Reactivación', icon: 'refresh', color: '#FBBF24', count: 2 },
+  { id: 'confirmacion', name: 'Confirmación', icon: 'check', color: '#2D5A3D', count: 1 },
+  { id: 'promociones', name: 'Promociones', icon: 'tag', color: '#8B5CF6', count: 1 },
+  { id: 'feedback', name: 'Feedback', icon: 'message', color: '#6366F1', count: 1 },
 ];
 
 // ============================================
 // WhatsApp Stats
 // ============================================
 export const mockWhatsAppStats = {
-  messagesToday: 24,
-  messagesThisWeek: 156,
-  messagesThisMonth: 487,
-  conversationsActive: 12,
-  responseRate: 78,
-  avgResponseTime: '12 min',
-  templatesSentToday: 8,
-  templatesSentWeek: 45,
+  messagesToday: 0,
+  messagesThisWeek: 0,
+  messagesThisMonth: 0,
+  conversationsActive: 0,
+  responseRate: 0,
+  avgResponseTime: '-',
+  templatesSentToday: 0,
+  templatesSentWeek: 0,
   topTemplates: [
-    { id: 'tpl-9', name: 'Cita Confirmada', sent: 150, responses: 67 },
-    { id: 'tpl-5', name: 'Recordatorio 24h', sent: 120, responses: 102 },
-    { id: 'tpl-6', name: 'Recordatorio 2h', sent: 95, responses: 74 },
-    { id: 'tpl-7', name: 'Recordatorio Mañana', sent: 88, responses: 72 },
-    { id: 'tpl-12', name: 'Agradecimiento Post-Visita', sent: 85, responses: 53 },
+    { id: 'tpl-1', name: 'Bienvenida Nuevo Cliente', sent: 0, responses: 0 },
+    { id: 'tpl-3', name: 'Recordatorio de Cita', sent: 0, responses: 0 },
+    { id: 'tpl-5', name: 'Te Extrañamos', sent: 0, responses: 0 },
   ],
-  clientsWithoutContact7Days: 8,
-  clientsWithoutContact30Days: 5,
+  clientsWithoutContact7Days: 0,
+  clientsWithoutContact30Days: 0,
 };
 
 // ============================================
