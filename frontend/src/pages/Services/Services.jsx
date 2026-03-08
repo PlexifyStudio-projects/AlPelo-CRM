@@ -1,0 +1,428 @@
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import servicesService from '../../services/servicesService';
+import staffService from '../../services/staffService';
+import { useNotification } from '../../context/NotificationContext';
+
+const b = 'services';
+
+const CATEGORY_META = {
+  'Barbería': {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 20V4h4l6 8-6 8H4z" /><path d="M14 20V4h4l4 8-4 8h-4z" />
+      </svg>
+    ),
+    color: '#2D5A3D',
+    gradient: 'linear-gradient(135deg, #2D5A3D 0%, #3D7A52 100%)',
+  },
+  'Manicure y Pedicure': {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2v6m0 8v6M2 12h6m8 0h6" /><circle cx="12" cy="12" r="3" />
+      </svg>
+    ),
+    color: '#E05292',
+    gradient: 'linear-gradient(135deg, #E05292 0%, #F472B6 100%)',
+  },
+  'Estilismo': {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2C7 2 3 6 3 11c0 3 1.5 5.5 4 7v4h10v-4c2.5-1.5 4-4 4-7 0-5-4-9-9-9z" />
+        <path d="M9 22h6" />
+      </svg>
+    ),
+    color: '#C9A84C',
+    gradient: 'linear-gradient(135deg, #C9A84C 0%, #E4CC7A 100%)',
+  },
+  'Tratamientos Capilares': {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 21h10" /><path d="M12 3v18" /><path d="M3 7c3-2 6-3 9-3s6 1 9 3" /><path d="M5 11c2.5-1.5 5-2 7-2s4.5.5 7 2" />
+      </svg>
+    ),
+    color: '#60A5FA',
+    gradient: 'linear-gradient(135deg, #60A5FA 0%, #93C5FD 100%)',
+  },
+  'Facial y Pestañas': {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" y1="9" x2="9.01" y2="9" strokeWidth="2.5" /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth="2.5" />
+      </svg>
+    ),
+    color: '#A78BFA',
+    gradient: 'linear-gradient(135deg, #A78BFA 0%, #C4B5FD 100%)',
+  },
+};
+
+const getCategoryMeta = (cat) => CATEGORY_META[cat] || { icon: null, color: '#6B6B63', gradient: 'linear-gradient(135deg, #6B6B63, #8E8E85)' };
+
+const formatCurrency = (amount) => {
+  if (!amount && amount !== 0) return '-';
+  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+};
+
+const formatDuration = (mins) => {
+  if (!mins) return '-';
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `${h}h ${m}min` : `${h}h`;
+};
+
+const Services = () => {
+  const [services, setServices] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('Todos');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editingService, setEditingService] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '', category: 'Barbería', price: '', duration_minutes: '', description: '', staff_ids: [],
+  });
+  const { addNotification } = useNotification();
+
+  const loadData = useCallback(async () => {
+    try {
+      const [svcList, staffList] = await Promise.all([
+        servicesService.list(),
+        staffService.list(),
+      ]);
+      setServices(svcList);
+      setStaff(staffList);
+    } catch (err) {
+      addNotification('Error al cargar servicios: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [addNotification]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const categories = useMemo(() => {
+    const cats = [...new Set(services.map(s => s.category))];
+    return ['Todos', ...Object.keys(CATEGORY_META).filter(c => cats.includes(c)), ...cats.filter(c => !CATEGORY_META[c])];
+  }, [services]);
+
+  const filtered = useMemo(() => {
+    let list = services.filter(s => s.is_active);
+    if (activeCategory !== 'Todos') list = list.filter(s => s.category === activeCategory);
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(s =>
+        s.name.toLowerCase().includes(term) ||
+        s.category.toLowerCase().includes(term) ||
+        (s.staff_names || []).some(n => n.toLowerCase().includes(term))
+      );
+    }
+    return list;
+  }, [services, activeCategory, searchTerm]);
+
+  const grouped = useMemo(() => {
+    const groups = {};
+    filtered.forEach(s => {
+      if (!groups[s.category]) groups[s.category] = [];
+      groups[s.category].push(s);
+    });
+    // Sort groups by CATEGORY_META order
+    const order = Object.keys(CATEGORY_META);
+    const sorted = {};
+    order.forEach(cat => { if (groups[cat]) sorted[cat] = groups[cat]; });
+    Object.keys(groups).forEach(cat => { if (!sorted[cat]) sorted[cat] = groups[cat]; });
+    return sorted;
+  }, [filtered]);
+
+  const stats = useMemo(() => {
+    const active = services.filter(s => s.is_active);
+    return {
+      total: active.length,
+      categories: [...new Set(active.map(s => s.category))].length,
+      avgPrice: active.length ? Math.round(active.reduce((sum, s) => sum + s.price, 0) / active.length) : 0,
+      priceRange: active.length ? { min: Math.min(...active.map(s => s.price)), max: Math.max(...active.map(s => s.price)) } : { min: 0, max: 0 },
+    };
+  }, [services]);
+
+  const staffMap = useMemo(() => {
+    const map = {};
+    staff.forEach(s => { map[s.id] = s; });
+    return map;
+  }, [staff]);
+
+  const openCreateModal = () => {
+    setEditingService(null);
+    setFormData({ name: '', category: 'Barbería', price: '', duration_minutes: '', description: '', staff_ids: [] });
+    setShowModal(true);
+  };
+
+  const openEditModal = (svc) => {
+    setEditingService(svc);
+    setFormData({
+      name: svc.name,
+      category: svc.category,
+      price: String(svc.price),
+      duration_minutes: svc.duration_minutes ? String(svc.duration_minutes) : '',
+      description: svc.description || '',
+      staff_ids: svc.staff_ids || [],
+    });
+    setShowModal(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const payload = {
+      ...formData,
+      price: parseInt(formData.price) || 0,
+      duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null,
+      description: formData.description || null,
+    };
+    try {
+      if (editingService) {
+        await servicesService.update(editingService.id, payload);
+        addNotification('Servicio actualizado', 'success');
+      } else {
+        await servicesService.create(payload);
+        addNotification('Servicio creado', 'success');
+      }
+      setShowModal(false);
+      loadData();
+    } catch (err) {
+      addNotification(err.message, 'error');
+    }
+  };
+
+  const handleDelete = async (svc) => {
+    if (!window.confirm(`¿Eliminar "${svc.name}"?`)) return;
+    try {
+      await servicesService.delete(svc.id);
+      addNotification('Servicio eliminado', 'success');
+      loadData();
+    } catch (err) {
+      addNotification(err.message, 'error');
+    }
+  };
+
+  const toggleStaffId = (id) => {
+    setFormData(prev => ({
+      ...prev,
+      staff_ids: prev.staff_ids.includes(id) ? prev.staff_ids.filter(x => x !== id) : [...prev.staff_ids, id],
+    }));
+  };
+
+  if (loading) {
+    return (
+      <div className={b}>
+        <div className={`${b}__loading`}>
+          <div className={`${b}__spinner`} />
+          <span>Cargando servicios...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={b}>
+      {/* Header */}
+      <div className={`${b}__header`}>
+        <div className={`${b}__header-left`}>
+          <h1 className={`${b}__title`}>Servicios</h1>
+          <p className={`${b}__subtitle`}>Catálogo completo de AlPelo Peluquería</p>
+        </div>
+        <button className={`${b}__add-btn`} onClick={openCreateModal}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+          Nuevo servicio
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className={`${b}__stats`}>
+        <div className={`${b}__stat`}>
+          <span className={`${b}__stat-value`}>{stats.total}</span>
+          <span className={`${b}__stat-label`}>Servicios activos</span>
+        </div>
+        <div className={`${b}__stat`}>
+          <span className={`${b}__stat-value`}>{stats.categories}</span>
+          <span className={`${b}__stat-label`}>Categorías</span>
+        </div>
+        <div className={`${b}__stat`}>
+          <span className={`${b}__stat-value`}>{formatCurrency(stats.avgPrice)}</span>
+          <span className={`${b}__stat-label`}>Precio promedio</span>
+        </div>
+        <div className={`${b}__stat`}>
+          <span className={`${b}__stat-value`}>{formatCurrency(stats.priceRange.min)} — {formatCurrency(stats.priceRange.max)}</span>
+          <span className={`${b}__stat-label`}>Rango de precios</span>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className={`${b}__filters`}>
+        <div className={`${b}__search`}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+          <input
+            type="text"
+            placeholder="Buscar servicio, categoría o profesional..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`${b}__search-input`}
+          />
+        </div>
+        <div className={`${b}__tabs`}>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              className={`${b}__tab ${activeCategory === cat ? `${b}__tab--active` : ''}`}
+              onClick={() => setActiveCategory(cat)}
+              style={activeCategory === cat && cat !== 'Todos' ? { '--tab-color': getCategoryMeta(cat).color } : {}}
+            >
+              {cat === 'Todos' ? 'Todos' : cat}
+              {cat !== 'Todos' && (
+                <span className={`${b}__tab-count`}>{services.filter(s => s.category === cat && s.is_active).length}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Service Grid by Category */}
+      <div className={`${b}__content`}>
+        {Object.keys(grouped).length === 0 ? (
+          <div className={`${b}__empty`}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M8 15h8M9 9h.01M15 9h.01" /></svg>
+            <p>No se encontraron servicios</p>
+          </div>
+        ) : (
+          Object.entries(grouped).map(([category, items]) => {
+            const meta = getCategoryMeta(category);
+            return (
+              <div key={category} className={`${b}__category`}>
+                <div className={`${b}__category-header`}>
+                  <div className={`${b}__category-icon`} style={{ background: meta.gradient }}>
+                    {meta.icon}
+                  </div>
+                  <div className={`${b}__category-info`}>
+                    <h2 className={`${b}__category-name`}>{category}</h2>
+                    <span className={`${b}__category-count`}>{items.length} servicio{items.length !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+
+                <div className={`${b}__grid`}>
+                  {items.map(svc => (
+                    <div key={svc.id} className={`${b}__card`} style={{ '--card-accent': meta.color }}>
+                      <div className={`${b}__card-top`}>
+                        <div className={`${b}__card-name`}>{svc.name}</div>
+                        <div className={`${b}__card-actions`}>
+                          <button className={`${b}__card-edit`} onClick={() => openEditModal(svc)} title="Editar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </button>
+                          <button className={`${b}__card-delete`} onClick={() => handleDelete(svc)} title="Eliminar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                          </button>
+                        </div>
+                      </div>
+
+                      {svc.description && (
+                        <p className={`${b}__card-desc`}>{svc.description}</p>
+                      )}
+
+                      <div className={`${b}__card-details`}>
+                        <div className={`${b}__card-price`}>
+                          <span className={`${b}__card-price-value`}>{formatCurrency(svc.price)}</span>
+                        </div>
+                        <div className={`${b}__card-duration`}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                          {formatDuration(svc.duration_minutes)}
+                        </div>
+                      </div>
+
+                      {(svc.staff_names || []).length > 0 && (
+                        <div className={`${b}__card-staff`}>
+                          <span className={`${b}__card-staff-label`}>Profesionales:</span>
+                          <div className={`${b}__card-staff-list`}>
+                            {svc.staff_names.map((name, i) => (
+                              <span key={i} className={`${b}__card-staff-tag`}>{name}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Create/Edit Modal */}
+      {showModal && createPortal(
+        <div className={`${b}__modal-overlay`} onClick={() => setShowModal(false)}>
+          <div className={`${b}__modal`} onClick={(e) => e.stopPropagation()}>
+            <div className={`${b}__modal-header`}>
+              <h2>{editingService ? 'Editar servicio' : 'Nuevo servicio'}</h2>
+              <button className={`${b}__modal-close`} onClick={() => setShowModal(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className={`${b}__modal-form`}>
+              <div className={`${b}__form-group`}>
+                <label>Nombre del servicio</label>
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: Corte Hipster" />
+              </div>
+
+              <div className={`${b}__form-row`}>
+                <div className={`${b}__form-group`}>
+                  <label>Categoría</label>
+                  <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+                    {Object.keys(CATEGORY_META).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className={`${b}__form-group`}>
+                  <label>Precio (COP)</label>
+                  <input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required placeholder="40000" />
+                </div>
+                <div className={`${b}__form-group`}>
+                  <label>Duración (min)</label>
+                  <input type="number" value={formData.duration_minutes} onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })} placeholder="40" />
+                </div>
+              </div>
+
+              <div className={`${b}__form-group`}>
+                <label>Descripción (opcional)</label>
+                <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Descripción del servicio..." rows={2} />
+              </div>
+
+              <div className={`${b}__form-group`}>
+                <label>Profesionales que lo realizan</label>
+                <div className={`${b}__staff-picker`}>
+                  {staff.filter(s => s.is_active).map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`${b}__staff-chip ${formData.staff_ids.includes(s.id) ? `${b}__staff-chip--selected` : ''}`}
+                      onClick={() => toggleStaffId(s.id)}
+                    >
+                      <span className={`${b}__staff-chip-name`}>{s.name}</span>
+                      <span className={`${b}__staff-chip-role`}>{s.role}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`${b}__modal-actions`}>
+                <button type="button" className={`${b}__btn-cancel`} onClick={() => setShowModal(false)}>Cancelar</button>
+                <button type="submit" className={`${b}__btn-save`}>
+                  {editingService ? 'Guardar cambios' : 'Crear servicio'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+};
+
+export default Services;

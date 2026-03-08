@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory, ClientNote
+from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment
 
 router = APIRouter()
 
@@ -66,3 +66,33 @@ def delete_client_note(note_id: int, db: Session = Depends(get_db)):
     db.delete(note)
     db.commit()
     return {"success": True, "message": "Note deleted"}
+
+
+# ============================================================================
+# SERVICE ENDPOINTS
+# ============================================================================
+
+@router.delete("/services/{service_id}")
+def delete_service(service_id: int, db: Session = Depends(get_db)):
+    service = db.query(Service).filter(Service.id == service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    db.delete(service)
+    db.commit()
+    return {"success": True, "message": f"Service '{service.name}' deleted"}
+
+
+# ============================================================================
+# APPOINTMENT ENDPOINTS
+# ============================================================================
+
+@router.delete("/appointments/{appointment_id}")
+def delete_appointment(appointment_id: int, db: Session = Depends(get_db)):
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    db.delete(appointment)
+    db.commit()
+    return {"success": True, "message": "Appointment deleted"}

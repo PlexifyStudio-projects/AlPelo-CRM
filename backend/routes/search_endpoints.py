@@ -5,13 +5,15 @@ from sqlalchemy.orm import Session
 from sqlalchemy import cast, String
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory, ClientNote
+from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment
 from schemas import (
     StaffResponse,
     ClientResponse, ClientListResponse,
     VisitHistoryResponse,
     ClientNoteResponse,
     DashboardKPIs,
+    ServiceResponse,
+    AppointmentResponse,
 )
 
 router = APIRouter()
@@ -233,4 +235,134 @@ def get_dashboard_kpis(db: Session = Depends(get_db)):
         retention_rate=round(retention_rate, 1),
         total_revenue=total_revenue,
         avg_ticket=avg_ticket,
+    )
+
+
+# ============================================================================
+# SERVICE ENDPOINTS
+# ============================================================================
+
+@router.get("/services/", response_model=List[ServiceResponse])
+def list_services(
+    category: Optional[str] = Query(None),
+    active: Optional[bool] = Query(None),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    query = db.query(Service)
+
+    if active is not None:
+        query = query.filter(Service.is_active == active)
+
+    if category:
+        query = query.filter(Service.category.ilike(f"%{category}%"))
+
+    if search:
+        term = f"%{search}%"
+        query = query.filter(
+            Service.name.ilike(term) | Service.category.ilike(term)
+        )
+
+    services = query.order_by(Service.category, Service.name).all()
+
+    # Batch-load staff names
+    all_staff_ids = set()
+    for s in services:
+        if s.staff_ids:
+            all_staff_ids.update(s.staff_ids)
+
+    staff_map = {}
+    if all_staff_ids:
+        staff_list = db.query(Staff).filter(Staff.id.in_(all_staff_ids)).all()
+        staff_map = {s.id: s.name for s in staff_list}
+
+    result = []
+    for s in services:
+        names = [staff_map[sid] for sid in (s.staff_ids or []) if sid in staff_map]
+        result.append(ServiceResponse(
+            **{c.name: getattr(s, c.name) for c in s.__table__.columns},
+            staff_names=names,
+        ))
+
+    return result
+
+
+@router.get("/services/{service_id}", response_model=ServiceResponse)
+def get_service(service_id: int, db: Session = Depends(get_db)):
+    service = db.query(Service).filter(Service.id == service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    staff_names = []
+    if service.staff_ids:
+        staff_list = db.query(Staff).filter(Staff.id.in_(service.staff_ids)).all()
+        staff_names = [s.name for s in staff_list]
+
+    return ServiceResponse(
+        **{c.name: getattr(service, c.name) for c in service.__table__.columns},
+        staff_names=staff_names,
+    )
+
+
+# ============================================================================
+# APPOINTMENT ENDPOINTS
+# ============================================================================
+
+@router.get("/appointments/", response_model=List[AppointmentResponse])
+def list_appointments(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    staff_id: Optional[int] = Query(None),
+    status: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    from datetime import date as dt_date
+
+    query = db.query(Appointment)
+
+    if date_from:
+        query = query.filter(Appointment.date >= dt_date.fromisoformat(date_from))
+    if date_to:
+        query = query.filter(Appointment.date <= dt_date.fromisoformat(date_to))
+    if staff_id:
+        query = query.filter(Appointment.staff_id == staff_id)
+    if status:
+        query = query.filter(Appointment.status == status)
+
+    appointments = query.order_by(Appointment.date, Appointment.time).all()
+
+    result = []
+    staff_cache = {}
+    service_cache = {}
+
+    for a in appointments:
+        if a.staff_id not in staff_cache:
+            staff = db.query(Staff).filter(Staff.id == a.staff_id).first()
+            staff_cache[a.staff_id] = staff.name if staff else None
+        if a.service_id not in service_cache:
+            svc = db.query(Service).filter(Service.id == a.service_id).first()
+            service_cache[a.service_id] = svc.name if svc else None
+
+        result.append(AppointmentResponse(
+            **{c.name: getattr(a, c.name) for c in a.__table__.columns},
+            staff_name=staff_cache.get(a.staff_id),
+            service_name=service_cache.get(a.service_id),
+        ))
+
+    return result
+
+
+@router.get("/appointments/{appointment_id}", response_model=AppointmentResponse)
+def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    staff = db.query(Staff).filter(Staff.id == appointment.staff_id).first()
+    service = db.query(Service).filter(Service.id == appointment.service_id).first()
+
+    return AppointmentResponse(
+        **{c.name: getattr(appointment, c.name) for c in appointment.__table__.columns},
+        staff_name=staff.name if staff else None,
+        service_name=service.name if service else None,
     )

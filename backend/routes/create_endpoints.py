@@ -2,12 +2,14 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory, ClientNote
+from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment
 from schemas import (
     StaffCreate, StaffResponse,
     ClientCreate, ClientResponse,
     VisitHistoryCreate, VisitHistoryResponse,
     ClientNoteCreate, ClientNoteResponse,
+    ServiceCreate, ServiceResponse,
+    AppointmentCreate, AppointmentResponse,
 )
 
 router = APIRouter()
@@ -95,3 +97,57 @@ def create_client_note(data: ClientNoteCreate, db: Session = Depends(get_db)):
     db.refresh(note)
 
     return ClientNoteResponse.model_validate(note)
+
+
+# ============================================================================
+# SERVICE ENDPOINTS
+# ============================================================================
+
+@router.post("/services/", response_model=ServiceResponse)
+def create_service(data: ServiceCreate, db: Session = Depends(get_db)):
+    service = Service(**data.model_dump())
+    db.add(service)
+    db.commit()
+    db.refresh(service)
+
+    staff_names = []
+    if service.staff_ids:
+        staff_list = db.query(Staff).filter(Staff.id.in_(service.staff_ids)).all()
+        staff_names = [s.name for s in staff_list]
+
+    return ServiceResponse(
+        **{c.name: getattr(service, c.name) for c in service.__table__.columns},
+        staff_names=staff_names,
+    )
+
+
+# ============================================================================
+# APPOINTMENT ENDPOINTS
+# ============================================================================
+
+@router.post("/appointments/", response_model=AppointmentResponse)
+def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db)):
+    staff = db.query(Staff).filter(Staff.id == data.staff_id).first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+
+    service = db.query(Service).filter(Service.id == data.service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    appt_data = data.model_dump()
+    if appt_data.get("duration_minutes") is None:
+        appt_data["duration_minutes"] = service.duration_minutes or 30
+    if appt_data.get("price") is None:
+        appt_data["price"] = service.price
+
+    appointment = Appointment(**appt_data)
+    db.add(appointment)
+    db.commit()
+    db.refresh(appointment)
+
+    return AppointmentResponse(
+        **{c.name: getattr(appointment, c.name) for c in appointment.__table__.columns},
+        staff_name=staff.name,
+        service_name=service.name,
+    )

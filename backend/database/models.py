@@ -106,6 +106,45 @@ class AIConfig(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class Service(Base):
+    __tablename__ = "service"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    category = Column(String, nullable=False)  # Barbería, Manicure y Pedicure, Estilismo, Tratamientos Capilares, Facial y Pestañas
+    price = Column(Integer, nullable=False)  # COP sin decimales
+    duration_minutes = Column(Integer, nullable=True)
+    description = Column(Text, nullable=True)
+    staff_ids = Column(JSON, default=list)  # IDs of staff who can perform this service
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Appointment(Base):
+    __tablename__ = "appointment"
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
+    client_name = Column(String, nullable=False)
+    client_phone = Column(String, nullable=False)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("public.service.id"), nullable=False)
+    date = Column(Date, nullable=False)
+    time = Column(String, nullable=False)  # HH:MM format
+    duration_minutes = Column(Integer, nullable=False)
+    price = Column(Integer, nullable=False)  # COP
+    status = Column(String, nullable=False, default="confirmed")  # confirmed, completed, cancelled, no_show
+    notes = Column(Text, nullable=True)
+    created_by = Column(String, nullable=True)  # admin, lina_ia, client
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    client = relationship("Client", foreign_keys=[client_id])
+    staff = relationship("Staff", foreign_keys=[staff_id])
+    service = relationship("Service", foreign_keys=[service_id])
+
+
 class WhatsAppConversation(Base):
     __tablename__ = "whatsapp_conversation"
 
@@ -113,6 +152,7 @@ class WhatsAppConversation(Base):
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
     wa_contact_phone = Column(String, nullable=False)
     wa_contact_name = Column(String, nullable=True)
+    wa_profile_photo_url = Column(Text, nullable=True)
     last_message_at = Column(DateTime, nullable=True)
     is_ai_active = Column(Boolean, default=True)
     unread_count = Column(Integer, default=0)

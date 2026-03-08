@@ -4,11 +4,13 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory
+from database.models import Staff, Client, VisitHistory, Service, Appointment
 from schemas import (
     StaffUpdate, StaffResponse,
     ClientUpdate, ClientResponse,
     VisitHistoryUpdate, VisitHistoryResponse,
+    ServiceUpdate, ServiceResponse,
+    AppointmentUpdate, AppointmentResponse,
 )
 
 router = APIRouter()
@@ -108,4 +110,73 @@ def update_visit(visit_id: int, data: VisitHistoryUpdate, db: Session = Depends(
     return VisitHistoryResponse(
         **{c.name: getattr(visit, c.name) for c in visit.__table__.columns},
         staff_name=staff.name if staff else None,
+    )
+
+
+# ============================================================================
+# SERVICE ENDPOINTS
+# ============================================================================
+
+@router.put("/services/{service_id}", response_model=ServiceResponse)
+def update_service(service_id: int, data: ServiceUpdate, db: Session = Depends(get_db)):
+    service = db.query(Service).filter(Service.id == service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(service, field, value)
+
+    db.commit()
+    db.refresh(service)
+
+    staff_names = []
+    if service.staff_ids:
+        staff_list = db.query(Staff).filter(Staff.id.in_(service.staff_ids)).all()
+        staff_names = [s.name for s in staff_list]
+
+    return ServiceResponse(
+        **{c.name: getattr(service, c.name) for c in service.__table__.columns},
+        staff_names=staff_names,
+    )
+
+
+# ============================================================================
+# APPOINTMENT ENDPOINTS
+# ============================================================================
+
+@router.put("/appointments/{appointment_id}", response_model=AppointmentResponse)
+def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session = Depends(get_db)):
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    update_data = data.model_dump(exclude_unset=True)
+
+    if "status" in update_data and update_data["status"] not in ("confirmed", "completed", "cancelled", "no_show"):
+        raise HTTPException(status_code=400, detail="Invalid status")
+
+    if "staff_id" in update_data:
+        staff = db.query(Staff).filter(Staff.id == update_data["staff_id"]).first()
+        if not staff:
+            raise HTTPException(status_code=404, detail="Staff not found")
+
+    if "service_id" in update_data:
+        svc = db.query(Service).filter(Service.id == update_data["service_id"]).first()
+        if not svc:
+            raise HTTPException(status_code=404, detail="Service not found")
+
+    for field, value in update_data.items():
+        setattr(appointment, field, value)
+
+    db.commit()
+    db.refresh(appointment)
+
+    staff = db.query(Staff).filter(Staff.id == appointment.staff_id).first()
+    service = db.query(Service).filter(Service.id == appointment.service_id).first()
+
+    return AppointmentResponse(
+        **{c.name: getattr(appointment, c.name) for c in appointment.__table__.columns},
+        staff_name=staff.name if staff else None,
+        service_name=service.name if service else None,
     )

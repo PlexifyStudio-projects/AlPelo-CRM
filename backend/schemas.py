@@ -241,6 +241,95 @@ class DashboardKPIs(BaseModel):
     avg_ticket: int = 0
 
 
+#========================= SERVICES =========================#
+
+class ServiceCreate(BaseModel):
+    name: str
+    category: str
+    price: int
+    duration_minutes: Optional[int] = None
+    description: Optional[str] = None
+    staff_ids: List[int] = []
+    is_active: bool = True
+
+class ServiceUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    price: Optional[int] = None
+    duration_minutes: Optional[int] = None
+    description: Optional[str] = None
+    staff_ids: Optional[List[int]] = None
+    is_active: Optional[bool] = None
+
+class ServiceResponse(BaseModel):
+    id: int
+    name: str
+    category: str
+    price: int
+    duration_minutes: Optional[int] = None
+    description: Optional[str] = None
+    staff_ids: List[int] = []
+    staff_names: List[str] = []
+    is_active: bool
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+#========================= APPOINTMENTS =========================#
+
+class AppointmentCreate(BaseModel):
+    client_id: Optional[int] = None
+    client_name: str
+    client_phone: str
+    staff_id: int
+    service_id: int
+    date: date
+    time: str                                   # HH:MM
+    duration_minutes: Optional[int] = None      # auto-filled from service if not set
+    price: Optional[int] = None                 # auto-filled from service if not set
+    status: str = "confirmed"
+    notes: Optional[str] = None
+    created_by: Optional[str] = None
+
+class AppointmentUpdate(BaseModel):
+    client_id: Optional[int] = None
+    client_name: Optional[str] = None
+    client_phone: Optional[str] = None
+    staff_id: Optional[int] = None
+    service_id: Optional[int] = None
+    date: Optional[date] = None
+    time: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    price: Optional[int] = None
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+class AppointmentResponse(BaseModel):
+    id: int
+    client_id: Optional[int] = None
+    client_name: str
+    client_phone: str
+    staff_id: int
+    staff_name: Optional[str] = None
+    service_id: int
+    service_name: Optional[str] = None
+    date: date
+    time: str
+    duration_minutes: int
+    price: int
+    status: str
+    notes: Optional[str] = None
+    created_by: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 #========================= AI CONFIG =========================#
 
 class AIConfigCreate(BaseModel):
