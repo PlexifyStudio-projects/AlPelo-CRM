@@ -1,15 +1,12 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotification } from '../../context/NotificationContext';
+import clientService from '../../services/clientService';
+import whatsappService from '../../services/whatsappService';
 import {
   mockWhatsAppTemplates,
   templateCategories,
-  mockClients as rawClients,
-  mockVisitHistory,
 } from '../../data/mockData';
-import { enrichClients, STATUS } from '../../utils/clientStatus';
-
-const clients = enrichClients(rawClients, mockVisitHistory);
 const B = 'messaging';
 
 // ===== SVG Icons =====
@@ -186,16 +183,29 @@ const PreviewModal = ({ template, onClose }) => {
 const SendModal = ({ template, onClose, onSend }) => {
   const [segment, setSegment] = useState('all');
   const [selected, setSelected] = useState([]);
+  const [realClients, setRealClients] = useState([]);
+  const [loadingClients, setLoadingClients] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [sendProgress, setSendProgress] = useState({ sent: 0, failed: 0, total: 0 });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await clientService.list({ active: true });
+        setRealClients(Array.isArray(data) ? data.filter((c) => c.phone) : []);
+      } catch { setRealClients([]); }
+      finally { setLoadingClients(false); }
+    })();
+  }, []);
 
   const filteredClients = useMemo(() => {
-    const waClients = clients.filter((c) => c.acceptsWhatsApp);
-    if (segment === 'all') return waClients;
-    if (segment === 'vip') return waClients.filter((c) => c.status === STATUS.VIP);
-    if (segment === 'activo') return waClients.filter((c) => c.status === STATUS.ACTIVO || c.status === STATUS.NUEVO);
-    if (segment === 'en_riesgo') return waClients.filter((c) => c.status === STATUS.EN_RIESGO);
-    if (segment === 'inactivo') return waClients.filter((c) => c.status === STATUS.INACTIVO);
-    return waClients;
-  }, [segment]);
+    if (segment === 'all') return realClients;
+    if (segment === 'vip') return realClients.filter((c) => c.status === 'vip');
+    if (segment === 'activo') return realClients.filter((c) => c.status === 'active' || c.status === 'new');
+    if (segment === 'en_riesgo') return realClients.filter((c) => c.status === 'at_risk');
+    if (segment === 'inactivo') return realClients.filter((c) => c.status === 'inactive');
+    return realClients;
+  }, [segment, realClients]);
 
   const toggleClient = useCallback((clientId) => {
     setSelected((prev) =>
@@ -205,17 +215,48 @@ const SendModal = ({ template, onClose, onSend }) => {
     );
   }, []);
 
-  const handleSend = () => {
-    const count = selected.length > 0 ? selected.length : filteredClients.length;
-    onSend(template, count);
+  const handleSend = async () => {
+    const targets = selected.length > 0
+      ? realClients.filter((c) => selected.includes(c.id))
+      : filteredClients;
+
+    if (targets.length === 0) return;
+    setSending(true);
+    setSendProgress({ sent: 0, failed: 0, total: targets.length });
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const client of targets) {
+      try {
+        // Resolve template variables for this client
+        const firstName = (client.name || '').split(' ')[0];
+        let body = template.body
+          .replace(/\{\{nombre\}\}/g, firstName)
+          .replace(/\{\{servicio\}\}/g, client.favorite_service || 'tu servicio')
+          .replace(/\{\{barbero\}\}/g, 'tu barbero')
+          .replace(/\{\{dias\}\}/g, client.days_since_last_visit ? String(client.days_since_last_visit) : '30');
+
+        // Create or get conversation, then send message
+        const conv = await whatsappService.createConversation(client.phone, client.name);
+        await whatsappService.sendMessage(conv.id, body);
+        sent++;
+      } catch {
+        failed++;
+      }
+      setSendProgress({ sent, failed, total: targets.length });
+    }
+
+    setSending(false);
+    onSend(template, sent, failed);
   };
 
   return createPortal(
-    <div className={`${B}__overlay`} onClick={onClose}>
+    <div className={`${B}__overlay`} onClick={sending ? undefined : onClose}>
       <div className={`${B}__modal ${B}__modal--send`} onClick={(e) => e.stopPropagation()}>
         <div className={`${B}__modal-header`}>
           <h3 className={`${B}__modal-title`}>Enviar: {template.name}</h3>
-          <button className={`${B}__modal-close`} onClick={onClose}>
+          <button className={`${B}__modal-close`} onClick={onClose} disabled={sending}>
             <CloseIcon />
           </button>
         </div>
@@ -227,6 +268,7 @@ const SendModal = ({ template, onClose, onSend }) => {
                 key={seg.id}
                 className={`${B}__segment-btn ${segment === seg.id ? `${B}__segment-btn--active` : ''}`}
                 onClick={() => setSegment(seg.id)}
+                disabled={sending}
               >
                 {seg.label}
               </button>
@@ -235,37 +277,51 @@ const SendModal = ({ template, onClose, onSend }) => {
 
           {/* Client list */}
           <div className={`${B}__client-list`}>
-            {filteredClients.map((client) => (
-              <label
-                key={client.id}
-                className={`${B}__client-row ${selected.includes(client.id) ? `${B}__client-row--selected` : ''}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={selected.includes(client.id)}
-                  onChange={() => toggleClient(client.id)}
-                  className={`${B}__client-check`}
-                />
-                <div className={`${B}__client-avatar`}>{getInitials(client.name)}</div>
-                <div className={`${B}__client-info`}>
-                  <span className={`${B}__client-name`}>{client.name}</span>
-                  <span className={`${B}__client-phone`}>{client.phone}</span>
-                </div>
-              </label>
-            ))}
+            {loadingClients ? (
+              <p style={{ padding: '20px', textAlign: 'center', color: '#8696A0' }}>Cargando clientes...</p>
+            ) : filteredClients.length === 0 ? (
+              <p style={{ padding: '20px', textAlign: 'center', color: '#8696A0' }}>No hay clientes en este segmento</p>
+            ) : (
+              filteredClients.map((client) => (
+                <label
+                  key={client.id}
+                  className={`${B}__client-row ${selected.includes(client.id) ? `${B}__client-row--selected` : ''}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(client.id)}
+                    onChange={() => toggleClient(client.id)}
+                    className={`${B}__client-check`}
+                    disabled={sending}
+                  />
+                  <div className={`${B}__client-avatar`}>{getInitials(client.name)}</div>
+                  <div className={`${B}__client-info`}>
+                    <span className={`${B}__client-name`}>{client.name}</span>
+                    <span className={`${B}__client-phone`}>{client.phone}</span>
+                  </div>
+                </label>
+              ))
+            )}
           </div>
 
           {/* Footer */}
           <div className={`${B}__send-footer`}>
-            <span className={`${B}__send-count`}>
-              <UsersIcon />
-              {selected.length > 0
-                ? `${selected.length} seleccionados`
-                : `${filteredClients.length} clientes`}
-            </span>
-            <button className={`${B}__send-btn`} onClick={handleSend}>
+            {sending ? (
+              <span className={`${B}__send-count`}>
+                Enviando... {sendProgress.sent + sendProgress.failed}/{sendProgress.total}
+                {sendProgress.failed > 0 && <span style={{ color: '#FF5252' }}> ({sendProgress.failed} fallidos)</span>}
+              </span>
+            ) : (
+              <span className={`${B}__send-count`}>
+                <UsersIcon />
+                {selected.length > 0
+                  ? `${selected.length} seleccionados`
+                  : `${filteredClients.length} clientes`}
+              </span>
+            )}
+            <button className={`${B}__send-btn`} onClick={handleSend} disabled={sending || filteredClients.length === 0}>
               <WhatsAppIcon />
-              <span>Enviar Plantilla</span>
+              <span>{sending ? 'Enviando...' : 'Enviar Plantilla'}</span>
             </button>
           </div>
         </div>
@@ -300,11 +356,18 @@ const Messaging = () => {
     return templates;
   }, [activeCategory, searchQuery]);
 
-  const handleSend = useCallback((template, count) => {
-    addNotification({
-      message: `Plantilla "${template.name}" enviada a ${count} clientes`,
-      type: 'success',
-    });
+  const handleSend = useCallback((template, sent, failed) => {
+    if (failed > 0) {
+      addNotification({
+        message: `Plantilla "${template.name}": ${sent} enviados, ${failed} fallidos`,
+        type: sent > 0 ? 'warning' : 'error',
+      });
+    } else {
+      addNotification({
+        message: `Plantilla "${template.name}" enviada a ${sent} clientes`,
+        type: 'success',
+      });
+    }
     setSendTemplate(null);
   }, [addNotification]);
 
