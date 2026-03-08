@@ -455,7 +455,7 @@ const MessageContextMenu = ({ msg, position, onAction, onClose, isStarred }) => 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 // ===== CLIENT PROFILE SIDEBAR =====
-const ClientSidebar = ({ conversation, onClose, starredMsgIds }) => {
+const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete }) => {
   const [activeMediaTab, setActiveMediaTab] = useState('media');
   const client = conversation?.client || null;
   const name = conversation?.wa_contact_name || client?.name || 'Contacto';
@@ -611,7 +611,9 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds }) => {
         <button className={`${b}__client-action ${b}__client-action--danger`}>
           {Icons.close} Bloquear contacto
         </button>
-        <button className={`${b}__client-action ${b}__client-action--danger`}>
+        <button className={`${b}__client-action ${b}__client-action--danger`} onClick={() => {
+          if (window.confirm('¿Eliminar esta conversación? Se borrarán todos los mensajes.') && onDelete) onDelete();
+        }}>
           {Icons.trash} Eliminar chat
         </button>
       </div>
@@ -1601,7 +1603,16 @@ const Inbox = () => {
             <button onClick={() => { toggleArchive(showConvMenu.id); setShowConvMenu(null); }}>
               {Icons.archive} {archivedConvIds.includes(showConvMenu.id) ? 'Desarchivar' : 'Archivar'}
             </button>
-            <button className={`${b}__conv-context-danger`} onClick={() => { setShowConvMenu(null); }}>
+            <button className={`${b}__conv-context-danger`} onClick={async () => {
+              const convId = showConvMenu.id;
+              setShowConvMenu(null);
+              if (!window.confirm('¿Eliminar esta conversación? Se borrarán todos los mensajes.')) return;
+              try {
+                await whatsappService.deleteConversation(convId);
+                setConversations((prev) => prev.filter((c) => c.id !== convId));
+                if (selectedConvId === convId) { setSelectedConvId(null); setMessages([]); }
+              } catch (err) { console.error('[Inbox] Delete error:', err); }
+            }}>
               {Icons.trash} Eliminar chat
             </button>
           </div>
@@ -1868,6 +1879,15 @@ const Inbox = () => {
                   conversation={selectedConv}
                   onClose={() => setShowClientInfo(false)}
                   starredMsgIds={starredMsgIds.filter((id) => messages.some((m) => m.id === id))}
+                  onDelete={async () => {
+                    try {
+                      await whatsappService.deleteConversation(selectedConvId);
+                      setConversations((prev) => prev.filter((c) => c.id !== selectedConvId));
+                      setSelectedConvId(null);
+                      setMessages([]);
+                      setShowClientInfo(false);
+                    } catch (err) { console.error('[Inbox] Delete error:', err); }
+                  }}
                 />
               )}
             </div>
