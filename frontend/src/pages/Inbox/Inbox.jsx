@@ -1397,24 +1397,30 @@ const Inbox = () => {
             {newChatStep === 'template' && (
               <div className={`${b}__new-chat-templates`}>
                 <p className={`${b}__new-chat-templates-hint`}>Enviando a <strong>{newChatName || newChatPhone}</strong></p>
-                <p className={`${b}__new-chat-meta-note`}>Para contactos nuevos se requiere una plantilla aprobada por Meta.</p>
+                <p className={`${b}__new-chat-meta-note`}>WhatsApp requiere una plantilla aprobada por Meta para iniciar conversaciones con contactos nuevos. Una vez el cliente responda, puedes enviar mensajes libres.</p>
                 {newChatError && <p className={`${b}__new-chat-error`}>{newChatError}</p>}
 
                 {/* Meta approved templates */}
                 {metaTemplates.length > 0 ? (
                   <>
-                    <p className={`${b}__new-chat-section-label`}>Plantillas aprobadas por Meta</p>
-                    {metaTemplates.map((tpl) => (
-                      <button key={tpl.name} className={`${b}__new-chat-tpl`} onClick={() => handleSendTemplate(tpl)} disabled={newChatLoading}>
-                        <span className={`${b}__new-chat-tpl-label`}>{tpl.name.replace(/_/g, ' ')}</span>
-                        <span className={`${b}__new-chat-tpl-preview`}>{(tpl.body || `Plantilla: ${tpl.name}`).slice(0, 100)}</span>
-                        <span className={`${b}__new-chat-tpl-meta`}>{tpl.language} · {tpl.category}</span>
-                      </button>
-                    ))}
+                    <p className={`${b}__new-chat-section-label`}>Plantillas disponibles</p>
+                    {metaTemplates.map((tpl) => {
+                      const friendlyNames = {
+                        hello_world: 'Mensaje de bienvenida (Meta)',
+                      };
+                      return (
+                        <button key={tpl.name} className={`${b}__new-chat-tpl`} onClick={() => handleSendTemplate(tpl)} disabled={newChatLoading}>
+                          <span className={`${b}__new-chat-tpl-label`}>{friendlyNames[tpl.name] || tpl.name.replace(/_/g, ' ')}</span>
+                          <span className={`${b}__new-chat-tpl-preview`}>{(tpl.body || `Plantilla: ${tpl.name}`).slice(0, 120)}</span>
+                          <span className={`${b}__new-chat-tpl-meta`}>{tpl.language} · {tpl.category}</span>
+                        </button>
+                      );
+                    })}
+                    <p className={`${b}__new-chat-meta-note`} style={{ marginTop: '12px' }}>Para crear plantillas personalizadas en español, ve a Meta Business Suite → WhatsApp → Plantillas de mensajes.</p>
                   </>
                 ) : (
                   <p className={`${b}__new-chat-no-templates`}>
-                    {metaTemplatesLoaded ? 'No hay plantillas aprobadas. Crea una en Meta Business Suite.' : 'Cargando plantillas...'}
+                    {metaTemplatesLoaded ? 'No hay plantillas aprobadas. Crea una en Meta Business Suite → WhatsApp → Plantillas.' : 'Cargando plantillas...'}
                   </p>
                 )}
 
