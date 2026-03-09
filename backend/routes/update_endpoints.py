@@ -153,6 +153,14 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
 
     update_data = data.model_dump(exclude_unset=True)
 
+    # Convert date string to date object if present
+    if "date" in update_data and update_data["date"] is not None:
+        from datetime import date as date_type
+        try:
+            update_data["date"] = date_type.fromisoformat(update_data["date"])
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid date format, use YYYY-MM-DD")
+
     if "status" in update_data and update_data["status"] not in ("confirmed", "completed", "cancelled", "no_show"):
         raise HTTPException(status_code=400, detail="Invalid status")
 

@@ -15,6 +15,7 @@ def _run_migrations(engine):
         ("whatsapp_message", "media_mime_type", "VARCHAR"),
         ("whatsapp_conversation", "tags", "JSON DEFAULT '[]'"),
         ("whatsapp_conversation", "wa_profile_photo_url", "TEXT"),
+        ("staff", "color", "VARCHAR"),
     ]
 
     for table, column, col_type in migrations:

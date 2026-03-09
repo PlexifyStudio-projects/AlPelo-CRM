@@ -37,7 +37,6 @@
     padding: $spacing-xl $spacing-2xl $spacing-2xl;
     overflow-y: auto;
     width: 100%;
-    max-width: $max-content-width;
     @include custom-scrollbar;
     position: relative;
 

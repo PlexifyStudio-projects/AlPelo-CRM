@@ -33,6 +33,7 @@ class Staff(Base):
     is_active = Column(Boolean, default=True)
     skills = Column(JSON, default=list)
     rating = Column(Float, nullable=True)
+    color = Column(String, nullable=True)  # hex color for calendar, e.g. "#2D5A3D"
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

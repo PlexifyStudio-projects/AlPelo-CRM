@@ -225,10 +225,12 @@ const DeactivateModal = ({ member, clients, onConfirm, onCancel }) => {
 // ===== STAFF FORM MODAL =====
 const StaffFormModal = ({ staff, onClose, onSaved }) => {
   const isEdit = !!staff;
+  const PRESET_COLORS = ['#2D5A3D', '#3B82F6', '#E05292', '#C9A84C', '#8B5CF6', '#F97316', '#14B8A6', '#EC4899', '#06B6D4', '#EF4444', '#22B07E', '#6366F1', '#D946EF', '#0EA5E9', '#84CC16'];
   const [form, setForm] = useState({
     name: staff?.name || '', phone: staff?.phone || '', email: staff?.email || '',
     role: staff?.role || 'Barbero', specialty: staff?.specialty || '', bio: staff?.bio || '',
     hire_date: staff?.hire_date || '', skills: staff?.skills?.join(', ') || '',
+    color: staff?.color || '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -245,6 +247,7 @@ const StaffFormModal = ({ staff, onClose, onSaved }) => {
         role: form.role, specialty: form.specialty.trim() || null, bio: form.bio.trim() || null,
         hire_date: form.hire_date || null,
         skills: form.skills ? form.skills.split(',').map((s) => s.trim()).filter(Boolean) : [],
+        color: form.color || null,
       };
       if (isEdit) await staffService.update(staff.id, data);
       else await staffService.create(data);
@@ -299,6 +302,20 @@ const StaffFormModal = ({ staff, onClose, onSaved }) => {
           <div className={`${b}__form-field`}>
             <label>Habilidades (separadas por coma)</label>
             <input name="skills" value={form.skills} onChange={handleChange} placeholder="Degradados, Cortes clasicos, Disenos" />
+          </div>
+          <div className={`${b}__form-field`}>
+            <label>Color en agenda</label>
+            <div className={`${b}__color-picker`}>
+              {PRESET_COLORS.map(c => (
+                <button key={c} type="button"
+                  className={`${b}__color-swatch ${form.color === c ? `${b}__color-swatch--on` : ''}`}
+                  style={{ background: c }}
+                  onClick={() => setForm({ ...form, color: c })}
+                  title={c} />
+              ))}
+              <input type="color" value={form.color || '#2D5A3D'} onChange={e => setForm({ ...form, color: e.target.value })}
+                className={`${b}__color-input`} title="Color personalizado" />
+            </div>
           </div>
           <div className={`${b}__form-field`}>
             <label>Biografia</label>

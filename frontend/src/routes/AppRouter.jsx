@@ -8,6 +8,7 @@ import ChatAI from '../pages/ChatAI/ChatAI';
 import Team from '../pages/Team/Team';
 import Inbox from '../pages/Inbox/Inbox';
 import Services from '../pages/Services/Services';
+import Agenda from '../pages/Agenda/Agenda';
 import Profile from '../pages/Profile/Profile';
 import Settings from '../pages/Settings/Settings';
 import { useState } from 'react';
@@ -27,7 +28,7 @@ const AppRouter = () => {
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard': return <Dashboard />;
-      case 'agenda': return <div style={{ padding: '2rem', color: '#8E8E85', textAlign: 'center' }}>Agenda — Próximamente</div>;
+      case 'agenda': return <Agenda />;
       case 'clients': return <Clients />;
       case 'services': return <Services />;
       case 'inbox': return <Inbox />;

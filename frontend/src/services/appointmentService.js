@@ -28,7 +28,8 @@ const appointmentService = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al crear cita');
+      const detail = typeof err.detail === 'string' ? err.detail : Array.isArray(err.detail) ? err.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ') : 'Error al crear cita';
+      throw new Error(detail);
     }
     return res.json();
   },
@@ -42,7 +43,8 @@ const appointmentService = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al actualizar cita');
+      const detail = typeof err.detail === 'string' ? err.detail : Array.isArray(err.detail) ? err.detail.map(e => e.msg || e.message || JSON.stringify(e)).join(', ') : 'Error al actualizar cita';
+      throw new Error(detail);
     }
     return res.json();
   },

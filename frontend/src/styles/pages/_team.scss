@@ -1003,6 +1003,51 @@
     textarea { resize: vertical; }
   }
 
+  &__color-picker {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  &__color-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 150ms ease;
+    padding: 0;
+    outline: none;
+
+    &:hover {
+      transform: scale(1.15);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    &--on {
+      border-color: $color-secondary;
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px currentColor;
+      transform: scale(1.1);
+    }
+  }
+
+  &__color-input {
+    width: 26px;
+    height: 26px;
+    border: 2px solid $border-color-medium;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+    overflow: hidden;
+    -webkit-appearance: none;
+    appearance: none;
+
+    &::-webkit-color-swatch-wrapper { padding: 0; }
+    &::-webkit-color-swatch { border: none; border-radius: 50%; }
+    &::-moz-color-swatch { border: none; border-radius: 50%; }
+  }
+
   &__form-error {
     font-size: $font-size-sm;
     color: $color-error-dark;

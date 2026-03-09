@@ -70,6 +70,7 @@ class StaffCreate(BaseModel):
     is_active: bool = True
     skills: List[str] = []
     rating: Optional[float] = None
+    color: Optional[str] = None
 
 class StaffUpdate(BaseModel):
     name: Optional[str] = None
@@ -82,6 +83,7 @@ class StaffUpdate(BaseModel):
     is_active: Optional[bool] = None
     skills: Optional[List[str]] = None
     rating: Optional[float] = None
+    color: Optional[str] = None
 
 class StaffResponse(BaseModel):
     id: int
@@ -95,6 +97,7 @@ class StaffResponse(BaseModel):
     is_active: bool
     skills: List[str] = []
     rating: Optional[float] = None
+    color: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -300,7 +303,7 @@ class AppointmentUpdate(BaseModel):
     client_phone: Optional[str] = None
     staff_id: Optional[int] = None
     service_id: Optional[int] = None
-    date: Optional[date] = None
+    date: Optional[str] = None  # str to avoid Pydantic v2 coercion issues with Optional[date]
     time: Optional[str] = None
     duration_minutes: Optional[int] = None
     price: Optional[int] = None
