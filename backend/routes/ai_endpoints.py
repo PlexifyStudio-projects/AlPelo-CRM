@@ -1189,6 +1189,7 @@ HOY: {date.today().strftime('%d de %B de %Y')}
 # ============================================================================
 
 async def _call_anthropic(api_key: str, model: str, system_prompt: str, messages: list, temperature: float, max_tokens: int):
+    """Call Claude API. Messages can contain text strings or multi-content blocks (for vision)."""
     payload = {
         "model": model,
         "max_tokens": max_tokens,
@@ -1203,7 +1204,10 @@ async def _call_anthropic(api_key: str, model: str, system_prompt: str, messages
         response.raise_for_status()
 
     result = response.json()
-    text = result.get("content", [{}])[0].get("text", "")
+    text = ""
+    for block in result.get("content", []):
+        if block.get("type") == "text":
+            text += block.get("text", "")
     tokens = result.get("usage", {}).get("input_tokens", 0) + result.get("usage", {}).get("output_tokens", 0)
     return text, tokens
 
@@ -1273,13 +1277,29 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
 # STANDALONE AI CALL — Used by WhatsApp auto-reply
 # ============================================================================
 
-async def _call_ai(system_prompt: str, history: list, user_message: str) -> str:
-    """Standalone AI call for WhatsApp auto-reply. Uses Claude only."""
+async def _call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None) -> str:
+    """Standalone AI call for WhatsApp auto-reply. Uses Claude only. Supports vision."""
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     if not anthropic_key:
         return "Disculpa, no puedo responder en este momento. Contacta a Al Pelo directamente."
 
-    messages = list(history) + [{"role": "user", "content": user_message}]
+    # Build the user message — with image if provided (Claude Vision)
+    if image_b64 and image_mime:
+        user_content = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": image_mime,
+                    "data": image_b64,
+                },
+            },
+            {"type": "text", "text": user_message or "El cliente envio esta imagen. Describe lo que ves y responde apropiadamente."},
+        ]
+    else:
+        user_content = user_message
+
+    messages = list(history) + [{"role": "user", "content": user_content}]
 
     try:
         text, _ = await _call_anthropic(anthropic_key, "claude-haiku-4-5-20251001", system_prompt, messages, 0.4, 512)

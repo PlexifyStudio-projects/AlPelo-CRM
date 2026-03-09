@@ -99,6 +99,79 @@ async def _transcribe_audio(media_id: str) -> str:
         return "[Audio recibido - error de transcripcion]"
 
 
+async def _download_media_base64(media_id: str) -> tuple[bytes | None, str | None]:
+    """Download media from Meta API and return (raw_bytes, mime_type)."""
+    try:
+        # Step 1: Get download URL from Meta
+        async with httpx.AsyncClient(timeout=15) as client:
+            meta_resp = await client.get(
+                f"https://graph.facebook.com/{WA_API_VERSION}/{media_id}",
+                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+            )
+            if meta_resp.status_code != 200:
+                return None, None
+            download_url = meta_resp.json().get("url")
+            mime_type = meta_resp.json().get("mime_type", "image/jpeg")
+
+        if not download_url:
+            return None, None
+
+        # Step 2: Download the file
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(
+                download_url,
+                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+            )
+            if resp.status_code != 200:
+                return None, None
+
+        return resp.content, mime_type
+
+    except Exception as e:
+        print(f"[Vision] Media download error: {e}")
+        return None, None
+
+
+async def _extract_video_frame(video_bytes: bytes) -> tuple[bytes | None, str | None]:
+    """Extract first frame from video as JPEG. Returns (jpeg_bytes, 'image/jpeg') or (None, None)."""
+    import tempfile
+    import subprocess
+
+    try:
+        # Write video to temp file
+        with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp_in:
+            tmp_in.write(video_bytes)
+            tmp_in_path = tmp_in.name
+
+        tmp_out_path = tmp_in_path + "_frame.jpg"
+
+        # Try ffmpeg first (available on most Linux systems)
+        try:
+            result = subprocess.run(
+                ["ffmpeg", "-i", tmp_in_path, "-vframes", "1", "-f", "image2", "-y", tmp_out_path],
+                capture_output=True, timeout=10,
+            )
+            if result.returncode == 0:
+                with open(tmp_out_path, "rb") as f:
+                    frame_bytes = f.read()
+                if frame_bytes:
+                    return frame_bytes, "image/jpeg"
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            pass  # ffmpeg not installed or timeout
+
+        return None, None
+    except Exception as e:
+        print(f"[Vision] Frame extraction error: {e}")
+        return None, None
+    finally:
+        import os as _os
+        for p in [tmp_in_path, tmp_out_path]:
+            try:
+                _os.unlink(p)
+            except Exception:
+                pass
+
+
 async def _fetch_profile_photo(conv_id: int, wa_phone: str):
     """Try to fetch WhatsApp profile photo URL from Meta Cloud API.
 
@@ -732,20 +805,16 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     background_tasks.add_task(_send_read_receipt, wa_msg_id)
 
                     # Queue AI auto-reply if active (only 1 per conversation per webhook batch)
-                    # Lina replies to: text, audio (transcribed), image/video WITH caption
-                    # Lina IGNORES: stickers, reactions, images/videos without caption
+                    # Lina replies to: text, audio (transcribed), image/video (with vision)
+                    # Lina IGNORES: stickers, reactions, documents
                     if conv.is_ai_active and msg_type in ("text", "audio", "image", "video"):
                         ai_text = content.strip() if content else ""
                         # For audio, transcribe first (will be done in background)
                         needs_transcription = msg_type == "audio" and media_url
-                        # For image/video: only reply if there's a real caption (not our placeholder)
-                        if msg_type in ("image", "video"):
-                            caption = msg_data.get(msg_type, {}).get("caption", "")
-                            if not caption:
-                                # No caption = casual media, skip AI reply
-                                ai_text = ""
+                        # For image/video: Lina can SEE them via Claude Vision
+                        needs_vision = msg_type in ("image", "video") and media_url
 
-                        if ai_text or needs_transcription:
+                        if ai_text or needs_transcription or needs_vision:
                             already_queued = any(r["conv_id"] == conv.id for r in conversations_to_reply)
                             if not already_queued:
                                 conversations_to_reply.append({
@@ -754,7 +823,10 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                                     "inbound_text": ai_text,
                                     "wa_msg_id": wa_msg_id,
                                     "needs_transcription": needs_transcription,
-                                    "media_id": media_url if needs_transcription else None,
+                                    "media_id": media_url if (needs_transcription or needs_vision) else None,
+                                    "needs_vision": needs_vision,
+                                    "vision_type": msg_type if needs_vision else None,
+                                    "media_mime": media_mime if needs_vision else None,
                                 })
 
                 # Process status updates (sent -> delivered -> read)
@@ -786,6 +858,9 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
             reply_info.get("wa_msg_id"),
             reply_info.get("needs_transcription", False),
             reply_info.get("media_id"),
+            reply_info.get("needs_vision", False),
+            reply_info.get("vision_type"),
+            reply_info.get("media_mime"),
         )
 
     return {"status": "ok"}
@@ -811,16 +886,20 @@ async def _send_read_receipt(wa_msg_id: str):
         pass  # Don't fail on read receipt errors
 
 
-async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_wa_msg_id: str = None, needs_transcription: bool = False, media_id: str = None):
-    """Background task: mark as read, wait 10s, generate AI response, send."""
+async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_wa_msg_id: str = None, needs_transcription: bool = False, media_id: str = None, needs_vision: bool = False, vision_type: str = None, media_mime: str = None):
+    """Background task: mark as read, wait, generate AI response (with vision if image/video), send."""
     import time
+    import base64
+
+    image_data_b64 = None  # Will hold base64 image for Claude Vision
+    image_mime = None
 
     try:
         # Step 0: Send read receipt immediately (blue ticks)
         if inbound_wa_msg_id:
             await _send_read_receipt(inbound_wa_msg_id)
 
-        # Step 0.5: Transcribe audio if needed
+        # Step 0.5a: Transcribe audio if needed
         if needs_transcription and media_id:
             print(f"[Lina IA] Transcribing audio for conv {conv_id}...")
             transcript = await _transcribe_audio(media_id)
@@ -845,6 +924,46 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     db_temp.commit()
             finally:
                 db_temp.close()
+
+        # Step 0.5b: Download image/video for Claude Vision
+        if needs_vision and media_id:
+            print(f"[Lina IA] Downloading {vision_type} for vision (conv {conv_id})...")
+            raw_bytes, detected_mime = await _download_media_base64(media_id)
+
+            if raw_bytes:
+                if vision_type == "video":
+                    # Extract first frame from video — Claude can't process video directly
+                    print(f"[Lina IA] Extracting frame from video...")
+                    frame_bytes, frame_mime = await _extract_video_frame(raw_bytes)
+                    if frame_bytes:
+                        image_data_b64 = base64.standard_b64encode(frame_bytes).decode("utf-8")
+                        image_mime = "image/jpeg"
+                        if not inbound_text or inbound_text.startswith("📎"):
+                            inbound_text = "[El cliente envio un video. Esta es una captura del primer frame]"
+                        print(f"[Lina IA] Video frame extracted ({len(frame_bytes)} bytes)")
+                    else:
+                        print(f"[Lina IA] Could not extract frame (ffmpeg not available?)")
+                        if not inbound_text or inbound_text.startswith("📎"):
+                            inbound_text = "[El cliente envio un video pero no se pudo procesar]"
+                else:
+                    # Image — send directly to Claude
+                    # Map WhatsApp mime types to Claude-supported types
+                    mime_map = {
+                        "image/jpeg": "image/jpeg",
+                        "image/png": "image/png",
+                        "image/gif": "image/gif",
+                        "image/webp": "image/webp",
+                    }
+                    final_mime = mime_map.get(detected_mime, "image/jpeg")
+                    image_data_b64 = base64.standard_b64encode(raw_bytes).decode("utf-8")
+                    image_mime = final_mime
+                    if not inbound_text or inbound_text.startswith("📎"):
+                        inbound_text = "[El cliente envio una foto/imagen]"
+                    print(f"[Lina IA] Image ready for vision ({len(raw_bytes)} bytes, {final_mime})")
+            else:
+                print(f"[Lina IA] Could not download media for vision")
+                if not inbound_text or inbound_text.startswith("📎"):
+                    inbound_text = f"[El cliente envio {'un video' if vision_type == 'video' else 'una imagen'} pero no se pudo descargar]"
 
         # Step 1: Wait random 20-90 seconds (natural human-like delay)
         delay = random.randint(20, 90)
@@ -923,9 +1042,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             # The inbound message is already in history (from DB), so pass empty
             # to avoid duplication. _call_ai appends user_message to history.
             if history and history[-1]["role"] == "user" and history[-1]["content"] == inbound_text:
-                ai_response = await _call_ai(system_prompt, history[:-1], inbound_text)
+                ai_response = await _call_ai(system_prompt, history[:-1], inbound_text, image_b64=image_data_b64, image_mime=image_mime)
             else:
-                ai_response = await _call_ai(system_prompt, history, inbound_text)
+                ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_mime)
 
             if not ai_response or not ai_response.strip():
                 print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")
