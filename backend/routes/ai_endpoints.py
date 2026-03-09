@@ -104,21 +104,17 @@ Ingreso total registrado: ${total_revenue:,} COP""")
         )
     sections.append("=== LISTA DE CLIENTES ===\n" + "\n".join(client_lines) if client_lines else "=== CLIENTES ===\nNo hay clientes registrados.")
 
-    # --- Staff ---
+    # --- Staff (compact) ---
     staff_all = db.query(Staff).filter(Staff.is_active == True).all()
-    staff_lines = [
-        f"  - ID:{s.id} {s.name} (rol:{s.role}, especialidad:{s.specialty or 'General'}, "
-        f"rating:{s.rating or 'N/A'}, activo:{s.is_active})"
-        for s in staff_all
-    ]
-    sections.append("=== EQUIPO ===\n" + "\n".join(staff_lines) if staff_lines else "=== EQUIPO ===\nNo hay staff registrado.")
+    staff_lines = [f"  - ID:{s.id} {s.name} ({s.role})" for s in staff_all]
+    sections.append("=== EQUIPO ===\n" + "\n".join(staff_lines) if staff_lines else "=== EQUIPO ===\nNo hay staff.")
 
-    # --- Recent visits (last 20) ---
+    # --- Recent visits (last 10) ---
     recent_visits = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
         .order_by(VisitHistory.visit_date.desc())
-        .limit(20)
+        .limit(10)
         .all()
     )
     if recent_visits:
@@ -130,7 +126,7 @@ Ingreso total registrado: ${total_revenue:,} COP""")
                 f"  - {v.visit_date}: {client.name if client else '?'} | "
                 f"{v.service_name} | ${v.amount:,} | por {staff.name if staff else '?'}"
             )
-        sections.append("=== ULTIMAS 20 VISITAS ===\n" + "\n".join(visit_lines))
+        sections.append("=== ULTIMAS VISITAS ===\n" + "\n".join(visit_lines))
 
     # --- Top services ---
     top_services = (
@@ -145,7 +141,7 @@ Ingreso total registrado: ${total_revenue:,} COP""")
         svc_lines = [f"  - {s.service_name}: {s.cnt} veces, ${s.total:,} COP" for s in top_services]
         sections.append("=== SERVICIOS MAS POPULARES ===\n" + "\n".join(svc_lines))
 
-    # --- Service catalog ---
+    # --- Service catalog (compact: name, price, duration only) ---
     all_services = db.query(Service).filter(Service.is_active == True).order_by(Service.category, Service.name).all()
     if all_services:
         catalog_lines = []
@@ -154,15 +150,9 @@ Ingreso total registrado: ${total_revenue:,} COP""")
             if svc.category != current_cat:
                 current_cat = svc.category
                 catalog_lines.append(f"\n  [{current_cat}]")
-            duration = f", {svc.duration_minutes}min" if svc.duration_minutes else ""
-            staff_names = ""
-            if svc.staff_ids:
-                names = [s.name for s in db.query(Staff).filter(Staff.id.in_(svc.staff_ids)).all()]
-                if names:
-                    staff_names = f" | por: {', '.join(names)}"
-            desc = f" — {svc.description}" if svc.description else ""
-            catalog_lines.append(f"  - ID:{svc.id} {svc.name}: ${svc.price:,}{duration}{staff_names}{desc}")
-        sections.append(f"=== CATALOGO DE SERVICIOS ({len(all_services)} activos) ===\n" + "\n".join(catalog_lines))
+            duration = f" {svc.duration_minutes}min" if svc.duration_minutes else ""
+            catalog_lines.append(f"  - {svc.name}: ${svc.price:,}{duration}")
+        sections.append(f"=== SERVICIOS ({len(all_services)}) ===\n" + "\n".join(catalog_lines))
 
     # --- Upcoming appointments (today + next 3 days) ---
     today = date.today()
@@ -1570,7 +1560,7 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
                 last_error = e
                 # On 429, retry same provider after delay (rate limits are per-minute)
                 if status == 429 and attempt < 2:
-                    wait = (attempt + 1) * 4  # 4s, 8s
+                    wait = (attempt + 1) * 2  # 2s, 4s
                     print(f"[AI] Rate limited, waiting {wait}s before retry...")
                     await asyncio.sleep(wait)
                     continue
