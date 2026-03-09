@@ -174,6 +174,10 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
         if not svc:
             raise HTTPException(status_code=404, detail="Service not found")
 
+    # Check if status is changing TO completed (and wasn't already completed)
+    old_status = appointment.status
+    new_status = update_data.get("status")
+
     for field, value in update_data.items():
         setattr(appointment, field, value)
 
@@ -182,6 +186,48 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
 
     staff = db.query(Staff).filter(Staff.id == appointment.staff_id).first()
     service = db.query(Service).filter(Service.id == appointment.service_id).first()
+
+    # ── Auto-create VisitHistory when appointment is completed ──
+    if new_status == "completed" and old_status != "completed" and appointment.client_id:
+        existing_visit = db.query(VisitHistory).filter(
+            VisitHistory.client_id == appointment.client_id,
+            VisitHistory.visit_date == appointment.date,
+            VisitHistory.staff_id == appointment.staff_id,
+            VisitHistory.service_name == (service.name if service else appointment.client_name),
+        ).first()
+        if not existing_visit:
+            visit = VisitHistory(
+                client_id=appointment.client_id,
+                staff_id=appointment.staff_id,
+                service_name=service.name if service else "Servicio",
+                amount=appointment.price or 0,
+                visit_date=appointment.date,
+                status="completed",
+                notes=f"Auto-registrada desde cita #{appointment.id}",
+            )
+            db.add(visit)
+            db.commit()
+
+    # ── Auto-create VisitHistory for no_show too (tracks attendance) ──
+    if new_status == "no_show" and old_status != "no_show" and appointment.client_id:
+        existing_visit = db.query(VisitHistory).filter(
+            VisitHistory.client_id == appointment.client_id,
+            VisitHistory.visit_date == appointment.date,
+            VisitHistory.staff_id == appointment.staff_id,
+            VisitHistory.status == "no_show",
+        ).first()
+        if not existing_visit:
+            visit = VisitHistory(
+                client_id=appointment.client_id,
+                staff_id=appointment.staff_id,
+                service_name=service.name if service else "Servicio",
+                amount=0,
+                visit_date=appointment.date,
+                status="no_show",
+                notes=f"No-show desde cita #{appointment.id}",
+            )
+            db.add(visit)
+            db.commit()
 
     return AppointmentResponse(
         **{c.name: getattr(appointment, c.name) for c in appointment.__table__.columns},
