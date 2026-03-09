@@ -54,6 +54,19 @@ def update_ai_config(config_id: int, data: AIConfigUpdate, db: Session = Depends
     return AIConfigResponse.model_validate(config)
 
 
+@router.get("/ai/status")
+def ai_provider_status():
+    """Check which AI providers have keys configured and which is active."""
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    groq_key = os.getenv("GROQ_API_KEY")
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    return {
+        "gemini": {"configured": bool(gemini_key), "key_prefix": gemini_key[:8] + "..." if gemini_key else None},
+        "groq": {"configured": bool(groq_key), "key_prefix": groq_key[:8] + "..." if groq_key else None},
+        "anthropic": {"configured": bool(anthropic_key), "key_prefix": anthropic_key[:8] + "..." if anthropic_key else None},
+    }
+
+
 # ============================================================================
 # BUSINESS CONTEXT BUILDER — Feeds real DB data to the AI
 # ============================================================================
