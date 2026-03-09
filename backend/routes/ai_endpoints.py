@@ -367,9 +367,10 @@ def _execute_action(action: dict, db: Session) -> str:
         import asyncio
         from database.models import WhatsAppConversation, WhatsAppMessage
 
-        search_name = action.get("search_name", "").strip()
-        phone = action.get("phone", "").strip()
-        message_text = action.get("message", "").strip()
+        # Accept multiple field names for search flexibility
+        search_name = (action.get("search_name") or action.get("name") or action.get("client") or action.get("to") or action.get("contact") or "").strip()
+        phone = (action.get("phone") or action.get("number") or action.get("telefono") or "").strip()
+        message_text = (action.get("message") or action.get("text") or action.get("msg") or "").strip()
 
         if not message_text:
             return "ERROR: Necesito el texto del mensaje."
@@ -428,8 +429,8 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- SEND WHATSAPP TEMPLATE (for first contact / outside 24h window) ----
     elif action_type == "send_whatsapp_template":
-        search_name = action.get("search_name", "").strip()
-        phone = action.get("phone", "").strip()
+        search_name = (action.get("search_name") or action.get("name") or action.get("client") or action.get("to") or "").strip()
+        phone = (action.get("phone") or action.get("number") or "").strip()
         template_name = action.get("template_name", "hello_world")
         language_code = action.get("language_code", "en_US")
 
@@ -646,8 +647,8 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- DELETE CONVERSATION ----
     elif action_type == "delete_conversation":
-        search_name = action.get("search_name", "").strip()
-        phone = action.get("phone", "").strip()
+        search_name = (action.get("search_name") or action.get("name") or action.get("client") or "").strip()
+        phone = (action.get("phone") or action.get("number") or "").strip()
 
         conv = find_conversation(db, search_name=search_name, phone=phone)
 
@@ -682,8 +683,8 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- TOGGLE AI FOR CONVERSATION ----
     elif action_type == "toggle_conversation_ai":
-        search_name = action.get("search_name", "").strip()
-        phone = action.get("phone", "").strip()
+        search_name = (action.get("search_name") or action.get("name") or action.get("client") or "").strip()
+        phone = (action.get("phone") or action.get("number") or "").strip()
         enable = action.get("enable", True)
 
         conv = find_conversation(db, search_name=search_name, phone=phone)
@@ -699,8 +700,8 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- TAG CONVERSATION ----
     elif action_type == "tag_conversation":
-        search_name = action.get("search_name", "").strip()
-        phone = action.get("phone", "").strip()
+        search_name = (action.get("search_name") or action.get("name") or action.get("client") or "").strip()
+        phone = (action.get("phone") or action.get("number") or "").strip()
         tags = action.get("tags", [])
 
         conv = find_conversation(db, search_name=search_name, phone=phone)
