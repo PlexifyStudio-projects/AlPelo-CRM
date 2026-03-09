@@ -14,7 +14,8 @@ const STATUS_OPTIONS = [
   { value: 'nuevo', label: 'Nuevo' },
 ];
 
-const ClientDetail = ({ client, onClose, onEdit, onRefresh }) => {
+const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
+  const [localClient, setLocalClient] = useState(clientProp);
   const [activeTab, setActiveTab] = useState('overview');
   const [visits, setVisits] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -24,6 +25,11 @@ const ClientDetail = ({ client, onClose, onEdit, onRefresh }) => {
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const statusBtnRef = useRef(null);
   const b = 'client-detail';
+
+  // Sync when parent prop changes
+  useEffect(() => { setLocalClient(clientProp); }, [clientProp]);
+
+  const client = localClient;
 
   useEffect(() => {
     if (client) {
@@ -88,7 +94,8 @@ const ClientDetail = ({ client, onClose, onEdit, onRefresh }) => {
   const handleStatusChange = async (newStatus) => {
     setShowStatusMenu(false);
     try {
-      await clientService.update(client.id, { status_override: newStatus });
+      const updated = await clientService.update(client.id, { status_override: newStatus });
+      setLocalClient(updated);
       if (onRefresh) onRefresh();
     } catch { /* silently fail */ }
   };
