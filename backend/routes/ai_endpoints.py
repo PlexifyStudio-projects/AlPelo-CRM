@@ -9,7 +9,7 @@ from sqlalchemy import func
 from datetime import datetime, date, timedelta
 
 from database.connection import get_db
-from database.models import AIConfig, Staff, Client, VisitHistory, ClientNote, WhatsAppConversation, WhatsAppMessage, Service
+from database.models import AIConfig, Staff, Client, VisitHistory, ClientNote, WhatsAppConversation, WhatsAppMessage, Service, Appointment
 from schemas import (
     AIConfigCreate, AIConfigUpdate, AIConfigResponse,
     AIChatRequest, AIChatResponse,
@@ -150,6 +150,28 @@ Ingreso total registrado: ${total_revenue:,} COP""")
             desc = f" — {svc.description}" if svc.description else ""
             catalog_lines.append(f"  - ID:{svc.id} {svc.name}: ${svc.price:,}{duration}{staff_names}{desc}")
         sections.append(f"=== CATALOGO DE SERVICIOS ({len(all_services)} activos) ===\n" + "\n".join(catalog_lines))
+
+    # --- Upcoming appointments (today + next 3 days) ---
+    today = date.today()
+    upcoming_end = today + timedelta(days=3)
+    upcoming_apts = db.query(Appointment).filter(
+        Appointment.date >= today,
+        Appointment.date <= upcoming_end
+    ).order_by(Appointment.date, Appointment.time).all()
+    if upcoming_apts:
+        apt_lines = []
+        current_day = None
+        for a in upcoming_apts:
+            day_str = str(a.date)
+            if day_str != current_day:
+                current_day = day_str
+                label = "HOY" if a.date == today else ("MANANA" if a.date == today + timedelta(days=1) else day_str)
+                apt_lines.append(f"\n  [{label} — {day_str}]")
+            staff_obj = db.query(Staff).filter(Staff.id == a.staff_id).first()
+            svc_obj = db.query(Service).filter(Service.id == a.service_id).first()
+            apt_lines.append(f"  - ID:{a.id} {a.time} | {a.client_name} | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | ${a.price or 0:,} | {a.status}")
+        total_today = len([a for a in upcoming_apts if a.date == today])
+        sections.append(f"=== AGENDA PROXIMA ({len(upcoming_apts)} citas, {total_today} hoy) ===\n" + "\n".join(apt_lines))
 
     return "\n\n".join(sections)
 
@@ -793,6 +815,138 @@ def _execute_action(action: dict, db: Session) -> str:
         db.commit()
         return f"Servicio '{svc.name}' desactivado."
 
+    # ── APPOINTMENTS ──────────────────────────────────
+    elif action_type == "list_appointments":
+        q = db.query(Appointment)
+        if action.get("date"):
+            q = q.filter(Appointment.date == action["date"])
+        if action.get("date_from"):
+            q = q.filter(Appointment.date >= action["date_from"])
+        if action.get("date_to"):
+            q = q.filter(Appointment.date <= action["date_to"])
+        if action.get("staff_name"):
+            st = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%")).first()
+            if st:
+                q = q.filter(Appointment.staff_id == st.id)
+        if action.get("status"):
+            q = q.filter(Appointment.status == action["status"])
+        if action.get("client_name"):
+            q = q.filter(Appointment.client_name.ilike(f"%{action['client_name']}%"))
+        apts = q.order_by(Appointment.date, Appointment.time).limit(action.get("limit", 30)).all()
+        if not apts:
+            return "No encontre citas con esos filtros."
+        lines = []
+        for a in apts:
+            staff_obj = db.query(Staff).filter(Staff.id == a.staff_id).first()
+            svc_obj = db.query(Service).filter(Service.id == a.service_id).first()
+            lines.append(f"- ID:{a.id} | {a.date} {a.time} | {a.client_name} ({a.client_phone}) | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | ${a.price or 0:,} | {a.status}")
+        return f"Encontre {len(apts)} cita(s):\n" + "\n".join(lines)
+
+    elif action_type == "create_appointment":
+        # Required: client_name, client_phone, staff (name or id), service (name or id), date, time
+        client_name = action.get("client_name")
+        client_phone = action.get("client_phone", "")
+        if not client_name:
+            return "ERROR: Necesito client_name para crear la cita."
+
+        # Find or resolve staff
+        staff_obj = None
+        if action.get("staff_id"):
+            staff_obj = db.query(Staff).filter(Staff.id == action["staff_id"]).first()
+        elif action.get("staff_name"):
+            staff_obj = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%"), Staff.is_active == True).first()
+        if not staff_obj:
+            return "ERROR: No encontre al profesional."
+
+        # Find or resolve service
+        svc_obj = None
+        if action.get("service_id"):
+            svc_obj = db.query(Service).filter(Service.id == action["service_id"]).first()
+        elif action.get("service_name"):
+            svc_obj = db.query(Service).filter(Service.name.ilike(f"%{action['service_name']}%"), Service.is_active == True).first()
+        if not svc_obj:
+            return "ERROR: No encontre el servicio."
+
+        apt_date = action.get("date")
+        apt_time = action.get("time")
+        if not apt_date or not apt_time:
+            return "ERROR: Necesito date (YYYY-MM-DD) y time (HH:MM)."
+
+        # Find client_id if exists
+        client_obj = db.query(Client).filter(Client.name.ilike(f"%{client_name}%")).first()
+
+        new_apt = Appointment(
+            client_id=client_obj.id if client_obj else None,
+            client_name=client_name,
+            client_phone=client_phone or (client_obj.phone if client_obj else ""),
+            staff_id=staff_obj.id,
+            service_id=svc_obj.id,
+            date=date.fromisoformat(apt_date) if isinstance(apt_date, str) else apt_date,
+            time=apt_time,
+            duration_minutes=svc_obj.duration_minutes,
+            price=svc_obj.price,
+            status=action.get("status", "confirmed"),
+            notes=action.get("notes"),
+            created_by="lina_ia",
+        )
+        db.add(new_apt)
+        db.commit()
+        db.refresh(new_apt)
+        return f"Cita creada (ID:{new_apt.id}): {client_name} con {staff_obj.name} para {svc_obj.name} el {apt_date} a las {apt_time}. Precio: ${svc_obj.price:,}."
+
+    elif action_type == "update_appointment":
+        apt = None
+        apt_id = action.get("appointment_id")
+        if apt_id:
+            apt = db.query(Appointment).filter(Appointment.id == apt_id).first()
+        if not apt:
+            return "ERROR: No encontre la cita. Necesito appointment_id."
+
+        changed = []
+        if action.get("status"):
+            apt.status = action["status"]
+            changed.append(f"estado={action['status']}")
+        if action.get("date"):
+            apt.date = date.fromisoformat(action["date"]) if isinstance(action["date"], str) else action["date"]
+            changed.append(f"fecha={action['date']}")
+        if action.get("time"):
+            apt.time = action["time"]
+            changed.append(f"hora={action['time']}")
+        if action.get("staff_name"):
+            st = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%"), Staff.is_active == True).first()
+            if st:
+                apt.staff_id = st.id
+                changed.append(f"profesional={st.name}")
+        if action.get("staff_id"):
+            apt.staff_id = action["staff_id"]
+            changed.append(f"staff_id={action['staff_id']}")
+        if action.get("notes"):
+            apt.notes = action["notes"]
+            changed.append("notas")
+        if action.get("service_name"):
+            svc = db.query(Service).filter(Service.name.ilike(f"%{action['service_name']}%"), Service.is_active == True).first()
+            if svc:
+                apt.service_id = svc.id
+                apt.duration_minutes = svc.duration_minutes
+                apt.price = svc.price
+                changed.append(f"servicio={svc.name}")
+        if not changed:
+            return "No se especificaron cambios."
+        db.commit()
+        return f"Cita ID:{apt.id} actualizada: {', '.join(changed)}."
+
+    elif action_type == "delete_appointment":
+        apt_id = action.get("appointment_id")
+        if not apt_id:
+            return "ERROR: Necesito appointment_id para eliminar."
+        apt = db.query(Appointment).filter(Appointment.id == apt_id).first()
+        if not apt:
+            return "ERROR: No encontre cita con ID {}.".format(apt_id)
+        info = f"{apt.client_name} - {apt.date} {apt.time}"
+        db.delete(apt)
+        db.commit()
+        return f"Cita eliminada: {info}."
+
     return f"ERROR: Accion desconocida '{action_type}'"
 
 
@@ -1008,6 +1162,16 @@ MODULO CLIENTES (CRM):
 - Agregar notas al perfil
 - Filtrar clientes por estado, dias sin visita, gasto, etc.
 
+MODULO AGENDA (CITAS):
+- Ver citas proximas (hoy, manana, semana). Los datos estan mas abajo en "AGENDA PROXIMA"
+- Listar citas con filtros (por fecha, profesional, estado, cliente)
+- Crear citas nuevas (necesitas: cliente, profesional, servicio, fecha, hora)
+- Actualizar citas (cambiar fecha, hora, profesional, servicio, estado, notas)
+- Eliminar citas
+- Cambiar estado de citas: confirmed, completed, cancelled, no_show
+- Ver disponibilidad de cada profesional
+- Precio y duracion se llenan automaticamente desde el servicio
+
 MODULO SERVICIOS (CATALOGO):
 - Ver el catalogo completo de servicios (nombre, categoria, precio, duracion, profesionales)
 - Crear nuevos servicios
@@ -1115,6 +1279,26 @@ ACCIONES DE SERVICIOS:
 ```
 ```action
 {{"action": "delete_service", "search_name": "Corte Premium"}}
+```
+
+ACCIONES DE AGENDA (CITAS):
+```action
+{{"action": "list_appointments", "date": "2026-03-09"}}
+```
+```action
+{{"action": "list_appointments", "staff_name": "Anderson", "date_from": "2026-03-09", "date_to": "2026-03-15"}}
+```
+```action
+{{"action": "create_appointment", "client_name": "Juan Pérez", "client_phone": "3001234567", "staff_name": "Anderson", "service_name": "Corte Hipster", "date": "2026-03-10", "time": "14:00"}}
+```
+```action
+{{"action": "update_appointment", "appointment_id": 5, "status": "completed"}}
+```
+```action
+{{"action": "update_appointment", "appointment_id": 5, "date": "2026-03-11", "time": "15:00", "staff_name": "Angel"}}
+```
+```action
+{{"action": "delete_appointment", "appointment_id": 5}}
 ```
 
 ACCIONES DE WHATSAPP:
