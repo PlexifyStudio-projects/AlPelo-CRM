@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Button from '../../common/Button/Button';
 import { formatCurrency, formatDate, daysSince } from '../../../utils/formatters';
@@ -21,6 +21,8 @@ const ClientDetail = ({ client, onClose, onEdit, onRefresh }) => {
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const statusBtnRef = useRef(null);
   const b = 'client-detail';
 
   useEffect(() => {
@@ -62,6 +64,26 @@ const ClientDetail = ({ client, onClose, onEdit, onRefresh }) => {
       setNotes(data);
     } catch { setNotes([]); }
   };
+
+  const toggleStatusMenu = useCallback(() => {
+    if (!showStatusMenu && statusBtnRef.current) {
+      const rect = statusBtnRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setShowStatusMenu(v => !v);
+  }, [showStatusMenu]);
+
+  // Close status menu on outside click
+  useEffect(() => {
+    if (!showStatusMenu) return;
+    const handler = (e) => {
+      if (statusBtnRef.current?.contains(e.target)) return;
+      if (e.target.closest(`.${b}__status-menu`)) return;
+      setShowStatusMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showStatusMenu]);
 
   const handleStatusChange = async (newStatus) => {
     setShowStatusMenu(false);
@@ -175,8 +197,9 @@ const ClientDetail = ({ client, onClose, onEdit, onRefresh }) => {
               {client.client_id && <span className={`${b}__client-id`}>{client.client_id}</span>}
               <div className={`${b}__status-wrapper`}>
                 <button
+                  ref={statusBtnRef}
                   className={`${b}__status ${b}__status--${client.status}`}
-                  onClick={() => setShowStatusMenu(!showStatusMenu)}
+                  onClick={toggleStatusMenu}
                   title="Cambiar estado"
                 >
                   {client.status === 'vip' && (
@@ -189,8 +212,11 @@ const ClientDetail = ({ client, onClose, onEdit, onRefresh }) => {
                     <path d="M6 9l6 6 6-6" />
                   </svg>
                 </button>
-                {showStatusMenu && (
-                  <div className={`${b}__status-menu`}>
+                {showStatusMenu && createPortal(
+                  <div
+                    className={`${b}__status-menu`}
+                    style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 99999 }}
+                  >
                     {STATUS_OPTIONS.map((opt) => (
                       <button
                         key={opt.value ?? 'auto'}
@@ -201,7 +227,8 @@ const ClientDetail = ({ client, onClose, onEdit, onRefresh }) => {
                         {opt.label}
                       </button>
                     ))}
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
             </div>

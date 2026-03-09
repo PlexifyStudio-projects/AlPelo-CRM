@@ -206,15 +206,11 @@
   }
 
   &__status-menu {
-    position: absolute;
-    top: calc(100% + $spacing-xs);
-    left: 0;
     min-width: 160px;
     background: $color-white;
     border: $border-width solid $border-color-medium;
     border-radius: $border-radius-md;
-    box-shadow: $shadow-lg;
-    z-index: 10;
+    box-shadow: $shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.12);
     padding: $spacing-xs 0;
     animation: cdFadeIn 150ms $ease-out-expo both;
   }
