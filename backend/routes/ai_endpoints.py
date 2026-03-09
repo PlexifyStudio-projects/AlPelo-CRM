@@ -1542,34 +1542,45 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
         messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
     messages.append({"role": "user", "content": data.message})
 
-    # Try each provider in order — automatic fallback on failure
+    # Try each provider with retry on 429 (rate limit)
+    import asyncio
     last_error = None
     text = None
     tokens = 0
+
+    async def _try_call(prov):
+        if prov["fn"] == "gemini":
+            return await _call_gemini(prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens)
+        elif prov["fn"] == "openai":
+            return await _call_openai_format("https://api.groq.com/openai/v1/chat/completions", prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens)
+        else:
+            return await _call_anthropic(prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens)
+
     for prov in providers:
-        try:
-            print(f"[AI] Trying provider: {prov['name']} ({prov['model']})")
-            if prov["fn"] == "gemini":
-                text, tokens = await _call_gemini(
-                    prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens
-                )
-            elif prov["fn"] == "openai":
-                text, tokens = await _call_openai_format(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens
-                )
-            else:
-                text, tokens = await _call_anthropic(
-                    prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens
-                )
-            print(f"[AI] Success with {prov['name']}")
-            break  # Success — stop trying
-        except (httpx.HTTPStatusError, httpx.RequestError) as e:
-            error_detail = getattr(e, 'response', None)
-            error_body = error_detail.text if error_detail else str(e)
-            print(f"[AI] {prov['name']} failed: {error_body[:200]}")
-            last_error = e
-            continue  # Try next provider
+        for attempt in range(3):  # Up to 3 attempts per provider (with backoff on 429)
+            try:
+                print(f"[AI] Trying {prov['name']} ({prov['model']}) attempt {attempt + 1}")
+                text, tokens = await _try_call(prov)
+                print(f"[AI] Success with {prov['name']}")
+                break
+            except httpx.HTTPStatusError as e:
+                error_body = e.response.text
+                status = e.response.status_code
+                print(f"[AI] {prov['name']} failed ({status}): {error_body[:200]}")
+                last_error = e
+                # On 429, retry same provider after delay (rate limits are per-minute)
+                if status == 429 and attempt < 2:
+                    wait = (attempt + 1) * 4  # 4s, 8s
+                    print(f"[AI] Rate limited, waiting {wait}s before retry...")
+                    await asyncio.sleep(wait)
+                    continue
+                break  # Non-429 error or max retries → try next provider
+            except httpx.RequestError as e:
+                print(f"[AI] {prov['name']} connection error: {e}")
+                last_error = e
+                break  # Connection error → try next provider
+        if text is not None:
+            break
 
     if text is None:
         error_body = getattr(last_error, 'response', None)

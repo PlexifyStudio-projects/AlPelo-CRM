@@ -137,9 +137,12 @@ const ChatAI = () => {
     setIsTyping(true);
     setQueryHistory((prev) => [trimmed, ...prev.filter((q) => q !== trimmed)].slice(0, 15));
 
-    // Send full conversation history for context persistence
+    // Send conversation history (exclude error messages to save tokens)
     const allMsgs = [...messages, userMsg];
-    const history = allMsgs.slice(-40).map((m) => ({ role: m.role, content: m.content }));
+    const history = allMsgs
+      .filter((m) => !m.isError)
+      .slice(-20)
+      .map((m) => ({ role: m.role, content: m.content }));
 
     try {
       const result = await aiService.chat(trimmed, history);
