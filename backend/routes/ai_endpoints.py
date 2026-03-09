@@ -1606,34 +1606,31 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
 # ============================================================================
 
 async def _call_ai(system_prompt: str, history: list, user_message: str) -> str:
-    """Standalone AI call for WhatsApp auto-reply. Returns plain text response."""
+    """Standalone AI call for WhatsApp auto-reply. Tries Anthropic first (paid, reliable), then free providers."""
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key = os.getenv("GROQ_API_KEY")
-    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 
     messages = list(history) + [{"role": "user", "content": user_message}]
 
-    try:
-        if gemini_key:
-            text, _ = await _call_gemini(
-                gemini_key, "gemini-2.0-flash",
-                system_prompt, messages, 0.4, 512
-            )
-        elif groq_key:
-            text, _ = await _call_openai_format(
-                "https://api.groq.com/openai/v1/chat/completions",
-                groq_key, "llama-3.3-70b-versatile",
-                system_prompt, messages, 0.4, 512
-            )
-        elif anthropic_key:
-            text, _ = await _call_anthropic(
-                anthropic_key, "claude-sonnet-4-20250514",
-                system_prompt, messages, 0.4, 512
-            )
-        else:
-            return "Disculpa, no puedo responder en este momento. Contacta a Al Pelo directamente."
+    # Build ordered provider list — paid first, free as fallback
+    providers = []
+    if anthropic_key:
+        providers.append(("anthropic", lambda: _call_anthropic(anthropic_key, "claude-haiku-4-5-20251001", system_prompt, messages, 0.4, 512)))
+    if gemini_key:
+        providers.append(("gemini", lambda: _call_gemini(gemini_key, "gemini-2.0-flash", system_prompt, messages, 0.4, 512)))
+    if groq_key:
+        providers.append(("groq", lambda: _call_openai_format("https://api.groq.com/openai/v1/chat/completions", groq_key, "llama-3.3-70b-versatile", system_prompt, messages, 0.4, 512)))
 
-        return text.strip()
-    except Exception as e:
-        print(f"[AI Call] Error: {e}")
-        return None
+    if not providers:
+        return "Disculpa, no puedo responder en este momento. Contacta a Al Pelo directamente."
+
+    for name, call_fn in providers:
+        try:
+            text, _ = await call_fn()
+            return text.strip()
+        except Exception as e:
+            print(f"[AI WhatsApp] {name} failed: {e}")
+            continue
+
+    return None

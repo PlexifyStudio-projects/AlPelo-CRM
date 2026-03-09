@@ -74,8 +74,10 @@ Tu estilo: mensajes cortos, directos, que suenan a mensaje de texto real bumangu
 ];
 
 const MODELS = [
-  { id: 'gemini-2.0-flash', provider: 'gemini', label: 'Gemini 2.0 Flash', cost: 'Gratis', tag: 'Recomendado', desc: '15 req/min, 1500/dia' },
-  { id: 'gemini-2.5-flash-preview-05-20', provider: 'gemini', label: 'Gemini 2.5 Flash Preview', cost: 'Gratis', tag: 'Nuevo', desc: 'Preview, limites bajos' },
+  { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', cost: '~$40 COP/msg', tag: 'Recomendado', desc: 'Rapido, confiable, sin limites' },
+  { id: 'claude-sonnet-4-6', provider: 'anthropic', label: 'Claude Sonnet 4.6', cost: '~$120 COP/msg', tag: 'Premium', desc: 'Mas inteligente, pago por uso' },
+  { id: 'gemini-2.0-flash', provider: 'gemini', label: 'Gemini 2.0 Flash', cost: 'Gratis', tag: null, desc: '15 req/min, 1500/dia' },
+  { id: 'gemini-2.5-flash-preview-05-20', provider: 'gemini', label: 'Gemini 2.5 Flash Preview', cost: 'Gratis', tag: null, desc: 'Preview, limites bajos' },
   { id: 'llama-3.3-70b-versatile', provider: 'groq', label: 'Llama 3.3 70B (Groq)', cost: 'Gratis', tag: null, desc: '~9 msg/dia (100K tokens)' },
 ];
 
