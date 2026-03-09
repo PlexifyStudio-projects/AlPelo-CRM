@@ -2,12 +2,12 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// Lina IA — Control Panel
+// Dashboard — Executive Panel
 // ============================================
 
-.lina-panel {
+.dashboard {
   @include page-enter;
-  max-width: 800px;
+  max-width: $max-content-width;
   margin: 0 auto;
 
   // ===========================================
@@ -16,39 +16,20 @@
   &__header {
     @include flex-between;
     margin-bottom: $spacing-xl;
-    animation: fadeIn 400ms $ease-out-expo both 0.05s;
+    animation: db-fadeIn 400ms $ease-out-expo both 0.05s;
     gap: $spacing-md;
   }
 
   &__header-left {
+    @include flex-column;
+    gap: 2px;
+  }
+
+  &__header-right {
     display: flex;
     align-items: center;
-    gap: $spacing-md;
-  }
-
-  &__status-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: $border-radius-full;
+    gap: $spacing-xs;
     flex-shrink: 0;
-    position: relative;
-
-    &--active {
-      background: $color-success;
-      box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.2);
-      animation: pulse-dot 2s ease-in-out infinite;
-    }
-
-    &--inactive {
-      background: $color-gray-300;
-      box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
-    }
-  }
-
-  &__header-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
   }
 
   &__title {
@@ -63,17 +44,355 @@
     font-weight: $font-weight-regular;
   }
 
-  &__header-right {
-    flex-shrink: 0;
+  &__live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: $border-radius-full;
+    background: $color-success;
+    animation: db-pulse 2s ease-in-out infinite;
   }
 
-  &__status-badge {
+  &__live-label {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  // ===========================================
+  // KPI CARDS
+  // ===========================================
+  &__kpis {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: $spacing-md;
+    margin-bottom: $spacing-xl;
+
+    @media (max-width: $breakpoint-xl) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__kpi-card {
+    @include glass-card;
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md $spacing-lg;
+    transition: all 300ms $ease-out-quart;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: $shadow-glass-hover, $glass-inner-glow;
+    }
+
+    @for $i from 1 through 5 {
+      &:nth-child(#{$i}) {
+        animation: db-fadeInUp 400ms $ease-out-expo both #{0.08 + $i * 0.04}s;
+      }
+    }
+
+    &--warning {
+      border-left: 3px solid $color-warning;
+    }
+
+    &--skeleton {
+      pointer-events: none;
+    }
+  }
+
+  &__kpi-icon {
+    @include flex-center;
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-md;
+    flex-shrink: 0;
+
+    &--primary {
+      background: $color-primary-ghost;
+      color: $color-primary;
+    }
+
+    &--success {
+      background: $color-success-bg;
+      color: $color-success-dark;
+    }
+
+    &--info {
+      background: $color-info-bg;
+      color: $color-info;
+    }
+
+    &--accent {
+      background: $color-accent-ghost;
+      color: $color-accent;
+    }
+
+    &--warning {
+      background: $color-warning-bg;
+      color: $color-warning-dark;
+    }
+
+    &--skeleton {
+      @include shimmer-bg;
+      width: 48px;
+      height: 48px;
+      border-radius: $border-radius-md;
+    }
+  }
+
+  &__kpi-info {
+    @include flex-column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__kpi-value {
+    font-family: $font-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    line-height: $line-height-tight;
+    font-variant-numeric: tabular-nums;
+    @include counter-roll-in;
+  }
+
+  &__kpi-label {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+    @include truncate;
+  }
+
+  &__kpi-sub {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-regular;
+    @include truncate;
+  }
+
+  // ===========================================
+  // SKELETON LINES
+  // ===========================================
+  &__skeleton-line {
+    @include shimmer-bg;
+    height: 14px;
+    border-radius: $border-radius-xs;
+
+    &--xs { width: 40px; }
+    &--short { width: 60px; height: 20px; }
+    &--medium { width: 100px; }
+    &--long { width: 160px; }
+  }
+
+  // ===========================================
+  // BODY (AGENDA + LINA)
+  // ===========================================
+  &__body {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
+    animation: db-fadeInUp 400ms $ease-out-expo both 0.3s;
+
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // ===========================================
+  // SECTION HEADER (shared)
+  // ===========================================
+  &__section-header {
+    @include flex-between;
+    margin-bottom: $spacing-md;
+  }
+
+  &__section-title {
+    font-family: $font-primary;
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin: 0;
+
+    svg {
+      color: $color-gray-400;
+    }
+  }
+
+  &__section-badge {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    padding: $spacing-2xs $spacing-sm;
+    background: $color-gray-50;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color;
+  }
+
+  // ===========================================
+  // AGENDA DE HOY
+  // ===========================================
+  &__agenda {
+    @include glass-card;
+    padding: $spacing-lg;
+    overflow: hidden;
+  }
+
+  &__agenda-empty {
+    @include flex-center;
+    padding: $spacing-2xl $spacing-md;
+    color: $color-gray-400;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+  }
+
+  &__agenda-table {
+    overflow-x: auto;
+    @include custom-scrollbar;
+  }
+
+  &__agenda-header-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 1fr 100px 100px;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-sm;
+    border-bottom: 1px solid $border-color-medium;
+    margin-bottom: $spacing-xs;
+
+    span {
+      @include label-text;
+      font-size: $font-size-2xs;
+    }
+  }
+
+  &__agenda-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 1fr 100px 100px;
+    gap: $spacing-sm;
+    padding: $spacing-sm;
+    border-bottom: 1px solid $border-color-light;
+    align-items: center;
+    transition: background 150ms $ease-out-quart;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: rgba(45, 90, 61, 0.02); }
+
+    &--skeleton {
+      pointer-events: none;
+    }
+  }
+
+  &__agenda-time {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__agenda-client {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__agenda-service {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    @include truncate;
+  }
+
+  &__agenda-staff {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    @include truncate;
+  }
+
+  &__agenda-status {
     display: inline-flex;
     align-items: center;
-    gap: $spacing-xs;
-    padding: $spacing-xs $spacing-md;
+    justify-content: center;
+    padding: $spacing-2xs $spacing-sm;
     border-radius: $border-radius-full;
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wide;
+    white-space: nowrap;
+
+    &--success {
+      background: $color-success-bg;
+      color: $color-success-dark;
+    }
+
+    &--info {
+      background: $color-info-bg;
+      color: $color-info-dark;
+    }
+
+    &--error {
+      background: $color-error-bg;
+      color: $color-error-dark;
+    }
+
+    &--warning {
+      background: $color-warning-bg;
+      color: $color-warning-dark;
+    }
+  }
+
+  &__top-services {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+    margin-top: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: 1px solid $border-color-light;
+  }
+
+  &__top-services-label {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  &__top-services-tag {
+    font-size: $font-size-2xs;
+    color: $color-primary;
+    background: $color-primary-ghost;
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-full;
+    font-weight: $font-weight-semibold;
+  }
+
+  // ===========================================
+  // LINA IA PANEL
+  // ===========================================
+  &__lina {
+    @include glass-card;
+    padding: $spacing-lg;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__lina-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-full;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     letter-spacing: $letter-spacing-wider;
     text-transform: uppercase;
@@ -91,314 +410,312 @@
     }
   }
 
-  // ===========================================
-  // POWER TOGGLE
-  // ===========================================
-  &__toggle-section {
-    @include flex-column;
-    align-items: center;
-    padding: $spacing-2xl $spacing-lg;
-    margin-bottom: $spacing-xl;
-    animation: fadeInUp 400ms $ease-out-expo both 0.1s;
-  }
-
-  &__power-btn {
-    position: relative;
-    width: 140px;
-    height: 140px;
-    border-radius: $border-radius-full;
-    border: none;
-    background: $color-gray-100;
-    color: $color-gray-400;
-    cursor: pointer;
-    transition: all 400ms $ease-out-expo;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: $spacing-lg;
-
-    &:hover {
-      transform: scale(1.05);
-    }
-
-    &:active {
-      transform: scale(0.97);
-    }
-
-    &--active {
-      background: linear-gradient(135deg, $color-primary-dark, $color-primary, $color-primary-light);
-      color: $color-white;
-      box-shadow: 0 8px 32px rgba(45, 90, 61, 0.3), 0 0 0 6px rgba(45, 90, 61, 0.1);
-
-      &:hover {
-        box-shadow: 0 12px 40px rgba(45, 90, 61, 0.4), 0 0 0 8px rgba(45, 90, 61, 0.12);
-      }
-    }
-
-    &--animating {
-      animation: power-pulse 600ms $ease-out-expo;
-    }
-  }
-
-  &__power-ring {
-    position: absolute;
-    inset: -8px;
-    border-radius: $border-radius-full;
-    border: 2px solid transparent;
-    transition: border-color 400ms $ease-out-expo;
-
-    .lina-panel__power-btn--active & {
-      border-color: rgba(45, 90, 61, 0.15);
-    }
-  }
-
-  &__power-icon {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__toggle-label {
-    font-size: $font-size-sm;
-    color: $color-gray-500;
-    text-align: center;
-    max-width: 400px;
-    line-height: $line-height-relaxed;
-    margin-bottom: $spacing-sm;
-  }
-
-  &__toggle-text-btn {
-    background: none;
-    border: none;
-    font-family: inherit;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    color: $color-primary;
-    cursor: pointer;
-    padding: $spacing-xs $spacing-md;
-    border-radius: $border-radius-full;
-    transition: all 200ms $ease-out-quart;
-
-    &:hover {
-      background: $color-primary-ghost;
-    }
-  }
-
-  // ===========================================
-  // LIVE STATS
-  // ===========================================
-  &__stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
+  // --- Toggle Switch ---
+  &__lina-toggle {
+    @include flex-between;
     gap: $spacing-md;
-    margin-bottom: $spacing-xl;
-    animation: fadeInUp 400ms $ease-out-expo both 0.2s;
+    padding: $spacing-sm $spacing-md;
+    background: $color-gray-50;
+    border-radius: $border-radius-md;
+    border: 1px solid $border-color;
+  }
 
-    @media (max-width: $breakpoint-lg) {
-      grid-template-columns: repeat(2, 1fr);
+  &__lina-toggle-label {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+    line-height: $line-height-snug;
+  }
+
+  &__toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    border-radius: $border-radius-full;
+    border: none;
+    background: $color-gray-300;
+    cursor: pointer;
+    transition: background 300ms $ease-out-quart;
+    flex-shrink: 0;
+    padding: 0;
+
+    &--on {
+      background: $color-primary;
     }
 
-    @media (max-width: $breakpoint-sm) {
-      grid-template-columns: 1fr;
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
   }
 
-  &__stat-card {
-    @include glass-card;
+  &__toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: $border-radius-full;
+    background: $color-white;
+    box-shadow: $shadow-xs;
+    transition: transform 300ms $ease-out-expo;
+
+    .dashboard__toggle-switch--on & {
+      transform: translateX(20px);
+    }
+  }
+
+  // --- Lina Stats Grid ---
+  &__lina-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-sm;
+  }
+
+  &__lina-stat {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: $spacing-md;
-    transition: all 300ms $ease-out-quart;
+    padding: $spacing-sm;
+    background: $color-gray-50;
+    border-radius: $border-radius-md;
+    border: 1px solid $border-color-light;
+    transition: all 200ms $ease-out-quart;
 
     &:hover {
-      transform: translateY(-3px);
+      background: $color-white;
+      border-color: $border-color;
     }
-
-    &:nth-child(1) { animation: fadeInUp 400ms $ease-out-expo both 0.12s; }
-    &:nth-child(2) { animation: fadeInUp 400ms $ease-out-expo both 0.18s; }
-    &:nth-child(3) { animation: fadeInUp 400ms $ease-out-expo both 0.24s; }
-    &:nth-child(4) { animation: fadeInUp 400ms $ease-out-expo both 0.30s; }
   }
 
-  &__stat-icon {
+  &__lina-stat-icon {
     @include flex-center;
-    width: 42px;
-    height: 42px;
-    border-radius: $border-radius-md;
+    width: 32px;
+    height: 32px;
+    border-radius: $border-radius-sm;
+    background: $color-primary-ghost;
+    color: $color-primary;
     flex-shrink: 0;
-
-    .lina-panel__stat-card--success & {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    .lina-panel__stat-card--info & {
-      background: $color-info-bg;
-      color: $color-info;
-    }
-
-    .lina-panel__stat-card--primary & {
-      background: $color-primary-ghost;
-      color: $color-primary;
-    }
-
-    .lina-panel__stat-card--accent & {
-      background: $color-accent-ghost;
-      color: $color-accent;
-    }
   }
 
-  &__stat-data {
+  &__lina-stat-info {
     @include flex-column;
-    gap: 1px;
+    gap: 0;
     min-width: 0;
   }
 
-  &__stat-number {
-    font-family: $font-heading;
-    font-size: $font-size-xl;
+  &__lina-stat-value {
+    font-size: $font-size-md;
     font-weight: $font-weight-bold;
     color: $color-secondary;
     line-height: $line-height-tight;
     font-variant-numeric: tabular-nums;
-    @include counter-roll-in;
+
+    &--unread {
+      color: $color-error;
+    }
   }
 
-  &__stat-label {
+  &__lina-stat-label {
     font-size: $font-size-2xs;
-    color: $color-gray-500;
+    color: $color-gray-400;
     font-weight: $font-weight-medium;
     @include truncate;
   }
 
-  // ===========================================
-  // ACTIVITY LOG
-  // ===========================================
-  &__log {
-    animation: fadeInUp 400ms $ease-out-expo both 0.35s;
-  }
-
-  &__log-header {
+  // --- WhatsApp summary ---
+  &__lina-wa {
     @include flex-between;
-    margin-bottom: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: rgba(37, 211, 102, 0.06);
+    border-radius: $border-radius-md;
+    border: 1px solid rgba(37, 211, 102, 0.15);
   }
 
-  &__log-title {
-    font-family: $font-primary;
-    font-size: $font-size-md;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
-  }
-
-  &__log-badge {
+  &__lina-wa-label {
     font-size: $font-size-xs;
+    color: $wa-green-dark;
     font-weight: $font-weight-semibold;
-    color: $color-gray-400;
-    padding: $spacing-2xs $spacing-sm;
-    background: $color-gray-50;
-    border-radius: $border-radius-full;
-    border: 1px solid $border-color;
   }
 
-  &__log-list {
+  &__lina-wa-value {
+    font-size: $font-size-xs;
+    color: $wa-green-dark;
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // ===========================================
+  // PENDING TASKS
+  // ===========================================
+  &__tasks {
     @include glass-card;
-    padding: 0;
-    overflow: hidden;
+    padding: $spacing-lg;
+    background: rgba(251, 191, 36, 0.04);
+    border: 1px solid $color-warning-border;
+    animation: db-fadeInUp 400ms $ease-out-expo both 0.4s;
   }
 
-  &__log-item {
+  &__tasks-count {
+    @include flex-center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 $spacing-sm;
+    border-radius: $border-radius-full;
+    background: $color-warning-bg;
+    color: $color-warning-dark;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid $color-warning-border;
+  }
+
+  &__tasks-empty {
+    @include flex-center;
+    padding: $spacing-xl $spacing-md;
+    color: $color-gray-400;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+  }
+
+  &__tasks-list {
+    @include flex-column;
+    gap: 0;
+  }
+
+  &__task-item {
     display: flex;
     align-items: flex-start;
     gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
-    border-bottom: 1px solid $border-color-light;
-    animation: fadeInUp 280ms $ease-out-expo both;
-    transition: background 150ms $ease-out-quart;
+    padding: $spacing-sm 0;
+    border-bottom: 1px solid rgba(251, 191, 36, 0.12);
 
     &:last-child { border-bottom: none; }
-    &:hover { background: rgba(45, 90, 61, 0.02); }
-
-    &--paused { opacity: 0.5; }
 
     @for $i from 1 through 10 {
       &:nth-child(#{$i}) {
-        animation-delay: #{$i * 0.04 + 0.35}s;
+        animation: db-fadeInUp 280ms $ease-out-expo both #{0.4 + $i * 0.04}s;
       }
     }
   }
 
-  &__log-icon {
-    @include flex-center;
-    width: 28px;
-    height: 28px;
-    border-radius: $border-radius-sm;
+  &__task-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: $border-radius-full;
+    background: $color-warning;
     flex-shrink: 0;
-    margin-top: 2px;
-
-    &--success {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--info {
-      background: $color-info-bg;
-      color: $color-info;
-    }
-
-    &--accent {
-      background: $color-accent-ghost;
-      color: $color-accent;
-    }
-
-    &--primary {
-      background: $color-primary-ghost;
-      color: $color-primary;
-    }
+    margin-top: 5px;
   }
 
-  &__log-content {
+  &__task-content {
     @include flex-column;
     gap: 2px;
     flex: 1;
     min-width: 0;
   }
 
-  &__log-text {
-    font-size: $font-size-sm;
+  &__task-client {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
     color: $color-secondary;
-    font-weight: $font-weight-medium;
+  }
+
+  &__task-text {
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+    font-weight: $font-weight-regular;
     line-height: $line-height-snug;
   }
 
-  &__log-time {
+  &__task-time {
     display: flex;
     align-items: center;
     gap: 4px;
     font-size: $font-size-2xs;
     color: $color-gray-400;
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin-top: 2px;
   }
 
   // ===========================================
-  // ANIMATIONS
+  // ERROR STATE
   // ===========================================
-  @include press-effect;
+  &__error {
+    @include glass-card;
+    @include flex-column-center;
+    padding: $spacing-3xl $spacing-xl;
+    gap: $spacing-md;
+    text-align: center;
+  }
+
+  &__error-icon {
+    @include flex-center;
+    width: 56px;
+    height: 56px;
+    border-radius: $border-radius-full;
+    background: $color-error-bg;
+    color: $color-error;
+  }
+
+  &__error-text {
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+  }
+
+  &__error-detail {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    max-width: 400px;
+  }
+
+  &__error-btn {
+    margin-top: $spacing-sm;
+    padding: $spacing-sm $spacing-xl;
+    border: none;
+    border-radius: $border-radius-full;
+    background: $color-primary;
+    color: $color-white;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover {
+      background: $color-primary-light;
+      transform: translateY(-1px);
+      box-shadow: $shadow-md;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
 }
 
-@keyframes pulse-dot {
-  0%, 100% {
-    box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.2);
+// ===========================================
+// NAMESPACED KEYFRAMES
+// ===========================================
+@keyframes db-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes db-fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
   }
-  50% {
-    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0.08);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@keyframes power-pulse {
-  0% { transform: scale(1); }
-  30% { transform: scale(0.92); }
-  60% { transform: scale(1.08); }
-  100% { transform: scale(1); }
+@keyframes db-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }

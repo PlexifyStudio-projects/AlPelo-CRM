@@ -1,0 +1,545 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// Finances — Financial Module
+// ============================================
+
+.finances {
+  @include page-enter;
+  max-width: $max-content-width;
+  margin: 0 auto;
+
+  // ===========================================
+  // HEADER
+  // ===========================================
+  &__header {
+    @include flex-between;
+    margin-bottom: $spacing-xl;
+    animation: fin-fadeIn 400ms $ease-out-expo both 0.05s;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+  }
+
+  &__header-left {
+    @include flex-column;
+    gap: 2px;
+  }
+
+  &__title {
+    @include heading($font-size-2xl);
+    line-height: $line-height-tight;
+    margin: 0;
+  }
+
+  &__subtitle {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    font-weight: $font-weight-regular;
+  }
+
+  // --- Period Selector ---
+  &__period-selector {
+    display: flex;
+    gap: 0;
+    background: $color-gray-50;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color;
+    padding: 3px;
+    flex-shrink: 0;
+  }
+
+  &__period-btn {
+    padding: $spacing-xs $spacing-md;
+    border: none;
+    background: transparent;
+    border-radius: $border-radius-full;
+    font-family: $font-primary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      color: $color-secondary;
+    }
+
+    &--active {
+      background: $color-white;
+      color: $color-primary;
+      box-shadow: $shadow-xs;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  // ===========================================
+  // KPI CARDS
+  // ===========================================
+  &__kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-md;
+    margin-bottom: $spacing-xl;
+
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__kpi-card {
+    @include glass-card;
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md $spacing-lg;
+    transition: all 300ms $ease-out-quart;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: $shadow-glass-hover, $glass-inner-glow;
+    }
+
+    @for $i from 1 through 4 {
+      &:nth-child(#{$i}) {
+        animation: fin-fadeInUp 400ms $ease-out-expo both #{0.08 + $i * 0.04}s;
+      }
+    }
+
+    &--primary {
+      border-left: 3px solid $color-primary;
+    }
+
+    &--warning {
+      border-left: 3px solid $color-warning;
+    }
+  }
+
+  &__kpi-icon {
+    @include flex-center;
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-md;
+    flex-shrink: 0;
+
+    &--primary {
+      background: $color-primary-ghost;
+      color: $color-primary;
+    }
+
+    &--success {
+      background: $color-success-bg;
+      color: $color-success-dark;
+    }
+
+    &--accent {
+      background: $color-accent-ghost;
+      color: $color-accent;
+    }
+
+    &--warning {
+      background: $color-warning-bg;
+      color: $color-warning-dark;
+    }
+  }
+
+  &__kpi-info {
+    @include flex-column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__kpi-value {
+    font-family: $font-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    line-height: $line-height-tight;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__kpi-label {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+    @include truncate;
+  }
+
+  // ===========================================
+  // BODY (CHART + SERVICES)
+  // ===========================================
+  &__body {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-xl;
+    animation: fin-fadeInUp 400ms $ease-out-expo both 0.3s;
+
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // ===========================================
+  // CARD (shared)
+  // ===========================================
+  &__card {
+    @include glass-card;
+    padding: $spacing-lg;
+    overflow: hidden;
+
+    &--chart {
+      display: flex;
+      flex-direction: column;
+    }
+
+    &--full {
+      animation: fin-fadeInUp 400ms $ease-out-expo both 0.4s;
+    }
+  }
+
+  &__card-header {
+    @include flex-between;
+    margin-bottom: $spacing-md;
+  }
+
+  &__card-title {
+    font-family: $font-primary;
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin: 0;
+
+    svg {
+      color: $color-gray-400;
+    }
+  }
+
+  // ===========================================
+  // CHART
+  // ===========================================
+  &__chart {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+  }
+
+  &__chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    flex: 1;
+    padding-top: $spacing-md;
+  }
+
+  &__chart-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 180px;
+    justify-content: flex-end;
+  }
+
+  &__chart-bar {
+    width: 100%;
+    max-width: 28px;
+    background: $color-primary;
+    border-radius: $border-radius-xs $border-radius-xs 0 0;
+    min-height: 4px;
+    transition: height 600ms $ease-out-expo, background 200ms;
+    cursor: pointer;
+
+    &:hover {
+      background: $color-primary-light;
+    }
+  }
+
+  &__chart-label {
+    font-size: 10px;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__chart-skeleton {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 180px;
+    padding-top: $spacing-md;
+
+    .finances__skeleton {
+      flex: 1;
+      border-radius: $border-radius-xs $border-radius-xs 0 0;
+    }
+  }
+
+  // ===========================================
+  // RANKING LIST (Services)
+  // ===========================================
+  &__ranking-list {
+    @include flex-column;
+    gap: 0;
+  }
+
+  &__ranking-item {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm 0;
+    border-bottom: 1px solid $border-color-light;
+
+    &:last-child { border-bottom: none; }
+
+    @for $i from 1 through 8 {
+      &:nth-child(#{$i}) {
+        animation: fin-fadeInUp 280ms $ease-out-expo both #{0.3 + $i * 0.04}s;
+      }
+    }
+  }
+
+  &__ranking-pos {
+    @include flex-center;
+    width: 24px;
+    height: 24px;
+    border-radius: $border-radius-full;
+    background: $color-gray-50;
+    border: 1px solid $border-color;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-500;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__ranking-info {
+    flex: 1;
+    min-width: 0;
+    @include flex-column;
+    gap: 4px;
+  }
+
+  &__ranking-top {
+    @include flex-between;
+    gap: $spacing-sm;
+  }
+
+  &__ranking-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__ranking-amount {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  &__ranking-bar-bg {
+    width: 100%;
+    height: 4px;
+    background: $color-gray-100;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+  }
+
+  &__ranking-bar {
+    height: 100%;
+    background: $color-primary;
+    border-radius: $border-radius-full;
+    transition: width 800ms $ease-out-expo;
+  }
+
+  &__ranking-count {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  // ===========================================
+  // STAFF GRID
+  // ===========================================
+  &__staff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: $spacing-md;
+  }
+
+  &__staff-card {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md;
+    background: $color-gray-50;
+    border-radius: $border-radius-md;
+    border: 1px solid $border-color-light;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover {
+      background: $color-white;
+      border-color: $border-color;
+      box-shadow: $shadow-xs;
+    }
+
+    @for $i from 1 through 6 {
+      &:nth-child(#{$i}) {
+        animation: fin-fadeInUp 280ms $ease-out-expo both #{0.4 + $i * 0.05}s;
+      }
+    }
+  }
+
+  &__staff-rank {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    background: $color-primary-ghost;
+    color: $color-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+  }
+
+  &__staff-info {
+    @include flex-column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__staff-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__staff-count {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  &__staff-revenue {
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  // ===========================================
+  // EMPTY & ERROR STATES
+  // ===========================================
+  &__empty {
+    @include flex-center;
+    padding: $spacing-2xl $spacing-md;
+    color: $color-gray-400;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+  }
+
+  &__error {
+    @include glass-card;
+    @include flex-column-center;
+    padding: $spacing-3xl $spacing-xl;
+    gap: $spacing-md;
+    text-align: center;
+  }
+
+  &__error-icon {
+    @include flex-center;
+    width: 56px;
+    height: 56px;
+    border-radius: $border-radius-full;
+    background: $color-error-bg;
+    color: $color-error;
+  }
+
+  &__error-text {
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+  }
+
+  &__error-detail {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    max-width: 400px;
+  }
+
+  &__error-btn {
+    margin-top: $spacing-sm;
+    padding: $spacing-sm $spacing-xl;
+    border: none;
+    border-radius: $border-radius-full;
+    background: $color-primary;
+    color: $color-white;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover {
+      background: $color-primary-light;
+      transform: translateY(-1px);
+      box-shadow: $shadow-md;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  // ===========================================
+  // SKELETON
+  // ===========================================
+  &__skeleton {
+    @include shimmer-bg;
+    border-radius: $border-radius-xs;
+  }
+
+  &__list-skeleton {
+    @include flex-column;
+    gap: $spacing-sm;
+  }
+}
+
+// ===========================================
+// NAMESPACED KEYFRAMES
+// ===========================================
+@keyframes fin-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fin-fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

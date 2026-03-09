@@ -1,11 +1,16 @@
 from typing import List, Optional
+from datetime import datetime, date, timedelta
+from collections import Counter
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import cast, String
+from sqlalchemy import cast, String, func
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment
+from database.models import (
+    Staff, Client, VisitHistory, ClientNote, Service, Appointment,
+    WhatsAppConversation, WhatsAppMessage,
+)
 from schemas import (
     StaffResponse,
     ClientResponse, ClientListResponse,
@@ -14,6 +19,14 @@ from schemas import (
     DashboardKPIs,
     ServiceResponse,
     AppointmentResponse,
+    DashboardStatsResponse,
+    AppointmentTodayItem,
+    PendingTaskItem,
+    TopServiceItem,
+    FinancialSummaryResponse,
+    RevenueDayItem,
+    RevenueServiceItem,
+    RevenueStaffItem,
 )
 
 router = APIRouter()
@@ -366,3 +379,322 @@ def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
         staff_name=staff.name if staff else None,
         service_name=service.name if service else None,
     )
+
+
+# ============================================================================
+# DASHBOARD STATS (comprehensive)
+# ============================================================================
+
+@router.get("/dashboard/stats", response_model=DashboardStatsResponse)
+def get_dashboard_stats(db: Session = Depends(get_db)):
+    from routes._helpers import compute_client_list_item
+
+    today = datetime.utcnow().date()
+    week_start = today - timedelta(days=today.weekday())
+    month_start = date(today.year, today.month, 1)
+
+    # ---------- Client metrics ----------
+    clients = db.query(Client).filter(Client.is_active == True).all()
+    enriched = [compute_client_list_item(c, db) for c in clients]
+
+    total_clients = len(enriched)
+    active_clients = sum(1 for c in enriched if c.status == "activo")
+    vip_clients = sum(1 for c in enriched if c.status == "vip")
+    at_risk_clients = sum(1 for c in enriched if c.status == "en_riesgo")
+
+    # New clients this month
+    new_clients_this_month = (
+        db.query(func.count(Client.id))
+        .filter(Client.is_active == True)
+        .filter(func.date(Client.created_at) >= month_start)
+        .scalar() or 0
+    )
+
+    # ---------- Today's appointments ----------
+    today_appointments = (
+        db.query(Appointment)
+        .filter(Appointment.date == today)
+        .order_by(Appointment.time)
+        .all()
+    )
+
+    staff_cache = {}
+    service_cache = {}
+    appointments_today_list = []
+    for a in today_appointments:
+        if a.staff_id not in staff_cache:
+            s = db.query(Staff).filter(Staff.id == a.staff_id).first()
+            staff_cache[a.staff_id] = s.name if s else None
+        if a.service_id not in service_cache:
+            svc = db.query(Service).filter(Service.id == a.service_id).first()
+            service_cache[a.service_id] = svc.name if svc else None
+
+        appointments_today_list.append(AppointmentTodayItem(
+            id=a.id,
+            time=a.time,
+            client_name=a.client_name,
+            service_name=service_cache.get(a.service_id),
+            staff_name=staff_cache.get(a.staff_id),
+            status=a.status,
+        ))
+
+    completed_today = sum(1 for a in today_appointments if a.status == "completed")
+
+    # ---------- Revenue ----------
+    def revenue_in_range(start_date, end_date):
+        result = (
+            db.query(func.coalesce(func.sum(VisitHistory.amount), 0))
+            .filter(VisitHistory.status == "completed")
+            .filter(VisitHistory.visit_date >= start_date)
+            .filter(VisitHistory.visit_date <= end_date)
+            .scalar()
+        )
+        return result or 0
+
+    revenue_today = revenue_in_range(today, today)
+    revenue_this_week = revenue_in_range(week_start, today)
+    revenue_this_month = revenue_in_range(month_start, today)
+
+    # ---------- WhatsApp ----------
+    today_start_dt = datetime.combine(today, datetime.min.time())
+    today_end_dt = datetime.combine(today, datetime.max.time())
+
+    whatsapp_messages_today = (
+        db.query(func.count(WhatsAppMessage.id))
+        .filter(WhatsAppMessage.direction == "outbound")
+        .filter(WhatsAppMessage.sent_by == "lina_ia")
+        .filter(WhatsAppMessage.created_at >= today_start_dt)
+        .filter(WhatsAppMessage.created_at <= today_end_dt)
+        .scalar() or 0
+    )
+
+    whatsapp_active_conversations = (
+        db.query(func.count(WhatsAppConversation.id))
+        .filter(WhatsAppConversation.is_ai_active == True)
+        .scalar() or 0
+    )
+
+    whatsapp_total_conversations = (
+        db.query(func.count(WhatsAppConversation.id)).scalar() or 0
+    )
+
+    whatsapp_unread = (
+        db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0))
+        .scalar() or 0
+    )
+
+    # ---------- Lina ----------
+    lina_is_global_active = (
+        whatsapp_active_conversations > (whatsapp_total_conversations / 2)
+        if whatsapp_total_conversations > 0
+        else False
+    )
+
+    lina_messages_today = whatsapp_messages_today  # same query: outbound by lina_ia today
+
+    lina_actions_today = (
+        db.query(func.count(ClientNote.id))
+        .filter(ClientNote.created_by == "lina_ia")
+        .filter(ClientNote.created_at >= today_start_dt)
+        .filter(ClientNote.created_at <= today_end_dt)
+        .scalar() or 0
+    )
+
+    # ---------- Pending tasks ----------
+    pending_notes = (
+        db.query(ClientNote)
+        .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+        .filter(~ClientNote.content.ilike("%RESUELTO:%"))
+        .order_by(ClientNote.created_at.desc())
+        .limit(20)
+        .all()
+    )
+
+    client_cache = {}
+    pending_tasks = []
+    for n in pending_notes:
+        if n.client_id not in client_cache:
+            cl = db.query(Client).filter(Client.id == n.client_id).first()
+            client_cache[n.client_id] = cl.name if cl else "Desconocido"
+        pending_tasks.append(PendingTaskItem(
+            id=n.id,
+            client_id=n.client_id,
+            client_name=client_cache[n.client_id],
+            content=n.content,
+            created_at=n.created_at,
+        ))
+
+    # ---------- Top services today ----------
+    service_counter = Counter()
+    for a in today_appointments:
+        svc_name = service_cache.get(a.service_id, "Otro")
+        service_counter[svc_name] += 1
+
+    top_services_today = [
+        TopServiceItem(name=name, count=count)
+        for name, count in service_counter.most_common(10)
+    ]
+
+    return DashboardStatsResponse(
+        total_clients=total_clients,
+        active_clients=active_clients,
+        vip_clients=vip_clients,
+        at_risk_clients=at_risk_clients,
+        new_clients_this_month=new_clients_this_month,
+        appointments_today=len(today_appointments),
+        appointments_today_list=appointments_today_list,
+        completed_today=completed_today,
+        revenue_today=revenue_today,
+        revenue_this_week=revenue_this_week,
+        revenue_this_month=revenue_this_month,
+        whatsapp_messages_today=whatsapp_messages_today,
+        whatsapp_active_conversations=whatsapp_active_conversations,
+        whatsapp_total_conversations=whatsapp_total_conversations,
+        whatsapp_unread=whatsapp_unread,
+        lina_is_global_active=lina_is_global_active,
+        lina_messages_today=lina_messages_today,
+        lina_actions_today=lina_actions_today,
+        pending_tasks=pending_tasks,
+        top_services_today=top_services_today,
+    )
+
+
+# ============================================================================
+# FINANCIAL SUMMARY
+# ============================================================================
+
+@router.get("/finances/summary", response_model=FinancialSummaryResponse)
+def get_financial_summary(
+    period: str = Query("month"),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    today = datetime.utcnow().date()
+
+    # Determine date range
+    if date_from and date_to:
+        start = date.fromisoformat(date_from)
+        end = date.fromisoformat(date_to)
+    elif period == "today":
+        start = end = today
+    elif period == "week":
+        start = today - timedelta(days=today.weekday())
+        end = today
+    elif period == "year":
+        start = date(today.year, 1, 1)
+        end = today
+    else:  # month (default)
+        start = date(today.year, today.month, 1)
+        end = today
+
+    # Base query: completed visits in range
+    visits = (
+        db.query(VisitHistory)
+        .filter(VisitHistory.status == "completed")
+        .filter(VisitHistory.visit_date >= start)
+        .filter(VisitHistory.visit_date <= end)
+        .all()
+    )
+
+    total_revenue = sum(v.amount for v in visits)
+    total_visits = len(visits)
+    avg_ticket = total_revenue // total_visits if total_visits > 0 else 0
+
+    # Revenue by day
+    day_map = {}
+    for v in visits:
+        d = v.visit_date.isoformat()
+        if d not in day_map:
+            day_map[d] = {"revenue": 0, "visits": 0}
+        day_map[d]["revenue"] += v.amount
+        day_map[d]["visits"] += 1
+
+    revenue_by_day = [
+        RevenueDayItem(date=d, revenue=info["revenue"], visits=info["visits"])
+        for d, info in sorted(day_map.items())
+    ]
+
+    # Revenue by service
+    svc_map = {}
+    for v in visits:
+        name = v.service_name
+        if name not in svc_map:
+            svc_map[name] = {"revenue": 0, "count": 0}
+        svc_map[name]["revenue"] += v.amount
+        svc_map[name]["count"] += 1
+
+    revenue_by_service = sorted(
+        [RevenueServiceItem(service_name=n, revenue=info["revenue"], count=info["count"]) for n, info in svc_map.items()],
+        key=lambda x: x.revenue,
+        reverse=True,
+    )
+
+    # Revenue by staff
+    staff_map_rev = {}
+    staff_name_cache = {}
+    for v in visits:
+        if v.staff_id not in staff_name_cache:
+            s = db.query(Staff).filter(Staff.id == v.staff_id).first()
+            staff_name_cache[v.staff_id] = s.name if s else "Desconocido"
+        sname = staff_name_cache[v.staff_id]
+        if sname not in staff_map_rev:
+            staff_map_rev[sname] = {"revenue": 0, "count": 0}
+        staff_map_rev[sname]["revenue"] += v.amount
+        staff_map_rev[sname]["count"] += 1
+
+    revenue_by_staff = sorted(
+        [RevenueStaffItem(staff_name=n, revenue=info["revenue"], count=info["count"]) for n, info in staff_map_rev.items()],
+        key=lambda x: x.revenue,
+        reverse=True,
+    )
+
+    # Pending payments — conversations tagged with pago pendiente
+    pending_payments = (
+        db.query(func.count(WhatsAppConversation.id))
+        .filter(cast(WhatsAppConversation.tags, String).ilike('%Pago pendiente%'))
+        .scalar() or 0
+    )
+
+    return FinancialSummaryResponse(
+        period=period,
+        total_revenue=total_revenue,
+        total_visits=total_visits,
+        avg_ticket=avg_ticket,
+        revenue_by_day=revenue_by_day,
+        revenue_by_service=revenue_by_service,
+        revenue_by_staff=revenue_by_staff,
+        pending_payments=pending_payments,
+    )
+
+
+# ============================================================================
+# PENDING NOTES / TASKS
+# ============================================================================
+
+@router.get("/notes/pending", response_model=List[PendingTaskItem])
+def get_pending_notes(db: Session = Depends(get_db)):
+    notes = (
+        db.query(ClientNote)
+        .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+        .filter(~ClientNote.content.ilike("%RESUELTO:%"))
+        .order_by(ClientNote.created_at.desc())
+        .limit(30)
+        .all()
+    )
+
+    client_cache = {}
+    result = []
+    for n in notes:
+        if n.client_id not in client_cache:
+            cl = db.query(Client).filter(Client.id == n.client_id).first()
+            client_cache[n.client_id] = cl.name if cl else "Desconocido"
+        result.append(PendingTaskItem(
+            id=n.id,
+            client_id=n.client_id,
+            client_name=client_cache[n.client_id],
+            content=n.content,
+            created_at=n.created_at,
+        ))
+
+    return result

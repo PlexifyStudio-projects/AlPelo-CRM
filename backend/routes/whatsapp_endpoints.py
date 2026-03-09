@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, joinedload
 from database.connection import get_db, SessionLocal
 from database.models import WhatsAppConversation, WhatsAppMessage, Client
 from routes._helpers import normalize_phone
+from schemas import ToggleAllAIRequest as _ToggleAllAIRequest
 
 router = APIRouter(prefix="/whatsapp", tags=["WhatsApp"])
 
@@ -778,8 +779,18 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                             ai_text = "[SISTEMA: El cliente envio un video. NO puedes ver videos. Dile amablemente que no pudiste cargar el video y preguntale que necesita o que te cuente de que se trata.]"
 
                         if ai_text or needs_transcription or needs_vision:
-                            already_queued = any(r["conv_id"] == conv.id for r in conversations_to_reply)
-                            if not already_queued:
+                            # Check if this conversation already has a queued reply
+                            existing_entry = next((r for r in conversations_to_reply if r["conv_id"] == conv.id), None)
+                            if existing_entry:
+                                # Merge: append text from additional messages in same batch
+                                if ai_text and not ai_text.startswith("📎"):
+                                    existing_entry["inbound_text"] = (existing_entry["inbound_text"] + "\n" + ai_text).strip()
+                                # If this message has vision and the existing one doesn't, upgrade
+                                if needs_vision and not existing_entry.get("needs_vision"):
+                                    existing_entry["needs_vision"] = True
+                                    existing_entry["media_id"] = media_url
+                                    existing_entry["media_mime"] = media_mime
+                            else:
                                 conversations_to_reply.append({
                                     "conv_id": conv.id,
                                     "from_phone": from_phone,
@@ -901,8 +912,8 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 if not inbound_text or inbound_text.startswith("📎"):
                     inbound_text = "[El cliente envio una imagen pero no se pudo descargar. Dile que recibiste la imagen pero no cargo, y preguntale que necesita.]"
 
-        # Step 1: Wait random 20-90 seconds (natural human-like delay)
-        delay = random.randint(20, 90)
+        # Step 1: Wait random 20-40 seconds (natural human-like delay)
+        delay = random.randint(20, 40)
         print(f"[Lina IA] Waiting {delay}s before replying to conv {conv_id}...")
         await asyncio.sleep(delay)
 
@@ -957,14 +968,33 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     return
 
             # Step 3: Get conversation history and generate AI response
+            # Re-fetch recent messages (more may have arrived during the delay)
+            # Use 40 messages for full context — Lina needs to understand the whole conversation
             recent_msgs = (
                 db.query(WhatsAppMessage)
                 .filter(WhatsAppMessage.conversation_id == conv_id)
                 .order_by(WhatsAppMessage.created_at.desc())
-                .limit(20)
+                .limit(40)
                 .all()
             )
             recent_msgs.reverse()
+
+            # Collect ALL recent inbound messages that came after the last Lina reply
+            # This ensures we don't miss any text sent alongside/after an image
+            pending_inbound = []
+            for m in reversed(recent_msgs):
+                if m.direction == "inbound":
+                    pending_inbound.append(m.content)
+                elif m.sent_by == "lina_ia":
+                    pending_inbound = []  # Reset — only care about msgs after last AI reply
+
+            # Combine all pending inbound messages into the prompt
+            # This catches: image + separate text, or multiple texts before AI responds
+            if len(pending_inbound) > 1:
+                combined_text = "\n".join(t for t in pending_inbound if t and not t.startswith("📎"))
+                if combined_text.strip():
+                    inbound_text = combined_text.strip()
+                    print(f"[Lina IA] Combined {len(pending_inbound)} pending messages: {inbound_text[:100]}")
 
             history = []
             for m in recent_msgs:
@@ -975,12 +1005,13 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             system_prompt = _build_system_prompt(db, is_whatsapp=True, conv_id=conv_id)
 
-            # The inbound message is already in history (from DB), so pass empty
-            # to avoid duplication. _call_ai appends user_message to history.
-            if history and history[-1]["role"] == "user" and history[-1]["content"] == inbound_text:
-                ai_response = await _call_ai(system_prompt, history[:-1], inbound_text, image_b64=image_data_b64, image_mime=image_media_type)
-            else:
-                ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type)
+            # The inbound messages are already in history (from DB).
+            # Build the final user message: combined text + image if applicable.
+            # Remove the last N inbound entries from history to avoid duplication.
+            while history and history[-1]["role"] == "user":
+                history.pop()
+
+            ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type)
 
             if not ai_response or not ai_response.strip():
                 print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")
@@ -1017,19 +1048,29 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     action_type = action_data.get("action")
 
                     if action_type == "tag_conversation":
-                        # Handle conversation tagging
+                        # Handle conversation tagging (special — needs conv object)
                         tags = action_data.get("tags", [])
                         if tags:
                             existing_tags = conv.tags or []
                             conv.tags = list(set(existing_tags + tags))
                             db.commit()
                             print(f"[Lina IA] Tagged conv {conv_id}: {tags}")
-                    elif action_type in ("create_client", "add_note", "update_client"):
-                        # Force real phone from conversation (never trust AI-generated phone)
+
+                    elif action_type in (
+                        "create_client", "update_client", "delete_client",
+                        "add_note", "list_clients_by_filter",
+                        "create_appointment", "update_appointment", "delete_appointment", "list_appointments",
+                        "list_services", "add_visit",
+                    ):
+                        # Force real phone from conversation for client creation
                         if action_type == "create_client":
                             action_data["phone"] = conv.wa_contact_phone
 
-                        # Use existing action executor
+                        # For create_appointment, auto-fill client phone from conversation
+                        if action_type == "create_appointment" and not action_data.get("client_phone"):
+                            action_data["client_phone"] = conv.wa_contact_phone
+
+                        # Route ALL actions through the unified executor
                         from routes.ai_endpoints import _execute_action
                         result = _execute_action(action_data, db)
                         print(f"[Lina IA] Action {action_type}: {result}")
@@ -1044,6 +1085,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                                 conv.client_id = new_client.id
                                 db.commit()
                                 print(f"[Lina IA] Linked conv {conv_id} to client {new_client.client_id}")
+
+                    else:
+                        print(f"[Lina IA] Unknown action type: {action_type}")
                 except Exception as action_err:
                     print(f"[Lina IA] Action error: {action_err}")
 
@@ -1096,18 +1140,24 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 clean_response = "Hola! Soy Lina de AlPelo Peluqueria. En que te puedo ayudar?"
 
             # Step 3.9: Payment/comprobante detection — tag alert + pause AI
+            # ONLY trigger for ACTUAL payment confirmations (receipts, proof of payment)
+            # NOT for questions about payment ("cuanto debo?", "puedo pagar?", "pago adelantado?")
             inbound_lower = (inbound_text or "").lower()
-            PAYMENT_KEYWORDS = [
-                "pago", "pague", "pagué", "transferencia", "transferi", "transferí",
-                "comprobante", "recibo", "consignacion", "consignación", "nequi",
-                "daviplata", "bancolombia", "deposito", "depósito", "abono",
-                "giro", "enviado", "ya pague", "ya pagué", "te envie", "te envié",
+
+            # Strong indicators: client says they ALREADY paid/sent money
+            PAYMENT_CONFIRM_PHRASES = [
+                "ya pague", "ya pagué", "ya te pague", "ya te pagué",
+                "ya transferi", "ya transferí", "te envie el pago", "te envié el pago",
+                "te hice la transferencia", "ahi te envie", "ahí te envié",
+                "hice el pago", "realice el pago", "realicé el pago",
+                "te envie el comprobante", "te envié el comprobante",
+                "ahi va el comprobante", "ahí va el comprobante",
+                "mira el comprobante", "aqui esta el comprobante",
+                "aquí está el comprobante", "te mando el recibo",
             ]
-            is_payment = any(kw in inbound_lower for kw in PAYMENT_KEYWORDS)
-            # Also flag if client sent an image with payment-related caption
-            if needs_vision and any(kw in inbound_lower for kw in PAYMENT_KEYWORDS):
-                is_payment = True
-            # Flag if image was sent right after a payment-related message (check last 3 messages)
+            is_payment = any(phrase in inbound_lower for phrase in PAYMENT_CONFIRM_PHRASES)
+
+            # If client sent an image and recent messages mention payment confirmation
             if needs_vision and not is_payment:
                 recent_check = (
                     db.query(WhatsAppMessage)
@@ -1117,9 +1167,15 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     .all()
                 )
                 for rc in recent_check:
-                    if any(kw in (rc.content or "").lower() for kw in PAYMENT_KEYWORDS):
+                    rc_lower = (rc.content or "").lower()
+                    if any(phrase in rc_lower for phrase in PAYMENT_CONFIRM_PHRASES):
                         is_payment = True
                         break
+
+            # Also check if the AI response itself flags it as payment
+            ai_lower = clean_response.lower()
+            if any(phrase in ai_lower for phrase in ["verificar.*pago", "confirmar.*pago", "recibido.*pago"]):
+                pass  # Let the AI handle it naturally
 
             if is_payment:
                 # Tag conversation as payment alert
@@ -1130,8 +1186,18 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 conv.is_ai_active = False
                 db.commit()
                 print(f"[Lina IA] PAYMENT DETECTED for conv {conv_id} — tagged + AI paused")
-                # Override response to acknowledge and defer to admin
-                clean_response = "Recibido! Voy a pasarle tu informacion al equipo para que lo verifiquen. Te confirman en un momento 👍"
+                # Get client name for personalized message
+                client_name = ""
+                if conv.client_id:
+                    from database.models import Client as ClientModel
+                    cl = db.query(ClientModel).filter(ClientModel.id == conv.client_id).first()
+                    if cl:
+                        client_name = cl.name.split()[0]  # First name only
+                if not client_name:
+                    client_name = conv.wa_contact_name.split()[0] if conv.wa_contact_name else ""
+                name_suffix = f" {client_name}" if client_name else ""
+                # Lina acknowledges and takes ownership — SHE verifies, not "the team"
+                clean_response = f"Permiteme un momento en lo que verifico la informacion del pago{name_suffix}, gracias! 🙏"
 
             # Step 4: Send AI response via WhatsApp
             wa_message_id = None
@@ -1333,6 +1399,17 @@ def set_profile_photo(conv_id: int, body: dict, db: Session = Depends(get_db)):
 # ============================================================================
 # MESSAGE SEARCH — Search messages across all conversations
 # ============================================================================
+@router.post("/toggle-all-ai")
+def toggle_all_ai(body: _ToggleAllAIRequest, db: Session = Depends(get_db)):
+    """Enable or disable Lina IA on ALL conversations at once."""
+    updated = (
+        db.query(WhatsAppConversation)
+        .update({WhatsAppConversation.is_ai_active: body.enable})
+    )
+    db.commit()
+    return {"updated": updated, "is_active": body.enable}
+
+
 @router.get("/messages/search")
 def search_messages(q: str = Query(..., min_length=2), db: Session = Depends(get_db)):
     """Search messages across all conversations."""

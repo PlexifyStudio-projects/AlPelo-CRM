@@ -8,6 +8,7 @@ const MENU_ITEMS = [
   { id: 'agenda', label: 'Agenda', description: 'CITAS Y CALENDARIO', section: 'GESTION PRINCIPAL' },
   { id: 'clients', label: 'Clientes', description: 'CRM Y GESTION DE CLIENTES', section: 'GESTION PRINCIPAL' },
   { id: 'services', label: 'Servicios', description: 'CATALOGO Y PRECIOS', section: 'GESTION PRINCIPAL' },
+  { id: 'finances', label: 'Finanzas', description: 'INGRESOS Y METRICAS', section: 'GESTION PRINCIPAL' },
   { id: 'team', label: 'Equipo', description: 'RENDIMIENTO Y FEEDBACK', section: 'GESTION PRINCIPAL' },
   { id: 'inbox', label: 'Inbox', description: 'CONVERSACIONES WHATSAPP', section: 'WHATSAPP' },
   { id: 'messaging', label: 'Plantillas', description: 'MENSAJES MASIVOS', section: 'WHATSAPP' },

@@ -49,6 +49,11 @@ def _run_migrations(engine):
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     _run_migrations(engine)
+
+    # Start background scheduler for reminders and pending tasks
+    from scheduler import start_scheduler
+    start_scheduler()
+
     print("[STARTUP] AlPelo API ready")
     yield
     print("[SHUTDOWN] Stopped")

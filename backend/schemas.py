@@ -333,6 +333,101 @@ class AppointmentResponse(BaseModel):
         from_attributes = True
 
 
+#========================= DASHBOARD STATS =========================#
+
+class AppointmentTodayItem(BaseModel):
+    id: int
+    time: str
+    client_name: str
+    service_name: Optional[str] = None
+    staff_name: Optional[str] = None
+    status: str
+
+class PendingTaskItem(BaseModel):
+    id: int
+    client_id: int
+    client_name: str
+    content: str
+    created_at: Optional[datetime] = None
+
+class TopServiceItem(BaseModel):
+    name: str
+    count: int
+
+class DashboardStatsResponse(BaseModel):
+    # Client metrics
+    total_clients: int = 0
+    active_clients: int = 0
+    vip_clients: int = 0
+    at_risk_clients: int = 0
+    new_clients_this_month: int = 0
+
+    # Today's activity
+    appointments_today: int = 0
+    appointments_today_list: List[AppointmentTodayItem] = []
+    completed_today: int = 0
+
+    # Revenue
+    revenue_today: int = 0
+    revenue_this_week: int = 0
+    revenue_this_month: int = 0
+
+    # WhatsApp
+    whatsapp_messages_today: int = 0
+    whatsapp_active_conversations: int = 0
+    whatsapp_total_conversations: int = 0
+    whatsapp_unread: int = 0
+
+    # Lina
+    lina_is_global_active: bool = False
+    lina_messages_today: int = 0
+    lina_actions_today: int = 0
+
+    # Pending tasks
+    pending_tasks: List[PendingTaskItem] = []
+
+    # Top services today
+    top_services_today: List[TopServiceItem] = []
+
+
+#========================= FINANCES =========================#
+
+class RevenueDayItem(BaseModel):
+    date: str
+    revenue: int
+    visits: int
+
+class RevenueServiceItem(BaseModel):
+    service_name: str
+    revenue: int
+    count: int
+
+class RevenueStaffItem(BaseModel):
+    staff_name: str
+    revenue: int
+    count: int
+
+class FinancialSummaryResponse(BaseModel):
+    period: str
+    total_revenue: int = 0
+    total_visits: int = 0
+    avg_ticket: int = 0
+    revenue_by_day: List[RevenueDayItem] = []
+    revenue_by_service: List[RevenueServiceItem] = []
+    revenue_by_staff: List[RevenueStaffItem] = []
+    pending_payments: int = 0
+
+
+#========================= TOGGLE AI =========================#
+
+class ToggleAllAIRequest(BaseModel):
+    enable: bool
+
+class ToggleAllAIResponse(BaseModel):
+    updated: int
+    is_active: bool
+
+
 #========================= AI CONFIG =========================#
 
 class AIConfigCreate(BaseModel):
