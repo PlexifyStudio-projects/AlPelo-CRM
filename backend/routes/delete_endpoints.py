@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment
+from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment, WhatsAppConversation, WhatsAppMessage
 
 router = APIRouter()
 
@@ -34,10 +34,15 @@ def delete_client(client_id: int, hard: bool = False, db: Session = Depends(get_
         raise HTTPException(status_code=404, detail="Client not found")
 
     if hard:
-        # Delete related records first
+        # Delete related records first (all foreign keys)
         db.query(VisitHistory).filter(VisitHistory.client_id == client_id).delete()
         db.query(ClientNote).filter(ClientNote.client_id == client_id).delete()
         db.query(Appointment).filter(Appointment.client_id == client_id).delete()
+        # WhatsApp conversations and their messages
+        convos = db.query(WhatsAppConversation).filter(WhatsAppConversation.client_id == client_id).all()
+        for c in convos:
+            db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id == c.id).delete()
+            db.delete(c)
         db.delete(client)
         db.commit()
         return {"success": True, "message": f"Client '{client.name}' permanently deleted"}
