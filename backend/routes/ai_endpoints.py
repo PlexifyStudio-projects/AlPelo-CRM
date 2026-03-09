@@ -363,10 +363,6 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- WHATSAPP ----
     elif action_type == "send_whatsapp":
-        import httpx
-        import asyncio
-        from database.models import WhatsAppConversation, WhatsAppMessage
-
         # Accept multiple field names for search flexibility
         search_name = (action.get("search_name") or action.get("name") or action.get("client") or action.get("to") or action.get("contact") or "").strip()
         phone = (action.get("phone") or action.get("number") or action.get("telefono") or "").strip()
