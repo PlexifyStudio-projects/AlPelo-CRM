@@ -74,9 +74,9 @@ Tu estilo: mensajes cortos, directos, que suenan a mensaje de texto real bumangu
 ];
 
 const MODELS = [
-  { id: 'gemini-2.0-flash', provider: 'gemini', label: 'Gemini 2.0 Flash', cost: 'Gratis', tag: 'Recomendado' },
-  { id: 'gemini-2.5-flash-preview-05-20', provider: 'gemini', label: 'Gemini 2.5 Flash', cost: 'Gratis', tag: 'Nuevo' },
-  { id: 'llama-3.3-70b-versatile', provider: 'groq', label: 'Llama 3.3 70B (Groq)', cost: 'Gratis', tag: null },
+  { id: 'gemini-2.0-flash', provider: 'gemini', label: 'Gemini 2.0 Flash', cost: 'Gratis', tag: 'Recomendado', desc: '15 req/min, 1500/dia' },
+  { id: 'gemini-2.5-flash-preview-05-20', provider: 'gemini', label: 'Gemini 2.5 Flash Preview', cost: 'Gratis', tag: 'Nuevo', desc: 'Preview, limites bajos' },
+  { id: 'llama-3.3-70b-versatile', provider: 'groq', label: 'Llama 3.3 70B (Groq)', cost: 'Gratis', tag: null, desc: '~9 msg/dia (100K tokens)' },
 ];
 
 const Settings = () => {
@@ -93,9 +93,13 @@ const Settings = () => {
   const [aiSaving, setAiSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(true);
   const [selectedPreset, setSelectedPreset] = useState(null);
+  const [providerStatus, setProviderStatus] = useState(null);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     loadAiConfig();
+    loadProviderStatus();
   }, []);
 
   const loadAiConfig = async () => {
@@ -118,6 +122,29 @@ const Settings = () => {
       // No config yet, use defaults
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  const loadProviderStatus = async () => {
+    try {
+      const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+      const res = await fetch(`${API}/ai/status`);
+      if (res.ok) setProviderStatus(await res.json());
+    } catch { /* ignore */ }
+  };
+
+  const handleTestAI = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const start = Date.now();
+      const result = await aiService.chat('Responde SOLO con "OK, funcionando correctamente" y nada mas.', []);
+      const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+      setTestResult({ ok: true, msg: `${result.response} (${elapsed}s, ${result.tokens_used} tokens)` });
+    } catch (err) {
+      setTestResult({ ok: false, msg: err.message });
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -240,12 +267,24 @@ const Settings = () => {
                   if (model) setProvider(model.provider);
                 }}
               >
-                {MODELS.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label} — {m.cost}{m.tag ? ` (${m.tag})` : ''}
-                  </option>
-                ))}
+                {MODELS.map((m) => {
+                  const status = providerStatus?.[m.provider];
+                  const available = status?.configured !== false;
+                  return (
+                    <option key={m.id} value={m.id} disabled={!available}>
+                      {m.label} — {m.cost}{m.tag ? ` (${m.tag})` : ''}{!available ? ' [Sin API key]' : ''}
+                    </option>
+                  );
+                })}
               </select>
+              {(() => {
+                const currentModel = MODELS.find(m => m.id === selectedModel);
+                return currentModel?.desc ? (
+                  <span className={`${b}__ai-label-hint`} style={{ marginTop: 4 }}>
+                    Limite: {currentModel.desc} — Fallback automatico si se agota
+                  </span>
+                ) : null;
+              })()}
             </div>
 
             <div className={`${b}__ai-field ${b}__ai-field--quarter`}>
@@ -282,6 +321,28 @@ const Settings = () => {
             </div>
           </div>
 
+          {/* Provider status */}
+          {providerStatus && (
+            <div className={`${b}__providers`}>
+              <label className={`${b}__ai-label`}>Estado de proveedores (fallback automatico)</label>
+              <div className={`${b}__provider-list`}>
+                {['gemini', 'groq', 'anthropic'].map(p => {
+                  const s = providerStatus[p];
+                  const isActive = provider === p;
+                  return (
+                    <div key={p} className={`${b}__provider ${s?.configured ? `${b}__provider--ok` : `${b}__provider--off`} ${isActive ? `${b}__provider--active` : ''}`}>
+                      <span className={`${b}__provider-dot`} />
+                      <span className={`${b}__provider-name`}>{p.charAt(0).toUpperCase() + p.slice(1)}</span>
+                      <span className={`${b}__provider-status`}>
+                        {s?.configured ? (isActive ? 'Principal' : 'Respaldo') : 'Sin key'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className={`${b}__ai-actions`}>
             <button
               className={`${b}__ai-save`}
@@ -290,12 +351,24 @@ const Settings = () => {
             >
               {aiSaving ? 'Guardando...' : aiConfig?.id ? 'Actualizar configuracion' : 'Guardar configuracion'}
             </button>
+            <button
+              className={`${b}__ai-test`}
+              onClick={handleTestAI}
+              disabled={testing}
+            >
+              {testing ? 'Probando...' : 'Probar IA'}
+            </button>
             {aiConfig?.updated_at && (
               <span className={`${b}__ai-last-saved`}>
                 Ultima actualizacion: {new Date(aiConfig.updated_at).toLocaleDateString('es-CO')}
               </span>
             )}
           </div>
+          {testResult && (
+            <div className={`${b}__test-result ${testResult.ok ? `${b}__test-result--ok` : `${b}__test-result--err`}`}>
+              {testResult.ok ? '✓' : '✗'} {testResult.msg}
+            </div>
+          )}
         </Card>
 
         {/* ========== NOTIFICATIONS ========== */}

@@ -27,15 +27,24 @@ def delete_staff(staff_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.delete("/clients/{client_id}")
-def delete_client(client_id: int, db: Session = Depends(get_db)):
-    """Soft delete - sets is_active=False. History is preserved."""
+def delete_client(client_id: int, hard: bool = False, db: Session = Depends(get_db)):
+    """Delete client. soft=deactivate (default), hard=permanent delete with all history."""
     client = db.query(Client).filter(Client.id == client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
-    client.is_active = False
-    db.commit()
-    return {"success": True, "message": f"Client '{client.name}' deactivated"}
+    if hard:
+        # Delete related records first
+        db.query(VisitHistory).filter(VisitHistory.client_id == client_id).delete()
+        db.query(ClientNote).filter(ClientNote.client_id == client_id).delete()
+        db.query(Appointment).filter(Appointment.client_id == client_id).delete()
+        db.delete(client)
+        db.commit()
+        return {"success": True, "message": f"Client '{client.name}' permanently deleted"}
+    else:
+        client.is_active = False
+        db.commit()
+        return {"success": True, "message": f"Client '{client.name}' deactivated"}
 
 
 # ============================================================================

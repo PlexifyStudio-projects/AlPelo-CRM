@@ -453,6 +453,115 @@
     color: $color-gray-400;
   }
 
+  &__ai-test {
+    padding: $spacing-sm $spacing-lg;
+    background: transparent;
+    color: $color-primary;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    border: 1.5px solid $color-primary;
+    border-radius: $border-radius-md;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover:not(:disabled) {
+      background: rgba($color-primary, 0.08);
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  // Provider status indicators
+  &__providers {
+    margin-bottom: $spacing-md;
+    padding-bottom: $spacing-md;
+  }
+
+  &__provider-list {
+    display: flex;
+    gap: $spacing-sm;
+    margin-top: $spacing-xs;
+  }
+
+  &__provider {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    background: rgba($color-gray-100, 0.5);
+    border: 1.5px solid transparent;
+
+    &--ok {
+      background: rgba(#22c55e, 0.06);
+    }
+
+    &--off {
+      opacity: 0.45;
+    }
+
+    &--active {
+      border-color: $color-primary;
+      background: rgba($color-primary, 0.06);
+    }
+  }
+
+  &__provider-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $color-gray-300;
+
+    .settings__provider--ok & {
+      background: #22c55e;
+    }
+
+    .settings__provider--off & {
+      background: $color-gray-300;
+    }
+
+    .settings__provider--active & {
+      background: $color-primary;
+      box-shadow: 0 0 6px rgba($color-primary, 0.5);
+    }
+  }
+
+  &__provider-name {
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+  }
+
+  &__provider-status {
+    color: $color-gray-400;
+    font-size: 10px;
+  }
+
+  // Test result
+  &__test-result {
+    margin-top: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+
+    &--ok {
+      background: rgba(#22c55e, 0.08);
+      color: #16a34a;
+      border: 1px solid rgba(#22c55e, 0.2);
+    }
+
+    &--err {
+      background: rgba(#ef4444, 0.08);
+      color: #dc2626;
+      border: 1px solid rgba(#ef4444, 0.2);
+    }
+  }
+
   // -----------------------------------------------
   // RESPONSIVE
   // -----------------------------------------------
