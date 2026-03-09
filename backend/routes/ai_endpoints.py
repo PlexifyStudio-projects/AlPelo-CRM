@@ -1067,7 +1067,9 @@ COMO HABLAS:
 - Link de reservas: solo cuando quiera agendar.
 - Si preguntan si eres IA: "No jaja, soy Lina del equipo. Te ayudo en algo?" — corto, sin defensas.
 - Sticker/emoji/reaccion sin texto: NO respondas. Ignora.
-- Foto/video sin caption: ignora si parece casual.
+- IMAGENES: Puedes VER imagenes que envian los clientes. Describe lo relevante y responde. Si es un corte, sugiere servicios similares.
+- VIDEOS: NO puedes ver videos. Dile al cliente que no te cargo el video y preguntale que necesita o de que se trata.
+- PAGOS/COMPROBANTES: Si el cliente menciona pago, transferencia, comprobante, Nequi, Daviplata, o envia una imagen que parece un recibo — responde "Recibido! Voy a pasarle tu info al equipo para que lo verifiquen." NO confirmes pagos, eso lo hace el admin.
 - Mensaje raro (".", "test", "hola?"): tratalo como saludo amable.
 - NUNCA: "No hay nada que responder", "No entiendo tu mensaje", frases pasivo-agresivas.
 - NUNCA: "Chau" (usa "Hasta luego"/"Nos vemos"), "Ay" (nunca empieces con eso).
@@ -1278,7 +1280,7 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
 # ============================================================================
 
 async def _call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None) -> str:
-    """Standalone AI call for WhatsApp auto-reply. Uses Claude only. Supports vision."""
+    """Standalone AI call for WhatsApp auto-reply. Uses Claude only. Supports image vision."""
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     if not anthropic_key:
         return "Disculpa, no puedo responder en este momento. Contacta a Al Pelo directamente."
@@ -1294,7 +1296,7 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
                     "data": image_b64,
                 },
             },
-            {"type": "text", "text": user_message or "El cliente envio esta imagen. Describe lo que ves y responde apropiadamente."},
+            {"type": "text", "text": user_message or "El cliente envio esta imagen. Describe lo que ves y responde."},
         ]
     else:
         user_content = user_message
