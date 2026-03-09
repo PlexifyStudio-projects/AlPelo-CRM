@@ -56,14 +56,10 @@ def update_ai_config(config_id: int, data: AIConfigUpdate, db: Session = Depends
 
 @router.get("/ai/status")
 def ai_provider_status():
-    """Check which AI providers have keys configured and which is active."""
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    groq_key = os.getenv("GROQ_API_KEY")
+    """Check AI provider status."""
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     return {
-        "gemini": {"configured": bool(gemini_key), "key_prefix": gemini_key[:8] + "..." if gemini_key else None},
-        "groq": {"configured": bool(groq_key), "key_prefix": groq_key[:8] + "..." if groq_key else None},
-        "anthropic": {"configured": bool(anthropic_key), "key_prefix": anthropic_key[:8] + "..." if anthropic_key else None},
+        "anthropic": {"configured": bool(anthropic_key), "key_prefix": anthropic_key[:12] + "..." if anthropic_key else None},
     }
 
 
@@ -1189,27 +1185,8 @@ HOY: {date.today().strftime('%d de %B de %Y')}
 
 
 # ============================================================================
-# PROVIDER CALLS
+# PROVIDER CALL — Claude (Anthropic) only
 # ============================================================================
-
-async def _call_openai_format(url: str, api_key: str, model: str, system_prompt: str, messages: list, temperature: float, max_tokens: int):
-    payload = {
-        "model": model,
-        "messages": [{"role": "system", "content": system_prompt}] + messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    }
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-
-    async with httpx.AsyncClient(timeout=90.0) as client:
-        response = await client.post(url, json=payload, headers=headers)
-        response.raise_for_status()
-
-    result = response.json()
-    text = result["choices"][0]["message"]["content"]
-    tokens = result.get("usage", {}).get("total_tokens", 0)
-    return text, tokens
-
 
 async def _call_anthropic(api_key: str, model: str, system_prompt: str, messages: list, temperature: float, max_tokens: int):
     payload = {
@@ -1221,42 +1198,13 @@ async def _call_anthropic(api_key: str, model: str, system_prompt: str, messages
     }
     headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"}
 
-    async with httpx.AsyncClient(timeout=90.0) as client:
+    async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post("https://api.anthropic.com/v1/messages", json=payload, headers=headers)
         response.raise_for_status()
 
     result = response.json()
     text = result.get("content", [{}])[0].get("text", "")
     tokens = result.get("usage", {}).get("input_tokens", 0) + result.get("usage", {}).get("output_tokens", 0)
-    return text, tokens
-
-
-async def _call_gemini(api_key: str, model: str, system_prompt: str, messages: list, temperature: float, max_tokens: int):
-    """Call Google Gemini API via REST (generateContent endpoint)."""
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-
-    # Build contents array: system instruction + conversation history
-    contents = []
-    for msg in messages:
-        role = "user" if msg["role"] == "user" else "model"
-        contents.append({"role": role, "parts": [{"text": msg["content"]}]})
-
-    payload = {
-        "system_instruction": {"parts": [{"text": system_prompt}]},
-        "contents": contents,
-        "generationConfig": {
-            "temperature": temperature,
-            "maxOutputTokens": max_tokens,
-        },
-    }
-
-    async with httpx.AsyncClient(timeout=90.0) as client:
-        response = await client.post(url, json=payload, headers={"Content-Type": "application/json"})
-        response.raise_for_status()
-
-    result = response.json()
-    text = result.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-    tokens = result.get("usageMetadata", {}).get("totalTokenCount", 0)
     return text, tokens
 
 
@@ -1268,98 +1216,36 @@ ACTION_PATTERN = re.compile(r'```action\s*(.*?)```', re.DOTALL)
 
 @router.post("/ai/chat", response_model=AIChatResponse)
 async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    groq_key = os.getenv("GROQ_API_KEY")
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    if not anthropic_key:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada en el servidor.")
 
     config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
-    preferred_provider = config.provider if config else "gemini"
-    cfg_model = config.model if config else None
+    model = (config.model if config and config.model and "claude" in (config.model or "") else "claude-haiku-4-5-20251001")
     temperature = config.temperature if config else 0.4
     max_tokens = config.max_tokens if config else 1024
-
-    # Build ordered list of providers to try (preferred first, then fallbacks)
-    providers = []
-
-    def _add(name, key, model_name, fn):
-        if key:
-            providers.append({"name": name, "key": key, "model": model_name, "fn": fn})
-
-    if preferred_provider == "groq":
-        _add("groq", groq_key, cfg_model if cfg_model and "llama" in (cfg_model or "") else "llama-3.3-70b-versatile", "openai")
-        _add("gemini", gemini_key, "gemini-2.0-flash", "gemini")
-        _add("anthropic", anthropic_key, "claude-haiku-4-5-20251001", "anthropic")
-    elif preferred_provider == "gemini":
-        _add("gemini", gemini_key, cfg_model if cfg_model and "gemini" in (cfg_model or "") else "gemini-2.0-flash", "gemini")
-        _add("groq", groq_key, "llama-3.3-70b-versatile", "openai")
-        _add("anthropic", anthropic_key, "claude-haiku-4-5-20251001", "anthropic")
-    elif preferred_provider == "anthropic":
-        _add("anthropic", anthropic_key, cfg_model or "claude-haiku-4-5-20251001", "anthropic")
-        _add("gemini", gemini_key, "gemini-2.0-flash", "gemini")
-        _add("groq", groq_key, "llama-3.3-70b-versatile", "openai")
-    else:
-        _add("gemini", gemini_key, "gemini-2.0-flash", "gemini")
-        _add("groq", groq_key, "llama-3.3-70b-versatile", "openai")
-        _add("anthropic", anthropic_key, "claude-haiku-4-5-20251001", "anthropic")
-
-    if not providers:
-        raise HTTPException(status_code=500, detail="No hay API key configurada. Agrega GEMINI_API_KEY, GROQ_API_KEY o ANTHROPIC_API_KEY.")
 
     # Build system prompt with live business data
     system_prompt = _build_system_prompt(db)
 
-    # Build messages (full conversation history for context)
+    # Build messages
     messages = []
     for msg in data.conversation_history:
         messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
     messages.append({"role": "user", "content": data.message})
 
-    # Try each provider with retry on 429 (rate limit)
-    import asyncio
-    last_error = None
-    text = None
-    tokens = 0
-
-    async def _try_call(prov):
-        if prov["fn"] == "gemini":
-            return await _call_gemini(prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens)
-        elif prov["fn"] == "openai":
-            return await _call_openai_format("https://api.groq.com/openai/v1/chat/completions", prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens)
-        else:
-            return await _call_anthropic(prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens)
-
-    for prov in providers:
-        for attempt in range(3):  # Up to 3 attempts per provider (with backoff on 429)
-            try:
-                print(f"[AI] Trying {prov['name']} ({prov['model']}) attempt {attempt + 1}")
-                text, tokens = await _try_call(prov)
-                print(f"[AI] Success with {prov['name']}")
-                break
-            except httpx.HTTPStatusError as e:
-                error_body = e.response.text
-                status = e.response.status_code
-                print(f"[AI] {prov['name']} failed ({status}): {error_body[:200]}")
-                last_error = e
-                # On 429, retry same provider after delay (rate limits are per-minute)
-                if status == 429 and attempt < 2:
-                    wait = (attempt + 1) * 2  # 2s, 4s
-                    print(f"[AI] Rate limited, waiting {wait}s before retry...")
-                    await asyncio.sleep(wait)
-                    continue
-                break  # Non-429 error or max retries → try next provider
-            except httpx.RequestError as e:
-                print(f"[AI] {prov['name']} connection error: {e}")
-                last_error = e
-                break  # Connection error → try next provider
-        if text is not None:
-            break
-
-    if text is None:
-        error_body = getattr(last_error, 'response', None)
-        error_text = error_body.text if error_body else str(last_error)
-        if "rate_limit" in error_text.lower() or "429" in error_text:
-            raise HTTPException(status_code=429, detail="Todos los proveedores de IA agotaron sus limites. Intenta mas tarde.")
-        raise HTTPException(status_code=502, detail="No pude conectarme a ningun proveedor de IA. Intenta de nuevo en unos minutos.")
+    # Call Claude
+    try:
+        print(f"[AI] Calling {model}")
+        text, tokens = await _call_anthropic(anthropic_key, model, system_prompt, messages, temperature, max_tokens)
+        print(f"[AI] Success ({tokens} tokens)")
+    except httpx.HTTPStatusError as e:
+        error_body = e.response.text[:200]
+        print(f"[AI] Claude failed ({e.response.status_code}): {error_body}")
+        raise HTTPException(status_code=502, detail=f"Error de IA: {error_body}")
+    except httpx.RequestError as e:
+        print(f"[AI] Connection error: {e}")
+        raise HTTPException(status_code=502, detail="No se pudo conectar con el servicio de IA.")
 
     # Parse and execute any action blocks
     action_matches = ACTION_PATTERN.findall(text)
@@ -1388,31 +1274,16 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
 # ============================================================================
 
 async def _call_ai(system_prompt: str, history: list, user_message: str) -> str:
-    """Standalone AI call for WhatsApp auto-reply. Tries Anthropic first (paid, reliable), then free providers."""
+    """Standalone AI call for WhatsApp auto-reply. Uses Claude only."""
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-    gemini_key = os.getenv("GEMINI_API_KEY")
-    groq_key = os.getenv("GROQ_API_KEY")
+    if not anthropic_key:
+        return "Disculpa, no puedo responder en este momento. Contacta a Al Pelo directamente."
 
     messages = list(history) + [{"role": "user", "content": user_message}]
 
-    # Build ordered provider list — paid first, free as fallback
-    providers = []
-    if anthropic_key:
-        providers.append(("anthropic", lambda: _call_anthropic(anthropic_key, "claude-haiku-4-5-20251001", system_prompt, messages, 0.4, 512)))
-    if gemini_key:
-        providers.append(("gemini", lambda: _call_gemini(gemini_key, "gemini-2.0-flash", system_prompt, messages, 0.4, 512)))
-    if groq_key:
-        providers.append(("groq", lambda: _call_openai_format("https://api.groq.com/openai/v1/chat/completions", groq_key, "llama-3.3-70b-versatile", system_prompt, messages, 0.4, 512)))
-
-    if not providers:
-        return "Disculpa, no puedo responder en este momento. Contacta a Al Pelo directamente."
-
-    for name, call_fn in providers:
-        try:
-            text, _ = await call_fn()
-            return text.strip()
-        except Exception as e:
-            print(f"[AI WhatsApp] {name} failed: {e}")
-            continue
-
-    return None
+    try:
+        text, _ = await _call_anthropic(anthropic_key, "claude-haiku-4-5-20251001", system_prompt, messages, 0.4, 512)
+        return text.strip()
+    except Exception as e:
+        print(f"[AI WhatsApp] Claude failed: {e}")
+        return None

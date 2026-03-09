@@ -74,11 +74,8 @@ Tu estilo: mensajes cortos, directos, que suenan a mensaje de texto real bumangu
 ];
 
 const MODELS = [
-  { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', cost: '~$40 COP/msg', tag: 'Recomendado', desc: 'Rapido, confiable, sin limites' },
-  { id: 'claude-sonnet-4-6', provider: 'anthropic', label: 'Claude Sonnet 4.6', cost: '~$120 COP/msg', tag: 'Premium', desc: 'Mas inteligente, pago por uso' },
-  { id: 'gemini-2.0-flash', provider: 'gemini', label: 'Gemini 2.0 Flash', cost: 'Gratis', tag: null, desc: '15 req/min, 1500/dia' },
-  { id: 'gemini-2.5-flash-preview-05-20', provider: 'gemini', label: 'Gemini 2.5 Flash Preview', cost: 'Gratis', tag: null, desc: 'Preview, limites bajos' },
-  { id: 'llama-3.3-70b-versatile', provider: 'groq', label: 'Llama 3.3 70B (Groq)', cost: 'Gratis', tag: null, desc: '~9 msg/dia (100K tokens)' },
+  { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', cost: '~$40 COP/msg', tag: 'Recomendado', desc: 'Rapido y economico — ideal para Lina' },
+  { id: 'claude-sonnet-4-6', provider: 'anthropic', label: 'Claude Sonnet 4.6', cost: '~$120 COP/msg', tag: 'Premium', desc: 'Mas inteligente, respuestas superiores' },
 ];
 
 const Settings = () => {
@@ -88,8 +85,8 @@ const Settings = () => {
   const [aiConfig, setAiConfig] = useState(null);
   const [aiName, setAiName] = useState('Lina IA');
   const [systemPrompt, setSystemPrompt] = useState(PERSONALITY_PRESETS[0].prompt);
-  const [selectedModel, setSelectedModel] = useState('gemini-2.0-flash');
-  const [provider, setProvider] = useState('gemini');
+  const [selectedModel, setSelectedModel] = useState('claude-haiku-4-5-20251001');
+  const [provider, setProvider] = useState('anthropic');
   const [temperature, setTemperature] = useState(0.4);
   const [maxTokens, setMaxTokens] = useState(512);
   const [aiSaving, setAiSaving] = useState(false);
@@ -111,7 +108,7 @@ const Settings = () => {
       setAiName(config.name);
       setSystemPrompt(config.system_prompt);
       setSelectedModel(config.model);
-      setProvider(config.provider || 'gemini');
+      setProvider(config.provider || 'anthropic');
       setTemperature(config.temperature);
       setMaxTokens(config.max_tokens);
 
@@ -326,21 +323,15 @@ const Settings = () => {
           {/* Provider status */}
           {providerStatus && (
             <div className={`${b}__providers`}>
-              <label className={`${b}__ai-label`}>Estado de proveedores (fallback automatico)</label>
+              <label className={`${b}__ai-label`}>Proveedor de IA</label>
               <div className={`${b}__provider-list`}>
-                {['gemini', 'groq', 'anthropic'].map(p => {
-                  const s = providerStatus[p];
-                  const isActive = provider === p;
-                  return (
-                    <div key={p} className={`${b}__provider ${s?.configured ? `${b}__provider--ok` : `${b}__provider--off`} ${isActive ? `${b}__provider--active` : ''}`}>
-                      <span className={`${b}__provider-dot`} />
-                      <span className={`${b}__provider-name`}>{p.charAt(0).toUpperCase() + p.slice(1)}</span>
-                      <span className={`${b}__provider-status`}>
-                        {s?.configured ? (isActive ? 'Principal' : 'Respaldo') : 'Sin key'}
-                      </span>
-                    </div>
-                  );
-                })}
+                <div className={`${b}__provider ${providerStatus.anthropic?.configured ? `${b}__provider--ok ${b}__provider--active` : `${b}__provider--off`}`}>
+                  <span className={`${b}__provider-dot`} />
+                  <span className={`${b}__provider-name`}>Claude (Anthropic)</span>
+                  <span className={`${b}__provider-status`}>
+                    {providerStatus.anthropic?.configured ? 'Conectado' : 'Sin API key'}
+                  </span>
+                </div>
               </div>
             </div>
           )}
