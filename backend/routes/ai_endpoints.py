@@ -1483,43 +1483,41 @@ ACTION_PATTERN = re.compile(r'```action\s*(.*?)```', re.DOTALL)
 
 @router.post("/ai/chat", response_model=AIChatResponse)
 async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
-    # Determine provider
     gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key = os.getenv("GROQ_API_KEY")
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
 
     config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
-    provider = config.provider if config else "gemini"
-    model = config.model if config else None
+    preferred_provider = config.provider if config else "gemini"
+    cfg_model = config.model if config else None
     temperature = config.temperature if config else 0.4
     max_tokens = config.max_tokens if config else 1024
 
-    if provider == "gemini" and gemini_key:
-        api_key = gemini_key
-        model = model if model and "gemini" in (model or "") else "gemini-2.0-flash"
-        call_fn = "gemini"
-    elif provider == "anthropic" and anthropic_key:
-        api_key = anthropic_key
-        model = model or "claude-sonnet-4-20250514"
-        call_fn = "anthropic"
-    elif provider == "groq" and groq_key:
-        api_key = groq_key
-        model = model if model and "llama" in (model or "") else "llama-3.3-70b-versatile"
-        call_fn = "openai"
-    # Fallback chain: gemini > groq > anthropic
-    elif gemini_key:
-        api_key = gemini_key
-        model = "gemini-2.0-flash"
-        call_fn = "gemini"
-    elif groq_key:
-        api_key = groq_key
-        model = "llama-3.3-70b-versatile"
-        call_fn = "openai"
-    elif anthropic_key:
-        api_key = anthropic_key
-        model = model or "claude-sonnet-4-20250514"
-        call_fn = "anthropic"
+    # Build ordered list of providers to try (preferred first, then fallbacks)
+    providers = []
+
+    def _add(name, key, model_name, fn):
+        if key:
+            providers.append({"name": name, "key": key, "model": model_name, "fn": fn})
+
+    if preferred_provider == "groq":
+        _add("groq", groq_key, cfg_model if cfg_model and "llama" in (cfg_model or "") else "llama-3.3-70b-versatile", "openai")
+        _add("gemini", gemini_key, "gemini-2.0-flash", "gemini")
+        _add("anthropic", anthropic_key, "claude-sonnet-4-20250514", "anthropic")
+    elif preferred_provider == "gemini":
+        _add("gemini", gemini_key, cfg_model if cfg_model and "gemini" in (cfg_model or "") else "gemini-2.0-flash", "gemini")
+        _add("groq", groq_key, "llama-3.3-70b-versatile", "openai")
+        _add("anthropic", anthropic_key, "claude-sonnet-4-20250514", "anthropic")
+    elif preferred_provider == "anthropic":
+        _add("anthropic", anthropic_key, cfg_model or "claude-sonnet-4-20250514", "anthropic")
+        _add("gemini", gemini_key, "gemini-2.0-flash", "gemini")
+        _add("groq", groq_key, "llama-3.3-70b-versatile", "openai")
     else:
+        _add("gemini", gemini_key, "gemini-2.0-flash", "gemini")
+        _add("groq", groq_key, "llama-3.3-70b-versatile", "openai")
+        _add("anthropic", anthropic_key, "claude-sonnet-4-20250514", "anthropic")
+
+    if not providers:
         raise HTTPException(status_code=500, detail="No hay API key configurada. Agrega GEMINI_API_KEY, GROQ_API_KEY o ANTHROPIC_API_KEY.")
 
     # Build system prompt with live business data
@@ -1531,30 +1529,41 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
         messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
     messages.append({"role": "user", "content": data.message})
 
-    # Call AI
-    try:
-        if call_fn == "gemini":
-            text, tokens = await _call_gemini(
-                api_key, model, system_prompt, messages, temperature, max_tokens
-            )
-        elif call_fn == "openai":
-            text, tokens = await _call_openai_format(
-                "https://api.groq.com/openai/v1/chat/completions",
-                api_key, model, system_prompt, messages, temperature, max_tokens
-            )
-        else:
-            text, tokens = await _call_anthropic(
-                api_key, model, system_prompt, messages, temperature, max_tokens
-            )
-    except httpx.HTTPStatusError as e:
-        error_body = e.response.text
-        print(f"[AI] Provider error: {error_body}")
-        if "rate_limit" in error_body.lower() or "429" in str(e.response.status_code):
-            raise HTTPException(status_code=429, detail="Se agotaron los tokens de IA por hoy. El limite se reinicia en unas horas. Intenta mas tarde.")
-        raise HTTPException(status_code=502, detail="No pude conectarme al proveedor de IA. Intenta de nuevo en unos minutos.")
-    except httpx.RequestError as e:
-        print(f"[AI] Connection error: {e}")
-        raise HTTPException(status_code=502, detail="Error de conexion con el proveedor de IA. Intenta de nuevo.")
+    # Try each provider in order — automatic fallback on failure
+    last_error = None
+    text = None
+    tokens = 0
+    for prov in providers:
+        try:
+            print(f"[AI] Trying provider: {prov['name']} ({prov['model']})")
+            if prov["fn"] == "gemini":
+                text, tokens = await _call_gemini(
+                    prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens
+                )
+            elif prov["fn"] == "openai":
+                text, tokens = await _call_openai_format(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens
+                )
+            else:
+                text, tokens = await _call_anthropic(
+                    prov["key"], prov["model"], system_prompt, messages, temperature, max_tokens
+                )
+            print(f"[AI] Success with {prov['name']}")
+            break  # Success — stop trying
+        except (httpx.HTTPStatusError, httpx.RequestError) as e:
+            error_detail = getattr(e, 'response', None)
+            error_body = error_detail.text if error_detail else str(e)
+            print(f"[AI] {prov['name']} failed: {error_body[:200]}")
+            last_error = e
+            continue  # Try next provider
+
+    if text is None:
+        error_body = getattr(last_error, 'response', None)
+        error_text = error_body.text if error_body else str(last_error)
+        if "rate_limit" in error_text.lower() or "429" in error_text:
+            raise HTTPException(status_code=429, detail="Todos los proveedores de IA agotaron sus limites. Intenta mas tarde.")
+        raise HTTPException(status_code=502, detail="No pude conectarme a ningun proveedor de IA. Intenta de nuevo en unos minutos.")
 
     # Parse and execute any action blocks
     action_matches = ACTION_PATTERN.findall(text)
