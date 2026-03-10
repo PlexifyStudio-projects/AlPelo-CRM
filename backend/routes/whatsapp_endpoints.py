@@ -350,10 +350,15 @@ async def toggle_ai(conv_id: int, body: dict, background_tasks: BackgroundTasks,
             .first()
         )
         if last_inbound:
-            # Only catch up if Lina hasn't replied to the last inbound message
+            # Only catch up if Lina hasn't SUCCESSFULLY replied to the last inbound message
+            # Exclude failed sends — those never reached the client
             last_ai_reply = (
                 db.query(WhatsAppMessage)
-                .filter(WhatsAppMessage.conversation_id == conv.id, WhatsAppMessage.sent_by == "lina_ia")
+                .filter(
+                    WhatsAppMessage.conversation_id == conv.id,
+                    WhatsAppMessage.sent_by == "lina_ia",
+                    WhatsAppMessage.status != "failed",
+                )
                 .order_by(desc(WhatsAppMessage.created_at))
                 .first()
             )
@@ -1653,13 +1658,14 @@ async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundT
             if not last_inbound:
                 continue
 
-            # Only skip if a REAL Lina AI reply (not off-hours template, not admin)
-            # was sent AFTER the client's last message
+            # Only skip if a REAL Lina AI reply (not off-hours, not admin, not failed)
+            # was SUCCESSFULLY sent AFTER the client's last message
             last_ai_reply = (
                 db.query(WhatsAppMessage)
                 .filter(
                     WhatsAppMessage.conversation_id == conv.id,
                     WhatsAppMessage.sent_by == "lina_ia",
+                    WhatsAppMessage.status != "failed",
                 )
                 .order_by(desc(WhatsAppMessage.created_at))
                 .first()

@@ -629,13 +629,14 @@ def _sweep_missed_conversations(db):
         if last_inbound.created_at > min_age or last_inbound.created_at < max_age:
             continue
 
-        # Check if Lina already replied after this message
+        # Check if Lina already SUCCESSFULLY replied after this message (exclude failed sends)
         last_ai = (
             db.query(WhatsAppMessage)
             .filter(
                 WhatsAppMessage.conversation_id == conv.id,
                 WhatsAppMessage.direction == "outbound",
                 WhatsAppMessage.sent_by.in_(["lina_ia", "lina_ia_sweep"]),
+                WhatsAppMessage.status != "failed",
                 WhatsAppMessage.created_at > last_inbound.created_at,
             )
             .first()
