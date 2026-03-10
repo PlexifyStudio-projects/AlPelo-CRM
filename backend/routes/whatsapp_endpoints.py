@@ -1535,14 +1535,72 @@ def set_profile_photo(conv_id: int, body: dict, db: Session = Depends(get_db)):
 # MESSAGE SEARCH — Search messages across all conversations
 # ============================================================================
 @router.post("/toggle-all-ai")
-def toggle_all_ai(body: _ToggleAllAIRequest, db: Session = Depends(get_db)):
-    """Enable or disable Lina IA on ALL conversations at once."""
+async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Enable or disable Lina IA on ALL conversations at once.
+    When enabling, immediately catch-up on all conversations with unread inbound messages."""
     updated = (
         db.query(WhatsAppConversation)
         .update({WhatsAppConversation.is_ai_active: body.enable})
     )
     db.commit()
-    return {"updated": updated, "is_active": body.enable}
+
+    catchup_count = 0
+
+    # When re-enabling AI, sweep all unread conversations and reply
+    if body.enable:
+        from sqlalchemy import desc
+
+        # Find conversations with unread messages
+        unread_convs = (
+            db.query(WhatsAppConversation)
+            .filter(WhatsAppConversation.unread_count > 0)
+            .all()
+        )
+
+        for conv in unread_convs:
+            # Get the last inbound message (client's last message)
+            last_inbound = (
+                db.query(WhatsAppMessage)
+                .filter(
+                    WhatsAppMessage.conversation_id == conv.id,
+                    WhatsAppMessage.direction == "inbound",
+                )
+                .order_by(desc(WhatsAppMessage.created_at))
+                .first()
+            )
+            if not last_inbound:
+                continue
+
+            # Check that we haven't already replied after this message
+            last_outbound = (
+                db.query(WhatsAppMessage)
+                .filter(
+                    WhatsAppMessage.conversation_id == conv.id,
+                    WhatsAppMessage.direction == "outbound",
+                )
+                .order_by(desc(WhatsAppMessage.created_at))
+                .first()
+            )
+            if last_outbound and last_outbound.created_at > last_inbound.created_at:
+                continue  # Already replied after client's last message
+
+            # Skip if already in-flight
+            if conv.id in _in_flight_convs:
+                continue
+
+            # Schedule AI reply for this conversation
+            inbound_text = last_inbound.content or ""
+            background_tasks.add_task(
+                ai_auto_reply,
+                conv.id,
+                conv.wa_contact_phone,
+                inbound_text,
+            )
+            catchup_count += 1
+
+        print(f"[Lina IA] Toggle ON — catching up on {catchup_count} unread conversations.")
+
+    return {"updated": updated, "is_active": body.enable, "catchup": catchup_count}
 
 
 @router.get("/messages/search")
