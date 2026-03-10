@@ -491,18 +491,25 @@ def _check_noshow_followups(db):
 # 4. EXPIRE OLD PENDIENTE NOTES
 # ============================================================================
 def _expire_old_notes(db):
-    """Mark PENDIENTE notes older than 24h as expired."""
+    """Mark PENDIENTE/RECORDATORIO notes older than 24h as expired."""
+    from sqlalchemy import or_
     now = datetime.utcnow()
 
     old_notes = (
         db.query(ClientNote)
-        .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+        .filter(or_(ClientNote.content.ilike("%PENDIENTE:%"), ClientNote.content.ilike("%RECORDATORIO:%")))
+        .filter(~ClientNote.content.ilike("%COMPLETADO:%"))
+        .filter(~ClientNote.content.ilike("%EXPIRADO:%"))
+        .filter(~ClientNote.content.ilike("%FALLIDO:%"))
+        .filter(~ClientNote.content.ilike("%RESUELTO:%"))
         .all()
     )
 
     for note in old_notes:
         if note.created_at and (now - note.created_at).total_seconds() > 86400:  # 24h
-            note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [Expirado — tarea tenia mas de 24h sin resolverse {now.strftime('%d/%m %H:%M')}]"
+            for prefix in ["PENDIENTE:", "RECORDATORIO:"]:
+                note.content = note.content.replace(prefix, "EXPIRADO:")
+            note.content += f" [Expirado — tarea tenia mas de 24h {now.strftime('%d/%m %H:%M')}]"
             db.commit()
             print(f"[SCHEDULER] Expired old note #{note.id}")
 
@@ -853,10 +860,15 @@ def _execute_pending_tasks(db):
         "minutos antes", "faltando",
     ]
 
-    # Find all PENDIENTE notes
+    # Find all PENDIENTE and RECORDATORIO notes (not yet resolved)
+    from sqlalchemy import or_
     pending_notes = (
         db.query(ClientNote)
-        .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+        .filter(or_(ClientNote.content.ilike("%PENDIENTE:%"), ClientNote.content.ilike("%RECORDATORIO:%")))
+        .filter(~ClientNote.content.ilike("%COMPLETADO:%"))
+        .filter(~ClientNote.content.ilike("%EXPIRADO:%"))
+        .filter(~ClientNote.content.ilike("%FALLIDO:%"))
+        .filter(~ClientNote.content.ilike("%RESUELTO:%"))
         .all()
     )
 
@@ -907,8 +919,13 @@ def _execute_pending_tasks(db):
             db.commit()
             continue
 
-        # Extract the task description (everything after "PENDIENTE:")
-        task_desc = note.content.split("PENDIENTE:")[-1].strip() if "PENDIENTE:" in note.content else note.content
+        # Extract the task description (everything after PENDIENTE:/RECORDATORIO:)
+        if "PENDIENTE:" in note.content:
+            task_desc = note.content.split("PENDIENTE:")[-1].strip()
+        elif "RECORDATORIO:" in note.content:
+            task_desc = note.content.split("RECORDATORIO:")[-1].strip()
+        else:
+            task_desc = note.content
 
         # Generate AI message based on task description
         try:
@@ -973,7 +990,9 @@ def _execute_pending_tasks(db):
 
             # Mark note as completed
             status_tag = "COMPLETADO:" if wa_sent else "FALLIDO:"
-            note.content = note.content.replace("PENDIENTE:", status_tag) + f" [{'Enviado' if wa_sent else 'Fallo'} {now.strftime('%H:%M')}]"
+            for prefix in ["PENDIENTE:", "RECORDATORIO:"]:
+                note.content = note.content.replace(prefix, status_tag)
+            note.content += f" [{'Enviado' if wa_sent else 'Fallo'} {now.strftime('%H:%M')}]"
             db.commit()
 
             client_first = (client.name or "").split()[0]

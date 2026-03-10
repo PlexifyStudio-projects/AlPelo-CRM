@@ -503,13 +503,15 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     )
 
     # ---------- Pending tasks (pending + recently completed) ----------
-    # Pending tasks (PENDIENTE but not RESUELTO/COMPLETADO/EXPIRADO)
+    # Pending tasks (PENDIENTE/RECORDATORIO but not resolved)
+    from sqlalchemy import or_
     pending_notes = (
         db.query(ClientNote)
-        .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+        .filter(or_(ClientNote.content.ilike("%PENDIENTE:%"), ClientNote.content.ilike("%RECORDATORIO:%")))
         .filter(~ClientNote.content.ilike("%RESUELTO:%"))
         .filter(~ClientNote.content.ilike("%COMPLETADO:%"))
         .filter(~ClientNote.content.ilike("%EXPIRADO:%"))
+        .filter(~ClientNote.content.ilike("%FALLIDO:%"))
         .order_by(ClientNote.created_at.desc())
         .limit(20)
         .all()
@@ -841,10 +843,14 @@ def get_financial_summary(
 
 @router.get("/notes/pending", response_model=List[PendingTaskItem])
 def get_pending_notes(db: Session = Depends(get_db)):
+    from sqlalchemy import or_
     notes = (
         db.query(ClientNote)
-        .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+        .filter(or_(ClientNote.content.ilike("%PENDIENTE:%"), ClientNote.content.ilike("%RECORDATORIO:%")))
         .filter(~ClientNote.content.ilike("%RESUELTO:%"))
+        .filter(~ClientNote.content.ilike("%COMPLETADO:%"))
+        .filter(~ClientNote.content.ilike("%EXPIRADO:%"))
+        .filter(~ClientNote.content.ilike("%FALLIDO:%"))
         .order_by(ClientNote.created_at.desc())
         .limit(30)
         .all()
