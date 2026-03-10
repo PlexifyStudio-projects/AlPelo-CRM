@@ -168,11 +168,14 @@ const LinaActivity = () => {
     finally { setSavingRule(false); }
   }, [newRule, newRuleCategory, savingRule, fetchMemory]);
 
-  const deleteRule = useCallback(async (id) => {
-    // id format: "L123" for learnings
-    const numId = String(id).replace('L', '');
+  const deleteItem = useCallback(async (id) => {
+    const strId = String(id);
     try {
-      await fetch(`${API_URL}/lina/learnings/${numId}`, { method: 'DELETE', credentials: 'include' });
+      if (strId.startsWith('L')) {
+        await fetch(`${API_URL}/lina/learnings/${strId.slice(1)}`, { method: 'DELETE', credentials: 'include' });
+      } else if (strId.startsWith('N')) {
+        await fetch(`${API_URL}/client-notes/${strId.slice(1)}`, { method: 'DELETE', credentials: 'include' });
+      }
       fetchMemory();
     } catch { /* silent */ }
   }, [fetchMemory]);
@@ -330,15 +333,13 @@ const LinaActivity = () => {
                         <span className="lina-activity__memory-cat">{item.category}</span>
                       )}
                       <span className="lina-activity__memory-client">{item.client_name}</span>
-                      {isRule && (
-                        <button
-                          className="lina-activity__memory-delete"
-                          onClick={() => deleteRule(item.id)}
-                          title="Eliminar regla"
-                        >
-                          &times;
-                        </button>
-                      )}
+                      <button
+                        className="lina-activity__memory-delete"
+                        onClick={() => deleteItem(item.id)}
+                        title="Eliminar"
+                      >
+                        &times;
+                      </button>
                       <p className="lina-activity__memory-text">{item.content}</p>
                       {item.created_at && (
                         <span className="lina-activity__memory-date">
