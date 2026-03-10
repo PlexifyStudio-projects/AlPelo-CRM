@@ -833,6 +833,166 @@ def _sweep_missed_conversations(db):
 
 
 # ============================================================================
+# 7. GENERIC PENDING TASKS — Execute timed messages (e.g., "write in 10 min")
+# ============================================================================
+def _execute_pending_tasks(db):
+    """
+    Process PENDIENTE notes that are NOT appointment reminders.
+    These are generic tasks like "write to client in 10 min", "follow up tomorrow", etc.
+    Uses AI to generate the message based on the task description.
+    """
+    import re as _re
+
+    now = _now_colombia()
+    now_utc = datetime.utcnow()
+
+    # Appointment reminder keywords — SKIP these (handled by _check_custom_reminders)
+    _REMINDER_KEYWORDS = [
+        "recordatorio", "avisar", "aviso", "antes de la cita",
+        "antes de su cita", "antes de cita", "min antes",
+        "minutos antes", "faltando",
+    ]
+
+    # Find all PENDIENTE notes
+    pending_notes = (
+        db.query(ClientNote)
+        .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+        .all()
+    )
+
+    for note in pending_notes:
+        note_lower = note.content.lower()
+
+        # Skip appointment reminders — those are handled separately
+        if any(kw in note_lower for kw in _REMINDER_KEYWORDS):
+            continue
+
+        # Check if enough time has passed since the note was created
+        # Parse time hints: "en 10 min", "en 10 minutos", "en 5 min"
+        time_match = _re.search(r'en\s+(\d+)\s*min', note_lower)
+        if time_match:
+            delay_min = int(time_match.group(1))
+        else:
+            # No time hint — execute after 5 min by default
+            delay_min = 5
+
+        if not note.created_at:
+            continue
+
+        elapsed_min = (now_utc - note.created_at).total_seconds() / 60
+        if elapsed_min < delay_min:
+            continue  # Not time yet
+
+        # Find the client and their conversation
+        client = db.query(Client).filter(Client.id == note.client_id).first()
+        if not client:
+            continue
+
+        # Find WA conversation
+        conv = None
+        if client.phone:
+            phone_tail = client.phone[-10:]
+            conv = (
+                db.query(WhatsAppConversation)
+                .filter(WhatsAppConversation.wa_contact_phone.contains(phone_tail))
+                .first()
+            )
+        if not conv:
+            continue
+
+        # Dedup
+        dedup_tag = f"task_{note.id}"
+        if _already_sent_today(db, conv.id, dedup_tag):
+            note.content = note.content.replace("PENDIENTE:", "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
+            db.commit()
+            continue
+
+        # Extract the task description (everything after "PENDIENTE:")
+        task_desc = note.content.split("PENDIENTE:")[-1].strip() if "PENDIENTE:" in note.content else note.content
+
+        # Generate AI message based on task description
+        try:
+            from routes.ai_endpoints import _build_system_prompt, _call_ai_sync
+
+            system_prompt = _build_system_prompt(db, is_whatsapp=True, conv_id=conv.id)
+
+            # Build conversation history
+            from sqlalchemy import desc
+            recent_msgs = (
+                db.query(WhatsAppMessage)
+                .filter(WhatsAppMessage.conversation_id == conv.id)
+                .order_by(desc(WhatsAppMessage.created_at))
+                .limit(20)
+                .all()
+            )
+            recent_msgs.reverse()
+
+            history = []
+            for m in recent_msgs:
+                role = "user" if m.direction == "inbound" else "assistant"
+                if m.sent_by == "lina_ia_offhours":
+                    continue
+                history.append({"role": role, "content": m.content or ""})
+
+            # Merge consecutive same-role
+            merged = []
+            for h in history:
+                if merged and merged[-1]["role"] == h["role"]:
+                    merged[-1]["content"] += "\n" + h["content"]
+                else:
+                    merged.append(h)
+            history = merged
+
+            while history and history[-1]["role"] == "user":
+                history.pop()
+
+            context = f"[SISTEMA: Tienes una tarea pendiente que debes ejecutar AHORA. La tarea es: {task_desc}. Escribe el mensaje al cliente de forma natural y calida, como si fuera espontaneo. NO menciones que es una tarea programada.]"
+
+            ai_response = _call_ai_sync(system_prompt, history, context)
+
+            if not ai_response or not ai_response.strip():
+                continue
+
+            # Clean response
+            import re as re_mod
+            clean = ai_response
+            clean = re_mod.sub(r'\*\*(.+?)\*\*', r'\1', clean)
+            clean = re_mod.sub(r'\*(.+?)\*', r'\1', clean)
+            clean = re_mod.sub(r'#{1,3}\s+', '', clean)
+            clean = re_mod.sub(r'`([^`]+)`', r'\1', clean)
+            clean = re_mod.sub(r'[`]{1,3}\s*action.*', '', clean, flags=re_mod.DOTALL | re_mod.IGNORECASE)
+            clean = re_mod.sub(r'\{[^}]*"action"\s*:.*?\}', '', clean, flags=re_mod.DOTALL)
+            clean = re_mod.sub(r'\n{3,}', '\n\n', clean).strip()
+
+            if not clean:
+                continue
+
+            # Send via WhatsApp
+            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean)
+            _store_outbound_message(db, conv.id, clean, wa_sent, tag=dedup_tag)
+
+            # Mark note as completed
+            status_tag = "COMPLETADO:" if wa_sent else "FALLIDO:"
+            note.content = note.content.replace("PENDIENTE:", status_tag) + f" [{'Enviado' if wa_sent else 'Fallo'} {now.strftime('%H:%M')}]"
+            db.commit()
+
+            client_first = (client.name or "").split()[0]
+            print(f"[SCHEDULER] Task executed for {client_first}: {task_desc[:60]}")
+            log_event(
+                "tarea",
+                f"Tarea completada: {task_desc[:50]}",
+                detail=f"Mensaje enviado a {client_first}" if wa_sent else f"Fallo envio a {client_first}",
+                contact_name=client_first, conv_id=conv.id,
+                status="ok" if wa_sent else "error",
+            )
+
+            time.sleep(3)
+
+        except Exception as e:
+            print(f"[SCHEDULER] Task error for note #{note.id}: {e}")
+
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 def _scheduler_loop():
@@ -851,6 +1011,7 @@ def _scheduler_loop():
                 if _is_business_hours():
                     _check_30min_reminders(db)
                     _check_custom_reminders(db)
+                    _execute_pending_tasks(db)
                     _morning_review(db)
                     _sweep_missed_conversations(db)
 
