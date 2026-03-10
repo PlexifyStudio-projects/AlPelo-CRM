@@ -1283,7 +1283,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             # SAFETY NET: If Lina promised to do something (schedule, create, etc.) but NO action block found,
             # retry once with explicit instruction to include the action block
-            _PROMISE_WORDS = ["te agend", "te program", "listo, queda", "ya te agend", "queda agendad", "cita para", "te registr", "ya te registr"]
+            _PROMISE_WORDS = ["te agend", "te program", "listo, queda", "ya te agend", "queda agendad", "cita para", "te registr", "ya te registr", "te aviso", "te recuerdo", "te notifico", "te cambio la cita", "te movi la cita", "te reagend", "30 minutos antes", "10 minutos antes", "te confirmo"]
             if not action_matches:
                 response_lower = ai_response.lower()
                 promised_action = any(w in response_lower for w in _PROMISE_WORDS)
