@@ -621,6 +621,46 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete }) => {
   );
 };
 
+// ===== LINA THINKING INDICATOR — Shows rotating status while AI processes =====
+const LINA_STEPS = [
+  '🔍 Revisando conversación...',
+  '👤 Verificando perfil del cliente...',
+  '📅 Consultando agenda disponible...',
+  '💈 Revisando catálogo de servicios...',
+  '👥 Verificando personal disponible...',
+  '✍️ Elaborando respuesta...',
+];
+
+const LinaThinking = () => {
+  const [stepIdx, setStepIdx] = useState(0);
+
+  useEffect(() => {
+    // Start from a random step for variety
+    setStepIdx(Math.floor(Math.random() * 3));
+    const interval = setInterval(() => {
+      setStepIdx(prev => (prev + 1) % LINA_STEPS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className={`${b}__lina-thinking`}>
+      <div className={`${b}__lina-thinking-bubble`}>
+        <div className={`${b}__lina-thinking-header`}>
+          <span className={`${b}__lina-thinking-icon`}>🤖</span>
+          <span className={`${b}__lina-thinking-label`}>Lina IA</span>
+        </div>
+        <div className={`${b}__lina-thinking-step`}>
+          <span className={`${b}__lina-thinking-text`}>{LINA_STEPS[stepIdx]}</span>
+          <span className={`${b}__lina-thinking-dots`}>
+            <span /><span /><span />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ===== AUDIO PLAYER — WhatsApp-style voice message player =====
 const AudioPlayer = ({ src }) => {
   const audioRef = useRef(null);
@@ -1860,6 +1900,11 @@ const Inbox = () => {
                         </div>
                       );
                     })
+                  )}
+
+                  {/* Lina AI thinking indicator — show when AI is active and last message is from client */}
+                  {selectedConv?.is_ai_active && messages.length > 0 && messages[messages.length - 1]?.direction === 'inbound' && !typingState[selectedConvId] && (
+                    <LinaThinking />
                   )}
 
                   {/* Typing indicator */}

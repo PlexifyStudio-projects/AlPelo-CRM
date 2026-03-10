@@ -979,6 +979,84 @@
     font-variant-numeric: tabular-nums;
   }
 
+  // Lina IA thinking indicator
+  &__lina-thinking {
+    display: flex;
+    justify-content: flex-end;
+    padding: 4px 16px 8px;
+    animation: inbox-fadeIn 0.3s ease;
+  }
+
+  &__lina-thinking-bubble {
+    background: #d9fdd3;
+    border-radius: 8px;
+    padding: 8px 14px 10px;
+    max-width: 280px;
+    box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.08);
+  }
+
+  &__lina-thinking-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 4px;
+  }
+
+  &__lina-thinking-icon {
+    font-size: 12px;
+  }
+
+  &__lina-thinking-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: $color-primary;
+  }
+
+  &__lina-thinking-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__lina-thinking-text {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.55);
+    animation: inbox-stepFade 3.5s ease infinite;
+  }
+
+  &__lina-thinking-dots {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+
+    span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: $color-primary;
+      opacity: 0.4;
+      animation: inbox-dotBounce 1.4s ease-in-out infinite;
+
+      &:nth-child(2) { animation-delay: 0.2s; }
+      &:nth-child(3) { animation-delay: 0.4s; }
+    }
+  }
+
+  @keyframes inbox-fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes inbox-stepFade {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes inbox-dotBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
   // Audio transcription below player
   &__message-transcript {
     font-size: 13px;
