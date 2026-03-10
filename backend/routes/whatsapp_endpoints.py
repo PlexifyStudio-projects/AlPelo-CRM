@@ -329,14 +329,61 @@ def get_conversation(conv_id: int, db: Session = Depends(get_db)):
 # TOGGLE AI — Enable/disable Lina IA auto-reply for a conversation
 # ============================================================================
 @router.put("/conversations/{conv_id}/ai")
-def toggle_ai(conv_id: int, body: dict, db: Session = Depends(get_db)):
-    """Toggle Lina IA auto-reply on/off for a specific conversation."""
+async def toggle_ai(conv_id: int, body: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    """Toggle Lina IA auto-reply on/off for a specific conversation. Catches up on unread when enabling."""
+    from sqlalchemy import desc
+
     conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversacion no encontrada")
     conv.is_ai_active = body.get("is_ai_active", not conv.is_ai_active)
     db.commit()
-    return {"id": conv.id, "is_ai_active": conv.is_ai_active}
+
+    catchup = False
+
+    # When re-enabling AI, catch up on unread messages
+    if conv.is_ai_active and conv.unread_count and conv.unread_count > 0:
+        last_inbound = (
+            db.query(WhatsAppMessage)
+            .filter(WhatsAppMessage.conversation_id == conv.id, WhatsAppMessage.direction == "inbound")
+            .order_by(desc(WhatsAppMessage.created_at))
+            .first()
+        )
+        if last_inbound:
+            # Only catch up if Lina hasn't replied to the last inbound message
+            last_ai_reply = (
+                db.query(WhatsAppMessage)
+                .filter(WhatsAppMessage.conversation_id == conv.id, WhatsAppMessage.sent_by == "lina_ia")
+                .order_by(desc(WhatsAppMessage.created_at))
+                .first()
+            )
+            needs_catchup = not last_ai_reply or last_ai_reply.created_at < last_inbound.created_at
+
+            if needs_catchup:
+                # Collect pending inbound text
+                since = last_ai_reply.created_at if last_ai_reply else conv.created_at
+                recent_inbound = (
+                    db.query(WhatsAppMessage)
+                    .filter(
+                        WhatsAppMessage.conversation_id == conv.id,
+                        WhatsAppMessage.direction == "inbound",
+                        WhatsAppMessage.created_at >= since,
+                    )
+                    .order_by(WhatsAppMessage.created_at.asc())
+                    .all()
+                )
+                inbound_text = " | ".join(m.content for m in recent_inbound if m.content and not m.content.startswith("📎")) or last_inbound.content or ""
+
+                background_tasks.add_task(
+                    ai_auto_reply,
+                    conv.id, conv.wa_contact_phone, inbound_text,
+                    None, False, None, False, None,
+                    True,  # is_catchup
+                )
+                catchup = True
+                print(f"[Lina IA] Individual toggle ON for conv {conv_id} — catching up on unread messages.")
+
+    return {"id": conv.id, "is_ai_active": conv.is_ai_active, "catchup": catchup}
 
 
 # ============================================================================
@@ -1066,7 +1113,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     print(f"[Lina IA] Cooldown active for conv {conv_id} ({seconds_since:.0f}s ago). Skipping.")
                     return
 
-            # Step 2.5: Goodbye detection — if Lina already said goodbye, don't reply to farewell messages
+            # Step 2.5: Goodbye detection — if Lina recently said goodbye and client sends short farewell
             GOODBYE_WORDS = [
                 "hasta luego", "nos vemos", "buen dia", "que estes bien", "que te vaya bien",
                 "que te quede", "cuídate", "cuidate", "fue un placer", "buena tarde",
@@ -1077,14 +1124,19 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 "gracias", "ok gracias", "listo gracias", "vale", "bueno", "dale", "igualmente",
                 "igual", "grax", "ty", "thanks", "tkm", "chau",
             ]
-            if last_ai_msg and last_ai_msg.content:
-                last_ai_lower = last_ai_msg.content.lower()
+            if last_ai_msg and last_ai_msg.content and last_ai_msg.created_at:
+                # Only trigger if Lina's bye was within last 10 minutes (not a stale old goodbye)
+                seconds_since_bye = (datetime.utcnow() - last_ai_msg.created_at).total_seconds()
                 inbound_lower = inbound_text.lower().strip() if inbound_text else ""
-                lina_said_bye = any(gw in last_ai_lower for gw in GOODBYE_WORDS)
-                client_says_bye = any(cw == inbound_lower or inbound_lower.startswith(cw + " ") or inbound_lower.endswith(" " + cw) or cw in inbound_lower.split() for cw in CLIENT_BYE_WORDS)
-                if lina_said_bye and client_says_bye:
-                    print(f"[Lina IA] Goodbye detected — Lina already said bye, client replied with farewell. Staying silent for conv {conv_id}.")
-                    return
+                inbound_word_count = len(inbound_lower.split()) if inbound_lower else 0
+
+                if seconds_since_bye < 600 and inbound_word_count <= 4:
+                    last_ai_lower = last_ai_msg.content.lower()
+                    lina_said_bye = any(gw in last_ai_lower for gw in GOODBYE_WORDS)
+                    client_says_bye = any(cw == inbound_lower or inbound_lower.startswith(cw + " ") or inbound_lower.endswith(" " + cw) or cw in inbound_lower.split() for cw in CLIENT_BYE_WORDS)
+                    if lina_said_bye and client_says_bye:
+                        print(f"[Lina IA] Goodbye detected — Lina said bye {int(seconds_since_bye)}s ago, client replied '{inbound_lower}'. Staying silent for conv {conv_id}.")
+                        return
 
             # Step 3: Get conversation history and generate AI response
             # Re-fetch recent messages — 20 msgs is enough context, saves tokens

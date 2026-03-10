@@ -30,6 +30,13 @@ WA_BASE_URL = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}"
 
 SCHEDULER_INTERVAL = 120  # Check every 2 minutes
 
+# Colombia timezone offset (UTC-5)
+_COL_OFFSET = timedelta(hours=-5)
+
+def _now_colombia():
+    """Current time in Colombia (UTC-5)."""
+    return datetime.utcnow() + _COL_OFFSET
+
 # Days of the week in Spanish for suggestions
 _DAYS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
 
@@ -86,7 +93,7 @@ def _store_outbound_message(db, conv_id: int, text: str, wa_sent: bool, tag: str
 
 def _already_sent_today(db, conv_id: int, tag: str) -> bool:
     """Check if the scheduler already sent a message with this tag to this conversation today."""
-    today_start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+    today_start = datetime.combine(_now_colombia().date(), datetime.min.time())
     existing = (
         db.query(WhatsAppMessage)
         .filter(
@@ -154,7 +161,7 @@ def _get_appt_details(db, appt):
 
 def _suggest_day():
     """Suggest a friendly day to reschedule (next 2-3 business days)."""
-    now = datetime.utcnow()
+    now = _now_colombia()
     for offset in [1, 2, 3]:
         candidate = now.date() + timedelta(days=offset)
         weekday = candidate.weekday()
@@ -168,7 +175,7 @@ def _suggest_day():
 # ============================================================================
 def _check_30min_reminders(db):
     """Send reminder 30 minutes before every confirmed appointment."""
-    now = datetime.utcnow()
+    now = _now_colombia()
     today = now.date()
 
     appointments = (
@@ -218,7 +225,7 @@ def _check_30min_reminders(db):
 # ============================================================================
 def _check_custom_reminders(db):
     """Handle custom reminder requests (e.g., "avisame 10 minutos antes")."""
-    now = datetime.utcnow()
+    now = _now_colombia()
     today = now.date()
 
     appointments = (
@@ -294,7 +301,7 @@ def _check_noshow_followups(db):
     Send a personalized re-engagement message. ONE message per conversation.
     Uses DB for deduplication — survives redeploys.
     """
-    now = datetime.utcnow()
+    now = _now_colombia()
     yesterday = now.date() - timedelta(days=1)
 
     # Appointments from yesterday still "confirmed" (never showed) or "no_show"
@@ -411,12 +418,6 @@ def _expire_old_notes(db):
 # ============================================================================
 # 5. MORNING REVIEW — Process unread chats when AI reactivates at 7:30 AM
 # ============================================================================
-# Colombia timezone offset
-_COL_OFFSET = timedelta(hours=-5)
-
-def _now_colombia():
-    return datetime.utcnow() + _COL_OFFSET
-
 def _is_business_hours():
     """True if current Colombia time is within business hours (7:30 AM - 8:30 PM)."""
     now = _now_colombia()
@@ -582,12 +583,166 @@ def _morning_review(db):
 
 
 # ============================================================================
+# 6. SWEEP MISSED CONVERSATIONS — Catch-up for messages Lina missed
+# ============================================================================
+def _sweep_missed_conversations(db):
+    """
+    Find active conversations where a client wrote but Lina never replied.
+    This catches messages that were dropped due to rate limits, cooldowns,
+    transient errors, or other silent skips in the auto-reply pipeline.
+    Only processes messages 3-120 min old (avoids racing with normal flow).
+    """
+    from sqlalchemy import desc
+
+    now_utc = datetime.utcnow()
+    min_age = now_utc - timedelta(minutes=3)    # Don't touch very recent (normal flow handles)
+    max_age = now_utc - timedelta(minutes=120)  # Don't touch very old
+
+    convs = (
+        db.query(WhatsAppConversation)
+        .filter(
+            WhatsAppConversation.is_ai_active == True,
+            WhatsAppConversation.unread_count > 0,
+        )
+        .all()
+    )
+
+    processed = 0
+    for conv in convs:
+        if processed >= 3:
+            break  # Max 3 per cycle to avoid overload
+
+        # Get last inbound message
+        last_inbound = (
+            db.query(WhatsAppMessage)
+            .filter(
+                WhatsAppMessage.conversation_id == conv.id,
+                WhatsAppMessage.direction == "inbound",
+            )
+            .order_by(desc(WhatsAppMessage.created_at))
+            .first()
+        )
+        if not last_inbound or not last_inbound.created_at:
+            continue
+
+        # Must be within the 3-120 min window
+        if last_inbound.created_at > min_age or last_inbound.created_at < max_age:
+            continue
+
+        # Check if Lina already replied after this message
+        last_ai = (
+            db.query(WhatsAppMessage)
+            .filter(
+                WhatsAppMessage.conversation_id == conv.id,
+                WhatsAppMessage.direction == "outbound",
+                WhatsAppMessage.sent_by.in_(["lina_ia", "lina_ia_sweep"]),
+                WhatsAppMessage.created_at > last_inbound.created_at,
+            )
+            .first()
+        )
+        if last_ai:
+            continue  # Already replied
+
+        # Dedup: don't sweep same conversation twice in a day
+        if _already_sent_today(db, conv.id, "sweep"):
+            continue
+
+        # Collect pending inbound text
+        pending = (
+            db.query(WhatsAppMessage)
+            .filter(
+                WhatsAppMessage.conversation_id == conv.id,
+                WhatsAppMessage.direction == "inbound",
+                WhatsAppMessage.created_at >= max_age,
+            )
+            .order_by(WhatsAppMessage.created_at.asc())
+            .all()
+        )
+        inbound_text = " | ".join(
+            m.content for m in pending
+            if m.content and not m.content.startswith("📎")
+        ) or last_inbound.content or ""
+
+        if not inbound_text.strip():
+            continue
+
+        try:
+            from routes.ai_endpoints import _build_system_prompt, _call_ai_sync
+            import re as re_mod
+
+            system_prompt = _build_system_prompt(db, is_whatsapp=True, conv_id=conv.id)
+
+            # Build history
+            recent_msgs = (
+                db.query(WhatsAppMessage)
+                .filter(WhatsAppMessage.conversation_id == conv.id)
+                .order_by(desc(WhatsAppMessage.created_at))
+                .limit(20)
+                .all()
+            )
+            recent_msgs.reverse()
+
+            history = []
+            for m in recent_msgs:
+                role = "user" if m.direction == "inbound" else "assistant"
+                content = m.content or ""
+                if m.sent_by == "lina_ia_offhours":
+                    continue  # Skip off-hours templates
+                history.append({"role": role, "content": content})
+
+            # Merge consecutive same-role messages
+            merged = []
+            for h in history:
+                if merged and merged[-1]["role"] == h["role"]:
+                    merged[-1]["content"] += "\n" + h["content"]
+                else:
+                    merged.append(h)
+            history = merged
+
+            # Remove trailing user messages (we'll add the combined inbound text)
+            while history and history[-1]["role"] == "user":
+                history.pop()
+
+            ai_response = _call_ai_sync(system_prompt, history, inbound_text)
+
+            if not ai_response or not ai_response.strip():
+                continue
+
+            # Clean response (same as morning review)
+            clean = ai_response
+            clean = re_mod.sub(r'\*\*(.+?)\*\*', r'\1', clean)
+            clean = re_mod.sub(r'\*(.+?)\*', r'\1', clean)
+            clean = re_mod.sub(r'#{1,3}\s+', '', clean)
+            clean = re_mod.sub(r'`([^`]+)`', r'\1', clean)
+            clean = re_mod.sub(r'[`]{1,3}\s*action.*', '', clean, flags=re_mod.DOTALL | re_mod.IGNORECASE)
+            clean = re_mod.sub(r'\{[^}]*"action"\s*:.*?\}', '', clean, flags=re_mod.DOTALL)
+            clean = re_mod.sub(r'\n{3,}', '\n\n', clean).strip()
+
+            if not clean:
+                continue
+
+            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean)
+            _store_outbound_message(db, conv.id, clean, wa_sent, tag="sweep")
+
+            processed += 1
+            print(f"[SCHEDULER] Sweep: replied to conv #{conv.id} ({conv.wa_contact_name}) — msg was {int((now_utc - last_inbound.created_at).total_seconds() / 60)}min old")
+
+            time.sleep(5)
+
+        except Exception as e:
+            print(f"[SCHEDULER] Sweep error for conv #{conv.id}: {e}")
+
+    if processed:
+        print(f"[SCHEDULER] Sweep complete — caught up {processed} conversations")
+
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 def _scheduler_loop():
     """Main scheduler loop — runs in a background thread."""
-    print("[SCHEDULER] Started v4 (DB-aware, deploy-safe, off-hours)")
-    print("[SCHEDULER] Features: 30-min reminders, custom reminders, 24h no-show follow-up, morning review")
+    print("[SCHEDULER] Started v5 (DB-aware, deploy-safe, off-hours, sweep)")
+    print("[SCHEDULER] Features: 30-min reminders, custom reminders, no-show follow-up, morning review, sweep")
     # Wait 60 seconds on startup before first check (let everything initialize)
     time.sleep(60)
 
@@ -600,6 +755,7 @@ def _scheduler_loop():
                     _check_30min_reminders(db)
                     _check_custom_reminders(db)
                     _morning_review(db)
+                    _sweep_missed_conversations(db)
 
                 _check_noshow_followups(db)
                 _expire_old_notes(db)
@@ -615,4 +771,4 @@ def start_scheduler():
     """Start the scheduler in a daemon thread."""
     thread = threading.Thread(target=_scheduler_loop, daemon=True)
     thread.start()
-    print("[SCHEDULER] Background thread launched (v4)")
+    print("[SCHEDULER] Background thread launched (v5)")
