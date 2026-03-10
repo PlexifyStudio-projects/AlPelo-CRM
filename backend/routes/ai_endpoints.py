@@ -1031,7 +1031,95 @@ def _execute_action(action: dict, db: Session) -> str:
         if not apt_date or not apt_time:
             return "ERROR: Necesito date (YYYY-MM-DD) y time (HH:MM)."
 
-        # Find client_id if exists
+        apt_date_obj = date.fromisoformat(apt_date) if isinstance(apt_date, str) else apt_date
+
+        # --- DUPLICATE CHECK: same client + same staff + same date + same time ---
+        duplicate = db.query(Appointment).filter(
+            Appointment.client_name.ilike(f"%{client_name}%"),
+            Appointment.staff_id == staff_obj.id,
+            Appointment.date == apt_date_obj,
+            Appointment.time == apt_time,
+            Appointment.status.in_(["confirmed", "completed"]),
+        ).first()
+        if duplicate:
+            return f"DUPLICADO: Ya existe una cita para {client_name} con {staff_obj.name} el {apt_date} a las {apt_time} (ID:{duplicate.id}). No se creo otra."
+
+        # --- CONFLICT CHECK: same staff + same date + overlapping time ---
+        duration_mins = svc_obj.duration_minutes or 30
+        # Parse requested time
+        req_hour, req_min = int(apt_time.split(":")[0]), int(apt_time.split(":")[1])
+        req_start = req_hour * 60 + req_min
+        req_end = req_start + duration_mins
+
+        existing_apts = db.query(Appointment).filter(
+            Appointment.staff_id == staff_obj.id,
+            Appointment.date == apt_date_obj,
+            Appointment.status.in_(["confirmed", "completed"]),
+        ).all()
+
+        conflicts = []
+        for ea in existing_apts:
+            try:
+                eh, em = int(ea.time.split(":")[0]), int(ea.time.split(":")[1])
+                ea_start = eh * 60 + em
+                ea_end = ea_start + (ea.duration_minutes or 30)
+                # Check overlap
+                if req_start < ea_end and req_end > ea_start:
+                    conflicts.append(ea)
+            except (ValueError, AttributeError):
+                pass
+
+        if conflicts:
+            # Find next available slot for this staff member
+            all_slots = sorted(existing_apts + conflicts, key=lambda a: a.time)
+            busy_ends = []
+            for ea in all_slots:
+                try:
+                    eh, em = int(ea.time.split(":")[0]), int(ea.time.split(":")[1])
+                    ea_end = eh * 60 + em + (ea.duration_minutes or 30)
+                    busy_ends.append(ea_end)
+                except (ValueError, AttributeError):
+                    pass
+            next_free = max(busy_ends) if busy_ends else req_end
+            next_free_h = next_free // 60
+            next_free_m = next_free % 60
+            next_free_str = f"{next_free_h:02d}:{next_free_m:02d}"
+
+            # Find other available staff at the requested time
+            all_staff = db.query(Staff).filter(Staff.is_active == True).all()
+            available_staff = []
+            for s in all_staff:
+                if s.id == staff_obj.id:
+                    continue
+                s_conflicts = db.query(Appointment).filter(
+                    Appointment.staff_id == s.id,
+                    Appointment.date == apt_date_obj,
+                    Appointment.status.in_(["confirmed", "completed"]),
+                ).all()
+                s_busy = False
+                for sa in s_conflicts:
+                    try:
+                        sh, sm = int(sa.time.split(":")[0]), int(sa.time.split(":")[1])
+                        sa_start = sh * 60 + sm
+                        sa_end = sa_start + (sa.duration_minutes or 30)
+                        if req_start < sa_end and req_end > sa_start:
+                            s_busy = True
+                            break
+                    except (ValueError, AttributeError):
+                        pass
+                if not s_busy:
+                    available_staff.append(s.name)
+
+            conflict_names = [f"{c.client_name} a las {c.time}" for c in conflicts]
+            msg = f"CONFLICTO: {staff_obj.name} ya tiene cita(s) a esa hora ({', '.join(conflict_names)}). NO se creo la cita."
+            msg += f" Proximo horario libre con {staff_obj.name}: {next_free_str}."
+            if available_staff:
+                msg += f" Barberos disponibles a las {apt_time}: {', '.join(available_staff[:3])}."
+            else:
+                msg += f" Ningun barbero esta libre a las {apt_time}."
+            return msg
+
+        # --- All clear — create the appointment ---
         client_obj = db.query(Client).filter(Client.name.ilike(f"%{client_name}%")).first()
 
         new_apt = Appointment(
@@ -1040,9 +1128,9 @@ def _execute_action(action: dict, db: Session) -> str:
             client_phone=client_phone or (client_obj.phone if client_obj else ""),
             staff_id=staff_obj.id,
             service_id=svc_obj.id,
-            date=date.fromisoformat(apt_date) if isinstance(apt_date, str) else apt_date,
+            date=apt_date_obj,
             time=apt_time,
-            duration_minutes=svc_obj.duration_minutes,
+            duration_minutes=duration_mins,
             price=svc_obj.price,
             status=action.get("status", "confirmed"),
             notes=action.get("notes"),
