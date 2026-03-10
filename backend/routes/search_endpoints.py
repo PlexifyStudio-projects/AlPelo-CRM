@@ -880,7 +880,12 @@ def resolve_note(note_id: int, db: Session = Depends(get_db)):
     if not note:
         raise HTTPException(status_code=404, detail="Nota no encontrada")
     from datetime import datetime
-    note.content = note.content.replace("PENDIENTE:", "RESUELTO:") + f" [Resuelto por admin {datetime.utcnow().strftime('%d/%m %H:%M')}]"
+    # Handle both PENDIENTE: and RECORDATORIO: prefixes
+    for prefix in ["PENDIENTE:", "RECORDATORIO:"]:
+        note.content = note.content.replace(prefix, "COMPLETADO:")
+    # Only append timestamp if not already resolved (prevent repeated appending)
+    if "[Resuelto" not in note.content and "[Completado" not in note.content:
+        note.content += f" [Completado por admin {datetime.utcnow().strftime('%d/%m %H:%M')}]"
     db.commit()
     return {"ok": True}
 
