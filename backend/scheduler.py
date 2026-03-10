@@ -31,7 +31,7 @@ _reminded_custom: set[int] = set()     # appointment IDs that got custom reminde
 _reminded_notes: set[int] = set()      # note IDs already processed
 _followed_up: set[int] = set()         # appointment IDs that got 24h no-show follow-up
 
-SCHEDULER_INTERVAL = 120  # Check every 2 minutes
+SCHEDULER_INTERVAL = 120  # Check every 2 minutes (v2 — default reminders + no-show follow-up)
 
 
 def _wa_headers():
