@@ -22,6 +22,7 @@ from schemas import (
     DashboardStatsResponse,
     AppointmentTodayItem,
     PendingTaskItem,
+    PaymentAlertItem,
     TopServiceItem,
     FinancialSummaryResponse,
     RevenueDayItem,
@@ -501,28 +502,89 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         .scalar() or 0
     )
 
-    # ---------- Pending tasks ----------
+    # ---------- Pending tasks (pending + recently completed) ----------
+    # Pending tasks (PENDIENTE but not RESUELTO/COMPLETADO/EXPIRADO)
     pending_notes = (
         db.query(ClientNote)
         .filter(ClientNote.content.ilike("%PENDIENTE:%"))
         .filter(~ClientNote.content.ilike("%RESUELTO:%"))
+        .filter(~ClientNote.content.ilike("%COMPLETADO:%"))
+        .filter(~ClientNote.content.ilike("%EXPIRADO:%"))
         .order_by(ClientNote.created_at.desc())
         .limit(20)
         .all()
     )
 
+    # Recently resolved tasks (last 24h) — show as completed/strikethrough
+    recent_cutoff = datetime.utcnow() - timedelta(hours=24)
+    resolved_notes = (
+        db.query(ClientNote)
+        .filter(
+            ClientNote.content.ilike("%RESUELTO:%") |
+            ClientNote.content.ilike("%COMPLETADO:%")
+        )
+        .filter(ClientNote.created_at >= recent_cutoff)
+        .order_by(ClientNote.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    expired_notes = (
+        db.query(ClientNote)
+        .filter(ClientNote.content.ilike("%EXPIRADO:%"))
+        .filter(ClientNote.created_at >= recent_cutoff)
+        .order_by(ClientNote.created_at.desc())
+        .limit(5)
+        .all()
+    )
+
     client_cache = {}
     pending_tasks = []
+
+    def _get_client_name(cid):
+        if cid not in client_cache:
+            cl = db.query(Client).filter(Client.id == cid).first()
+            client_cache[cid] = cl.name if cl else "Desconocido"
+        return client_cache[cid]
+
     for n in pending_notes:
-        if n.client_id not in client_cache:
-            cl = db.query(Client).filter(Client.id == n.client_id).first()
-            client_cache[n.client_id] = cl.name if cl else "Desconocido"
         pending_tasks.append(PendingTaskItem(
-            id=n.id,
-            client_id=n.client_id,
-            client_name=client_cache[n.client_id],
-            content=n.content,
-            created_at=n.created_at,
+            id=n.id, client_id=n.client_id,
+            client_name=_get_client_name(n.client_id),
+            content=n.content, status="pending", created_at=n.created_at,
+        ))
+    for n in resolved_notes:
+        pending_tasks.append(PendingTaskItem(
+            id=n.id, client_id=n.client_id,
+            client_name=_get_client_name(n.client_id),
+            content=n.content, status="completed", created_at=n.created_at,
+        ))
+    for n in expired_notes:
+        pending_tasks.append(PendingTaskItem(
+            id=n.id, client_id=n.client_id,
+            client_name=_get_client_name(n.client_id),
+            content=n.content, status="expired", created_at=n.created_at,
+        ))
+
+    # ---------- Payment alerts ----------
+    payment_convs = (
+        db.query(WhatsAppConversation)
+        .filter(cast(WhatsAppConversation.tags, String).ilike('%Pago pendiente%'))
+        .order_by(WhatsAppConversation.last_message_at.desc())
+        .all()
+    )
+    payment_alerts = []
+    for pc in payment_convs:
+        client_name = pc.wa_contact_name or ""
+        if pc.client_id:
+            cl = db.query(Client).filter(Client.id == pc.client_id).first()
+            if cl:
+                client_name = cl.name
+        payment_alerts.append(PaymentAlertItem(
+            conversation_id=pc.id,
+            client_name=client_name or pc.wa_contact_phone,
+            phone=pc.wa_contact_phone,
+            created_at=pc.last_message_at,
         ))
 
     # ---------- Top services today ----------
@@ -556,6 +618,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         lina_messages_today=lina_messages_today,
         lina_actions_today=lina_actions_today,
         pending_tasks=pending_tasks,
+        payment_alerts=payment_alerts,
         top_services_today=top_services_today,
     )
 

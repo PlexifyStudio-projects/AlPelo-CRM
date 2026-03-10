@@ -348,6 +348,13 @@ class PendingTaskItem(BaseModel):
     client_id: int
     client_name: str
     content: str
+    status: str = "pending"                 # pending, completed, expired
+    created_at: Optional[datetime] = None
+
+class PaymentAlertItem(BaseModel):
+    conversation_id: int
+    client_name: str
+    phone: str
     created_at: Optional[datetime] = None
 
 class TopServiceItem(BaseModel):
@@ -385,6 +392,9 @@ class DashboardStatsResponse(BaseModel):
 
     # Pending tasks
     pending_tasks: List[PendingTaskItem] = []
+
+    # Payment alerts (conversations tagged as "Pago pendiente" or AI paused)
+    payment_alerts: List[PaymentAlertItem] = []
 
     # Top services today
     top_services_today: List[TopServiceItem] = []

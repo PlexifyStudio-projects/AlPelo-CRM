@@ -1150,6 +1150,12 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 print(f"[Lina IA] Blocked dismissive response for conv {conv_id}: {clean_response[:60]}")
                 clean_response = "Hola! Soy Lina de AlPelo Peluqueria. En que te puedo ayudar?"
 
+            # Step 3.85: Strip markdown — WhatsApp doesn't render it properly
+            clean_response = re.sub(r'\*\*(.+?)\*\*', r'\1', clean_response)  # **bold** → bold
+            clean_response = re.sub(r'\*(.+?)\*', r'\1', clean_response)      # *italic* → italic
+            clean_response = re.sub(r'#{1,3}\s+', '', clean_response)         # ## heading → heading
+            clean_response = re.sub(r'`([^`]+)`', r'\1', clean_response)      # `code` → code
+
             # Step 3.9: Payment/comprobante detection — tag alert + pause AI
             # ONLY trigger for ACTUAL payment confirmations (receipts, proof of payment)
             # NOT for questions about payment ("cuanto debo?", "puedo pagar?", "pago adelantado?")

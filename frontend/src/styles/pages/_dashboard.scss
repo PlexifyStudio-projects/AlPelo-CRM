@@ -639,6 +639,125 @@
     margin-top: 2px;
   }
 
+  // Completed / expired task items
+  &__task-item--completed,
+  &__task-item--expired {
+    opacity: 0.55;
+  }
+
+  &__task-check {
+    @include flex-center;
+    width: 18px;
+    height: 18px;
+    border-radius: $border-radius-full;
+    background: $color-primary;
+    color: #fff;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__task-text--done {
+    text-decoration: line-through;
+    color: $color-gray-400;
+  }
+
+  &__task-badge {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
+    background: rgba($color-primary, 0.1);
+    color: $color-primary;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  // ===========================================
+  // PAYMENT ALERTS
+  // ===========================================
+  &__payment-alerts {
+    @include glass-card;
+    padding: $spacing-lg;
+    background: rgba(220, 38, 38, 0.04);
+    border: 2px solid rgba(220, 38, 38, 0.25);
+    animation: db-fadeInUp 400ms $ease-out-expo both 0.3s;
+  }
+
+  &__section-title--alert {
+    color: #dc2626;
+  }
+
+  &__alerts-count {
+    @include flex-center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 $spacing-sm;
+    border-radius: $border-radius-full;
+    background: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    border: 1px solid rgba(220, 38, 38, 0.25);
+  }
+
+  &__alerts-list {
+    @include flex-column;
+    gap: $spacing-xs;
+    margin-top: $spacing-sm;
+  }
+
+  &__alert-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: #fff;
+    border-radius: $border-radius-md;
+    border: 1px solid rgba(220, 38, 38, 0.15);
+  }
+
+  &__alert-icon {
+    @include flex-center;
+    width: 32px;
+    height: 32px;
+    border-radius: $border-radius-full;
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    font-weight: $font-weight-bold;
+    font-size: $font-size-sm;
+    flex-shrink: 0;
+  }
+
+  &__alert-content {
+    @include flex-column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__alert-client {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+  }
+
+  &__alert-phone {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+  }
+
+  &__alert-badge {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
   // ===========================================
   // ERROR STATE
   // ===========================================

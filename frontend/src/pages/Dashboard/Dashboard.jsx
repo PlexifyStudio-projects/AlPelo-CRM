@@ -269,8 +269,11 @@ const Dashboard = () => {
 
   const linaActive = stats.lina_is_global_active;
   const appointments = stats.appointments_today_list || [];
-  const pendingTasks = stats.pending_tasks || [];
+  const allTasks = stats.pending_tasks || [];
+  const pendingTasks = allTasks.filter(t => t.status === 'pending');
+  const completedTasks = allTasks.filter(t => t.status === 'completed' || t.status === 'expired');
   const topServices = stats.top_services_today || [];
+  const paymentAlerts = stats.payment_alerts || [];
 
   return (
     <div className="dashboard">
@@ -473,17 +476,42 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* ===== PAYMENT ALERTS ===== */}
+      {paymentAlerts.length > 0 && (
+        <div className="dashboard__payment-alerts">
+          <div className="dashboard__section-header">
+            <h2 className="dashboard__section-title dashboard__section-title--alert">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              Pagos por Verificar
+            </h2>
+            <span className="dashboard__alerts-count">{paymentAlerts.length}</span>
+          </div>
+          <div className="dashboard__alerts-list">
+            {paymentAlerts.map((alert) => (
+              <div key={alert.conversation_id} className="dashboard__alert-item">
+                <div className="dashboard__alert-icon">$</div>
+                <div className="dashboard__alert-content">
+                  <span className="dashboard__alert-client">{alert.client_name}</span>
+                  <span className="dashboard__alert-phone">{alert.phone}</span>
+                </div>
+                <span className="dashboard__alert-badge">Pago pendiente</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ===== PENDING TASKS ===== */}
       <div className="dashboard__tasks">
         <div className="dashboard__section-header">
           <h2 className="dashboard__section-title">
             {Icons.clipboard}
-            Tareas Pendientes de Lina
+            Tareas de Lina
           </h2>
           <span className="dashboard__tasks-count">{pendingTasks.length}</span>
         </div>
 
-        {pendingTasks.length === 0 ? (
+        {pendingTasks.length === 0 && completedTasks.length === 0 ? (
           <div className="dashboard__tasks-empty">
             <p>No hay tareas pendientes</p>
           </div>
@@ -500,6 +528,26 @@ const Dashboard = () => {
                   </div>
                   <span className="dashboard__task-time">
                     {Icons.clock} {timeAgo(task.created_at)}
+                  </span>
+                </div>
+              );
+            })}
+            {completedTasks.map((task) => {
+              const content = (task.content || '')
+                .replace(/^(COMPLETADO|RESUELTO|EXPIRADO):\s*/i, '')
+                .replace(/\s*\[Auto-resuelto.*?\]/, '')
+                .replace(/\s*\[Expirado.*?\]/, '');
+              return (
+                <div key={task.id} className={`dashboard__task-item dashboard__task-item--${task.status}`}>
+                  <div className="dashboard__task-check">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <div className="dashboard__task-content">
+                    <span className="dashboard__task-client">{task.client_name}</span>
+                    <span className="dashboard__task-text dashboard__task-text--done">{content}</span>
+                  </div>
+                  <span className="dashboard__task-badge">
+                    {task.status === 'completed' ? 'Completada' : 'Expirada'}
                   </span>
                 </div>
               );

@@ -333,6 +333,24 @@ def _check_noshow_followups(db):
                 db.commit()
             continue
 
+        # SKIP if there's been recent conversation activity (client or Lina talking)
+        # Don't interrupt an active conversation with a scheduler message
+        recent_activity = (
+            db.query(WhatsAppMessage)
+            .filter(
+                WhatsAppMessage.conversation_id == conv.id,
+                WhatsAppMessage.created_at >= now - timedelta(hours=3),
+            )
+            .first()
+        )
+        if recent_activity:
+            print(f"[SCHEDULER] Skipping no-show follow-up for conv #{conv.id} — active conversation in last 3h")
+            contacted_convs.add(conv.id)
+            if appt.status == "confirmed":
+                appt.status = "no_show"
+                db.commit()
+            continue
+
         client_first, service_name, staff_first = _get_appt_details(db, appt)
         suggestion = _suggest_day()
 

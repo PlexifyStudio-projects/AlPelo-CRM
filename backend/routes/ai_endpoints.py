@@ -16,6 +16,27 @@ from schemas import (
 )
 from routes._helpers import compute_client_list_item, compute_client_fields, find_client, find_conversation, normalize_phone
 
+# Colombia timezone offset (UTC-5)
+COL_OFFSET = timedelta(hours=-5)
+
+def _now_colombia() -> datetime:
+    """Current datetime in Colombia (UTC-5)."""
+    return datetime.utcnow() + COL_OFFSET
+
+def _today_colombia() -> date:
+    """Current date in Colombia (UTC-5)."""
+    return _now_colombia().date()
+
+_DIAS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+_MESES_ES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+def _fecha_colombia_str() -> str:
+    """'lunes 10 de marzo de 2026' in Spanish, using Colombia timezone."""
+    now = _now_colombia()
+    dia_sem = _DIAS_ES[now.weekday()]
+    mes = _MESES_ES[now.month]
+    return f"{dia_sem} {now.day} de {mes} de {now.year}"
+
 router = APIRouter()
 
 
@@ -151,7 +172,7 @@ Ingreso total registrado: ${total_revenue:,} COP""")
         sections.append(f"=== SERVICIOS ({len(all_services)}) ===\n" + "\n".join(catalog_lines))
 
     # --- Upcoming appointments (today + next 3 days) ---
-    today = date.today()
+    today = _today_colombia()
     upcoming_end = today + timedelta(days=3)
     upcoming_apts = db.query(Appointment).filter(
         Appointment.date >= today,
@@ -1070,7 +1091,7 @@ Barbero preferido: {preferred_barber}"""
         sections.append(f"SERVICIOS DISPONIBLES ({len(all_services)}):\n" + "\n".join(svc_lines))
 
     # Today's appointments (so Lina can check availability before scheduling)
-    today = date.today()
+    today = _today_colombia()
     todays_apts = db.query(Appointment).filter(
         Appointment.date == today,
         Appointment.status.in_(["confirmed", "completed"]),
@@ -1130,8 +1151,9 @@ def _build_system_prompt(db: Session, is_whatsapp: bool = False, conv_id: int = 
         return f"""Eres Lina de AlPelo Peluqueria (Cabecera, Bucaramanga). Respondes clientes por WhatsApp como una persona real — NO como bot. Tienes CONTROL TOTAL del CRM.
 
 NEGOCIO: AlPelo Peluqueria | Cabecera, Bucaramanga | Lun-Sab 9am-8pm (cierre a las 8:00 PM)
-Hoy: {date.today().strftime('%A %d de %B de %Y')}
-Hora actual (Colombia): {(datetime.utcnow() - timedelta(hours=5)).strftime('%I:%M %p')}
+HOY: {_fecha_colombia_str()} (fecha en Colombia, zona horaria UTC-5)
+Hora actual (Colombia): {_now_colombia().strftime('%I:%M %p')}
+IMPORTANTE: Usa ESTA fecha para todo. "Mañana" = {(_today_colombia() + timedelta(days=1)).strftime('%Y-%m-%d')} ({_DIAS_ES[(_today_colombia() + timedelta(days=1)).weekday()]})
 
 === HORARIO Y CIERRE ===
 - Horario: Lunes a Sabado, 9:00 AM a 8:00 PM. Domingos CERRADO.
@@ -1197,9 +1219,19 @@ Si el cliente pide recordatorios de otro tipo (no de citas), crea la nota PENDIE
 
 === COMO HABLAS ===
 - WhatsApp real: 1-3 lineas max. Corta, natural, como persona.
+- NUNCA uses markdown: nada de **negritas**, *cursivas*, ## titulos, ni `codigo`. Esto es WhatsApp, no un documento. Texto plano SIEMPRE.
 - Nada de frases de bot ("estoy aqui para ayudarte", "con gusto puedo asistirte", "no dudes en escribirme").
 - Respetuosa pero cercana. Si sabes su nombre, usalo. Si te tutean, tutea.
 - Precios: SOLO los del catalogo. Nunca inventes.
+
+=== ANTES DE RESPONDER — VERIFICA ===
+SIEMPRE antes de enviar tu respuesta, REVISA mentalmente:
+1. ¿La fecha/hora que estoy dando es correcta? (mira HOY y la hora actual arriba)
+2. ¿Estoy respondiendo lo que el cliente PIDIO, no otra cosa?
+3. ¿El cliente pidio para HOY o para MAÑANA? No confundas.
+4. ¿Los nombres de barberos que menciono EXISTEN en el equipo de abajo?
+5. ¿No estoy usando markdown ni asteriscos?
+Si algo no cuadra, corrige ANTES de enviar.
 - Si preguntan si eres IA: "No jaja, soy Lina del equipo. Te ayudo en algo?"
 - Sticker/emoji/reaccion sin texto: NO respondas. Ignora.
 - IMAGENES: Puedes VER imagenes. SIEMPRE describe lo que ves y responde al contexto. Si es un corte/peinado, sugiere servicios similares del catalogo. Si es un comprobante de pago (Nequi, Daviplata, Bancolombia, transferencia), etiqueta con tag "⚠️ Pago pendiente" y dile que lo vas a verificar.
@@ -1351,7 +1383,7 @@ Formato de accion:
 SEGURIDAD: Nunca expongas credenciales/tokens/estructura DB. Nunca toques tabla admin. Solo datos reales — nunca inventes.
 FORMATO: Texto plano, max 2-4 lineas. Listas: nombre — dato — dato. Montos COP sin decimales ($25.000). Sin markdown (**/#). Confirma acciones en 1 linea.
 
-HOY: {date.today().strftime('%d de %B de %Y')}
+HOY: {_fecha_colombia_str()} | Hora: {_now_colombia().strftime('%I:%M %p')} (Colombia UTC-5)
 
 {business_context}
 
