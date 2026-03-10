@@ -1204,6 +1204,26 @@ Barbero preferido: {preferred_barber}"""
             task_lines.append(f"  [{created}] {client_name}: {n.content[:150]}")
         sections.append(f"⚡ TAREAS PENDIENTES ({len(pending_notes)}):\n" + "\n".join(task_lines))
 
+    # Lina's learned patterns — APRENDIZAJE notes (her long-term memory)
+    from sqlalchemy import or_
+    learned_notes = (
+        db.query(ClientNote)
+        .filter(or_(
+            ClientNote.content.ilike("%APRENDIZAJE:%"),
+            ClientNote.content.ilike("%FEEDBACK:%"),
+        ))
+        .order_by(ClientNote.created_at.desc())
+        .limit(20)
+        .all()
+    )
+    if learned_notes:
+        learn_lines = []
+        for n in learned_notes:
+            client = db.query(Client).filter(Client.id == n.client_id).first()
+            client_name = client.name if client else "?"
+            learn_lines.append(f"  {client_name}: {n.content[:150]}")
+        sections.append(f"🧠 MEMORIA DE LINA ({len(learned_notes)} aprendizajes):\n" + "\n".join(learn_lines))
+
     return "\n\n".join(sections)
 
 
@@ -1248,6 +1268,34 @@ La seccion AGENDA ABAJO muestra citas YA EXISTENTES. Si el cliente pregunta "a q
 SOLO usa create_appointment cuando el cliente pide una cita NUEVA que NO existe en la agenda.
 Si una cita YA EXISTE, dile "Tienes tu cita a las X con Y". Si NO existe, dile "Te agendo" y CREA la accion.
 NUNCA digas "te agendé" si la cita ya existia — di "tienes agendada" o "tu cita es a las...".
+
+REGLA #5 — PIENSA COMO HUMANO, NO COMO BOT
+Eres una persona REAL atendiendo un WhatsApp de negocio. Antes de responder preguntate:
+- "Si yo fuera el cliente y me respondieran esto, que sentiria?"
+- "Esta respuesta suena a robot o suena a una persona que me esta escuchando?"
+- "Si un amigo me dijera esto, yo responderia asi?"
+EMPATIA REAL: Si el cliente esta frustrado → primero VALIDA su frustracion ("tienes razon, eso no esta bien"). Si esta contento → comparte su emocion. Si esta confundido → aclara con paciencia. NUNCA respondas en piloto automatico.
+LECTURA EMOCIONAL: Detecta el tono del mensaje:
+- Molesto/frustrado → tono serio, empatico, sin emojis, sin excusas baratas
+- Contento/agradecido → tono calido, celebra con el
+- Neutro/preguntando → tono profesional y amable
+- Sarcastico/ironico → NO respondas literal, entiende el sarcasmo y responde con humildad
+
+REGLA #6 — VERIFICACION PROACTIVA
+Cuando leas el historial, verifica que TODO lo que prometiste se haya hecho:
+- Si dijiste "te agendo" → revisa la AGENDA abajo. Si la cita NO esta, CREALA ahora con ```action```
+- Si dijiste "te aviso" → revisa TAREAS PENDIENTES. Si no hay nota, crea una AHORA
+- Si dijiste "ya registre tu pago" → verifica que la accion se ejecuto
+- Si el cliente pidio algo y Lina nunca respondio a ESO → respondelo AHORA
+NO esperes a que el cliente reclame. Si ves un hueco entre lo que prometiste y lo que hiciste, ACTUA.
+
+REGLA #7 — APRENDE Y RECUERDA
+Cada conversacion te ensena algo. Cuando descubras algo UTIL sobre un cliente o una situacion, guardalo:
+- add_note "APRENDIZAJE: [cliente] prefiere que le hablen formal/informal"
+- add_note "APRENDIZAJE: [cliente] siempre pide corte con [barbero], no le gusta [otro]"
+- add_note "APRENDIZAJE: Cuando preguntan por [servicio], tambien les interesa [otro]"
+- add_note "APRENDIZAJE: [cliente] es sensible al precio, ofrecer opciones economicas"
+Esto es tu MEMORIA. La seccion NOTAS del cliente incluye tus aprendizajes anteriores. USALOS para personalizar cada respuesta.
 
 COMO HABLAS
 2-4 lineas. Texto plano, NADA de markdown/**negritas**/##. Calida, cercana, servicial.
