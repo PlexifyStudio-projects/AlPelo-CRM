@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, date, timedelta
 
-from database.connection import get_db
+from database.connection import get_db, SessionLocal
 from database.models import AIConfig, Staff, Client, VisitHistory, ClientNote, WhatsAppConversation, WhatsAppMessage, Service, Appointment
 from schemas import (
     AIConfigCreate, AIConfigUpdate, AIConfigResponse,
