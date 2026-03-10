@@ -475,6 +475,69 @@
     &:disabled { cursor: default; }
   }
 
+  &__attach-btn {
+    @include flex-center;
+    width: 34px;
+    height: 34px;
+    border-radius: $border-radius-md;
+    border: none;
+    background: none;
+    color: $color-gray-400;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+    flex-shrink: 0;
+
+    &:hover { color: $color-primary; background: rgba(45, 90, 61, 0.06); }
+    &:disabled { opacity: 0.4; cursor: default; }
+  }
+
+  &__image-preview {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-xs $spacing-sm;
+    background: rgba(45, 90, 61, 0.04);
+    border-radius: $border-radius-sm;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__image-preview-img {
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-sm;
+    object-fit: cover;
+  }
+
+  &__image-preview-name {
+    font-size: 12px;
+    color: $color-gray-400;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__image-preview-remove {
+    @include flex-center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: none;
+    color: $color-gray-400;
+    cursor: pointer;
+
+    &:hover { background: rgba(0, 0, 0, 0.06); color: $color-danger; }
+  }
+
+  &__msg-image {
+    max-width: 240px;
+    max-height: 180px;
+    border-radius: $border-radius-sm;
+    margin-bottom: $spacing-xs;
+    display: block;
+  }
+
   &__hint {
     font-size: 10px;
     color: $color-gray-300;

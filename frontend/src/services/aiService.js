@@ -36,11 +36,16 @@ const aiService = {
   },
 
   // ========================= CHAT =========================
-  chat: async (message, conversationHistory = []) => {
+  chat: async (message, conversationHistory = [], imageBase64 = null, imageMime = null) => {
+    const body = { message, conversation_history: conversationHistory };
+    if (imageBase64 && imageMime) {
+      body.image_base64 = imageBase64;
+      body.image_mime = imageMime;
+    }
     const res = await fetch(`${API}/ai/chat`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ message, conversation_history: conversationHistory }),
+      body: JSON.stringify(body),
     });
     return handleResponse(res);
   },

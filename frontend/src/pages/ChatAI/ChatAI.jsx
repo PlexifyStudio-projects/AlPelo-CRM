@@ -91,9 +91,11 @@ const ChatAI = () => {
   const [queryHistory, setQueryHistory] = useState(loadHistory);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [tokenCount, setTokenCount] = useState(loadTokens);
+  const [pendingImage, setPendingImage] = useState(null); // { base64, mime, preview }
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Persist messages
   useEffect(() => {
@@ -127,15 +129,35 @@ const ChatAI = () => {
 
   useEffect(() => { autoResize(); }, [inputValue, autoResize]);
 
+  const handleImageSelect = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1];
+      setPendingImage({ base64, mime: file.type, preview: reader.result, name: file.name });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }, []);
+
   const sendMessage = useCallback(async (text) => {
     const trimmed = text.trim();
-    if (!trimmed || isTyping) return;
+    const hasImage = !!pendingImage;
+    if (!trimmed && !hasImage) return;
+    if (isTyping) return;
 
-    const userMsg = { id: generateId(), role: 'user', content: trimmed, timestamp: new Date().toISOString() };
+    const displayContent = hasImage ? `${trimmed || 'Imagen enviada'}\n[📷 ${pendingImage.name}]` : trimmed;
+    const userMsg = { id: generateId(), role: 'user', content: displayContent, imagePreview: pendingImage?.preview, timestamp: new Date().toISOString() };
     setMessages((prev) => [...prev, userMsg]);
     setInputValue('');
     setIsTyping(true);
-    setQueryHistory((prev) => [trimmed, ...prev.filter((q) => q !== trimmed)].slice(0, 15));
+    if (trimmed) setQueryHistory((prev) => [trimmed, ...prev.filter((q) => q !== trimmed)].slice(0, 15));
+
+    const imageData = pendingImage;
+    setPendingImage(null);
 
     // Send conversation history (exclude error messages to save tokens)
     const allMsgs = [...messages, userMsg];
@@ -145,7 +167,7 @@ const ChatAI = () => {
       .map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      const result = await aiService.chat(trimmed, history);
+      const result = await aiService.chat(trimmed || 'Describe esta imagen', history, imageData?.base64, imageData?.mime);
       const aiMsg = { id: generateId(), role: 'assistant', content: result.response, timestamp: new Date().toISOString() };
       setMessages((prev) => [...prev, aiMsg]);
       setTokenCount((prev) => prev + (result.tokens_used || 0));
@@ -158,7 +180,7 @@ const ChatAI = () => {
     } finally {
       setIsTyping(false);
     }
-  }, [isTyping, messages]);
+  }, [isTyping, messages, pendingImage]);
 
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(inputValue); };
   const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(inputValue); } };
@@ -275,7 +297,10 @@ const ChatAI = () => {
                               )}
                             </>
                           ) : (
-                            msg.content
+                            <>
+                              {msg.imagePreview && <img src={msg.imagePreview} alt="Adjunto" className="chat-ai__msg-image" />}
+                              {msg.content}
+                            </>
                           )}
                         </div>
                         <span className="chat-ai__time">{formatTime(msg.timestamp)}</span>
@@ -318,28 +343,43 @@ const ChatAI = () => {
                 ))}
               </div>
             )}
+            {pendingImage && (
+              <div className="chat-ai__image-preview">
+                <img src={pendingImage.preview} alt="Preview" className="chat-ai__image-preview-img" />
+                <span className="chat-ai__image-preview-name">{pendingImage.name}</span>
+                <button type="button" className="chat-ai__image-preview-remove" onClick={() => setPendingImage(null)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+              </div>
+            )}
             <div className="chat-ai__input-row">
+              <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageSelect} />
+              <button type="button" className="chat-ai__attach-btn" onClick={() => fileInputRef.current?.click()} title="Adjuntar imagen" disabled={isTyping}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
+                </svg>
+              </button>
               <textarea
                 ref={textareaRef}
                 className="chat-ai__input"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Escribe una instruccion..."
+                placeholder={pendingImage ? "Describe que quieres saber de la imagen..." : "Escribe una instruccion..."}
                 rows={1}
                 disabled={isTyping}
               />
               <button
                 type="submit"
-                className={`chat-ai__send ${inputValue.trim() ? 'chat-ai__send--active' : ''}`}
-                disabled={!inputValue.trim() || isTyping}
+                className={`chat-ai__send ${(inputValue.trim() || pendingImage) ? 'chat-ai__send--active' : ''}`}
+                disabled={(!inputValue.trim() && !pendingImage) || isTyping}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>
               </button>
             </div>
-            <span className="chat-ai__hint">Enter para enviar · Shift+Enter nueva linea</span>
+            <span className="chat-ai__hint">Enter para enviar · Shift+Enter nueva linea · 📷 Puedes adjuntar imagenes</span>
           </form>
         </div>
 

@@ -215,7 +215,8 @@ def _build_inbox_context(db: Session) -> str:
         unread = f" [{c.unread_count} sin leer]" if c.unread_count else ""
         ai = "IA:ON" if c.is_ai_active else "IA:OFF"
         tags = f" | tags:{','.join(c.tags)}" if c.tags else ""
-        last = c.last_message_at.strftime("%d/%m %H:%M") if c.last_message_at else "nunca"
+        last_col = (c.last_message_at + COL_OFFSET) if c.last_message_at else None
+        last = last_col.strftime("%d/%m %I:%M %p") if last_col else "nunca"
 
         # Client link
         client_info = ""
@@ -680,7 +681,7 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- INBOX SUMMARY ----
     elif action_type == "get_chat_messages":
-        # Read full chat history of a conversation
+        # Read full chat history of a conversation — Lina reads INTERNALLY, does NOT dump to admin
         search_name = (action.get("search_name") or action.get("name") or action.get("client") or "").strip()
         phone = (action.get("phone") or action.get("number") or "").strip()
 
@@ -698,10 +699,13 @@ def _execute_action(action: dict, db: Session) -> str:
             return f"No hay mensajes en la conversacion con {conv.wa_contact_name or conv.wa_contact_phone}."
 
         contact = conv.wa_contact_name or conv.wa_contact_phone
-        lines = [f"Chat completo con {contact} (Conv#{conv.id}, ultimos {len(msgs)} mensajes):"]
+
+        # Build internal context for Lina (she reads this, NOT the admin)
+        lines = [f"[CONTEXTO INTERNO — Lina leyo el chat de {contact} (Conv#{conv.id}, {len(msgs)} msgs). Resume lo relevante al admin, NO copies el chat.]"]
         for m in msgs:
             direction = "CLIENTE" if m.direction == "inbound" else ("LINA" if m.sent_by == "lina_ia" else "ADMIN")
-            time_str = m.created_at.strftime("%d/%m %H:%M") if m.created_at else "?"
+            col_time = (m.created_at + COL_OFFSET) if m.created_at else None
+            time_str = col_time.strftime("%d/%m %I:%M %p") if col_time else "?"
             media_tag = f" [📎 {m.message_type}]" if m.message_type and m.message_type != "text" else ""
             content = m.content or "[sin contenido]"
             lines.append(f"  [{time_str}] {direction}: {content}{media_tag}")
@@ -722,7 +726,8 @@ def _execute_action(action: dict, db: Session) -> str:
             unread = f" ({c.unread_count} sin leer)" if c.unread_count else ""
             ai = "IA ON" if c.is_ai_active else "IA OFF"
             tags = ", ".join(c.tags) if c.tags else ""
-            last = c.last_message_at.strftime("%d/%m %H:%M") if c.last_message_at else "nunca"
+            last_col = (c.last_message_at + COL_OFFSET) if c.last_message_at else None
+            last = last_col.strftime("%d/%m %I:%M %p") if last_col else "nunca"
             lines.append(f"  - {name}{unread} | {ai} | ultimo: {last}" + (f" | tags: {tags}" if tags else ""))
         return "\n".join(lines)
 
@@ -1333,6 +1338,7 @@ CAPACIDADES (tienes control total del CRM):
 - Equipo: datos del staff, crear/editar/desactivar
 - WhatsApp: VER chats reales (estan en INBOX abajo), LEER chats completos (get_chat_messages), enviar mensajes, plantillas, masivos, toggle IA, etiquetar, eliminar conversaciones
 - IMPORTANTE: Si el admin pide que revises un chat, usa get_chat_messages para leer el historial COMPLETO. El inbox solo muestra previews.
+- CRITICO: Cuando leas un chat con get_chat_messages, LEE PARA TI MISMA. NO copies ni pegues el historial al admin. En vez de eso, RESUME lo importante: que pidio el cliente, que quedo pendiente, que necesita atencion. El admin no quiere leer toda la conversacion, quiere un RESUMEN ejecutivo.
 - Config: cambiar personalidad, modelo, temperatura, tokens
 
 WHATSAPP — REGLA DE 24H:
@@ -1453,7 +1459,23 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
     messages = []
     for msg in data.conversation_history:
         messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})
-    messages.append({"role": "user", "content": data.message})
+
+    # Build the user message — with image if provided (Claude Vision)
+    if data.image_base64 and data.image_mime:
+        user_content = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": data.image_mime,
+                    "data": data.image_base64,
+                },
+            },
+            {"type": "text", "text": data.message or "El admin envio esta imagen. Describe lo que ves."},
+        ]
+        messages.append({"role": "user", "content": user_content})
+    else:
+        messages.append({"role": "user", "content": data.message})
 
     # Call Claude
     try:

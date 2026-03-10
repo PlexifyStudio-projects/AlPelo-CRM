@@ -499,6 +499,8 @@ class AIConfigResponse(BaseModel):
 class AIChatRequest(BaseModel):
     message: str
     conversation_history: List[dict] = []
+    image_base64: Optional[str] = None
+    image_mime: Optional[str] = None
 
 class AIChatResponse(BaseModel):
     response: str
