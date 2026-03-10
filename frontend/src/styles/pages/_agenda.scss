@@ -1809,6 +1809,55 @@
         transform: translateY(-1px);
       }
     }
+
+    &--busy {
+      background: #FEE2E2;
+      color: #B91C1C;
+      border-color: #FECACA;
+      cursor: not-allowed;
+      opacity: 0.7;
+      text-decoration: line-through;
+
+      &:hover {
+        transform: none;
+        background: #FEE2E2;
+        color: #B91C1C;
+        border-color: #FECACA;
+      }
+    }
+
+    &--current {
+      background: #DBEAFE;
+      color: #1D4ED8;
+      border-color: #93C5FD;
+      position: relative;
+
+      &:hover {
+        background: #BFDBFE;
+        color: #1D4ED8;
+        border-color: #60A5FA;
+        transform: translateY(-1px);
+      }
+    }
+
+    &--blocked {
+      background: $color-gray-50;
+      color: $color-gray-300;
+      border-color: $color-gray-100;
+      cursor: not-allowed;
+
+      &:hover {
+        transform: none;
+        background: $color-gray-50;
+        color: $color-gray-300;
+        border-color: $color-gray-100;
+      }
+    }
+  }
+
+  &__slots-count {
+    font-weight: $font-weight-regular;
+    color: $color-gray-400;
   }
 
   &__slots-empty {

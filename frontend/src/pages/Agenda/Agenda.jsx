@@ -260,14 +260,18 @@ const AgendaInner = () => {
   // ─── Load appointments for modal date ──────────────
   useEffect(() => {
     if (!showModal || !formData.date) return;
+    // Immediately use locally-loaded appointments (no blank flash)
+    const local = appointments.filter(a => a.date === formData.date && a.status !== 'cancelled');
+    setModalDayApts(local);
+    // Then refresh from API for any changes by other users / Lina
     const load = async () => {
       try {
         const apts = await appointmentService.list({ date_from: formData.date, date_to: formData.date });
         setModalDayApts(apts.filter(a => a.status !== 'cancelled'));
-      } catch { setModalDayApts([]); }
+      } catch { /* keep local data */ }
     };
     load();
-  }, [showModal, formData.date]);
+  }, [showModal, formData.date, appointments]);
 
   // ─── Per-service availability computation ──────────
   const computeSlots = useCallback((staffId, serviceId, assignmentIndex) => {
@@ -1018,7 +1022,7 @@ const AgendaInner = () => {
                 const staffWithAvail = eligible.map(s => ({
                   ...s,
                   availableSlots: computeSlots(s.id, assignment.serviceId, aIdx),
-                  busyCount: modalDayApts.filter(a => a.staff_id === s.id).length,
+                  busyCount: modalDayApts.filter(a => a.staff_id === s.id && a.status !== 'cancelled').length,
                 }));
 
                 return (
@@ -1062,19 +1066,59 @@ const AgendaInner = () => {
                         </div>
 
                         {assignment.staffId && (() => {
-                          const slots = computeSlots(parseInt(assignment.staffId), assignment.serviceId, aIdx);
-                          const selStaff = staff.find(s => s.id === parseInt(assignment.staffId));
+                          const selStaffId = parseInt(assignment.staffId);
+                          const slots = computeSlots(selStaffId, assignment.serviceId, aIdx);
+                          const selStaff = staff.find(s => s.id === selStaffId);
+
+                          // Compute ALL busy ranges for this staff (including current apt) for visual display
+                          const busyRanges = modalDayApts
+                            .filter(a => a.staff_id === selStaffId && a.status !== 'cancelled')
+                            .map(a => ({
+                              s: timeToMin(a.time),
+                              e: timeToMin(a.time) + (a.duration_minutes || 30),
+                              isCurrent: editingApt && a.id === editingApt.id,
+                              clientName: a.client_name,
+                            }));
+
+                          // Generate ALL time slots for display (available + busy)
+                          // Visual: mark only slots that fall WITHIN the actual busy range (real occupied time)
+                          // Availability: uses computeSlots which checks if a new service would overlap
+                          const allSlots = [];
+                          for (let m = HOURS_START * 60; m < HOURS_END * 60; m += 15) {
+                            // Visual check: does this 15-min slot fall inside any busy range?
+                            const visualOverlap = busyRanges.find(r => m >= r.s && m < r.e);
+                            const isAvailable = slots.includes(m);
+                            const isCurrent = visualOverlap?.isCurrent || false;
+                            const isBusy = !!visualOverlap && !isCurrent;
+                            allSlots.push({ m, isAvailable, isBusy, isCurrent, busyClient: visualOverlap?.clientName });
+                          }
+                          const availCount = allSlots.filter(s => s.isAvailable || s.isCurrent).length;
+                          const busyCount = allSlots.filter(s => s.isBusy).length;
+
                           return (
                             <div className={`${b}__slots`}>
-                              <span className={`${b}__slots-label`}>Horarios disponibles — {selStaff?.name}</span>
-                              {slots.length > 0 ? (
+                              <span className={`${b}__slots-label`}>
+                                Horarios — {selStaff?.name}
+                                {busyCount > 0 && <span className={`${b}__slots-count`}> ({availCount} libres, {busyCount} ocupados)</span>}
+                              </span>
+                              {allSlots.length > 0 ? (
                                 <div className={`${b}__slots-grid`}>
-                                  {slots.map(m => {
+                                  {allSlots.map(({ m, isAvailable, isBusy, isCurrent, busyClient }) => {
                                     const t = minToTime(m);
+                                    const isSelected = assignment.time === t;
+                                    const canClick = isAvailable || isCurrent;
                                     return (
                                       <button key={m} type="button"
-                                        className={`${b}__slot-btn ${assignment.time === t ? `${b}__slot-btn--on` : ''}`}
-                                        onClick={() => updateAssignment(aIdx, { time: t })}>
+                                        className={[
+                                          `${b}__slot-btn`,
+                                          isSelected ? `${b}__slot-btn--on` : '',
+                                          isBusy ? `${b}__slot-btn--busy` : '',
+                                          isCurrent ? `${b}__slot-btn--current` : '',
+                                          !canClick && !isBusy ? `${b}__slot-btn--blocked` : '',
+                                        ].filter(Boolean).join(' ')}
+                                        onClick={() => { if (canClick) updateAssignment(aIdx, { time: t }); }}
+                                        disabled={!canClick}
+                                        title={isBusy ? `Ocupado: ${busyClient || ''}` : isCurrent ? 'Horario actual de esta cita' : !canClick ? 'No disponible (conflicto de horario)' : formatTime12(t)}>
                                         {formatTime12(t)}
                                       </button>
                                     );
