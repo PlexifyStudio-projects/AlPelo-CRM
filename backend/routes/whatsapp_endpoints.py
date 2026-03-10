@@ -1117,6 +1117,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             history = []
             for m in recent_msgs:
                 role = "user" if m.direction == "inbound" else "assistant"
+                # Skip off-hours template from history — it confuses the AI into repeating "mañana abrimos"
+                if m.sent_by == "lina_ia_offhours":
+                    continue
                 history.append({"role": role, "content": m.content})
 
             from routes.ai_endpoints import _build_system_prompt, _call_ai
