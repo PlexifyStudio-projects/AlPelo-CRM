@@ -102,7 +102,7 @@ const LinaActivity = () => {
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState('all');
-  const [isLive, setIsLive] = useState(true);
+  const isLive = true; // Always live — status indicator only
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [tokenStatus, setTokenStatus] = useState(null);
@@ -141,13 +141,10 @@ const LinaActivity = () => {
   useEffect(() => {
     fetchActivity();
     checkToken();
-    if (isLive) {
-      intervalRef.current = setInterval(fetchActivity, 5000);
-    }
-    // Check token every 60s
+    intervalRef.current = setInterval(fetchActivity, 5000);
     const tokenInterval = setInterval(checkToken, 60000);
     return () => { clearInterval(intervalRef.current); clearInterval(tokenInterval); };
-  }, [fetchActivity, checkToken, isLive]);
+  }, [fetchActivity, checkToken]);
 
   const filteredEvents = filter === 'all' ? events : events.filter(e => e.event_type === filter);
 
@@ -172,13 +169,10 @@ const LinaActivity = () => {
           <p className="lina-activity__subtitle">Monitoreo en tiempo real de todas las acciones de Lina IA</p>
         </div>
         <div className="lina-activity__header-right">
-          <button
-            className={`lina-activity__live-btn ${isLive ? 'lina-activity__live-btn--active' : ''}`}
-            onClick={() => setIsLive(!isLive)}
-          >
-            <span className={`lina-activity__live-dot ${isLive ? 'lina-activity__live-dot--pulse' : ''}`} />
-            {isLive ? 'EN VIVO' : 'PAUSADO'}
-          </button>
+          <span className="lina-activity__live-btn lina-activity__live-btn--active">
+            <span className="lina-activity__live-dot lina-activity__live-dot--pulse" />
+            EN VIVO
+          </span>
           {lastUpdate && (
             <span className="lina-activity__last-update">
               Actualizado: {lastUpdate.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}

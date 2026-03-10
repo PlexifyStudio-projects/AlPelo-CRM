@@ -34,17 +34,6 @@ def _run_migrations(engine):
         except Exception as e:
             print(f"[MIGRATION] Error on {table}.{column}: {e}")
 
-    # Activate Lina IA on all existing conversations
-    try:
-        with engine.begin() as conn:
-            result = conn.execute(text(
-                "UPDATE public.whatsapp_conversation SET is_ai_active = true WHERE is_ai_active = false"
-            ))
-            if result.rowcount > 0:
-                print(f"[MIGRATION] Activated Lina IA on {result.rowcount} conversations")
-    except Exception:
-        pass
-
     # Switch AI model from Haiku to Sonnet (Haiku too dumb for WhatsApp)
     try:
         with engine.begin() as conn:

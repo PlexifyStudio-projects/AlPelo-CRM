@@ -1168,8 +1168,8 @@ Barbero preferido: {preferred_barber}"""
         for a in todays_apts:
             staff_obj = db.query(Staff).filter(Staff.id == a.staff_id).first()
             svc_obj = db.query(Service).filter(Service.id == a.service_id).first()
-            apt_lines.append(f"  {a.time} | {a.client_name} | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | {a.status}")
-        sections.append(f"AGENDA HOY ({today.strftime('%d/%m/%Y')}) — {len(todays_apts)} citas:\n" + "\n".join(apt_lines))
+            apt_lines.append(f"  ID:{a.id} {a.time} | {a.client_name} | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | {a.status}")
+        sections.append(f"AGENDA HOY ({today.strftime('%d/%m/%Y')}) — {len(todays_apts)} citas (ESTAS YA EXISTEN, no las crees de nuevo):\n" + "\n".join(apt_lines))
     else:
         sections.append(f"AGENDA HOY ({today.strftime('%d/%m/%Y')}): Sin citas agendadas.")
 
@@ -1184,8 +1184,8 @@ Barbero preferido: {preferred_barber}"""
         for a in tomorrows_apts:
             staff_obj = db.query(Staff).filter(Staff.id == a.staff_id).first()
             svc_obj = db.query(Service).filter(Service.id == a.service_id).first()
-            apt_lines.append(f"  {a.time} | {a.client_name} | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | {a.status}")
-        sections.append(f"AGENDA MAÑANA ({tomorrow.strftime('%d/%m/%Y')}) — {len(tomorrows_apts)} citas:\n" + "\n".join(apt_lines))
+            apt_lines.append(f"  ID:{a.id} {a.time} | {a.client_name} | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | {a.status}")
+        sections.append(f"AGENDA MAÑANA ({tomorrow.strftime('%d/%m/%Y')}) — {len(tomorrows_apts)} citas (ESTAS YA EXISTEN):\n" + "\n".join(apt_lines))
 
     # Pending tasks — notes with "PENDIENTE" across ALL clients (Lina's task memory)
     pending_notes = (
@@ -1227,14 +1227,21 @@ PROHIBIDO: "Voy a revisar/consultar/confirmar/verificar", "Te confirmo en un mom
 EN VEZ: Cliente pide cita → CREALA con ```action```. Pregunta precio → DILO (esta abajo en SERVICIOS). Pregunta disponibilidad → MIRA la AGENDA abajo y responde.
 Excepcion UNICA: pagos/comprobantes (admin verifica).
 
-REGLA #2 — PROACTIVA Y PERSISTENTE
-Si prometiste algo y no lo hiciste, HAZLO AHORA con acciones. No dejes tareas a medias.
-Si hay TAREAS PENDIENTES abajo que puedes resolver, RESUELVELAS inmediatamente.
+REGLA #2 — PERSISTENTE COMO UNA MAQUINA
+Eres imparable. Si prometiste algo, HAZLO AHORA con acciones. Si fallo algo, REINTENTA. Si hay TAREAS PENDIENTES abajo, RESUELVELAS inmediatamente.
+NO dejas NADA a medias. NO dices "te aviso luego". NO creas una tarea si puedes hacerlo YA.
 Si falta info pregunta directo: "A que hora te viene bien?"
-NUNCA digas que vas a hacer algo y luego NO lo hagas. Si dices "te agendo", INCLUYE el bloque ```action``` de create_appointment.
+Si dices "te agendo", INCLUYE el bloque ```action``` de create_appointment. Si dices "te envio recordatorio", crea la nota PENDIENTE.
+Cada tarea que creas DEBE tener sentido y ser ejecutable por el sistema automatico.
 
 REGLA #3 — LEE TODO EL CONTEXTO
 Lee COMPLETO el historial de la conversacion antes de responder. Si el cliente pregunto 3 cosas, responde LAS 3. Si hiciste una promesa en mensajes anteriores, CUMPLELA. No ignores mensajes previos.
+
+REGLA #4 — DIFERENCIA INFORMAR vs CREAR
+La seccion AGENDA ABAJO muestra citas YA EXISTENTES. Si el cliente pregunta "a que hora es mi cita?", responde con la info que ves — NO uses create_appointment.
+SOLO usa create_appointment cuando el cliente pide una cita NUEVA que NO existe en la agenda.
+Si una cita YA EXISTE, dile "Tienes tu cita a las X con Y". Si NO existe, dile "Te agendo" y CREA la accion.
+NUNCA digas "te agendé" si la cita ya existia — di "tienes agendada" o "tu cita es a las...".
 
 COMO HABLAS
 2-4 lineas. Texto plano, NADA de markdown/**negritas**/##. Calida, cercana, servicial.
@@ -1270,7 +1277,8 @@ RECORDATORIOS: El sistema automatico envia recordatorio 10min antes de citas. So
 ACCIONES (bloques ```action``` al FINAL):
 create_client: name, phone | update_client: search_name, +campos | delete_client: search_name
 add_note: search_name, content | list_clients_by_filter: status?, min_days_since_visit?, limit?
-create_appointment: client_name, staff_name, service_name, date(YYYY-MM-DD), time(HH:MM) | update_appointment: appointment_id, +campos | delete_appointment: appointment_id | list_appointments: date?, staff_name?, status?
+create_appointment: client_name, staff_name, service_name, date(YYYY-MM-DD), time(HH:MM) | update_appointment: appointment_id(NUMERO, ej: 42), +campos | delete_appointment: appointment_id(NUMERO) | list_appointments: date?, staff_name?, status?
+IMPORTANTE: appointment_id SIEMPRE es un NUMERO entero (ej: 42, 157). Mira los IDs en la AGENDA abajo. NUNCA inventes IDs como "appointment_id_6:35pm".
 list_services: category? | add_visit: search_name, staff_id, service_name, amount
 tag_conversation: search_name|phone, tags(list)
 VISITAS: Siempre add_visit + create_appointment(status=completed). Ambas.
@@ -1509,7 +1517,7 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
     messages = list(history) + [{"role": "user", "content": user_content}]
 
     try:
-        text, _ = await _call_anthropic(anthropic_key, model_override, system_prompt, messages, 0.4, 1024)
+        text, _ = await _call_anthropic(anthropic_key, model_override, system_prompt, messages, 0.4, 2048)
         return text.strip()
     except Exception as e:
         print(f"[AI WhatsApp] Claude ({model_override}) failed: {e}")
@@ -1526,7 +1534,7 @@ def _call_ai_sync(system_prompt: str, history: list, user_message: str) -> str:
 
     payload = {
         "model": "claude-sonnet-4-5-20250929",
-        "max_tokens": 1024,
+        "max_tokens": 2048,
         "system": system_prompt,
         "messages": messages,
         "temperature": 0.4,

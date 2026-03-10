@@ -228,18 +228,30 @@ def _check_30min_reminders(db):
 # 2. CUSTOM REMINDERS — From PENDIENTE notes ("avisame 10 min antes", etc.)
 # ============================================================================
 def _check_custom_reminders(db):
-    """Handle custom reminder requests (e.g., "avisame 10 minutos antes")."""
+    """Handle custom reminder requests — send before appointment, expire if missed."""
     now = _now_colombia()
     today = now.date()
+
+    # Broader keyword matching for PENDIENTE notes related to reminders
+    _REMINDER_KEYWORDS = [
+        "%recordar%", "%avisar%", "%aviso%", "%recordatorio%",
+        "%10 minuto%", "%40 minuto%", "%faltando%",
+        "%antes de la cita%", "%antes de su cita%",
+        "%antes de cita%", "%enviar recordatorio%",
+        "%manual%", "%minutos antes%", "%min antes%",
+    ]
 
     appointments = (
         db.query(Appointment)
         .filter(Appointment.date == today)
-        .filter(Appointment.status == "confirmed")
+        .filter(Appointment.status.in_(["confirmed", "completed"]))
         .all()
     )
 
     for appt in appointments:
+        if not appt.client_id:
+            continue
+
         try:
             hour, minute = map(int, appt.time.split(":"))
             appt_dt = datetime.combine(today, datetime.min.time().replace(hour=hour, minute=minute))
@@ -248,53 +260,77 @@ def _check_custom_reminders(db):
 
         diff_min = (appt_dt - now).total_seconds() / 60
 
-        # Check for custom reminder notes (8-15 min window for "10 min" requests)
-        if 8 <= diff_min <= 15 and appt.client_id:
-            pending_notes = (
-                db.query(ClientNote)
-                .filter(ClientNote.client_id == appt.client_id)
-                .filter(ClientNote.content.ilike("%PENDIENTE:%"))
-                .filter(
-                    ClientNote.content.ilike("%recordar%") |
-                    ClientNote.content.ilike("%avisar%") |
-                    ClientNote.content.ilike("%aviso%") |
-                    ClientNote.content.ilike("%10 minuto%") |
-                    ClientNote.content.ilike("%faltando%") |
-                    ClientNote.content.ilike("%antes de la cita%") |
-                    ClientNote.content.ilike("%antes de su cita%")
-                )
-                .all()
-            )
+        # Build keyword filter
+        from sqlalchemy import or_
+        keyword_filter = or_(*[ClientNote.content.ilike(kw) for kw in _REMINDER_KEYWORDS])
 
-            if not pending_notes:
-                continue
+        pending_notes = (
+            db.query(ClientNote)
+            .filter(ClientNote.client_id == appt.client_id)
+            .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+            .filter(keyword_filter)
+            .all()
+        )
 
-            conv = _find_conversation(db, appt)
+        if not pending_notes:
+            continue
+
+        conv = _find_conversation(db, appt)
+
+        # CASE 1: Appointment time passed — mark notes as EXPIRADO (missed window)
+        if diff_min < -5:
+            for note in pending_notes:
+                note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [La cita ya paso — {now.strftime('%H:%M')}]"
+            db.commit()
+            client_first = (appt.client_name or "").split()[0]
+            print(f"[SCHEDULER] Expired {len(pending_notes)} missed reminder(s) for {client_first} (cita was at {appt.time})")
+            log_event("tarea", f"Recordatorio expirado para {client_first}", detail=f"La cita era a las {appt.time} y ya paso. Tarea marcada como expirada.", contact_name=client_first, conv_id=conv.id if conv else None, status="warning")
+            continue
+
+        # CASE 2: Within send window (0-45 min before appointment) — send the reminder
+        if 0 <= diff_min <= 45:
             if not conv:
                 continue
 
-            # DB-SAFE DEDUP: Check if we already sent a custom reminder to this conv today
+            # DB-SAFE DEDUP
             if _already_sent_today(db, conv.id, "reminder_custom"):
+                # Still resolve the notes even if we already sent
+                for note in pending_notes:
+                    if "PENDIENTE:" in note.content:
+                        note.content = note.content.replace("PENDIENTE:", "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
+                db.commit()
                 continue
 
             client_first, service_name, staff_first = _get_appt_details(db, appt)
 
-            msg = f"Hola {client_first}! Como me pediste, te aviso que tu cita es en 10 minutos"
+            mins_left = int(diff_min)
+            if mins_left > 1:
+                msg = f"Hola {client_first}! Te recuerdo que tu cita es en {mins_left} minutos"
+            else:
+                msg = f"Hola {client_first}! Tu cita es ahorita"
+
             if staff_first:
                 msg += f" con {staff_first}"
             msg += f" para {service_name}."
-            msg += " Nos vemos! 💈"
+            msg += " Te esperamos! 💈"
 
             wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
             _store_outbound_message(db, conv.id, msg, wa_sent, tag="reminder_custom")
 
             # Resolve the PENDIENTE notes
+            status_tag = "COMPLETADO:" if wa_sent else "FALLIDO:"
             for note in pending_notes:
-                note.content = note.content.replace("PENDIENTE:", "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
+                note.content = note.content.replace("PENDIENTE:", status_tag) + f" [{'Enviado' if wa_sent else 'Fallo envio'} {now.strftime('%H:%M')}]"
             db.commit()
 
-            print(f"[SCHEDULER] Custom 10-min reminder sent for appt #{appt.id} → {client_first}")
-            log_event("tarea", f"Recordatorio personalizado enviado a {client_first}", detail=f"Tarea PENDIENTE completada: recordar 10 min antes de cita", contact_name=client_first, conv_id=conv.id, status="ok")
+            print(f"[SCHEDULER] Custom reminder {'sent' if wa_sent else 'FAILED'} for appt #{appt.id} → {client_first}")
+            log_event(
+                "tarea",
+                f"Recordatorio {'enviado' if wa_sent else 'fallido'} a {client_first}",
+                detail=f"Cita a las {appt.time} — recordatorio {mins_left}min antes",
+                contact_name=client_first, conv_id=conv.id,
+                status="ok" if wa_sent else "error",
+            )
 
 
 # ============================================================================
@@ -398,26 +434,20 @@ def _check_noshow_followups(db):
 # 4. EXPIRE OLD PENDIENTE NOTES
 # ============================================================================
 def _expire_old_notes(db):
-    """Mark PENDIENTE notes older than 48h as expired."""
+    """Mark PENDIENTE notes older than 24h as expired."""
     now = datetime.utcnow()
 
     old_notes = (
         db.query(ClientNote)
         .filter(ClientNote.content.ilike("%PENDIENTE:%"))
-        .filter(
-            ClientNote.content.ilike("%recordar%") |
-            ClientNote.content.ilike("%avisar%") |
-            ClientNote.content.ilike("%faltando%") |
-            ClientNote.content.ilike("%antes de%")
-        )
         .all()
     )
 
     for note in old_notes:
-        if note.created_at and (now - note.created_at).total_seconds() > 172800:  # 48h
-            note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [Expirado {now.strftime('%d/%m %H:%M')}]"
+        if note.created_at and (now - note.created_at).total_seconds() > 86400:  # 24h
+            note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [Expirado — tarea tenia mas de 24h sin resolverse {now.strftime('%d/%m %H:%M')}]"
             db.commit()
-            print(f"[SCHEDULER] Expired old reminder note #{note.id}")
+            print(f"[SCHEDULER] Expired old note #{note.id}")
 
 
 # ============================================================================

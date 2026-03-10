@@ -345,7 +345,7 @@ async def toggle_ai(conv_id: int, body: dict, background_tasks: BackgroundTasks,
     catchup = False
 
     # When re-enabling AI, catch up on unread messages
-    if conv.is_ai_active and conv.unread_count and conv.unread_count > 0:
+    if conv.is_ai_active:
         last_inbound = (
             db.query(WhatsAppMessage)
             .filter(WhatsAppMessage.conversation_id == conv.id, WhatsAppMessage.direction == "inbound")
@@ -353,8 +353,6 @@ async def toggle_ai(conv_id: int, body: dict, background_tasks: BackgroundTasks,
             .first()
         )
         if last_inbound:
-            # Only catch up if Lina hasn't SUCCESSFULLY replied to the last inbound message
-            # Exclude failed sends — those never reached the client
             last_ai_reply = (
                 db.query(WhatsAppMessage)
                 .filter(
@@ -368,7 +366,6 @@ async def toggle_ai(conv_id: int, body: dict, background_tasks: BackgroundTasks,
             needs_catchup = not last_ai_reply or last_ai_reply.created_at < last_inbound.created_at
 
             if needs_catchup:
-                # Collect pending inbound text
                 since = last_ai_reply.created_at if last_ai_reply else conv.created_at
                 recent_inbound = (
                     db.query(WhatsAppMessage)
@@ -858,7 +855,8 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     # Lina replies to: text, audio (transcribed), image (vision), video (can't see)
                     # Lina IGNORES: stickers, reactions, documents
                     _media_labels = {"text": "texto", "audio": "audio", "image": "imagen", "video": "video"}
-                    log_event("sistema", f"Mensaje recibido de {conv.wa_contact_name or from_phone}", detail=f"Tipo: {_media_labels.get(msg_type, msg_type)} | {(content or '')[:80]}", conv_id=conv.id, contact_name=conv.wa_contact_name or "", status="info")
+                    if msg_type not in ("reaction", "sticker"):
+                        log_event("sistema", f"Mensaje recibido de {conv.wa_contact_name or from_phone}", detail=f"Tipo: {_media_labels.get(msg_type, msg_type)} | {(content or '')[:80]}", conv_id=conv.id, contact_name=conv.wa_contact_name or "", status="info")
 
                     if conv.is_ai_active and msg_type in ("text", "audio", "image", "video"):
                         ai_text = content.strip() if content else ""
@@ -1102,7 +1100,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             print(f"[Lina IA] CATCHUP — waiting {delay}s before replying to conv {conv_id}...")
             log_event("sistema", "Recuperando mensajes pendientes", detail=f"Preparando respuesta (demora {delay}s)", conv_id=conv_id, contact_name=_log_contact, status="info")
         else:
-            delay = random.randint(10, 20)
+            delay = random.randint(20, 40)
             print(f"[Lina IA] Waiting {delay}s before replying to conv {conv_id}...")
             log_event("sistema", "Preparando respuesta", detail=f"Leyendo conversacion y escribiendo ({delay}s)", conv_id=conv_id, contact_name=_log_contact, status="info")
         await asyncio.sleep(delay)
@@ -1116,7 +1114,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             log_event("skip", "Limite de mensajes por minuto alcanzado", detail=f"Maximo {_AI_REPLY_MAX} respuestas por minuto. Reintentare en el proximo ciclo.", conv_id=conv_id, status="warning")
             return
 
-        # Step 2: Check per-conversation cooldown — skip if Lina already replied in last 60 seconds
+        # Step 2: Check per-conversation cooldown — skip if Lina already replied in last 15 seconds
         db = SessionLocal()
         try:
             conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
@@ -1135,9 +1133,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             )
             if last_ai_msg and last_ai_msg.created_at:
                 seconds_since = (datetime.utcnow() - last_ai_msg.created_at).total_seconds()
-                if seconds_since < 45:
+                if seconds_since < 15:
                     print(f"[Lina IA] Cooldown active for conv {conv_id} ({seconds_since:.0f}s ago). Skipping.")
-                    log_event("skip", "Esperando entre respuestas", detail=f"Ultima respuesta hace {int(seconds_since)}s. Espero 45s entre mensajes para no saturar.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
+                    log_event("skip", "Esperando entre respuestas", detail=f"Ultima respuesta hace {int(seconds_since)}s. Espero 15s entre mensajes para no saturar.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
                     return
 
             # Step 2.5: Goodbye detection — if Lina recently said goodbye and client sends short farewell
@@ -1283,6 +1281,40 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             if not action_matches:
                 action_matches = BARE_ACTION.findall(ai_response)
 
+            # SAFETY NET: If Lina promised to do something (schedule, create, etc.) but NO action block found,
+            # retry once with explicit instruction to include the action block
+            _PROMISE_WORDS = ["te agend", "te program", "listo, queda", "ya te agend", "queda agendad", "cita para", "te registr", "ya te registr"]
+            if not action_matches:
+                response_lower = ai_response.lower()
+                promised_action = any(w in response_lower for w in _PROMISE_WORDS)
+                if promised_action:
+                    print(f"[Lina IA] WARNING: Response promises action but NO action block found. Retrying...")
+                    log_event("error", "Lina prometio accion sin ejecutarla — reintentando", detail=f"Respuesta: {ai_response[:100]}...", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
+
+                    # Retry with explicit instruction
+                    retry_msg = f"[SISTEMA: Tu respuesta anterior prometio una accion (agendar, registrar, etc.) pero NO incluiste el bloque ```action```. DEBES incluir el bloque action al final. Responde igual pero INCLUYE el ```action``` esta vez.]\n\n{inbound_text}"
+                    retry_response = await _call_ai(system_prompt, history, retry_msg)
+                    if retry_response:
+                        # Re-parse actions from retry
+                        for ch in '\u201c\u201d\u00ab\u00bb\u201e\u201f':
+                            retry_response = retry_response.replace(ch, '"')
+                        for ch in '\u2018\u2019\u201a\u201b':
+                            retry_response = retry_response.replace(ch, "'")
+                        for ch in '\u0060\u2018\u2019\u02CB\u02CA':
+                            retry_response = retry_response.replace(ch, '`')
+
+                        retry_actions = ACTION_PATTERN.findall(retry_response)
+                        if not retry_actions:
+                            retry_actions = BARE_ACTION.findall(retry_response)
+
+                        if retry_actions:
+                            action_matches = retry_actions
+                            print(f"[Lina IA] Retry SUCCESS — found {len(retry_actions)} action(s)")
+                            log_event("accion", "Reintento exitoso — acciones encontradas", detail=f"{len(retry_actions)} accion(es) recuperadas", conv_id=conv_id, status="ok")
+                        else:
+                            print(f"[Lina IA] Retry FAILED — still no actions")
+                            log_event("error", "Reintento fallido — Lina no incluyo acciones", detail="Dos intentos sin bloque action", conv_id=conv_id, status="error")
+
             for action_json in action_matches:
                 try:
                     action_data = json.loads(action_json.strip())
@@ -1330,27 +1362,39 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         }
                         action_label = _action_labels.get(action_type, f"Ejecutando: {action_type}")
                         log_event("accion", action_label, detail=str(action_data)[:200], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
-                        result = _execute_action(action_data, db)
-                        print(f"[Lina IA] Action {action_type}: {result}")
-                        # Log result
-                        action_ok = "ERROR" not in result
-                        log_event("accion", f"{action_label} — {'Listo' if action_ok else 'Error'}", detail=result[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok" if action_ok else "error")
 
-                        # If client was created, link to conversation
-                        if action_type == "create_client" and "ERROR" not in result:
-                            from database.models import Client as ClientModel
-                            new_client = db.query(ClientModel).filter(
-                                ClientModel.phone == conv.wa_contact_phone
-                            ).first()
-                            if new_client and not conv.client_id:
-                                conv.client_id = new_client.id
-                                db.commit()
-                                print(f"[Lina IA] Linked conv {conv_id} to client {new_client.client_id}")
+                        # Use FRESH DB session for each action to avoid InFailedSqlTransaction cascade
+                        action_db = SessionLocal()
+                        try:
+                            result = _execute_action(action_data, action_db)
+                            print(f"[Lina IA] Action {action_type}: {result}")
+                            action_ok = "ERROR" not in result
+                            log_event("accion", f"{action_label} — {'Listo' if action_ok else 'Error'}", detail=result[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok" if action_ok else "error")
+
+                            # If client was created, link to conversation
+                            if action_type == "create_client" and "ERROR" not in result:
+                                from database.models import Client as ClientModel
+                                new_client = action_db.query(ClientModel).filter(
+                                    ClientModel.phone == conv.wa_contact_phone
+                                ).first()
+                                if new_client and not conv.client_id:
+                                    conv_link = action_db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+                                    if conv_link:
+                                        conv_link.client_id = new_client.id
+                                        action_db.commit()
+                                        print(f"[Lina IA] Linked conv {conv_id} to client {new_client.client_id}")
+                        except Exception as exec_err:
+                            action_db.rollback()
+                            print(f"[Lina IA] Action execution error: {exec_err}")
+                            log_event("error", f"{action_label} — Error de ejecucion", detail=str(exec_err)[:200], conv_id=conv_id, status="error")
+                        finally:
+                            action_db.close()
 
                     else:
                         print(f"[Lina IA] Unknown action type: {action_type}")
                 except Exception as action_err:
-                    print(f"[Lina IA] Action error: {action_err}")
+                    print(f"[Lina IA] Action parse error: {action_err}")
+                    log_event("error", "Error parseando accion", detail=str(action_err)[:200], conv_id=conv_id, status="error")
 
             # NUCLEAR STRIP: Remove ALL traces of action blocks from client-facing text
             clean_response = ai_response
@@ -1701,18 +1745,19 @@ async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundT
 
     catchup_count = 0
 
-    # When re-enabling AI, sweep all unread conversations and reply
+    # When re-enabling AI, scan the last 15 conversations for any unanswered messages
     if body.enable:
         from sqlalchemy import desc
 
-        # Find conversations with unread messages
-        unread_convs = (
+        # Scan last 15 conversations (by last activity), not just unread
+        recent_convs = (
             db.query(WhatsAppConversation)
-            .filter(WhatsAppConversation.unread_count > 0)
+            .order_by(desc(WhatsAppConversation.last_message_at))
+            .limit(15)
             .all()
         )
 
-        for conv in unread_convs:
+        for conv in recent_convs:
             # Get the last inbound message (client's last message)
             last_inbound = (
                 db.query(WhatsAppMessage)
