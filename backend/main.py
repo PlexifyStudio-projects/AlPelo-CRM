@@ -90,6 +90,57 @@ async def lina_activity(limit: int = 100, offset: int = 0):
     return {"events": events, "stats": stats}
 
 
+@app.get("/api/lina/memory")
+async def lina_memory():
+    """Get Lina's learned patterns and feedback — her growing memory."""
+    from database.connection import SessionLocal
+    from database.models import ClientNote, Client
+    from sqlalchemy import or_
+
+    db = SessionLocal()
+    try:
+        notes = (
+            db.query(ClientNote)
+            .filter(or_(
+                ClientNote.content.ilike("%APRENDIZAJE:%"),
+                ClientNote.content.ilike("%FEEDBACK:%"),
+            ))
+            .order_by(ClientNote.created_at.desc())
+            .limit(50)
+            .all()
+        )
+
+        items = []
+        for n in notes:
+            client = db.query(Client).filter(Client.id == n.client_id).first()
+            # Determine type
+            content = n.content or ""
+            if "APRENDIZAJE:" in content:
+                mem_type = "aprendizaje"
+                text = content.split("APRENDIZAJE:")[-1].strip()
+            elif "FEEDBACK:" in content:
+                mem_type = "feedback"
+                text = content.split("FEEDBACK:")[-1].strip()
+            else:
+                mem_type = "otro"
+                text = content
+
+            items.append({
+                "id": n.id,
+                "type": mem_type,
+                "client_name": client.name if client else "?",
+                "content": text[:300],
+                "created_at": n.created_at.isoformat() if n.created_at else None,
+            })
+
+        return {
+            "total": len(items),
+            "items": items,
+        }
+    finally:
+        db.close()
+
+
 @app.get("/api/lina/health")
 async def lina_health():
     """Check if WhatsApp token is valid by making a test API call."""

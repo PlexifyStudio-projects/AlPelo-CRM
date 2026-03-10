@@ -467,6 +467,116 @@
 
     svg { width: 28px; height: 28px; }
   }
+
+  // ----- Memory section -----
+  &__memory {
+    border-radius: $border-radius-lg;
+    background: $glass-bg-heavy;
+    border: 1px solid $glass-border;
+    overflow: hidden;
+  }
+
+  &__memory-toggle {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-md $spacing-lg;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover { background: rgba(0, 0, 0, 0.02); }
+  }
+
+  &__memory-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: $border-radius-sm;
+    background: $color-primary-ghost;
+    color: $color-primary;
+    flex-shrink: 0;
+  }
+
+  &__memory-title {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-gray-800;
+  }
+
+  &__memory-count {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    margin-left: auto;
+  }
+
+  &__memory-arrow {
+    display: flex;
+    color: $color-gray-300;
+    transition: transform $transition-fast;
+
+    &--open { transform: rotate(180deg); }
+  }
+
+  &__memory-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: $color-gray-100;
+    max-height: 400px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb { background: $color-gray-200; border-radius: 4px; }
+  }
+
+  &__memory-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $spacing-xs $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
+    background: $color-white;
+
+    &--feedback { border-left: 3px solid $color-warning; }
+    &--aprendizaje { border-left: 3px solid $color-primary; }
+  }
+
+  &__memory-tag {
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-wide;
+    text-transform: uppercase;
+    padding: 1px 8px;
+    border-radius: $border-radius-full;
+
+    &--feedback { background: $color-warning-bg; color: $color-warning-dark; }
+    &--aprendizaje { background: $color-primary-ghost; color: $color-primary; }
+  }
+
+  &__memory-client {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+  }
+
+  &__memory-text {
+    width: 100%;
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    margin: 0;
+    line-height: $line-height-base;
+  }
+
+  &__memory-date {
+    font-size: 10px;
+    color: $color-gray-300;
+    margin-left: auto;
+  }
 }
 
 // ----- Animations (namespaced) -----

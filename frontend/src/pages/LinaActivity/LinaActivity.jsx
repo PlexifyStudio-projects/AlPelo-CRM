@@ -106,6 +106,8 @@ const LinaActivity = () => {
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [tokenStatus, setTokenStatus] = useState(null);
+  const [memory, setMemory] = useState(null);
+  const [showMemory, setShowMemory] = useState(false);
   const intervalRef = useRef(null);
   const feedRef = useRef(null);
   const prevCountRef = useRef(0);
@@ -138,13 +140,22 @@ const LinaActivity = () => {
     } catch { setTokenStatus({ status: 'error', message: 'No se pudo verificar' }); }
   }, []);
 
+  const fetchMemory = useCallback(async () => {
+    try {
+      const resp = await fetch(`${API_URL}/lina/memory`, { credentials: 'include' });
+      if (resp.ok) setMemory(await resp.json());
+    } catch { /* silent */ }
+  }, []);
+
   useEffect(() => {
     fetchActivity();
     checkToken();
+    fetchMemory();
     intervalRef.current = setInterval(fetchActivity, 5000);
     const tokenInterval = setInterval(checkToken, 60000);
-    return () => { clearInterval(intervalRef.current); clearInterval(tokenInterval); };
-  }, [fetchActivity, checkToken]);
+    const memoryInterval = setInterval(fetchMemory, 30000);
+    return () => { clearInterval(intervalRef.current); clearInterval(tokenInterval); clearInterval(memoryInterval); };
+  }, [fetchActivity, checkToken, fetchMemory]);
 
   const filteredEvents = filter === 'all' ? events : events.filter(e => e.event_type === filter);
 
@@ -203,6 +214,47 @@ const LinaActivity = () => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Memory Section */}
+      {memory && memory.total > 0 && (
+        <div className="lina-activity__memory">
+          <button
+            className="lina-activity__memory-toggle"
+            onClick={() => setShowMemory(!showMemory)}
+          >
+            <span className="lina-activity__memory-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
+                <line x1="9" y1="21" x2="15" y2="21" /><line x1="10" y1="24" x2="14" y2="24" />
+              </svg>
+            </span>
+            <span className="lina-activity__memory-title">Memoria de Lina</span>
+            <span className="lina-activity__memory-count">{memory.total} aprendizajes</span>
+            <span className={`lina-activity__memory-arrow ${showMemory ? 'lina-activity__memory-arrow--open' : ''}`}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9" /></svg>
+            </span>
+          </button>
+
+          {showMemory && (
+            <div className="lina-activity__memory-list">
+              {memory.items.map(item => (
+                <div key={item.id} className={`lina-activity__memory-item lina-activity__memory-item--${item.type}`}>
+                  <span className={`lina-activity__memory-tag lina-activity__memory-tag--${item.type}`}>
+                    {item.type === 'feedback' ? 'Feedback' : 'Aprendizaje'}
+                  </span>
+                  <span className="lina-activity__memory-client">{item.client_name}</span>
+                  <p className="lina-activity__memory-text">{item.content}</p>
+                  {item.created_at && (
+                    <span className="lina-activity__memory-date">
+                      {new Date(item.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
