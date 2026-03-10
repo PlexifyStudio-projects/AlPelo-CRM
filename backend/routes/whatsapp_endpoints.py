@@ -1375,7 +1375,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
                     elif action_type in (
                         "create_client", "update_client", "delete_client",
-                        "add_note", "list_clients_by_filter",
+                        "add_note", "complete_task", "list_clients_by_filter",
                         "create_appointment", "update_appointment", "delete_appointment", "list_appointments",
                         "list_services", "add_visit",
                     ):
@@ -1397,6 +1397,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             "update_appointment": "Modificando cita",
                             "delete_appointment": "Cancelando cita",
                             "add_note": "Guardando nota/tarea",
+                            "complete_task": "Completando tarea pendiente",
                             "add_visit": "Registrando visita",
                             "list_appointments": "Consultando agenda",
                             "list_services": "Consultando servicios",
