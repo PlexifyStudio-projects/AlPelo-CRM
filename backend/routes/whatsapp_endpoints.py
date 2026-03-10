@@ -54,6 +54,44 @@ _AI_REPLY_MAX = 10
 _AI_REPLY_WINDOW = 60  # seconds
 
 # ============================================================================
+# Token auto-pause — Lina pauses herself when WA token expires/fails
+# ============================================================================
+_wa_token_paused = False  # True = token is dead, Lina is paused
+_wa_token_fail_count = 0  # Consecutive send failures due to token
+
+def _is_token_error(error_msg: str) -> bool:
+    """Check if an error message indicates a token/auth problem."""
+    indicators = ["session has expired", "access token", "oauthexception",
+                   "invalid oauth", "token has expired", "expired session",
+                   "error validating", "(#190)", "unauthorized"]
+    lower = (error_msg or "").lower()
+    return any(ind in lower for ind in indicators)
+
+def _trigger_token_pause():
+    """Pause Lina globally when token is dead."""
+    global _wa_token_paused, _wa_token_fail_count
+    if _wa_token_paused:
+        return  # Already paused
+    _wa_token_paused = True
+    _wa_token_fail_count = 0
+    print("[Lina IA] TOKEN EXPIRED — Auto-pausing all AI responses until token is restored.")
+    log_event("sistema", "Token de WhatsApp expirado — Lina en pausa",
+              detail="El token de Meta expiro. Lina se pauso automaticamente. Cuando se renueve el token, se reactivara sola.",
+              status="error")
+
+def _trigger_token_resume():
+    """Resume Lina when token is back."""
+    global _wa_token_paused, _wa_token_fail_count
+    if not _wa_token_paused:
+        return
+    _wa_token_paused = False
+    _wa_token_fail_count = 0
+    print("[Lina IA] TOKEN RESTORED — Resuming AI responses.")
+    log_event("sistema", "Token restaurado — Lina reactivada",
+              detail="El token de WhatsApp volvio a funcionar. Lina se reactivo automaticamente.",
+              status="ok")
+
+# ============================================================================
 # In-flight lock per conversation — prevents duplicate concurrent auto-replies
 # ============================================================================
 _in_flight_convs: set[int] = set()
@@ -964,6 +1002,12 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             return
         _in_flight_convs.add(conv_id)
 
+        # Step -0.5: Token pause check — skip if token is dead
+        if _wa_token_paused:
+            print(f"[Lina IA] Token paused — skipping reply for conv {conv_id}")
+            log_event("skip", "Token expirado — respuesta en pausa", detail="Esperando a que se renueve el token de WhatsApp.", conv_id=conv_id, status="warning")
+            return
+
         # Step 0: Send read receipt immediately (blue ticks)
         if inbound_wa_msg_id:
             await _send_read_receipt(inbound_wa_msg_id)
@@ -1537,6 +1581,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             send_status = "failed"
                             error_msg = data.get("error", {}).get("message", str(data)[:100])
                             print(f"[Lina IA] WhatsApp send failed (attempt {attempt+1}) for conv {conv_id}: {error_msg}")
+                            # Detect token expiration → auto-pause
+                            if _is_token_error(error_msg):
+                                _trigger_token_pause()
+                                log_event("respuesta", "Token expirado — mensaje no enviado", detail=f"Lina se pauso automaticamente. Error: {error_msg}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
+                                break  # Don't retry — token is dead
                             if attempt < max_retries - 1:
                                 log_event("sistema", "Envio fallido, reintentando...", detail=f"Error: {error_msg}. Reintento en 5s.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
                                 await asyncio.sleep(5)

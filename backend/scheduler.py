@@ -53,6 +53,15 @@ def _wa_headers():
 
 def _send_whatsapp_sync(phone: str, text: str) -> bool:
     """Send a WhatsApp message synchronously (for use in scheduler thread)."""
+    # Check token pause before attempting send
+    try:
+        from routes.whatsapp_endpoints import _wa_token_paused, _trigger_token_pause, _is_token_error
+        if _wa_token_paused:
+            print(f"[SCHEDULER] Token paused — skipping WA send to {phone[-4:]}")
+            return False
+    except ImportError:
+        pass
+
     try:
         with httpx.Client(timeout=15) as client:
             resp = client.post(
@@ -69,7 +78,15 @@ def _send_whatsapp_sync(phone: str, text: str) -> bool:
             if resp.status_code == 200 and "messages" in data:
                 return True
             else:
-                print(f"[SCHEDULER] WA send failed: {data}")
+                error_msg = data.get("error", {}).get("message", str(data)[:100])
+                print(f"[SCHEDULER] WA send failed: {error_msg}")
+                # Detect token expiration → auto-pause
+                try:
+                    from routes.whatsapp_endpoints import _is_token_error, _trigger_token_pause
+                    if _is_token_error(error_msg):
+                        _trigger_token_pause()
+                except ImportError:
+                    pass
                 return False
     except Exception as e:
         print(f"[SCHEDULER] WA send error: {e}")
@@ -946,18 +963,54 @@ def _execute_pending_tasks(db):
 
 
 # ============================================================================
+# TOKEN HEALTH CHECK — Auto-resume Lina when token is restored
+# ============================================================================
+def _check_token_health():
+    """Check if WA token is valid. Auto-resume Lina if it was paused and token is back."""
+    from routes.whatsapp_endpoints import _wa_token_paused, _trigger_token_resume
+
+    if not _wa_token_paused:
+        return  # Token is fine, nothing to do
+
+    # Token is paused — check if it's back
+    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+
+    if not token:
+        return
+
+    try:
+        with httpx.Client(timeout=10) as client:
+            resp = client.get(
+                f"https://graph.facebook.com/{api_version}/{phone_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if resp.status_code == 200:
+                _trigger_token_resume()
+                print("[SCHEDULER] Token health check PASSED — Lina resumed!")
+            else:
+                print(f"[SCHEDULER] Token still expired — Lina remains paused.")
+    except Exception as e:
+        print(f"[SCHEDULER] Token health check error: {e}")
+
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 def _scheduler_loop():
     """Main scheduler loop — runs in a background thread."""
-    print("[SCHEDULER] Started v5 (DB-aware, deploy-safe, off-hours, sweep)")
-    print("[SCHEDULER] Features: 30-min reminders, custom reminders, no-show follow-up, morning review, sweep")
-    log_event("sistema", "Lina IA iniciada", detail="Sistema de tareas automaticas activo: recordatorios, seguimientos, revision matutina.", status="ok")
+    print("[SCHEDULER] Started v6 (DB-aware, deploy-safe, off-hours, sweep, token-aware)")
+    print("[SCHEDULER] Features: 30-min reminders, custom reminders, no-show status, morning review, sweep, token health")
+    log_event("sistema", "Lina IA iniciada", detail="Sistema de tareas automaticas activo: recordatorios, seguimientos, revision matutina, verificacion de token.", status="ok")
     # Wait 60 seconds on startup before first check (let everything initialize)
     time.sleep(60)
 
     while True:
         try:
+            # Always check token health (even outside business hours)
+            _check_token_health()
+
             db = SessionLocal()
             try:
                 # Only run appointment-related tasks during business hours
