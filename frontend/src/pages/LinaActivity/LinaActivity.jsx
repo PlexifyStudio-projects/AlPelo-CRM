@@ -290,7 +290,7 @@ const LinaActivity = () => {
                 <input
                   className="lina-activity__memory-field"
                   type="text"
-                  placeholder="Ensenale algo a Lina... ej: Cuando un cliente pregunte por promociones, dile que..."
+                  placeholder="Enseñale algo a Lina... ej: Cuando un cliente pregunte por promociones, dile que..."
                   value={newRule}
                   onChange={e => setNewRule(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && saveNewRule()}
@@ -301,10 +301,10 @@ const LinaActivity = () => {
                   onClick={saveNewRule}
                   disabled={!newRule.trim() || savingRule}
                 >
-                  {savingRule ? '...' : 'Ensenar'}
+                  {savingRule ? '...' : 'Enseñar'}
                 </button>
               </div>
-              <span className="lina-activity__memory-hint">Lina procesara tu instruccion, la mejorara y la guardara como regla permanente</span>
+              <span className="lina-activity__memory-hint">Lina procesará tu instrucción, la mejorará y la guardará como regla permanente</span>
             </div>
 
             {/* Items list */}
@@ -314,7 +314,7 @@ const LinaActivity = () => {
                   <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
                   <line x1="9" y1="21" x2="15" y2="21" /><line x1="10" y1="24" x2="14" y2="24" />
                 </svg>
-                <p>Lina aun no tiene aprendizajes. Ensena algo arriba o espera a que interactue con clientes.</p>
+                <p>Lina aún no tiene aprendizajes. Enseña algo arriba o espera a que interactúe con clientes.</p>
               </div>
             ) : (
               <div className="lina-activity__memory-list">
