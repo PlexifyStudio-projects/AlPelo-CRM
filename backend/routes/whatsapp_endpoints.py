@@ -1092,13 +1092,12 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     return
 
             # Step 3: Get conversation history and generate AI response
-            # Re-fetch recent messages (more may have arrived during the delay)
-            # Use 40 messages for full context — Lina needs to understand the whole conversation
+            # Re-fetch recent messages — 20 msgs is enough context, saves tokens
             recent_msgs = (
                 db.query(WhatsAppMessage)
                 .filter(WhatsAppMessage.conversation_id == conv_id)
                 .order_by(WhatsAppMessage.created_at.desc())
-                .limit(40)
+                .limit(20)
                 .all()
             )
             recent_msgs.reverse()
