@@ -326,6 +326,58 @@ def _execute_action(action: dict, db: Session) -> str:
         db.commit()
         return f"Nota agregada al perfil de {client.name}."
 
+    elif action_type == "complete_task":
+        # Find and mark a PENDIENTE/RECORDATORIO note as completed
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
+        note_id = action.get("note_id")
+        keyword = action.get("keyword", "")
+
+        target_note = None
+        if note_id:
+            target_note = db.query(ClientNote).filter(ClientNote.id == note_id).first()
+        elif client and keyword:
+            # Search by keyword in client's pending notes
+            from sqlalchemy import or_
+            target_note = (
+                db.query(ClientNote)
+                .filter(
+                    ClientNote.client_id == client.id,
+                    or_(ClientNote.content.ilike(f"%PENDIENTE:%{keyword}%"), ClientNote.content.ilike(f"%RECORDATORIO:%{keyword}%")),
+                    ~ClientNote.content.ilike("%COMPLETADO:%"),
+                    ~ClientNote.content.ilike("%EXPIRADO:%"),
+                    ~ClientNote.content.ilike("%FALLIDO:%"),
+                )
+                .order_by(ClientNote.created_at.desc())
+                .first()
+            )
+        elif client:
+            # Just get the most recent pending note for this client
+            from sqlalchemy import or_
+            target_note = (
+                db.query(ClientNote)
+                .filter(
+                    ClientNote.client_id == client.id,
+                    or_(ClientNote.content.ilike("%PENDIENTE:%"), ClientNote.content.ilike("%RECORDATORIO:%")),
+                    ~ClientNote.content.ilike("%COMPLETADO:%"),
+                    ~ClientNote.content.ilike("%EXPIRADO:%"),
+                    ~ClientNote.content.ilike("%FALLIDO:%"),
+                )
+                .order_by(ClientNote.created_at.desc())
+                .first()
+            )
+
+        if not target_note:
+            return "ERROR: No encontre la tarea pendiente."
+
+        for prefix in ["PENDIENTE:", "RECORDATORIO:"]:
+            target_note.content = target_note.content.replace(prefix, "COMPLETADO:")
+        from datetime import datetime as _dt
+        target_note.content += f" [Completado por Lina {_dt.utcnow().strftime('%d/%m %H:%M')}]"
+        db.commit()
+        client_obj = db.query(Client).filter(Client.id == target_note.client_id).first()
+        client_name = client_obj.name if client_obj else "?"
+        return f"Tarea de {client_name} marcada como completada."
+
     # ---- STAFF ----
     elif action_type == "update_staff":
         staff = None
@@ -1366,10 +1418,11 @@ REGLAS:
 3. OBLIGATORIO incluir el bloque ```action``` de add_note. Sin la nota, la tarea NO existe y NO se hara
 4. Si prometes algo ("te aviso", "te escribo en 10 min"), DEBES crear la nota PENDIENTE inmediatamente
 5. Nunca digas "No tengo funcion de programar" — SI la tienes con add_note PENDIENTE
+6. COMPLETAR TAREAS: Cuando termines una tarea, usa complete_task (NO add_note). Esto ACTUALIZA la nota original de PENDIENTE → COMPLETADO. Si usas add_note, creas una nota NUEVA y la tarea original queda pendiente para siempre.
 
 ACCIONES (bloques ```action``` al FINAL):
 create_client: name, phone | update_client: search_name, +campos | delete_client: search_name
-add_note: search_name, content | list_clients_by_filter: status?, min_days_since_visit?, limit?
+add_note: search_name, content | complete_task: search_name, keyword? (marca PENDIENTE/RECORDATORIO como COMPLETADO) | list_clients_by_filter: status?, min_days_since_visit?, limit?
 create_appointment: client_name, staff_name, service_name, date(YYYY-MM-DD), time(HH:MM) | update_appointment: appointment_id(NUMERO, ej: 42), +campos | delete_appointment: appointment_id(NUMERO) | list_appointments: date?, staff_name?, status?
 IMPORTANTE: appointment_id SIEMPRE es un NUMERO entero (ej: 42, 157). Mira los IDs en la AGENDA abajo. NUNCA inventes IDs como "appointment_id_6:35pm".
 list_services: category? | add_visit: search_name, staff_id, service_name, amount
@@ -1415,6 +1468,7 @@ Clientes:
   update_client: search_name|client_id, + campos (name/phone/email/favorite_service/tags/accepts_whatsapp/status_override)
   delete_client: search_name|client_id
   add_note: search_name|client_id, content
+  complete_task: search_name|client_id, keyword? — Marca una tarea PENDIENTE/RECORDATORIO como COMPLETADA (actualiza la nota original, NO crea una nueva)
   list_clients_by_filter: status?, min_days_since_visit?, max_days_since_visit?, limit?
 
 Equipo:
