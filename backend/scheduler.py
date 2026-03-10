@@ -43,8 +43,10 @@ _DAYS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domi
 
 
 def _wa_headers():
+    """Read token fresh from env — survives Railway env var updates without redeploy."""
+    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "") or WA_TOKEN
     return {
-        "Authorization": f"Bearer {WA_TOKEN}",
+        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
 

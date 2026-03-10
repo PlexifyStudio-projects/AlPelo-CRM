@@ -105,6 +105,7 @@ const LinaActivity = () => {
   const [isLive, setIsLive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
+  const [tokenStatus, setTokenStatus] = useState(null);
   const intervalRef = useRef(null);
   const feedRef = useRef(null);
   const prevCountRef = useRef(0);
@@ -130,13 +131,23 @@ const LinaActivity = () => {
     }
   }, []);
 
+  const checkToken = useCallback(async () => {
+    try {
+      const resp = await fetch(`${API_URL}/lina/health`, { credentials: 'include' });
+      if (resp.ok) setTokenStatus(await resp.json());
+    } catch { setTokenStatus({ status: 'error', message: 'No se pudo verificar' }); }
+  }, []);
+
   useEffect(() => {
     fetchActivity();
+    checkToken();
     if (isLive) {
       intervalRef.current = setInterval(fetchActivity, 5000);
     }
-    return () => clearInterval(intervalRef.current);
-  }, [fetchActivity, isLive]);
+    // Check token every 60s
+    const tokenInterval = setInterval(checkToken, 60000);
+    return () => { clearInterval(intervalRef.current); clearInterval(tokenInterval); };
+  }, [fetchActivity, checkToken, isLive]);
 
   const filteredEvents = filter === 'all' ? events : events.filter(e => e.event_type === filter);
 
@@ -175,6 +186,16 @@ const LinaActivity = () => {
           )}
         </div>
       </div>
+
+      {/* Token Status */}
+      {tokenStatus && (
+        <div className={`lina-activity__token-bar lina-activity__token-bar--${tokenStatus.status}`}>
+          <span className={`lina-activity__token-dot lina-activity__token-dot--${tokenStatus.status}`} />
+          <span className="lina-activity__token-label">WhatsApp:</span>
+          <span className="lina-activity__token-msg">{tokenStatus.message}</span>
+          <button className="lina-activity__token-check" onClick={checkToken}>Verificar</button>
+        </div>
+      )}
 
       {/* Stats */}
       {stats && (

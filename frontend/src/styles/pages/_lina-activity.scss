@@ -104,6 +104,63 @@
     color: $color-gray-300;
   }
 
+  // ----- Token status bar -----
+  &__token-bar {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+
+    &--ok {
+      background: $color-success-bg;
+      border: 1px solid $color-success-border;
+    }
+
+    &--error {
+      background: $color-error-bg;
+      border: 1px solid $color-error-border;
+    }
+  }
+
+  &__token-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &--ok { background: $color-success; }
+    &--error { background: $color-error; animation: la-pulse 1s infinite; }
+  }
+
+  &__token-label {
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+  }
+
+  &__token-msg {
+    color: $color-gray-500;
+    flex: 1;
+  }
+
+  &__token-check {
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color-medium;
+    background: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-primary;
+      color: $color-primary;
+    }
+  }
+
   // ----- Stats cards -----
   &__stats {
     display: grid;

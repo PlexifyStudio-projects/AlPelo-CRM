@@ -73,8 +73,10 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 
 def wa_headers():
+    """Read token fresh from env on every call — survives Railway env var updates without redeploy."""
+    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "") or WA_TOKEN
     return {
-        "Authorization": f"Bearer {WA_TOKEN}",
+        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
 
@@ -1465,32 +1467,45 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 # Lina acknowledges and takes ownership — SHE verifies, not "the team"
                 clean_response = f"Permiteme un momento en lo que verifico la informacion del pago{name_suffix}, gracias! 🙏"
 
-            # Step 4: Send AI response via WhatsApp
+            # Step 4: Send AI response via WhatsApp (with 1 retry on failure)
             wa_message_id = None
             send_status = "sent"
-            try:
-                async with httpx.AsyncClient(timeout=15) as client:
-                    resp = await client.post(
-                        f"{WA_BASE_URL}/messages",
-                        headers=wa_headers(),
-                        json={
-                            "messaging_product": "whatsapp",
-                            "to": normalize_phone(to_phone),
-                            "type": "text",
-                            "text": {"body": clean_response},
-                        },
-                    )
-                    data = resp.json()
-                    if resp.status_code == 200 and "messages" in data:
-                        wa_message_id = data["messages"][0].get("id")
+            max_retries = 2
+            for attempt in range(max_retries):
+                try:
+                    async with httpx.AsyncClient(timeout=15) as client:
+                        resp = await client.post(
+                            f"{WA_BASE_URL}/messages",
+                            headers=wa_headers(),
+                            json={
+                                "messaging_product": "whatsapp",
+                                "to": normalize_phone(to_phone),
+                                "type": "text",
+                                "text": {"body": clean_response},
+                            },
+                        )
+                        data = resp.json()
+                        if resp.status_code == 200 and "messages" in data:
+                            wa_message_id = data["messages"][0].get("id")
+                            send_status = "sent"
+                            break  # Success
+                        else:
+                            send_status = "failed"
+                            error_msg = data.get("error", {}).get("message", str(data)[:100])
+                            print(f"[Lina IA] WhatsApp send failed (attempt {attempt+1}) for conv {conv_id}: {error_msg}")
+                            if attempt < max_retries - 1:
+                                log_event("sistema", "Envio fallido, reintentando...", detail=f"Error: {error_msg}. Reintento en 5s.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
+                                await asyncio.sleep(5)
+                            else:
+                                log_event("respuesta", "No se pudo enviar el mensaje", detail=f"Fallo despues de {max_retries} intentos. Error: {error_msg}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
+                except Exception as send_err:
+                    send_status = "failed"
+                    print(f"[Lina IA] WhatsApp send error (attempt {attempt+1}) for conv {conv_id}: {send_err}")
+                    if attempt < max_retries - 1:
+                        log_event("sistema", "Error de conexion, reintentando...", detail=str(send_err)[:100], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
+                        await asyncio.sleep(5)
                     else:
-                        send_status = "failed"
-                        print(f"[Lina IA] WhatsApp send failed for conv {conv_id}: {data}")
-                        log_event("respuesta", "No se pudo enviar el mensaje", detail=f"WhatsApp rechazo el envio. Posible token expirado.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
-            except Exception as send_err:
-                send_status = "failed"
-                print(f"[Lina IA] WhatsApp send error for conv {conv_id}: {send_err}")
-                log_event("respuesta", "Error al enviar mensaje", detail=f"Error de conexion con WhatsApp: {str(send_err)[:100]}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
+                        log_event("respuesta", "Error al enviar mensaje", detail=f"Fallo despues de {max_retries} intentos: {str(send_err)[:100]}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
 
             # Step 5: Store AI response in DB (even if WhatsApp send failed — visible in CRM)
             msg = WhatsAppMessage(

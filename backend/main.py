@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import setup_cors_middleware
@@ -98,6 +99,33 @@ async def lina_activity(limit: int = 100, offset: int = 0):
     events = get_recent_events(limit=limit, offset=offset)
     stats = get_activity_stats()
     return {"events": events, "stats": stats}
+
+
+@app.get("/api/lina/health")
+async def lina_health():
+    """Check if WhatsApp token is valid by making a test API call."""
+    import httpx
+    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+
+    if not token:
+        return {"status": "error", "token_set": False, "message": "Token de WhatsApp no configurado"}
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"https://graph.facebook.com/{api_version}/{phone_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            data = resp.json()
+            if resp.status_code == 200:
+                return {"status": "ok", "token_set": True, "message": "Token valido, WhatsApp conectado"}
+            else:
+                error = data.get("error", {}).get("message", "Error desconocido")
+                return {"status": "error", "token_set": True, "message": f"Token invalido: {error}"}
+    except Exception as e:
+        return {"status": "error", "token_set": True, "message": f"Error de conexion: {str(e)[:100]}"}
 
 
 @app.get("/")
