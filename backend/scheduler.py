@@ -204,8 +204,8 @@ def _check_30min_reminders(db):
                 print(f"[SCHEDULER] No WA conv for appt #{appt.id} ({appt.client_name}), skip 30min reminder")
                 continue
 
-            # DB-SAFE DEDUP: Check if we already sent a reminder to this conv today
-            if _already_sent_today(db, conv.id, "reminder_30min"):
+            # DB-SAFE DEDUP: per appointment ID (not per conversation — client may have 2+ appointments)
+            if _already_sent_today(db, conv.id, f"reminder_30min_{appt.id}"):
                 continue
 
             client_first, service_name, staff_first = _get_appt_details(db, appt)
@@ -218,7 +218,7 @@ def _check_30min_reminders(db):
             msg += "\n\nSi necesitas cambiar la hora, avisame y lo ajustamos sin problema!"
 
             wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
-            _store_outbound_message(db, conv.id, msg, wa_sent, tag="reminder_30min")
+            _store_outbound_message(db, conv.id, msg, wa_sent, tag=f"reminder_30min_{appt.id}")
 
             print(f"[SCHEDULER] 30-min reminder sent for appt #{appt.id} → {client_first} ({conv.wa_contact_phone})")
             log_event("tarea", f"Recordatorio 30min enviado a {client_first}", detail=f"Cita a las {appt.time} con {staff_first} para {service_name}", contact_name=client_first, conv_id=conv.id, status="ok")
@@ -228,11 +228,13 @@ def _check_30min_reminders(db):
 # 2. CUSTOM REMINDERS — From PENDIENTE notes ("avisame 10 min antes", etc.)
 # ============================================================================
 def _check_custom_reminders(db):
-    """Handle custom reminder requests — send before appointment, expire if missed."""
+    """Handle custom reminder requests — match note content to correct appointment."""
+    import re as _re
+    from sqlalchemy import or_
+
     now = _now_colombia()
     today = now.date()
 
-    # Broader keyword matching for PENDIENTE notes related to reminders
     _REMINDER_KEYWORDS = [
         "%recordar%", "%avisar%", "%aviso%", "%recordatorio%",
         "%10 minuto%", "%40 minuto%", "%faltando%",
@@ -241,96 +243,151 @@ def _check_custom_reminders(db):
         "%manual%", "%minutos antes%", "%min antes%",
     ]
 
-    appointments = (
-        db.query(Appointment)
-        .filter(Appointment.date == today)
-        .filter(Appointment.status.in_(["confirmed", "completed"]))
+    # Step 1: Find ALL pending reminder notes (not per-appointment — avoids wrong match)
+    keyword_filter = or_(*[ClientNote.content.ilike(kw) for kw in _REMINDER_KEYWORDS])
+    pending_notes = (
+        db.query(ClientNote)
+        .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+        .filter(keyword_filter)
         .all()
     )
 
-    for appt in appointments:
-        if not appt.client_id:
+    if not pending_notes:
+        return
+
+    for note in pending_notes:
+        client_id = note.client_id
+        note_text = note.content.lower()
+
+        # Step 2: Parse time hint from note (e.g., "cita 3:30pm", "cita 15:30")
+        time_match = _re.search(r'cita\s+(\d{1,2}):?(\d{2})?\s*(am|pm)?', note_text)
+        target_hour, target_min = None, None
+        if time_match:
+            h = int(time_match.group(1))
+            m = int(time_match.group(2) or 0)
+            ampm = time_match.group(3)
+            if ampm == "pm" and h < 12:
+                h += 12
+            elif ampm == "am" and h == 12:
+                h = 0
+            target_hour, target_min = h, m
+
+        # Step 3: Parse requested lead time (e.g., "30min antes", "10 minutos antes")
+        lead_match = _re.search(r'(\d+)\s*min', note_text)
+        requested_lead = int(lead_match.group(1)) if lead_match else 30  # default 30 min
+
+        # Step 4: Find the RIGHT appointment for this client today
+        client_apts = (
+            db.query(Appointment)
+            .filter(
+                Appointment.date == today,
+                Appointment.client_id == client_id,
+                Appointment.status.in_(["confirmed", "completed"]),
+            )
+            .order_by(Appointment.time)
+            .all()
+        )
+
+        if not client_apts:
             continue
 
+        # Match by time hint if available, otherwise pick the NEXT upcoming one
+        best_appt = None
+        if target_hour is not None:
+            for a in client_apts:
+                try:
+                    ah, am = map(int, a.time.split(":"))
+                    if ah == target_hour and abs(am - target_min) <= 5:
+                        best_appt = a
+                        break
+                except (ValueError, AttributeError):
+                    continue
+
+        if not best_appt:
+            # Pick the next upcoming appointment (not one that already passed)
+            for a in client_apts:
+                try:
+                    ah, am = map(int, a.time.split(":"))
+                    appt_dt = datetime.combine(today, datetime.min.time().replace(hour=ah, minute=am))
+                    if (appt_dt - now).total_seconds() > -300:  # Not more than 5 min past
+                        best_appt = a
+                        break
+                except (ValueError, AttributeError):
+                    continue
+
+        if not best_appt:
+            # All appointments have passed — expire the note
+            note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [Todas las citas de hoy ya pasaron — {now.strftime('%H:%M')}]"
+            db.commit()
+            client = db.query(Client).filter(Client.id == client_id).first()
+            client_first = (client.name or "").split()[0] if client else "?"
+            print(f"[SCHEDULER] Expired reminder note #{note.id} — all appointments passed for {client_first}")
+            log_event("tarea", f"Recordatorio expirado para {client_first}", detail="Todas las citas de hoy ya pasaron.", contact_name=client_first, status="warning")
+            continue
+
+        # Step 5: Calculate timing
         try:
-            hour, minute = map(int, appt.time.split(":"))
-            appt_dt = datetime.combine(today, datetime.min.time().replace(hour=hour, minute=minute))
+            ah, am = map(int, best_appt.time.split(":"))
+            appt_dt = datetime.combine(today, datetime.min.time().replace(hour=ah, minute=am))
         except (ValueError, AttributeError):
             continue
 
         diff_min = (appt_dt - now).total_seconds() / 60
 
-        # Build keyword filter
-        from sqlalchemy import or_
-        keyword_filter = or_(*[ClientNote.content.ilike(kw) for kw in _REMINDER_KEYWORDS])
-
-        pending_notes = (
-            db.query(ClientNote)
-            .filter(ClientNote.client_id == appt.client_id)
-            .filter(ClientNote.content.ilike("%PENDIENTE:%"))
-            .filter(keyword_filter)
-            .all()
-        )
-
-        if not pending_notes:
-            continue
-
-        conv = _find_conversation(db, appt)
-
-        # CASE 1: Appointment time passed — mark notes as EXPIRADO (missed window)
+        # Appointment already passed
         if diff_min < -5:
-            for note in pending_notes:
-                note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [La cita ya paso — {now.strftime('%H:%M')}]"
+            note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [La cita ya paso — {now.strftime('%H:%M')}]"
             db.commit()
-            client_first = (appt.client_name or "").split()[0]
-            print(f"[SCHEDULER] Expired {len(pending_notes)} missed reminder(s) for {client_first} (cita was at {appt.time})")
-            log_event("tarea", f"Recordatorio expirado para {client_first}", detail=f"La cita era a las {appt.time} y ya paso. Tarea marcada como expirada.", contact_name=client_first, conv_id=conv.id if conv else None, status="warning")
+            client_first = (best_appt.client_name or "").split()[0]
+            print(f"[SCHEDULER] Expired reminder note #{note.id} for {client_first} (cita {best_appt.time} passed)")
+            log_event("tarea", f"Recordatorio expirado para {client_first}", detail=f"La cita era a las {best_appt.time} y ya paso.", contact_name=client_first, status="warning")
             continue
 
-        # CASE 2: Within send window (0-45 min before appointment) — send the reminder
-        if 0 <= diff_min <= 45:
-            if not conv:
-                continue
+        # Step 6: Send within precise window (requested_lead ± 5 min)
+        window_min = max(0, requested_lead - 5)
+        window_max = requested_lead + 5
+        if not (window_min <= diff_min <= window_max):
+            continue  # Not time yet
 
-            # DB-SAFE DEDUP
-            if _already_sent_today(db, conv.id, "reminder_custom"):
-                # Still resolve the notes even if we already sent
-                for note in pending_notes:
-                    if "PENDIENTE:" in note.content:
-                        note.content = note.content.replace("PENDIENTE:", "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
-                db.commit()
-                continue
+        conv = _find_conversation(db, best_appt)
+        if not conv:
+            continue
 
-            client_first, service_name, staff_first = _get_appt_details(db, appt)
-
-            mins_left = int(diff_min)
-            if mins_left > 1:
-                msg = f"Hola {client_first}! Te recuerdo que tu cita es en {mins_left} minutos"
-            else:
-                msg = f"Hola {client_first}! Tu cita es ahorita"
-
-            if staff_first:
-                msg += f" con {staff_first}"
-            msg += f" para {service_name}."
-            msg += " Te esperamos! 💈"
-
-            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
-            _store_outbound_message(db, conv.id, msg, wa_sent, tag="reminder_custom")
-
-            # Resolve the PENDIENTE notes
-            status_tag = "COMPLETADO:" if wa_sent else "FALLIDO:"
-            for note in pending_notes:
-                note.content = note.content.replace("PENDIENTE:", status_tag) + f" [{'Enviado' if wa_sent else 'Fallo envio'} {now.strftime('%H:%M')}]"
+        # DB-SAFE DEDUP — per appointment ID to avoid conflicts with multiple appointments
+        dedup_tag = f"reminder_custom_{best_appt.id}"
+        if _already_sent_today(db, conv.id, dedup_tag):
+            note.content = note.content.replace("PENDIENTE:", "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
             db.commit()
+            continue
 
-            print(f"[SCHEDULER] Custom reminder {'sent' if wa_sent else 'FAILED'} for appt #{appt.id} → {client_first}")
-            log_event(
-                "tarea",
-                f"Recordatorio {'enviado' if wa_sent else 'fallido'} a {client_first}",
-                detail=f"Cita a las {appt.time} — recordatorio {mins_left}min antes",
-                contact_name=client_first, conv_id=conv.id,
-                status="ok" if wa_sent else "error",
-            )
+        client_first, service_name, staff_first = _get_appt_details(db, best_appt)
+
+        mins_left = int(diff_min)
+        if mins_left > 1:
+            msg = f"Hola {client_first}! Te recuerdo que tu cita es en {mins_left} minutos"
+        else:
+            msg = f"Hola {client_first}! Tu cita es ahorita"
+
+        if staff_first:
+            msg += f" con {staff_first}"
+        msg += f" para {service_name}."
+        msg += " Te esperamos! 💈"
+
+        wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
+        _store_outbound_message(db, conv.id, msg, wa_sent, tag=dedup_tag)
+
+        status_tag = "COMPLETADO:" if wa_sent else "FALLIDO:"
+        note.content = note.content.replace("PENDIENTE:", status_tag) + f" [{'Enviado' if wa_sent else 'Fallo envio'} {now.strftime('%H:%M')}]"
+        db.commit()
+
+        print(f"[SCHEDULER] Custom reminder {'sent' if wa_sent else 'FAILED'} for appt #{best_appt.id} → {client_first} (with {staff_first})")
+        log_event(
+            "tarea",
+            f"Recordatorio {'enviado' if wa_sent else 'fallido'} a {client_first}",
+            detail=f"Cita a las {best_appt.time} con {staff_first} — recordatorio {requested_lead}min antes",
+            contact_name=client_first, conv_id=conv.id,
+            status="ok" if wa_sent else "error",
+        )
 
 
 # ============================================================================
