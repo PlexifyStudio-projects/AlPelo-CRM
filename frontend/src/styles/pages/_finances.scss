@@ -2,7 +2,7 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// Finances — Financial Module
+// Finances — Premium Financial Module v2
 // ============================================
 
 .finances {
@@ -23,7 +23,14 @@
 
   &__header-left {
     @include flex-column;
-    gap: 2px;
+    gap: 4px;
+  }
+
+  &__header-title-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    flex-wrap: wrap;
   }
 
   &__title {
@@ -32,10 +39,57 @@
     margin: 0;
   }
 
+  &__date-range {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    background: $color-gray-50;
+    padding: 4px 12px;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color-light;
+
+    svg { color: $color-gray-300; }
+  }
+
   &__subtitle {
     font-size: $font-size-sm;
     color: $color-gray-500;
     font-weight: $font-weight-regular;
+  }
+
+  &__header-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex-shrink: 0;
+  }
+
+  // --- Refresh Button ---
+  &__refresh-btn {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-full;
+    background: $color-white;
+    color: $color-gray-400;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover:not(:disabled) {
+      color: $color-primary;
+      border-color: $color-primary-ghost;
+      box-shadow: $shadow-xs;
+    }
+
+    &--spinning svg {
+      animation: fin-spin 800ms linear infinite;
+    }
+
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
   // --- Period Selector ---
@@ -62,9 +116,7 @@
     transition: all 200ms $ease-out-quart;
     white-space: nowrap;
 
-    &:hover:not(:disabled) {
-      color: $color-secondary;
-    }
+    &:hover:not(:disabled) { color: $color-secondary; }
 
     &--active {
       background: $color-white;
@@ -72,10 +124,7 @@
       box-shadow: $shadow-xs;
     }
 
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
   // ===========================================
@@ -83,44 +132,56 @@
   // ===========================================
   &__kpis {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: $spacing-md;
-    margin-bottom: $spacing-xl;
-
-    @media (max-width: $breakpoint-lg) {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    margin-bottom: $spacing-lg;
 
     @media (max-width: $breakpoint-sm) {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr 1fr;
     }
   }
 
   &__kpi-card {
     @include glass-card;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: $spacing-md;
-    padding: $spacing-md $spacing-lg;
+    padding: $spacing-lg;
     transition: all 300ms $ease-out-quart;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      opacity: 0;
+      transition: opacity 300ms;
+    }
 
     &:hover {
       transform: translateY(-3px);
       box-shadow: $shadow-glass-hover, $glass-inner-glow;
+
+      &::before { opacity: 1; }
     }
 
-    @for $i from 1 through 4 {
+    @for $i from 1 through 5 {
       &:nth-child(#{$i}) {
         animation: fin-fadeInUp 400ms $ease-out-expo both #{0.08 + $i * 0.04}s;
       }
     }
 
     &--primary {
-      border-left: 3px solid $color-primary;
+      &::before { background: linear-gradient(90deg, $color-primary, $color-primary-light); }
     }
 
     &--warning {
       border-left: 3px solid $color-warning;
+      &::before { background: $color-warning; }
     }
   }
 
@@ -128,33 +189,19 @@
     @include flex-center;
     width: 48px;
     height: 48px;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-lg;
     flex-shrink: 0;
 
-    &--primary {
-      background: $color-primary-ghost;
-      color: $color-primary;
-    }
-
-    &--success {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--accent {
-      background: $color-accent-ghost;
-      color: $color-accent;
-    }
-
-    &--warning {
-      background: $color-warning-bg;
-      color: $color-warning-dark;
-    }
+    &--primary { background: $color-primary-ghost; color: $color-primary; }
+    &--success { background: $color-success-bg; color: $color-success-dark; }
+    &--accent { background: $color-accent-ghost; color: $color-accent; }
+    &--warning { background: $color-warning-bg; color: $color-warning-dark; }
+    &--info { background: $color-info-bg; color: $color-info-dark; }
   }
 
   &__kpi-info {
     @include flex-column;
-    gap: 1px;
+    gap: 2px;
     min-width: 0;
   }
 
@@ -172,17 +219,103 @@
     color: $color-gray-500;
     font-weight: $font-weight-medium;
     @include truncate;
+    margin-top: 2px;
+  }
+
+  // --- Growth Badge ---
+  &__growth {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
+    width: fit-content;
+
+    &--up {
+      color: $color-success-dark;
+      background: $color-success-bg;
+    }
+
+    &--down {
+      color: $color-error-dark;
+      background: $color-error-bg;
+    }
   }
 
   // ===========================================
-  // BODY (CHART + SERVICES)
+  // INSIGHTS STRIP
+  // ===========================================
+  &__insights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+    animation: fin-fadeInUp 400ms $ease-out-expo both 0.28s;
+  }
+
+  &__insight {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-md;
+    background: $color-gray-50;
+    border: 1px solid $border-color-light;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover {
+      background: $color-white;
+      border-color: $border-color;
+      box-shadow: $shadow-xs;
+    }
+
+    &--primary .finances__insight-icon { color: $color-primary; }
+    &--accent .finances__insight-icon { color: $color-accent; }
+    &--success .finances__insight-icon { color: $color-success-dark; }
+    &--info .finances__insight-icon { color: $color-info-dark; }
+  }
+
+  &__insight-icon {
+    @include flex-center;
+    flex-shrink: 0;
+  }
+
+  &__insight-text {
+    @include flex-column;
+    gap: 0;
+    min-width: 0;
+  }
+
+  &__insight-label {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+  }
+
+  &__insight-value {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  // ===========================================
+  // BODY (CHART + SERVICES / CATEGORY + STAFF)
   // ===========================================
   &__body {
     display: grid;
-    grid-template-columns: 3fr 2fr;
+    grid-template-columns: 1.4fr 1fr;
     gap: $spacing-lg;
-    margin-bottom: $spacing-xl;
-    animation: fin-fadeInUp 400ms $ease-out-expo both 0.3s;
+    margin-bottom: $spacing-lg;
+    animation: fin-fadeInUp 400ms $ease-out-expo both 0.32s;
+
+    &--bottom {
+      animation-delay: 0.4s;
+    }
 
     @media (max-width: $breakpoint-lg) {
       grid-template-columns: 1fr;
@@ -201,10 +334,6 @@
       display: flex;
       flex-direction: column;
     }
-
-    &--full {
-      animation: fin-fadeInUp 400ms $ease-out-expo both 0.4s;
-    }
   }
 
   &__card-header {
@@ -222,65 +351,183 @@
     gap: $spacing-sm;
     margin: 0;
 
-    svg {
-      color: $color-gray-400;
-    }
+    svg { color: $color-gray-400; }
+  }
+
+  &__card-badge {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    background: $color-gray-50;
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color-light;
   }
 
   // ===========================================
-  // CHART
+  // CHART (Enhanced)
   // ===========================================
   &__chart {
     flex: 1;
     display: flex;
+    min-height: 240px;
+    gap: 0;
+  }
+
+  &__chart-y-axis {
+    display: flex;
     flex-direction: column;
-    min-height: 200px;
+    justify-content: space-between;
+    padding-right: $spacing-sm;
+    padding-bottom: 32px;
+    flex-shrink: 0;
+  }
+
+  &__chart-y-label {
+    font-size: 10px;
+    color: $color-gray-300;
+    font-weight: $font-weight-medium;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    min-width: 28px;
+  }
+
+  &__chart-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  &__chart-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  &__chart-grid-line {
+    height: 1px;
+    background: $color-gray-100;
+    width: 100%;
   }
 
   &__chart-bars {
     display: flex;
     align-items: flex-end;
-    gap: 4px;
-    flex: 1;
-    padding-top: $spacing-md;
+    gap: 3px;
+    height: calc(100% - 32px);
+    position: relative;
+    z-index: 1;
   }
 
-  &__chart-bar-wrap {
+  &__chart-col {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    height: 180px;
+    height: 100%;
     justify-content: flex-end;
+    position: relative;
+    cursor: pointer;
+
+    &--active .finances__chart-bar-fill {
+      background: $color-primary-light;
+      box-shadow: 0 0 12px $color-primary-glow;
+    }
+  }
+
+  &__chart-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: $color-secondary;
+    color: $color-white;
+    padding: 6px 10px;
+    border-radius: $border-radius-sm;
+    white-space: nowrap;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    animation: fin-fadeIn 150ms $ease-out-quart;
+    box-shadow: $shadow-lg;
+
+    strong {
+      font-size: $font-size-xs;
+      font-weight: $font-weight-bold;
+    }
+
+    span {
+      font-size: 10px;
+      color: $color-gray-300;
+      font-weight: $font-weight-medium;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: $color-secondary;
+    }
   }
 
   &__chart-bar {
     width: 100%;
-    max-width: 28px;
-    background: $color-primary;
+    max-width: 32px;
     border-radius: $border-radius-xs $border-radius-xs 0 0;
     min-height: 4px;
-    transition: height 600ms $ease-out-expo, background 200ms;
-    cursor: pointer;
+    transition: height 700ms $ease-out-expo;
+    overflow: hidden;
+  }
 
-    &:hover {
-      background: $color-primary-light;
-    }
+  &__chart-bar-fill {
+    width: 100%;
+    height: 100%;
+    background: $color-primary;
+    border-radius: $border-radius-xs $border-radius-xs 0 0;
+    transition: all 200ms $ease-out-quart;
   }
 
   &__chart-label {
-    font-size: 10px;
-    color: $color-gray-400;
-    font-weight: $font-weight-medium;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding-top: 6px;
+    height: 32px;
+  }
+
+  &__chart-label-day {
+    font-size: 11px;
+    color: $color-gray-500;
+    font-weight: $font-weight-semibold;
     font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  &__chart-label-weekday {
+    font-size: 9px;
+    color: $color-gray-300;
+    font-weight: $font-weight-medium;
+    text-transform: uppercase;
+    line-height: 1;
   }
 
   &__chart-skeleton {
     display: flex;
     align-items: flex-end;
-    gap: 8px;
-    height: 180px;
+    gap: 6px;
+    height: 220px;
     padding-top: $spacing-md;
 
     .finances__skeleton {
@@ -290,33 +537,52 @@
   }
 
   // ===========================================
-  // RANKING LIST (Services)
+  // RANKING LIST (Services) — Enhanced
   // ===========================================
   &__ranking-list {
     @include flex-column;
     gap: 0;
+    max-height: 480px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar { width: 3px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb { background: $color-gray-200; border-radius: 10px; }
   }
 
   &__ranking-item {
     display: flex;
     align-items: flex-start;
     gap: $spacing-sm;
-    padding: $spacing-sm 0;
+    padding: 10px 0;
     border-bottom: 1px solid $border-color-light;
+    transition: background 150ms;
 
     &:last-child { border-bottom: none; }
 
-    @for $i from 1 through 8 {
+    &:hover {
+      background: $color-gray-50;
+      margin: 0 #{-$spacing-sm};
+      padding-left: $spacing-sm;
+      padding-right: $spacing-sm;
+      border-radius: $border-radius-sm;
+    }
+
+    &--top .finances__ranking-name {
+      font-weight: $font-weight-bold;
+    }
+
+    @for $i from 1 through 10 {
       &:nth-child(#{$i}) {
-        animation: fin-fadeInUp 280ms $ease-out-expo both #{0.3 + $i * 0.04}s;
+        animation: fin-fadeInUp 280ms $ease-out-expo both #{0.3 + $i * 0.03}s;
       }
     }
   }
 
   &__ranking-pos {
     @include flex-center;
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     border-radius: $border-radius-full;
     background: $color-gray-50;
     border: 1px solid $border-color;
@@ -325,6 +591,14 @@
     color: $color-gray-500;
     flex-shrink: 0;
     margin-top: 2px;
+
+    &--highlight {
+      background: $color-accent-ghost;
+      border-color: rgba($color-accent, 0.2);
+      color: $color-accent-dark;
+
+      svg { width: 12px; height: 12px; color: $color-accent; }
+    }
   }
 
   &__ranking-info {
@@ -339,6 +613,12 @@
     gap: $spacing-sm;
   }
 
+  &__ranking-name-wrap {
+    @include flex-column;
+    gap: 1px;
+    min-width: 0;
+  }
+
   &__ranking-name {
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
@@ -346,12 +626,30 @@
     @include truncate;
   }
 
+  &__ranking-cat {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__ranking-amounts {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
   &__ranking-amount {
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     color: $color-primary;
     font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
+  }
+
+  &__ranking-pct {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    font-variant-numeric: tabular-nums;
   }
 
   &__ranking-bar-bg {
@@ -364,7 +662,6 @@
 
   &__ranking-bar {
     height: 100%;
-    background: $color-primary;
     border-radius: $border-radius-full;
     transition: width 800ms $ease-out-expo;
   }
@@ -376,28 +673,104 @@
   }
 
   // ===========================================
-  // STAFF GRID
+  // CATEGORY BREAKDOWN
   // ===========================================
-  &__staff-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  &__categories {
+    @include flex-column;
     gap: $spacing-md;
   }
 
-  &__staff-card {
+  &__categories-bar {
+    display: flex;
+    height: 14px;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+    gap: 2px;
+  }
+
+  &__categories-segment {
+    height: 100%;
+    transition: width 800ms $ease-out-expo, opacity 200ms;
+    min-width: 4px;
+    border-radius: 2px;
+    cursor: pointer;
+
+    &:hover { opacity: 0.8; }
+  }
+
+  &__categories-legend {
+    @include flex-column;
+    gap: $spacing-xs;
+  }
+
+  &__categories-item {
     display: flex;
     align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-xs 0;
+
+    @for $i from 1 through 6 {
+      &:nth-child(#{$i}) {
+        animation: fin-fadeInUp 250ms $ease-out-expo both #{0.35 + $i * 0.04}s;
+      }
+    }
+  }
+
+  &__categories-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+  }
+
+  &__categories-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+    flex: 1;
+    min-width: 0;
+    @include truncate;
+  }
+
+  &__categories-value {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__categories-pct {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // ===========================================
+  // STAFF PERFORMANCE (Enhanced)
+  // ===========================================
+  &__staff-list {
+    @include flex-column;
+    gap: 0;
+  }
+
+  &__staff-row {
+    @include flex-between;
     gap: $spacing-md;
-    padding: $spacing-md;
-    background: $color-gray-50;
-    border-radius: $border-radius-md;
-    border: 1px solid $border-color-light;
+    padding: $spacing-md 0;
+    border-bottom: 1px solid $border-color-light;
     transition: all 200ms $ease-out-quart;
 
+    &:last-child { border-bottom: none; }
+
     &:hover {
-      background: $color-white;
-      border-color: $border-color;
-      box-shadow: $shadow-xs;
+      background: $color-gray-50;
+      margin: 0 #{-$spacing-sm};
+      padding-left: $spacing-sm;
+      padding-right: $spacing-sm;
+      border-radius: $border-radius-sm;
     }
 
     @for $i from 1 through 6 {
@@ -407,22 +780,35 @@
     }
   }
 
-  &__staff-rank {
+  &__staff-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    min-width: 0;
+  }
+
+  &__staff-avatar {
     @include flex-center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: $border-radius-full;
     background: $color-primary-ghost;
     color: $color-primary;
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-weight: $font-weight-bold;
     flex-shrink: 0;
+    letter-spacing: -0.02em;
+
+    &--gold {
+      background: $color-accent-ghost;
+      color: $color-accent-dark;
+      border: 1.5px solid rgba($color-accent, 0.25);
+    }
   }
 
-  &__staff-info {
+  &__staff-details {
     @include flex-column;
     gap: 1px;
-    flex: 1;
     min-width: 0;
   }
 
@@ -433,10 +819,51 @@
     @include truncate;
   }
 
-  &__staff-count {
+  &__staff-meta {
     font-size: $font-size-2xs;
     color: $color-gray-400;
     font-weight: $font-weight-medium;
+    @include truncate;
+  }
+
+  &__staff-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    flex-shrink: 0;
+  }
+
+  &__staff-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100px;
+
+    @media (max-width: $breakpoint-md) { display: none; }
+  }
+
+  &__staff-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: $color-gray-100;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+  }
+
+  &__staff-bar-fill {
+    height: 100%;
+    background: $color-primary;
+    border-radius: $border-radius-full;
+    transition: width 800ms $ease-out-expo;
+  }
+
+  &__staff-pct {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    font-variant-numeric: tabular-nums;
+    min-width: 28px;
+    text-align: right;
   }
 
   &__staff-revenue {
@@ -444,7 +871,6 @@
     font-weight: $font-weight-bold;
     color: $color-primary;
     font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
   }
 
   // ===========================================
@@ -464,6 +890,7 @@
     padding: $spacing-3xl $spacing-xl;
     gap: $spacing-md;
     text-align: center;
+    animation: fin-fadeInUp 400ms $ease-out-expo both;
   }
 
   &__error-icon {
@@ -506,9 +933,7 @@
       box-shadow: $shadow-md;
     }
 
-    &:active {
-      transform: translateY(0);
-    }
+    &:active { transform: translateY(0); }
   }
 
   // ===========================================
@@ -542,4 +967,9 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes fin-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

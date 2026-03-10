@@ -27,6 +27,7 @@ from schemas import (
     RevenueDayItem,
     RevenueServiceItem,
     RevenueStaffItem,
+    RevenueCategoryItem,
 )
 
 router = APIRouter()
@@ -588,6 +589,11 @@ def get_financial_summary(
         start = date(today.year, today.month, 1)
         end = today
 
+    # Previous period (same length, immediately before)
+    period_days = (end - start).days + 1
+    prev_end = start - timedelta(days=1)
+    prev_start = prev_end - timedelta(days=period_days - 1)
+
     # Base query: completed visits in range
     visits = (
         db.query(VisitHistory)
@@ -597,9 +603,34 @@ def get_financial_summary(
         .all()
     )
 
+    # Previous period visits
+    prev_visits_list = (
+        db.query(VisitHistory)
+        .filter(VisitHistory.status == "completed")
+        .filter(VisitHistory.visit_date >= prev_start)
+        .filter(VisitHistory.visit_date <= prev_end)
+        .all()
+    )
+
     total_revenue = sum(v.amount for v in visits)
     total_visits = len(visits)
     avg_ticket = total_revenue // total_visits if total_visits > 0 else 0
+    unique_clients = len(set(v.client_id for v in visits if v.client_id))
+
+    prev_revenue = sum(v.amount for v in prev_visits_list)
+    prev_visits_count = len(prev_visits_list)
+
+    revenue_growth_pct = None
+    if prev_revenue > 0:
+        revenue_growth_pct = round(((total_revenue - prev_revenue) / prev_revenue) * 100, 1)
+    elif total_revenue > 0:
+        revenue_growth_pct = 100.0
+
+    visits_growth_pct = None
+    if prev_visits_count > 0:
+        visits_growth_pct = round(((total_visits - prev_visits_count) / prev_visits_count) * 100, 1)
+    elif total_visits > 0:
+        visits_growth_pct = 100.0
 
     # Revenue by day
     day_map = {}
@@ -615,17 +646,69 @@ def get_financial_summary(
         for d, info in sorted(day_map.items())
     ]
 
-    # Revenue by service
+    # Best day / busiest day
+    best_day_date = None
+    best_day_revenue = 0
+    busiest_day_date = None
+    busiest_day_visits = 0
+    for d, info in day_map.items():
+        if info["revenue"] > best_day_revenue:
+            best_day_revenue = info["revenue"]
+            best_day_date = d
+        if info["visits"] > busiest_day_visits:
+            busiest_day_visits = info["visits"]
+            busiest_day_date = d
+
+    # Service catalog cache for category lookup
+    svc_catalog = {}
+    all_services = db.query(Service).all()
+    for s in all_services:
+        svc_catalog[s.name.lower().strip()] = s.category or "Otros"
+
+    # Revenue by service (with category)
     svc_map = {}
     for v in visits:
         name = v.service_name
         if name not in svc_map:
-            svc_map[name] = {"revenue": 0, "count": 0}
+            cat = svc_catalog.get(name.lower().strip(), "Otros")
+            svc_map[name] = {"revenue": 0, "count": 0, "category": cat}
         svc_map[name]["revenue"] += v.amount
         svc_map[name]["count"] += 1
 
     revenue_by_service = sorted(
-        [RevenueServiceItem(service_name=n, revenue=info["revenue"], count=info["count"]) for n, info in svc_map.items()],
+        [
+            RevenueServiceItem(
+                service_name=n,
+                category=info["category"],
+                revenue=info["revenue"],
+                count=info["count"],
+                pct_of_total=round((info["revenue"] / total_revenue * 100), 1) if total_revenue > 0 else 0,
+            )
+            for n, info in svc_map.items()
+        ],
+        key=lambda x: x.revenue,
+        reverse=True,
+    )
+
+    # Revenue by category
+    cat_map = {}
+    for n, info in svc_map.items():
+        cat = info["category"]
+        if cat not in cat_map:
+            cat_map[cat] = {"revenue": 0, "count": 0}
+        cat_map[cat]["revenue"] += info["revenue"]
+        cat_map[cat]["count"] += info["count"]
+
+    revenue_by_category = sorted(
+        [
+            RevenueCategoryItem(
+                category=c,
+                revenue=info["revenue"],
+                count=info["count"],
+                pct_of_total=round((info["revenue"] / total_revenue * 100), 1) if total_revenue > 0 else 0,
+            )
+            for c, info in cat_map.items()
+        ],
         key=lambda x: x.revenue,
         reverse=True,
     )
@@ -644,7 +727,16 @@ def get_financial_summary(
         staff_map_rev[sname]["count"] += 1
 
     revenue_by_staff = sorted(
-        [RevenueStaffItem(staff_name=n, revenue=info["revenue"], count=info["count"]) for n, info in staff_map_rev.items()],
+        [
+            RevenueStaffItem(
+                staff_name=n,
+                revenue=info["revenue"],
+                count=info["count"],
+                avg_ticket=info["revenue"] // info["count"] if info["count"] > 0 else 0,
+                pct_of_total=round((info["revenue"] / total_revenue * 100), 1) if total_revenue > 0 else 0,
+            )
+            for n, info in staff_map_rev.items()
+        ],
         key=lambda x: x.revenue,
         reverse=True,
     )
@@ -658,13 +750,25 @@ def get_financial_summary(
 
     return FinancialSummaryResponse(
         period=period,
+        date_from=start.isoformat(),
+        date_to=end.isoformat(),
         total_revenue=total_revenue,
         total_visits=total_visits,
         avg_ticket=avg_ticket,
+        unique_clients=unique_clients,
         revenue_by_day=revenue_by_day,
         revenue_by_service=revenue_by_service,
         revenue_by_staff=revenue_by_staff,
+        revenue_by_category=revenue_by_category,
         pending_payments=pending_payments,
+        prev_revenue=prev_revenue,
+        prev_visits=prev_visits_count,
+        revenue_growth_pct=revenue_growth_pct,
+        visits_growth_pct=visits_growth_pct,
+        best_day_date=best_day_date,
+        best_day_revenue=best_day_revenue,
+        busiest_day_date=busiest_day_date,
+        busiest_day_visits=busiest_day_visits,
     )
 
 

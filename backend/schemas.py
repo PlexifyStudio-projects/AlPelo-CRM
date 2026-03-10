@@ -399,23 +399,47 @@ class RevenueDayItem(BaseModel):
 
 class RevenueServiceItem(BaseModel):
     service_name: str
+    category: Optional[str] = None
     revenue: int
     count: int
+    pct_of_total: float = 0.0
 
 class RevenueStaffItem(BaseModel):
     staff_name: str
     revenue: int
     count: int
+    avg_ticket: int = 0
+    pct_of_total: float = 0.0
+
+class RevenueCategoryItem(BaseModel):
+    category: str
+    revenue: int
+    count: int
+    pct_of_total: float = 0.0
 
 class FinancialSummaryResponse(BaseModel):
     period: str
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
     total_revenue: int = 0
     total_visits: int = 0
     avg_ticket: int = 0
+    unique_clients: int = 0
     revenue_by_day: List[RevenueDayItem] = []
     revenue_by_service: List[RevenueServiceItem] = []
     revenue_by_staff: List[RevenueStaffItem] = []
+    revenue_by_category: List[RevenueCategoryItem] = []
     pending_payments: int = 0
+    # Comparison with previous period
+    prev_revenue: int = 0
+    prev_visits: int = 0
+    revenue_growth_pct: Optional[float] = None
+    visits_growth_pct: Optional[float] = None
+    # Highlights
+    best_day_date: Optional[str] = None
+    best_day_revenue: int = 0
+    busiest_day_date: Optional[str] = None
+    busiest_day_visits: int = 0
 
 
 #========================= TOGGLE AI =========================#
