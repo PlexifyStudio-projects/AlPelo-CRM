@@ -681,7 +681,7 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- INBOX SUMMARY ----
     elif action_type == "get_chat_messages":
-        # Read full chat history of a conversation — Lina reads INTERNALLY, does NOT dump to admin
+        # Read full chat history of a conversation — Lina processes INTERNALLY
         search_name = (action.get("search_name") or action.get("name") or action.get("client") or "").strip()
         phone = (action.get("phone") or action.get("number") or "").strip()
 
@@ -689,27 +689,87 @@ def _execute_action(action: dict, db: Session) -> str:
         if not conv:
             return f"ERROR: No encontre la conversacion de '{search_name or phone}'."
 
-        limit = action.get("limit", 50)
+        # Get ALL messages for analysis but only send a compact summary
         msgs = db.query(WhatsAppMessage).filter(
             WhatsAppMessage.conversation_id == conv.id
-        ).order_by(WhatsAppMessage.created_at.desc()).limit(limit).all()
-        msgs.reverse()
+        ).order_by(WhatsAppMessage.created_at.asc()).all()
 
         if not msgs:
             return f"No hay mensajes en la conversacion con {conv.wa_contact_name or conv.wa_contact_phone}."
 
         contact = conv.wa_contact_name or conv.wa_contact_phone
 
-        # Build internal context for Lina (she reads this, NOT the admin)
-        lines = [f"[CONTEXTO INTERNO — Lina leyo el chat de {contact} (Conv#{conv.id}, {len(msgs)} msgs). Resume lo relevante al admin, NO copies el chat.]"]
+        # --- SERVER-SIDE ANALYSIS: extract key facts so we don't dump raw chat ---
+        client_requests = []   # Things the client asked for
+        lina_promises = []     # Things Lina committed to
+        pending_items = []     # Unresolved items
+        last_topic = ""
+        visit_mentions = []
+        appointment_mentions = []
+        payment_mentions = []
+
         for m in msgs:
+            content = (m.content or "").lower().strip()
+            col_time = (m.created_at + COL_OFFSET) if m.created_at else None
+            time_str = col_time.strftime("%d/%m %I:%M %p") if col_time else "?"
+
+            if m.direction == "inbound":
+                # Client requests
+                if any(w in content for w in ["agendar", "agendam", "cita", "reserv", "quiero ir", "puedo ir"]):
+                    appointment_mentions.append(f"{time_str}: {m.content[:120]}")
+                if any(w in content for w in ["pago", "pagar", "bancolombia", "efectivo", "transferencia", "cuanto", "cuánto", "debo", "total"]):
+                    payment_mentions.append(f"{time_str}: {m.content[:120]}")
+                if any(w in content for w in ["visita", "corte", "barba", "servicio"]):
+                    visit_mentions.append(f"{time_str}: {m.content[:120]}")
+            elif m.sent_by == "lina_ia":
+                if any(w in content for w in ["te agendo", "confirmad", "agendamos", "reserv"]):
+                    lina_promises.append(f"{time_str}: {m.content[:120]}")
+                if any(w in content for w in ["pendiente", "verificar", "confirmar", "te aviso"]):
+                    pending_items.append(f"{time_str}: {m.content[:120]}")
+
+        # Last 10 messages as recent context (compact)
+        recent = msgs[-10:]
+        recent_lines = []
+        for m in recent:
             direction = "CLIENTE" if m.direction == "inbound" else ("LINA" if m.sent_by == "lina_ia" else "ADMIN")
             col_time = (m.created_at + COL_OFFSET) if m.created_at else None
             time_str = col_time.strftime("%d/%m %I:%M %p") if col_time else "?"
-            media_tag = f" [📎 {m.message_type}]" if m.message_type and m.message_type != "text" else ""
-            content = m.content or "[sin contenido]"
-            lines.append(f"  [{time_str}] {direction}: {content}{media_tag}")
-        return "\n".join(lines)
+            content = (m.content or "[sin contenido]")[:150]
+            recent_lines.append(f"  [{time_str}] {direction}: {content}")
+
+        # Build compact analysis result
+        result = [f"[LEIDO INTERNAMENTE — Chat de {contact}, {len(msgs)} msgs total]"]
+        result.append(f"INSTRUCCION: Ya leiste el chat. Ahora EJECUTA las tareas que el admin pidio. NO repitas ni copies mensajes del chat.")
+
+        if appointment_mentions:
+            result.append(f"\nCITAS/AGENDA mencionadas ({len(appointment_mentions)}):")
+            for a in appointment_mentions[-5:]:
+                result.append(f"  • {a}")
+
+        if payment_mentions:
+            result.append(f"\nPAGOS mencionados ({len(payment_mentions)}):")
+            for p in payment_mentions[-3:]:
+                result.append(f"  • {p}")
+
+        if visit_mentions:
+            result.append(f"\nSERVICIOS/VISITAS mencionados ({len(visit_mentions)}):")
+            for v in visit_mentions[-5:]:
+                result.append(f"  • {v}")
+
+        if lina_promises:
+            result.append(f"\nLINA PROMETIO ({len(lina_promises)}):")
+            for lp in lina_promises[-5:]:
+                result.append(f"  • {lp}")
+
+        if pending_items:
+            result.append(f"\nPENDIENTES ({len(pending_items)}):")
+            for pi in pending_items[-3:]:
+                result.append(f"  • {pi}")
+
+        result.append(f"\nULTIMOS MENSAJES:")
+        result.extend(recent_lines)
+
+        return "\n".join(result)
 
     elif action_type == "get_inbox_summary":
         convs = db.query(WhatsAppConversation).order_by(WhatsAppConversation.last_message_at.desc()).all()
@@ -1338,7 +1398,8 @@ CAPACIDADES (tienes control total del CRM):
 - Equipo: datos del staff, crear/editar/desactivar
 - WhatsApp: VER chats reales (estan en INBOX abajo), LEER chats completos (get_chat_messages), enviar mensajes, plantillas, masivos, toggle IA, etiquetar, eliminar conversaciones
 - IMPORTANTE: Si el admin pide que revises un chat, usa get_chat_messages para leer el historial COMPLETO. El inbox solo muestra previews.
-- CRITICO: Cuando leas un chat con get_chat_messages, LEE PARA TI MISMA. NO copies ni pegues el historial al admin. En vez de eso, RESUME lo importante: que pidio el cliente, que quedo pendiente, que necesita atencion. El admin no quiere leer toda la conversacion, quiere un RESUMEN ejecutivo.
+- CRITICO: Cuando leas un chat con get_chat_messages, ya leiste el chat para ti misma. NUNCA NUNCA copies ni pegues mensajes del chat. En vez, da un RESUMEN de 2-3 lineas y luego EJECUTA las acciones que te pidieron (agregar visitas, agendar citas, etc). El resultado de get_chat_messages es SOLO para que TU entiendas — el admin NO quiere ver mensajes copiados.
+- REGLA ABSOLUTA: Si el admin te pide "lee el chat y haz X", despues de leer INMEDIATAMENTE haz X. No te quedes solo leyendo.
 - Config: cambiar personalidad, modelo, temperatura, tokens
 
 WHATSAPP — REGLA DE 24H:
