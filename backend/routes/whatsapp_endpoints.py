@@ -1327,7 +1327,15 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             # SAFETY NET: If Lina promised to do something (schedule, create, etc.) but NO action block found,
             # retry once with explicit instruction to include the action block
-            _PROMISE_WORDS = ["te agend", "te program", "listo, queda", "ya te agend", "queda agendad", "cita para", "te registr", "ya te registr", "te aviso", "te recuerdo", "te notifico", "te cambio la cita", "te movi la cita", "te reagend", "30 minutos antes", "10 minutos antes", "te confirmo"]
+            _PROMISE_WORDS = [
+                "te agend", "te program", "listo, queda", "ya te agend", "queda agendad",
+                "cita para", "te registr", "ya te registr", "te aviso", "te recuerdo",
+                "te notifico", "te cambio la cita", "te movi la cita", "te reagend",
+                "30 minutos antes", "10 minutos antes", "40 minutos antes", "te confirmo",
+                "te cambio para", "te paso para", "te creo", "ya te cre",
+                "te anoto", "queda registrad", "nota agregad", "te mando recordatorio",
+                "te escribo", "queda confirmad", "te agendo para",
+            ]
             if not action_matches:
                 response_lower = ai_response.lower()
                 promised_action = any(w in response_lower for w in _PROMISE_WORDS)
@@ -1335,8 +1343,18 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     print(f"[Lina IA] WARNING: Response promises action but NO action block found. Retrying...")
                     log_event("error", "Lina prometio accion sin ejecutarla — reintentando", detail=f"Respuesta: {ai_response[:100]}...", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
 
+                    # Find which promises were made to give better retry instruction
+                    found_promises = [w for w in _PROMISE_WORDS if w in response_lower]
                     # Retry with explicit instruction
-                    retry_msg = f"[SISTEMA: Tu respuesta anterior prometio una accion (agendar, registrar, etc.) pero NO incluiste el bloque ```action```. DEBES incluir el bloque action al final. Responde igual pero INCLUYE el ```action``` esta vez.]\n\n{inbound_text}"
+                    retry_msg = (
+                        f"[SISTEMA CRITICO: Tu respuesta anterior dice: \"{ai_response[:200]}\" "
+                        f"pero NO incluiste NINGUN bloque ```action```. "
+                        f"Promesas detectadas: {', '.join(found_promises[:5])}. "
+                        f"DEBES incluir UN bloque ```action``` por CADA promesa. "
+                        f"Si dijiste 'te cambio la cita' necesitas update_appointment. "
+                        f"Si dijiste 'te aviso antes' necesitas add_note PENDIENTE. "
+                        f"Responde IGUAL pero con TODOS los bloques ```action``` al final.]\n\n{inbound_text}"
+                    )
                     retry_response = await _call_ai(system_prompt, history, retry_msg)
                     if retry_response:
                         # Re-parse actions from retry
