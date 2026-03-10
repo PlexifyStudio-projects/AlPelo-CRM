@@ -391,100 +391,31 @@ def _check_custom_reminders(db):
 
 
 # ============================================================================
-# 3. 24-HOUR NO-SHOW FOLLOW-UP — Re-engagement message
+# 3. NO-SHOW STATUS UPDATE — Mark missed appointments (NO unsolicited messages)
 # ============================================================================
 def _check_noshow_followups(db):
     """
     Check appointments from yesterday that were no_show or never completed.
-    Send a personalized re-engagement message. ONE message per conversation.
-    Uses DB for deduplication — survives redeploys.
+    ONLY marks them as no_show in the DB — does NOT send any message.
+    Unsolicited promotional/re-engagement messages are NOT allowed.
     """
     now = _now_colombia()
     yesterday = now.date() - timedelta(days=1)
 
-    # Appointments from yesterday still "confirmed" (never showed) or "no_show"
+    # Appointments from yesterday still "confirmed" (never showed)
     missed = (
         db.query(Appointment)
         .filter(Appointment.date == yesterday)
-        .filter(Appointment.status.in_(["confirmed", "no_show"]))
+        .filter(Appointment.status == "confirmed")
         .all()
     )
 
-    # Track which conversations we've already handled THIS run
-    contacted_convs = set()
-
     for appt in missed:
-        conv = _find_conversation(db, appt)
-        if not conv:
-            # Mark as no_show so we don't keep checking
-            if appt.status == "confirmed":
-                appt.status = "no_show"
-                db.commit()
-            continue
-
-        # Skip if we already handled this conversation in this loop iteration
-        if conv.id in contacted_convs:
-            if appt.status == "confirmed":
-                appt.status = "no_show"
-                db.commit()
-            continue
-
-        # DB-SAFE DEDUP: Check if we already sent a no-show follow-up to this conv
-        # Check from yesterday onwards (covers redeploys)
-        if _already_sent_for_date(db, conv.id, "noshow_followup", yesterday):
-            contacted_convs.add(conv.id)
-            if appt.status == "confirmed":
-                appt.status = "no_show"
-                db.commit()
-            continue
-
-        # SKIP if there's been recent conversation activity (client or Lina talking)
-        # Don't interrupt an active conversation with a scheduler message
-        recent_activity = (
-            db.query(WhatsAppMessage)
-            .filter(
-                WhatsAppMessage.conversation_id == conv.id,
-                WhatsAppMessage.created_at >= now - timedelta(hours=3),
-            )
-            .first()
-        )
-        if recent_activity:
-            print(f"[SCHEDULER] Skipping no-show follow-up for conv #{conv.id} — active conversation in last 3h")
-            contacted_convs.add(conv.id)
-            if appt.status == "confirmed":
-                appt.status = "no_show"
-                db.commit()
-            continue
-
-        client_first, service_name, staff_first = _get_appt_details(db, appt)
-        suggestion = _suggest_day()
-
-        # Personalized, warm, human-like message
-        msg = f"Hola {client_first}, notamos que ayer no pudiste venir"
-        if service_name and service_name != "tu servicio":
-            msg += f" a tu cita de {service_name}"
-        msg += "."
-
-        msg += "\n\nSin embargo, tenemos disponibilidad esta semana para reagendar tu visita."
-
-        if staff_first:
-            msg += f" {staff_first} tiene espacio disponible"
-            msg += f", te sugiero el {suggestion} si te queda bien."
-        else:
-            msg += f" Te sugiero el {suggestion} si te queda bien."
-
-        msg += f"\n\nQuedamos atentos {client_first}, gracias! 💈"
-
-        wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
-        _store_outbound_message(db, conv.id, msg, wa_sent, tag="noshow_followup")
-        contacted_convs.add(conv.id)
-
-        # Mark as no_show
-        if appt.status == "confirmed":
-            appt.status = "no_show"
-            db.commit()
-
-        print(f"[SCHEDULER] No-show follow-up sent for appt #{appt.id} → {client_first} (conv #{conv.id})")
+        appt.status = "no_show"
+        db.commit()
+        client_first = (appt.client_name or "").split()[0]
+        print(f"[SCHEDULER] Marked appt #{appt.id} as no_show ({client_first})")
+        log_event("sistema", f"Cita marcada como no-show: {client_first}", detail=f"Cita del {yesterday} a las {appt.time} no fue completada.", contact_name=client_first, status="warning")
 
 
 # ============================================================================
@@ -630,8 +561,8 @@ def _morning_review(db):
             while history and history[-1]["role"] == "user":
                 history.pop()
 
-            # Prefix so Lina knows this is morning follow-up
-            morning_context = f"[CONTEXTO: Es la manana siguiente. El cliente escribio anoche fuera de horario. Respondele amablemente, retomando su consulta.]\n\n{latest_inbound}"
+            # Prefix so Lina knows this is morning follow-up — ONLY respond to what was asked
+            morning_context = f"[CONTEXTO: Es la manana siguiente. El cliente escribio anoche fuera de horario. Respondele amablemente, retomando su consulta. SOLO responde a lo que el cliente pregunto o pidio. NO inventes mensajes promocionales ni de reactivacion.]\n\n{latest_inbound}"
 
             ai_response = _call_ai_sync(system_prompt, history, morning_context)
 
@@ -804,7 +735,10 @@ def _sweep_missed_conversations(db):
             while history and history[-1]["role"] == "user":
                 history.pop()
 
-            ai_response = _call_ai_sync(system_prompt, history, inbound_text)
+            # CRITICAL: Only respond to what the client wrote — NO promotional/re-engagement messages
+            safe_context = f"[INSTRUCCION CRITICA: SOLO responde al mensaje del cliente. NO inventes mensajes promocionales, de reactivacion, ni de seguimiento. Si el cliente dijo algo, respondele a ESO. Si no hay nada concreto que responder, NO envies nada.]\n\n{inbound_text}"
+
+            ai_response = _call_ai_sync(system_prompt, history, safe_context)
 
             if not ai_response or not ai_response.strip():
                 continue
