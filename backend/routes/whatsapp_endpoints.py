@@ -1138,11 +1138,12 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")
                 return
 
-            # Anti-repetition: if the new response is very similar to the last AI message, stay silent
+            # Anti-repetition: if the new response is IDENTICAL or near-identical to the last AI message, stay silent
+            # Threshold raised to 0.85 — 0.7 was blocking valid responses that just started with similar greetings
             if last_ai_msg and last_ai_msg.content:
                 from difflib import SequenceMatcher
                 similarity = SequenceMatcher(None, last_ai_msg.content.lower().strip(), ai_response.lower().strip()).ratio()
-                if similarity > 0.7:
+                if similarity > 0.85:
                     print(f"[Lina IA] BLOCKED repetitive response for conv {conv_id} (similarity={similarity:.2f}): {ai_response[:60]}")
                     return
 
