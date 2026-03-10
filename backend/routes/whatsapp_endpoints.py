@@ -1138,14 +1138,29 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")
                 return
 
-            # Anti-repetition: if the new response is IDENTICAL or near-identical to the last AI message, stay silent
-            # Threshold raised to 0.85 — 0.7 was blocking valid responses that just started with similar greetings
+            # Anti-repetition: block if response is too similar to last AI message
             if last_ai_msg and last_ai_msg.content:
                 from difflib import SequenceMatcher
-                similarity = SequenceMatcher(None, last_ai_msg.content.lower().strip(), ai_response.lower().strip()).ratio()
-                if similarity > 0.85:
+                prev = last_ai_msg.content.lower().strip()
+                curr = ai_response.lower().strip()
+                similarity = SequenceMatcher(None, prev, curr).ratio()
+                if similarity > 0.75:
                     print(f"[Lina IA] BLOCKED repetitive response for conv {conv_id} (similarity={similarity:.2f}): {ai_response[:60]}")
-                    return
+                    # Instead of staying silent, ask the AI to respond differently
+                    retry_response = await _call_ai(
+                        system_prompt + f"\n\nIMPORTANTE: Tu respuesta anterior fue: \"{last_ai_msg.content}\". NO repitas eso. Responde de forma diferente, abordando lo que el cliente acaba de decir.",
+                        history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type
+                    )
+                    if retry_response and retry_response.strip():
+                        retry_sim = SequenceMatcher(None, prev, retry_response.lower().strip()).ratio()
+                        if retry_sim <= 0.75:
+                            ai_response = retry_response
+                            print(f"[Lina IA] Retry succeeded (similarity={retry_sim:.2f}): {ai_response[:60]}")
+                        else:
+                            print(f"[Lina IA] Retry also repetitive (similarity={retry_sim:.2f}). Staying silent.")
+                            return
+                    else:
+                        return
 
             # Debug: log raw response with repr() to see exact chars
             print(f"[Lina IA] RAW response: {repr(ai_response[:300])}")

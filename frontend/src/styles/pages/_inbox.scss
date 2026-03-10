@@ -979,6 +979,16 @@
     font-variant-numeric: tabular-nums;
   }
 
+  // Audio transcription below player
+  &__message-transcript {
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.55);
+    line-height: 1.4;
+    margin: 4px 0 0;
+    font-style: italic;
+    white-space: pre-wrap;
+  }
+
   // Lina IA label on auto-reply messages
   &__lina-label {
     display: inline-flex;

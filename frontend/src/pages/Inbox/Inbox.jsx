@@ -1829,7 +1829,12 @@ const Inbox = () => {
                               <video src={resolveMediaUrl(msg.media_url)} controls className={`${b}__message-video`} />
                             )}
                             {msg.media_url && (msg.message_type === 'audio' || msg.media_mime_type?.startsWith('audio/')) && (
-                              <AudioPlayer src={resolveMediaUrl(msg.media_url)} />
+                              <>
+                                <AudioPlayer src={resolveMediaUrl(msg.media_url)} />
+                                {msg.content && msg.content.startsWith('🎤') && (
+                                  <p className={`${b}__message-transcript`}>{msg.content}</p>
+                                )}
+                              </>
                             )}
                             {(!msg.media_url || (msg.content && !['sticker', 'image', 'video', 'audio', 'document'].includes(msg.message_type))) && (
                               <p className={`${b}__message-text`}>{msg.content || msg.text}</p>
