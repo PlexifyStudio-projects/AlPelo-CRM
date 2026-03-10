@@ -1368,6 +1368,11 @@ Equipo:
 Visitas:
   add_visit: search_name|client_id, staff_id, service_name, amount
 
+REGLA VISITAS: Cuando registres una visita que YA ocurrio, SIEMPRE haz DOS cosas:
+1. add_visit (para el historial del cliente)
+2. create_appointment con status "completed" (para que aparezca en la agenda)
+Ambas. No solo una. El admin necesita ver la visita en la agenda tambien.
+
 Conversacion:
   tag_conversation: search_name|phone, tags (list)
 
