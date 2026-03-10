@@ -92,13 +92,32 @@ async def lina_activity(limit: int = 100, offset: int = 0):
 
 @app.get("/api/lina/memory")
 async def lina_memory():
-    """Get Lina's learned patterns and feedback — her growing memory."""
+    """Get ALL of Lina's knowledge: global learnings + per-client patterns."""
     from database.connection import SessionLocal
-    from database.models import ClientNote, Client
+    from database.models import ClientNote, Client, LinaLearning
     from sqlalchemy import or_
 
     db = SessionLocal()
     try:
+        # --- Global learnings (admin-taught rules) ---
+        learnings = (
+            db.query(LinaLearning)
+            .filter(LinaLearning.is_active == True)
+            .order_by(LinaLearning.created_at.desc())
+            .all()
+        )
+        global_items = []
+        for l in learnings:
+            global_items.append({
+                "id": f"L{l.id}",
+                "type": "regla",
+                "category": l.category,
+                "client_name": "General",
+                "content": l.content[:400],
+                "created_at": l.created_at.isoformat() if l.created_at else None,
+            })
+
+        # --- Per-client learnings + feedback ---
         notes = (
             db.query(ClientNote)
             .filter(or_(
@@ -110,10 +129,9 @@ async def lina_memory():
             .all()
         )
 
-        items = []
+        client_items = []
         for n in notes:
             client = db.query(Client).filter(Client.id == n.client_id).first()
-            # Determine type
             content = n.content or ""
             if "APRENDIZAJE:" in content:
                 mem_type = "aprendizaje"
@@ -125,20 +143,144 @@ async def lina_memory():
                 mem_type = "otro"
                 text = content
 
-            items.append({
-                "id": n.id,
+            client_items.append({
+                "id": f"N{n.id}",
                 "type": mem_type,
                 "client_name": client.name if client else "?",
                 "content": text[:300],
                 "created_at": n.created_at.isoformat() if n.created_at else None,
             })
 
+        all_items = global_items + client_items
         return {
-            "total": len(items),
-            "items": items,
+            "total": len(all_items),
+            "global_count": len(global_items),
+            "client_count": len(client_items),
+            "items": all_items,
         }
     finally:
         db.close()
+
+
+@app.get("/api/lina/learnings")
+async def list_learnings():
+    """Get all global learnings for Lina."""
+    from database.connection import SessionLocal
+    from database.models import LinaLearning
+
+    db = SessionLocal()
+    try:
+        items = db.query(LinaLearning).filter(LinaLearning.is_active == True).order_by(LinaLearning.created_at.desc()).all()
+        return [{
+            "id": l.id,
+            "category": l.category,
+            "content": l.content,
+            "original_input": l.original_input,
+            "created_by": l.created_by,
+            "created_at": l.created_at.isoformat() if l.created_at else None,
+        } for l in items]
+    finally:
+        db.close()
+
+
+@app.post("/api/lina/learnings")
+async def create_learning(request: dict):
+    """Admin teaches Lina something new. AI processes and stores it."""
+    from database.connection import SessionLocal
+    from database.models import LinaLearning
+
+    raw_input = (request.get("content") or "").strip()
+    category = (request.get("category") or "general").strip().lower()
+
+    if not raw_input:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Contenido vacio")
+
+    # Let AI process and improve the instruction
+    processed = await _process_learning(raw_input, category)
+
+    db = SessionLocal()
+    try:
+        learning = LinaLearning(
+            category=category,
+            original_input=raw_input,
+            content=processed,
+            created_by="admin",
+        )
+        db.add(learning)
+        db.commit()
+        db.refresh(learning)
+        return {
+            "id": learning.id,
+            "category": learning.category,
+            "content": learning.content,
+            "original_input": learning.original_input,
+            "created_at": learning.created_at.isoformat() if learning.created_at else None,
+        }
+    finally:
+        db.close()
+
+
+@app.delete("/api/lina/learnings/{learning_id}")
+async def delete_learning(learning_id: int):
+    """Delete a global learning."""
+    from database.connection import SessionLocal
+    from database.models import LinaLearning
+
+    db = SessionLocal()
+    try:
+        item = db.query(LinaLearning).filter(LinaLearning.id == learning_id).first()
+        if not item:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="No encontrado")
+        item.is_active = False
+        db.commit()
+        return {"ok": True}
+    finally:
+        db.close()
+
+
+async def _process_learning(raw_input: str, category: str) -> str:
+    """Use AI to process and improve the admin's instruction into a clear rule for Lina."""
+    import httpx
+
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        return raw_input  # fallback: use as-is
+
+    system = """Eres un editor de instrucciones para una IA asistente de peluqueria llamada Lina.
+El admin te da una instruccion en lenguaje informal de como debe actuar Lina en una situacion.
+Tu trabajo: reescribirla como una REGLA CLARA y CONCISA que Lina pueda seguir.
+- Mantén el significado exacto
+- Hazla directa, en imperativo: "Cuando X pase, haz Y"
+- Maximo 2-3 oraciones
+- NO cambies la intencion, solo mejora la redaccion
+- Si el admin dice algo como "no hagas X", convierte en "NUNCA hagas X"
+- Responde SOLO con la regla reescrita, nada mas"""
+
+    try:
+        payload = {
+            "model": "claude-sonnet-4-5-20250929",
+            "max_tokens": 300,
+            "system": system,
+            "messages": [{"role": "user", "content": f"Categoria: {category}\nInstruccion del admin: {raw_input}"}],
+            "temperature": 0.3,
+        }
+        headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"}
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post("https://api.anthropic.com/v1/messages", json=payload, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                text = ""
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        text += block.get("text", "")
+                return text.strip() if text.strip() else raw_input
+    except Exception as e:
+        print(f"[Learning AI] Failed to process: {e}")
+
+    return raw_input
 
 
 @app.get("/api/lina/health")

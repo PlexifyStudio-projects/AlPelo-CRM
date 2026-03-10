@@ -526,6 +526,71 @@
     border-top: 1px solid $glass-border;
   }
 
+  &__memory-input {
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $glass-border;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__memory-input-row {
+    display: flex;
+    gap: $spacing-xs;
+    align-items: center;
+  }
+
+  &__memory-select {
+    padding: 7px 10px;
+    border-radius: $border-radius-md;
+    border: 1px solid $border-color;
+    background: $color-white;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-600;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:focus { border-color: $color-primary; outline: none; }
+  }
+
+  &__memory-field {
+    flex: 1;
+    padding: 7px 12px;
+    border-radius: $border-radius-md;
+    border: 1px solid $border-color;
+    background: $color-white;
+    font-size: $font-size-sm;
+    color: $color-gray-800;
+    transition: border-color $transition-fast;
+
+    &::placeholder { color: $color-gray-300; }
+    &:focus { border-color: $color-primary; outline: none; }
+  }
+
+  &__memory-send {
+    padding: 7px 16px;
+    border-radius: $border-radius-md;
+    border: 1px solid $color-primary;
+    background: $color-primary;
+    color: $color-white;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all $transition-fast;
+    flex-shrink: 0;
+
+    &:hover:not(:disabled) { background: $color-primary-light; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__memory-hint {
+    font-size: 11px;
+    color: $color-gray-300;
+    padding-left: 2px;
+  }
+
   &__memory-empty {
     display: flex;
     flex-direction: column;
@@ -566,6 +631,7 @@
 
     &--feedback { border-left: 3px solid $color-warning; }
     &--aprendizaje { border-left: 3px solid $color-primary; }
+    &--regla { border-left: 3px solid $color-info; }
   }
 
   &__memory-tag {
@@ -578,6 +644,34 @@
 
     &--feedback { background: $color-warning-bg; color: $color-warning-dark; }
     &--aprendizaje { background: $color-primary-ghost; color: $color-primary; }
+    &--regla { background: $color-info-bg; color: $color-info-dark; }
+  }
+
+  &__memory-cat {
+    font-size: 10px;
+    font-weight: $font-weight-medium;
+    color: $color-gray-400;
+    text-transform: capitalize;
+  }
+
+  &__memory-delete {
+    margin-left: auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: $color-gray-300;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all $transition-fast;
+    flex-shrink: 0;
+
+    &:hover { background: $color-error-bg; color: $color-error; }
   }
 
   &__memory-client {

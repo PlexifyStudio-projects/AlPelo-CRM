@@ -1256,7 +1256,22 @@ Barbero preferido: {preferred_barber}"""
             task_lines.append(f"  [{created}] {client_name}: {n.content[:150]}")
         sections.append(f"⚡ TAREAS PENDIENTES ({len(pending_notes)}):\n" + "\n".join(task_lines))
 
-    # Lina's learned patterns — APRENDIZAJE notes (her long-term memory)
+    # --- Global learnings (admin-taught rules — HIGHEST PRIORITY) ---
+    from database.models import LinaLearning
+    global_learnings = (
+        db.query(LinaLearning)
+        .filter(LinaLearning.is_active == True)
+        .order_by(LinaLearning.created_at.desc())
+        .all()
+    )
+    if global_learnings:
+        rule_lines = []
+        for gl in global_learnings:
+            cat = gl.category.upper() if gl.category else "GENERAL"
+            rule_lines.append(f"  [{cat}] {gl.content[:200]}")
+        sections.append(f"⚠️ REGLAS DEL ADMIN — DEBES SEGUIR ESTAS SI O SI ({len(global_learnings)} reglas):\n" + "\n".join(rule_lines))
+
+    # --- Per-client learnings (APRENDIZAJE/FEEDBACK notes) ---
     from sqlalchemy import or_
     learned_notes = (
         db.query(ClientNote)
@@ -1274,7 +1289,7 @@ Barbero preferido: {preferred_barber}"""
             client = db.query(Client).filter(Client.id == n.client_id).first()
             client_name = client.name if client else "?"
             learn_lines.append(f"  {client_name}: {n.content[:150]}")
-        sections.append(f"🧠 MEMORIA DE LINA ({len(learned_notes)} aprendizajes):\n" + "\n".join(learn_lines))
+        sections.append(f"🧠 MEMORIA DE LINA ({len(learned_notes)} aprendizajes de clientes):\n" + "\n".join(learn_lines))
 
     return "\n\n".join(sections)
 

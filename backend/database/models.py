@@ -181,3 +181,18 @@ class WhatsAppMessage(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     conversation = relationship("WhatsAppConversation", back_populates="messages")
+
+
+class LinaLearning(Base):
+    """Global learnings for Lina IA — rules and patterns she must follow.
+    These are NOT tied to a specific client. They're general knowledge."""
+    __tablename__ = "lina_learning"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String, nullable=False, default="general")  # general, rechazos, citas, pagos, quejas, audios, etc.
+    original_input = Column(Text, nullable=False)  # What the admin typed
+    content = Column(Text, nullable=False)  # Processed/improved by AI
+    created_by = Column(String, nullable=True, default="admin")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

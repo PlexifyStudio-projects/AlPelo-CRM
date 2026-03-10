@@ -108,6 +108,9 @@ const LinaActivity = () => {
   const [tokenStatus, setTokenStatus] = useState(null);
   const [memory, setMemory] = useState(null);
   const [showMemory, setShowMemory] = useState(true);
+  const [newRule, setNewRule] = useState('');
+  const [newRuleCategory, setNewRuleCategory] = useState('general');
+  const [savingRule, setSavingRule] = useState(false);
   const intervalRef = useRef(null);
   const feedRef = useRef(null);
   const prevCountRef = useRef(0);
@@ -146,6 +149,33 @@ const LinaActivity = () => {
       if (resp.ok) setMemory(await resp.json());
     } catch { /* silent */ }
   }, []);
+
+  const saveNewRule = useCallback(async () => {
+    if (!newRule.trim() || savingRule) return;
+    setSavingRule(true);
+    try {
+      const resp = await fetch(`${API_URL}/lina/learnings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: newRule.trim(), category: newRuleCategory }),
+      });
+      if (resp.ok) {
+        setNewRule('');
+        fetchMemory(); // refresh
+      }
+    } catch { /* silent */ }
+    finally { setSavingRule(false); }
+  }, [newRule, newRuleCategory, savingRule, fetchMemory]);
+
+  const deleteRule = useCallback(async (id) => {
+    // id format: "L123" for learnings
+    const numId = String(id).replace('L', '');
+    try {
+      await fetch(`${API_URL}/lina/learnings/${numId}`, { method: 'DELETE', credentials: 'include' });
+      fetchMemory();
+    } catch { /* silent */ }
+  }, [fetchMemory]);
 
   useEffect(() => {
     fetchActivity();
@@ -240,30 +270,84 @@ const LinaActivity = () => {
 
         {showMemory && (
           <div className="lina-activity__memory-body">
+            {/* Input field — admin teaches Lina */}
+            <div className="lina-activity__memory-input">
+              <div className="lina-activity__memory-input-row">
+                <select
+                  className="lina-activity__memory-select"
+                  value={newRuleCategory}
+                  onChange={e => setNewRuleCategory(e.target.value)}
+                >
+                  <option value="general">General</option>
+                  <option value="rechazos">Rechazos</option>
+                  <option value="citas">Citas</option>
+                  <option value="quejas">Quejas</option>
+                  <option value="pagos">Pagos</option>
+                  <option value="audios">Audios</option>
+                  <option value="saludos">Saludos</option>
+                  <option value="servicios">Servicios</option>
+                </select>
+                <input
+                  className="lina-activity__memory-field"
+                  type="text"
+                  placeholder="Ensenale algo a Lina... ej: Cuando un cliente pregunte por promociones, dile que..."
+                  value={newRule}
+                  onChange={e => setNewRule(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && saveNewRule()}
+                  disabled={savingRule}
+                />
+                <button
+                  className="lina-activity__memory-send"
+                  onClick={saveNewRule}
+                  disabled={!newRule.trim() || savingRule}
+                >
+                  {savingRule ? '...' : 'Ensenar'}
+                </button>
+              </div>
+              <span className="lina-activity__memory-hint">Lina procesara tu instruccion, la mejorara y la guardara como regla permanente</span>
+            </div>
+
+            {/* Items list */}
             {!memory || memory.total === 0 ? (
               <div className="lina-activity__memory-empty">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
                   <line x1="9" y1="21" x2="15" y2="21" /><line x1="10" y1="24" x2="14" y2="24" />
                 </svg>
-                <p>Lina aun no ha registrado aprendizajes. A medida que interactue con los clientes ira guardando preferencias, feedback y patrones que descubra en las conversaciones.</p>
+                <p>Lina aun no tiene aprendizajes. Ensena algo arriba o espera a que interactue con clientes.</p>
               </div>
             ) : (
               <div className="lina-activity__memory-list">
-                {memory.items.map(item => (
-                  <div key={item.id} className={`lina-activity__memory-item lina-activity__memory-item--${item.type}`}>
-                    <span className={`lina-activity__memory-tag lina-activity__memory-tag--${item.type}`}>
-                      {item.type === 'feedback' ? 'Feedback' : 'Aprendizaje'}
-                    </span>
-                    <span className="lina-activity__memory-client">{item.client_name}</span>
-                    <p className="lina-activity__memory-text">{item.content}</p>
-                    {item.created_at && (
-                      <span className="lina-activity__memory-date">
-                        {new Date(item.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                {memory.items.map(item => {
+                  const typeLabels = { regla: 'Regla', feedback: 'Feedback', aprendizaje: 'Aprendizaje' };
+                  const isRule = item.type === 'regla';
+                  return (
+                    <div key={item.id} className={`lina-activity__memory-item lina-activity__memory-item--${item.type}`}>
+                      <span className={`lina-activity__memory-tag lina-activity__memory-tag--${item.type}`}>
+                        {typeLabels[item.type] || 'Otro'}
                       </span>
-                    )}
-                  </div>
-                ))}
+                      {isRule && item.category && (
+                        <span className="lina-activity__memory-cat">{item.category}</span>
+                      )}
+                      <span className="lina-activity__memory-client">{item.client_name}</span>
+                      {isRule && (
+                        <button
+                          className="lina-activity__memory-delete"
+                          onClick={() => deleteRule(item.id)}
+                          title="Eliminar regla"
+                        >
+                          &times;
+                        </button>
+                      )}
+                      <p className="lina-activity__memory-text">{item.content}</p>
+                      {item.created_at && (
+                        <span className="lina-activity__memory-date">
+                          {new Date(item.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
