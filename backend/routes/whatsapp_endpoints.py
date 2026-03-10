@@ -1114,13 +1114,25 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     inbound_text = combined_text.strip()
                     print(f"[Lina IA] Combined {len(pending_inbound)} pending messages: {inbound_text[:100]}")
 
-            history = []
+            # Build history with proper role alternation (Claude API requires user/assistant/user/assistant)
+            raw_history = []
             for m in recent_msgs:
                 role = "user" if m.direction == "inbound" else "assistant"
-                # Skip off-hours template from history — it confuses the AI into repeating "mañana abrimos"
+                # Skip off-hours template — it confuses the AI into repeating "mañana abrimos"
                 if m.sent_by == "lina_ia_offhours":
                     continue
-                history.append({"role": role, "content": m.content})
+                content = m.content or ""
+                if not content.strip():
+                    continue
+                raw_history.append({"role": role, "content": content})
+
+            # Merge consecutive same-role messages to ensure proper alternation
+            history = []
+            for entry in raw_history:
+                if history and history[-1]["role"] == entry["role"]:
+                    history[-1]["content"] += "\n" + entry["content"]
+                else:
+                    history.append(dict(entry))
 
             from routes.ai_endpoints import _build_system_prompt, _call_ai
 

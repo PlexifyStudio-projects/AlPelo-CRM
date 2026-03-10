@@ -737,39 +737,36 @@ def _execute_action(action: dict, db: Session) -> str:
             content = (m.content or "[sin contenido]")[:150]
             recent_lines.append(f"  [{time_str}] {direction}: {content}")
 
-        # Build compact analysis result
-        result = [f"[LEIDO INTERNAMENTE — Chat de {contact}, {len(msgs)} msgs total]"]
-        result.append(f"INSTRUCCION: Ya leiste el chat. Ahora EJECUTA las tareas que el admin pidio. NO repitas ni copies mensajes del chat.")
-
+        # Build ULTRA-COMPACT internal summary — the AI must NOT show this to admin
+        # Only key facts that inform actions
+        facts = []
         if appointment_mentions:
-            result.append(f"\nCITAS/AGENDA mencionadas ({len(appointment_mentions)}):")
-            for a in appointment_mentions[-5:]:
-                result.append(f"  • {a}")
-
+            facts.append(f"CITAS: {len(appointment_mentions)} mencionadas")
         if payment_mentions:
-            result.append(f"\nPAGOS mencionados ({len(payment_mentions)}):")
-            for p in payment_mentions[-3:]:
-                result.append(f"  • {p}")
-
+            facts.append(f"PAGOS: {len(payment_mentions)} mencionados")
         if visit_mentions:
-            result.append(f"\nSERVICIOS/VISITAS mencionados ({len(visit_mentions)}):")
-            for v in visit_mentions[-5:]:
-                result.append(f"  • {v}")
-
-        if lina_promises:
-            result.append(f"\nLINA PROMETIO ({len(lina_promises)}):")
-            for lp in lina_promises[-5:]:
-                result.append(f"  • {lp}")
-
+            facts.append(f"SERVICIOS: {len(visit_mentions)} mencionados")
         if pending_items:
-            result.append(f"\nPENDIENTES ({len(pending_items)}):")
-            for pi in pending_items[-3:]:
-                result.append(f"  • {pi}")
+            facts.append(f"PENDIENTES: {len(pending_items)}")
 
-        result.append(f"\nULTIMOS MENSAJES:")
-        result.extend(recent_lines)
+        # Only the LAST 5 messages for immediate context
+        recent = msgs[-5:]
+        recent_lines = []
+        for m in recent:
+            direction = "C" if m.direction == "inbound" else "L"
+            content = (m.content or "")[:80]
+            recent_lines.append(f"{direction}: {content}")
 
-        return "\n".join(result)
+        return (
+            f"[INTERNO — Chat de {contact}, {len(msgs)} msgs]\n"
+            f"{' | '.join(facts) if facts else 'Sin items pendientes'}\n"
+            f"Contexto reciente:\n" + "\n".join(recent_lines) + "\n"
+            f"---\n"
+            f"INSTRUCCION CRITICA: Este resultado es SOLO para tu memoria interna. "
+            f"NO muestres este analisis al admin. Responde con UN RESUMEN de maximo 2 lineas "
+            f"y luego EJECUTA las acciones (add_visit, create_appointment, add_note, etc). "
+            f"Si el admin pidio que hagas algo, HAZLO AHORA con bloques ```action```."
+        )
 
     elif action_type == "get_inbox_summary":
         convs = db.query(WhatsAppConversation).order_by(WhatsAppConversation.last_message_at.desc()).all()
@@ -1242,7 +1239,9 @@ NUNCA cierres la conversacion tu primero. No digas "Hasta luego" a menos que el 
 Si el cliente pregunta "estas ahi?" → "Hola [nombre]! Si, aqui estoy, en que te puedo ayudar?" (NO "Si, estoy aca. Hasta luego!")
 NO frases de bot. NO "Chau". NO "Ay". NO inventes info.
 Si preguntan si eres IA: "No jaja, soy Lina del equipo"
-Sticker/emoji sin texto: ignora. ANTI-REPETICION: NO repitas lo que ya dijiste.
+Sticker/emoji sin texto: ignora.
+ANTI-REPETICION ESTRICTA: Lee el historial — si ya saludaste, NO saludes de nuevo. Si ya preguntaste algo, NO lo preguntes otra vez. Responde DIRECTO al ultimo mensaje del cliente.
+AUDIOS: Cuando recibes [Audio del cliente], ya tienes la transcripcion. Responde al CONTENIDO del audio.
 Despedidas: SOLO si el CLIENTE se despide primero. Responde breve y calido: "Dale, que estes bien!" o "Con gusto, buena noche!"
 
 IMAGENES: Puedes VER imagenes. Describe y responde. Comprobante de pago → tag "⚠️ Pago pendiente", di que verificas. VIDEOS: NO puedes ver, pide que explique.
@@ -1291,8 +1290,8 @@ CAPACIDADES (tienes control total del CRM):
 - Equipo: datos del staff, crear/editar/desactivar
 - WhatsApp: VER chats reales (estan en INBOX abajo), LEER chats completos (get_chat_messages), enviar mensajes, plantillas, masivos, toggle IA, etiquetar, eliminar conversaciones
 - IMPORTANTE: Si el admin pide que revises un chat, usa get_chat_messages para leer el historial COMPLETO. El inbox solo muestra previews.
-- CRITICO: Cuando leas un chat con get_chat_messages, ya leiste el chat para ti misma. NUNCA NUNCA copies ni pegues mensajes del chat. En vez, da un RESUMEN de 2-3 lineas y luego EJECUTA las acciones que te pidieron (agregar visitas, agendar citas, etc). El resultado de get_chat_messages es SOLO para que TU entiendas — el admin NO quiere ver mensajes copiados.
-- REGLA ABSOLUTA: Si el admin te pide "lee el chat y haz X", despues de leer INMEDIATAMENTE haz X. No te quedes solo leyendo.
+- CRITICO: El resultado de get_chat_messages es INTERNO — NUNCA lo muestres al admin. Solo di "Ya revisé el chat de [nombre]" y luego EJECUTA las acciones con bloques ```action```. PROHIBIDO mostrar listas de mensajes, analisis, timestamps, o cualquier detalle del chat. El admin NO quiere ver eso.
+- REGLA ABSOLUTA: Si el admin te pide "lee el chat y haz X", despues de leer di "Listo, ya lo revisé" e INMEDIATAMENTE haz X con acciones. NUNCA te quedes solo leyendo o mostrando el analisis.
 - Config: cambiar personalidad, modelo, temperatura, tokens
 
 WHATSAPP — REGLA DE 24H:
