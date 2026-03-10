@@ -890,8 +890,9 @@ async def _send_read_receipt(wa_msg_id: str):
         pass  # Don't fail on read receipt errors
 
 
-async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_wa_msg_id: str = None, needs_transcription: bool = False, media_id: str = None, needs_vision: bool = False, media_mime: str = None):
-    """Background task: mark as read, wait, generate AI response, send. Supports image vision."""
+async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_wa_msg_id: str = None, needs_transcription: bool = False, media_id: str = None, needs_vision: bool = False, media_mime: str = None, is_catchup: bool = False):
+    """Background task: mark as read, wait, generate AI response, send. Supports image vision.
+    When is_catchup=True, skips off-hours check and reduces delay (admin explicitly re-enabled AI)."""
     import time
     import base64
 
@@ -909,8 +910,8 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         if inbound_wa_msg_id:
             await _send_read_receipt(inbound_wa_msg_id)
 
-        # Step 0.1: OFF-HOURS CHECK — send template, no AI
-        if _is_off_hours():
+        # Step 0.1: OFF-HOURS CHECK — send template, no AI (skip for catchup — admin explicitly turned ON)
+        if _is_off_hours() and not is_catchup:
             # Check if we already sent an off-hours template to this conv today
             db_oh = SessionLocal()
             try:
@@ -1031,9 +1032,13 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 if not inbound_text or inbound_text.startswith("📎"):
                     inbound_text = "[El cliente envio una imagen pero no se pudo descargar. Dile que recibiste la imagen pero no cargo, y preguntale que necesita.]"
 
-        # Step 1: Wait random 20-40 seconds (natural human-like delay)
-        delay = random.randint(20, 40)
-        print(f"[Lina IA] Waiting {delay}s before replying to conv {conv_id}...")
+        # Step 1: Wait random delay (shorter for catchup, natural for live messages)
+        if is_catchup:
+            delay = random.randint(3, 8)
+            print(f"[Lina IA] CATCHUP — waiting {delay}s before replying to conv {conv_id}...")
+        else:
+            delay = random.randint(20, 40)
+            print(f"[Lina IA] Waiting {delay}s before replying to conv {conv_id}...")
         await asyncio.sleep(delay)
 
         # Step 1.5: Check global rate limit — max 10 AI replies per 60 seconds
@@ -1571,30 +1576,49 @@ async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundT
             if not last_inbound:
                 continue
 
-            # Check that we haven't already replied after this message
-            last_outbound = (
+            # Only skip if a REAL Lina AI reply (not off-hours template, not admin)
+            # was sent AFTER the client's last message
+            last_ai_reply = (
                 db.query(WhatsAppMessage)
                 .filter(
                     WhatsAppMessage.conversation_id == conv.id,
-                    WhatsAppMessage.direction == "outbound",
+                    WhatsAppMessage.sent_by == "lina_ia",
                 )
                 .order_by(desc(WhatsAppMessage.created_at))
                 .first()
             )
-            if last_outbound and last_outbound.created_at > last_inbound.created_at:
-                continue  # Already replied after client's last message
+            if last_ai_reply and last_ai_reply.created_at > last_inbound.created_at:
+                continue  # Lina already replied to this message
 
             # Skip if already in-flight
             if conv.id in _in_flight_convs:
                 continue
 
-            # Schedule AI reply for this conversation
-            inbound_text = last_inbound.content or ""
+            # Collect all pending inbound text after last AI reply for full context
+            recent_inbound = (
+                db.query(WhatsAppMessage)
+                .filter(
+                    WhatsAppMessage.conversation_id == conv.id,
+                    WhatsAppMessage.direction == "inbound",
+                    WhatsAppMessage.created_at >= (last_ai_reply.created_at if last_ai_reply else conv.created_at),
+                )
+                .order_by(WhatsAppMessage.created_at.asc())
+                .all()
+            )
+            inbound_text = " | ".join(m.content for m in recent_inbound if m.content and not m.content.startswith("📎")) or last_inbound.content or ""
+
+            # Schedule AI reply for this conversation (catchup mode = skip off-hours, shorter delay)
             background_tasks.add_task(
                 ai_auto_reply,
                 conv.id,
                 conv.wa_contact_phone,
                 inbound_text,
+                None,   # inbound_wa_msg_id
+                False,  # needs_transcription
+                None,   # media_id
+                False,  # needs_vision
+                None,   # media_mime
+                True,   # is_catchup
             )
             catchup_count += 1
 
