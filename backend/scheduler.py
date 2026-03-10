@@ -22,6 +22,7 @@ from database.models import (
     WhatsAppConversation, WhatsAppMessage,
 )
 from routes._helpers import normalize_phone
+from activity_log import log_event
 
 WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
@@ -218,6 +219,7 @@ def _check_30min_reminders(db):
             _store_outbound_message(db, conv.id, msg, wa_sent, tag="reminder_30min")
 
             print(f"[SCHEDULER] 30-min reminder sent for appt #{appt.id} → {client_first} ({conv.wa_contact_phone})")
+            log_event("tarea", f"Recordatorio 30min enviado a {client_first}", detail=f"Cita a las {appt.time} con {staff_first} para {service_name}", contact_name=client_first, conv_id=conv.id, status="ok")
 
 
 # ============================================================================
@@ -290,6 +292,7 @@ def _check_custom_reminders(db):
             db.commit()
 
             print(f"[SCHEDULER] Custom 10-min reminder sent for appt #{appt.id} → {client_first}")
+            log_event("tarea", f"Recordatorio personalizado enviado a {client_first}", detail=f"Tarea PENDIENTE completada: recordar 10 min antes de cita", contact_name=client_first, conv_id=conv.id, status="ok")
 
 
 # ============================================================================
@@ -453,6 +456,7 @@ def _morning_review(db):
 
     _last_morning_review_date = today
     print(f"[SCHEDULER] Morning review started at {now_col.strftime('%H:%M')}")
+    log_event("sistema", "Revision matutina iniciada", detail="Revisando mensajes que llegaron anoche fuera de horario.", status="info")
 
     # Find conversations with unread inbound messages from off-hours (last night)
     # Look for inbound messages after 8:30 PM yesterday (UTC) or before 7:30 AM today
@@ -726,7 +730,9 @@ def _sweep_missed_conversations(db):
             _store_outbound_message(db, conv.id, clean, wa_sent, tag="sweep")
 
             processed += 1
-            print(f"[SCHEDULER] Sweep: replied to conv #{conv.id} ({conv.wa_contact_name}) — msg was {int((now_utc - last_inbound.created_at).total_seconds() / 60)}min old")
+            age_min = int((now_utc - last_inbound.created_at).total_seconds() / 60)
+            print(f"[SCHEDULER] Sweep: replied to conv #{conv.id} ({conv.wa_contact_name}) — msg was {age_min}min old")
+            log_event("respuesta", f"Recupere mensaje perdido de {conv.wa_contact_name or 'cliente'}", detail=f"El mensaje tenia {age_min} minutos sin respuesta. Ya lo resolvi.", contact_name=conv.wa_contact_name or "", conv_id=conv.id, status="ok")
 
             time.sleep(5)
 
@@ -744,6 +750,7 @@ def _scheduler_loop():
     """Main scheduler loop — runs in a background thread."""
     print("[SCHEDULER] Started v5 (DB-aware, deploy-safe, off-hours, sweep)")
     print("[SCHEDULER] Features: 30-min reminders, custom reminders, no-show follow-up, morning review, sweep")
+    log_event("sistema", "Lina IA iniciada", detail="Sistema de tareas automaticas activo: recordatorios, seguimientos, revision matutina.", status="ok")
     # Wait 60 seconds on startup before first check (let everything initialize)
     time.sleep(60)
 

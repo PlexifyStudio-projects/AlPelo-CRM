@@ -87,6 +87,19 @@ app.include_router(ai_router, prefix="/api", tags=["AI"])
 app.include_router(whatsapp_router, prefix="/api", tags=["WhatsApp"])
 
 
+# ============================================================================
+# LINA ACTIVITY LOG — Real-time monitoring endpoint
+# ============================================================================
+from activity_log import get_recent_events, get_stats as get_activity_stats
+
+@app.get("/api/lina/activity")
+async def lina_activity(limit: int = 100, offset: int = 0):
+    """Get Lina IA recent activity events for the monitoring dashboard."""
+    events = get_recent_events(limit=limit, offset=offset)
+    stats = get_activity_stats()
+    return {"events": events, "stats": stats}
+
+
 @app.get("/")
 async def root():
     return {"status": "running", "api": "AlPelo CRM"}

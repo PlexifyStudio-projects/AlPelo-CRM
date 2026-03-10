@@ -16,6 +16,7 @@ from database.connection import get_db, SessionLocal
 from database.models import WhatsAppConversation, WhatsAppMessage, Client
 from routes._helpers import normalize_phone
 from schemas import ToggleAllAIRequest as _ToggleAllAIRequest
+from activity_log import log_event
 
 # ============================================================================
 # Colombia timezone helpers (UTC-5)
@@ -387,6 +388,7 @@ async def toggle_ai(conv_id: int, body: dict, background_tasks: BackgroundTasks,
                 )
                 catchup = True
                 print(f"[Lina IA] Individual toggle ON for conv {conv_id} — catching up on unread messages.")
+                log_event("sistema", f"IA activada — revisando mensajes pendientes", detail=f"Encontre mensajes sin responder. Preparando respuesta.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok")
 
     return {"id": conv.id, "is_ai_active": conv.is_ai_active, "catchup": catchup}
 
@@ -853,6 +855,9 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     # Queue AI auto-reply if active (only 1 per conversation per webhook batch)
                     # Lina replies to: text, audio (transcribed), image (vision), video (can't see)
                     # Lina IGNORES: stickers, reactions, documents
+                    _media_labels = {"text": "texto", "audio": "audio", "image": "imagen", "video": "video"}
+                    log_event("sistema", f"Mensaje recibido de {conv.wa_contact_name or from_phone}", detail=f"Tipo: {_media_labels.get(msg_type, msg_type)} | {(content or '')[:80]}", conv_id=conv.id, contact_name=conv.wa_contact_name or "", status="info")
+
                     if conv.is_ai_active and msg_type in ("text", "audio", "image", "video"):
                         ai_text = content.strip() if content else ""
                         needs_transcription = msg_type == "audio" and media_url
@@ -955,6 +960,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         # Step -1: In-flight lock — prevent concurrent replies to same conversation
         if conv_id in _in_flight_convs:
             print(f"[Lina IA] Already processing conv {conv_id}, skipping duplicate task.")
+            log_event("skip", "Ya estoy procesando esta conversacion", conv_id=conv_id, status="warning")
             return
         _in_flight_convs.add(conv_id)
 
@@ -1080,12 +1086,23 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     inbound_text = "[El cliente envio una imagen pero no se pudo descargar. Dile que recibiste la imagen pero no cargo, y preguntale que necesita.]"
 
         # Step 1: Wait random delay (shorter for catchup, natural for live messages)
+        # Get contact name for logging
+        _log_db = SessionLocal()
+        _log_contact = ""
+        try:
+            _log_conv = _log_db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+            _log_contact = _log_conv.wa_contact_name if _log_conv else ""
+        finally:
+            _log_db.close()
+
         if is_catchup:
             delay = random.randint(3, 8)
             print(f"[Lina IA] CATCHUP — waiting {delay}s before replying to conv {conv_id}...")
+            log_event("sistema", "Recuperando mensajes pendientes", detail=f"Preparando respuesta (demora {delay}s)", conv_id=conv_id, contact_name=_log_contact, status="info")
         else:
-            delay = random.randint(20, 40)
+            delay = random.randint(10, 20)
             print(f"[Lina IA] Waiting {delay}s before replying to conv {conv_id}...")
+            log_event("sistema", "Preparando respuesta", detail=f"Leyendo conversacion y escribiendo ({delay}s)", conv_id=conv_id, contact_name=_log_contact, status="info")
         await asyncio.sleep(delay)
 
         # Step 1.5: Check global rate limit — max 10 AI replies per 60 seconds
@@ -1094,6 +1111,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         _ai_reply_timestamps[:] = [t for t in _ai_reply_timestamps if now - t < _AI_REPLY_WINDOW]
         if len(_ai_reply_timestamps) >= _AI_REPLY_MAX:
             print(f"[Lina IA] Global rate limit reached ({_AI_REPLY_MAX}/min). Skipping conv {conv_id}.")
+            log_event("skip", "Limite de mensajes por minuto alcanzado", detail=f"Maximo {_AI_REPLY_MAX} respuestas por minuto. Reintentare en el proximo ciclo.", conv_id=conv_id, status="warning")
             return
 
         # Step 2: Check per-conversation cooldown — skip if Lina already replied in last 60 seconds
@@ -1101,6 +1119,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         try:
             conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
             if not conv or not conv.is_ai_active:
+                log_event("skip", "IA desactivada en esta conversacion", conv_id=conv_id, contact_name=conv.wa_contact_name if conv else "", status="info")
                 return
 
             last_ai_msg = (
@@ -1116,6 +1135,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 seconds_since = (datetime.utcnow() - last_ai_msg.created_at).total_seconds()
                 if seconds_since < 45:
                     print(f"[Lina IA] Cooldown active for conv {conv_id} ({seconds_since:.0f}s ago). Skipping.")
+                    log_event("skip", "Esperando entre respuestas", detail=f"Ultima respuesta hace {int(seconds_since)}s. Espero 45s entre mensajes para no saturar.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
                     return
 
             # Step 2.5: Goodbye detection — if Lina recently said goodbye and client sends short farewell
@@ -1141,15 +1161,16 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     client_says_bye = any(cw == inbound_lower or inbound_lower.startswith(cw + " ") or inbound_lower.endswith(" " + cw) or cw in inbound_lower.split() for cw in CLIENT_BYE_WORDS)
                     if lina_said_bye and client_says_bye:
                         print(f"[Lina IA] Goodbye detected — Lina said bye {int(seconds_since_bye)}s ago, client replied '{inbound_lower}'. Staying silent for conv {conv_id}.")
+                        log_event("skip", "Conversacion cerrada — no respondo", detail=f"Ya me despedi hace {int(seconds_since_bye)}s y el cliente respondio '{inbound_lower}'. No es una nueva consulta.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
                         return
 
             # Step 3: Get conversation history and generate AI response
-            # Re-fetch recent messages — 20 msgs is enough context, saves tokens
+            # Fetch 40 messages for better context (Lina needs full picture to avoid repetitions)
             recent_msgs = (
                 db.query(WhatsAppMessage)
                 .filter(WhatsAppMessage.conversation_id == conv_id)
                 .order_by(WhatsAppMessage.created_at.desc())
-                .limit(20)
+                .limit(40)
                 .all()
             )
             recent_msgs.reverse()
@@ -1193,6 +1214,8 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             from routes.ai_endpoints import _build_system_prompt, _call_ai
 
+            log_event("sistema", f"Leyendo conversacion de {conv.wa_contact_name or 'cliente'}", detail=f"Analizando {len(history)} mensajes de historial + contexto del negocio", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
+
             system_prompt = _build_system_prompt(db, is_whatsapp=True, conv_id=conv_id)
 
             # The inbound messages are already in history (from DB).
@@ -1200,6 +1223,8 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             # Remove the last N inbound entries from history to avoid duplication.
             while history and history[-1]["role"] == "user":
                 history.pop()
+
+            log_event("sistema", f"Generando respuesta para {conv.wa_contact_name or 'cliente'}", detail=f"Mensaje del cliente: {(inbound_text or '')[:100]}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
 
             ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type)
 
@@ -1286,8 +1311,28 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
                         # Route ALL actions through the unified executor
                         from routes.ai_endpoints import _execute_action
+                        # Log the action BEFORE executing
+                        _action_labels = {
+                            "create_client": "Registrando nuevo cliente",
+                            "update_client": "Actualizando datos de cliente",
+                            "create_appointment": "Agendando cita",
+                            "update_appointment": "Modificando cita",
+                            "delete_appointment": "Cancelando cita",
+                            "add_note": "Guardando nota/tarea",
+                            "add_visit": "Registrando visita",
+                            "list_appointments": "Consultando agenda",
+                            "list_services": "Consultando servicios",
+                            "list_clients_by_filter": "Buscando clientes",
+                            "tag_conversation": "Etiquetando conversacion",
+                            "send_whatsapp": "Enviando mensaje WhatsApp",
+                        }
+                        action_label = _action_labels.get(action_type, f"Ejecutando: {action_type}")
+                        log_event("accion", action_label, detail=str(action_data)[:200], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
                         result = _execute_action(action_data, db)
                         print(f"[Lina IA] Action {action_type}: {result}")
+                        # Log result
+                        action_ok = "ERROR" not in result
+                        log_event("accion", f"{action_label} — {'Listo' if action_ok else 'Error'}", detail=result[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok" if action_ok else "error")
 
                         # If client was created, link to conversation
                         if action_type == "create_client" and "ERROR" not in result:
@@ -1406,6 +1451,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 conv.is_ai_active = False
                 db.commit()
                 print(f"[Lina IA] PAYMENT DETECTED for conv {conv_id} — tagged + AI paused")
+                log_event("accion", "Pago detectado — IA pausada", detail="El cliente menciono un pago. Pause la IA para que el admin verifique manualmente.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
                 # Get client name for personalized message
                 client_name = ""
                 if conv.client_id:
@@ -1440,9 +1486,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     else:
                         send_status = "failed"
                         print(f"[Lina IA] WhatsApp send failed for conv {conv_id}: {data}")
+                        log_event("respuesta", "No se pudo enviar el mensaje", detail=f"WhatsApp rechazo el envio. Posible token expirado.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
             except Exception as send_err:
                 send_status = "failed"
                 print(f"[Lina IA] WhatsApp send error for conv {conv_id}: {send_err}")
+                log_event("respuesta", "Error al enviar mensaje", detail=f"Error de conexion con WhatsApp: {str(send_err)[:100]}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
 
             # Step 5: Store AI response in DB (even if WhatsApp send failed — visible in CRM)
             msg = WhatsAppMessage(
@@ -1462,12 +1510,17 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             _ai_reply_timestamps.append(time.time())
 
             print(f"[Lina IA] Replied to conv {conv_id}: {clean_response[:60]}...")
+            if send_status == "sent":
+                log_event("respuesta", f"Respondi a {conv.wa_contact_name or 'cliente'}", detail=clean_response[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok")
+            else:
+                log_event("respuesta", f"Mensaje generado pero fallo el envio", detail=clean_response[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
 
         finally:
             db.close()
 
     except Exception as e:
         print(f"[Lina IA] Auto-reply error: {e}")
+        log_event("error", "Error interno al procesar respuesta", detail=str(e)[:200], conv_id=conv_id, status="error")
     finally:
         # Always release the in-flight lock
         _in_flight_convs.discard(conv_id)
@@ -1706,6 +1759,8 @@ async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundT
             catchup_count += 1
 
         print(f"[Lina IA] Toggle ON — catching up on {catchup_count} unread conversations.")
+        if catchup_count:
+            log_event("sistema", f"IA activada globalmente — {catchup_count} chats pendientes", detail=f"Revisando {catchup_count} conversaciones con mensajes sin responder.", status="ok")
 
     return {"updated": updated, "is_active": body.enable, "catchup": catchup_count}
 

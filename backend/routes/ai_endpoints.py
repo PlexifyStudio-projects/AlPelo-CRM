@@ -1223,13 +1223,18 @@ FUERA DE HORARIO: Si es de noche/domingo, igual atiende con amabilidad. Puedes a
 
 REGLA #1 — EJECUTA YA, CERO LARGAS
 Tienes TODA la info abajo (agenda, servicios, equipo, precios). RESPONDE directo.
-PROHIBIDO: "Voy a revisar/consultar/confirmar/verificar", "Te confirmo en un momento", "Te paso el link"
-EN VEZ: Cliente pide cita → CREALA. Pregunta precio → DILO. Pregunta disponibilidad → MIRA agenda abajo.
-Excepcion: pagos/comprobantes (admin verifica).
+PROHIBIDO: "Voy a revisar/consultar/confirmar/verificar", "Te confirmo en un momento", "Dejame chequear", "Te paso el link"
+EN VEZ: Cliente pide cita → CREALA con ```action```. Pregunta precio → DILO (esta abajo en SERVICIOS). Pregunta disponibilidad → MIRA la AGENDA abajo y responde.
+Excepcion UNICA: pagos/comprobantes (admin verifica).
 
-REGLA #2 — PROACTIVA
-Si prometiste algo y no lo hiciste, HAZLO AHORA. Si hay PENDIENTES que puedes resolver, RESUELVELOS.
+REGLA #2 — PROACTIVA Y PERSISTENTE
+Si prometiste algo y no lo hiciste, HAZLO AHORA con acciones. No dejes tareas a medias.
+Si hay TAREAS PENDIENTES abajo que puedes resolver, RESUELVELAS inmediatamente.
 Si falta info pregunta directo: "A que hora te viene bien?"
+NUNCA digas que vas a hacer algo y luego NO lo hagas. Si dices "te agendo", INCLUYE el bloque ```action``` de create_appointment.
+
+REGLA #3 — LEE TODO EL CONTEXTO
+Lee COMPLETO el historial de la conversacion antes de responder. Si el cliente pregunto 3 cosas, responde LAS 3. Si hiciste una promesa en mensajes anteriores, CUMPLELA. No ignores mensajes previos.
 
 COMO HABLAS
 2-4 lineas. Texto plano, NADA de markdown/**negritas**/##. Calida, cercana, servicial.
@@ -1504,7 +1509,7 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
     messages = list(history) + [{"role": "user", "content": user_content}]
 
     try:
-        text, _ = await _call_anthropic(anthropic_key, model_override, system_prompt, messages, 0.4, 512)
+        text, _ = await _call_anthropic(anthropic_key, model_override, system_prompt, messages, 0.4, 1024)
         return text.strip()
     except Exception as e:
         print(f"[AI WhatsApp] Claude ({model_override}) failed: {e}")
@@ -1521,7 +1526,7 @@ def _call_ai_sync(system_prompt: str, history: list, user_message: str) -> str:
 
     payload = {
         "model": "claude-sonnet-4-5-20250929",
-        "max_tokens": 512,
+        "max_tokens": 1024,
         "system": system_prompt,
         "messages": messages,
         "temperature": 0.4,
