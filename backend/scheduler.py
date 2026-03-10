@@ -1,10 +1,13 @@
 # ============================================================================
-# AlPelo - Background Scheduler
+# AlPelo - Background Scheduler (v3 — DB-aware, deploy-safe)
 # Runs periodic tasks:
 #   1. 30-min default reminder for ALL appointments
 #   2. Custom reminders from PENDIENTE notes (e.g. "avisame 10 min antes")
 #   3. 24-hour no-show follow-up to re-engage clients
 #   4. Expire old PENDIENTE notes
+#
+# IMPORTANT: All deduplication uses the DATABASE, not in-memory sets.
+# This means the scheduler survives redeploys without sending duplicates.
 # ============================================================================
 
 import os
@@ -25,13 +28,10 @@ WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 WA_BASE_URL = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}"
 
-# Track what we've already processed (avoid duplicates across scheduler runs)
-_reminded_30min: set[int] = set()      # appointment IDs that got 30-min reminder
-_reminded_custom: set[int] = set()     # appointment IDs that got custom reminder (10 min, etc.)
-_reminded_notes: set[int] = set()      # note IDs already processed
-_followed_up: set[int] = set()         # appointment IDs that got 24h no-show follow-up
+SCHEDULER_INTERVAL = 120  # Check every 2 minutes
 
-SCHEDULER_INTERVAL = 120  # Check every 2 minutes (v2 — default reminders + no-show follow-up)
+# Days of the week in Spanish for suggestions
+_DAYS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
 
 
 def _wa_headers():
@@ -66,8 +66,8 @@ def _send_whatsapp_sync(phone: str, text: str) -> bool:
         return False
 
 
-def _store_outbound_message(db, conv_id: int, text: str, wa_sent: bool):
-    """Store a Lina IA outbound message in the DB."""
+def _store_outbound_message(db, conv_id: int, text: str, wa_sent: bool, tag: str = "scheduler"):
+    """Store a scheduler outbound message in the DB with a tag for deduplication."""
     msg = WhatsAppMessage(
         conversation_id=conv_id,
         wa_message_id=None,
@@ -75,13 +75,44 @@ def _store_outbound_message(db, conv_id: int, text: str, wa_sent: bool):
         content=text,
         message_type="text",
         status="sent" if wa_sent else "failed",
-        sent_by="lina_ia",
+        sent_by=f"lina_ia_{tag}",
     )
     db.add(msg)
     conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
     if conv:
         conv.last_message_at = datetime.utcnow()
     db.commit()
+
+
+def _already_sent_today(db, conv_id: int, tag: str) -> bool:
+    """Check if the scheduler already sent a message with this tag to this conversation today."""
+    today_start = datetime.combine(datetime.utcnow().date(), datetime.min.time())
+    existing = (
+        db.query(WhatsAppMessage)
+        .filter(
+            WhatsAppMessage.conversation_id == conv_id,
+            WhatsAppMessage.sent_by == f"lina_ia_{tag}",
+            WhatsAppMessage.created_at >= today_start,
+        )
+        .first()
+    )
+    return existing is not None
+
+
+def _already_sent_for_date(db, conv_id: int, tag: str, target_date: date) -> bool:
+    """Check if the scheduler already sent a message with this tag for a specific date range."""
+    # Check messages from target_date onwards (for no-show follow-ups)
+    check_start = datetime.combine(target_date, datetime.min.time())
+    existing = (
+        db.query(WhatsAppMessage)
+        .filter(
+            WhatsAppMessage.conversation_id == conv_id,
+            WhatsAppMessage.sent_by == f"lina_ia_{tag}",
+            WhatsAppMessage.created_at >= check_start,
+        )
+        .first()
+    )
+    return existing is not None
 
 
 def _find_conversation(db, appt):
@@ -121,6 +152,17 @@ def _get_appt_details(db, appt):
     return client_first, service_name, staff_first
 
 
+def _suggest_day():
+    """Suggest a friendly day to reschedule (next 2-3 business days)."""
+    now = datetime.utcnow()
+    for offset in [1, 2, 3]:
+        candidate = now.date() + timedelta(days=offset)
+        weekday = candidate.weekday()
+        if weekday < 6:  # Mon-Sat
+            return _DAYS_ES[weekday]
+    return "esta semana"
+
+
 # ============================================================================
 # 1. DEFAULT 30-MINUTE REMINDER — For ALL confirmed appointments
 # ============================================================================
@@ -137,9 +179,6 @@ def _check_30min_reminders(db):
     )
 
     for appt in appointments:
-        if appt.id in _reminded_30min:
-            continue
-
         try:
             hour, minute = map(int, appt.time.split(":"))
             appt_dt = datetime.combine(today, datetime.min.time().replace(hour=hour, minute=minute))
@@ -152,13 +191,16 @@ def _check_30min_reminders(db):
         if 25 <= diff_min <= 35:
             conv = _find_conversation(db, appt)
             if not conv:
-                _reminded_30min.add(appt.id)
                 print(f"[SCHEDULER] No WA conv for appt #{appt.id} ({appt.client_name}), skip 30min reminder")
+                continue
+
+            # DB-SAFE DEDUP: Check if we already sent a reminder to this conv today
+            if _already_sent_today(db, conv.id, "reminder_30min"):
                 continue
 
             client_first, service_name, staff_first = _get_appt_details(db, appt)
 
-            msg = f"Hola {client_first}! 😊 Te recordamos que tienes una cita hoy a las {appt.time}"
+            msg = f"Hola {client_first}! Te recordamos que tienes una cita hoy a las {appt.time}"
             if staff_first:
                 msg += f" con {staff_first}"
             msg += f" para {service_name}."
@@ -166,8 +208,7 @@ def _check_30min_reminders(db):
             msg += "\n\nSi necesitas cambiar la hora, avisame y lo ajustamos sin problema!"
 
             wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
-            _store_outbound_message(db, conv.id, msg, wa_sent)
-            _reminded_30min.add(appt.id)
+            _store_outbound_message(db, conv.id, msg, wa_sent, tag="reminder_30min")
 
             print(f"[SCHEDULER] 30-min reminder sent for appt #{appt.id} → {client_first} ({conv.wa_contact_phone})")
 
@@ -188,9 +229,6 @@ def _check_custom_reminders(db):
     )
 
     for appt in appointments:
-        if appt.id in _reminded_custom:
-            continue
-
         try:
             hour, minute = map(int, appt.time.split(":"))
             appt_dt = datetime.combine(today, datetime.min.time().replace(hour=hour, minute=minute))
@@ -222,26 +260,26 @@ def _check_custom_reminders(db):
 
             conv = _find_conversation(db, appt)
             if not conv:
-                _reminded_custom.add(appt.id)
+                continue
+
+            # DB-SAFE DEDUP: Check if we already sent a custom reminder to this conv today
+            if _already_sent_today(db, conv.id, "reminder_custom"):
                 continue
 
             client_first, service_name, staff_first = _get_appt_details(db, appt)
 
-            # More personal message — this was explicitly requested by the client
-            msg = f"Hola {client_first}! 👋 Como me pediste, te aviso que tu cita es en 10 minutos"
+            msg = f"Hola {client_first}! Como me pediste, te aviso que tu cita es en 10 minutos"
             if staff_first:
                 msg += f" con {staff_first}"
             msg += f" para {service_name}."
             msg += " Nos vemos! 💈"
 
             wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
-            _store_outbound_message(db, conv.id, msg, wa_sent)
-            _reminded_custom.add(appt.id)
+            _store_outbound_message(db, conv.id, msg, wa_sent, tag="reminder_custom")
 
             # Resolve the PENDIENTE notes
             for note in pending_notes:
                 note.content = note.content.replace("PENDIENTE:", "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
-                _reminded_notes.add(note.id)
             db.commit()
 
             print(f"[SCHEDULER] Custom 10-min reminder sent for appt #{appt.id} → {client_first}")
@@ -253,13 +291,13 @@ def _check_custom_reminders(db):
 def _check_noshow_followups(db):
     """
     Check appointments from yesterday that were no_show or never completed.
-    Send a friendly re-engagement message offering to reschedule.
+    Send a personalized re-engagement message. ONE message per conversation.
+    Uses DB for deduplication — survives redeploys.
     """
     now = datetime.utcnow()
     yesterday = now.date() - timedelta(days=1)
 
-    # Appointments from yesterday that are still "confirmed" (never showed up)
-    # or explicitly marked as "no_show"
+    # Appointments from yesterday still "confirmed" (never showed) or "no_show"
     missed = (
         db.query(Appointment)
         .filter(Appointment.date == yesterday)
@@ -267,35 +305,63 @@ def _check_noshow_followups(db):
         .all()
     )
 
-    for appt in missed:
-        if appt.id in _followed_up:
-            continue
+    # Track which conversations we've already handled THIS run
+    contacted_convs = set()
 
+    for appt in missed:
         conv = _find_conversation(db, appt)
         if not conv:
-            _followed_up.add(appt.id)
+            # Mark as no_show so we don't keep checking
+            if appt.status == "confirmed":
+                appt.status = "no_show"
+                db.commit()
+            continue
+
+        # Skip if we already handled this conversation in this loop iteration
+        if conv.id in contacted_convs:
+            if appt.status == "confirmed":
+                appt.status = "no_show"
+                db.commit()
+            continue
+
+        # DB-SAFE DEDUP: Check if we already sent a no-show follow-up to this conv
+        # Check from yesterday onwards (covers redeploys)
+        if _already_sent_for_date(db, conv.id, "noshow_followup", yesterday):
+            contacted_convs.add(conv.id)
+            if appt.status == "confirmed":
+                appt.status = "no_show"
+                db.commit()
             continue
 
         client_first, service_name, staff_first = _get_appt_details(db, appt)
+        suggestion = _suggest_day()
 
-        # Friendly, non-accusatory re-engagement message
-        msg = f"Hola {client_first}! 😊 Vimos que no pudiste asistir a tu cita de ayer"
-        if service_name != "tu servicio":
-            msg += f" ({service_name})"
+        # Personalized, warm, human-like message
+        msg = f"Hola {client_first}, notamos que ayer no pudiste venir"
+        if service_name and service_name != "tu servicio":
+            msg += f" a tu cita de {service_name}"
         msg += "."
-        msg += "\n\nNo te preocupes, estas cosas pasan! Si quieres, podemos reagendar para cuando te quede mejor."
-        msg += "\n\nSolo dime el dia y la hora que prefieras y te la agendo de una 📅"
+
+        msg += "\n\nSin embargo, tenemos disponibilidad esta semana para reagendar tu visita."
+
+        if staff_first:
+            msg += f" {staff_first} tiene espacio disponible"
+            msg += f", te sugiero el {suggestion} si te queda bien."
+        else:
+            msg += f" Te sugiero el {suggestion} si te queda bien."
+
+        msg += f"\n\nQuedamos atentos {client_first}, gracias! 💈"
 
         wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
-        _store_outbound_message(db, conv.id, msg, wa_sent)
-        _followed_up.add(appt.id)
+        _store_outbound_message(db, conv.id, msg, wa_sent, tag="noshow_followup")
+        contacted_convs.add(conv.id)
 
-        # If appointment was still "confirmed" (never updated), mark as no_show
+        # Mark as no_show
         if appt.status == "confirmed":
             appt.status = "no_show"
             db.commit()
 
-        print(f"[SCHEDULER] 24h no-show follow-up sent for appt #{appt.id} → {client_first}")
+        print(f"[SCHEDULER] No-show follow-up sent for appt #{appt.id} → {client_first} (conv #{conv.id})")
 
 
 # ============================================================================
@@ -318,11 +384,8 @@ def _expire_old_notes(db):
     )
 
     for note in old_notes:
-        if note.id in _reminded_notes:
-            continue
         if note.created_at and (now - note.created_at).total_seconds() > 172800:  # 48h
             note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [Expirado {now.strftime('%d/%m %H:%M')}]"
-            _reminded_notes.add(note.id)
             db.commit()
             print(f"[SCHEDULER] Expired old reminder note #{note.id}")
 
@@ -332,10 +395,10 @@ def _expire_old_notes(db):
 # ============================================================================
 def _scheduler_loop():
     """Main scheduler loop — runs in a background thread."""
-    print("[SCHEDULER] Started — checking every 2 minutes")
+    print("[SCHEDULER] Started v3 (DB-aware, deploy-safe)")
     print("[SCHEDULER] Features: 30-min reminders, custom reminders, 24h no-show follow-up")
-    # Wait 30 seconds on startup before first check
-    time.sleep(30)
+    # Wait 60 seconds on startup before first check (let everything initialize)
+    time.sleep(60)
 
     while True:
         try:
@@ -350,16 +413,6 @@ def _scheduler_loop():
         except Exception as e:
             print(f"[SCHEDULER] Error: {e}")
 
-        # Clear tracking sets daily to prevent memory growth
-        if len(_reminded_30min) > 300:
-            _reminded_30min.clear()
-        if len(_reminded_custom) > 300:
-            _reminded_custom.clear()
-        if len(_reminded_notes) > 300:
-            _reminded_notes.clear()
-        if len(_followed_up) > 300:
-            _followed_up.clear()
-
         time.sleep(SCHEDULER_INTERVAL)
 
 
@@ -367,4 +420,4 @@ def start_scheduler():
     """Start the scheduler in a daemon thread."""
     thread = threading.Thread(target=_scheduler_loop, daemon=True)
     thread.start()
-    print("[SCHEDULER] Background thread launched")
+    print("[SCHEDULER] Background thread launched (v3)")

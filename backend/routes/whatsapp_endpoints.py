@@ -26,6 +26,11 @@ _AI_REPLY_MAX = 10
 _AI_REPLY_WINDOW = 60  # seconds
 
 # ============================================================================
+# In-flight lock per conversation — prevents duplicate concurrent auto-replies
+# ============================================================================
+_in_flight_convs: set[int] = set()
+
+# ============================================================================
 # Config from .env
 # ============================================================================
 WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
@@ -867,6 +872,12 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
     image_media_type = None
 
     try:
+        # Step -1: In-flight lock — prevent concurrent replies to same conversation
+        if conv_id in _in_flight_convs:
+            print(f"[Lina IA] Already processing conv {conv_id}, skipping duplicate task.")
+            return
+        _in_flight_convs.add(conv_id)
+
         # Step 0: Send read receipt immediately (blue ticks)
         if inbound_wa_msg_id:
             await _send_read_receipt(inbound_wa_msg_id)
@@ -1248,7 +1259,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
     except Exception as e:
         print(f"[Lina IA] Auto-reply error: {e}")
-
+    finally:
+        # Always release the in-flight lock
+        _in_flight_convs.discard(conv_id)
 
 
 # ============================================================================
