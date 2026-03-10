@@ -4,10 +4,11 @@
 # ============================================================================
 
 import os
+import re
 import asyncio
 import random
 import httpx
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session, joinedload
@@ -15,6 +16,32 @@ from database.connection import get_db, SessionLocal
 from database.models import WhatsAppConversation, WhatsAppMessage, Client
 from routes._helpers import normalize_phone
 from schemas import ToggleAllAIRequest as _ToggleAllAIRequest
+
+# ============================================================================
+# Colombia timezone helpers (UTC-5)
+# ============================================================================
+_COL_OFFSET = timedelta(hours=-5)
+
+def _now_col() -> datetime:
+    return datetime.utcnow() + _COL_OFFSET
+
+def _is_off_hours() -> bool:
+    """True if current Colombia time is outside business hours (8:30 PM - 7:30 AM)."""
+    now = _now_col()
+    hour, minute = now.hour, now.minute
+    # Off hours: 20:30 (8:30 PM) to 07:30 (7:30 AM)
+    if hour > 20 or (hour == 20 and minute >= 30):
+        return True
+    if hour < 7 or (hour == 7 and minute < 30):
+        return True
+    return False
+
+def _off_hours_greeting() -> str:
+    """Return 'buenas noches' or 'buenos dias' depending on time."""
+    hour = _now_col().hour
+    if hour >= 18 or hour < 6:
+        return "buenas noches"
+    return "buenos dias"
 
 router = APIRouter(prefix="/whatsapp", tags=["WhatsApp"])
 
@@ -881,6 +908,87 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         # Step 0: Send read receipt immediately (blue ticks)
         if inbound_wa_msg_id:
             await _send_read_receipt(inbound_wa_msg_id)
+
+        # Step 0.1: OFF-HOURS CHECK — send template, no AI
+        if _is_off_hours():
+            # Check if we already sent an off-hours template to this conv today
+            db_oh = SessionLocal()
+            try:
+                today_start = datetime.utcnow() - timedelta(hours=5)  # Colombia midnight
+                today_start = today_start.replace(hour=5, minute=0, second=0, microsecond=0)  # UTC midnight = 5 AM UTC
+                already_sent = (
+                    db_oh.query(WhatsAppMessage)
+                    .filter(
+                        WhatsAppMessage.conversation_id == conv_id,
+                        WhatsAppMessage.sent_by == "lina_ia_offhours",
+                        WhatsAppMessage.created_at >= today_start,
+                    )
+                    .first()
+                )
+                if already_sent:
+                    print(f"[Lina IA] Off-hours template already sent to conv {conv_id} today. Skipping.")
+                    return
+
+                # Get client name for personalization
+                conv_oh = db_oh.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+                if not conv_oh:
+                    return
+                client_name = ""
+                if conv_oh.client_id:
+                    cl = db_oh.query(Client).filter(Client.id == conv_oh.client_id).first()
+                    if cl:
+                        client_name = cl.name.split()[0]
+                if not client_name:
+                    client_name = conv_oh.wa_contact_name.split()[0] if conv_oh.wa_contact_name else ""
+
+                greeting = _off_hours_greeting()
+                name_part = f" {client_name}" if client_name else ""
+                template_msg = (
+                    f"Hola{name_part}! Soy Lina de AlPelo Peluqueria. "
+                    f"En este momento ya cerramos, pero manana a primera hora te contestamos. "
+                    f"Gracias por escribirnos, {greeting}! 💈"
+                )
+
+                # Wait a short delay (5-10s) for natural feel
+                await asyncio.sleep(random.randint(5, 10))
+
+                # Send template via WhatsApp
+                wa_msg_id = None
+                try:
+                    async with httpx.AsyncClient(timeout=15) as client_http:
+                        resp = await client_http.post(
+                            f"{WA_BASE_URL}/messages",
+                            headers=wa_headers(),
+                            json={
+                                "messaging_product": "whatsapp",
+                                "to": normalize_phone(to_phone),
+                                "type": "text",
+                                "text": {"body": template_msg},
+                            },
+                        )
+                        data = resp.json()
+                        if resp.status_code == 200 and "messages" in data:
+                            wa_msg_id = data["messages"][0].get("id")
+                except Exception as e:
+                    print(f"[Lina IA] Off-hours template send error: {e}")
+
+                # Store in DB with special tag for dedup
+                msg = WhatsAppMessage(
+                    conversation_id=conv_id,
+                    wa_message_id=wa_msg_id,
+                    direction="outbound",
+                    content=template_msg,
+                    message_type="text",
+                    status="sent" if wa_msg_id else "failed",
+                    sent_by="lina_ia_offhours",
+                )
+                db_oh.add(msg)
+                conv_oh.last_message_at = datetime.utcnow()
+                db_oh.commit()
+                print(f"[Lina IA] Off-hours template sent to conv {conv_id}: {template_msg[:60]}...")
+            finally:
+                db_oh.close()
+            return  # Don't proceed to AI — off hours
 
         # Step 0.5a: Transcribe audio if needed
         if needs_transcription and media_id:

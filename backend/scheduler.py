@@ -409,12 +409,185 @@ def _expire_old_notes(db):
 
 
 # ============================================================================
+# 5. MORNING REVIEW — Process unread chats when AI reactivates at 7:30 AM
+# ============================================================================
+# Colombia timezone offset
+_COL_OFFSET = timedelta(hours=-5)
+
+def _now_colombia():
+    return datetime.utcnow() + _COL_OFFSET
+
+def _is_business_hours():
+    """True if current Colombia time is within business hours (7:30 AM - 8:30 PM)."""
+    now = _now_colombia()
+    hour, minute = now.hour, now.minute
+    if hour > 20 or (hour == 20 and minute >= 30):
+        return False
+    if hour < 7 or (hour == 7 and minute < 30):
+        return False
+    return True
+
+# Track whether we already did morning review today
+_last_morning_review_date = None
+
+def _morning_review(db):
+    """
+    At 7:30 AM Colombia time, check all conversations that have unread
+    inbound messages from off-hours. Trigger AI auto-reply for each.
+    This runs in sync scheduler thread, so we use httpx sync + direct AI call.
+    """
+    global _last_morning_review_date
+
+    now_col = _now_colombia()
+    today = now_col.date()
+
+    # Only run once per day, and only between 7:30 AM and 8:00 AM
+    if _last_morning_review_date == today:
+        return
+    if now_col.hour != 7 or now_col.minute < 30:
+        return
+    # Don't run after 8:00 AM (we had our window)
+    if now_col.hour == 7 and now_col.minute > 59:
+        return
+
+    _last_morning_review_date = today
+    print(f"[SCHEDULER] Morning review started at {now_col.strftime('%H:%M')}")
+
+    # Find conversations with unread inbound messages from off-hours (last night)
+    # Look for inbound messages after 8:30 PM yesterday (UTC) or before 7:30 AM today
+    yesterday_offhours_start = datetime.combine(
+        (today - timedelta(days=1)), datetime.min.time()
+    ).replace(hour=20, minute=30) - _COL_OFFSET  # Convert to UTC
+
+    now_utc = datetime.utcnow()
+
+    # Get conversations with recent unread inbound messages
+    convs_with_pending = (
+        db.query(WhatsAppConversation)
+        .filter(WhatsAppConversation.unread_count > 0)
+        .all()
+    )
+
+    processed = 0
+    for conv in convs_with_pending:
+        if not conv.is_ai_active:
+            continue  # Admin manually paused AI — don't touch
+
+        # Check for inbound messages during off-hours
+        pending_msgs = (
+            db.query(WhatsAppMessage)
+            .filter(
+                WhatsAppMessage.conversation_id == conv.id,
+                WhatsAppMessage.direction == "inbound",
+                WhatsAppMessage.created_at >= yesterday_offhours_start,
+            )
+            .order_by(WhatsAppMessage.created_at.desc())
+            .all()
+        )
+
+        if not pending_msgs:
+            continue
+
+        # Check if there was already a non-offhours AI reply after these messages
+        last_ai = (
+            db.query(WhatsAppMessage)
+            .filter(
+                WhatsAppMessage.conversation_id == conv.id,
+                WhatsAppMessage.sent_by == "lina_ia",
+                WhatsAppMessage.created_at >= yesterday_offhours_start,
+            )
+            .first()
+        )
+        if last_ai:
+            continue  # AI already replied — skip
+
+        # Get the latest inbound text
+        latest_inbound = pending_msgs[0].content or ""
+
+        # Build context and generate AI response
+        try:
+            from routes.ai_endpoints import _build_system_prompt, _call_ai_sync
+
+            system_prompt = _build_system_prompt(db, is_whatsapp=True, conv_id=conv.id)
+
+            # Get conversation history
+            recent_msgs = (
+                db.query(WhatsAppMessage)
+                .filter(WhatsAppMessage.conversation_id == conv.id)
+                .order_by(WhatsAppMessage.created_at.desc())
+                .limit(40)
+                .all()
+            )
+            recent_msgs.reverse()
+
+            history = []
+            for m in recent_msgs:
+                role = "user" if m.direction == "inbound" else "assistant"
+                history.append({"role": role, "content": m.content})
+
+            # Remove trailing user messages (we'll add combined text)
+            while history and history[-1]["role"] == "user":
+                history.pop()
+
+            # Prefix so Lina knows this is morning follow-up
+            morning_context = f"[CONTEXTO: Es la manana siguiente. El cliente escribio anoche fuera de horario. Respondele amablemente, retomando su consulta.]\n\n{latest_inbound}"
+
+            ai_response = _call_ai_sync(system_prompt, history, morning_context)
+
+            if not ai_response or not ai_response.strip():
+                continue
+
+            # Clean markdown
+            import re as re_mod
+            clean = ai_response
+            clean = re_mod.sub(r'\*\*(.+?)\*\*', r'\1', clean)
+            clean = re_mod.sub(r'\*(.+?)\*', r'\1', clean)
+            clean = re_mod.sub(r'#{1,3}\s+', '', clean)
+            clean = re_mod.sub(r'`([^`]+)`', r'\1', clean)
+            # Remove action blocks
+            clean = re_mod.sub(r'[`]{1,3}\s*action.*', '', clean, flags=re_mod.DOTALL | re_mod.IGNORECASE)
+            clean = re_mod.sub(r'\{[^}]*"action"\s*:.*?\}', '', clean, flags=re_mod.DOTALL)
+            clean = re_mod.sub(r'\n{3,}', '\n\n', clean).strip()
+
+            if not clean:
+                continue
+
+            # Send via WhatsApp
+            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean)
+
+            # Store in DB
+            msg = WhatsAppMessage(
+                conversation_id=conv.id,
+                wa_message_id=None,
+                direction="outbound",
+                content=clean,
+                message_type="text",
+                status="sent" if wa_sent else "failed",
+                sent_by="lina_ia",
+            )
+            db.add(msg)
+            conv.last_message_at = datetime.utcnow()
+            db.commit()
+
+            processed += 1
+            print(f"[SCHEDULER] Morning review: replied to conv #{conv.id} ({conv.wa_contact_name})")
+
+            # Small delay between messages to not hit rate limits
+            time.sleep(3)
+
+        except Exception as e:
+            print(f"[SCHEDULER] Morning review error for conv #{conv.id}: {e}")
+
+    print(f"[SCHEDULER] Morning review complete — processed {processed} conversations")
+
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 def _scheduler_loop():
     """Main scheduler loop — runs in a background thread."""
-    print("[SCHEDULER] Started v3 (DB-aware, deploy-safe)")
-    print("[SCHEDULER] Features: 30-min reminders, custom reminders, 24h no-show follow-up")
+    print("[SCHEDULER] Started v4 (DB-aware, deploy-safe, off-hours)")
+    print("[SCHEDULER] Features: 30-min reminders, custom reminders, 24h no-show follow-up, morning review")
     # Wait 60 seconds on startup before first check (let everything initialize)
     time.sleep(60)
 
@@ -422,8 +595,12 @@ def _scheduler_loop():
         try:
             db = SessionLocal()
             try:
-                _check_30min_reminders(db)
-                _check_custom_reminders(db)
+                # Only run appointment-related tasks during business hours
+                if _is_business_hours():
+                    _check_30min_reminders(db)
+                    _check_custom_reminders(db)
+                    _morning_review(db)
+
                 _check_noshow_followups(db)
                 _expire_old_notes(db)
             finally:
@@ -438,4 +615,4 @@ def start_scheduler():
     """Start the scheduler in a daemon thread."""
     thread = threading.Thread(target=_scheduler_loop, daemon=True)
     thread.start()
-    print("[SCHEDULER] Background thread launched (v3)")
+    print("[SCHEDULER] Background thread launched (v4)")

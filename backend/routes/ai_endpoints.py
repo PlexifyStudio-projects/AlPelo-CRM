@@ -1524,3 +1524,36 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
     except Exception as e:
         print(f"[AI WhatsApp] Claude failed: {e}")
         return None
+
+
+def _call_ai_sync(system_prompt: str, history: list, user_message: str) -> str:
+    """Synchronous AI call for scheduler morning review (runs in background thread)."""
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    if not anthropic_key:
+        return None
+
+    messages = list(history) + [{"role": "user", "content": user_message}]
+
+    payload = {
+        "model": "claude-sonnet-4-5-20250929",
+        "max_tokens": 512,
+        "system": system_prompt,
+        "messages": messages,
+        "temperature": 0.4,
+    }
+    headers = {"x-api-key": anthropic_key, "anthropic-version": "2023-06-01", "content-type": "application/json"}
+
+    try:
+        with httpx.Client(timeout=60.0) as client:
+            response = client.post("https://api.anthropic.com/v1/messages", json=payload, headers=headers)
+            response.raise_for_status()
+
+        result = response.json()
+        text = ""
+        for block in result.get("content", []):
+            if block.get("type") == "text":
+                text += block.get("text", "")
+        return text.strip() if text else None
+    except Exception as e:
+        print(f"[AI Sync] Claude failed: {e}")
+        return None
