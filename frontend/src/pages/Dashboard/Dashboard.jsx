@@ -160,11 +160,13 @@ const SkeletonRow = () => (
 );
 
 // ===== MAIN DASHBOARD =====
-const Dashboard = () => {
+const Dashboard = ({ onNavigate }) => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [linaToggling, setLinaToggling] = useState(false);
+  const [paymentAlerts, setPaymentAlerts] = useState([]);
+  const [dismissingAlert, setDismissingAlert] = useState(null);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -192,6 +194,27 @@ const Dashboard = () => {
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, [fetchStats]);
+
+  // Sync payment alerts from stats
+  useEffect(() => {
+    if (stats?.payment_alerts) setPaymentAlerts(stats.payment_alerts);
+  }, [stats]);
+
+  const dismissPaymentAlert = async (convId) => {
+    setDismissingAlert(convId);
+    try {
+      await fetch(`${API_URL}/payment-alert/${convId}`, { method: 'DELETE', credentials: 'include' });
+      setPaymentAlerts(prev => prev.filter(a => a.conversation_id !== convId));
+    } catch (e) { console.error(e); }
+    setDismissingAlert(null);
+  };
+
+  const resolveTask = async (noteId) => {
+    try {
+      await fetch(`${API_URL}/notes/${noteId}/resolve`, { method: 'PUT', credentials: 'include' });
+      fetchStats();
+    } catch (e) { console.error(e); }
+  };
 
   // Toggle Lina IA globally
   const handleLinaToggle = async () => {
@@ -273,7 +296,6 @@ const Dashboard = () => {
   const pendingTasks = allTasks.filter(t => t.status === 'pending');
   const completedTasks = allTasks.filter(t => t.status === 'completed' || t.status === 'expired');
   const topServices = stats.top_services_today || [];
-  const paymentAlerts = stats.payment_alerts || [];
 
   return (
     <div className="dashboard">
@@ -490,11 +512,19 @@ const Dashboard = () => {
             {paymentAlerts.map((alert) => (
               <div key={alert.conversation_id} className="dashboard__alert-item">
                 <div className="dashboard__alert-icon">$</div>
-                <div className="dashboard__alert-content">
+                <div className="dashboard__alert-content dashboard__alert-content--clickable" onClick={() => onNavigate && onNavigate('inbox')}>
                   <span className="dashboard__alert-client">{alert.client_name}</span>
                   <span className="dashboard__alert-phone">{alert.phone}</span>
+                  <span className="dashboard__alert-goto">Ver en Inbox →</span>
                 </div>
-                <span className="dashboard__alert-badge">Pago pendiente</span>
+                <button
+                  className="dashboard__alert-dismiss"
+                  onClick={() => dismissPaymentAlert(alert.conversation_id)}
+                  disabled={dismissingAlert === alert.conversation_id}
+                  title="Descartar alerta"
+                >
+                  {dismissingAlert === alert.conversation_id ? '...' : '✕'}
+                </button>
               </div>
             ))}
           </div>
@@ -526,9 +556,14 @@ const Dashboard = () => {
                     <span className="dashboard__task-client">{task.client_name}</span>
                     <span className="dashboard__task-text">{content}</span>
                   </div>
-                  <span className="dashboard__task-time">
-                    {Icons.clock} {timeAgo(task.created_at)}
-                  </span>
+                  <div className="dashboard__task-actions">
+                    <span className="dashboard__task-time">
+                      {Icons.clock} {timeAgo(task.created_at)}
+                    </span>
+                    <button className="dashboard__task-resolve" onClick={() => resolveTask(task.id)} title="Marcar como resuelta">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    </button>
+                  </div>
                 </div>
               );
             })}

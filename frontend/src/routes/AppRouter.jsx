@@ -28,7 +28,7 @@ const AppRouter = () => {
 
   const renderSection = () => {
     switch (activeSection) {
-      case 'dashboard': return <Dashboard />;
+      case 'dashboard': return <Dashboard onNavigate={setActiveSection} />;
       case 'agenda': return <Agenda />;
       case 'clients': return <Clients />;
       case 'services': return <Services />;

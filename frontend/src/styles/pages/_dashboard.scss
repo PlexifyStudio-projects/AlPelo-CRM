@@ -758,6 +758,68 @@
     letter-spacing: 0.03em;
   }
 
+  &__alert-content--clickable {
+    cursor: pointer;
+
+    &:hover {
+      .dashboard__alert-goto { opacity: 1; }
+      .dashboard__alert-client { color: #dc2626; }
+    }
+  }
+
+  &__alert-goto {
+    font-size: $font-size-2xs;
+    color: #dc2626;
+    opacity: 0;
+    transition: opacity 200ms;
+  }
+
+  &__alert-dismiss {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    background: none;
+    color: #dc2626;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 200ms;
+
+    &:hover { background: rgba(220, 38, 38, 0.1); }
+    &:disabled { opacity: 0.4; cursor: default; }
+  }
+
+  &__task-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex-shrink: 0;
+  }
+
+  &__task-resolve {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid $color-gray-200;
+    background: none;
+    color: $color-gray-300;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 200ms;
+
+    &:hover {
+      border-color: $color-primary;
+      color: $color-primary;
+      background: rgba(45, 90, 61, 0.06);
+    }
+  }
+
   // ===========================================
   // ERROR STATE
   // ===========================================

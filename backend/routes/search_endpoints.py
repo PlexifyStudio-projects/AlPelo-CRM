@@ -865,3 +865,27 @@ def get_pending_notes(db: Session = Depends(get_db)):
         ))
 
     return result
+
+
+@router.put("/notes/{note_id}/resolve")
+def resolve_note(note_id: int, db: Session = Depends(get_db)):
+    """Mark a PENDIENTE note as RESUELTO (admin manual resolution)."""
+    note = db.query(ClientNote).filter(ClientNote.id == note_id).first()
+    if not note:
+        raise HTTPException(status_code=404, detail="Nota no encontrada")
+    from datetime import datetime
+    note.content = note.content.replace("PENDIENTE:", "RESUELTO:") + f" [Resuelto por admin {datetime.utcnow().strftime('%d/%m %H:%M')}]"
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/payment-alert/{conversation_id}")
+def dismiss_payment_alert(conversation_id: int, db: Session = Depends(get_db)):
+    """Remove the Pago pendiente tag from a conversation."""
+    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conversation_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
+    if conv.tags:
+        conv.tags = [t for t in conv.tags if "Pago pendiente" not in t]
+    db.commit()
+    return {"ok": True}
