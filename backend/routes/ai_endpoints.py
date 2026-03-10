@@ -1508,7 +1508,7 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
     messages = list(history) + [{"role": "user", "content": user_content}]
 
     try:
-        text, _ = await _call_anthropic(anthropic_key, "claude-haiku-4-5-20251001", system_prompt, messages, 0.4, 512)
+        text, _ = await _call_anthropic(anthropic_key, "claude-sonnet-4-5-20250929", system_prompt, messages, 0.4, 512)
         return text.strip()
     except Exception as e:
         print(f"[AI WhatsApp] Claude failed: {e}")

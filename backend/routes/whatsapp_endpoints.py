@@ -954,7 +954,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             )
             if last_ai_msg and last_ai_msg.created_at:
                 seconds_since = (datetime.utcnow() - last_ai_msg.created_at).total_seconds()
-                if seconds_since < 30:
+                if seconds_since < 45:
                     print(f"[Lina IA] Cooldown active for conv {conv_id} ({seconds_since:.0f}s ago). Skipping.")
                     return
 
@@ -1027,6 +1027,14 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             if not ai_response or not ai_response.strip():
                 print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")
                 return
+
+            # Anti-repetition: if the new response is very similar to the last AI message, stay silent
+            if last_ai_msg and last_ai_msg.content:
+                from difflib import SequenceMatcher
+                similarity = SequenceMatcher(None, last_ai_msg.content.lower().strip(), ai_response.lower().strip()).ratio()
+                if similarity > 0.7:
+                    print(f"[Lina IA] BLOCKED repetitive response for conv {conv_id} (similarity={similarity:.2f}): {ai_response[:60]}")
+                    return
 
             # Debug: log raw response with repr() to see exact chars
             print(f"[Lina IA] RAW response: {repr(ai_response[:300])}")
