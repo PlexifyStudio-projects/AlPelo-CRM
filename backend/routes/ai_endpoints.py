@@ -1402,7 +1402,7 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada en el servidor.")
 
     config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
-    model = (config.model if config and config.model and "claude" in (config.model or "") else "claude-haiku-4-5-20251001")
+    model = (config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-5-20250929")
     temperature = config.temperature if config else 0.4
     max_tokens = config.max_tokens if config else 1024
 
@@ -1470,11 +1470,21 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
 # STANDALONE AI CALL — Used by WhatsApp auto-reply
 # ============================================================================
 
-async def _call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None) -> str:
-    """Standalone AI call for WhatsApp auto-reply. Uses Claude only. Supports image vision."""
+async def _call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None, model_override: str = None) -> str:
+    """Standalone AI call for WhatsApp auto-reply. Uses Claude only. Supports image vision.
+    model_override: if provided, use this model. Otherwise reads from AIConfig."""
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     if not anthropic_key:
         return "Disculpa, no puedo responder en este momento. Contacta a Al Pelo directamente."
+
+    # Resolve model: override > AIConfig > default Sonnet
+    if not model_override:
+        db_temp = SessionLocal()
+        try:
+            config = db_temp.query(AIConfig).filter(AIConfig.is_active == True).first()
+            model_override = config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-5-20250929"
+        finally:
+            db_temp.close()
 
     # Build the user message — with image if provided (Claude Vision)
     if image_b64 and image_mime:
@@ -1495,10 +1505,10 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
     messages = list(history) + [{"role": "user", "content": user_content}]
 
     try:
-        text, _ = await _call_anthropic(anthropic_key, "claude-haiku-4-5-20251001", system_prompt, messages, 0.4, 512)
+        text, _ = await _call_anthropic(anthropic_key, model_override, system_prompt, messages, 0.4, 512)
         return text.strip()
     except Exception as e:
-        print(f"[AI WhatsApp] Claude failed: {e}")
+        print(f"[AI WhatsApp] Claude ({model_override}) failed: {e}")
         return None
 
 

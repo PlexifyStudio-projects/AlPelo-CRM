@@ -44,6 +44,17 @@ def _run_migrations(engine):
     except Exception:
         pass
 
+    # Switch AI model from Haiku to Sonnet (Haiku too dumb for WhatsApp)
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "UPDATE public.ai_config SET model = 'claude-sonnet-4-5-20250929' WHERE model = 'claude-haiku-4-5-20251001'"
+            ))
+            if result.rowcount > 0:
+                print(f"[MIGRATION] Switched {result.rowcount} AI config(s) from Haiku to Sonnet")
+    except Exception:
+        pass
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

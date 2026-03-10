@@ -74,8 +74,8 @@ Tu estilo: mensajes cortos, directos, que suenan a mensaje de texto real bumangu
 ];
 
 const MODELS = [
-  { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', cost: '~$40 COP/msg', tag: 'Recomendado', desc: 'Rapido y economico — ideal para Lina' },
-  { id: 'claude-sonnet-4-6', provider: 'anthropic', label: 'Claude Sonnet 4.6', cost: '~$120 COP/msg', tag: 'Premium', desc: 'Mas inteligente, respuestas superiores' },
+  { id: 'claude-sonnet-4-5-20250929', provider: 'anthropic', label: 'Claude Sonnet 4.5', cost: '~$120 COP/msg', tag: 'Recomendado', desc: 'Inteligente y confiable — ideal para Lina' },
+  { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', cost: '~$40 COP/msg', tag: 'Economico', desc: 'Rapido y barato, pero menos inteligente' },
 ];
 
 const Settings = () => {
@@ -85,7 +85,7 @@ const Settings = () => {
   const [aiConfig, setAiConfig] = useState(null);
   const [aiName, setAiName] = useState('Lina IA');
   const [systemPrompt, setSystemPrompt] = useState(PERSONALITY_PRESETS[0].prompt);
-  const [selectedModel, setSelectedModel] = useState('claude-haiku-4-5-20251001');
+  const [selectedModel, setSelectedModel] = useState('claude-sonnet-4-5-20250929');
   const [provider, setProvider] = useState('anthropic');
   const [temperature, setTemperature] = useState(0.4);
   const [maxTokens, setMaxTokens] = useState(512);
