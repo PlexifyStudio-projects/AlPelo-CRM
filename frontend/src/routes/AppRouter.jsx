@@ -1,5 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import MainLayout from '../components/layout/MainLayout/MainLayout';
+import DevRouter from '../components/devs/DevRouter/DevRouter';
 import Login from '../pages/Login/Login';
 import Dashboard from '../pages/Dashboard/Dashboard';
 import Clients from '../pages/Clients/Clients';
@@ -16,6 +17,8 @@ import Profile from '../pages/Profile/Profile';
 import Settings from '../pages/Settings/Settings';
 import { useState } from 'react';
 
+const DEV_ROLES = ['dev', 'super_admin'];
+
 const AppRouter = () => {
   const { isAuthenticated, loading, user, login, logout, updateProfile } = useAuth();
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -28,6 +31,12 @@ const AppRouter = () => {
     return <Login onLogin={login} />;
   }
 
+  // Dev/Super Admin → Plexify Studio panel
+  if (DEV_ROLES.includes(user?.role)) {
+    return <DevRouter user={user} onLogout={logout} />;
+  }
+
+  // Regular tenant user → CRM
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard': return <Dashboard onNavigate={setActiveSection} />;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTenant } from '../../context/TenantContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -331,6 +332,7 @@ const InsightsPanel = ({ data }) => {
 
 // ===== MAIN COMPONENT =====
 const Finances = () => {
+  const { tenant } = useTenant();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -405,7 +407,7 @@ const Finances = () => {
               </span>
             )}
           </div>
-          <p className="finances__subtitle">Control financiero — AlPelo Peluqueria</p>
+          <p className="finances__subtitle">Control financiero — {tenant.name}</p>
         </div>
         <div className="finances__header-right">
           <button

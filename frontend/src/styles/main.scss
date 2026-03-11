@@ -33,6 +33,11 @@
 @use 'components/add-client-modal';
 @use 'components/barber-rating';
 @use 'components/add-visit-modal';
+@use 'components/usage-meter';
+@use 'components/dev-layout';
+@use 'components/dev-dashboard';
+@use 'components/dev-tenants';
+@use 'components/dev-pages';
 
 // --- Pages ---
 @use 'pages/login';

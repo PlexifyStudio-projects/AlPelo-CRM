@@ -647,6 +647,107 @@
 }
 
 // ============================================
+// Responsive
+// ============================================
+@media (max-width: $breakpoint-md) {
+  .chat-ai {
+    height: calc(100vh - #{$header-height} - #{$spacing-md});
+    max-height: calc(100vh - #{$header-height} - #{$spacing-md});
+
+    &__header {
+      padding: $spacing-xs $spacing-sm;
+      margin-bottom: $spacing-xs;
+    }
+
+    &__header-icon {
+      width: 34px;
+      height: 34px;
+    }
+
+    &__title {
+      font-size: 15px;
+    }
+
+    &__subtitle {
+      font-size: 11px;
+    }
+
+    &__messages {
+      padding: $spacing-sm;
+    }
+
+    &__bubble-wrap {
+      max-width: 85%;
+    }
+
+    &__welcome {
+      padding: $spacing-lg $spacing-sm;
+    }
+
+    &__welcome-badge {
+      width: 48px;
+      height: 48px;
+      margin-bottom: $spacing-md;
+    }
+
+    &__welcome-title {
+      font-size: 18px;
+    }
+
+    &__welcome-text {
+      font-size: 13px;
+    }
+
+    &__prompts {
+      grid-template-columns: repeat(2, 1fr);
+      gap: $spacing-xs;
+    }
+
+    &__chips {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      padding-bottom: $spacing-xs;
+
+      &::-webkit-scrollbar { display: none; }
+    }
+
+    &__chip {
+      flex-shrink: 0;
+    }
+
+    &__input-row {
+      padding: $spacing-2xs $spacing-2xs $spacing-2xs $spacing-sm;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .chat-ai {
+    &__header-actions {
+      gap: 0;
+    }
+
+    &__header-btn {
+      width: 30px;
+      height: 30px;
+    }
+
+    &__prompts {
+      grid-template-columns: 1fr;
+    }
+
+    &__bubble-wrap {
+      max-width: 90%;
+    }
+
+    &__msg-image {
+      max-width: 180px;
+      max-height: 140px;
+    }
+  }
+}
+
+// ============================================
 // Animations
 // ============================================
 @keyframes typingPulse {

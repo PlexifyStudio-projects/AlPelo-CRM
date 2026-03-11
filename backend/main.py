@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import setup_cors_middleware
 from auth import auth_router
-from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router
+from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router
 from database.connection import engine, Base
 
 
@@ -45,6 +45,66 @@ def _run_migrations(engine):
     except Exception:
         pass
 
+    # --- Seed: DeveloperLuis admin user (role=dev) ---
+    try:
+        with engine.begin() as conn:
+            existing = conn.execute(text(
+                "SELECT id FROM public.admin WHERE username = 'DeveloperLuis'"
+            )).fetchone()
+            if existing is None:
+                from auth.security import hash_password
+                hashed = hash_password("DeveloperLuis")
+                conn.execute(text(
+                    "INSERT INTO public.admin (name, email, phone, username, password, role, is_active) "
+                    "VALUES (:name, :email, :phone, :username, :password, :role, true)"
+                ), {
+                    "name": "Luis Developer",
+                    "email": "dev@plexify.studio",
+                    "phone": "+573000000000",
+                    "username": "DeveloperLuis",
+                    "password": hashed,
+                    "role": "dev",
+                })
+                print("[SEED] Created DeveloperLuis admin user (role=dev)")
+    except Exception as e:
+        print(f"[SEED] DeveloperLuis: {e}")
+
+    # --- Seed: AlPelo as first tenant ---
+    try:
+        with engine.begin() as conn:
+            existing = conn.execute(text(
+                "SELECT id FROM public.tenant WHERE slug = 'alpelo'"
+            )).fetchone()
+            if existing is None:
+                conn.execute(text(
+                    "INSERT INTO public.tenant (slug, name, business_type, owner_name, owner_phone, "
+                    "ai_name, plan, monthly_price, messages_limit, messages_used, "
+                    "city, country, is_active, ai_is_paused, timezone, currency, "
+                    "booking_url) "
+                    "VALUES (:slug, :name, :btype, :owner, :phone, "
+                    ":ai_name, :plan, :price, :limit, 0, "
+                    ":city, :country, true, false, :tz, :currency, "
+                    ":booking)"
+                ), {
+                    "slug": "alpelo",
+                    "name": "AlPelo Peluquería",
+                    "btype": "peluqueria",
+                    "owner": "Jaime",
+                    "phone": "+573147083182",
+                    "ai_name": "Lina",
+                    "plan": "pro",
+                    "price": 250000,
+                    "limit": 5000,
+                    "city": "Bucaramanga",
+                    "country": "CO",
+                    "tz": "America/Bogota",
+                    "currency": "COP",
+                    "booking": "https://book.weibook.co/alpelo-peluqueria",
+                })
+                print("[SEED] Created AlPelo tenant (slug=alpelo, plan=pro)")
+    except Exception as e:
+        print(f"[SEED] AlPelo tenant: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,7 +115,7 @@ async def lifespan(app: FastAPI):
     from scheduler import start_scheduler
     start_scheduler()
 
-    print("[STARTUP] AlPelo API ready")
+    print("[STARTUP] Plexify Studio API ready")
     yield
     print("[SHUTDOWN] Stopped")
 
@@ -75,6 +135,7 @@ app.include_router(update_router, prefix="/api")
 app.include_router(delete_router, prefix="/api")
 app.include_router(ai_router, prefix="/api", tags=["AI"])
 app.include_router(whatsapp_router, prefix="/api", tags=["WhatsApp"])
+app.include_router(dev_router, prefix="/api", tags=["Dev Panel"])
 
 
 # ============================================================================

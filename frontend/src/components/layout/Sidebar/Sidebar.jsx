@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTenant } from '../../../context/TenantContext';
 
 const SVG_ICONS = {
   dashboard: (
@@ -91,8 +92,20 @@ const SVG_ICONS = {
   ),
 };
 
+const BUSINESS_TYPES = {
+  peluqueria: 'Peluqueria',
+  barberia: 'Barberia',
+  spa: 'Spa',
+  consultorio: 'Consultorio',
+  restaurante: 'Restaurante',
+  gimnasio: 'Gimnasio',
+  tienda: 'Tienda',
+  otro: 'Negocio',
+};
+
 const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout, isMobileOpen, onCloseMobile, badgeCounts = {} }) => {
   const [openSections, setOpenSections] = useState({});
+  const { tenant } = useTenant();
   const b = 'sidebar';
 
   const sections = menuItems.reduce((acc, item) => {
@@ -126,8 +139,8 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
           </div>
           {!isCollapsed && (
             <div className={`${b}__brand-text`}>
-              <h1 className={`${b}__logo`}>AlPelo</h1>
-              <span className={`${b}__logo-sub`}>Peluqueria</span>
+              <h1 className={`${b}__logo`}>{tenant.name || 'Mi Negocio'}</h1>
+              <span className={`${b}__logo-sub`}>{BUSINESS_TYPES[tenant.business_type] || 'CRM'}</span>
             </div>
           )}
         </div>

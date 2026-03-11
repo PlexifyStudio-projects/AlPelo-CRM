@@ -1,0 +1,217 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// UsageMeter — Message usage progress bar
+// Variants: default, compact, badge
+// ============================================
+
+.usage-meter {
+  // -----------------------------------------------
+  // DEFAULT VARIANT
+  // -----------------------------------------------
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  padding: $spacing-md $spacing-lg;
+  background: $color-white;
+  border-radius: $border-radius-lg;
+  border: $border-width solid $border-color-light;
+
+  &__header {
+    @include flex-between;
+    font-size: $font-size-sm;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-700;
+  }
+
+  &__count {
+    color: $color-gray-400;
+    font-size: $font-size-xs;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+
+  &__bar-track {
+    width: 100%;
+    height: 6px;
+    background: $color-gray-100;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  &__bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 600ms $ease-spring;
+
+    &--normal {
+      background: linear-gradient(90deg, $color-primary, $color-primary-light);
+    }
+
+    &--warning {
+      background: linear-gradient(90deg, #D97706, #F59E0B);
+    }
+
+    &--critical {
+      background: linear-gradient(90deg, #DC2626, #EF4444);
+      animation: um-pulse 2s ease-in-out infinite;
+    }
+
+    &--depleted {
+      background: $color-gray-300;
+      width: 100% !important;
+    }
+  }
+
+  &__footer {
+    @include flex-between;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+  }
+
+  &__remaining {
+    font-weight: $font-weight-medium;
+  }
+
+  &__alert {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-md;
+    background: rgba(220, 38, 38, 0.06);
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    color: #DC2626;
+    font-weight: $font-weight-medium;
+    margin-top: $spacing-xs;
+  }
+
+  // -----------------------------------------------
+  // STATUS MODIFIERS (border color)
+  // -----------------------------------------------
+  &--warning {
+    border-color: rgba(217, 119, 6, 0.2);
+  }
+
+  &--critical {
+    border-color: rgba(220, 38, 38, 0.2);
+    background: rgba(220, 38, 38, 0.02);
+  }
+
+  &--depleted {
+    border-color: $color-gray-200;
+    background: $color-gray-50;
+    opacity: 0.8;
+  }
+
+  // -----------------------------------------------
+  // COMPACT VARIANT (Inbox header)
+  // -----------------------------------------------
+  &--compact {
+    flex-direction: row;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    min-width: 140px;
+
+    .usage-meter__bar-track {
+      flex: 1;
+      height: 4px;
+    }
+
+    .usage-meter__compact-label {
+      font-size: $font-size-xs;
+      color: $color-gray-400;
+      white-space: nowrap;
+      font-weight: $font-weight-medium;
+    }
+
+    &.usage-meter--warning .usage-meter__compact-label {
+      color: #D97706;
+    }
+
+    &.usage-meter--critical .usage-meter__compact-label {
+      color: #DC2626;
+    }
+
+    &.usage-meter--depleted .usage-meter__compact-label {
+      color: $color-gray-400;
+    }
+  }
+
+  // -----------------------------------------------
+  // BADGE VARIANT (inline)
+  // -----------------------------------------------
+  &--badge {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: $color-gray-50;
+    border: none;
+    border-radius: $border-radius-full;
+    display: inline-flex;
+
+    .usage-meter__badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: $color-primary;
+    }
+
+    .usage-meter__badge-text {
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+      color: $color-gray-600;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    &.usage-meter--warning .usage-meter__badge-dot {
+      background: #D97706;
+    }
+
+    &.usage-meter--critical .usage-meter__badge-dot {
+      background: #DC2626;
+      animation: um-pulse-dot 1.5s ease-in-out infinite;
+    }
+
+    &.usage-meter--depleted .usage-meter__badge-dot {
+      background: $color-gray-300;
+    }
+  }
+
+  // -----------------------------------------------
+  // RESPONSIVE
+  // -----------------------------------------------
+  @media (max-width: $breakpoint-sm) {
+    padding: $spacing-sm $spacing-md;
+
+    &__header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+  }
+}
+
+// -----------------------------------------------
+// ANIMATIONS
+// -----------------------------------------------
+@keyframes um-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes um-pulse-dot {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+}

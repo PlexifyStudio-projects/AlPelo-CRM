@@ -166,6 +166,54 @@
     -webkit-backdrop-filter: blur(4px) saturate(0.8);
   }
 
+  // -----------------------------------------------
+  // RESPONSIVE
+  // -----------------------------------------------
+  @media (max-width: $breakpoint-md) {
+    width: 95%;
+    max-height: 92vh;
+
+    &__header {
+      padding: $spacing-md $spacing-lg;
+    }
+
+    &__title {
+      font-size: $font-size-lg;
+    }
+
+    &__body {
+      padding: $spacing-md $spacing-lg $spacing-lg;
+    }
+
+    &__overlay {
+      padding: $spacing-sm;
+    }
+  }
+
+  @media (max-width: $breakpoint-sm) {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: $border-radius-lg;
+
+    &__header {
+      padding: $spacing-sm $spacing-md;
+    }
+
+    &__body {
+      padding: $spacing-sm $spacing-md $spacing-md;
+    }
+
+    &__overlay {
+      padding: $spacing-xs;
+      align-items: flex-end;
+    }
+
+    &--lg,
+    &--full {
+      max-width: 100%;
+    }
+  }
+
   // Exit animation class (apply via JS)
   &--exiting {
     animation: modalScaleOut 200ms $ease-smooth forwards;

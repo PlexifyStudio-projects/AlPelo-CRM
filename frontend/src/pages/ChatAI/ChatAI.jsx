@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import aiService from '../../services/aiService';
+import { useTenant } from '../../context/TenantContext';
 
 // ============================================
 // AlPelo - Lina IA v6.0
@@ -84,6 +85,7 @@ const loadHistory = () => {
 };
 
 const ChatAI = () => {
+  const { tenant } = useTenant();
   const [messages, setMessages] = useState(loadMessages);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -253,7 +255,7 @@ const ChatAI = () => {
                 </div>
                 <h3 className="chat-ai__welcome-title">Hola, soy Lina</h3>
                 <p className="chat-ai__welcome-text">
-                  Tu asistente ejecutiva con control total de AlPelo. Dashboard, clientes, equipo, inbox, plantillas, configuracion — preguntame lo que necesites o pideme que haga cualquier cosa.
+                  Tu asistente ejecutiva con control total de {tenant.name}. Dashboard, clientes, equipo, inbox, plantillas, configuracion — preguntame lo que necesites o pideme que haga cualquier cosa.
                 </p>
                 <div className="chat-ai__prompts">
                   {SUGGESTED_PROMPTS.map((p, i) => (

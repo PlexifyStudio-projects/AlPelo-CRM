@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTenant } from '../../context/TenantContext';
+import UsageMeter from '../../components/common/UsageMeter/UsageMeter';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -161,6 +163,7 @@ const SkeletonRow = () => (
 
 // ===== MAIN DASHBOARD =====
 const Dashboard = ({ onNavigate }) => {
+  const { tenant } = useTenant();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -303,7 +306,7 @@ const Dashboard = ({ onNavigate }) => {
       <div className="dashboard__header">
         <div className="dashboard__header-left">
           <h1 className="dashboard__title">Dashboard</h1>
-          <p className="dashboard__subtitle">Panel ejecutivo — AlPelo Peluqueria</p>
+          <p className="dashboard__subtitle">Panel ejecutivo — {tenant.name}</p>
         </div>
         <div className="dashboard__header-right">
           <span className="dashboard__live-dot" />
@@ -495,6 +498,9 @@ const Dashboard = ({ onNavigate }) => {
             <span className="dashboard__lina-wa-label">WhatsApp hoy</span>
             <span className="dashboard__lina-wa-value">{stats.whatsapp_messages_today || 0} mensajes</span>
           </div>
+
+          {/* AI Message Usage */}
+          <UsageMeter />
         </div>
       </div>
 

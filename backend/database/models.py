@@ -196,3 +196,70 @@ class LinaLearning(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ============================================================================
+# MULTI-TENANT — Plexify Studio SaaS
+# ============================================================================
+
+class Tenant(Base):
+    """Each business/agency is a tenant with its own data, config, and limits."""
+    __tablename__ = "tenant"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slug = Column(String(50), unique=True, nullable=False, index=True)  # URL-safe identifier
+    name = Column(String(200), nullable=False)
+    business_type = Column(String(50), nullable=False, default="peluqueria")
+    owner_name = Column(String(200), nullable=True)
+    owner_phone = Column(String(20), nullable=True)
+    owner_email = Column(String(200), nullable=True)
+
+    # WhatsApp config (per-tenant)
+    wa_phone_number_id = Column(String(50), nullable=True)
+    wa_business_account_id = Column(String(50), nullable=True)
+    wa_access_token = Column(Text, nullable=True)
+    wa_webhook_token = Column(String(100), nullable=True)
+    wa_phone_display = Column(String(20), nullable=True)
+
+    # AI config
+    ai_name = Column(String(50), nullable=False, default="Lina")
+    ai_personality = Column(Text, nullable=True)
+    ai_model = Column(String(100), nullable=False, default="claude-sonnet-4-5-20250929")
+
+    # Business info
+    timezone = Column(String(50), nullable=False, default="America/Bogota")
+    currency = Column(String(10), nullable=False, default="COP")
+    booking_url = Column(String(500), nullable=True)
+    address = Column(Text, nullable=True)
+    city = Column(String(100), nullable=True)
+    country = Column(String(10), nullable=False, default="CO")
+
+    # Plan & billing
+    plan = Column(String(20), nullable=False, default="trial")
+    monthly_price = Column(Integer, nullable=False, default=0)
+    is_active = Column(Boolean, default=True)
+    ai_is_paused = Column(Boolean, default=False)
+
+    # Message metering
+    messages_used = Column(Integer, nullable=False, default=0)
+    messages_limit = Column(Integer, nullable=False, default=5000)
+
+    # Meta
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class UsageMetrics(Base):
+    """Monthly usage tracking per tenant — for billing and monitoring."""
+    __tablename__ = "usage_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    period = Column(String(20), nullable=False)  # "2026-03"
+    wa_messages_sent = Column(Integer, nullable=False, default=0)
+    wa_messages_received = Column(Integer, nullable=False, default=0)
+    ai_tokens_used = Column(Integer, nullable=False, default=0)
+    campaigns_sent = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])

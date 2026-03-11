@@ -303,7 +303,7 @@ const Campaigns = () => {
         clientCount: segClients.length,
         updatedAt: new Date().toISOString(),
       } : c));
-      addNotification('Campañaactualizada', 'success');
+      addNotification('Campaña actualizada', 'success');
     } else {
       const newCampaign = {
         id: `camp_${Date.now()}`,
@@ -401,7 +401,7 @@ const Campaigns = () => {
     }));
 
     setExecuting(null);
-    addNotification(`Campañaejecutada: ${sent} enviados, ${failed} fallidos`, sent > 0 ? 'success' : 'error');
+    addNotification(`Campaña ejecutada: ${sent} enviados, ${failed} fallidos`, sent > 0 ? 'success' : 'error');
   };
 
   // ─── Render ────────────────────────────────────
@@ -594,6 +594,7 @@ const Campaigns = () => {
                       </>
                     )}
                     <button className={`${B}__card-btn`} onClick={() => openEdit(camp)} title="Editar"><EditIcon /></button>
+                    <button className={`${B}__card-btn ${B}__card-btn--del`} onClick={() => deleteCampaign(camp.id)} title="Eliminar"><TrashIcon /></button>
                   </div>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import whatsappService from '../../services/whatsappService';
 import clientService from '../../services/clientService';
 import { formatCurrency } from '../../utils/formatters';
+import UsageMeter from '../../components/common/UsageMeter/UsageMeter';
 
 // ============================================
 // AlPelo - Inbox WhatsApp Business v3.0
@@ -1755,6 +1756,9 @@ const Inbox = () => {
                 ) : (
                   <span className={`${b}__client-bar-new`}>Contacto no registrado</span>
                 )}
+                <div className={`${b}__client-bar-meter`}>
+                  <UsageMeter variant="compact" />
+                </div>
               </div>
             )}
 

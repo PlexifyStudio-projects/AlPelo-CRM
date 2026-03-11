@@ -1,0 +1,265 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// DevLayout — Plexify Studio admin shell
+// Sidebar + main content area
+// ============================================
+
+.dev-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #F8F9FB;
+
+  // -----------------------------------------------
+  // SIDEBAR
+  // -----------------------------------------------
+  &__sidebar {
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+    background: #0F172A;
+    color: #E2E8F0;
+    transition: width 200ms $ease-out-quart;
+    flex-shrink: 0;
+  }
+
+  &--collapsed &__sidebar {
+    width: 68px;
+  }
+
+  // -----------------------------------------------
+  // BRAND
+  // -----------------------------------------------
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-lg $spacing-md;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  &__brand-icon {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    flex-shrink: 0;
+  }
+
+  &__brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+
+  &__brand-name {
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: white;
+    letter-spacing: -0.02em;
+  }
+
+  &__brand-sub {
+    font-size: $font-size-xs;
+    color: #94A3B8;
+    font-weight: $font-weight-medium;
+  }
+
+  // -----------------------------------------------
+  // NAVIGATION
+  // -----------------------------------------------
+  &__nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: $spacing-md $spacing-sm;
+  }
+
+  &__nav-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border: none;
+    background: transparent;
+    color: #94A3B8;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    border-radius: $border-radius-md;
+    cursor: pointer;
+    transition:
+      background 150ms $ease-out-quart,
+      color 150ms $ease-out-quart;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #E2E8F0;
+    }
+
+    &--active {
+      background: rgba(99, 102, 241, 0.15);
+      color: #A5B4FC;
+
+      &:hover {
+        background: rgba(99, 102, 241, 0.2);
+        color: #C7D2FE;
+      }
+    }
+  }
+
+  &__nav-icon {
+    @include flex-center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  &__nav-label {
+    white-space: nowrap;
+  }
+
+  // -----------------------------------------------
+  // SIDEBAR FOOTER
+  // -----------------------------------------------
+  &__sidebar-footer {
+    padding: $spacing-md;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__collapse-btn {
+    @include flex-center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94A3B8;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    transition: background 150ms;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #E2E8F0;
+    }
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+  }
+
+  &__user-name {
+    font-size: $font-size-sm;
+    color: #CBD5E1;
+    font-weight: $font-weight-medium;
+  }
+
+  &__logout {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: #94A3B8;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #FCA5A5;
+    }
+  }
+
+  // -----------------------------------------------
+  // MAIN
+  // -----------------------------------------------
+  &__main {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding: $spacing-2xl;
+  }
+
+  // -----------------------------------------------
+  // COLLAPSED STATE
+  // -----------------------------------------------
+  &--collapsed {
+    .dev-layout__brand-text,
+    .dev-layout__nav-label,
+    .dev-layout__user {
+      display: none;
+    }
+
+    .dev-layout__brand {
+      justify-content: center;
+      padding: $spacing-lg $spacing-sm;
+    }
+
+    .dev-layout__nav-item {
+      justify-content: center;
+      padding: $spacing-sm;
+    }
+
+    .dev-layout__sidebar-footer {
+      align-items: center;
+    }
+  }
+
+  // -----------------------------------------------
+  // RESPONSIVE
+  // -----------------------------------------------
+  @media (max-width: $breakpoint-lg) {
+    &__main {
+      padding: $spacing-xl;
+    }
+  }
+
+  @media (max-width: $breakpoint-md) {
+    flex-direction: column;
+
+    &__sidebar {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      padding: 0;
+    }
+
+    &__brand {
+      border-bottom: none;
+      padding: $spacing-sm $spacing-md;
+    }
+
+    &__nav {
+      flex-direction: row;
+      flex: 1;
+      padding: $spacing-xs $spacing-sm;
+      overflow-x: auto;
+    }
+
+    &__nav-item {
+      white-space: nowrap;
+      padding: $spacing-xs $spacing-md;
+    }
+
+    &__sidebar-footer {
+      display: none;
+    }
+
+    &__main {
+      padding: $spacing-md;
+    }
+
+    &--collapsed &__sidebar {
+      width: 100%;
+    }
+  }
+}

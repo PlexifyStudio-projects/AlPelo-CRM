@@ -90,7 +90,7 @@ const Login = ({ onLogin }) => {
             </div>
 
             <h1 className={`${b}__showcase-title`}>
-              Al<span className={`${b}__showcase-title-accent`}>Pelo</span>
+              Plexify<span className={`${b}__showcase-title-accent`}>Studio</span>
             </h1>
 
             <div className={`${b}__showcase-divider`}>
@@ -98,27 +98,27 @@ const Login = ({ onLogin }) => {
             </div>
 
             <p className={`${b}__showcase-tagline`}>
-              Tu barberia,<br />bajo control<br />total
+              Tu negocio,<br />bajo control<br />total
             </p>
 
             <p className={`${b}__showcase-description`}>
-              Sistema de gestion integral para AlPelo Peluqueria
+              CRM inteligente con IA para tu negocio
             </p>
 
             <div className={`${b}__showcase-stats`}>
               <div className={`${b}__showcase-stat`}>
-                <span className={`${b}__showcase-stat-number`}>+500</span>
-                <span className={`${b}__showcase-stat-label`}>Clientes</span>
+                <span className={`${b}__showcase-stat-number`}>IA</span>
+                <span className={`${b}__showcase-stat-label`}>WhatsApp</span>
               </div>
               <div className={`${b}__showcase-stat-divider`} />
               <div className={`${b}__showcase-stat`}>
-                <span className={`${b}__showcase-stat-number`}>5★</span>
-                <span className={`${b}__showcase-stat-label`}>Calificacion</span>
+                <span className={`${b}__showcase-stat-number`}>CRM</span>
+                <span className={`${b}__showcase-stat-label`}>Completo</span>
               </div>
               <div className={`${b}__showcase-stat-divider`} />
               <div className={`${b}__showcase-stat`}>
-                <span className={`${b}__showcase-stat-number`}>3+</span>
-                <span className={`${b}__showcase-stat-label`}>Anos</span>
+                <span className={`${b}__showcase-stat-number`}>24/7</span>
+                <span className={`${b}__showcase-stat-label`}>Activo</span>
               </div>
             </div>
           </div>
@@ -284,10 +284,10 @@ const Login = ({ onLogin }) => {
             <div className={`${b}__footer`}>
               <div className={`${b}__footer-divider`} />
               <p className={`${b}__footer-copyright`}>
-                2026 AlPelo Peluqueria. Todos los derechos reservados.
+                2026 Plexify Studio. Todos los derechos reservados.
               </p>
               <p className={`${b}__footer-address`}>
-                Cabecera, Bucaramanga, Colombia
+                CRM inteligente con IA
               </p>
             </div>
           </div>
