@@ -1746,14 +1746,29 @@ export const mockWhatsAppTemplates = [
   // --- PROMOCION Y REFERIDOS (2) ---
   { id: 'tpl-9', name: 'Promo de la semana', category: 'promocion', body: 'Hola {{nombre}}! Esta semana en AlPelo tenemos promo especial: {{servicio}} con 15% de descuento. Solo hasta el sabado. Agenda antes de que se acaben los cupos: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'servicio'], timesSent: 0, responseRate: 0, lastSent: null },
   { id: 'tpl-10', name: 'Trae un amigo', category: 'promocion', body: 'Hola {{nombre}}! En AlPelo tenemos algo para ti: trae a un amigo y los dos reciben 10% de descuento. Solo muestra este mensaje al llegar. Te esperamos!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+
+  // --- FIDELIZACION VIP (3) ---
+  { id: 'tpl-11', name: 'Gracias VIP', category: 'fidelizacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Queria agradecerte por ser parte de nuestros clientes mas fieles. Llevas {{visitas}} visitas con nosotros y eso para nosotros vale mucho. Te esperamos pronto!', variables: ['nombre', 'visitas'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-12', name: 'Beneficio exclusivo VIP', category: 'fidelizacion', body: 'Hola {{nombre}}! Por ser cliente frecuente de AlPelo, te regalamos un servicio de hidratacion express en tu proxima visita. Solo menciona este mensaje al llegar. Te esperamos!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-13', name: 'Tu barbero te extraña', category: 'fidelizacion', body: 'Hola {{nombre}}! {{barbero}} me pidio que te saludara. Dice que hace rato no te ve y quiere saber como estas. Cuando quieras venir, aqui te esperamos con los brazos abiertos!', variables: ['nombre', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
+
+  // --- REACTIVACION AGRESIVA (3) ---
+  { id: 'tpl-14', name: 'Ultimo intento', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Hace bastante no sabemos de ti y te echamos de menos. Tenemos un 15% de descuento esperandote en cualquier servicio. Solo hasta esta semana. Te animas?', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-15', name: 'Cambio de look gratis', category: 'reactivacion', body: 'Hola {{nombre}}! En AlPelo estamos estrenando estilos nuevos y queremos que seas de los primeros en probarlos. Te regalamos una asesoria de imagen gratis en tu proxima visita. Que dices?', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-16', name: 'Que tal todo?', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo, como estas? Solo queria saludarte y recordarte que cuando necesites un buen corte o un cambio de look, aqui estamos para ti. Buen dia!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+
+  // --- PROMOCION EXTRA (2) ---
+  { id: 'tpl-17', name: '2x1 en combo', category: 'promocion', body: 'Hola {{nombre}}! En AlPelo esta semana tenemos 2x1 en Corte + Barba. Ven con un amigo y pagan uno solo. Agenda aqui: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
+  { id: 'tpl-18', name: 'Descuento cumpleaños', category: 'promocion', body: 'Hola {{nombre}}! De parte de todo el equipo de AlPelo, feliz cumpleanos! Te regalamos un 20% de descuento en el servicio que quieras durante esta semana. Pasa cuando gustes!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
 ];
 
 // Template category metadata
 export const templateCategories = [
   { id: 'post-servicio', name: 'Post-Servicio', icon: 'star', color: '#34D399', count: 3 },
-  { id: 'reactivacion', name: 'Reactivación', icon: 'refresh', color: '#FBBF24', count: 3 },
+  { id: 'reactivacion', name: 'Reactivación', icon: 'refresh', color: '#FBBF24', count: 6 },
   { id: 'recordatorio', name: 'Recordatorio', icon: 'clock', color: '#60A5FA', count: 2 },
-  { id: 'promocion', name: 'Promoción', icon: 'tag', color: '#8B5CF6', count: 2 },
+  { id: 'promocion', name: 'Promoción', icon: 'tag', color: '#8B5CF6', count: 4 },
+  { id: 'fidelizacion', name: 'Fidelización', icon: 'heart', color: '#EC4899', count: 3 },
 ];
 
 // ============================================

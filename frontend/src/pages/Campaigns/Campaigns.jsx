@@ -124,7 +124,7 @@ const SUGGESTED_CAMPAIGNS = [
     name: 'Fidelización VIP',
     type: 'vip',
     segment: 'vip',
-    templateId: 'tpl-1',
+    templateId: 'tpl-11',
     desc: 'Mantener contentos a los mejores clientes con seguimiento personalizado',
     priority: 'media',
   },
@@ -140,8 +140,8 @@ const SUGGESTED_CAMPAIGNS = [
     name: 'Clientes casi perdidos +90 días',
     type: 'reactivation',
     segment: 'inactive_90',
-    templateId: 'tpl-6',
-    desc: 'Último intento con clientes que llevan 3 meses sin venir',
+    templateId: 'tpl-14',
+    desc: 'Último intento con clientes que llevan 3 meses sin venir — descuento agresivo',
     priority: 'urgente',
   },
 ];
@@ -193,7 +193,7 @@ const Campaigns = () => {
   // ─── Computed ──────────────────────────────────
   const templates = useMemo(() => {
     return mockWhatsAppTemplates.filter(t =>
-      ['reactivacion', 'promocion', 'post-servicio'].includes(t.category)
+      ['reactivacion', 'promocion', 'post-servicio', 'fidelizacion'].includes(t.category)
     );
   }, []);
 
