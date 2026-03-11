@@ -475,6 +475,11 @@ $_text-muted: #8896AB;
     display: flex;
     flex-direction: column;
     gap: 6px;
+    margin-bottom: $spacing-md;
+
+    .dev-tenants__form-row > & {
+      margin-bottom: 0;
+    }
   }
 
   &__form-label {
@@ -527,6 +532,204 @@ $_text-muted: #8896AB;
     font-weight: $font-weight-semibold;
     color: $_text-primary;
     margin: 0 0 14px;
+  }
+
+  &__form-textarea {
+    padding: 10px 14px;
+    border: 1px solid $_card-border;
+    border-radius: 10px;
+    font-size: $font-size-sm;
+    color: $_text-primary;
+    background: white;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    resize: vertical;
+    min-height: 60px;
+    transition: all 200ms;
+
+    &::placeholder {
+      color: #B8C1CE;
+      font-family: inherit;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: $_accent;
+      box-shadow: 0 0 0 3px $_accent-bg;
+    }
+  }
+
+  &__form-note {
+    font-size: $font-size-xs;
+    color: $_text-muted;
+    margin: -6px 0 14px;
+    font-style: italic;
+  }
+
+  &__form-password-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .dev-tenants__form-input {
+      width: 100%;
+      padding-right: 40px;
+    }
+  }
+
+  &__form-password-toggle {
+    position: absolute;
+    right: 8px;
+    @include flex-center;
+    width: 30px;
+    height: 30px;
+    background: none;
+    border: none;
+    color: $_text-muted;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 180ms;
+
+    &:hover {
+      color: $_text-secondary;
+      background: #F5F6F8;
+    }
+  }
+
+  // -----------------------------------------------
+  // EMPTY STATE
+  // -----------------------------------------------
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-md;
+    padding: $spacing-3xl $spacing-xl;
+    color: $_text-muted;
+
+    svg {
+      opacity: 0.35;
+    }
+  }
+
+  &__empty-text {
+    font-size: $font-size-md;
+    color: $_text-muted;
+    margin: 0;
+  }
+
+  // -----------------------------------------------
+  // SUCCESS MODAL
+  // -----------------------------------------------
+  &__success-modal {
+    width: 100%;
+    max-width: 440px;
+    background: #FFFFFF;
+    border-radius: 20px;
+    border: 1px solid $_card-border;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.06);
+    padding: 36px 32px 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    animation: devTenantsScaleIn 300ms $ease-spring;
+  }
+
+  &__success-icon {
+    margin-bottom: 8px;
+  }
+
+  &__success-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $_text-primary;
+    margin: 0;
+    text-align: center;
+  }
+
+  &__success-name {
+    font-size: $font-size-sm;
+    color: $_text-muted;
+    margin: 0 0 12px;
+  }
+
+  &__success-credentials {
+    width: 100%;
+    background: #F8F9FB;
+    border: 1px solid #F0F2F5;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  &__success-cred-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__success-cred-label {
+    font-size: $font-size-xs;
+    color: $_text-muted;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__success-cred-value {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $_text-primary;
+    user-select: all;
+  }
+
+  &__success-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  &__success-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+
+    &--copy {
+      background: $_accent;
+      border: none;
+      color: white;
+      box-shadow: 0 2px 10px rgba(79, 110, 247, 0.25);
+
+      &:hover {
+        background: darken($_accent, 6%);
+        box-shadow: 0 4px 16px rgba(79, 110, 247, 0.35);
+      }
+    }
+
+    &--close {
+      background: white;
+      border: 1px solid $_card-border;
+      color: $_text-secondary;
+
+      &:hover {
+        background: #F8F9FB;
+        color: $_text-primary;
+      }
+    }
   }
 
   // -----------------------------------------------

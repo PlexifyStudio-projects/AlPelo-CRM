@@ -12,41 +12,24 @@ const DevUsage = () => {
   });
 
   const fetchUsage = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch(`${API_URL}/dev/usage?period=${period}`, {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
       if (!res.ok) throw new Error('Failed');
-      const json = await res.json();
-      if (!json.tenants || json.tenants.length === 0) throw new Error('Empty');
-      setData(json);
+      setData(await res.json());
     } catch {
-      // Mock data
-      setData({
-        period,
-        total_messages: 347,
-        total_tokens: 2450000,
-        estimated_cost_usd: 42.50,
-        tenants: [
-          {
-            slug: 'alpelo',
-            name: 'AlPelo Peluqueria',
-            messages_sent: 198,
-            messages_received: 149,
-            ai_tokens: 2450000,
-            cost_usd: 42.50,
-          },
-        ],
-      });
-    } finally {
-      setLoading(false);
+      setData({ period, total_messages: 0, total_tokens: 0, estimated_cost_usd: 0, tenants: [] });
     }
+    setLoading(false);
   }, [period]);
 
   useEffect(() => { fetchUsage(); }, [fetchUsage]);
 
   const formatTokens = (n) => {
+    if (!n) return '0';
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
     if (n >= 1000) return `${(n / 1000).toFixed(0)}K`;
     return n.toString();
@@ -63,12 +46,14 @@ const DevUsage = () => {
     );
   }
 
+  const d = data || {};
+
   return (
     <div className={b}>
       <div className={`${b}__header`}>
         <div>
           <h1 className={`${b}__title`}>Consumo</h1>
-          <p className={`${b}__subtitle`}>Tokens y mensajes por agencia</p>
+          <p className={`${b}__subtitle`}>Tokens, mensajes y costos por agencia — Precios Anthropic (Sonnet: $3/$15 MTok)</p>
         </div>
         <div className={`${b}__period-selector`}>
           <input
@@ -83,15 +68,15 @@ const DevUsage = () => {
       {/* Summary KPIs */}
       <div className={`${b}__summary`}>
         <div className={`${b}__summary-card`}>
-          <span className={`${b}__summary-value`}>{data?.total_messages?.toLocaleString('es-CO') || 0}</span>
-          <span className={`${b}__summary-label`}>Mensajes IA</span>
+          <span className={`${b}__summary-value`}>{(d.total_messages || 0).toLocaleString('es-CO')}</span>
+          <span className={`${b}__summary-label`}>Total mensajes</span>
         </div>
         <div className={`${b}__summary-card`}>
-          <span className={`${b}__summary-value`}>{formatTokens(data?.total_tokens || 0)}</span>
+          <span className={`${b}__summary-value`}>{formatTokens(d.total_tokens)}</span>
           <span className={`${b}__summary-label`}>Tokens consumidos</span>
         </div>
         <div className={`${b}__summary-card`}>
-          <span className={`${b}__summary-value`}>${data?.estimated_cost_usd?.toFixed(2) || '0.00'}</span>
+          <span className={`${b}__summary-value`}>${(d.estimated_cost_usd || 0).toFixed(2)}</span>
           <span className={`${b}__summary-label`}>Costo estimado (USD)</span>
         </div>
       </div>
@@ -111,20 +96,24 @@ const DevUsage = () => {
               </tr>
             </thead>
             <tbody>
-              {(data?.tenants || []).map((t) => (
-                <tr key={t.slug}>
-                  <td>
-                    <div className={`${b}__tenant-cell`}>
-                      <span className={`${b}__tenant-slug`}>{t.slug}</span>
-                      <span className={`${b}__tenant-name`}>{t.name}</span>
-                    </div>
-                  </td>
-                  <td className={`${b}__td-mono`}>{t.messages_sent.toLocaleString('es-CO')}</td>
-                  <td className={`${b}__td-mono`}>{t.messages_received.toLocaleString('es-CO')}</td>
-                  <td className={`${b}__td-mono`}>{formatTokens(t.ai_tokens)}</td>
-                  <td className={`${b}__td-mono`}>${t.cost_usd.toFixed(2)}</td>
-                </tr>
-              ))}
+              {(d.tenants || []).length === 0 ? (
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '32px', color: '#8896AB' }}>Sin datos para este periodo</td></tr>
+              ) : (
+                (d.tenants || []).map((t) => (
+                  <tr key={t.slug}>
+                    <td>
+                      <div className={`${b}__tenant-cell`}>
+                        <span className={`${b}__tenant-slug`}>{t.slug}</span>
+                        <span className={`${b}__tenant-name`}>{t.name}</span>
+                      </div>
+                    </td>
+                    <td className={`${b}__td-mono`}>{(t.messages_sent || 0).toLocaleString('es-CO')}</td>
+                    <td className={`${b}__td-mono`}>{(t.messages_received || 0).toLocaleString('es-CO')}</td>
+                    <td className={`${b}__td-mono`}>{formatTokens(t.ai_tokens)}</td>
+                    <td className={`${b}__td-mono`}>${(t.cost_usd || 0).toFixed(2)}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

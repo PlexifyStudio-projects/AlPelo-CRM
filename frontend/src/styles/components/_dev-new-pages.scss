@@ -1,0 +1,731 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// New Dev Pages — Activity, WhatsApp, Clients, Performance, System
+// Shared Plexify Studio clinical design
+// ============================================
+
+$_accent: #4F6EF7;
+$_accent-bg: rgba(79, 110, 247, 0.06);
+$_accent-border: rgba(79, 110, 247, 0.12);
+$_card-bg: #FFFFFF;
+$_card-border: #E8ECF1;
+$_card-hover-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04);
+$_text-primary: #1A202E;
+$_text-secondary: #4A5568;
+$_text-muted: #8896AB;
+$_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+
+// Shared base for all new dev pages
+.dev-activity,
+.dev-whatsapp,
+.dev-clients,
+.dev-perf,
+.dev-system {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+// Shared header
+.dev-activity__header,
+.dev-whatsapp__header,
+.dev-clients__header,
+.dev-perf__header,
+.dev-system__header {
+  @include flex-between;
+  align-items: flex-start;
+}
+
+.dev-activity__title,
+.dev-whatsapp__title,
+.dev-clients__title,
+.dev-perf__title,
+.dev-system__title {
+  font-size: $font-size-2xl;
+  font-weight: $font-weight-bold;
+  color: $_text-primary;
+  margin: 0;
+  letter-spacing: $letter-spacing-tight;
+}
+
+.dev-activity__subtitle,
+.dev-whatsapp__subtitle,
+.dev-clients__subtitle,
+.dev-perf__subtitle,
+.dev-system__subtitle {
+  font-size: $font-size-sm;
+  color: $_text-muted;
+  margin-top: 4px;
+}
+
+.dev-activity__loading,
+.dev-whatsapp__loading,
+.dev-clients__loading,
+.dev-perf__loading,
+.dev-system__loading {
+  padding: $spacing-3xl;
+  text-align: center;
+  color: $_text-muted;
+  font-size: $font-size-sm;
+}
+
+// Shared refresh button
+.dev-activity__refresh,
+.dev-system__refresh {
+  padding: 8px 20px;
+  background: white;
+  border: 1px solid $_card-border;
+  border-radius: 10px;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $_text-secondary;
+  cursor: pointer;
+  transition: all 200ms;
+
+  &:hover {
+    background: #F8F9FB;
+    border-color: $_accent;
+    color: $_accent;
+  }
+}
+
+// Shared KPIs grid
+.dev-whatsapp__kpis,
+.dev-clients__kpis,
+.dev-perf__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+
+  @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
+}
+
+.dev-whatsapp__kpi,
+.dev-clients__kpi,
+.dev-perf__kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background: $_card-bg;
+  border-radius: 16px;
+  border: 1px solid $_card-border;
+  transition: box-shadow 250ms;
+
+  &:hover { box-shadow: $_card-hover-shadow; }
+}
+
+.dev-whatsapp__kpi-value,
+.dev-clients__kpi-value,
+.dev-perf__kpi-value {
+  font-size: 1.5rem;
+  font-weight: $font-weight-bold;
+  color: $_text-primary;
+  font-family: $_mono-font;
+  letter-spacing: $letter-spacing-tight;
+}
+
+.dev-whatsapp__kpi-label,
+.dev-clients__kpi-label,
+.dev-perf__kpi-label {
+  font-size: $font-size-sm;
+  color: $_text-muted;
+  margin-top: 4px;
+}
+
+// Shared card grid
+.dev-whatsapp__grid,
+.dev-clients__grid,
+.dev-perf__grid,
+.dev-system__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+
+  @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
+}
+
+.dev-whatsapp__card,
+.dev-clients__card,
+.dev-perf__card,
+.dev-system__card {
+  background: $_card-bg;
+  border-radius: 16px;
+  border: 1px solid $_card-border;
+  padding: 22px 24px;
+  transition: box-shadow 250ms;
+
+  &:hover { box-shadow: $_card-hover-shadow; }
+}
+
+.dev-whatsapp__card-title,
+.dev-clients__card-title,
+.dev-perf__card-title,
+.dev-system__card-title {
+  font-size: $font-size-base;
+  font-weight: $font-weight-semibold;
+  color: $_text-primary;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F0F2F5;
+}
+
+// ============================================
+// DEV ACTIVITY
+// ============================================
+.dev-activity {
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+
+    @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: $breakpoint-sm) { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 12px;
+    background: $_card-bg;
+    border-radius: 14px;
+    border: 1px solid $_card-border;
+  }
+
+  &__stat-value {
+    font-size: 1.3rem;
+    font-weight: $font-weight-bold;
+    color: $_text-primary;
+    font-family: $_mono-font;
+  }
+
+  &__stat-label {
+    font-size: $font-size-xs;
+    color: $_text-muted;
+    margin-top: 4px;
+    font-weight: $font-weight-medium;
+  }
+
+  &__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__filter {
+    padding: 6px 16px;
+    border: 1px solid $_card-border;
+    background: white;
+    color: $_text-secondary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 180ms;
+
+    &:hover {
+      border-color: $_accent-border;
+      color: $_accent;
+    }
+
+    &--active {
+      background: $_accent;
+      border-color: $_accent;
+      color: white;
+      box-shadow: 0 2px 8px rgba(79, 110, 247, 0.3);
+    }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: $_card-bg;
+    border-radius: 16px;
+    border: 1px solid $_card-border;
+    overflow: hidden;
+  }
+
+  &__empty {
+    padding: $spacing-3xl;
+    text-align: center;
+    color: $_text-muted;
+    font-size: $font-size-sm;
+  }
+
+  &__event {
+    display: flex;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #F5F6F8;
+    transition: background 120ms;
+
+    &:hover { background: #F9FAFB; }
+    &:last-child { border-bottom: none; }
+  }
+
+  &__event-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  &__event-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__event-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 3px;
+  }
+
+  &__event-type {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+  }
+
+  &__event-time {
+    font-size: $font-size-xs;
+    color: $_text-muted;
+    font-family: $_mono-font;
+    margin-left: auto;
+  }
+
+  &__event-desc {
+    font-size: $font-size-sm;
+    color: $_text-primary;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  &__event-details {
+    font-size: $font-size-xs;
+    color: $_text-muted;
+    margin: 4px 0 0;
+    font-style: italic;
+  }
+
+  &__event-contact {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 10px;
+    background: $_accent-bg;
+    color: $_accent;
+    border-radius: $border-radius-full;
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+  }
+}
+
+// ============================================
+// DEV WHATSAPP
+// ============================================
+.dev-whatsapp {
+  &__status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    border-radius: $border-radius-full;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+
+    &--ok {
+      background: rgba(34, 197, 94, 0.06);
+      color: #16A34A;
+      border: 1px solid rgba(34, 197, 94, 0.12);
+    }
+
+    &--error {
+      background: rgba(239, 68, 68, 0.06);
+      color: #DC2626;
+      border: 1px solid rgba(239, 68, 68, 0.12);
+    }
+  }
+
+  &__status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+
+    .dev-whatsapp__status-pill--ok & {
+      background: #22C55E;
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+    }
+
+    .dev-whatsapp__status-pill--error & {
+      background: #EF4444;
+    }
+  }
+
+  &__phone-display {
+    padding: 10px 18px;
+    background: $_card-bg;
+    border-radius: 12px;
+    border: 1px solid $_card-border;
+    font-size: $font-size-sm;
+    color: $_text-secondary;
+  }
+
+  &__card-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__card-stat {
+    @include flex-between;
+  }
+
+  &__card-stat-label {
+    font-size: $font-size-sm;
+    color: $_text-muted;
+  }
+
+  &__card-stat-value {
+    font-family: $_mono-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $_text-primary;
+
+    &--alert { color: #EF4444; }
+  }
+
+  &__chart-section {
+    background: $_card-bg;
+    border-radius: 16px;
+    border: 1px solid $_card-border;
+    padding: 22px 24px;
+  }
+
+  &__chart-title {
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $_text-primary;
+    margin: 0 0 20px;
+  }
+
+  &__chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 140px;
+  }
+
+  &__chart-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  &__chart-count {
+    font-size: 10px;
+    font-family: $_mono-font;
+    color: $_text-muted;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__chart-bar {
+    width: 100%;
+    max-width: 48px;
+    background: $_accent;
+    border-radius: 6px 6px 2px 2px;
+    min-height: 4px;
+    transition: height 400ms $ease-spring;
+  }
+
+  &__chart-label {
+    font-size: 10px;
+    color: $_text-muted;
+    font-family: $_mono-font;
+  }
+}
+
+// ============================================
+// DEV CLIENTS
+// ============================================
+.dev-clients {
+  &__status-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &--vip { background: #D4AF37; box-shadow: 0 0 6px rgba(212, 175, 55, 0.4); }
+    &--active { background: #22C55E; }
+    &--risk { background: #F59E0B; }
+    &--inactive { background: #EF4444; }
+  }
+
+  &__status-name {
+    flex: 1;
+    font-size: $font-size-sm;
+    color: $_text-secondary;
+    font-weight: $font-weight-medium;
+  }
+
+  &__status-count {
+    font-family: $_mono-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $_text-primary;
+  }
+
+  &__revenue-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__revenue-row {
+    @include flex-between;
+  }
+
+  &__revenue-label {
+    font-size: $font-size-sm;
+    color: $_text-muted;
+  }
+
+  &__revenue-value {
+    font-family: $_mono-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $_text-primary;
+
+    &--highlight { color: $_accent; }
+    &--alert { color: #EF4444; }
+  }
+
+  // Section & Table
+  &__section {
+    background: $_card-bg;
+    border-radius: 16px;
+    border: 1px solid $_card-border;
+    overflow: hidden;
+  }
+
+  &__section-title {
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $_text-primary;
+    margin: 0;
+    padding: 18px 24px;
+    border-bottom: 1px solid #F0F2F5;
+  }
+
+  &__table-wrap { overflow-x: auto; @include custom-scrollbar; }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: $font-size-sm;
+
+    th {
+      padding: 12px 24px;
+      text-align: left;
+      font-weight: $font-weight-semibold;
+      color: $_text-muted;
+      font-size: $font-size-xs;
+      text-transform: uppercase;
+      letter-spacing: $letter-spacing-wider;
+      background: #FAFBFC;
+      border-bottom: 1px solid #F0F2F5;
+    }
+
+    td {
+      padding: 14px 24px;
+      border-bottom: 1px solid #F5F6F8;
+      color: $_text-secondary;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #F9FAFB; }
+  }
+
+  &__td-rank {
+    font-family: $_mono-font;
+    font-size: $font-size-xs;
+    color: $_text-muted;
+    font-weight: $font-weight-bold;
+  }
+
+  &__td-name { font-weight: $font-weight-medium; color: $_text-primary; }
+  &__td-mono { font-family: $_mono-font; font-size: $font-size-xs; }
+  &__td-amount { font-weight: $font-weight-bold; color: $_accent; }
+}
+
+// ============================================
+// DEV PERFORMANCE
+// ============================================
+.dev-perf {
+  &__card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__metric-row {
+    @include flex-between;
+    font-size: $font-size-sm;
+    color: $_text-secondary;
+  }
+
+  &__metric-value {
+    font-family: $_mono-font;
+    font-weight: $font-weight-bold;
+    color: $_text-primary;
+
+    &--success { color: #16A34A; }
+    &--warning { color: #D97706; }
+    &--error { color: #DC2626; }
+    &--accent { color: $_accent; }
+  }
+}
+
+// ============================================
+// DEV SYSTEM
+// ============================================
+.dev-system {
+  &__health {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__health-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    background: $_card-bg;
+    border-radius: 14px;
+    border: 1px solid $_card-border;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  &__health-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &--ok {
+      background: #22C55E;
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+    }
+
+    &--error {
+      background: #EF4444;
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
+    }
+  }
+
+  &__health-label {
+    font-size: $font-size-sm;
+    color: $_text-secondary;
+    font-weight: $font-weight-medium;
+    flex: 1;
+  }
+
+  &__health-value {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $_text-primary;
+  }
+
+  &__info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__info-row {
+    @include flex-between;
+  }
+
+  &__info-label {
+    font-size: $font-size-sm;
+    color: $_text-muted;
+  }
+
+  &__info-value {
+    font-family: $_mono-font;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $_text-primary;
+  }
+
+  &__section {
+    background: $_card-bg;
+    border-radius: 16px;
+    border: 1px solid $_card-border;
+    overflow: hidden;
+  }
+
+  &__section-title {
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $_text-primary;
+    margin: 0;
+    padding: 18px 24px;
+    border-bottom: 1px solid #F0F2F5;
+  }
+
+  &__env-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__env-row {
+    @include flex-between;
+    padding: 12px 24px;
+    border-bottom: 1px solid #F5F6F8;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: #F9FAFB; }
+  }
+
+  &__env-key {
+    font-family: $_mono-font;
+    font-size: $font-size-xs;
+    color: $_text-secondary;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__env-value {
+    font-family: $_mono-font;
+    font-size: $font-size-xs;
+    color: $_text-primary;
+    font-weight: $font-weight-medium;
+
+    &--missing { color: #EF4444; font-weight: $font-weight-bold; }
+  }
+}

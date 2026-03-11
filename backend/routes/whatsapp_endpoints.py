@@ -17,6 +17,7 @@ from database.models import WhatsAppConversation, WhatsAppMessage, Client
 from routes._helpers import normalize_phone
 from schemas import ToggleAllAIRequest as _ToggleAllAIRequest
 from activity_log import log_event
+from routes._usage_tracker import track_message_sent, track_message_received, track_ai_usage
 
 # ============================================================================
 # Colombia timezone helpers (UTC-5)
@@ -572,6 +573,10 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
     conv.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(msg)
+
+    # Track usage
+    if status == "sent":
+        track_message_sent()
 
     return {
         "id": msg.id,

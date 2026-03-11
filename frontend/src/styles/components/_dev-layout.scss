@@ -96,6 +96,16 @@ $_text-sidebar-active: #E8ECF1;
     padding: $spacing-sm 10px;
   }
 
+  &__nav-group {
+    display: block;
+    padding: 12px 14px 4px;
+    font-size: 9px;
+    font-weight: $font-weight-bold;
+    color: rgba(136, 150, 171, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
   &__nav-item {
     display: flex;
     align-items: center;

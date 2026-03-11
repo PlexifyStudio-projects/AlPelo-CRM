@@ -22,36 +22,11 @@ const DevBilling = () => {
         headers: { 'Content-Type': 'application/json' },
       });
       if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      if (!data || data.length === 0) throw new Error('Empty');
-      setRecords(data);
+      setRecords(await res.json());
     } catch {
-      // Mock data
-      setRecords([
-        {
-          id: 1,
-          tenant_name: 'AlPelo Peluqueria',
-          tenant_slug: 'alpelo',
-          amount: 250000,
-          period: '2026-03',
-          status: 'paid',
-          payment_method: 'transfer',
-          paid_at: '2026-03-05T14:30:00',
-        },
-        {
-          id: 2,
-          tenant_name: 'AlPelo Peluqueria',
-          tenant_slug: 'alpelo',
-          amount: 250000,
-          period: '2026-02',
-          status: 'paid',
-          payment_method: 'transfer',
-          paid_at: '2026-02-03T10:00:00',
-        },
-      ]);
-    } finally {
-      setLoading(false);
+      setRecords([]);
     }
+    setLoading(false);
   }, []);
 
   useEffect(() => { fetchBilling(); }, [fetchBilling]);
@@ -75,7 +50,7 @@ const DevBilling = () => {
       <div className={`${b}__header`}>
         <div>
           <h1 className={`${b}__title`}>Facturacion</h1>
-          <p className={`${b}__subtitle`}>Control de pagos y facturacion</p>
+          <p className={`${b}__subtitle`}>Control de pagos y facturacion de agencias</p>
         </div>
       </div>
 
@@ -111,30 +86,34 @@ const DevBilling = () => {
               </tr>
             </thead>
             <tbody>
-              {records.map((r) => {
-                const st = STATUS_LABELS[r.status] || STATUS_LABELS.pending;
-                return (
-                  <tr key={r.id}>
-                    <td>
-                      <div className={`${b}__tenant-cell`}>
-                        <span className={`${b}__tenant-slug`}>{r.tenant_slug}</span>
-                        <span className={`${b}__tenant-name`}>{r.tenant_name}</span>
-                      </div>
-                    </td>
-                    <td className={`${b}__td-mono`}>{r.period}</td>
-                    <td className={`${b}__td-mono ${b}__td-amount`}>{formatCOP(r.amount)}</td>
-                    <td>
-                      <span className={`${b}__status ${b}__status--${st.modifier}`}>
-                        {st.label}
-                      </span>
-                    </td>
-                    <td>{r.payment_method || '—'}</td>
-                    <td className={`${b}__td-mono`}>
-                      {r.paid_at ? new Date(r.paid_at).toLocaleDateString('es-CO') : '—'}
-                    </td>
-                  </tr>
-                );
-              })}
+              {records.length === 0 ? (
+                <tr><td colSpan="6" style={{ textAlign: 'center', padding: '32px', color: '#8896AB' }}>Sin registros de facturacion</td></tr>
+              ) : (
+                records.map((r) => {
+                  const st = STATUS_LABELS[r.status] || STATUS_LABELS.pending;
+                  return (
+                    <tr key={r.id}>
+                      <td>
+                        <div className={`${b}__tenant-cell`}>
+                          <span className={`${b}__tenant-slug`}>{r.tenant_slug}</span>
+                          <span className={`${b}__tenant-name`}>{r.tenant_name}</span>
+                        </div>
+                      </td>
+                      <td className={`${b}__td-mono`}>{r.period}</td>
+                      <td className={`${b}__td-mono ${b}__td-amount`}>{formatCOP(r.amount)}</td>
+                      <td>
+                        <span className={`${b}__status ${b}__status--${st.modifier}`}>
+                          {st.label}
+                        </span>
+                      </td>
+                      <td>{r.payment_method || '—'}</td>
+                      <td className={`${b}__td-mono`}>
+                        {r.paid_at ? new Date(r.paid_at).toLocaleDateString('es-CO') : '—'}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

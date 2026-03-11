@@ -198,10 +198,22 @@ def change_password(
     user_id: int,
     data: ChangePasswordRequest,
     db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
 ):
     user = db.query(Admin).filter(Admin.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # Only allow changing own password (unless dev role)
+    if current_user.id != user_id and current_user.role != "dev":
+        raise HTTPException(status_code=403, detail="No autorizado")
+
+    # Validate current password if provided (required for self-change)
+    if current_user.id == user_id:
+        if not data.current_password:
+            raise HTTPException(status_code=400, detail="Contrasena actual requerida")
+        if not verify_password(data.current_password, user.password):
+            raise HTTPException(status_code=400, detail="Contrasena actual incorrecta")
 
     if len(data.new_password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")

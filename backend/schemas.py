@@ -54,6 +54,7 @@ class AdminProfileUpdate(BaseModel):
     username: Optional[str] = None
 
 class ChangePasswordRequest(BaseModel):
+    current_password: Optional[str] = None
     new_password: str
 
 

@@ -160,6 +160,38 @@ $_text-muted: #8896AB;
     }
   }
 
+  &__password-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    .dev-profile__input {
+      width: 100%;
+      padding-right: 42px;
+    }
+  }
+
+  &__eye-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: $_text-muted;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 180ms;
+
+    &:hover {
+      color: $_text-secondary;
+      background: rgba(0, 0, 0, 0.04);
+    }
+  }
+
   &__msg {
     padding: 10px 14px;
     border-radius: 10px;
