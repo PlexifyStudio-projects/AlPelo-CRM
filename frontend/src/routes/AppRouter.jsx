@@ -11,6 +11,7 @@ import Services from '../pages/Services/Services';
 import Agenda from '../pages/Agenda/Agenda';
 import Finances from '../pages/Finances/Finances';
 import LinaActivity from '../pages/LinaActivity/LinaActivity';
+import Campaigns from '../pages/Campaigns/Campaigns';
 import Profile from '../pages/Profile/Profile';
 import Settings from '../pages/Settings/Settings';
 import { useState } from 'react';
@@ -32,6 +33,7 @@ const AppRouter = () => {
       case 'dashboard': return <Dashboard onNavigate={setActiveSection} />;
       case 'agenda': return <Agenda />;
       case 'clients': return <Clients />;
+      case 'campaigns': return <Campaigns />;
       case 'services': return <Services />;
       case 'finances': return <Finances />;
       case 'lina-activity': return <LinaActivity />;
