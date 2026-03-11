@@ -388,6 +388,62 @@ async def root():
     return {"status": "running", "api": "AlPelo CRM"}
 
 
+@app.get("/api/debug/db-check")
+async def debug_db_check():
+    """Temporary diagnostic: check what tables and tenant data exist."""
+    from database.connection import SessionLocal
+    from sqlalchemy import text
+
+    db = SessionLocal()
+    result = {}
+    try:
+        # Check if tenant table exists
+        tables = db.execute(text(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name"
+        )).fetchall()
+        result["tables"] = [t[0] for t in tables]
+
+        # Check tenant columns
+        if "tenant" in result["tables"]:
+            cols = db.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='tenant' ORDER BY ordinal_position"
+            )).fetchall()
+            result["tenant_columns"] = [c[0] for c in cols]
+
+            # Count tenants with raw SQL
+            count = db.execute(text("SELECT COUNT(*) FROM public.tenant")).scalar()
+            result["tenant_count"] = count
+
+            # Get basic tenant data with only safe columns
+            try:
+                rows = db.execute(text(
+                    "SELECT id, slug, name, plan, is_active FROM public.tenant LIMIT 10"
+                )).fetchall()
+                result["tenants"] = [{"id": r[0], "slug": r[1], "name": r[2], "plan": r[3], "is_active": r[4]} for r in rows]
+            except Exception as e:
+                result["tenants_error"] = str(e)
+
+            # Try ORM query to see if it fails
+            try:
+                from database.models import Tenant
+                orm_tenants = db.query(Tenant).all()
+                result["orm_query_ok"] = True
+                result["orm_count"] = len(orm_tenants)
+            except Exception as e:
+                result["orm_query_ok"] = False
+                result["orm_error"] = str(e)[:300]
+        else:
+            result["tenant_table_exists"] = False
+
+    except Exception as e:
+        result["error"] = str(e)[:300]
+    finally:
+        db.close()
+
+    return result
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
