@@ -68,35 +68,176 @@
     }
   }
 
-  // ── Stats row ──
-  &__stats {
+  // ── Health Dashboard ──
+  &__health {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: $spacing-sm;
   }
 
-  &__stat {
+  &__health-card {
     background: $glass-bg;
     border: $border-width solid $border-color;
     border-radius: $border-radius-lg;
     padding: $spacing-md;
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    gap: 12px;
     backdrop-filter: blur($glass-blur);
+    transition: all $transition-base;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+    }
+
+    &--danger::before { background: linear-gradient(90deg, #EF4444, #F87171); }
+    &--warning::before { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+    &--alert::before { background: linear-gradient(90deg, #F97316, #FB923C); }
+    &--vip::before { background: linear-gradient(90deg, #8B5CF6, #A78BFA); }
+    &--info::before { background: linear-gradient(90deg, $color-primary, $color-primary-light); }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-glass-hover;
+    }
   }
 
-  &__stat-value {
+  &__health-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+  }
+
+  &__health-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__health-value {
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
     color: $color-gray-900;
     font-variant-numeric: tabular-nums;
+    line-height: 1;
   }
 
-  &__stat-label {
+  &__health-label {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-600;
+  }
+
+  &__health-hint {
     font-size: $font-size-2xs;
     color: $color-gray-400;
     font-weight: $font-weight-medium;
+  }
+
+  // ── Suggestions ──
+  &__suggestions {
+    background: $glass-bg-heavy;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-xl;
+    padding: $spacing-lg;
+    backdrop-filter: blur($glass-blur);
+  }
+
+  &__suggestions-head {
+    margin-bottom: $spacing-md;
+
+    h3 {
+      font-family: $font-heading;
+      font-size: $font-size-md;
+      font-weight: $font-weight-bold;
+      color: $color-gray-800;
+      margin: 0 0 4px;
+    }
+
+    p {
+      font-size: $font-size-sm;
+      color: $color-gray-400;
+      margin: 0;
+    }
+  }
+
+  &__suggestions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: $spacing-sm;
+  }
+
+  &__suggestion {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: $spacing-md;
+    border: 2px solid $border-color;
+    border-radius: $border-radius-lg;
+    background: $color-white;
+    cursor: pointer;
+    transition: all $transition-base;
+    text-align: left;
+    font-family: $font-primary;
+
+    &:hover {
+      border-color: var(--sc);
+      transform: translateY(-3px);
+      box-shadow: $shadow-glass-hover;
+    }
+  }
+
+  &__suggestion-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__suggestion-priority {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
+
+    &--urgente { background: #FEE2E2; color: #B91C1C; }
+    &--alta { background: #FEF3C7; color: #92400E; }
+    &--media { background: $color-info-bg; color: $color-info-dark; }
+  }
+
+  &__suggestion-count {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__suggestion-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-gray-800;
+  }
+
+  &__suggestion-desc {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    line-height: 1.4;
+  }
+
+  &__suggestion-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    margin-top: 4px;
   }
 
   // ── Toolbar ──

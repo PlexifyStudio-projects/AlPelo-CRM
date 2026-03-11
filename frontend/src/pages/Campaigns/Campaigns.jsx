@@ -29,17 +29,17 @@ const EyeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none
 // Constants
 // ═══════════════════════════════════════════════
 const CAMPAIGN_TYPES = [
-  { id: 'recovery', label: 'Recuperacion', desc: 'Clientes inactivos (+30 dias)', color: '#FBBF24', icon: '🔄' },
+  { id: 'recovery', label: 'Recuperación', desc: 'Clientes inactivos (+30 dias)', color: '#FBBF24', icon: '🔄' },
   { id: 'vip', label: 'VIP', desc: 'Clientes VIP y frecuentes', color: '#8B5CF6', icon: '⭐' },
-  { id: 'reactivation', label: 'Reactivacion', desc: 'En riesgo de perderse', color: '#F87171', icon: '🔥' },
-  { id: 'promo', label: 'Promocion', desc: 'Ofertas y descuentos', color: '#34D399', icon: '🎯' },
+  { id: 'reactivation', label: 'Reactivación', desc: 'En riesgo de perderse', color: '#F87171', icon: '🔥' },
+  { id: 'promo', label: 'Promoción', desc: 'Ofertas y descuentos', color: '#34D399', icon: '🎯' },
   { id: 'followup', label: 'Seguimiento', desc: 'Post-servicio y feedback', color: '#60A5FA', icon: '💬' },
 ];
 
 const SEGMENT_FILTERS = [
-  { id: 'inactive_30', label: '+30 dias sin venir', filter: c => (c.days_since_visit || c.days_since_last_visit || 0) >= 30 },
-  { id: 'inactive_60', label: '+60 dias sin venir', filter: c => (c.days_since_visit || c.days_since_last_visit || 0) >= 60 },
-  { id: 'inactive_90', label: '+90 dias sin venir', filter: c => (c.days_since_visit || c.days_since_last_visit || 0) >= 90 },
+  { id: 'inactive_30', label: '+30 días sin venir', filter: c => (c.days_since_visit || c.days_since_last_visit || 0) >= 30 },
+  { id: 'inactive_60', label: '+60 días sin venir', filter: c => (c.days_since_visit || c.days_since_last_visit || 0) >= 60 },
+  { id: 'inactive_90', label: '+90 días sin venir', filter: c => (c.days_since_visit || c.days_since_last_visit || 0) >= 90 },
   { id: 'vip', label: 'Clientes VIP', filter: c => c.status === 'vip' },
   { id: 'at_risk', label: 'En riesgo', filter: c => c.status === 'at_risk' || c.status === 'en_riesgo' },
   { id: 'active', label: 'Activos', filter: c => c.status === 'active' || c.status === 'activo' },
@@ -101,6 +101,50 @@ const loadCampaigns = () => {
 const saveCampaigns = (campaigns) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(campaigns));
 };
+
+// Pre-built campaign suggestions (shown when no campaigns exist)
+const SUGGESTED_CAMPAIGNS = [
+  {
+    name: 'Recuperar clientes marzo',
+    type: 'recovery',
+    segment: 'inactive_30',
+    templateId: 'tpl-4',
+    desc: 'Contactar clientes que llevan +30 días sin venir con descuento del 10%',
+    priority: 'alta',
+  },
+  {
+    name: 'Rescate urgente +60 días',
+    type: 'reactivation',
+    segment: 'inactive_60',
+    templateId: 'tpl-5',
+    desc: 'Clientes que casi perdemos. Descuento + bebida gratis para que vuelvan',
+    priority: 'urgente',
+  },
+  {
+    name: 'Fidelización VIP',
+    type: 'vip',
+    segment: 'vip',
+    templateId: 'tpl-1',
+    desc: 'Mantener contentos a los mejores clientes con seguimiento personalizado',
+    priority: 'media',
+  },
+  {
+    name: 'Promo de la semana',
+    type: 'promo',
+    segment: 'active',
+    templateId: 'tpl-9',
+    desc: 'Promoción semanal para clientes activos con descuento en servicios',
+    priority: 'media',
+  },
+  {
+    name: 'Clientes casi perdidos +90 días',
+    type: 'reactivation',
+    segment: 'inactive_90',
+    templateId: 'tpl-6',
+    desc: 'Último intento con clientes que llevan 3 meses sin venir',
+    priority: 'urgente',
+  },
+];
 
 // ═══════════════════════════════════════════════
 // Main Component
@@ -174,9 +218,43 @@ const Campaigns = () => {
     const active = campaigns.filter(c => c.status === 'active').length;
     const totalSent = campaigns.reduce((acc, c) => acc + (c.sentCount || 0), 0);
     const totalResponded = campaigns.reduce((acc, c) => acc + (c.respondedCount || 0), 0);
-    const recoverable = clients.filter(c => (c.days_since_visit || c.days_since_last_visit || 0) >= 30 && c.phone).length;
-    return { active, totalSent, totalResponded, recoverable };
+    const withPhone = clients.filter(c => c.phone);
+    const inactive30 = withPhone.filter(c => (c.days_since_visit || c.days_since_last_visit || 0) >= 30).length;
+    const inactive60 = withPhone.filter(c => (c.days_since_visit || c.days_since_last_visit || 0) >= 60).length;
+    const inactive90 = withPhone.filter(c => (c.days_since_visit || c.days_since_last_visit || 0) >= 90).length;
+    const vips = withPhone.filter(c => c.status === 'vip').length;
+    const atRisk = withPhone.filter(c => c.status === 'at_risk' || c.status === 'en_riesgo').length;
+    return { active, totalSent, totalResponded, inactive30, inactive60, inactive90, vips, atRisk, total: withPhone.length };
   }, [campaigns, clients]);
+
+  // Create campaign from suggestion
+  const createFromSuggestion = (suggestion) => {
+    const tpl = templates.find(t => t.id === suggestion.templateId);
+    const typeObj = CAMPAIGN_TYPES.find(t => t.id === suggestion.type);
+    const segClients = getSegmentClients(suggestion.segment);
+
+    const newCampaign = {
+      id: `camp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      name: suggestion.name,
+      type: suggestion.type,
+      segment: suggestion.segment,
+      templateId: suggestion.templateId,
+      templateName: tpl?.name || '',
+      templateBody: tpl?.body || '',
+      notes: suggestion.desc,
+      typeLabel: typeObj?.label || '',
+      typeColor: typeObj?.color || '#6B6B63',
+      status: 'draft',
+      clientCount: segClients.length,
+      sentCount: 0,
+      respondedCount: 0,
+      sentClients: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setCampaigns(prev => [newCampaign, ...prev]);
+    addNotification(`Campaña "${suggestion.name}" creada. Revísala y ejecútala.`, 'success');
+  };
 
   // ─── Actions ──────────────────────────────────
   const openCreate = () => {
@@ -200,7 +278,7 @@ const Campaigns = () => {
   };
 
   const handleSave = () => {
-    if (!formName.trim()) { addNotification('Dale un nombre a la campana', 'error'); return; }
+    if (!formName.trim()) { addNotification('Dale un nombre a la campaña', 'error'); return; }
     if (!formTemplate) { addNotification('Selecciona una plantilla', 'error'); return; }
 
     const segClients = getSegmentClients(formSegment);
@@ -222,7 +300,7 @@ const Campaigns = () => {
         clientCount: segClients.length,
         updatedAt: new Date().toISOString(),
       } : c));
-      addNotification('Campana actualizada', 'success');
+      addNotification('Campañaactualizada', 'success');
     } else {
       const newCampaign = {
         id: `camp_${Date.now()}`,
@@ -244,7 +322,7 @@ const Campaigns = () => {
         updatedAt: new Date().toISOString(),
       };
       setCampaigns(prev => [newCampaign, ...prev]);
-      addNotification('Campana creada. Revisala y ejecutala cuando estes listo.', 'success');
+      addNotification('Campaña creada. Revísala y ejecútala cuando estés listo.', 'success');
     }
     setShowCreate(false);
   };
@@ -252,7 +330,7 @@ const Campaigns = () => {
   const deleteCampaign = (id) => {
     setCampaigns(prev => prev.filter(c => c.id !== id));
     setShowDetail(null);
-    addNotification('Campana eliminada', 'info');
+    addNotification('Campaña eliminada', 'info');
   };
 
   const togglePause = (id) => {
@@ -269,7 +347,7 @@ const Campaigns = () => {
     const unsent = segClients.filter(c => !(campaign.sentClients || []).includes(c.id));
 
     if (unsent.length === 0) {
-      addNotification('Ya se contacto a todos los clientes de esta campana', 'info');
+      addNotification('Ya se contacto a todos los clientes de esta campaña', 'info');
       return;
     }
 
@@ -320,7 +398,7 @@ const Campaigns = () => {
     }));
 
     setExecuting(null);
-    addNotification(`Campana ejecutada: ${sent} enviados, ${failed} fallidos`, sent > 0 ? 'success' : 'error');
+    addNotification(`Campañaejecutada: ${sent} enviados, ${failed} fallidos`, sent > 0 ? 'success' : 'error');
   };
 
   // ─── Render ────────────────────────────────────
@@ -331,39 +409,94 @@ const Campaigns = () => {
       {/* ── Header ── */}
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
-          <h1 className={`${B}__title`}>Campanas</h1>
-          <span className={`${B}__subtitle`}>Recuperacion y retencion de clientes</span>
+          <h1 className={`${B}__title`}>Campañas</h1>
+          <span className={`${B}__subtitle`}>Recuperación y retención de clientes</span>
         </div>
         <button className={`${B}__btn-create`} onClick={openCreate}>
-          <PlusIcon /> Nueva campana
+          <PlusIcon /> Nueva campaña
         </button>
       </div>
 
-      {/* ── Stats ── */}
-      <div className={`${B}__stats`}>
-        <div className={`${B}__stat`}>
-          <span className={`${B}__stat-value`}>{stats.recoverable}</span>
-          <span className={`${B}__stat-label`}>Clientes recuperables</span>
+      {/* ── Health Dashboard ── */}
+      <div className={`${B}__health`}>
+        <div className={`${B}__health-card ${B}__health-card--danger`}>
+          <div className={`${B}__health-icon`}>🚨</div>
+          <div className={`${B}__health-info`}>
+            <span className={`${B}__health-value`}>{stats.inactive90}</span>
+            <span className={`${B}__health-label`}>+90 días sin venir</span>
+            <span className={`${B}__health-hint`}>Casi perdidos</span>
+          </div>
         </div>
-        <div className={`${B}__stat`}>
-          <span className={`${B}__stat-value`}>{stats.active}</span>
-          <span className={`${B}__stat-label`}>Campanas activas</span>
+        <div className={`${B}__health-card ${B}__health-card--warning`}>
+          <div className={`${B}__health-icon`}>⚠️</div>
+          <div className={`${B}__health-info`}>
+            <span className={`${B}__health-value`}>{stats.inactive60}</span>
+            <span className={`${B}__health-label`}>+60 días sin venir</span>
+            <span className={`${B}__health-hint`}>En peligro</span>
+          </div>
         </div>
-        <div className={`${B}__stat`}>
-          <span className={`${B}__stat-value`}>{stats.totalSent}</span>
-          <span className={`${B}__stat-label`}>Mensajes enviados</span>
+        <div className={`${B}__health-card ${B}__health-card--alert`}>
+          <div className={`${B}__health-icon`}>🔔</div>
+          <div className={`${B}__health-info`}>
+            <span className={`${B}__health-value`}>{stats.inactive30}</span>
+            <span className={`${B}__health-label`}>+30 días sin venir</span>
+            <span className={`${B}__health-hint`}>Recuperables</span>
+          </div>
         </div>
-        <div className={`${B}__stat`}>
-          <span className={`${B}__stat-value`}>{stats.totalResponded}</span>
-          <span className={`${B}__stat-label`}>Respuestas</span>
+        <div className={`${B}__health-card ${B}__health-card--vip`}>
+          <div className={`${B}__health-icon`}>⭐</div>
+          <div className={`${B}__health-info`}>
+            <span className={`${B}__health-value`}>{stats.vips}</span>
+            <span className={`${B}__health-label`}>Clientes VIP</span>
+            <span className={`${B}__health-hint`}>Fidelizar</span>
+          </div>
+        </div>
+        <div className={`${B}__health-card ${B}__health-card--info`}>
+          <div className={`${B}__health-icon`}>📊</div>
+          <div className={`${B}__health-info`}>
+            <span className={`${B}__health-value`}>{stats.totalSent}</span>
+            <span className={`${B}__health-label`}>Mensajes enviados</span>
+            <span className={`${B}__health-hint`}>{stats.active} campañas activas</span>
+          </div>
         </div>
       </div>
+
+      {/* ── Suggested Campaigns (when no campaigns) ── */}
+      {campaigns.length === 0 && !loading && clients.length > 0 && (
+        <div className={`${B}__suggestions`}>
+          <div className={`${B}__suggestions-head`}>
+            <h3>Campañas sugeridas para ti</h3>
+            <p>Basadas en el estado actual de tus clientes. Haz clic para crearla al instante.</p>
+          </div>
+          <div className={`${B}__suggestions-grid`}>
+            {SUGGESTED_CAMPAIGNS.map((s, i) => {
+              const count = getSegmentClients(s.segment).length;
+              const typeObj = CAMPAIGN_TYPES.find(t => t.id === s.type);
+              if (count === 0) return null;
+              return (
+                <button key={i} className={`${B}__suggestion`} style={{ '--sc': typeObj?.color }}
+                  onClick={() => createFromSuggestion(s)}>
+                  <div className={`${B}__suggestion-top`}>
+                    <span className={`${B}__suggestion-priority ${B}__suggestion-priority--${s.priority}`}>
+                      {s.priority === 'urgente' ? '🔥 Urgente' : s.priority === 'alta' ? '⚡ Alta' : '📌 Media'}
+                    </span>
+                    <span className={`${B}__suggestion-count`}>{count} clientes</span>
+                  </div>
+                  <span className={`${B}__suggestion-name`}>{s.name}</span>
+                  <span className={`${B}__suggestion-desc`}>{s.desc}</span>
+                  <span className={`${B}__suggestion-action`}><PlusIcon /> Crear campaña</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Filter bar ── */}
       <div className={`${B}__toolbar`}>
         <div className={`${B}__search`}>
           <SearchIcon />
-          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar campana..." />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar campaña..." />
         </div>
         <div className={`${B}__filters`}>
           {[
@@ -388,12 +521,12 @@ const Campaigns = () => {
       ) : filteredCampaigns.length === 0 ? (
         <div className={`${B}__empty`}>
           <TargetIcon />
-          <h3>{campaigns.length === 0 ? 'Sin campanas todavia' : 'Sin resultados'}</h3>
+          <h3>{campaigns.length === 0 ? 'Sin campañas todavia' : 'Sin resultados'}</h3>
           <p>{campaigns.length === 0
-            ? 'Crea tu primera campana para recuperar clientes inactivos, fidelizar VIPs o lanzar promociones.'
+            ? 'Crea tu primera campaña para recuperar clientes inactivos, fidelizar VIPs o lanzar promociones.'
             : 'Intenta con otro filtro o busqueda.'}</p>
           {campaigns.length === 0 && (
-            <button className={`${B}__btn-create`} onClick={openCreate}><PlusIcon /> Crear campana</button>
+            <button className={`${B}__btn-create`} onClick={openCreate}><PlusIcon /> Crear campaña</button>
           )}
         </div>
       ) : (
@@ -490,7 +623,7 @@ const Campaigns = () => {
             {/* Client list */}
             <div className={`${B}__detail-section`}>
               <span className={`${B}__detail-label`}>
-                <UsersIcon /> Clientes en esta campana ({getSegmentClients(detailCampaign.segment).length})
+                <UsersIcon /> Clientes en esta campaña ({getSegmentClients(detailCampaign.segment).length})
               </span>
               <div className={`${B}__detail-clients`}>
                 {getSegmentClients(detailCampaign.segment).slice(0, 30).map(c => {
@@ -502,7 +635,7 @@ const Campaigns = () => {
                       <div className={`${B}__detail-client-info`}>
                         <span className={`${B}__detail-client-name`}>{c.name}</span>
                         <span className={`${B}__detail-client-meta`}>
-                          {days > 0 ? `${days} dias sin venir` : 'Activo'} · {c.total_visits || 0} visitas
+                          {days > 0 ? `${days} días sin venir` : 'Activo'} · {c.total_visits || 0} visitas
                         </span>
                       </div>
                       {wasSent && <span className={`${B}__detail-client-check`}><CheckIcon /> Enviado</span>}
@@ -529,7 +662,7 @@ const Campaigns = () => {
                 {detailCampaign.status !== 'completed' && (
                   <button className={`${B}__btn--primary`} onClick={() => { setShowDetail(null); executeCampaign(detailCampaign); }}
                     disabled={executing === detailCampaign.id}>
-                    <SendIcon /> {(detailCampaign.sentClients || []).length > 0 ? 'Continuar enviando' : 'Ejecutar campana'}
+                    <SendIcon /> {(detailCampaign.sentClients || []).length > 0 ? 'Continuar enviando' : 'Ejecutar campaña'}
                   </button>
                 )}
               </div>
@@ -546,21 +679,21 @@ const Campaigns = () => {
         <div className={`${B}__overlay`} onClick={() => setShowCreate(false)}>
           <div className={`${B}__modal`} onClick={e => e.stopPropagation()}>
             <div className={`${B}__modal-head`}>
-              <h2>{editingCampaign ? 'Editar campana' : 'Nueva campana'}</h2>
+              <h2>{editingCampaign ? 'Editar campaña' : 'Nueva campaña'}</h2>
               <button className={`${B}__modal-x`} onClick={() => setShowCreate(false)}><CloseIcon /></button>
             </div>
 
             <div className={`${B}__modal-body`}>
               {/* Name */}
               <div className={`${B}__field`}>
-                <label>Nombre de la campana</label>
+                <label>Nombre de la campaña</label>
                 <input type="text" value={formName} onChange={e => setFormName(e.target.value)}
                   placeholder='Ej: "Recuperar clientes marzo"' autoFocus />
               </div>
 
               {/* Type */}
               <div className={`${B}__field`}>
-                <label>Tipo de campana</label>
+                <label>Tipo de campaña</label>
                 <div className={`${B}__types`}>
                   {CAMPAIGN_TYPES.map(t => (
                     <button key={t.id} type="button"
@@ -636,14 +769,14 @@ const Campaigns = () => {
               <div className={`${B}__field`}>
                 <label>Notas internas (opcional)</label>
                 <textarea value={formNotes} onChange={e => setFormNotes(e.target.value)}
-                  placeholder="Notas sobre el objetivo de esta campana..." rows={2} />
+                  placeholder="Notas sobre el objetivo de esta campaña..." rows={2} />
               </div>
             </div>
 
             <div className={`${B}__modal-foot`}>
               <button className={`${B}__btn--ghost`} onClick={() => setShowCreate(false)}>Cancelar</button>
               <button className={`${B}__btn--primary`} onClick={handleSave}>
-                {editingCampaign ? 'Guardar cambios' : 'Crear campana'}
+                {editingCampaign ? 'Guardar cambios' : 'Crear campaña'}
               </button>
             </div>
           </div>

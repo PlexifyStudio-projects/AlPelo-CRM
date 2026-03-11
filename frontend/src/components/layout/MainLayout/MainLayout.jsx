@@ -7,7 +7,7 @@ const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', description: 'PANEL EJECUTIVO', section: 'GESTION PRINCIPAL' },
   { id: 'agenda', label: 'Agenda', description: 'CITAS Y CALENDARIO', section: 'GESTION PRINCIPAL' },
   { id: 'clients', label: 'Clientes', description: 'CRM Y GESTION DE CLIENTES', section: 'GESTION PRINCIPAL' },
-  { id: 'campaigns', label: 'Campanas', description: 'RECUPERACION Y RETENCION', section: 'GESTION PRINCIPAL' },
+  { id: 'campaigns', label: 'Campañas', description: 'RECUPERACIÓN Y RETENCIÓN', section: 'GESTION PRINCIPAL' },
   { id: 'services', label: 'Servicios', description: 'CATALOGO Y PRECIOS', section: 'GESTION PRINCIPAL' },
   { id: 'finances', label: 'Finanzas', description: 'INGRESOS Y METRICAS', section: 'GESTION PRINCIPAL' },
   { id: 'lina-activity', label: 'Actividad Lina', description: 'MONITOREO EN TIEMPO REAL', section: 'GESTION PRINCIPAL' },

@@ -1194,6 +1194,81 @@ def _execute_action(action: dict, db: Session) -> str:
         db.commit()
         return f"Cita eliminada: {info}."
 
+    # ── CAMPAIGNS (client recovery & retention) ──────
+    elif action_type == "list_clients_for_campaign":
+        min_days = int(action.get("min_days_since_visit", 30))
+        max_days = action.get("max_days_since_visit")
+        status_filter = action.get("status")
+        limit_n = int(action.get("limit", 20))
+
+        all_clients = db.query(Client).all()
+        results = []
+        for c in all_clients:
+            computed = compute_client_fields(c, db)
+            days = computed.get("days_since_visit", 0)
+            if days < min_days:
+                continue
+            if max_days and days > int(max_days):
+                continue
+            if status_filter and computed.get("status") != status_filter:
+                continue
+            if not c.phone:
+                continue
+            results.append({
+                "id": c.id,
+                "name": c.name,
+                "phone": c.phone,
+                "days_since_visit": days,
+                "total_visits": computed.get("total_visits", 0),
+                "status": computed.get("status", ""),
+                "favorite_service": computed.get("favorite_service", ""),
+            })
+            if len(results) >= limit_n:
+                break
+
+        if not results:
+            return f"No hay clientes con +{min_days} dias sin visita."
+
+        lines = [f"📋 {len(results)} clientes con +{min_days} dias sin venir:"]
+        for r in results[:15]:
+            lines.append(f"  - {r['name']} ({r['days_since_visit']}d, {r['total_visits']} visitas, {r['status']})")
+        if len(results) > 15:
+            lines.append(f"  ... y {len(results) - 15} mas")
+        return "\n".join(lines)
+
+    elif action_type == "get_campaign_stats":
+        all_clients = db.query(Client).all()
+        total = 0
+        inactive30 = 0
+        inactive60 = 0
+        inactive90 = 0
+        vips = 0
+        at_risk = 0
+        for c in all_clients:
+            if not c.phone:
+                continue
+            total += 1
+            computed = compute_client_fields(c, db)
+            days = computed.get("days_since_visit", 0)
+            status = computed.get("status", "")
+            if days >= 90:
+                inactive90 += 1
+            if days >= 60:
+                inactive60 += 1
+            if days >= 30:
+                inactive30 += 1
+            if status == "vip":
+                vips += 1
+            if status in ("at_risk", "en_riesgo"):
+                at_risk += 1
+
+        return (
+            f"📊 Estado de clientes (con telefono):\n"
+            f"Total: {total} | VIP: {vips} | En riesgo: {at_risk}\n"
+            f"+30d sin venir: {inactive30} | +60d: {inactive60} | +90d: {inactive90}\n"
+            f"Prioridad: Contactar primero los {inactive90} de +90 dias"
+        )
+
     return f"ERROR: Accion desconocida '{action_type}'"
 
 
@@ -1647,6 +1722,7 @@ ACCIONES (bloques ```action``` al FINAL):
 create_client: name, phone | update_client: search_name, +campos | delete_client: search_name
 add_note: search_name, content | complete_task: search_name, keyword? (marca PENDIENTE/RECORDATORIO como COMPLETADO) | list_clients_by_filter: status?, min_days_since_visit?, limit?
 create_appointment: client_name, staff_name, service_name, date(YYYY-MM-DD), time(HH:MM) | update_appointment: appointment_id(NUMERO, ej: 42), +campos | delete_appointment: appointment_id(NUMERO) | list_appointments: date?, staff_name?, status?
+Campanas: list_clients_for_campaign: min_days_since_visit?, status? — Lista clientes recuperables para campanas | get_campaign_stats — Resumen de salud de clientes (inactivos, VIP, en riesgo)
 IMPORTANTE: appointment_id SIEMPRE es un NUMERO entero (ej: 42, 157). Mira los IDs en la AGENDA abajo. NUNCA inventes IDs como "appointment_id_6:35pm".
 list_services: category? | add_visit: search_name, staff_id, service_name, amount
 tag_conversation: search_name|phone, tags(list)
