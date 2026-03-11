@@ -23,6 +23,7 @@ const DevBilling = () => {
       });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
+      if (!data || data.length === 0) throw new Error('Empty');
       setRecords(data);
     } catch {
       // Mock data

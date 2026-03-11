@@ -19,6 +19,7 @@ const DevUsage = () => {
       });
       if (!res.ok) throw new Error('Failed');
       const json = await res.json();
+      if (!json.tenants || json.tenants.length === 0) throw new Error('Empty');
       setData(json);
     } catch {
       // Mock data

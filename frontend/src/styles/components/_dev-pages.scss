@@ -2,8 +2,17 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// Shared styles for DevUsage and DevBilling
+// DevUsage + DevBilling — Clean warm clinical
 // ============================================
+
+$_accent: #4F6EF7;
+$_accent-bg: rgba(79, 110, 247, 0.06);
+$_card-bg: #FFFFFF;
+$_card-border: #E8ECF1;
+$_card-hover-shadow: 0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.04);
+$_text-primary: #1A202E;
+$_text-secondary: #4A5568;
+$_text-muted: #8896AB;
 
 .dev-usage,
 .dev-billing {
@@ -20,20 +29,22 @@
   &__title {
     font-size: $font-size-2xl;
     font-weight: $font-weight-bold;
-    color: #0F172A;
+    color: $_text-primary;
     margin: 0;
+    letter-spacing: $letter-spacing-tight;
   }
 
   &__subtitle {
     font-size: $font-size-sm;
-    color: #64748B;
+    color: $_text-muted;
     margin-top: 4px;
   }
 
   &__loading {
-    padding: $spacing-2xl;
+    padding: $spacing-3xl;
     text-align: center;
-    color: #64748B;
+    color: $_text-muted;
+    font-size: $font-size-sm;
   }
 
   // Period selector
@@ -43,17 +54,18 @@
   }
 
   &__period-input {
-    padding: $spacing-xs $spacing-md;
-    border: 1px solid #E2E8F0;
-    border-radius: $border-radius-md;
+    padding: 8px 14px;
+    border: 1px solid $_card-border;
+    border-radius: 10px;
     font-size: $font-size-sm;
-    color: #0F172A;
+    color: $_text-primary;
     background: white;
+    transition: all 200ms;
 
     &:focus {
       outline: none;
-      border-color: #6366F1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+      border-color: $_accent;
+      box-shadow: 0 0 0 3px $_accent-bg;
     }
   }
 
@@ -61,57 +73,65 @@
   &__summary {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: $spacing-md;
+    gap: 16px;
   }
 
   &__summary-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: $spacing-xl;
-    background: white;
-    border-radius: $border-radius-xl;
-    border: 1px solid #E2E8F0;
+    justify-content: center;
+    padding: 24px 20px;
+    background: $_card-bg;
+    border-radius: 16px;
+    border: 1px solid $_card-border;
+    transition: box-shadow 250ms $ease-out-quart;
+
+    &:hover {
+      box-shadow: $_card-hover-shadow;
+    }
 
     &--success {
-      border-color: rgba(34, 197, 94, 0.2);
+      border-color: rgba(34, 197, 94, 0.15);
       background: rgba(34, 197, 94, 0.02);
     }
 
     &--warning {
-      border-color: rgba(245, 158, 11, 0.2);
+      border-color: rgba(245, 158, 11, 0.15);
       background: rgba(245, 158, 11, 0.02);
     }
   }
 
   &__summary-value {
-    font-size: $font-size-2xl;
+    font-size: 1.5rem;
     font-weight: $font-weight-bold;
-    color: #0F172A;
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: $_text-primary;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    letter-spacing: $letter-spacing-tight;
   }
 
   &__summary-label {
     font-size: $font-size-sm;
-    color: #64748B;
+    color: $_text-muted;
     margin-top: 4px;
+    font-weight: $font-weight-medium;
   }
 
   // Section
   &__section {
-    background: white;
-    border-radius: $border-radius-xl;
-    border: 1px solid #E2E8F0;
+    background: $_card-bg;
+    border-radius: 16px;
+    border: 1px solid $_card-border;
     overflow: hidden;
   }
 
   &__section-title {
     font-size: $font-size-base;
     font-weight: $font-weight-semibold;
-    color: #0F172A;
+    color: $_text-primary;
     margin: 0;
-    padding: $spacing-lg $spacing-xl;
-    border-bottom: 1px solid #E2E8F0;
+    padding: 18px 24px;
+    border-bottom: 1px solid #F0F2F5;
   }
 
   // Table
@@ -126,80 +146,95 @@
     font-size: $font-size-sm;
 
     th {
-      padding: $spacing-sm $spacing-lg;
+      padding: 12px 24px;
       text-align: left;
       font-weight: $font-weight-semibold;
-      color: #64748B;
+      color: $_text-muted;
       font-size: $font-size-xs;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      background: #F8FAFC;
-      border-bottom: 1px solid #E2E8F0;
+      letter-spacing: $letter-spacing-wider;
+      background: #FAFBFC;
+      border-bottom: 1px solid #F0F2F5;
     }
 
     td {
-      padding: $spacing-md $spacing-lg;
-      border-bottom: 1px solid #F1F5F9;
-      color: #334155;
+      padding: 14px 24px;
+      border-bottom: 1px solid #F5F6F8;
+      color: $_text-secondary;
     }
 
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    tr:hover td {
-      background: #FAFBFE;
-    }
+    tr:last-child td { border-bottom: none; }
+    tr { transition: background 120ms; }
+    tr:hover td { background: #F9FAFB; }
   }
 
   &__td-mono {
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     font-size: $font-size-xs;
   }
 
   &__td-amount {
     font-weight: $font-weight-bold;
-    color: #0F172A;
+    color: $_text-primary;
   }
 
   &__tenant-cell {
     display: flex;
     flex-direction: column;
+    gap: 2px;
   }
 
   &__tenant-slug {
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     font-size: $font-size-xs;
-    color: #6366F1;
+    color: $_accent;
     font-weight: $font-weight-semibold;
   }
 
   &__tenant-name {
-    color: #0F172A;
+    color: $_text-primary;
     font-weight: $font-weight-medium;
   }
 
   // Status badge (billing)
   &__status {
-    display: inline-block;
-    padding: 2px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
     border-radius: $border-radius-full;
     font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
+
+    &::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
 
     &--success {
-      background: rgba(34, 197, 94, 0.12);
+      background: rgba(34, 197, 94, 0.07);
       color: #16A34A;
+      border: 1px solid rgba(34, 197, 94, 0.12);
+
+      &::before { background: #22C55E; box-shadow: 0 0 4px rgba(34, 197, 94, 0.4); }
     }
 
     &--warning {
-      background: rgba(245, 158, 11, 0.12);
+      background: rgba(245, 158, 11, 0.07);
       color: #D97706;
+      border: 1px solid rgba(245, 158, 11, 0.12);
+
+      &::before { background: #F59E0B; }
     }
 
     &--error {
-      background: rgba(239, 68, 68, 0.12);
+      background: rgba(239, 68, 68, 0.07);
       color: #DC2626;
+      border: 1px solid rgba(239, 68, 68, 0.12);
+
+      &::before { background: #EF4444; }
     }
   }
 
@@ -214,13 +249,14 @@
 
     &__summary {
       grid-template-columns: 1fr;
-      gap: $spacing-sm;
+      gap: 12px;
     }
 
     &__summary-card {
-      padding: $spacing-md;
+      padding: 16px;
       flex-direction: row;
       justify-content: space-between;
+      align-items: center;
     }
 
     &__table {

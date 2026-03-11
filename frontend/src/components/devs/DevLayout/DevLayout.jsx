@@ -36,6 +36,12 @@ const Icons = {
       <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
     </svg>
   ),
+  user: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
   logout: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -59,7 +65,7 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
       <aside className={`${b}__sidebar`}>
         <div className={`${b}__brand`}>
           <div className={`${b}__brand-icon`}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2" />
               <line x1="12" y1="22" x2="12" y2="15.5" />
               <polyline points="22 8.5 12 15.5 2 8.5" />
@@ -93,6 +99,7 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
           <button
             className={`${b}__collapse-btn`}
             onClick={() => setCollapsed(!collapsed)}
+            title={collapsed ? 'Expandir' : 'Colapsar'}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <polyline points={collapsed ? '9 18 15 12 9 6' : '15 18 9 12 15 6'} />
@@ -100,7 +107,13 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
           </button>
           {!collapsed && user && (
             <div className={`${b}__user`}>
-              <span className={`${b}__user-name`}>{user.name || 'Dev'}</span>
+              <button
+                className={`${b}__user-name`}
+                onClick={() => handleNav('dev-profile')}
+                title="Mi perfil"
+              >
+                {user.name || 'Dev'}
+              </button>
               <button className={`${b}__logout`} onClick={onLogout} title="Cerrar sesion">
                 {Icons.logout}
               </button>

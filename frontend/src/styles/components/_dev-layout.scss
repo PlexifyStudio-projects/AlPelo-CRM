@@ -3,29 +3,42 @@
 
 // ============================================
 // DevLayout — Plexify Studio admin shell
-// Sidebar + main content area
+// Clean, warm, clinical SaaS aesthetic
+// Colors: slate-900 sidebar + warm off-white content
 // ============================================
+
+$_sidebar-bg: #1B2332;
+$_sidebar-border: rgba(255, 255, 255, 0.06);
+$_accent: #4F6EF7;
+$_accent-light: #6B85FC;
+$_accent-glow: rgba(79, 110, 247, 0.15);
+$_content-bg: #F6F7F9;
+$_text-sidebar: #8896AB;
+$_text-sidebar-active: #E8ECF1;
 
 .dev-layout {
   display: flex;
   min-height: 100vh;
-  background: #F8F9FB;
+  background: $_content-bg;
 
   // -----------------------------------------------
   // SIDEBAR
   // -----------------------------------------------
   &__sidebar {
-    width: 240px;
+    width: 256px;
     display: flex;
     flex-direction: column;
-    background: #0F172A;
-    color: #E2E8F0;
-    transition: width 200ms $ease-out-quart;
+    background: $_sidebar-bg;
+    color: $_text-sidebar;
+    transition: width 250ms $ease-out-quart;
     flex-shrink: 0;
+    box-shadow: 2px 0 24px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 10;
   }
 
   &--collapsed &__sidebar {
-    width: 68px;
+    width: 72px;
   }
 
   // -----------------------------------------------
@@ -35,18 +48,20 @@
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: $spacing-lg $spacing-md;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 20px $spacing-md 20px;
+    border-bottom: 1px solid $_sidebar-border;
+    margin-bottom: $spacing-xs;
   }
 
   &__brand-icon {
     @include flex-center;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border-radius: $border-radius-md;
-    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    background: linear-gradient(135deg, $_accent 0%, #7C6BF7 100%);
     color: white;
     flex-shrink: 0;
+    box-shadow: 0 2px 12px rgba(79, 110, 247, 0.3);
   }
 
   &__brand-text {
@@ -56,16 +71,18 @@
   }
 
   &__brand-name {
-    font-size: $font-size-base;
+    font-size: 1.05rem;
     font-weight: $font-weight-bold;
-    color: white;
-    letter-spacing: -0.02em;
+    color: #FFFFFF;
+    letter-spacing: $letter-spacing-tight;
   }
 
   &__brand-sub {
     font-size: $font-size-xs;
-    color: #94A3B8;
+    color: rgba(136, 150, 171, 0.7);
     font-weight: $font-weight-medium;
+    letter-spacing: $letter-spacing-wide;
+    text-transform: uppercase;
   }
 
   // -----------------------------------------------
@@ -76,37 +93,50 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: $spacing-md $spacing-sm;
+    padding: $spacing-sm 10px;
   }
 
   &__nav-item {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
+    gap: 12px;
+    padding: 10px 14px;
     border: none;
     background: transparent;
-    color: #94A3B8;
+    color: $_text-sidebar;
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     border-radius: $border-radius-md;
     cursor: pointer;
+    position: relative;
     transition:
-      background 150ms $ease-out-quart,
-      color 150ms $ease-out-quart;
+      background 180ms $ease-out-quart,
+      color 180ms $ease-out-quart;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.06);
-      color: #E2E8F0;
+      background: rgba(255, 255, 255, 0.05);
+      color: #C1CDDF;
     }
 
     &--active {
-      background: rgba(99, 102, 241, 0.15);
-      color: #A5B4FC;
+      background: $_accent-glow;
+      color: $_text-sidebar-active;
+
+      // Left accent
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 18px;
+        background: $_accent;
+        border-radius: 0 3px 3px 0;
+      }
 
       &:hover {
-        background: rgba(99, 102, 241, 0.2);
-        color: #C7D2FE;
+        background: rgba(79, 110, 247, 0.18);
       }
     }
   }
@@ -116,6 +146,12 @@
     width: 20px;
     height: 20px;
     flex-shrink: 0;
+    opacity: 0.8;
+  }
+
+  &__nav-item--active &__nav-icon {
+    opacity: 1;
+    color: $_accent-light;
   }
 
   &__nav-label {
@@ -126,8 +162,8 @@
   // SIDEBAR FOOTER
   // -----------------------------------------------
   &__sidebar-footer {
-    padding: $spacing-md;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: $spacing-md 10px;
+    border-top: 1px solid $_sidebar-border;
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
@@ -135,18 +171,18 @@
 
   &__collapse-btn {
     @include flex-center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: rgba(255, 255, 255, 0.06);
-    color: #94A3B8;
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: transparent;
+    color: #5A6B80;
     border-radius: $border-radius-sm;
     cursor: pointer;
-    transition: background 150ms;
+    transition: all 180ms;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: #E2E8F0;
+      background: rgba(255, 255, 255, 0.05);
+      color: $_text-sidebar;
     }
   }
 
@@ -155,12 +191,26 @@
     align-items: center;
     justify-content: space-between;
     gap: $spacing-sm;
+    padding: 6px 8px 6px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: $border-radius-md;
+    border: 1px solid rgba(255, 255, 255, 0.04);
   }
 
   &__user-name {
     font-size: $font-size-sm;
-    color: #CBD5E1;
+    color: $_text-sidebar;
     font-weight: $font-weight-medium;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+    transition: color 180ms;
+
+    &:hover {
+      color: $_text-sidebar-active;
+    }
   }
 
   &__logout {
@@ -169,24 +219,27 @@
     height: 28px;
     border: none;
     background: transparent;
-    color: #94A3B8;
+    color: #5A6B80;
     border-radius: $border-radius-sm;
     cursor: pointer;
+    transition: all 180ms;
 
     &:hover {
-      background: rgba(239, 68, 68, 0.15);
+      background: rgba(239, 68, 68, 0.12);
       color: #FCA5A5;
     }
   }
 
   // -----------------------------------------------
-  // MAIN
+  // MAIN CONTENT
   // -----------------------------------------------
   &__main {
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    padding: $spacing-2xl;
+    padding: 32px 40px;
+    background: $_content-bg;
+    @include custom-scrollbar;
   }
 
   // -----------------------------------------------
@@ -201,12 +254,14 @@
 
     .dev-layout__brand {
       justify-content: center;
-      padding: $spacing-lg $spacing-sm;
+      padding: 20px 8px;
     }
 
     .dev-layout__nav-item {
       justify-content: center;
-      padding: $spacing-sm;
+      padding: 10px;
+
+      &--active::before { display: none; }
     }
 
     .dev-layout__sidebar-footer {
@@ -227,15 +282,17 @@
     flex-direction: column;
 
     &__sidebar {
-      width: 100%;
+      width: 100% !important;
       flex-direction: row;
       align-items: center;
       padding: 0;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     }
 
     &__brand {
       border-bottom: none;
       padding: $spacing-sm $spacing-md;
+      margin-bottom: 0;
     }
 
     &__nav {
@@ -248,18 +305,11 @@
     &__nav-item {
       white-space: nowrap;
       padding: $spacing-xs $spacing-md;
+
+      &--active::before { display: none; }
     }
 
-    &__sidebar-footer {
-      display: none;
-    }
-
-    &__main {
-      padding: $spacing-md;
-    }
-
-    &--collapsed &__sidebar {
-      width: 100%;
-    }
+    &__sidebar-footer { display: none; }
+    &__main { padding: $spacing-md; }
   }
 }

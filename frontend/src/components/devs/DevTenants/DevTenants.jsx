@@ -41,6 +41,7 @@ const DevTenants = () => {
       });
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
+      if (!data || data.length === 0) throw new Error('Empty');
       setTenants(data);
     } catch {
       // Mock data while endpoint doesn't exist
@@ -99,9 +100,36 @@ const DevTenants = () => {
   };
 
   const handleSave = async () => {
-    // TODO: API call to create/update tenant
-    setShowForm(false);
-    fetchTenants();
+    try {
+      const url = editingId
+        ? `${API_URL}/dev/tenants/${editingId}`
+        : `${API_URL}/dev/tenants`;
+      const method = editingId ? 'PUT' : 'POST';
+
+      // Generate slug from name if not set
+      const payload = { ...formData };
+      if (!payload.slug && payload.name) {
+        payload.slug = payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      }
+
+      const res = await fetch(url, {
+        method,
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || 'Error al guardar');
+        return;
+      }
+
+      setShowForm(false);
+      fetchTenants();
+    } catch {
+      alert('Error de conexion');
+    }
   };
 
   const handleToggleAI = async (tenant) => {

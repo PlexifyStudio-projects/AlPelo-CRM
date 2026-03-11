@@ -87,7 +87,7 @@ def _run_migrations(engine):
                     ":booking)"
                 ), {
                     "slug": "alpelo",
-                    "name": "AlPelo Peluquería",
+                    "name": "AlPelo Peluqueria",
                     "btype": "peluqueria",
                     "owner": "Jaime",
                     "phone": "+573147083182",
