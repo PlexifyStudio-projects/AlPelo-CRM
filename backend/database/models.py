@@ -224,7 +224,7 @@ class Tenant(Base):
     # AI config
     ai_name = Column(String(50), nullable=False, default="Lina")
     ai_personality = Column(Text, nullable=True)
-    ai_model = Column(String(100), nullable=False, default="claude-sonnet-4-5-20250929")
+    ai_model = Column(String(100), nullable=False, default="claude-sonnet-4-5-20250929", server_default="claude-sonnet-4-5-20250929")
 
     # Business info
     timezone = Column(String(50), nullable=False, default="America/Bogota")

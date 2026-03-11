@@ -26,7 +26,7 @@ def _run_migrations(engine):
         ("tenant", "wa_webhook_token", "VARCHAR(100)"),
         ("tenant", "wa_phone_display", "VARCHAR(20)"),
         ("tenant", "ai_personality", "TEXT"),
-        ("tenant", "ai_model", "VARCHAR(100) DEFAULT 'claude-sonnet-4-5-20250929'"),
+        ("tenant", "ai_model", "VARCHAR(100) NOT NULL DEFAULT 'claude-sonnet-4-5-20250929'"),
         ("tenant", "address", "TEXT"),
         ("tenant", "updated_at", "TIMESTAMP DEFAULT NOW()"),
     ]
@@ -45,6 +45,23 @@ def _run_migrations(engine):
                     print(f"[MIGRATION] Added {table}.{column}")
         except Exception as e:
             print(f"[MIGRATION] Error on {table}.{column}: {e}")
+
+    # Fix: ensure ai_model column has a DEFAULT so raw SQL inserts don't fail
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE public.tenant ALTER COLUMN ai_model SET DEFAULT 'claude-sonnet-4-5-20250929'"
+            ))
+    except Exception:
+        pass
+    # Also make ai_name nullable or set default (same issue)
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE public.tenant ALTER COLUMN ai_name SET DEFAULT 'Lina'"
+            ))
+    except Exception:
+        pass
 
     # Switch AI model from Haiku to Sonnet (Haiku too dumb for WhatsApp)
     try:
@@ -90,11 +107,11 @@ def _run_migrations(engine):
             if existing is None:
                 conn.execute(text(
                     "INSERT INTO public.tenant (slug, name, business_type, owner_name, owner_phone, "
-                    "ai_name, plan, monthly_price, messages_limit, messages_used, "
+                    "owner_email, ai_name, ai_model, plan, monthly_price, messages_limit, messages_used, "
                     "city, country, is_active, ai_is_paused, timezone, currency, "
                     "booking_url) "
                     "VALUES (:slug, :name, :btype, :owner, :phone, "
-                    ":ai_name, :plan, :price, :limit, 0, "
+                    ":email, :ai_name, :ai_model, :plan, :price, :limit, 0, "
                     ":city, :country, true, false, :tz, :currency, "
                     ":booking)"
                 ), {
@@ -103,8 +120,10 @@ def _run_migrations(engine):
                     "btype": "peluqueria",
                     "owner": "Jaime",
                     "phone": "+573147083182",
+                    "email": "somosalpelo@gmail.com",
                     "ai_name": "Lina",
-                    "plan": "pro",
+                    "ai_model": "claude-sonnet-4-5-20250929",
+                    "plan": "standard",
                     "price": 250000,
                     "limit": 5000,
                     "city": "Bucaramanga",
