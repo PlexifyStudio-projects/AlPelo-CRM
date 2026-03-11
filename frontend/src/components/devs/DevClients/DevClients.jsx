@@ -4,21 +4,23 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.u
 const b = 'dev-clients';
 
 const formatCOP = (val) => `$${Number(val || 0).toLocaleString('es-CO')}`;
+const formatNum = (n) => Number(n || 0).toLocaleString('es-CO');
+const pct = (used, limit) => limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
 
 const DevClients = () => {
-  const [data, setData] = useState(null);
+  const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/dev/clients-overview`, {
+      const res = await fetch(`${API_URL}/dev/tenants`, {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
       if (!res.ok) throw new Error('Failed');
-      setData(await res.json());
+      setTenants(await res.json());
     } catch {
-      setData({});
+      setTenants([]);
     }
     setLoading(false);
   }, []);
@@ -28,115 +30,164 @@ const DevClients = () => {
   if (loading) {
     return (
       <div className={b}>
-        <div className={`${b}__header`}><h1 className={`${b}__title`}>Clientes</h1></div>
-        <p className={`${b}__loading`}>Cargando datos de clientes...</p>
+        <div className={`${b}__header`}><h1 className={`${b}__title`}>Nuestros Clientes</h1></div>
+        <p className={`${b}__loading`}>Cargando agencias...</p>
       </div>
     );
   }
 
-  const d = data || {};
-  const topClients = d.top_clients || [];
+  const active = tenants.filter(t => t.is_active);
+  const inactive = tenants.filter(t => !t.is_active);
+  const totalMRR = active.reduce((s, t) => s + (t.monthly_price || 0), 0);
+  const totalMsgsUsed = tenants.reduce((s, t) => s + (t.messages_used || 0), 0);
+  const totalMsgsLimit = tenants.reduce((s, t) => s + (t.messages_limit || 0), 0);
+  const nearLimit = tenants.filter(t => t.messages_limit > 0 && (t.messages_used / t.messages_limit) >= 0.8);
+  const aiPaused = tenants.filter(t => t.ai_is_paused);
 
   return (
     <div className={b}>
       <div className={`${b}__header`}>
         <div>
-          <h1 className={`${b}__title`}>Clientes</h1>
-          <p className={`${b}__subtitle`}>Vista global de clientes de todas las agencias</p>
+          <h1 className={`${b}__title`}>Nuestros Clientes</h1>
+          <p className={`${b}__subtitle`}>Agencias que usan Plexify Studio</p>
         </div>
       </div>
 
       {/* KPIs */}
       <div className={`${b}__kpis`}>
-        <div className={`${b}__kpi`}><span className={`${b}__kpi-value`}>{d.total_clients || 0}</span><span className={`${b}__kpi-label`}>Total clientes</span></div>
-        <div className={`${b}__kpi`}><span className={`${b}__kpi-value`}>{d.active_clients || 0}</span><span className={`${b}__kpi-label`}>Activos</span></div>
-        <div className={`${b}__kpi`}><span className={`${b}__kpi-value`}>{d.new_this_month || 0}</span><span className={`${b}__kpi-label`}>Nuevos este mes</span></div>
-        <div className={`${b}__kpi`}><span className={`${b}__kpi-value`}>{d.wa_enabled_clients || 0}</span><span className={`${b}__kpi-label`}>Con WhatsApp</span></div>
+        <div className={`${b}__kpi`}>
+          <span className={`${b}__kpi-value`}>{tenants.length}</span>
+          <span className={`${b}__kpi-label`}>Total agencias</span>
+        </div>
+        <div className={`${b}__kpi`}>
+          <span className={`${b}__kpi-value`}>{active.length}</span>
+          <span className={`${b}__kpi-label`}>Activas</span>
+        </div>
+        <div className={`${b}__kpi`}>
+          <span className={`${b}__kpi-value`}>{formatCOP(totalMRR)}</span>
+          <span className={`${b}__kpi-label`}>MRR (mensual)</span>
+        </div>
+        <div className={`${b}__kpi ${nearLimit.length > 0 ? `${b}__kpi--alert` : ''}`}>
+          <span className={`${b}__kpi-value`}>{nearLimit.length}</span>
+          <span className={`${b}__kpi-label`}>Cerca del limite</span>
+        </div>
       </div>
 
-      {/* Status Breakdown */}
+      {/* Resumen de consumo */}
       <div className={`${b}__grid`}>
         <div className={`${b}__card`}>
-          <h3 className={`${b}__card-title`}>Estado de clientes</h3>
+          <h3 className={`${b}__card-title`}>Estado de agencias</h3>
           <div className={`${b}__status-list`}>
             <div className={`${b}__status-row`}>
-              <span className={`${b}__status-dot ${b}__status-dot--vip`} />
-              <span className={`${b}__status-name`}>VIP</span>
-              <span className={`${b}__status-count`}>{d.vip_count || 0}</span>
-            </div>
-            <div className={`${b}__status-row`}>
               <span className={`${b}__status-dot ${b}__status-dot--active`} />
-              <span className={`${b}__status-name`}>Activos</span>
-              <span className={`${b}__status-count`}>{(d.active_clients || 0) - (d.vip_count || 0)}</span>
-            </div>
-            <div className={`${b}__status-row`}>
-              <span className={`${b}__status-dot ${b}__status-dot--risk`} />
-              <span className={`${b}__status-name`}>En riesgo</span>
-              <span className={`${b}__status-count`}>{d.at_risk_count || 0}</span>
+              <span className={`${b}__status-name`}>Activas</span>
+              <span className={`${b}__status-count`}>{active.length}</span>
             </div>
             <div className={`${b}__status-row`}>
               <span className={`${b}__status-dot ${b}__status-dot--inactive`} />
-              <span className={`${b}__status-name`}>Inactivos</span>
-              <span className={`${b}__status-count`}>{d.inactive_count || 0}</span>
+              <span className={`${b}__status-name`}>Inactivas</span>
+              <span className={`${b}__status-count`}>{inactive.length}</span>
+            </div>
+            <div className={`${b}__status-row`}>
+              <span className={`${b}__status-dot ${b}__status-dot--risk`} />
+              <span className={`${b}__status-name`}>IA pausada</span>
+              <span className={`${b}__status-count`}>{aiPaused.length}</span>
+            </div>
+            <div className={`${b}__status-row`}>
+              <span className={`${b}__status-dot ${b}__status-dot--vip`} />
+              <span className={`${b}__status-name`}>Cerca del limite (&ge;80%)</span>
+              <span className={`${b}__status-count`}>{nearLimit.length}</span>
             </div>
           </div>
         </div>
 
         <div className={`${b}__card`}>
-          <h3 className={`${b}__card-title`}>Visitas y revenue</h3>
+          <h3 className={`${b}__card-title`}>Consumo global</h3>
           <div className={`${b}__revenue-stats`}>
             <div className={`${b}__revenue-row`}>
-              <span className={`${b}__revenue-label`}>Visitas totales</span>
-              <span className={`${b}__revenue-value`}>{(d.total_visits || 0).toLocaleString('es-CO')}</span>
+              <span className={`${b}__revenue-label`}>Mensajes usados</span>
+              <span className={`${b}__revenue-value`}>{formatNum(totalMsgsUsed)}</span>
             </div>
             <div className={`${b}__revenue-row`}>
-              <span className={`${b}__revenue-label`}>Visitas este mes</span>
-              <span className={`${b}__revenue-value`}>{(d.visits_this_month || 0).toLocaleString('es-CO')}</span>
+              <span className={`${b}__revenue-label`}>Limite total</span>
+              <span className={`${b}__revenue-value`}>{formatNum(totalMsgsLimit)}</span>
             </div>
             <div className={`${b}__revenue-row`}>
-              <span className={`${b}__revenue-label`}>Revenue total</span>
-              <span className={`${b}__revenue-value ${b}__revenue-value--highlight`}>{formatCOP(d.total_revenue_cop)}</span>
+              <span className={`${b}__revenue-label`}>Uso global</span>
+              <span className={`${b}__revenue-value ${b}__revenue-value--highlight`}>{pct(totalMsgsUsed, totalMsgsLimit)}%</span>
             </div>
             <div className={`${b}__revenue-row`}>
-              <span className={`${b}__revenue-label`}>Revenue este mes</span>
-              <span className={`${b}__revenue-value ${b}__revenue-value--highlight`}>{formatCOP(d.revenue_this_month_cop)}</span>
-            </div>
-            <div className={`${b}__revenue-row`}>
-              <span className={`${b}__revenue-label`}>Tareas pendientes</span>
-              <span className={`${b}__revenue-value ${(d.pending_tasks || 0) > 0 ? `${b}__revenue-value--alert` : ''}`}>{d.pending_tasks || 0}</span>
+              <span className={`${b}__revenue-label`}>MRR total</span>
+              <span className={`${b}__revenue-value ${b}__revenue-value--highlight`}>{formatCOP(totalMRR)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Top Clients */}
-      {topClients.length > 0 && (
+      {/* Tabla de agencias como clientes */}
+      {tenants.length > 0 ? (
         <div className={`${b}__section`}>
-          <h3 className={`${b}__section-title`}>Top 10 clientes por gasto</h3>
+          <h3 className={`${b}__section-title`}>Detalle por agencia</h3>
           <div className={`${b}__table-wrap`}>
             <table className={`${b}__table`}>
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Cliente</th>
-                  <th>ID</th>
-                  <th>Visitas</th>
-                  <th>Total gastado</th>
+                  <th>Agencia</th>
+                  <th>Propietario</th>
+                  <th>Ciudad</th>
+                  <th>Mensajes</th>
+                  <th>Uso</th>
+                  <th>Precio/mes</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
               <tbody>
-                {topClients.map((c, i) => (
-                  <tr key={c.client_id}>
-                    <td className={`${b}__td-rank`}>{i + 1}</td>
-                    <td className={`${b}__td-name`}>{c.name}</td>
-                    <td className={`${b}__td-mono`}>{c.client_id}</td>
-                    <td className={`${b}__td-mono`}>{c.visits}</td>
-                    <td className={`${b}__td-mono ${b}__td-amount`}>{formatCOP(c.total_spent)}</td>
-                  </tr>
-                ))}
+                {tenants.map((t) => {
+                  const usage = pct(t.messages_used, t.messages_limit);
+                  return (
+                    <tr key={t.id}>
+                      <td>
+                        <div className={`${b}__td-agency`}>
+                          <span className={`${b}__td-name`}>{t.name}</span>
+                          <span className={`${b}__td-slug`}>{t.slug}</span>
+                        </div>
+                      </td>
+                      <td className={`${b}__td-owner`}>
+                        <span>{t.owner_name || '—'}</span>
+                        {t.owner_phone && <span className={`${b}__td-phone`}>{t.owner_phone}</span>}
+                      </td>
+                      <td>{t.city || '—'}</td>
+                      <td className={`${b}__td-mono`}>
+                        {formatNum(t.messages_used)} / {formatNum(t.messages_limit)}
+                      </td>
+                      <td>
+                        <div className={`${b}__usage-bar`}>
+                          <div
+                            className={`${b}__usage-fill ${usage >= 80 ? `${b}__usage-fill--danger` : usage >= 50 ? `${b}__usage-fill--warn` : ''}`}
+                            style={{ width: `${usage}%` }}
+                          />
+                        </div>
+                        <span className={`${b}__td-pct`}>{usage}%</span>
+                      </td>
+                      <td className={`${b}__td-mono ${b}__td-amount`}>{formatCOP(t.monthly_price)}</td>
+                      <td>
+                        <span className={`${b}__badge ${t.is_active ? `${b}__badge--active` : `${b}__badge--inactive`}`}>
+                          {t.is_active ? 'Activa' : 'Inactiva'}
+                        </span>
+                        {t.ai_is_paused && (
+                          <span className={`${b}__badge ${b}__badge--paused`}>IA off</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+        </div>
+      ) : (
+        <div className={`${b}__empty`}>
+          <p>Sin agencias registradas</p>
         </div>
       )}
     </div>

@@ -569,6 +569,14 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     tr:hover td { background: #F9FAFB; }
   }
 
+  &__kpi--alert {
+    border-color: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.03);
+
+    .dev-clients__kpi-value { color: #DC2626; }
+    .dev-clients__kpi-label { color: #DC2626; }
+  }
+
   &__td-rank {
     font-family: $_mono-font;
     font-size: $font-size-xs;
@@ -579,6 +587,90 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   &__td-name { font-weight: $font-weight-medium; color: $_text-primary; }
   &__td-mono { font-family: $_mono-font; font-size: $font-size-xs; }
   &__td-amount { font-weight: $font-weight-bold; color: $_accent; }
+
+  &__td-agency {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__td-slug {
+    font-family: $_mono-font;
+    font-size: 10px;
+    color: $_text-muted;
+    letter-spacing: 0.02em;
+  }
+
+  &__td-owner {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__td-phone {
+    font-size: 10px;
+    color: $_text-muted;
+    font-family: $_mono-font;
+  }
+
+  &__td-pct {
+    font-family: $_mono-font;
+    font-size: 10px;
+    color: $_text-muted;
+    font-weight: $font-weight-semibold;
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  &__usage-bar {
+    width: 80px;
+    height: 6px;
+    background: #F0F2F5;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  &__usage-fill {
+    height: 100%;
+    background: $_accent;
+    border-radius: 3px;
+    transition: width 400ms $ease-out-quart;
+
+    &--warn { background: #F59E0B; }
+    &--danger { background: #EF4444; }
+  }
+
+  &__badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    letter-spacing: 0.02em;
+
+    &--active {
+      background: rgba(34, 197, 94, 0.08);
+      color: #16A34A;
+    }
+
+    &--inactive {
+      background: rgba(239, 68, 68, 0.08);
+      color: #DC2626;
+    }
+
+    &--paused {
+      background: rgba(245, 158, 11, 0.08);
+      color: #D97706;
+      margin-left: 6px;
+    }
+  }
+
+  &__empty {
+    padding: $spacing-3xl;
+    text-align: center;
+    color: $_text-muted;
+    font-size: $font-size-sm;
+  }
 }
 
 // ============================================

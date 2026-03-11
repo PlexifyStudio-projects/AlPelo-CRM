@@ -5,7 +5,7 @@ const DEV_MENU = [
   { id: 'dev-tenants', label: 'Agencias', icon: 'building', group: 'main' },
   { id: 'dev-activity', label: 'Actividad IA', icon: 'zap', group: 'monitor' },
   { id: 'dev-whatsapp', label: 'WhatsApp', icon: 'message-circle', group: 'monitor' },
-  { id: 'dev-clients', label: 'Clientes', icon: 'users', group: 'analytics' },
+  { id: 'dev-clients', label: 'Nuestros Clientes', icon: 'users', group: 'analytics' },
   { id: 'dev-performance', label: 'Rendimiento', icon: 'trending-up', group: 'analytics' },
   { id: 'dev-usage', label: 'Consumo', icon: 'bar-chart', group: 'billing' },
   { id: 'dev-billing', label: 'Facturacion', icon: 'dollar', group: 'billing' },

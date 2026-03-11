@@ -5,8 +5,8 @@ Manage tenants, billing, usage, and platform-level operations.
 
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from datetime import datetime
+from sqlalchemy import func, desc
+from datetime import datetime, timedelta
 import secrets
 import string
 import sys, platform
@@ -33,6 +33,41 @@ def _require_dev(current_user: Admin):
     return current_user
 
 
+def _safe_tenant_dict(t, db=None):
+    """Build a tenant dict safely using getattr for columns that may not exist."""
+    client_count = 0
+    staff_count = 0
+    if db and t.id == 1:
+        try:
+            client_count = db.query(func.count(Client.id)).scalar()
+            staff_count = db.query(func.count(Staff.id)).scalar()
+        except Exception:
+            pass
+
+    return {
+        "id": t.id,
+        "slug": t.slug,
+        "name": t.name,
+        "business_type": getattr(t, 'business_type', 'peluqueria'),
+        "owner_name": getattr(t, 'owner_name', None),
+        "owner_phone": getattr(t, 'owner_phone', None),
+        "owner_email": getattr(t, 'owner_email', None),
+        "plan": getattr(t, 'plan', 'standard'),
+        "monthly_price": getattr(t, 'monthly_price', 0),
+        "messages_used": getattr(t, 'messages_used', 0),
+        "messages_limit": getattr(t, 'messages_limit', 5000),
+        "ai_name": getattr(t, 'ai_name', 'Lina'),
+        "ai_is_paused": getattr(t, 'ai_is_paused', False),
+        "is_active": getattr(t, 'is_active', True),
+        "city": getattr(t, 'city', None),
+        "country": getattr(t, 'country', 'CO'),
+        "wa_phone_display": getattr(t, 'wa_phone_display', None),
+        "created_at": t.created_at.isoformat() if getattr(t, 'created_at', None) else None,
+        "total_clients": client_count,
+        "total_staff": staff_count,
+    }
+
+
 # ============================================================================
 # DASHBOARD STATS
 # ============================================================================
@@ -42,10 +77,10 @@ def dev_stats(db: Session = Depends(get_db), user: Admin = Depends(get_current_u
     _require_dev(user)
 
     tenants = db.query(Tenant).all()
-    active_tenants = [t for t in tenants if t.is_active]
+    active_tenants = [t for t in tenants if getattr(t, 'is_active', True)]
 
-    total_messages = sum(t.messages_used for t in tenants)
-    mrr = sum(t.monthly_price for t in active_tenants)
+    total_messages = sum(getattr(t, 'messages_used', 0) for t in tenants)
+    mrr = sum(getattr(t, 'monthly_price', 0) for t in active_tenants)
 
     # Get usage metrics for current month
     now = datetime.utcnow()
@@ -53,25 +88,7 @@ def dev_stats(db: Session = Depends(get_db), user: Admin = Depends(get_current_u
     metrics = db.query(UsageMetrics).filter(UsageMetrics.period == current_period).all()
     total_tokens = sum(m.ai_tokens_used for m in metrics)
 
-    tenant_list = []
-    for t in tenants:
-        # Count clients and staff for this tenant (for now, all belong to tenant 1)
-        client_count = db.query(func.count(Client.id)).scalar() if t.id == 1 else 0
-        staff_count = db.query(func.count(Staff.id)).scalar() if t.id == 1 else 0
-
-        tenant_list.append({
-            "id": t.id,
-            "slug": t.slug,
-            "name": t.name,
-            "plan": t.plan,
-            "messages_used": t.messages_used,
-            "messages_limit": t.messages_limit,
-            "ai_is_paused": t.ai_is_paused,
-            "is_active": t.is_active,
-            "created_at": t.created_at.isoformat() if t.created_at else None,
-            "total_clients": client_count,
-            "total_staff": staff_count,
-        })
+    tenant_list = [_safe_tenant_dict(t, db) for t in tenants]
 
     # Additional KPIs
     total_clients = db.query(func.count(Client.id)).scalar()
@@ -80,7 +97,7 @@ def dev_stats(db: Session = Depends(get_db), user: Admin = Depends(get_current_u
     total_appointments = db.query(func.count(Appointment.id)).scalar()
 
     # Today's activity
-    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     msgs_today = db.query(func.count(WhatsAppMessage.id)).filter(
         WhatsAppMessage.created_at >= today_start
     ).scalar()
@@ -116,84 +133,71 @@ def dev_stats(db: Session = Depends(get_db), user: Admin = Depends(get_current_u
 @router.get("/dev/tenants")
 def list_tenants(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
-
     tenants = db.query(Tenant).order_by(Tenant.created_at.desc()).all()
-    result = []
-    for t in tenants:
-        client_count = db.query(func.count(Client.id)).scalar() if t.id == 1 else 0
-        staff_count = db.query(func.count(Staff.id)).scalar() if t.id == 1 else 0
-
-        result.append({
-            "id": t.id,
-            "slug": t.slug,
-            "name": t.name,
-            "business_type": t.business_type,
-            "owner_name": t.owner_name,
-            "owner_phone": t.owner_phone,
-            "owner_email": t.owner_email,
-            "plan": t.plan,
-            "monthly_price": t.monthly_price,
-            "messages_used": t.messages_used,
-            "messages_limit": t.messages_limit,
-            "ai_name": t.ai_name,
-            "ai_is_paused": t.ai_is_paused,
-            "is_active": t.is_active,
-            "city": t.city,
-            "country": t.country,
-            "wa_phone_display": t.wa_phone_display,
-            "created_at": t.created_at.isoformat() if t.created_at else None,
-            "total_clients": client_count,
-            "total_staff": staff_count,
-        })
-
-    return result
+    return [_safe_tenant_dict(t, db) for t in tenants]
 
 
 @router.post("/dev/tenants")
 def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
 
-    slug = data.get("slug", "").strip().lower()
-    if not slug:
-        raise HTTPException(status_code=400, detail="Slug is required")
+    slug = (data.get("slug") or "").strip().lower().replace(" ", "-")
+    name = (data.get("name") or "").strip()
+
+    if not slug or not name:
+        raise HTTPException(status_code=400, detail="Slug y nombre son requeridos")
 
     existing = db.query(Tenant).filter(Tenant.slug == slug).first()
     if existing:
-        raise HTTPException(status_code=400, detail=f"Slug '{slug}' already exists")
+        raise HTTPException(status_code=400, detail=f"Ya existe una agencia con slug '{slug}'")
 
     tenant = Tenant(
         slug=slug,
-        name=data.get("name", slug),
+        name=name,
         business_type=data.get("business_type", "peluqueria"),
         owner_name=data.get("owner_name"),
         owner_phone=data.get("owner_phone"),
         owner_email=data.get("owner_email"),
+        ai_name=data.get("ai_name", "Lina"),
         plan="standard",
         monthly_price=250000,
         messages_limit=5000,
-        ai_name=data.get("ai_name", "Lina"),
+        messages_used=0,
+        is_active=True,
+        ai_is_paused=False,
+        timezone=data.get("timezone", "America/Bogota"),
+        currency=data.get("currency", "COP"),
         city=data.get("city"),
         country=data.get("country", "CO"),
-        wa_phone_number_id=data.get("wa_phone_number_id"),
-        wa_business_account_id=data.get("wa_business_account_id"),
-        wa_access_token=data.get("wa_access_token"),
-        wa_webhook_token=data.get("wa_webhook_token"),
-        wa_phone_display=data.get("wa_phone_display"),
+        booking_url=data.get("booking_url"),
     )
+
+    # WhatsApp config
+    if data.get("wa_phone_number_id"):
+        tenant.wa_phone_number_id = data["wa_phone_number_id"]
+    if data.get("wa_business_account_id"):
+        tenant.wa_business_account_id = data["wa_business_account_id"]
+    if data.get("wa_access_token"):
+        tenant.wa_access_token = data["wa_access_token"]
+    if data.get("wa_webhook_token"):
+        tenant.wa_webhook_token = data["wa_webhook_token"]
+    if data.get("wa_phone_display"):
+        tenant.wa_phone_display = data["wa_phone_display"]
+
     db.add(tenant)
     db.commit()
     db.refresh(tenant)
 
-    # Auto-create an Admin user for the tenant owner
+    # Auto-create admin user for this tenant
     alphabet = string.ascii_letters + string.digits
-    generated_password = ''.join(secrets.choice(alphabet) for _ in range(8))
-    username = f"admin-{slug}"
+    generated_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+    admin_username = f"admin_{slug}"
 
     admin_user = Admin(
-        name=data.get("owner_name", slug),
-        email=data.get("owner_email"),
-        phone=data.get("owner_phone"),
-        username=username,
+        name=f"Admin {name}",
+        email=data.get("owner_email") or f"{slug}@plexify.studio",
+        phone=data.get("owner_phone") or "",
+        username=admin_username,
         password=hash_password(generated_password),
         role="admin",
         is_active=True,
@@ -201,16 +205,12 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
     )
     db.add(admin_user)
     db.commit()
-    db.refresh(admin_user)
 
     return {
-        "id": tenant.id,
-        "slug": tenant.slug,
-        "name": tenant.name,
-        "admin_credentials": {
-            "username": username,
+        **_safe_tenant_dict(tenant),
+        "credentials": {
+            "username": admin_username,
             "password": generated_password,
-            "admin_id": admin_user.id,
         },
     }
 
@@ -221,30 +221,24 @@ def update_tenant(tenant_id: int, data: dict, db: Session = Depends(get_db), use
 
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        raise HTTPException(status_code=404, detail="Agencia no encontrada")
 
-    updatable = [
+    allowed_fields = [
         "name", "business_type", "owner_name", "owner_phone", "owner_email",
-        "plan", "monthly_price", "messages_limit", "ai_name", "ai_personality",
-        "city", "country", "booking_url", "address",
+        "ai_name", "city", "country", "timezone", "currency", "booking_url",
         "wa_phone_number_id", "wa_business_account_id", "wa_access_token",
         "wa_webhook_token", "wa_phone_display",
     ]
 
-    for field in updatable:
+    for field in allowed_fields:
         if field in data:
             setattr(tenant, field, data[field])
 
-    tenant.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(tenant)
 
-    return {"ok": True, "id": tenant.id}
+    return _safe_tenant_dict(tenant, db)
 
-
-# ============================================================================
-# TENANT ACTIONS (pause AI, add messages, suspend)
-# ============================================================================
 
 @router.post("/dev/tenants/{tenant_id}/toggle-ai")
 def toggle_tenant_ai(tenant_id: int, data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
@@ -252,10 +246,9 @@ def toggle_tenant_ai(tenant_id: int, data: dict, db: Session = Depends(get_db), 
 
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        raise HTTPException(status_code=404, detail="Agencia no encontrada")
 
     tenant.ai_is_paused = data.get("paused", not tenant.ai_is_paused)
-    tenant.updated_at = datetime.utcnow()
     db.commit()
 
     return {"ok": True, "ai_is_paused": tenant.ai_is_paused}
@@ -267,18 +260,19 @@ def add_tenant_messages(tenant_id: int, data: dict, db: Session = Depends(get_db
 
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        raise HTTPException(status_code=404, detail="Agencia no encontrada")
 
     amount = data.get("amount", 5000)
-    tenant.messages_limit += amount
-    tenant.updated_at = datetime.utcnow()
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Cantidad debe ser positiva")
+
+    tenant.messages_limit = (tenant.messages_limit or 0) + amount
     db.commit()
 
     return {
         "ok": True,
         "messages_limit": tenant.messages_limit,
         "messages_used": tenant.messages_used,
-        "added": amount,
     }
 
 
@@ -288,10 +282,9 @@ def toggle_tenant_active(tenant_id: int, data: dict, db: Session = Depends(get_d
 
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
     if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
+        raise HTTPException(status_code=404, detail="Agencia no encontrada")
 
     tenant.is_active = data.get("active", not tenant.is_active)
-    tenant.updated_at = datetime.utcnow()
     db.commit()
 
     return {"ok": True, "is_active": tenant.is_active}
@@ -316,9 +309,6 @@ def dev_usage(period: str = None, db: Session = Depends(get_db), user: Admin = D
     total_msgs = sum(m.wa_messages_sent + m.wa_messages_received for m in metrics)
     total_tokens = sum(m.ai_tokens_used for m in metrics)
 
-    # Real Anthropic pricing (80% input, 20% output estimate)
-    # Sonnet 4.5: $3/MTok input, $15/MTok output → blended ~$5.4/MTok
-    # Using $5.4 as weighted average
     estimated_cost = (total_tokens / 1_000_000) * 5.4
 
     tenant_details = []
@@ -339,12 +329,12 @@ def dev_usage(period: str = None, db: Session = Depends(get_db), user: Admin = D
             tenant_details.append({
                 "slug": t.slug,
                 "name": t.name,
-                "messages_sent": t.messages_used,
+                "messages_sent": getattr(t, 'messages_used', 0),
                 "messages_received": 0,
                 "ai_tokens": 0,
                 "cost_usd": 0,
             })
-            total_msgs = sum(t.messages_used for t in tenants)
+            total_msgs = sum(getattr(t, 'messages_used', 0) for t in tenants)
 
     return {
         "period": period,
@@ -359,23 +349,22 @@ def dev_usage(period: str = None, db: Session = Depends(get_db), user: Admin = D
 def dev_billing(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
 
-    # For now, generate billing records from tenant data
     tenants = db.query(Tenant).order_by(Tenant.created_at).all()
     records = []
 
     now = datetime.utcnow()
     for t in tenants:
-        if t.monthly_price > 0:
-            # Current month
+        price = getattr(t, 'monthly_price', 0)
+        if price > 0:
             records.append({
                 "id": t.id * 1000 + now.month,
                 "tenant_name": t.name,
                 "tenant_slug": t.slug,
-                "amount": t.monthly_price,
+                "amount": price,
                 "period": f"{now.year}-{now.month:02d}",
-                "status": "paid" if t.is_active else "pending",
+                "status": "paid" if getattr(t, 'is_active', True) else "pending",
                 "payment_method": "transfer",
-                "paid_at": t.updated_at.isoformat() if t.is_active and t.updated_at else None,
+                "paid_at": t.updated_at.isoformat() if getattr(t, 'is_active', True) and getattr(t, 'updated_at', None) else None,
             })
 
     return records
@@ -387,12 +376,7 @@ def dev_billing(db: Session = Depends(get_db), user: Admin = Depends(get_current
 
 @router.get("/tenant/me")
 def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    """Returns the tenant info for the currently logged-in user.
-    For now, returns the first tenant (AlPelo) for all non-dev users.
-    In full multi-tenant, this would look up tenant by user's tenant_id."""
-
     if user.role in DEV_ROLES:
-        # Devs don't belong to a specific tenant
         return {
             "id": 0,
             "slug": "plexify",
@@ -407,10 +391,8 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
             "timezone": "America/Bogota",
         }
 
-    # Find the first (and for now, only) tenant
     tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
     if not tenant:
-        # Fallback if no tenant exists yet
         return {
             "id": 0,
             "slug": "",
@@ -429,36 +411,142 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
         "id": tenant.id,
         "slug": tenant.slug,
         "name": tenant.name,
-        "business_type": tenant.business_type,
-        "plan": tenant.plan,
-        "messages_used": tenant.messages_used,
-        "messages_limit": tenant.messages_limit,
-        "ai_is_paused": tenant.ai_is_paused,
-        "ai_name": tenant.ai_name,
-        "currency": tenant.currency,
-        "timezone": tenant.timezone,
-        "booking_url": tenant.booking_url,
-        "city": tenant.city,
+        "business_type": getattr(tenant, 'business_type', 'peluqueria'),
+        "plan": getattr(tenant, 'plan', 'standard'),
+        "messages_used": getattr(tenant, 'messages_used', 0),
+        "messages_limit": getattr(tenant, 'messages_limit', 5000),
+        "ai_is_paused": getattr(tenant, 'ai_is_paused', False),
+        "ai_name": getattr(tenant, 'ai_name', 'Lina'),
+        "currency": getattr(tenant, 'currency', 'COP'),
+        "timezone": getattr(tenant, 'timezone', 'America/Bogota'),
+        "booking_url": getattr(tenant, 'booking_url', None),
+        "city": getattr(tenant, 'city', None),
         "logo_url": None,
         "primary_color": "#2D5A3D",
     }
 
 
 # ============================================================================
-# ACTIVITY FEED
+# ACTIVITY FEED — Real data from DB (WhatsApp messages by Lina + actions)
 # ============================================================================
 
 @router.get("/dev/activity")
 def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
-    # Import activity log
+
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    seven_days_ago = now - timedelta(days=7)
+
+    # Get Lina's recent messages (responses) from DB
+    lina_messages = db.query(WhatsAppMessage).filter(
+        WhatsAppMessage.sent_by == 'lina_ia',
+        WhatsAppMessage.created_at >= seven_days_ago,
+    ).order_by(WhatsAppMessage.created_at.desc()).limit(100).all()
+
+    # Get recent actions (notes with ACCION or system events)
+    action_notes = db.query(ClientNote).filter(
+        ClientNote.created_at >= seven_days_ago,
+        ClientNote.content.ilike('%ACCION:%'),
+    ).order_by(ClientNote.created_at.desc()).limit(30).all()
+
+    # Get tasks (PENDIENTE notes)
+    task_notes = db.query(ClientNote).filter(
+        ClientNote.created_at >= seven_days_ago,
+        ClientNote.content.ilike('%PENDIENTE%'),
+    ).order_by(ClientNote.created_at.desc()).limit(20).all()
+
+    # Build events list
+    events = []
+
+    for msg in lina_messages:
+        # Find the conversation to get client name
+        convo = db.query(WhatsAppConversation).filter(
+            WhatsAppConversation.id == msg.conversation_id
+        ).first() if msg.conversation_id else None
+
+        client_name = convo.wa_name if convo and convo.wa_name else "Cliente"
+
+        events.append({
+            "id": f"msg-{msg.id}",
+            "type": "respuesta",
+            "summary": f"Respondio a {client_name}",
+            "detail": (msg.content or "")[:150],
+            "timestamp": msg.created_at.isoformat() if msg.created_at else None,
+            "status": msg.status or "sent",
+        })
+
+    for note in action_notes:
+        client = db.query(Client).filter(Client.id == note.client_id).first() if note.client_id else None
+        content = (note.content or "").replace("ACCION:", "").strip()
+
+        events.append({
+            "id": f"act-{note.id}",
+            "type": "accion",
+            "summary": f"Accion para {client.name if client else 'Sistema'}",
+            "detail": content[:150],
+            "timestamp": note.created_at.isoformat() if note.created_at else None,
+            "status": "done",
+        })
+
+    for note in task_notes:
+        client = db.query(Client).filter(Client.id == note.client_id).first() if note.client_id else None
+        content = (note.content or "").replace("PENDIENTE:", "").strip()
+
+        events.append({
+            "id": f"task-{note.id}",
+            "type": "tarea",
+            "summary": f"Tarea: {client.name if client else 'Sistema'}",
+            "detail": content[:150],
+            "timestamp": note.created_at.isoformat() if note.created_at else None,
+            "status": "pending",
+        })
+
+    # Sort all events by timestamp desc
+    events.sort(key=lambda e: e.get("timestamp") or "", reverse=True)
+
+    # Daily stats
+    lina_today = db.query(func.count(WhatsAppMessage.id)).filter(
+        WhatsAppMessage.sent_by == 'lina_ia',
+        WhatsAppMessage.created_at >= today_start,
+    ).scalar()
+    lina_total_7d = len(lina_messages)
+    failed_7d = db.query(func.count(WhatsAppMessage.id)).filter(
+        WhatsAppMessage.status == 'failed',
+        WhatsAppMessage.created_at >= seven_days_ago,
+    ).scalar()
+    total_convos_7d = db.query(func.count(WhatsAppConversation.id)).filter(
+        WhatsAppConversation.last_message_at >= seven_days_ago,
+    ).scalar()
+
+    daily_stats = {
+        "sent": lina_today,
+        "failed": failed_7d,
+        "actions": len(action_notes),
+        "conversations": total_convos_7d,
+        "tasks": len(task_notes),
+        "skipped": 0,
+    }
+
+    # Also try to get in-memory events (for events from current session)
     try:
-        from activity_log import get_recent_events, get_daily_stats
-        events = get_recent_events(50)
-        daily = get_daily_stats()
-        return {"events": events, "daily_stats": daily}
+        from activity_log import get_recent_events
+        mem_events = get_recent_events(50)
+        if mem_events:
+            for e in mem_events:
+                events.append({
+                    "id": f"mem-{e.get('id', '')}",
+                    "type": e.get("type", "sistema"),
+                    "summary": e.get("summary", ""),
+                    "detail": e.get("detail", ""),
+                    "timestamp": e.get("timestamp", ""),
+                    "status": e.get("status", "ok"),
+                })
+            events.sort(key=lambda e: e.get("timestamp") or "", reverse=True)
     except Exception:
-        return {"events": [], "daily_stats": {}}
+        pass
+
+    return {"events": events[:100], "daily_stats": daily_stats}
 
 
 # ============================================================================
@@ -469,7 +557,6 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
 def dev_whatsapp_health(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
 
-    from datetime import timedelta
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
@@ -525,7 +612,7 @@ def dev_whatsapp_health(db: Session = Depends(get_db), user: Admin = Depends(get
 
     # Check WA token status from tenant
     tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
-    has_token = bool(tenant and tenant.wa_access_token)
+    has_token = bool(tenant and getattr(tenant, 'wa_access_token', None))
 
     return {
         "total_conversations": total_conversations,
@@ -542,7 +629,7 @@ def dev_whatsapp_health(db: Session = Depends(get_db), user: Admin = Depends(get
         "media_messages": media_count,
         "daily_messages": daily_msgs,
         "has_wa_token": has_token,
-        "wa_phone_display": tenant.wa_phone_display if tenant else None,
+        "wa_phone_display": getattr(tenant, 'wa_phone_display', None) if tenant else None,
     }
 
 
@@ -554,7 +641,6 @@ def dev_whatsapp_health(db: Session = Depends(get_db), user: Admin = Depends(get
 def dev_clients_overview(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
 
-    from datetime import timedelta
     now = datetime.utcnow()
     thirty_days_ago = now - timedelta(days=30)
 
@@ -565,7 +651,7 @@ def dev_clients_overview(db: Session = Depends(get_db), user: Admin = Depends(ge
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     new_this_month = db.query(func.count(Client.id)).filter(Client.created_at >= month_start).scalar()
 
-    # Status breakdown (from status_override or computed)
+    # Status breakdown
     vip_count = db.query(func.count(Client.id)).filter(Client.status_override == 'vip').scalar()
     risk_count = db.query(func.count(Client.id)).filter(Client.status_override == 'en_riesgo').scalar()
     inactive_count = db.query(func.count(Client.id)).filter(Client.is_active == False).scalar()
@@ -582,7 +668,6 @@ def dev_clients_overview(db: Session = Depends(get_db), user: Admin = Depends(ge
     ).scalar()
 
     # Top clients by visits
-    from sqlalchemy import desc
     top_clients = db.query(
         Client.name, Client.client_id, func.count(VisitHistory.id).label('visit_count'),
         func.coalesce(func.sum(VisitHistory.amount), 0).label('total_spent')
@@ -620,7 +705,6 @@ def dev_clients_overview(db: Session = Depends(get_db), user: Admin = Depends(ge
 def dev_performance(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
 
-    from datetime import timedelta
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -660,7 +744,7 @@ def dev_performance(db: Session = Depends(get_db), user: Admin = Depends(get_cur
     if metrics and metrics.wa_messages_sent > 0:
         avg_tokens_per_msg = round(metrics.ai_tokens_used / metrics.wa_messages_sent)
 
-    # Conversation resolution — convos with AI still active vs paused
+    # Conversation resolution
     ai_paused_convos = db.query(func.count(WhatsAppConversation.id)).filter(
         WhatsAppConversation.is_ai_active == False
     ).scalar()

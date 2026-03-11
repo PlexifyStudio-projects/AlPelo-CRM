@@ -18,6 +18,17 @@ def _run_migrations(engine):
         ("whatsapp_conversation", "wa_profile_photo_url", "TEXT"),
         ("staff", "color", "VARCHAR"),
         ("admin", "tenant_id", "INTEGER"),
+        # Tenant columns (may be missing if table was created before model updates)
+        ("tenant", "owner_email", "VARCHAR(200)"),
+        ("tenant", "wa_phone_number_id", "VARCHAR(50)"),
+        ("tenant", "wa_business_account_id", "VARCHAR(50)"),
+        ("tenant", "wa_access_token", "TEXT"),
+        ("tenant", "wa_webhook_token", "VARCHAR(100)"),
+        ("tenant", "wa_phone_display", "VARCHAR(20)"),
+        ("tenant", "ai_personality", "TEXT"),
+        ("tenant", "ai_model", "VARCHAR(100) DEFAULT 'claude-sonnet-4-5-20250929'"),
+        ("tenant", "address", "TEXT"),
+        ("tenant", "updated_at", "TIMESTAMP DEFAULT NOW()"),
     ]
 
     for table, column, col_type in migrations:
