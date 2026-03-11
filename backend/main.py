@@ -132,9 +132,63 @@ def _run_migrations(engine):
                     "currency": "COP",
                     "booking": "https://book.weibook.co/alpelo-peluqueria",
                 })
-                print("[SEED] Created AlPelo tenant (slug=alpelo, plan=pro)")
+                print("[SEED] Created AlPelo tenant (slug=alpelo, plan=standard)")
+
+                # Create admin user for AlPelo tenant
+                tenant_row = conn.execute(text(
+                    "SELECT id FROM public.tenant WHERE slug = 'alpelo'"
+                )).fetchone()
+                if tenant_row:
+                    existing_admin = conn.execute(text(
+                        "SELECT id FROM public.admin WHERE username = 'admin_alpelo'"
+                    )).fetchone()
+                    if existing_admin is None:
+                        from auth.security import hash_password
+                        hashed_pw = hash_password("AlPelo2026")
+                        conn.execute(text(
+                            "INSERT INTO public.admin (name, email, phone, username, password, role, is_active, tenant_id) "
+                            "VALUES (:name, :email, :phone, :username, :password, :role, true, :tid)"
+                        ), {
+                            "name": "Jaime AlPelo",
+                            "email": "somosalpelo@gmail.com",
+                            "phone": "+573147083182",
+                            "username": "admin_alpelo",
+                            "password": hashed_pw,
+                            "role": "admin",
+                            "tid": tenant_row[0],
+                        })
+                        print("[SEED] Created admin_alpelo user for AlPelo tenant")
     except Exception as e:
         print(f"[SEED] AlPelo tenant: {e}")
+
+    # Ensure admin_alpelo exists even if tenant was already seeded
+    try:
+        with engine.begin() as conn:
+            existing_admin = conn.execute(text(
+                "SELECT id FROM public.admin WHERE username = 'admin_alpelo'"
+            )).fetchone()
+            if existing_admin is None:
+                tenant_row = conn.execute(text(
+                    "SELECT id FROM public.tenant WHERE slug = 'alpelo'"
+                )).fetchone()
+                if tenant_row:
+                    from auth.security import hash_password
+                    hashed_pw = hash_password("AlPelo2026")
+                    conn.execute(text(
+                        "INSERT INTO public.admin (name, email, phone, username, password, role, is_active, tenant_id) "
+                        "VALUES (:name, :email, :phone, :username, :password, :role, true, :tid)"
+                    ), {
+                        "name": "Jaime AlPelo",
+                        "email": "somosalpelo@gmail.com",
+                        "phone": "+573147083182",
+                        "username": "admin_alpelo",
+                        "password": hashed_pw,
+                        "role": "admin",
+                        "tid": tenant_row[0],
+                    })
+                    print("[SEED] Created admin_alpelo user (standalone)")
+    except Exception as e:
+        print(f"[SEED] admin_alpelo standalone: {e}")
 
 
 @asynccontextmanager
@@ -405,62 +459,6 @@ async def lina_health():
 @app.get("/")
 async def root():
     return {"status": "running", "api": "AlPelo CRM"}
-
-
-@app.get("/api/debug/db-check")
-async def debug_db_check():
-    """Temporary diagnostic: check what tables and tenant data exist."""
-    from database.connection import SessionLocal
-    from sqlalchemy import text
-
-    db = SessionLocal()
-    result = {}
-    try:
-        # Check if tenant table exists
-        tables = db.execute(text(
-            "SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name"
-        )).fetchall()
-        result["tables"] = [t[0] for t in tables]
-
-        # Check tenant columns
-        if "tenant" in result["tables"]:
-            cols = db.execute(text(
-                "SELECT column_name FROM information_schema.columns "
-                "WHERE table_schema='public' AND table_name='tenant' ORDER BY ordinal_position"
-            )).fetchall()
-            result["tenant_columns"] = [c[0] for c in cols]
-
-            # Count tenants with raw SQL
-            count = db.execute(text("SELECT COUNT(*) FROM public.tenant")).scalar()
-            result["tenant_count"] = count
-
-            # Get basic tenant data with only safe columns
-            try:
-                rows = db.execute(text(
-                    "SELECT id, slug, name, plan, is_active FROM public.tenant LIMIT 10"
-                )).fetchall()
-                result["tenants"] = [{"id": r[0], "slug": r[1], "name": r[2], "plan": r[3], "is_active": r[4]} for r in rows]
-            except Exception as e:
-                result["tenants_error"] = str(e)
-
-            # Try ORM query to see if it fails
-            try:
-                from database.models import Tenant
-                orm_tenants = db.query(Tenant).all()
-                result["orm_query_ok"] = True
-                result["orm_count"] = len(orm_tenants)
-            except Exception as e:
-                result["orm_query_ok"] = False
-                result["orm_error"] = str(e)[:300]
-        else:
-            result["tenant_table_exists"] = False
-
-    except Exception as e:
-        result["error"] = str(e)[:300]
-    finally:
-        db.close()
-
-    return result
 
 
 if __name__ == "__main__":

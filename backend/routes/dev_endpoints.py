@@ -44,6 +44,15 @@ def _safe_tenant_dict(t, db=None):
         except Exception:
             pass
 
+    admin_user = None
+    if db:
+        try:
+            admin = db.query(Admin).filter(Admin.tenant_id == t.id).first()
+            if admin:
+                admin_user = {"id": admin.id, "username": admin.username, "name": admin.name, "email": admin.email}
+        except Exception:
+            pass
+
     return {
         "id": t.id,
         "slug": t.slug,
@@ -65,6 +74,7 @@ def _safe_tenant_dict(t, db=None):
         "created_at": t.created_at.isoformat() if getattr(t, 'created_at', None) else None,
         "total_clients": client_count,
         "total_staff": staff_count,
+        "admin_user": admin_user,
     }
 
 
@@ -288,6 +298,42 @@ def toggle_tenant_active(tenant_id: int, data: dict, db: Session = Depends(get_d
     db.commit()
 
     return {"ok": True, "is_active": tenant.is_active}
+
+
+@router.put("/dev/tenants/{tenant_id}/admin-credentials")
+def update_tenant_admin(tenant_id: int, data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Agencia no encontrada")
+
+    admin = db.query(Admin).filter(Admin.tenant_id == tenant_id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="No se encontro usuario admin para esta agencia")
+
+    if data.get("username"):
+        # Check uniqueness
+        existing = db.query(Admin).filter(Admin.username == data["username"], Admin.id != admin.id).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Username ya existe")
+        admin.username = data["username"]
+
+    if data.get("new_password"):
+        if len(data["new_password"]) < 6:
+            raise HTTPException(status_code=400, detail="Minimo 6 caracteres")
+        admin.password = hash_password(data["new_password"])
+
+    if data.get("name"):
+        admin.name = data["name"]
+
+    if data.get("email"):
+        admin.email = data["email"]
+
+    db.commit()
+    db.refresh(admin)
+
+    return {"ok": True, "admin_user": {"id": admin.id, "username": admin.username, "name": admin.name, "email": admin.email}}
 
 
 # ============================================================================

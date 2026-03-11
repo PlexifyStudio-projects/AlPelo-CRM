@@ -5,27 +5,17 @@ const b = 'dev-tenants';
 
 const EMPTY_TENANT = {
   name: '',
-  slug: '',
   business_type: 'peluqueria',
   owner_name: '',
   owner_phone: '',
   owner_email: '',
-  messages_limit: 5000,
-  ai_name: 'Lina',
   city: '',
   country: 'CO',
-  wa_phone_number_id: '',
-  wa_business_account_id: '',
-  wa_access_token: '',
-  wa_webhook_token: '',
-  wa_phone_display: '',
-  admin_username: '',
-  admin_password: '',
 };
 
 const generatePassword = () => {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 };
 
 const DevTenants = () => {
@@ -34,11 +24,17 @@ const DevTenants = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ ...EMPTY_TENANT });
   const [editingId, setEditingId] = useState(null);
+  const [editingTenant, setEditingTenant] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
-  const [showPasswordCreate, setShowPasswordCreate] = useState(false);
   const [successData, setSuccessData] = useState(null);
   const [copied, setCopied] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  // Admin credentials state (for edit mode)
+  const [adminUsername, setAdminUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [credMsg, setCredMsg] = useState(null);
+  const [savingCreds, setSavingCreds] = useState(false);
 
   const fetchTenants = useCallback(async () => {
     try {
@@ -60,59 +56,35 @@ const DevTenants = () => {
 
   useEffect(() => { fetchTenants(); }, [fetchTenants]);
 
+  const slugify = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
   const handleOpenCreate = () => {
-    const password = generatePassword();
-    setFormData({ ...EMPTY_TENANT, admin_password: password });
+    setFormData({ ...EMPTY_TENANT });
     setEditingId(null);
-    setShowPasswordCreate(false);
+    setEditingTenant(null);
+    setAdminUsername('');
+    setNewPassword('');
+    setCredMsg(null);
     setShowForm(true);
   };
 
   const handleOpenEdit = (tenant) => {
     setFormData({
       name: tenant.name,
-      slug: tenant.slug,
-      business_type: tenant.business_type,
+      business_type: tenant.business_type || 'peluqueria',
       owner_name: tenant.owner_name || '',
       owner_phone: tenant.owner_phone || '',
       owner_email: tenant.owner_email || '',
-      messages_limit: tenant.messages_limit,
-      ai_name: tenant.ai_name || 'Lina',
       city: tenant.city || '',
       country: tenant.country || 'CO',
-      wa_phone_number_id: tenant.wa_phone_number_id || '',
-      wa_business_account_id: tenant.wa_business_account_id || '',
-      wa_access_token: tenant.wa_access_token || '',
-      wa_webhook_token: tenant.wa_webhook_token || '',
-      wa_phone_display: tenant.wa_phone_display || '',
-      admin_username: '',
-      admin_password: '',
     });
     setEditingId(tenant.id);
+    setEditingTenant(tenant);
+    setAdminUsername(tenant.admin_user?.username || '');
+    setNewPassword('');
+    setCredMsg(null);
+    setShowNewPwd(false);
     setShowForm(true);
-  };
-
-  const handleSlugFromName = (name) => {
-    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  };
-
-  const handleNameChange = (name) => {
-    const updates = { name };
-    if (!editingId) {
-      const slug = handleSlugFromName(name);
-      updates.slug = slug;
-      updates.admin_username = slug ? `admin-${slug}` : '';
-    }
-    setFormData((prev) => ({ ...prev, ...updates }));
-  };
-
-  const handleSlugChange = (slug) => {
-    const clean = slug.toLowerCase().replace(/[^a-z0-9-]/g, '');
-    const updates = { slug: clean };
-    if (!editingId) {
-      updates.admin_username = clean ? `admin-${clean}` : '';
-    }
-    setFormData((prev) => ({ ...prev, ...updates }));
   };
 
   const handleSave = async () => {
@@ -123,14 +95,8 @@ const DevTenants = () => {
       const method = editingId ? 'PUT' : 'POST';
 
       const payload = { ...formData };
-      if (!payload.slug && payload.name) {
-        payload.slug = handleSlugFromName(payload.name);
-      }
-
-      // Don't send admin credentials on edit
-      if (editingId) {
-        delete payload.admin_username;
-        delete payload.admin_password;
+      if (!editingId) {
+        payload.slug = slugify(payload.name);
       }
 
       const res = await fetch(url, {
@@ -147,16 +113,14 @@ const DevTenants = () => {
       }
 
       const result = await res.json().catch(() => ({}));
-
       setShowForm(false);
 
-      if (!editingId) {
-        // Show success modal with credentials
+      if (!editingId && result.credentials) {
         setSuccessData({
           name: result.name || payload.name,
           slug: result.slug || payload.slug,
-          admin_username: result.admin_username || payload.admin_username,
-          admin_password: result.admin_password || payload.admin_password,
+          admin_username: result.credentials.username,
+          admin_password: result.credentials.password,
         });
         setCopied(false);
       }
@@ -167,15 +131,59 @@ const DevTenants = () => {
     }
   };
 
+  const handleSaveCredentials = async () => {
+    if (!editingId) return;
+    setSavingCreds(true);
+    setCredMsg(null);
+
+    const payload = {};
+    if (adminUsername && adminUsername !== editingTenant?.admin_user?.username) {
+      payload.username = adminUsername;
+    }
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        setCredMsg({ type: 'error', text: 'Minimo 6 caracteres' });
+        setSavingCreds(false);
+        return;
+      }
+      payload.new_password = newPassword;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      setCredMsg({ type: 'error', text: 'No hay cambios' });
+      setSavingCreds(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/dev/tenants/${editingId}/admin-credentials`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setCredMsg({ type: 'error', text: err.detail || 'Error' });
+      } else {
+        setCredMsg({ type: 'success', text: 'Credenciales actualizadas' });
+        setNewPassword('');
+        fetchTenants();
+      }
+    } catch {
+      setCredMsg({ type: 'error', text: 'Error de conexion' });
+    }
+    setSavingCreds(false);
+  };
+
   const handleCopyCredentials = async () => {
     if (!successData) return;
-    const text = `Agencia: ${successData.name}\nSlug: ${successData.slug}\nUsuario: ${successData.admin_username}\nContrasena: ${successData.admin_password}`;
+    const text = `Agencia: ${successData.name}\nUsuario: ${successData.admin_username}\nContrasena: ${successData.admin_password}`;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
       const ta = document.createElement('textarea');
       ta.value = text;
       document.body.appendChild(ta);
@@ -191,8 +199,7 @@ const DevTenants = () => {
     setActionLoading(`ai-${tenant.id}`);
     try {
       await fetch(`${API_URL}/dev/tenants/${tenant.id}/toggle-ai`, {
-        method: 'POST',
-        credentials: 'include',
+        method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paused: !tenant.ai_is_paused }),
       });
@@ -205,8 +212,7 @@ const DevTenants = () => {
     setActionLoading(`msg-${tenant.id}`);
     try {
       await fetch(`${API_URL}/dev/tenants/${tenant.id}/add-messages`, {
-        method: 'POST',
-        credentials: 'include',
+        method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount }),
       });
@@ -219,8 +225,7 @@ const DevTenants = () => {
     setActionLoading(`active-${tenant.id}`);
     try {
       await fetch(`${API_URL}/dev/tenants/${tenant.id}/toggle-active`, {
-        method: 'POST',
-        credentials: 'include',
+        method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !tenant.is_active }),
       });
@@ -234,9 +239,7 @@ const DevTenants = () => {
   if (loading) {
     return (
       <div className={b}>
-        <div className={`${b}__header`}>
-          <h1 className={`${b}__title`}>Agencias</h1>
-        </div>
+        <div className={`${b}__header`}><h1 className={`${b}__title`}>Agencias</h1></div>
         <div className={`${b}__loading`}>Cargando agencias...</div>
       </div>
     );
@@ -283,7 +286,6 @@ const DevTenants = () => {
                 <div className={`${b}__card-header`}>
                   <div className={`${b}__card-title-row`}>
                     <h3 className={`${b}__card-name`}>{t.name}</h3>
-                    <span className={`${b}__card-slug`}>/{t.slug}</span>
                   </div>
                   <span className={`${b}__card-plan`} style={{ '--plan-color': '#4F6EF7' }}>
                     Plexify
@@ -295,7 +297,7 @@ const DevTenants = () => {
                   <div className={`${b}__card-usage-header`}>
                     <span>Mensajes IA</span>
                     <span className={`${b}__card-usage-count`}>
-                      {(t.messages_used || 0).toLocaleString('es-CO')} / {t.messages_limit.toLocaleString('es-CO')}
+                      {(t.messages_used || 0).toLocaleString('es-CO')} / {(t.messages_limit || 0).toLocaleString('es-CO')}
                     </span>
                   </div>
                   <div className={`${b}__card-bar-track`}>
@@ -318,12 +320,14 @@ const DevTenants = () => {
                     <span className={`${b}__card-info-value`}>{t.city || '—'}</span>
                   </div>
                   <div className={`${b}__card-info-item`}>
-                    <span className={`${b}__card-info-label`}>Clientes</span>
-                    <span className={`${b}__card-info-value`}>{t.total_clients || 0}</span>
+                    <span className={`${b}__card-info-label`}>Usuario</span>
+                    <span className={`${b}__card-info-value ${b}__card-info-value--mono`}>
+                      {t.admin_user?.username || '—'}
+                    </span>
                   </div>
                   <div className={`${b}__card-info-item`}>
-                    <span className={`${b}__card-info-label`}>Equipo</span>
-                    <span className={`${b}__card-info-value`}>{t.total_staff || 0}</span>
+                    <span className={`${b}__card-info-label`}>Clientes</span>
+                    <span className={`${b}__card-info-value`}>{t.total_clients || 0}</span>
                   </div>
                 </div>
 
@@ -339,11 +343,7 @@ const DevTenants = () => {
 
                 {/* Actions */}
                 <div className={`${b}__card-actions`}>
-                  <button
-                    className={`${b}__card-btn ${b}__card-btn--edit`}
-                    onClick={() => handleOpenEdit(t)}
-                    title="Editar"
-                  >
+                  <button className={`${b}__card-btn ${b}__card-btn--edit`} onClick={() => handleOpenEdit(t)} title="Editar">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                     Editar
                   </button>
@@ -397,23 +397,10 @@ const DevTenants = () => {
                   <input
                     className={`${b}__form-input`}
                     value={formData.name}
-                    onChange={(e) => handleNameChange(e.target.value)}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Ej: AlPelo Peluqueria"
                   />
                 </div>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Slug (URL)</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.slug}
-                    onChange={(e) => handleSlugChange(e.target.value)}
-                    placeholder="alpelo"
-                    disabled={!!editingId}
-                  />
-                </div>
-              </div>
-
-              <div className={`${b}__form-row`}>
                 <div className={`${b}__form-field`}>
                   <label className={`${b}__form-label`}>Tipo de negocio</label>
                   <select
@@ -431,6 +418,9 @@ const DevTenants = () => {
                     <option value="otro">Otro</option>
                   </select>
                 </div>
+              </div>
+
+              <div className={`${b}__form-row`}>
                 <div className={`${b}__form-field`}>
                   <label className={`${b}__form-label`}>Ciudad</label>
                   <input
@@ -438,6 +428,15 @@ const DevTenants = () => {
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     placeholder="Bucaramanga"
+                  />
+                </div>
+                <div className={`${b}__form-field`}>
+                  <label className={`${b}__form-label`}>Pais</label>
+                  <input
+                    className={`${b}__form-input`}
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    placeholder="CO"
                   />
                 </div>
               </div>
@@ -479,138 +478,75 @@ const DevTenants = () => {
                 </div>
               </div>
 
-              {/* AI config */}
+              {/* Credentials section — ALWAYS visible */}
               <div className={`${b}__form-divider`} />
-              <h4 className={`${b}__form-section`}>Configuracion IA</h4>
+              <h4 className={`${b}__form-section`}>Credenciales de acceso</h4>
 
-              <div className={`${b}__form-row`}>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Nombre de la IA</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.ai_name}
-                    onChange={(e) => setFormData({ ...formData, ai_name: e.target.value })}
-                    placeholder="Lina"
-                  />
-                </div>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Limite de mensajes</label>
-                  <input
-                    className={`${b}__form-input`}
-                    type="number"
-                    value={formData.messages_limit}
-                    onChange={(e) => setFormData({ ...formData, messages_limit: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
-              </div>
-
-              {/* WhatsApp config */}
-              <div className={`${b}__form-divider`} />
-              <h4 className={`${b}__form-section`}>Configuracion WhatsApp</h4>
-
-              <div className={`${b}__form-row`}>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Phone Number ID</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.wa_phone_number_id}
-                    onChange={(e) => setFormData({ ...formData, wa_phone_number_id: e.target.value })}
-                    placeholder="1061738603687334"
-                  />
-                </div>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Business Account ID</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.wa_business_account_id}
-                    onChange={(e) => setFormData({ ...formData, wa_business_account_id: e.target.value })}
-                    placeholder="1488407832803597"
-                  />
-                </div>
-              </div>
-
-              <div className={`${b}__form-row`}>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Numero visible</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.wa_phone_display}
-                    onChange={(e) => setFormData({ ...formData, wa_phone_display: e.target.value })}
-                    placeholder="+57 300 123 4567"
-                  />
-                </div>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Webhook Verify Token</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.wa_webhook_token}
-                    onChange={(e) => setFormData({ ...formData, wa_webhook_token: e.target.value })}
-                    placeholder="alpelo_webhook_2026"
-                  />
-                </div>
-              </div>
-
-              <div className={`${b}__form-field`}>
-                <label className={`${b}__form-label`}>Access Token</label>
-                <textarea
-                  className={`${b}__form-textarea`}
-                  value={formData.wa_access_token}
-                  onChange={(e) => setFormData({ ...formData, wa_access_token: e.target.value })}
-                  placeholder="EAAxxxxxxx..."
-                  rows={3}
-                />
-              </div>
-
-              {/* Admin credentials — only on create */}
-              {!editingId && (
+              {editingId ? (
                 <>
-                  <div className={`${b}__form-divider`} />
-                  <h4 className={`${b}__form-section`}>Credenciales de admin</h4>
-                  <p className={`${b}__form-note`}>Estas credenciales se generan al crear la agencia</p>
-
                   <div className={`${b}__form-row`}>
                     <div className={`${b}__form-field`}>
-                      <label className={`${b}__form-label`}>Usuario</label>
+                      <label className={`${b}__form-label`}>Usuario actual</label>
                       <input
                         className={`${b}__form-input`}
-                        value={formData.admin_username}
-                        onChange={(e) => setFormData({ ...formData, admin_username: e.target.value })}
+                        value={adminUsername}
+                        onChange={(e) => setAdminUsername(e.target.value)}
                         placeholder="admin-alpelo"
                       />
                     </div>
                     <div className={`${b}__form-field`}>
-                      <label className={`${b}__form-label`}>Contrasena</label>
+                      <label className={`${b}__form-label`}>Nueva contrasena</label>
                       <div className={`${b}__form-password-wrap`}>
                         <input
                           className={`${b}__form-input`}
-                          type={showPasswordCreate ? 'text' : 'password'}
-                          value={formData.admin_password}
-                          onChange={(e) => setFormData({ ...formData, admin_password: e.target.value })}
-                          placeholder="Contrasena"
+                          type={showNewPwd ? 'text' : 'password'}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Dejar vacio para no cambiar"
                         />
                         <button
                           type="button"
                           className={`${b}__form-password-toggle`}
-                          onClick={() => setShowPasswordCreate(!showPasswordCreate)}
-                          title={showPasswordCreate ? 'Ocultar' : 'Mostrar'}
+                          onClick={() => setShowNewPwd(!showNewPwd)}
                         >
-                          {showPasswordCreate ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                              <line x1="1" y1="1" x2="23" y2="23" />
-                            </svg>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                          )}
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            {showNewPwd ? (
+                              <>
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                              </>
+                            ) : (
+                              <>
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </>
+                            )}
+                          </svg>
                         </button>
                       </div>
                     </div>
                   </div>
+
+                  {credMsg && (
+                    <div className={`${b}__form-msg ${b}__form-msg--${credMsg.type}`}>
+                      {credMsg.text}
+                    </div>
+                  )}
+
+                  <button
+                    className={`${b}__form-btn-creds`}
+                    onClick={handleSaveCredentials}
+                    disabled={savingCreds}
+                  >
+                    {savingCreds ? 'Guardando...' : 'Actualizar credenciales'}
+                  </button>
                 </>
+              ) : (
+                <p className={`${b}__form-note`}>
+                  Las credenciales se generan automaticamente al crear la agencia.
+                  Se mostraran en pantalla para que las copies.
+                </p>
               )}
             </div>
 

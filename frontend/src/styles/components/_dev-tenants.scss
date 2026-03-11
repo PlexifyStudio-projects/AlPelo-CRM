@@ -239,6 +239,11 @@ $_text-muted: #8896AB;
     font-size: $font-size-sm;
     color: $_text-secondary;
     font-weight: $font-weight-medium;
+
+    &--mono {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: $font-size-xs;
+    }
   }
 
   // -----------------------------------------------
@@ -563,6 +568,52 @@ $_text-muted: #8896AB;
     color: $_text-muted;
     margin: -6px 0 14px;
     font-style: italic;
+  }
+
+  &__form-msg {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    margin-bottom: $spacing-md;
+
+    &--success {
+      background: rgba(34, 197, 94, 0.08);
+      color: #16A34A;
+      border: 1px solid rgba(34, 197, 94, 0.15);
+    }
+
+    &--error {
+      background: rgba(239, 68, 68, 0.06);
+      color: #DC2626;
+      border: 1px solid rgba(239, 68, 68, 0.15);
+    }
+  }
+
+  &__form-btn-creds {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: white;
+    border: 1px solid $_accent-border;
+    color: $_accent;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 180ms $ease-out-quart;
+    margin-bottom: $spacing-sm;
+
+    &:hover {
+      background: $_accent-bg;
+      border-color: $_accent;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 
   &__form-password-wrap {
