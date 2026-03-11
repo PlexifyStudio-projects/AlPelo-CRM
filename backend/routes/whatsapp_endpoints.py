@@ -1171,40 +1171,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 log_event("skip", "IA desactivada en esta conversacion", conv_id=conv_id, contact_name=conv.wa_contact_name if conv else "", status="info")
                 return
 
-            # Check tenant-level AI pause — if paused, send "contact admin" message instead
+            # Check tenant-level AI pause — if paused, just stay silent (no message sent)
             from database.models import Tenant
             tenant = db.query(Tenant).first()  # single-tenant for now
             if tenant and tenant.ai_is_paused:
                 log_event("skip", "IA pausada a nivel de agencia", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
-                # Send a static "contact your admin" message
-                to_phone = conv.wa_contact_phone
-                paused_msg = "Hola! En este momento nuestro asistente virtual no esta disponible. Por favor comunicate directamente con nuestro equipo para que podamos atenderte. Gracias! 🙏"
-                try:
-                    async with httpx.AsyncClient(timeout=15) as client:
-                        await client.post(
-                            f"{WA_BASE_URL}/messages",
-                            headers=wa_headers(),
-                            json={
-                                "messaging_product": "whatsapp",
-                                "to": normalize_phone(to_phone),
-                                "type": "text",
-                                "text": {"body": paused_msg},
-                            },
-                        )
-                    # Save to DB so it appears in inbox
-                    paused_out = WhatsAppMessage(
-                        conversation_id=conv_id,
-                        direction="outbound",
-                        content=paused_msg,
-                        message_type="text",
-                        status="sent",
-                        sent_by="sistema",
-                    )
-                    db.add(paused_out)
-                    conv.last_message_at = datetime.utcnow()
-                    db.commit()
-                except Exception as e:
-                    print(f"[Lina IA] Failed to send paused message: {e}")
                 return
 
             last_ai_msg = (
