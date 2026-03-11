@@ -12,6 +12,11 @@ const authService = {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
+      if (data.detail === 'suspended') {
+        const err = new Error(data.message || 'Cuenta suspendida');
+        err.code = 'SUSPENDED';
+        throw err;
+      }
       throw new Error(data.detail || 'Usuario o contraseña incorrectos');
     }
 

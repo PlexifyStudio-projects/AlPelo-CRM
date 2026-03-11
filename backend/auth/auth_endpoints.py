@@ -82,6 +82,20 @@ def verify_credentials(login_data: LoginRequest, db: Session = Depends(get_db)):
             headers=CORS_HEADERS
         )
 
+    # Check if tenant is suspended (only for non-dev users with tenant_id)
+    if user.role != "dev" and getattr(user, "tenant_id", None):
+        from database.models import Tenant
+        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
+        if tenant and not tenant.is_active:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": "suspended",
+                    "message": "Tu cuenta ha sido suspendida por falta de pago. Contacta a soporte para reactivarla."
+                },
+                headers=CORS_HEADERS
+            )
+
     return UserCredentials(
         user_id=user.id,
         username=user.username,
