@@ -36,12 +36,15 @@ const CAMPAIGN_TYPES = [
   { id: 'followup', label: 'Seguimiento', desc: 'Post-servicio y feedback', color: '#60A5FA', icon: '💬' },
 ];
 
+const getDays = (c) => c.days_since_last_visit ?? c.days_since_visit ?? null;
+
 const SEGMENT_FILTERS = [
-  { id: 'inactive_30', label: '+30 días sin venir', filter: c => (c.days_since_visit || c.days_since_last_visit || 0) >= 30 },
-  { id: 'inactive_60', label: '+60 días sin venir', filter: c => (c.days_since_visit || c.days_since_last_visit || 0) >= 60 },
-  { id: 'inactive_90', label: '+90 días sin venir', filter: c => (c.days_since_visit || c.days_since_last_visit || 0) >= 90 },
+  { id: 'inactive_30', label: '+30 días sin venir', filter: c => { const d = getDays(c); return d !== null && d >= 30; } },
+  { id: 'inactive_60', label: '+60 días sin venir', filter: c => { const d = getDays(c); return d !== null && d >= 60; } },
+  { id: 'inactive_90', label: '+90 días sin venir', filter: c => { const d = getDays(c); return d !== null && d >= 90; } },
   { id: 'vip', label: 'Clientes VIP', filter: c => c.status === 'vip' },
   { id: 'at_risk', label: 'En riesgo', filter: c => c.status === 'at_risk' || c.status === 'en_riesgo' },
+  { id: 'inactive_all', label: 'Inactivos', filter: c => c.status === 'inactivo' || c.status === 'inactive' },
   { id: 'active', label: 'Activos', filter: c => c.status === 'active' || c.status === 'activo' },
   { id: 'new', label: 'Nuevos', filter: c => c.status === 'new' || c.status === 'nuevo' },
   { id: 'high_value', label: 'Alto valor (+$500k)', filter: c => (c.total_spent || 0) >= 500000 },
@@ -219,9 +222,9 @@ const Campaigns = () => {
     const totalSent = campaigns.reduce((acc, c) => acc + (c.sentCount || 0), 0);
     const totalResponded = campaigns.reduce((acc, c) => acc + (c.respondedCount || 0), 0);
     const withPhone = clients.filter(c => c.phone);
-    const inactive30 = withPhone.filter(c => (c.days_since_visit || c.days_since_last_visit || 0) >= 30).length;
-    const inactive60 = withPhone.filter(c => (c.days_since_visit || c.days_since_last_visit || 0) >= 60).length;
-    const inactive90 = withPhone.filter(c => (c.days_since_visit || c.days_since_last_visit || 0) >= 90).length;
+    const inactive30 = withPhone.filter(c => { const d = getDays(c); return d !== null && d >= 30; }).length;
+    const inactive60 = withPhone.filter(c => { const d = getDays(c); return d !== null && d >= 60; }).length;
+    const inactive90 = withPhone.filter(c => { const d = getDays(c); return d !== null && d >= 90; }).length;
     const vips = withPhone.filter(c => c.status === 'vip').length;
     const atRisk = withPhone.filter(c => c.status === 'at_risk' || c.status === 'en_riesgo').length;
     return { active, totalSent, totalResponded, inactive30, inactive60, inactive90, vips, atRisk, total: withPhone.length };
@@ -461,8 +464,8 @@ const Campaigns = () => {
         </div>
       </div>
 
-      {/* ── Suggested Campaigns (when no campaigns) ── */}
-      {campaigns.length === 0 && !loading && clients.length > 0 && (
+      {/* ── Suggested Campaigns ── */}
+      {!loading && clients.length > 0 && campaigns.length === 0 && (
         <div className={`${B}__suggestions`}>
           <div className={`${B}__suggestions-head`}>
             <h3>Campañas sugeridas para ti</h3>
@@ -472,10 +475,11 @@ const Campaigns = () => {
             {SUGGESTED_CAMPAIGNS.map((s, i) => {
               const count = getSegmentClients(s.segment).length;
               const typeObj = CAMPAIGN_TYPES.find(t => t.id === s.type);
-              if (count === 0) return null;
               return (
-                <button key={i} className={`${B}__suggestion`} style={{ '--sc': typeObj?.color }}
-                  onClick={() => createFromSuggestion(s)}>
+                <button key={i} className={`${B}__suggestion ${count === 0 ? `${B}__suggestion--empty` : ''}`}
+                  style={{ '--sc': typeObj?.color }}
+                  onClick={() => count > 0 ? createFromSuggestion(s) : null}
+                  disabled={count === 0}>
                   <div className={`${B}__suggestion-top`}>
                     <span className={`${B}__suggestion-priority ${B}__suggestion-priority--${s.priority}`}>
                       {s.priority === 'urgente' ? '🔥 Urgente' : s.priority === 'alta' ? '⚡ Alta' : '📌 Media'}
