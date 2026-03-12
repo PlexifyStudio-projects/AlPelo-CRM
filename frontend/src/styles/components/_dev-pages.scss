@@ -238,6 +238,195 @@ $_text-muted: #8896AB;
     }
   }
 
+  // Create button
+  &__btn-create {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: $_accent;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(79, 110, 247, 0.25);
+    transition: all 200ms $ease-out-quart;
+
+    &:hover {
+      background: darken($_accent, 6%);
+      box-shadow: 0 4px 16px rgba(79, 110, 247, 0.35);
+      transform: translateY(-1px);
+    }
+  }
+
+  // Action buttons in table
+  &__actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  &__action-btn {
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    border: 1px solid $_card-border;
+    background: white;
+    color: $_text-secondary;
+    transition: all 150ms;
+
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    &--pay {
+      color: #16A34A;
+      border-color: rgba(34, 197, 94, 0.2);
+      &:hover { background: rgba(34, 197, 94, 0.06); }
+    }
+
+    &--overdue {
+      color: #D97706;
+      border-color: rgba(245, 158, 11, 0.2);
+      &:hover { background: rgba(245, 158, 11, 0.06); }
+    }
+
+    &--delete {
+      color: #DC2626;
+      border-color: rgba(239, 68, 68, 0.15);
+      padding: 4px 8px;
+      &:hover { background: rgba(239, 68, 68, 0.06); }
+    }
+  }
+
+  // Modal
+  &__modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: $z-modal-backdrop;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-xl;
+  }
+
+  &__modal {
+    width: 100%;
+    max-width: 560px;
+    background: #FFFFFF;
+    border-radius: 20px;
+    border: 1px solid $_card-border;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.12);
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__modal-header {
+    @include flex-between;
+    padding: 20px 28px;
+    border-bottom: 1px solid #F0F2F5;
+  }
+
+  &__modal-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $_text-primary;
+    margin: 0;
+  }
+
+  &__modal-close {
+    @include flex-center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid $_card-border;
+    background: white;
+    color: $_text-muted;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 180ms;
+    &:hover { background: #F5F6F8; color: $_text-primary; }
+  }
+
+  &__modal-body {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 18px 28px;
+    border-top: 1px solid #F0F2F5;
+  }
+
+  &__modal-btn {
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+
+    &--cancel {
+      background: white;
+      border: 1px solid $_card-border;
+      color: $_text-secondary;
+      &:hover { background: #F8F9FB; }
+    }
+
+    &--save {
+      background: $_accent;
+      border: none;
+      color: white;
+      box-shadow: 0 2px 10px rgba(79, 110, 247, 0.25);
+      &:hover { background: darken($_accent, 6%); }
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
+    }
+  }
+
+  // Form fields
+  &__form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-md;
+  }
+
+  &__form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__form-label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $_text-muted;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+  }
+
+  &__form-input,
+  &__form-select {
+    padding: 10px 14px;
+    border: 1px solid $_card-border;
+    border-radius: 10px;
+    font-size: $font-size-sm;
+    color: $_text-primary;
+    background: white;
+    transition: all 200ms;
+
+    &::placeholder { color: #B8C1CE; }
+    &:focus { outline: none; border-color: $_accent; box-shadow: 0 0 0 3px $_accent-bg; }
+  }
+
+  &__form-select { cursor: pointer; }
+
   // Responsive
   @media (max-width: $breakpoint-md) {
     gap: $spacing-md;

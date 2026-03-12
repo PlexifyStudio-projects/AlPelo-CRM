@@ -263,3 +263,21 @@ class UsageMetrics(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+class BillingRecord(Base):
+    """Invoice/payment record per tenant per period."""
+    __tablename__ = "billing_record"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    period = Column(String(20), nullable=False)  # "2026-03"
+    amount = Column(Integer, nullable=False, default=0)  # COP
+    status = Column(String(20), nullable=False, default="pending")  # pending, paid, overdue
+    payment_method = Column(String(50), nullable=True)  # transfer, cash, card
+    notes = Column(Text, nullable=True)
+    paid_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])

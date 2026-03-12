@@ -37,10 +37,18 @@ def _safe_tenant_dict(t, db=None):
     """Build a tenant dict safely using getattr for columns that may not exist."""
     client_count = 0
     staff_count = 0
+    real_messages_used = 0
     if db and t.id == 1:
         try:
             client_count = db.query(func.count(Client.id)).scalar()
             staff_count = db.query(func.count(Staff.id)).scalar()
+        except Exception:
+            pass
+        # Count actual Lina messages sent (real usage)
+        try:
+            real_messages_used = db.query(func.count(WhatsAppMessage.id)).filter(
+                WhatsAppMessage.sent_by == 'lina_ia',
+            ).scalar() or 0
         except Exception:
             pass
 
@@ -53,6 +61,9 @@ def _safe_tenant_dict(t, db=None):
         except Exception:
             pass
 
+    # Use real count if available, fallback to stored value
+    messages_used = real_messages_used if real_messages_used > 0 else getattr(t, 'messages_used', 0)
+
     return {
         "id": t.id,
         "slug": t.slug,
@@ -63,7 +74,7 @@ def _safe_tenant_dict(t, db=None):
         "owner_email": getattr(t, 'owner_email', None),
         "plan": getattr(t, 'plan', 'standard'),
         "monthly_price": getattr(t, 'monthly_price', 0),
-        "messages_used": getattr(t, 'messages_used', 0),
+        "messages_used": messages_used,
         "messages_limit": getattr(t, 'messages_limit', 5000),
         "ai_name": getattr(t, 'ai_name', 'Lina'),
         "ai_is_paused": getattr(t, 'ai_is_paused', False),
@@ -238,6 +249,7 @@ def update_tenant(tenant_id: int, data: dict, db: Session = Depends(get_db), use
         "ai_name", "city", "country", "timezone", "currency", "booking_url",
         "wa_phone_number_id", "wa_business_account_id", "wa_access_token",
         "wa_webhook_token", "wa_phone_display",
+        "monthly_price", "messages_limit", "plan",
     ]
 
     for field in allowed_fields:
@@ -369,18 +381,53 @@ def dev_usage(period: str = None, db: Session = Depends(get_db), user: Admin = D
             "cost_usd": round((m.ai_tokens_used / 1_000_000) * 5.4, 2),
         })
 
-    # If no metrics yet, show tenants with their current usage
+    # If no metrics yet, compute from real WhatsApp messages
     if not tenant_details:
+        # Count real messages from DB for the period
+        try:
+            year, month = period.split("-")
+            period_start = datetime(int(year), int(month), 1)
+            if int(month) == 12:
+                period_end = datetime(int(year) + 1, 1, 1)
+            else:
+                period_end = datetime(int(year), int(month) + 1, 1)
+        except Exception:
+            period_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            period_end = datetime.utcnow()
+
+        real_sent = db.query(func.count(WhatsAppMessage.id)).filter(
+            WhatsAppMessage.direction == 'outbound',
+            WhatsAppMessage.created_at >= period_start,
+            WhatsAppMessage.created_at < period_end,
+        ).scalar() or 0
+
+        real_received = db.query(func.count(WhatsAppMessage.id)).filter(
+            WhatsAppMessage.direction == 'inbound',
+            WhatsAppMessage.created_at >= period_start,
+            WhatsAppMessage.created_at < period_end,
+        ).scalar() or 0
+
+        lina_sent = db.query(func.count(WhatsAppMessage.id)).filter(
+            WhatsAppMessage.sent_by == 'lina_ia',
+            WhatsAppMessage.created_at >= period_start,
+            WhatsAppMessage.created_at < period_end,
+        ).scalar() or 0
+
+        # Estimate tokens: ~300 tokens per AI message (input+output average)
+        estimated_tokens = lina_sent * 300
+        total_msgs = real_sent + real_received
+        total_tokens = estimated_tokens
+        estimated_cost = (estimated_tokens / 1_000_000) * 5.4
+
         for t in tenants:
             tenant_details.append({
                 "slug": t.slug,
                 "name": t.name,
-                "messages_sent": getattr(t, 'messages_used', 0),
-                "messages_received": 0,
-                "ai_tokens": 0,
-                "cost_usd": 0,
+                "messages_sent": real_sent,
+                "messages_received": real_received,
+                "ai_tokens": estimated_tokens,
+                "cost_usd": round((estimated_tokens / 1_000_000) * 5.4, 2),
             })
-            total_msgs = sum(getattr(t, 'messages_used', 0) for t in tenants)
 
     return {
         "period": period,
@@ -395,25 +442,125 @@ def dev_usage(period: str = None, db: Session = Depends(get_db), user: Admin = D
 def dev_billing(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
 
-    tenants = db.query(Tenant).order_by(Tenant.created_at).all()
-    records = []
+    from database.models import BillingRecord
+    records = db.query(BillingRecord).order_by(BillingRecord.created_at.desc()).all()
+    tenants = db.query(Tenant).all()
+    tenant_map = {t.id: t for t in tenants}
 
-    now = datetime.utcnow()
-    for t in tenants:
-        price = getattr(t, 'monthly_price', 0)
-        if price > 0:
-            records.append({
-                "id": t.id * 1000 + now.month,
-                "tenant_name": t.name,
-                "tenant_slug": t.slug,
-                "amount": price,
-                "period": f"{now.year}-{now.month:02d}",
-                "status": "paid" if getattr(t, 'is_active', True) else "pending",
-                "payment_method": "transfer",
-                "paid_at": t.updated_at.isoformat() if getattr(t, 'is_active', True) and getattr(t, 'updated_at', None) else None,
-            })
+    result = []
+    for r in records:
+        t = tenant_map.get(r.tenant_id)
+        result.append({
+            "id": r.id,
+            "tenant_id": r.tenant_id,
+            "tenant_name": t.name if t else "?",
+            "tenant_slug": t.slug if t else "?",
+            "amount": r.amount,
+            "period": r.period,
+            "status": r.status,
+            "payment_method": r.payment_method,
+            "notes": r.notes,
+            "paid_at": r.paid_at.isoformat() if r.paid_at else None,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        })
 
-    return records
+    return result
+
+
+@router.post("/dev/billing")
+def create_billing_record(data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+
+    from database.models import BillingRecord
+    tenant_id = data.get("tenant_id")
+    if not tenant_id:
+        raise HTTPException(status_code=400, detail="tenant_id requerido")
+
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Agencia no encontrada")
+
+    record = BillingRecord(
+        tenant_id=tenant_id,
+        period=data.get("period", f"{datetime.utcnow().year}-{datetime.utcnow().month:02d}"),
+        amount=int(data.get("amount", getattr(tenant, 'monthly_price', 0))),
+        status=data.get("status", "pending"),
+        payment_method=data.get("payment_method"),
+        notes=data.get("notes"),
+        paid_at=datetime.utcnow() if data.get("status") == "paid" else None,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
+    return {
+        "id": record.id,
+        "tenant_id": record.tenant_id,
+        "tenant_name": tenant.name,
+        "tenant_slug": tenant.slug,
+        "amount": record.amount,
+        "period": record.period,
+        "status": record.status,
+        "payment_method": record.payment_method,
+        "notes": record.notes,
+        "paid_at": record.paid_at.isoformat() if record.paid_at else None,
+        "created_at": record.created_at.isoformat() if record.created_at else None,
+    }
+
+
+@router.put("/dev/billing/{record_id}")
+def update_billing_record(record_id: int, data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+
+    from database.models import BillingRecord
+    record = db.query(BillingRecord).filter(BillingRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+
+    if "status" in data:
+        record.status = data["status"]
+        if data["status"] == "paid" and not record.paid_at:
+            record.paid_at = datetime.utcnow()
+    if "amount" in data:
+        record.amount = int(data["amount"])
+    if "payment_method" in data:
+        record.payment_method = data["payment_method"]
+    if "notes" in data:
+        record.notes = data["notes"]
+    if "period" in data:
+        record.period = data["period"]
+
+    db.commit()
+    db.refresh(record)
+
+    tenant = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
+    return {
+        "id": record.id,
+        "tenant_id": record.tenant_id,
+        "tenant_name": tenant.name if tenant else "?",
+        "tenant_slug": tenant.slug if tenant else "?",
+        "amount": record.amount,
+        "period": record.period,
+        "status": record.status,
+        "payment_method": record.payment_method,
+        "notes": record.notes,
+        "paid_at": record.paid_at.isoformat() if record.paid_at else None,
+        "created_at": record.created_at.isoformat() if record.created_at else None,
+    }
+
+
+@router.delete("/dev/billing/{record_id}")
+def delete_billing_record(record_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+
+    from database.models import BillingRecord
+    record = db.query(BillingRecord).filter(BillingRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Registro no encontrado")
+
+    db.delete(record)
+    db.commit()
+    return {"ok": True}
 
 
 # ============================================================================

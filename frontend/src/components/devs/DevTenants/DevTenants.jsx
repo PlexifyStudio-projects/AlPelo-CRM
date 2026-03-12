@@ -11,6 +11,9 @@ const EMPTY_TENANT = {
   owner_email: '',
   city: '',
   country: 'CO',
+  monthly_price: 0,
+  messages_limit: 5000,
+  plan: 'standard',
 };
 
 const generatePassword = () => {
@@ -77,6 +80,9 @@ const DevTenants = () => {
       owner_email: tenant.owner_email || '',
       city: tenant.city || '',
       country: tenant.country || 'CO',
+      monthly_price: tenant.monthly_price || 0,
+      messages_limit: tenant.messages_limit || 5000,
+      plan: tenant.plan || 'standard',
     });
     setEditingId(tenant.id);
     setEditingTenant(tenant);
@@ -474,6 +480,49 @@ const DevTenants = () => {
                     value={formData.owner_email}
                     onChange={(e) => setFormData({ ...formData, owner_email: e.target.value })}
                     placeholder="email@negocio.com"
+                  />
+                </div>
+              </div>
+
+              {/* Plan & pricing */}
+              <div className={`${b}__form-divider`} />
+              <h4 className={`${b}__form-section`}>Plan y facturacion</h4>
+
+              <div className={`${b}__form-row`}>
+                <div className={`${b}__form-field`}>
+                  <label className={`${b}__form-label`}>Plan</label>
+                  <select
+                    className={`${b}__form-select`}
+                    value={formData.plan}
+                    onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
+                  >
+                    <option value="trial">Trial</option>
+                    <option value="standard">Standard</option>
+                    <option value="pro">Pro</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                </div>
+                <div className={`${b}__form-field`}>
+                  <label className={`${b}__form-label`}>Precio mensual (COP)</label>
+                  <input
+                    className={`${b}__form-input`}
+                    type="number"
+                    value={formData.monthly_price}
+                    onChange={(e) => setFormData({ ...formData, monthly_price: parseInt(e.target.value) || 0 })}
+                    placeholder="250000"
+                  />
+                </div>
+              </div>
+
+              <div className={`${b}__form-row`}>
+                <div className={`${b}__form-field`}>
+                  <label className={`${b}__form-label`}>Limite de mensajes IA</label>
+                  <input
+                    className={`${b}__form-input`}
+                    type="number"
+                    value={formData.messages_limit}
+                    onChange={(e) => setFormData({ ...formData, messages_limit: parseInt(e.target.value) || 0 })}
+                    placeholder="5000"
                   />
                 </div>
               </div>
