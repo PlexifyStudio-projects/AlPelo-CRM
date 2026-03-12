@@ -1,0 +1,55 @@
+@use '../abstracts/variables' as *;
+
+.ai-pause-banner {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  padding: $spacing-sm $spacing-lg;
+  background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
+  border-bottom: 2px solid $color-error-border;
+  animation: ai-pause-banner-enter 400ms $ease-out-quart;
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    background: $color-error-bg;
+    border: 1px solid $color-error-border;
+    color: $color-error-dark;
+    flex-shrink: 0;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong {
+      font-size: $font-size-sm;
+      font-weight: $font-weight-bold;
+      color: $color-error-dark;
+      letter-spacing: $letter-spacing-wide;
+    }
+
+    span {
+      font-size: $font-size-xs;
+      color: $color-gray-600;
+      line-height: $line-height-snug;
+    }
+  }
+}
+
+@keyframes ai-pause-banner-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

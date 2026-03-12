@@ -221,7 +221,7 @@ const Dashboard = ({ onNavigate }) => {
 
   // Toggle Lina IA globally
   const handleLinaToggle = async () => {
-    if (linaToggling || !stats) return;
+    if (linaToggling || !stats || tenant.ai_is_paused) return;
     setLinaToggling(true);
     const newState = !stats.lina_is_global_active;
 
@@ -434,25 +434,35 @@ const Dashboard = ({ onNavigate }) => {
               {Icons.bot}
               Lina IA
             </h2>
-            <span className={`dashboard__lina-badge ${linaActive ? 'dashboard__lina-badge--active' : 'dashboard__lina-badge--inactive'}`}>
-              {linaActive ? 'Activa' : 'Inactiva'}
+            <span className={`dashboard__lina-badge ${tenant.ai_is_paused ? 'dashboard__lina-badge--blocked' : linaActive ? 'dashboard__lina-badge--active' : 'dashboard__lina-badge--inactive'}`}>
+              {tenant.ai_is_paused ? 'Bloqueada' : linaActive ? 'Activa' : 'Inactiva'}
             </span>
           </div>
 
           {/* Toggle */}
-          <div className="dashboard__lina-toggle">
-            <span className="dashboard__lina-toggle-label">
-              {linaActive ? 'Respondiendo chats automaticamente' : 'IA pausada — sin respuestas automaticas'}
-            </span>
-            <button
-              className={`dashboard__toggle-switch ${linaActive ? 'dashboard__toggle-switch--on' : ''}`}
-              onClick={handleLinaToggle}
-              disabled={linaToggling}
-              aria-label={linaActive ? 'Desactivar Lina IA' : 'Activar Lina IA'}
-            >
-              <span className="dashboard__toggle-knob" />
-            </button>
-          </div>
+          {tenant.ai_is_paused ? (
+            <div className="dashboard__lina-blocked">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <span>Control bloqueado por soporte tecnico</span>
+            </div>
+          ) : (
+            <div className="dashboard__lina-toggle">
+              <span className="dashboard__lina-toggle-label">
+                {linaActive ? 'Respondiendo chats automaticamente' : 'IA pausada — sin respuestas automaticas'}
+              </span>
+              <button
+                className={`dashboard__toggle-switch ${linaActive ? 'dashboard__toggle-switch--on' : ''}`}
+                onClick={handleLinaToggle}
+                disabled={linaToggling}
+                aria-label={linaActive ? 'Desactivar Lina IA' : 'Activar Lina IA'}
+              >
+                <span className="dashboard__toggle-knob" />
+              </button>
+            </div>
+          )}
 
           {/* Stats grid */}
           <div className="dashboard__lina-stats">

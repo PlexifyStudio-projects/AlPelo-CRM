@@ -1855,6 +1855,12 @@ ACTION_PATTERN = re.compile(r'```action\s*(.*?)```', re.DOTALL)
 
 @router.post("/ai/chat", response_model=AIChatResponse)
 async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
+    # Check tenant-level AI pause — block all AI when paused
+    from database.models import Tenant
+    tenant = db.query(Tenant).first()
+    if tenant and tenant.ai_is_paused:
+        raise HTTPException(status_code=403, detail="La IA está pausada para esta agencia. Reactívala desde el panel de desarrollo.")
+
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     if not anthropic_key:
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada en el servidor.")

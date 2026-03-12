@@ -408,6 +408,31 @@
       color: $color-gray-500;
       border: 1px solid $border-color;
     }
+
+    &--blocked {
+      background: $color-error-bg;
+      color: $color-error-dark;
+      border: 1px solid $color-error-border;
+    }
+  }
+
+  // --- Blocked state (by dev/support) ---
+  &__lina-blocked {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: $color-error-bg;
+    border-radius: $border-radius-md;
+    border: 1px solid $color-error-border;
+    color: $color-error-dark;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+
+    svg {
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
   }
 
   // --- Toggle Switch ---

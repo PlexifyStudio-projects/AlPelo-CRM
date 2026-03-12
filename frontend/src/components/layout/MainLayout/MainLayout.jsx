@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '../Sidebar/Sidebar';
 import Header from '../Header/Header';
+import { useTenant } from '../../../context/TenantContext';
 import whatsappService from '../../../services/whatsappService';
 
 const MENU_ITEMS = [
@@ -18,6 +19,27 @@ const MENU_ITEMS = [
 ];
 
 const MOBILE_BREAKPOINT = 768;
+
+const AIPauseBanner = () => {
+  const { tenant } = useTenant();
+  if (!tenant.ai_is_paused) return null;
+
+  return (
+    <div className="ai-pause-banner">
+      <div className="ai-pause-banner__icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="10" y1="15" x2="10" y2="9" />
+          <line x1="14" y1="15" x2="14" y2="9" />
+        </svg>
+      </div>
+      <div className="ai-pause-banner__text">
+        <strong>Lina IA esta pausada</strong>
+        <span>La inteligencia artificial fue desactivada por el equipo de soporte. No se enviaran respuestas automaticas hasta que sea reactivada.</span>
+      </div>
+    </div>
+  );
+};
 
 const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -86,6 +108,7 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
           isMobile={isMobile}
           onOpenMobileMenu={handleOpenMobileMenu}
         />
+        <AIPauseBanner />
         <main className="main-layout__main">
           {children}
         </main>

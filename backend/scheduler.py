@@ -499,6 +499,14 @@ def _morning_review(db):
         return
 
     _last_morning_review_date = today
+
+    # Check tenant-level AI pause — skip morning review entirely if paused
+    from database.models import Tenant
+    tenant = db.query(Tenant).first()
+    if tenant and tenant.ai_is_paused:
+        print(f"[SCHEDULER] Morning review SKIPPED — AI is paused for tenant '{tenant.name}'")
+        return
+
     print(f"[SCHEDULER] Morning review started at {now_col.strftime('%H:%M')}")
     log_event("sistema", "Revision matutina iniciada", detail="Revisando mensajes que llegaron anoche fuera de horario.", status="info")
 
@@ -641,6 +649,12 @@ def _sweep_missed_conversations(db):
     Only processes messages 3-120 min old (avoids racing with normal flow).
     """
     from sqlalchemy import desc
+
+    # Check tenant-level AI pause — skip sweep entirely if paused
+    from database.models import Tenant
+    tenant = db.query(Tenant).first()
+    if tenant and tenant.ai_is_paused:
+        return
 
     now_utc = datetime.utcnow()
     min_age = now_utc - timedelta(minutes=3)    # Don't touch very recent (normal flow handles)
@@ -800,6 +814,12 @@ def _execute_pending_tasks(db):
     Uses AI to generate the message based on the task description.
     """
     import re as _re
+
+    # Check tenant-level AI pause — skip all pending tasks if paused
+    from database.models import Tenant
+    tenant = db.query(Tenant).first()
+    if tenant and tenant.ai_is_paused:
+        return
 
     now = _now_colombia()
     now_utc = datetime.utcnow()

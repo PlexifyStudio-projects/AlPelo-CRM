@@ -216,8 +216,8 @@ const ChatAI = () => {
           <div>
             <h2 className="chat-ai__title">Lina</h2>
             <span className="chat-ai__subtitle">
-              <span className="chat-ai__status-dot" />
-              Asistente ejecutiva
+              <span className={`chat-ai__status-dot ${tenant.ai_is_paused ? 'chat-ai__status-dot--paused' : ''}`} />
+              {tenant.ai_is_paused ? 'Pausada' : 'Asistente ejecutiva'}
             </span>
           </div>
         </div>
@@ -335,7 +335,16 @@ const ChatAI = () => {
           )}
 
           {/* Input */}
-          <form className="chat-ai__input-area" onSubmit={handleSubmit}>
+          {tenant.ai_is_paused && (
+            <div className="chat-ai__paused-overlay">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <span>Lina esta pausada por soporte. No puedes enviar mensajes hasta que sea reactivada.</span>
+            </div>
+          )}
+          <form className="chat-ai__input-area" onSubmit={handleSubmit} style={tenant.ai_is_paused ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
             {hasMessages && !isTyping && (
               <div className="chat-ai__chips">
                 {QUICK_ACTIONS.map((c, i) => (
