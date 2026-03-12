@@ -447,6 +447,23 @@ async def root():
     return {"status": "running", "api": "AlPelo CRM"}
 
 
+@app.get("/api/debug/admins")
+async def debug_admins():
+    """Temporary: list all admin users and tenants."""
+    from database.connection import SessionLocal
+    from sqlalchemy import text
+    db = SessionLocal()
+    try:
+        admins = db.execute(text("SELECT id, username, role, tenant_id, name, email FROM public.admin ORDER BY id")).fetchall()
+        tenants = db.execute(text("SELECT id, slug, name FROM public.tenant ORDER BY id")).fetchall()
+        return {
+            "admins": [{"id": a[0], "username": a[1], "role": a[2], "tenant_id": a[3], "name": a[4], "email": a[5]} for a in admins],
+            "tenants": [{"id": t[0], "slug": t[1], "name": t[2]} for t in tenants],
+        }
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
