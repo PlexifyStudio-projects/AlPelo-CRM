@@ -186,12 +186,17 @@
 
   &__logo {
     font-family: $font-heading;
-    font-size: $font-size-xl;
+    font-size: $font-size-lg;
     font-weight: $font-weight-bold;
     @include gradient-text(linear-gradient(135deg, $color-accent-light, $color-accent));
-    white-space: nowrap;
     letter-spacing: $letter-spacing-wide;
-    line-height: 1.1;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
   }
 
   &__logo-sub {
