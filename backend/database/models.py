@@ -15,6 +15,7 @@ class Admin(Base):
     password = Column(String, nullable=False)
     role = Column(String, nullable=False, default="admin")
     is_active = Column(Boolean, default=True)
+    tenant_id = Column(Integer, nullable=True)  # Links admin to a tenant
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
