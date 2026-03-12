@@ -137,21 +137,42 @@ def _run_migrations(engine):
     except Exception as e:
         print(f"[SEED] AlPelo tenant: {e}")
 
-    # --- Link existing 'admin' user to AlPelo tenant ---
+    # --- Link admin users to AlPelo tenant ---
+    # Try multiple strategies: exact 'admin', 'admin_alpelo', or any non-dev admin without tenant
     try:
         with engine.begin() as conn:
             tenant_row = conn.execute(text(
                 "SELECT id FROM public.tenant WHERE slug = 'alpelo'"
             )).fetchone()
             if tenant_row:
-                admin_row = conn.execute(text(
-                    "SELECT id, tenant_id FROM public.admin WHERE username = 'admin'"
-                )).fetchone()
-                if admin_row and not admin_row[1]:
-                    conn.execute(text(
-                        "UPDATE public.admin SET tenant_id = :tid WHERE id = :aid"
-                    ), {"tid": tenant_row[0], "aid": admin_row[0]})
-                    print(f"[MIGRATION] Linked admin user (id={admin_row[0]}) to AlPelo tenant (id={tenant_row[0]})")
+                tid = tenant_row[0]
+                # Check if any admin is already linked to this tenant
+                already_linked = conn.execute(text(
+                    "SELECT id FROM public.admin WHERE tenant_id = :tid LIMIT 1"
+                ), {"tid": tid}).fetchone()
+
+                if not already_linked:
+                    # Try specific usernames first, then any non-dev admin
+                    for uname in ['admin', 'admin_alpelo']:
+                        admin_row = conn.execute(text(
+                            "SELECT id FROM public.admin WHERE username = :u"
+                        ), {"u": uname}).fetchone()
+                        if admin_row:
+                            conn.execute(text(
+                                "UPDATE public.admin SET tenant_id = :tid WHERE id = :aid"
+                            ), {"tid": tid, "aid": admin_row[0]})
+                            print(f"[MIGRATION] Linked '{uname}' (id={admin_row[0]}) to AlPelo tenant (id={tid})")
+                            break
+                    else:
+                        # Fallback: any admin user that's not dev and has no tenant
+                        fallback = conn.execute(text(
+                            "SELECT id, username FROM public.admin WHERE role != 'dev' AND (tenant_id IS NULL) LIMIT 1"
+                        )).fetchone()
+                        if fallback:
+                            conn.execute(text(
+                                "UPDATE public.admin SET tenant_id = :tid WHERE id = :aid"
+                            ), {"tid": tid, "aid": fallback[0]})
+                            print(f"[MIGRATION] Linked '{fallback[1]}' (id={fallback[0]}) to AlPelo tenant (id={tid})")
     except Exception as e:
         print(f"[MIGRATION] Link admin to tenant: {e}")
 
