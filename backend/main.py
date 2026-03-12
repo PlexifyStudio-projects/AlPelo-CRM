@@ -134,61 +134,26 @@ def _run_migrations(engine):
                 })
                 print("[SEED] Created AlPelo tenant (slug=alpelo, plan=standard)")
 
-                # Create admin user for AlPelo tenant
-                tenant_row = conn.execute(text(
-                    "SELECT id FROM public.tenant WHERE slug = 'alpelo'"
-                )).fetchone()
-                if tenant_row:
-                    existing_admin = conn.execute(text(
-                        "SELECT id FROM public.admin WHERE username = 'admin_alpelo'"
-                    )).fetchone()
-                    if existing_admin is None:
-                        from auth.security import hash_password
-                        hashed_pw = hash_password("AlPelo2026")
-                        conn.execute(text(
-                            "INSERT INTO public.admin (name, email, phone, username, password, role, is_active, tenant_id) "
-                            "VALUES (:name, :email, :phone, :username, :password, :role, true, :tid)"
-                        ), {
-                            "name": "Jaime AlPelo",
-                            "email": "somosalpelo@gmail.com",
-                            "phone": "+573147083182",
-                            "username": "admin_alpelo",
-                            "password": hashed_pw,
-                            "role": "admin",
-                            "tid": tenant_row[0],
-                        })
-                        print("[SEED] Created admin_alpelo user for AlPelo tenant")
     except Exception as e:
         print(f"[SEED] AlPelo tenant: {e}")
 
-    # Ensure admin_alpelo exists even if tenant was already seeded
+    # --- Link existing 'admin' user to AlPelo tenant ---
     try:
         with engine.begin() as conn:
-            existing_admin = conn.execute(text(
-                "SELECT id FROM public.admin WHERE username = 'admin_alpelo'"
+            tenant_row = conn.execute(text(
+                "SELECT id FROM public.tenant WHERE slug = 'alpelo'"
             )).fetchone()
-            if existing_admin is None:
-                tenant_row = conn.execute(text(
-                    "SELECT id FROM public.tenant WHERE slug = 'alpelo'"
+            if tenant_row:
+                admin_row = conn.execute(text(
+                    "SELECT id, tenant_id FROM public.admin WHERE username = 'admin'"
                 )).fetchone()
-                if tenant_row:
-                    from auth.security import hash_password
-                    hashed_pw = hash_password("AlPelo2026")
+                if admin_row and not admin_row[1]:
                     conn.execute(text(
-                        "INSERT INTO public.admin (name, email, phone, username, password, role, is_active, tenant_id) "
-                        "VALUES (:name, :email, :phone, :username, :password, :role, true, :tid)"
-                    ), {
-                        "name": "Jaime AlPelo",
-                        "email": "somosalpelo@gmail.com",
-                        "phone": "+573147083182",
-                        "username": "admin_alpelo",
-                        "password": hashed_pw,
-                        "role": "admin",
-                        "tid": tenant_row[0],
-                    })
-                    print("[SEED] Created admin_alpelo user (standalone)")
+                        "UPDATE public.admin SET tenant_id = :tid WHERE id = :aid"
+                    ), {"tid": tenant_row[0], "aid": admin_row[0]})
+                    print(f"[MIGRATION] Linked admin user (id={admin_row[0]}) to AlPelo tenant (id={tenant_row[0]})")
     except Exception as e:
-        print(f"[SEED] admin_alpelo standalone: {e}")
+        print(f"[MIGRATION] Link admin to tenant: {e}")
 
 
 @asynccontextmanager
