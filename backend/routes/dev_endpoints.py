@@ -38,16 +38,19 @@ def _safe_tenant_dict(t, db=None):
     client_count = 0
     staff_count = 0
     real_messages_used = 0
-    if db and t.id == 1:
+    if db:
+        # Count clients, staff, and real message usage
         try:
-            client_count = db.query(func.count(Client.id)).scalar()
-            staff_count = db.query(func.count(Staff.id)).scalar()
+            client_count = db.query(func.count(Client.id)).scalar() or 0
         except Exception:
             pass
-        # Count actual Lina messages sent (real usage)
+        try:
+            staff_count = db.query(func.count(Staff.id)).scalar() or 0
+        except Exception:
+            pass
         try:
             real_messages_used = db.query(func.count(WhatsAppMessage.id)).filter(
-                WhatsAppMessage.sent_by == 'lina_ia',
+                WhatsAppMessage.direction == 'outbound',
             ).scalar() or 0
         except Exception:
             pass
