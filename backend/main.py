@@ -176,6 +176,20 @@ def _run_migrations(engine):
     except Exception as e:
         print(f"[MIGRATION] Link admin to tenant: {e}")
 
+    # --- Cleanup: remove duplicate admin_alpelo if 'admin' already linked ---
+    try:
+        with engine.begin() as conn:
+            real_admin = conn.execute(text(
+                "SELECT id FROM public.admin WHERE username = 'admin' AND tenant_id IS NOT NULL"
+            )).fetchone()
+            if real_admin:
+                conn.execute(text(
+                    "DELETE FROM public.admin WHERE username = 'admin_alpelo'"
+                ))
+                print("[CLEANUP] Removed duplicate admin_alpelo user")
+    except Exception as e:
+        print(f"[CLEANUP] admin_alpelo: {e}")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -447,21 +461,6 @@ async def root():
     return {"status": "running", "api": "AlPelo CRM"}
 
 
-@app.get("/api/debug/admins")
-async def debug_admins():
-    """Temporary: list all admin users and tenants."""
-    from database.connection import SessionLocal
-    from sqlalchemy import text
-    db = SessionLocal()
-    try:
-        admins = db.execute(text("SELECT id, username, role, tenant_id, name, email FROM public.admin ORDER BY id")).fetchall()
-        tenants = db.execute(text("SELECT id, slug, name FROM public.tenant ORDER BY id")).fetchall()
-        return {
-            "admins": [{"id": a[0], "username": a[1], "role": a[2], "tenant_id": a[3], "name": a[4], "email": a[5]} for a in admins],
-            "tenants": [{"id": t[0], "slug": t[1], "name": t[2]} for t in tenants],
-        }
-    finally:
-        db.close()
 
 
 if __name__ == "__main__":
