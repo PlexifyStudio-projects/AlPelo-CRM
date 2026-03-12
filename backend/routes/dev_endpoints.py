@@ -630,6 +630,14 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     seven_days_ago = now - timedelta(days=7)
+    COL_OFFSET = timedelta(hours=-5)  # Colombia = UTC-5
+
+    def to_col_time(dt):
+        """Convert UTC datetime to Colombia display string."""
+        if not dt:
+            return ""
+        col = dt + COL_OFFSET
+        return f"{col.day:02d}/{col.month:02d} {col.hour:02d}:{col.minute:02d}"
 
     # Get Lina's recent messages (responses) from DB
     lina_messages = db.query(WhatsAppMessage).filter(
@@ -660,11 +668,7 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
 
         client_name = getattr(convo, 'wa_contact_name', None) or "Cliente"
 
-        # Format display time
-        display_time = ""
-        if msg.created_at:
-            dt = msg.created_at
-            display_time = f"{dt.day:02d}/{dt.month:02d} {dt.hour:02d}:{dt.minute:02d}"
+        display_time = to_col_time(msg.created_at)
 
         events.append({
             "id": f"msg-{msg.id}",
@@ -681,10 +685,7 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
         client = db.query(Client).filter(Client.id == note.client_id).first() if note.client_id else None
         content = (note.content or "").replace("ACCION:", "").strip()
         cname = client.name if client else "Sistema"
-        display_time = ""
-        if note.created_at:
-            dt = note.created_at
-            display_time = f"{dt.day:02d}/{dt.month:02d} {dt.hour:02d}:{dt.minute:02d}"
+        display_time = to_col_time(note.created_at)
 
         events.append({
             "id": f"act-{note.id}",
@@ -701,10 +702,7 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
         client = db.query(Client).filter(Client.id == note.client_id).first() if note.client_id else None
         content = (note.content or "").replace("PENDIENTE:", "").strip()
         cname = client.name if client else "Sistema"
-        display_time = ""
-        if note.created_at:
-            dt = note.created_at
-            display_time = f"{dt.day:02d}/{dt.month:02d} {dt.hour:02d}:{dt.minute:02d}"
+        display_time = to_col_time(note.created_at)
 
         events.append({
             "id": f"task-{note.id}",
