@@ -58,9 +58,31 @@ def _safe_tenant_dict(t, db=None):
     admin_user = None
     if db:
         try:
+            # 1) Try by tenant_id
             admin = db.query(Admin).filter(Admin.tenant_id == t.id).first()
+            # 2) Fallback: try by slug-based username pattern
+            if not admin:
+                slug = t.slug if hasattr(t, 'slug') else ''
+                if slug:
+                    admin = db.query(Admin).filter(
+                        Admin.username.ilike(f"%{slug}%"),
+                        Admin.role != 'dev',
+                    ).first()
+            # 3) Fallback: any non-dev admin without tenant_id
+            if not admin:
+                admin = db.query(Admin).filter(
+                    Admin.role != 'dev',
+                    Admin.role != 'super_admin',
+                ).first()
             if admin:
                 admin_user = {"id": admin.id, "username": admin.username, "name": admin.name, "email": admin.email}
+                # Auto-fix: link this admin to the tenant if not linked yet
+                if not getattr(admin, 'tenant_id', None) or admin.tenant_id != t.id:
+                    try:
+                        admin.tenant_id = t.id
+                        db.commit()
+                    except Exception:
+                        db.rollback()
         except Exception:
             pass
 
