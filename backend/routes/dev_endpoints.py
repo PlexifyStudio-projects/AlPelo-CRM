@@ -511,13 +511,21 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
             WhatsAppConversation.id == msg.conversation_id
         ).first() if msg.conversation_id else None
 
-        client_name = convo.wa_name if convo and convo.wa_name else "Cliente"
+        client_name = getattr(convo, 'wa_contact_name', None) or "Cliente"
+
+        # Format display time
+        display_time = ""
+        if msg.created_at:
+            dt = msg.created_at
+            display_time = f"{dt.day:02d}/{dt.month:02d} {dt.hour:02d}:{dt.minute:02d}"
 
         events.append({
             "id": f"msg-{msg.id}",
             "type": "respuesta",
-            "summary": f"Respondio a {client_name}",
-            "detail": (msg.content or "")[:150],
+            "description": f"Respondio a {client_name}",
+            "details": (msg.content or "")[:150],
+            "display_time": display_time,
+            "contact_name": client_name,
             "timestamp": msg.created_at.isoformat() if msg.created_at else None,
             "status": msg.status or "sent",
         })
@@ -525,12 +533,19 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
     for note in action_notes:
         client = db.query(Client).filter(Client.id == note.client_id).first() if note.client_id else None
         content = (note.content or "").replace("ACCION:", "").strip()
+        cname = client.name if client else "Sistema"
+        display_time = ""
+        if note.created_at:
+            dt = note.created_at
+            display_time = f"{dt.day:02d}/{dt.month:02d} {dt.hour:02d}:{dt.minute:02d}"
 
         events.append({
             "id": f"act-{note.id}",
             "type": "accion",
-            "summary": f"Accion para {client.name if client else 'Sistema'}",
-            "detail": content[:150],
+            "description": f"Accion para {cname}",
+            "details": content[:150],
+            "display_time": display_time,
+            "contact_name": cname,
             "timestamp": note.created_at.isoformat() if note.created_at else None,
             "status": "done",
         })
@@ -538,12 +553,19 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
     for note in task_notes:
         client = db.query(Client).filter(Client.id == note.client_id).first() if note.client_id else None
         content = (note.content or "").replace("PENDIENTE:", "").strip()
+        cname = client.name if client else "Sistema"
+        display_time = ""
+        if note.created_at:
+            dt = note.created_at
+            display_time = f"{dt.day:02d}/{dt.month:02d} {dt.hour:02d}:{dt.minute:02d}"
 
         events.append({
             "id": f"task-{note.id}",
             "type": "tarea",
-            "summary": f"Tarea: {client.name if client else 'Sistema'}",
-            "detail": content[:150],
+            "description": f"Tarea: {cname}",
+            "details": content[:150],
+            "display_time": display_time,
+            "contact_name": cname,
             "timestamp": note.created_at.isoformat() if note.created_at else None,
             "status": "pending",
         })
@@ -566,12 +588,12 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
     ).scalar()
 
     daily_stats = {
-        "sent": lina_today,
-        "failed": failed_7d,
-        "actions": len(action_notes),
-        "conversations": total_convos_7d,
-        "tasks": len(task_notes),
-        "skipped": 0,
+        "messages_sent": lina_today,
+        "messages_failed": failed_7d,
+        "actions_executed": len(action_notes),
+        "conversations_replied": total_convos_7d,
+        "tasks_completed": len(task_notes),
+        "skips": 0,
     }
 
     # Also try to get in-memory events (for events from current session)
@@ -583,8 +605,10 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
                 events.append({
                     "id": f"mem-{e.get('id', '')}",
                     "type": e.get("type", "sistema"),
-                    "summary": e.get("summary", ""),
-                    "detail": e.get("detail", ""),
+                    "description": e.get("summary", ""),
+                    "details": e.get("detail", ""),
+                    "display_time": e.get("timestamp", "")[-5:] if e.get("timestamp") else "",
+                    "contact_name": e.get("contact_name", ""),
                     "timestamp": e.get("timestamp", ""),
                     "status": e.get("status", "ok"),
                 })
