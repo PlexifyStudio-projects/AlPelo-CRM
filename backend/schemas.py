@@ -555,6 +555,10 @@ class ExpenseCreate(BaseModel):
     date: date
     payment_method: Optional[str] = None
     receipt_url: Optional[str] = None
+    subcategory: Optional[str] = None
+    vendor: Optional[str] = None
+    is_recurring: bool = False
+    recurring_frequency: Optional[str] = None
     created_by: Optional[str] = None
 
 class ExpenseUpdate(BaseModel):
@@ -564,6 +568,10 @@ class ExpenseUpdate(BaseModel):
     date: Optional[date] = None
     payment_method: Optional[str] = None
     receipt_url: Optional[str] = None
+    subcategory: Optional[str] = None
+    vendor: Optional[str] = None
+    is_recurring: Optional[bool] = None
+    recurring_frequency: Optional[str] = None
 
 class ExpenseResponse(BaseModel):
     id: int
@@ -573,6 +581,10 @@ class ExpenseResponse(BaseModel):
     date: date
     payment_method: Optional[str] = None
     receipt_url: Optional[str] = None
+    subcategory: Optional[str] = None
+    vendor: Optional[str] = None
+    is_recurring: bool = False
+    recurring_frequency: Optional[str] = None
     created_by: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
@@ -615,6 +627,7 @@ class InvoiceItemCreate(BaseModel):
     quantity: int = 1
     unit_price: int
     staff_name: Optional[str] = None
+    visit_id: Optional[int] = None
 
 class InvoiceCreate(BaseModel):
     client_id: Optional[int] = None
@@ -640,6 +653,7 @@ class InvoiceItemResponse(BaseModel):
     unit_price: int
     total: int
     staff_name: Optional[str] = None
+    visit_id: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -685,6 +699,21 @@ class PaymentMethodItem(BaseModel):
     count: int
     total: int
     pct_of_total: float = 0.0
+
+
+#========================= UNINVOICED VISITS =========================#
+
+class UninvoicedVisitResponse(BaseModel):
+    id: int
+    client_id: int
+    client_name: str
+    staff_name: str
+    service_name: str
+    amount: int
+    visit_date: date
+
+    class Config:
+        from_attributes = True
 
 
 #========================= IMPORT/EXPORT =========================#

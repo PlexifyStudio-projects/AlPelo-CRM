@@ -5,6 +5,7 @@ import financeService from '../../services/financeService';
 import clientService from '../../services/clientService';
 import servicesService from '../../services/servicesService';
 import staffService from '../../services/staffService';
+import aiService from '../../services/aiService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -173,9 +174,23 @@ const CATEGORY_COLORS = {
   'Otros': '#8E8E85',
 };
 
-const EXPENSE_CATEGORIES = [
-  'Arriendo', 'Nomina', 'Productos', 'Servicios publicos',
-  'Marketing', 'Mantenimiento', 'Impuestos', 'Otros',
+const EXPENSE_CATEGORIES = {
+  'Arriendo': { icon: '\u{1F3E0}', subs: [] },
+  'Nomina': { icon: '\u{1F465}', subs: ['Salarios', 'Prestaciones', 'Seguridad social'] },
+  'Productos': { icon: '\u{1F4E6}', subs: ['Insumos peluqueria', 'Productos reventa', 'Limpieza'] },
+  'Servicios publicos': { icon: '\u26A1', subs: ['Luz', 'Agua', 'Internet', 'Gas', 'Telefono'] },
+  'Marketing': { icon: '\u{1F4F1}', subs: ['Redes sociales', 'Material impreso', 'Eventos'] },
+  'Mantenimiento': { icon: '\u{1F527}', subs: ['Equipos', 'Instalaciones', 'Software/licencias'] },
+  'Impuestos': { icon: '\u{1F4CB}', subs: [] },
+  'Otros': { icon: '\u{1F4CB}', subs: [] },
+};
+
+const RECURRING_OPTIONS = [
+  { value: 'semanal', label: 'Semanal' },
+  { value: 'quincenal', label: 'Quincenal' },
+  { value: 'mensual', label: 'Mensual' },
+  { value: 'bimestral', label: 'Bimestral' },
+  { value: 'anual', label: 'Anual' },
 ];
 
 const PAYMENT_METHODS = [
@@ -371,12 +386,17 @@ const InsightsPanel = ({ data }) => {
 };
 
 // ===== PAYMENT METHODS CARD =====
-const PaymentMethodsCard = ({ period }) => {
+const PaymentMethodsCard = ({ period, dateFrom, dateTo }) => {
   const [data, setData] = useState(null);
 
   useEffect(() => {
-    financeService.paymentMethods({ period }).then(setData).catch(() => {});
-  }, [period]);
+    const params = { period };
+    if (period === 'custom' && dateFrom && dateTo) {
+      params.date_from = dateFrom;
+      params.date_to = dateTo;
+    }
+    financeService.paymentMethods(params).then(setData).catch(() => {});
+  }, [period, dateFrom, dateTo]);
 
   if (!data || !data.items || data.items.length === 0) return null;
 
@@ -404,7 +424,7 @@ const PaymentMethodsCard = ({ period }) => {
 // ================================================================
 // TAB: RESUMEN (existing content)
 // ================================================================
-const TabResumen = ({ data, loading, period }) => {
+const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
   const hasData = data && data.total_visits > 0;
 
   return (
@@ -583,55 +603,184 @@ const TabResumen = ({ data, loading, period }) => {
         </div>
       </div>
 
-      {/* Payment Methods + P&L */}
+      {/* Owner Profit Panel */}
+      {!loading && <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+
+      {/* Payment Methods */}
       <div className="finances__body finances__body--bottom">
-        {!loading && <PaymentMethodsCard period={period} />}
-        {!loading && <PnLMiniCard period={period} />}
+        {!loading && <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       </div>
+
+      {/* AI Widget */}
+      {!loading && <FinanceAIWidget period={period} dateFrom={dateFrom} dateTo={dateTo} />}
     </>
   );
 };
 
-// ===== P&L MINI CARD (for Resumen tab) =====
-const PnLMiniCard = ({ period }) => {
+// ===== OWNER PROFIT PANEL (Fase 2) =====
+const OwnerProfitPanel = ({ period, dateFrom, dateTo }) => {
   const [pnl, setPnl] = useState(null);
 
   useEffect(() => {
-    financeService.getPnL({ period }).then(setPnl).catch(() => {});
-  }, [period]);
+    const params = { period };
+    if (period === 'custom' && dateFrom && dateTo) {
+      params.date_from = dateFrom;
+      params.date_to = dateTo;
+    }
+    financeService.getPnL(params).then(setPnl).catch(() => {});
+  }, [period, dateFrom, dateTo]);
 
   if (!pnl) return null;
 
+  // Fase 6: IVA estimado from localStorage preference
+  const ivaDefault = localStorage.getItem('alpelo_iva_default') === 'true';
+  const estimatedIva = ivaDefault ? Math.round(pnl.total_revenue * 0.19) : 0;
+  const isProfit = pnl.net_profit >= 0;
+
   return (
-    <div className="finances__card">
-      <div className="finances__card-header">
-        <h2 className="finances__card-title">{Icons.barChart} Estado de Resultados</h2>
-        <span className="finances__card-badge">P&L</span>
+    <div className="finances__owner-panel">
+      {/* Left: big number hero */}
+      <div className="finances__owner-hero">
+        <span className="finances__owner-eyebrow">Tu Ganancia Neta</span>
+        <span className={`finances__owner-big ${isProfit ? '' : 'finances__owner-big--loss'}`}>
+          {formatCOP(pnl.net_profit)}
+        </span>
+        <div className="finances__owner-margin">
+          <div className="finances__owner-margin-bar">
+            <div className="finances__owner-margin-fill" style={{ width: `${Math.max(Math.min(pnl.margin_pct, 100), 0)}%` }} />
+          </div>
+          <span className="finances__owner-margin-label">Margen {pnl.margin_pct}%</span>
+        </div>
       </div>
-      <div className="finances__pnl-rows">
-        <div className="finances__pnl-row">
-          <span className="finances__pnl-label">{Icons.trendUp} Ingresos</span>
-          <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_revenue)}</span>
+
+      {/* Right: breakdown */}
+      <div className="finances__owner-breakdown">
+        <div className="finances__owner-row">
+          <div className="finances__owner-row-left">
+            <span className="finances__owner-dot finances__owner-dot--green" />
+            <span className="finances__owner-label">Ingresos por servicios</span>
+          </div>
+          <span className="finances__owner-value finances__owner-value--positive">+{formatCOP(pnl.total_revenue)}</span>
         </div>
-        <div className="finances__pnl-row">
-          <span className="finances__pnl-label">Gastos operativos</span>
-          <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_expenses)}</span>
+        <div className="finances__owner-row">
+          <div className="finances__owner-row-left">
+            <span className="finances__owner-dot finances__owner-dot--red" />
+            <span className="finances__owner-label">Comisiones equipo</span>
+          </div>
+          <span className="finances__owner-value finances__owner-value--negative">-{formatCOP(pnl.total_commissions)}</span>
         </div>
-        <div className="finances__pnl-row">
-          <span className="finances__pnl-label">Comisiones equipo</span>
-          <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_commissions)}</span>
+        <div className="finances__owner-row">
+          <div className="finances__owner-row-left">
+            <span className="finances__owner-dot finances__owner-dot--orange" />
+            <span className="finances__owner-label">Gastos operativos</span>
+          </div>
+          <span className="finances__owner-value finances__owner-value--negative">-{formatCOP(pnl.total_expenses)}</span>
         </div>
-        <div className="finances__pnl-divider" />
-        <div className="finances__pnl-row finances__pnl-row--total">
-          <span className="finances__pnl-label">Ganancia Neta</span>
-          <span className={`finances__pnl-value ${pnl.net_profit >= 0 ? 'finances__pnl-value--positive' : 'finances__pnl-value--negative'}`}>
-            {formatCOP(pnl.net_profit)}
-          </span>
-        </div>
-        {pnl.margin_pct !== null && (
-          <span className="finances__pnl-margin">Margen de ganancia: {pnl.margin_pct}%</span>
+        {estimatedIva > 0 && (
+          <div className="finances__owner-row finances__owner-row--subtle">
+            <div className="finances__owner-row-left">
+              <span className="finances__owner-dot finances__owner-dot--muted" />
+              <span className="finances__owner-label">IVA recaudado (est.)</span>
+            </div>
+            <span className="finances__owner-value finances__owner-value--muted">{formatCOP(estimatedIva)}</span>
+          </div>
         )}
+
+        {/* Mini visual bar showing distribution */}
+        <div className="finances__owner-dist">
+          {pnl.total_revenue > 0 && (
+            <>
+              <div className="finances__owner-dist-seg finances__owner-dist-seg--profit" style={{ width: `${Math.max((pnl.net_profit / pnl.total_revenue) * 100, 0)}%` }} title={`Ganancia: ${formatCOP(pnl.net_profit)}`} />
+              <div className="finances__owner-dist-seg finances__owner-dist-seg--comm" style={{ width: `${(pnl.total_commissions / pnl.total_revenue) * 100}%` }} title={`Comisiones: ${formatCOP(pnl.total_commissions)}`} />
+              <div className="finances__owner-dist-seg finances__owner-dist-seg--expense" style={{ width: `${(pnl.total_expenses / pnl.total_revenue) * 100}%` }} title={`Gastos: ${formatCOP(pnl.total_expenses)}`} />
+            </>
+          )}
+        </div>
       </div>
+    </div>
+  );
+};
+
+// ===== FINANCE AI WIDGET (Fase 5) =====
+const FinanceAIWidget = ({ period, dateFrom, dateTo }) => {
+  const [expanded, setExpanded] = useState(false);
+  const [query, setQuery] = useState('');
+  const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const periodLabel = period === 'custom' && dateFrom && dateTo
+    ? `${dateFrom} a ${dateTo}`
+    : { today: 'hoy', week: 'esta semana', month: 'este mes', year: 'este ano' }[period] || period;
+
+  const chips = [
+    'Cuanto gaste en productos este mes?',
+    'Cual fue mi mejor dia?',
+    'Cuanto le debo al equipo?',
+    'Resumen financiero completo',
+  ];
+
+  const handleAsk = async (message) => {
+    if (!message.trim()) return;
+    setLoading(true);
+    setResponse('');
+    try {
+      const prefixed = `[Finanzas] El usuario pregunta desde la pagina de Finanzas, periodo: ${periodLabel}. Pregunta: ${message}`;
+      const res = await aiService.chat(prefixed, []);
+      setResponse(res.response);
+    } catch {
+      setResponse('Error al consultar la IA. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    handleAsk(query);
+  };
+
+  return (
+    <div className={`finances__ai-widget ${expanded ? 'finances__ai-widget--expanded' : ''}`}>
+      <button className="finances__ai-header" onClick={() => setExpanded(!expanded)}>
+        <span className="finances__ai-sparkle">{'\u2728'}</span>
+        <span>Preguntale a Lina sobre tus finanzas</span>
+        <svg className={`finances__ai-chevron ${expanded ? 'finances__ai-chevron--open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+      </button>
+      {expanded && (
+        <div className="finances__ai-body">
+          <div className="finances__ai-chips">
+            {chips.map((chip, i) => (
+              <button key={i} className="finances__ai-chip" onClick={() => { setQuery(chip); handleAsk(chip); }}>{chip}</button>
+            ))}
+          </div>
+          <form className="finances__ai-input-row" onSubmit={handleSubmit}>
+            <input
+              className="finances__input"
+              placeholder="Escribe tu pregunta financiera..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              disabled={loading}
+            />
+            <button type="submit" className="finances__btn-primary" disabled={loading || !query.trim()}>
+              {loading ? 'Pensando...' : 'Preguntar'}
+            </button>
+          </form>
+          {(response || loading) && (
+            <div className="finances__ai-response">
+              {loading ? (
+                <div className="finances__ai-loading">
+                  <span className="finances__ai-dot" /><span className="finances__ai-dot" /><span className="finances__ai-dot" />
+                </div>
+              ) : (
+                <>
+                  <div className="finances__ai-answer">{response}</div>
+                  <button className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => { setResponse(''); setQuery(''); }}>Limpiar</button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -639,7 +788,7 @@ const PnLMiniCard = ({ period }) => {
 // ================================================================
 // TAB: GASTOS
 // ================================================================
-const TabGastos = ({ period }) => {
+const TabGastos = ({ period, dateFrom, dateTo }) => {
   const { addNotification } = useNotification();
   const [expenses, setExpenses] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -647,15 +796,26 @@ const TabGastos = ({ period }) => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ category: '', description: '', amount: '', date: new Date().toISOString().split('T')[0], payment_method: '' });
+  const emptyForm = { category: '', subcategory: '', description: '', amount: '', date: new Date().toISOString().split('T')[0], payment_method: '', vendor: '', is_recurring: false, recurring_frequency: '' };
+  const [form, setForm] = useState(emptyForm);
+
+  const buildParams = useCallback(() => {
+    const params = { period };
+    if (period === 'custom' && dateFrom && dateTo) {
+      params.date_from = dateFrom;
+      params.date_to = dateTo;
+    }
+    return params;
+  }, [period, dateFrom, dateTo]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const params = buildParams();
       const [exp, sum, p] = await Promise.all([
-        financeService.listExpenses({ period }),
-        financeService.expensesSummary({ period }),
-        financeService.getPnL({ period }),
+        financeService.listExpenses(params),
+        financeService.expensesSummary(params),
+        financeService.getPnL(params),
       ]);
       setExpenses(exp);
       setSummary(sum);
@@ -665,7 +825,7 @@ const TabGastos = ({ period }) => {
     } finally {
       setLoading(false);
     }
-  }, [period, addNotification]);
+  }, [buildParams, addNotification]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -673,7 +833,10 @@ const TabGastos = ({ period }) => {
     e.preventDefault();
     if (!form.category || !form.description || !form.amount || !form.date) return;
     try {
-      const payload = { ...form, amount: Number(form.amount) };
+      const payload = { ...form, amount: Number(form.amount), is_recurring: form.is_recurring || false };
+      if (!payload.subcategory) delete payload.subcategory;
+      if (!payload.vendor) delete payload.vendor;
+      if (!payload.recurring_frequency) delete payload.recurring_frequency;
       if (editingId) {
         await financeService.updateExpense(editingId, payload);
         addNotification('Gasto actualizado', 'success');
@@ -683,7 +846,7 @@ const TabGastos = ({ period }) => {
       }
       setShowForm(false);
       setEditingId(null);
-      setForm({ category: '', description: '', amount: '', date: new Date().toISOString().split('T')[0], payment_method: '' });
+      setForm(emptyForm);
       load();
     } catch (err) {
       addNotification('Error: ' + err.message, 'error');
@@ -691,7 +854,11 @@ const TabGastos = ({ period }) => {
   };
 
   const handleEdit = (exp) => {
-    setForm({ category: exp.category, description: exp.description, amount: exp.amount.toString(), date: exp.date, payment_method: exp.payment_method || '' });
+    setForm({
+      category: exp.category, subcategory: exp.subcategory || '', description: exp.description,
+      amount: exp.amount.toString(), date: exp.date, payment_method: exp.payment_method || '',
+      vendor: exp.vendor || '', is_recurring: exp.is_recurring || false, recurring_frequency: exp.recurring_frequency || '',
+    });
     setEditingId(exp.id);
     setShowForm(true);
   };
@@ -705,6 +872,9 @@ const TabGastos = ({ period }) => {
       addNotification('Error: ' + err.message, 'error');
     }
   };
+
+  const currentCatInfo = EXPENSE_CATEGORIES[form.category];
+  const availableSubs = currentCatInfo?.subs || [];
 
   if (loading) return <div className="finances__list-skeleton">{[...Array(4)].map((_, i) => <SkeletonBlock key={i} width="100%" height="48px" />)}</div>;
 
@@ -739,26 +909,50 @@ const TabGastos = ({ period }) => {
       {/* Header + Add button */}
       <div className="finances__section-header">
         <h3 className="finances__section-title">Gastos del periodo</h3>
-        <button className="finances__action-btn" onClick={() => { setShowForm(!showForm); setEditingId(null); setForm({ category: '', description: '', amount: '', date: new Date().toISOString().split('T')[0], payment_method: '' }); }}>
+        <button className="finances__action-btn" onClick={() => { setShowForm(!showForm); setEditingId(null); setForm(emptyForm); }}>
           {Icons.plus} Nuevo Gasto
         </button>
       </div>
 
-      {/* Expense Form */}
+      {/* Expense Form — Redesigned (Fase 3) */}
       {showForm && (
         <form className="finances__expense-form" onSubmit={handleSubmit}>
+          <p className="finances__form-subtitle">Detalle del gasto</p>
           <div className="finances__form-grid">
-            <select className="finances__select" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} required>
+            <select className="finances__select" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value, subcategory: '' })} required>
               <option value="">Categoria *</option>
-              {EXPENSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {Object.entries(EXPENSE_CATEGORIES).map(([cat, info]) => (
+                <option key={cat} value={cat}>{info.icon} {cat}</option>
+              ))}
             </select>
+            {availableSubs.length > 0 && (
+              <select className="finances__select" value={form.subcategory} onChange={(e) => setForm({ ...form, subcategory: e.target.value })}>
+                <option value="">Subcategoria</option>
+                {availableSubs.map((sub) => <option key={sub} value={sub}>{sub}</option>)}
+              </select>
+            )}
             <input className="finances__input" placeholder="Descripcion *" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
+            <input className="finances__input" placeholder="Proveedor" value={form.vendor} onChange={(e) => setForm({ ...form, vendor: e.target.value })} />
+          </div>
+          <p className="finances__form-subtitle">Pago</p>
+          <div className="finances__form-grid">
             <input className="finances__input" type="number" placeholder="Monto (COP) *" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
             <input className="finances__input" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
             <select className="finances__select" value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}>
               <option value="">Metodo de pago</option>
               {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
+            <div className="finances__recurring-toggle">
+              <label className="finances__label-inline">
+                <input type="checkbox" checked={form.is_recurring} onChange={(e) => setForm({ ...form, is_recurring: e.target.checked, recurring_frequency: e.target.checked ? 'mensual' : '' })} />
+                <span>Gasto recurrente</span>
+              </label>
+              {form.is_recurring && (
+                <select className="finances__select finances__select--sm" value={form.recurring_frequency} onChange={(e) => setForm({ ...form, recurring_frequency: e.target.value })}>
+                  {RECURRING_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </select>
+              )}
+            </div>
           </div>
           <div className="finances__form-actions">
             <button type="button" className="finances__btn-ghost" onClick={() => { setShowForm(false); setEditingId(null); }}>Cancelar</button>
@@ -802,7 +996,8 @@ const TabGastos = ({ period }) => {
               <th>Fecha</th>
               <th>Categoria</th>
               <th>Descripcion</th>
-              <th>Metodo</th>
+              <th className="finances__hide-mobile">Proveedor</th>
+              <th className="finances__hide-mobile">Metodo</th>
               <th>Monto</th>
               <th></th>
             </tr>
@@ -811,9 +1006,14 @@ const TabGastos = ({ period }) => {
             {expenses.map((exp) => (
               <tr key={exp.id}>
                 <td>{new Date(exp.date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</td>
-                <td><span className="finances__tag">{exp.category}</span></td>
+                <td>
+                  <span className="finances__tag">{exp.category}</span>
+                  {exp.subcategory && <span className="finances__tag finances__tag--sub">{exp.subcategory}</span>}
+                  {exp.is_recurring && <span className="finances__tag finances__tag--recurring">{'\u{1F501}'} {exp.recurring_frequency}</span>}
+                </td>
                 <td>{exp.description}</td>
-                <td>{exp.payment_method || '—'}</td>
+                <td className="finances__hide-mobile">{exp.vendor || '—'}</td>
+                <td className="finances__hide-mobile">{exp.payment_method || '—'}</td>
                 <td className="finances__amount-cell">{formatCOP(exp.amount)}</td>
                 <td>
                   <div className="finances__row-actions">
@@ -824,12 +1024,12 @@ const TabGastos = ({ period }) => {
               </tr>
             ))}
             {expenses.length === 0 && (
-              <tr><td colSpan={6} style={{ padding: 0, border: 'none' }}>
+              <tr><td colSpan={7} style={{ padding: 0, border: 'none' }}>
                 <div className="finances__empty-state" style={{ margin: '0', boxShadow: 'none' }}>
                   <div className="finances__empty-state-icon">{Icons.receipt}</div>
                   <p className="finances__empty-state-title">Sin gastos registrados</p>
-                  <p className="finances__empty-state-text">Registra arriendo, nómina, productos y otros gastos para ver tu estado de resultados completo</p>
-                  <button type="button" className="finances__action-btn" onClick={() => { setShowForm(true); setEditingId(null); setForm({ category: '', description: '', amount: '', date: new Date().toISOString().split('T')[0], payment_method: '' }); }}>
+                  <p className="finances__empty-state-text">Registra arriendo, nomina, productos y otros gastos para ver tu estado de resultados completo</p>
+                  <button type="button" className="finances__action-btn" onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }}>
                     {Icons.plus} Registrar primer gasto
                   </button>
                 </div>
@@ -847,7 +1047,7 @@ const TabGastos = ({ period }) => {
 // ================================================================
 const STAFF_COLORS = ['#2D5A3D', '#8B6914', '#3B82F6', '#EF4444', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
 
-const TabComisiones = ({ period }) => {
+const TabComisiones = ({ period, dateFrom, dateTo }) => {
   const { addNotification } = useNotification();
   const [configs, setConfigs] = useState([]);
   const [payouts, setPayouts] = useState([]);
@@ -858,9 +1058,14 @@ const TabComisiones = ({ period }) => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const params = { period };
+      if (period === 'custom' && dateFrom && dateTo) {
+        params.date_from = dateFrom;
+        params.date_to = dateTo;
+      }
       const [c, p] = await Promise.all([
         financeService.listCommissions(),
-        financeService.commissionPayouts({ period }),
+        financeService.commissionPayouts(params),
       ]);
       setConfigs(c);
       setPayouts(p);
@@ -869,7 +1074,7 @@ const TabComisiones = ({ period }) => {
     } finally {
       setLoading(false);
     }
-  }, [period, addNotification]);
+  }, [period, dateFrom, dateTo, addNotification]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -1095,7 +1300,7 @@ const STATUS_ICONS = {
   cancelled: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
 };
 
-const TabFacturas = ({ period }) => {
+const TabFacturas = ({ period, dateFrom, dateTo }) => {
   const { addNotification } = useNotification();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1113,10 +1318,17 @@ const TabFacturas = ({ period }) => {
   const searchTimer = useRef(null);
   const clientSearchRef = useRef(null);
 
+  // Uninvoiced visits (Fase 4)
+  const [uninvoicedVisits, setUninvoicedVisits] = useState([]);
+  const [showVisitImport, setShowVisitImport] = useState(false);
+
+  // Fase 6: IVA default from localStorage
+  const savedIvaDefault = localStorage.getItem('alpelo_iva_default') === 'true';
+
   const [form, setForm] = useState({
     client_name: '', client_phone: '', client_document: '',
-    payment_method: '', tax_rate: 0.19, notes: '',
-    items: [{ service_name: '', quantity: 1, unit_price: '', staff_name: '' }],
+    payment_method: '', tax_rate: savedIvaDefault ? 0.19 : 0.19, notes: '',
+    items: [{ service_name: '', quantity: 1, unit_price: '', staff_name: '', visit_id: null }],
   });
 
   // Load invoices + reference data
@@ -1168,6 +1380,22 @@ const TabFacturas = ({ period }) => {
       client_phone: client.phone || '',
       client_document: '',
     }));
+    // Load uninvoiced visits for this client
+    financeService.getUninvoicedVisits({ client_id: client.id }).then(setUninvoicedVisits).catch(() => setUninvoicedVisits([]));
+  };
+
+  const handleImportVisit = (visit) => {
+    setForm(prev => ({
+      ...prev,
+      items: [...prev.items.filter(it => it.service_name), {
+        service_name: visit.service_name,
+        quantity: 1,
+        unit_price: visit.amount.toString(),
+        staff_name: visit.staff_name,
+        visit_id: visit.id,
+      }],
+    }));
+    setUninvoicedVisits(prev => prev.filter(v => v.id !== visit.id));
   };
 
   // Service selection — auto-fill price
@@ -1192,7 +1420,7 @@ const TabFacturas = ({ period }) => {
   };
 
   const addItem = () => {
-    setForm((prev) => ({ ...prev, items: [...prev.items, { service_name: '', quantity: 1, unit_price: '', staff_name: '' }] }));
+    setForm((prev) => ({ ...prev, items: [...prev.items, { service_name: '', quantity: 1, unit_price: '', staff_name: '', visit_id: null }] }));
   };
 
   const removeItem = (idx) => {
@@ -1215,10 +1443,12 @@ const TabFacturas = ({ period }) => {
     setShowForm(false);
     setSelectedClient(null);
     setClientSearch('');
+    setUninvoicedVisits([]);
+    setShowVisitImport(false);
     setForm({
       client_name: '', client_phone: '', client_document: '',
-      payment_method: '', tax_rate: 0.19, notes: '',
-      items: [{ service_name: '', quantity: 1, unit_price: '', staff_name: '' }],
+      payment_method: '', tax_rate: savedIvaDefault ? 0.19 : 0.19, notes: '',
+      items: [{ service_name: '', quantity: 1, unit_price: '', staff_name: '', visit_id: null }],
     });
   };
 
@@ -1230,10 +1460,12 @@ const TabFacturas = ({ period }) => {
       return;
     }
     try {
+      // Fase 6: save IVA preference
+      localStorage.setItem('alpelo_iva_default', form.tax_rate > 0 ? 'true' : 'false');
       await financeService.createInvoice({
         ...form,
         client_name: finalClientName,
-        items: form.items.map((it) => ({ ...it, unit_price: Number(it.unit_price), quantity: Number(it.quantity) || 1 })),
+        items: form.items.map((it) => ({ ...it, unit_price: Number(it.unit_price), quantity: Number(it.quantity) || 1, visit_id: it.visit_id || undefined })),
       });
       addNotification('Factura creada', 'success');
       resetForm();
@@ -1406,6 +1638,28 @@ const TabFacturas = ({ period }) => {
               </label>
             </div>
           </div>
+
+          {/* Uninvoiced visits (Fase 4) */}
+          {selectedClient && uninvoicedVisits.length > 0 && (
+            <div className="finances__uninvoiced">
+              <button type="button" className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => setShowVisitImport(!showVisitImport)}>
+                {Icons.receipt} Importar desde visitas ({uninvoicedVisits.length} sin facturar)
+              </button>
+              {showVisitImport && (
+                <div className="finances__uninvoiced-list">
+                  {uninvoicedVisits.map((v) => (
+                    <button key={v.id} type="button" className="finances__uninvoiced-item" onClick={() => handleImportVisit(v)}>
+                      <span className="finances__uninvoiced-date">{new Date(v.visit_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>
+                      <span className="finances__uninvoiced-service">{v.service_name}</span>
+                      <span className="finances__uninvoiced-staff">{v.staff_name}</span>
+                      <span className="finances__uninvoiced-amount">{formatCOP(v.amount)}</span>
+                      <span className="finances__uninvoiced-add">{Icons.plus}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <p className="finances__form-subtitle">Servicios facturados</p>
           <div className="finances__invoice-items">
@@ -1580,10 +1834,19 @@ const Finances = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('resumen');
 
-  const fetchData = useCallback(async (p, isRefresh = false) => {
+  // Fase 1: Custom date range
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showCustomRange, setShowCustomRange] = useState(false);
+
+  const fetchData = useCallback(async (p, isRefresh = false, customFrom, customTo) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/finances/summary?period=${p}`, {
+      let url = `${API_URL}/finances/summary?period=${p}`;
+      if (p === 'custom' && customFrom && customTo) {
+        url = `${API_URL}/finances/summary?period=custom&date_from=${customFrom}&date_to=${customTo}`;
+      }
+      const res = await fetch(url, {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
       });
@@ -1603,13 +1866,48 @@ const Finances = () => {
   }, []);
 
   useEffect(() => {
-    fetchData(period);
-  }, [period, fetchData]);
+    if (period === 'custom' && dateFrom && dateTo) {
+      fetchData(period, false, dateFrom, dateTo);
+    } else if (period !== 'custom') {
+      fetchData(period);
+    }
+  }, [period, dateFrom, dateTo, fetchData]);
 
   useEffect(() => {
-    const interval = setInterval(() => fetchData(period, true), 60000);
+    const interval = setInterval(() => {
+      if (period === 'custom' && dateFrom && dateTo) {
+        fetchData(period, true, dateFrom, dateTo);
+      } else if (period !== 'custom') {
+        fetchData(period, true);
+      }
+    }, 60000);
     return () => clearInterval(interval);
-  }, [period, fetchData]);
+  }, [period, dateFrom, dateTo, fetchData]);
+
+  const handlePeriodChange = (p) => {
+    setPeriod(p);
+    if (p !== 'custom') {
+      setShowCustomRange(false);
+    }
+  };
+
+  const handleCustomToggle = () => {
+    if (period === 'custom') {
+      setPeriod('month');
+      setShowCustomRange(false);
+    } else {
+      setShowCustomRange(true);
+      // Set defaults: last 30 days
+      const today = new Date();
+      const thirtyAgo = new Date(today);
+      thirtyAgo.setDate(today.getDate() - 30);
+      const from = thirtyAgo.toISOString().split('T')[0];
+      const to = today.toISOString().split('T')[0];
+      setDateFrom(from);
+      setDateTo(to);
+      setPeriod('custom');
+    }
+  };
 
   if (error && !data) {
     return (
@@ -1621,7 +1919,7 @@ const Finances = () => {
           <div className="finances__error-icon">{Icons.alert}</div>
           <p className="finances__error-text">No se pudieron cargar los datos financieros</p>
           <p className="finances__error-detail">{error}</p>
-          <button className="finances__error-btn" onClick={() => fetchData(period)}>Reintentar</button>
+          <button className="finances__error-btn" onClick={() => fetchData(period, false, dateFrom, dateTo)}>Reintentar</button>
         </div>
       </div>
     );
@@ -1643,7 +1941,7 @@ const Finances = () => {
         <div className="finances__header-right">
           <button
             className={`finances__refresh-btn ${refreshing ? 'finances__refresh-btn--spinning' : ''}`}
-            onClick={() => fetchData(period, true)}
+            onClick={() => fetchData(period, true, dateFrom, dateTo)}
             disabled={refreshing}
             title="Actualizar datos"
           >
@@ -1654,13 +1952,37 @@ const Finances = () => {
               <button
                 key={opt.value}
                 className={`finances__period-btn ${period === opt.value ? 'finances__period-btn--active' : ''}`}
-                onClick={() => setPeriod(opt.value)}
+                onClick={() => handlePeriodChange(opt.value)}
                 disabled={loading}
               >
                 {opt.label}
               </button>
             ))}
+            <button
+              className={`finances__period-btn ${period === 'custom' ? 'finances__period-btn--active' : ''}`}
+              onClick={handleCustomToggle}
+              disabled={loading}
+            >
+              {Icons.calendar} Personalizado
+            </button>
           </div>
+          {showCustomRange && (
+            <div className="finances__period-custom">
+              <input
+                className="finances__input finances__input--date"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+              <span className="finances__period-custom-sep">—</span>
+              <input
+                className="finances__input finances__input--date"
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -1678,10 +2000,10 @@ const Finances = () => {
       </div>
 
       {/* TAB CONTENT */}
-      {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} />}
-      {activeTab === 'gastos' && <TabGastos period={period} />}
-      {activeTab === 'comisiones' && <TabComisiones period={period} />}
-      {activeTab === 'facturas' && <TabFacturas period={period} />}
+      {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
     </div>
   );
 };

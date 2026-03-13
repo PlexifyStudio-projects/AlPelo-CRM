@@ -16,7 +16,7 @@ from schemas import (
     ExpenseCreate, ExpenseUpdate, ExpenseResponse, ExpenseSummaryItem,
     CommissionConfigResponse, CommissionConfigUpdate, CommissionPayoutItem,
     InvoiceCreate, InvoiceUpdate, InvoiceResponse, InvoiceItemResponse,
-    PnLResponse, PaymentMethodItem, ImportResult,
+    PnLResponse, PaymentMethodItem, ImportResult, UninvoicedVisitResponse,
 )
 
 router = APIRouter()
@@ -212,6 +212,50 @@ def get_commission_payouts(
 
 
 # ============================================================================
+# UNINVOICED VISITS
+# ============================================================================
+
+@router.get("/finances/uninvoiced-visits", response_model=list[UninvoicedVisitResponse])
+def get_uninvoiced_visits(
+    client_id: Optional[int] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """List completed visits that haven't been invoiced yet."""
+    q = (
+        db.query(VisitHistory)
+        .filter(VisitHistory.status == "completed")
+        .filter(
+            (VisitHistory.is_invoiced == False) | (VisitHistory.is_invoiced == None)
+        )
+    )
+    if client_id:
+        q = q.filter(VisitHistory.client_id == client_id)
+    if date_from:
+        q = q.filter(VisitHistory.visit_date >= date.fromisoformat(date_from))
+    if date_to:
+        q = q.filter(VisitHistory.visit_date <= date.fromisoformat(date_to))
+
+    visits = q.order_by(VisitHistory.visit_date.desc()).limit(50).all()
+
+    result = []
+    for v in visits:
+        client = db.query(Client).filter(Client.id == v.client_id).first()
+        staff = db.query(Staff).filter(Staff.id == v.staff_id).first()
+        result.append(UninvoicedVisitResponse(
+            id=v.id,
+            client_id=v.client_id,
+            client_name=client.name if client else "?",
+            staff_name=staff.name if staff else "?",
+            service_name=v.service_name,
+            amount=v.amount,
+            visit_date=v.visit_date,
+        ))
+    return result
+
+
+# ============================================================================
 # INVOICES
 # ============================================================================
 
@@ -273,8 +317,15 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db)):
             unit_price=item_data.unit_price,
             total=item_data.unit_price * item_data.quantity,
             staff_name=item_data.staff_name,
+            visit_id=item_data.visit_id,
         )
         db.add(item)
+
+        # Mark visit as invoiced
+        if item_data.visit_id:
+            visit = db.query(VisitHistory).filter(VisitHistory.id == item_data.visit_id).first()
+            if visit:
+                visit.is_invoiced = True
 
     db.commit()
     db.refresh(inv)

@@ -76,6 +76,7 @@ class VisitHistory(Base):
     status = Column(String, nullable=False, default="completed")  # completed, no_show, cancelled
     payment_method = Column(String, nullable=True)  # efectivo, transferencia, tarjeta, nequi, daviplata
     notes = Column(Text, nullable=True)
+    is_invoiced = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     client = relationship("Client", back_populates="visits")
@@ -292,6 +293,10 @@ class Expense(Base):
     date = Column(Date, nullable=False)
     payment_method = Column(String, nullable=True)  # efectivo, transferencia, tarjeta, nequi, daviplata
     receipt_url = Column(Text, nullable=True)
+    subcategory = Column(String, nullable=True)
+    vendor = Column(String, nullable=True)  # proveedor
+    is_recurring = Column(Boolean, default=False)
+    recurring_frequency = Column(String, nullable=True)  # mensual, semanal, quincenal
     created_by = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -334,6 +339,7 @@ class InvoiceItem(Base):
     unit_price = Column(Integer, nullable=False)
     total = Column(Integer, nullable=False)
     staff_name = Column(String, nullable=True)
+    visit_id = Column(Integer, ForeignKey("public.visit_history.id"), nullable=True)
 
     invoice = relationship("Invoice", back_populates="items")
 

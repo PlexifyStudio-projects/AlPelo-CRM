@@ -36,6 +36,7 @@
     flex: 1;
     padding: $spacing-xl $spacing-2xl $spacing-2xl;
     overflow-y: auto;
+    overflow-x: hidden;
     width: 100%;
     @include custom-scrollbar;
     position: relative;

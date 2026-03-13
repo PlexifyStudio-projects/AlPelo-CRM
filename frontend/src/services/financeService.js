@@ -10,15 +10,22 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
+// Helper to build query string with optional date range
+const buildQuery = (params = {}) => {
+  const query = new URLSearchParams();
+  if (params.period) query.set('period', params.period);
+  if (params.date_from) query.set('date_from', params.date_from);
+  if (params.date_to) query.set('date_to', params.date_to);
+  if (params.category) query.set('category', params.category);
+  if (params.status) query.set('status', params.status);
+  if (params.client_id) query.set('client_id', params.client_id);
+  return query.toString();
+};
+
 const financeService = {
   // ========================= EXPENSES =========================
   listExpenses: async (params = {}) => {
-    const query = new URLSearchParams();
-    if (params.period) query.set('period', params.period);
-    if (params.category) query.set('category', params.category);
-    if (params.date_from) query.set('date_from', params.date_from);
-    if (params.date_to) query.set('date_to', params.date_to);
-    const qs = query.toString();
+    const qs = buildQuery(params);
     const res = await fetch(`${API}/expenses/${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
@@ -50,9 +57,7 @@ const financeService = {
   },
 
   expensesSummary: async (params = {}) => {
-    const query = new URLSearchParams();
-    if (params.period) query.set('period', params.period);
-    const qs = query.toString();
+    const qs = buildQuery(params);
     const res = await fetch(`${API}/expenses/summary${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
@@ -73,18 +78,14 @@ const financeService = {
   },
 
   commissionPayouts: async (params = {}) => {
-    const query = new URLSearchParams();
-    if (params.period) query.set('period', params.period);
-    const qs = query.toString();
+    const qs = buildQuery(params);
     const res = await fetch(`${API}/finances/commissions/payouts${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= INVOICES =========================
   listInvoices: async (params = {}) => {
-    const query = new URLSearchParams();
-    if (params.status) query.set('status', params.status);
-    const qs = query.toString();
+    const qs = buildQuery(params);
     const res = await fetch(`${API}/invoices/${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
@@ -120,20 +121,23 @@ const financeService = {
     return handleResponse(res);
   },
 
+  // ========================= UNINVOICED VISITS =========================
+  getUninvoicedVisits: async (params = {}) => {
+    const qs = buildQuery(params);
+    const res = await fetch(`${API}/finances/uninvoiced-visits${qs ? `?${qs}` : ''}`, { headers });
+    return handleResponse(res);
+  },
+
   // ========================= P&L =========================
   getPnL: async (params = {}) => {
-    const query = new URLSearchParams();
-    if (params.period) query.set('period', params.period);
-    const qs = query.toString();
+    const qs = buildQuery(params);
     const res = await fetch(`${API}/finances/pnl${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= PAYMENT METHODS =========================
   paymentMethods: async (params = {}) => {
-    const query = new URLSearchParams();
-    if (params.period) query.set('period', params.period);
-    const qs = query.toString();
+    const qs = buildQuery(params);
     const res = await fetch(`${API}/finances/payment-methods${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },

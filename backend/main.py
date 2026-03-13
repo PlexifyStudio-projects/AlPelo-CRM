@@ -31,6 +31,14 @@ def _run_migrations(engine):
         ("tenant", "updated_at", "TIMESTAMP DEFAULT NOW()"),
         # Finance module
         ("visit_history", "payment_method", "VARCHAR"),
+        ("visit_history", "is_invoiced", "BOOLEAN DEFAULT false"),
+        # Expense detail fields
+        ("expense", "subcategory", "VARCHAR"),
+        ("expense", "vendor", "VARCHAR"),
+        ("expense", "is_recurring", "BOOLEAN DEFAULT false"),
+        ("expense", "recurring_frequency", "VARCHAR"),
+        # Invoice item → visit link
+        ("invoice_item", "visit_id", "INTEGER"),
     ]
 
     for table, column, col_type in migrations:
