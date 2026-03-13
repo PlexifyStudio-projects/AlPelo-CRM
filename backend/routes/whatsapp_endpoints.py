@@ -51,7 +51,9 @@ router = APIRouter(prefix="/whatsapp", tags=["WhatsApp"])
 # Global AI reply rate limiter — max 10 replies per 60 seconds
 # ============================================================================
 _ai_reply_timestamps: list[float] = []
-_AI_REPLY_MAX = 10
+# WhatsApp Cloud API allows ~80 msgs/sec but we stay conservative.
+# 30 AI replies per minute is safe and well under Meta's limits.
+_AI_REPLY_MAX = 30
 _AI_REPLY_WINDOW = 60  # seconds
 
 # ============================================================================
@@ -1013,85 +1015,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             log_event("skip", "Token expirado — respuesta en pausa", detail="Esperando a que se renueve el token de WhatsApp.", conv_id=conv_id, status="warning")
             return
 
-        # Step 0: Send read receipt immediately (blue ticks)
-        if inbound_wa_msg_id:
-            await _send_read_receipt(inbound_wa_msg_id)
-
-        # Step 0.1: OFF-HOURS — send greeting template on FIRST contact, then let AI respond normally
-        if _is_off_hours() and not is_catchup:
-            db_oh = SessionLocal()
-            try:
-                today_start = datetime.utcnow() - timedelta(hours=5)
-                today_start = today_start.replace(hour=5, minute=0, second=0, microsecond=0)
-                already_sent = (
-                    db_oh.query(WhatsAppMessage)
-                    .filter(
-                        WhatsAppMessage.conversation_id == conv_id,
-                        WhatsAppMessage.sent_by == "lina_ia_offhours",
-                        WhatsAppMessage.created_at >= today_start,
-                    )
-                    .first()
-                )
-                if not already_sent:
-                    # First off-hours message today → send greeting template
-                    conv_oh = db_oh.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
-                    if conv_oh:
-                        client_name = ""
-                        if conv_oh.client_id:
-                            cl = db_oh.query(Client).filter(Client.id == conv_oh.client_id).first()
-                            if cl:
-                                client_name = cl.name.split()[0]
-                        if not client_name:
-                            client_name = conv_oh.wa_contact_name.split()[0] if conv_oh.wa_contact_name else ""
-
-                        greeting = _off_hours_greeting()
-                        name_part = f" {client_name}" if client_name else ""
-                        template_msg = (
-                            f"Hola{name_part}! Soy Lina de AlPelo Peluqueria. "
-                            f"En este momento ya cerramos, pero manana a primera hora te contestamos. "
-                            f"Gracias por escribirnos, {greeting}! 💈"
-                        )
-
-                        await asyncio.sleep(random.randint(5, 10))
-
-                        wa_msg_id = None
-                        try:
-                            async with httpx.AsyncClient(timeout=15) as client_http:
-                                resp = await client_http.post(
-                                    f"{WA_BASE_URL}/messages",
-                                    headers=wa_headers(),
-                                    json={
-                                        "messaging_product": "whatsapp",
-                                        "to": normalize_phone(to_phone),
-                                        "type": "text",
-                                        "text": {"body": template_msg},
-                                    },
-                                )
-                                data = resp.json()
-                                if resp.status_code == 200 and "messages" in data:
-                                    wa_msg_id = data["messages"][0].get("id")
-                        except Exception as e:
-                            print(f"[Lina IA] Off-hours template send error: {e}")
-
-                        msg = WhatsAppMessage(
-                            conversation_id=conv_id,
-                            wa_message_id=wa_msg_id,
-                            direction="outbound",
-                            content=template_msg,
-                            message_type="text",
-                            status="sent" if wa_msg_id else "failed",
-                            sent_by="lina_ia_offhours",
-                        )
-                        db_oh.add(msg)
-                        conv_oh.last_message_at = datetime.utcnow()
-                        db_oh.commit()
-                        print(f"[Lina IA] Off-hours template sent to conv {conv_id}")
-                        # Template sent — now fall through to normal AI for this first message too
-                else:
-                    print(f"[Lina IA] Off-hours but client keeps writing (conv {conv_id}). Responding with AI.")
-                # NO return — always fall through to AI if is_ai_active is ON
-            finally:
-                db_oh.close()
+        # Step 0: Read receipt is sent LATER (right before Lina's response) so the client
+        # sees blue ticks only when Lina is about to reply, not immediately.
+        # OFF-HOURS: Removed hardcoded check. Lina decides based on the business context
+        # prompt (each agency has different hours/timezone). She'll mention closing time
+        # naturally if it's relevant.
 
         # Step 0.5a: Transcribe audio if needed
         if needs_transcription and media_id:
@@ -1586,7 +1514,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 # Lina acknowledges and takes ownership — SHE verifies, not "the team"
                 clean_response = f"Permiteme un momento en lo que verifico la informacion del pago{name_suffix}, gracias! 🙏"
 
-            # Step 4: Send AI response via WhatsApp (with 1 retry on failure)
+            # Step 4: Send read receipt NOW (blue ticks appear right before Lina replies)
+            if inbound_wa_msg_id:
+                await _send_read_receipt(inbound_wa_msg_id)
+
+            # Step 4.5: Send AI response via WhatsApp (with 1 retry on failure)
             wa_message_id = None
             send_status = "sent"
             max_retries = 2

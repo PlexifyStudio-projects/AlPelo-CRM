@@ -16,23 +16,53 @@ from schemas import (
 )
 from routes._helpers import compute_client_list_item, compute_client_fields, find_client, find_conversation, normalize_phone
 
-# Colombia timezone offset (UTC-5)
-COL_OFFSET = timedelta(hours=-5)
+# Timezone offsets for supported regions (UTC offset in hours)
+_TIMEZONE_OFFSETS = {
+    "America/Bogota": -5,       # Colombia
+    "America/Lima": -5,         # Peru
+    "America/Caracas": -4,      # Venezuela
+    "America/Guayaquil": -5,    # Ecuador
+    "America/Mexico_City": -6,  # Mexico
+    "America/Santiago": -4,     # Chile
+    "America/Buenos_Aires": -3, # Argentina
+    "America/Sao_Paulo": -3,    # Brazil
+    "America/Panama": -5,       # Panama
+    "America/Costa_Rica": -6,   # Costa Rica
+    "America/New_York": -5,     # US East (EST, no DST calc)
+    "America/Los_Angeles": -8,  # US West (PST, no DST calc)
+    "Europe/Madrid": 1,         # Spain
+}
 
-def _now_colombia() -> datetime:
-    """Current datetime in Colombia (UTC-5)."""
-    return datetime.utcnow() + COL_OFFSET
+# Default offset (Colombia) — used when no tenant loaded
+_DEFAULT_OFFSET = timedelta(hours=-5)
 
-def _today_colombia() -> date:
-    """Current date in Colombia (UTC-5)."""
-    return _now_colombia().date()
+def _get_tenant_offset(db=None) -> timedelta:
+    """Get timezone offset from tenant config. Falls back to Colombia (UTC-5)."""
+    if db:
+        try:
+            from database.models import Tenant
+            tenant = db.query(Tenant).first()
+            if tenant and tenant.timezone:
+                offset_hours = _TIMEZONE_OFFSETS.get(tenant.timezone, -5)
+                return timedelta(hours=offset_hours)
+        except Exception:
+            pass
+    return _DEFAULT_OFFSET
+
+def _now_colombia(db=None) -> datetime:
+    """Current datetime in the tenant's timezone (defaults to Colombia UTC-5)."""
+    return datetime.utcnow() + _get_tenant_offset(db)
+
+def _today_colombia(db=None) -> date:
+    """Current date in the tenant's timezone."""
+    return _now_colombia(db).date()
 
 _DIAS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
 _MESES_ES = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
 
-def _fecha_colombia_str() -> str:
-    """'lunes 10 de marzo de 2026' in Spanish, using Colombia timezone."""
-    now = _now_colombia()
+def _fecha_colombia_str(db=None) -> str:
+    """'lunes 10 de marzo de 2026' in Spanish, using tenant's timezone."""
+    now = _now_colombia(db)
     dia_sem = _DIAS_ES[now.weekday()]
     mes = _MESES_ES[now.month]
     return f"{dia_sem} {now.day} de {mes} de {now.year}"
@@ -172,7 +202,7 @@ Ingreso total registrado: ${total_revenue:,} COP""")
         sections.append(f"=== SERVICIOS ({len(all_services)}) ===\n" + "\n".join(catalog_lines))
 
     # --- Upcoming appointments (today + next 3 days) ---
-    today = _today_colombia()
+    today = _today_colombia(db)
     upcoming_end = today + timedelta(days=3)
     upcoming_apts = db.query(Appointment).filter(
         Appointment.date >= today,
@@ -1425,7 +1455,7 @@ Barbero preferido: {preferred_barber}"""
         sections.append(f"SERVICIOS ({len(all_services)} total):\n" + "\n".join(svc_lines))
 
     # Today's appointments (so Lina can check availability before scheduling)
-    today = _today_colombia()
+    today = _today_colombia(db)
     todays_apts = db.query(Appointment).filter(
         Appointment.date == today,
         Appointment.status.in_(["confirmed", "completed"]),
@@ -1519,7 +1549,7 @@ def _build_system_prompt(db: Session, is_whatsapp: bool = False, conv_id: int = 
 
         return f"""Eres Lina, asistente virtual por WhatsApp. NO eres un bot — eres una persona real que atiende el WhatsApp del negocio. Tienes control total del CRM.
 
-HOY: {_fecha_colombia_str()} | Hora: {_now_colombia().strftime('%I:%M %p')} | Mañana: {(_today_colombia() + timedelta(days=1)).strftime('%Y-%m-%d')} ({_DIAS_ES[(_today_colombia() + timedelta(days=1)).weekday()]})
+HOY: {_fecha_colombia_str(db)} | Hora: {_now_colombia(db).strftime('%I:%M %p')} | Mañana: {(_today_colombia(db) + timedelta(days=1)).strftime('%Y-%m-%d')} ({_DIAS_ES[(_today_colombia(db) + timedelta(days=1)).weekday()]})
 
 === CONTEXTO DEL NEGOCIO (configurado por el admin — RESPETA TODO lo que dice aqui) ===
 {business_ctx}
@@ -1528,15 +1558,28 @@ HOY: {_fecha_colombia_str()} | Hora: {_now_colombia().strftime('%I:%M %p')} | Ma
 === CEREBRO DE LINA — COMO PIENSAS Y OPERAS ===
 Eres extremadamente inteligente, analitica y precisa. Piensas como un humano experto, no como un chatbot.
 
-LECTURA OBLIGATORIA DEL HISTORIAL (ANTES DE CUALQUIER RESPUESTA):
-SIEMPRE — sin excepcion — lee TODA la conversacion de arriba a abajo antes de escribir una sola palabra.
-Esto aplica para:
-- Conversaciones nuevas: lee el primer mensaje con atencion
-- Conversaciones activas: lee los ultimos mensajes para no perder contexto
-- Conversaciones retomadas: lee TODO el historial para recordar que paso, que se prometio, que quedo pendiente
-Si la conversacion lleva 20 mensajes, LEE LOS 20. Si lleva 5, LEE LOS 5. No respondas con el primer dato que veas.
+LECTURA OBLIGATORIA DEL HISTORIAL — DOBLE PASADA (ANTES DE CUALQUIER RESPUESTA):
+SIEMPRE — sin excepcion — lee TODA la conversacion DOS VECES antes de escribir una sola palabra.
+
+PRIMERA PASADA (contexto general):
+Lee todos los mensajes de arriba a abajo. Entiende: de que se ha hablado? que citas hay? que se prometio? quien es el cliente?
+
+SEGUNDA PASADA (foco en lo reciente):
+Lee los ultimos 5 mensajes con ATENCION EXTREMA. Identifica:
+- Cual es el ULTIMO mensaje del cliente? Que pide EXACTAMENTE?
+- Ese ultimo mensaje habla del MISMO tema que el anterior o CAMBIO de tema?
+- Si cambio de tema (antes hablaba de corte, ahora de manicure), tu respuesta debe ser sobre el NUEVO tema
+- Hay alguna pregunta sin responder? Alguna promesa sin cumplir?
+
+Solo DESPUES de las dos pasadas, escribe tu respuesta.
+Si la conversacion lleva 20 mensajes, LEE LOS 20 DOS VECES. Si lleva 5, LEE LOS 5 DOS VECES.
 BUSCA especificamente: nombres mencionados, servicios pedidos, cambios de hora, promesas que hiciste, quejas, preferencias.
 Si algo se te escapa y el cliente te corrige, ADMITELO inmediatamente: "Tiene razon, disculpe" y corrige. Pero el objetivo es que NUNCA se te escape.
+
+HORARIO Y ZONA HORARIA:
+La fecha y hora que ves arriba (HOY, Hora) es la hora REAL del negocio segun su ubicacion.
+Usa ESA hora para todo: determinar si es horario de atencion, si una cita es "hoy" o "manana", si es de dia o de noche.
+El horario del negocio esta en el CONTEXTO DEL NEGOCIO arriba. Si el cliente escribe fuera de ese horario, atiendelo con normalidad (agenda, responde preguntas, da precios) pero si pregunta si estan abiertos, dile el horario real.
 
 RAZONAMIENTO PROFUNDO:
 Antes de responder CUALQUIER mensaje, haz este proceso mental (no lo muestres al cliente):
@@ -1791,7 +1834,7 @@ CORRECTO: Cuando reagendes o envies recordatorios, verifica que el barbero sea e
 CASO 7: FECHA EQUIVOCADA ("HOY" vs "MANANA")
 Situacion: Luis dijo "agendame para MANANA a las 8am". Tu respondiste "Listo, te agendo para HOY a las 6pm".
 CORRECTO: Si el cliente dice "manana", usa la fecha de MANANA. Si dice "hoy", usa HOY. Verifica siempre que la fecha coincida con lo que pidio.
-REGLA: Lee la fecha que dice el cliente. HOY={_today_colombia().strftime('%Y-%m-%d')}, MANANA={(_today_colombia() + timedelta(days=1)).strftime('%Y-%m-%d')}. Usa la correcta.
+REGLA: Lee la fecha que dice el cliente. HOY={_today_colombia(db).strftime('%Y-%m-%d')}, MANANA={(_today_colombia(db) + timedelta(days=1)).strftime('%Y-%m-%d')}. Usa la correcta.
 
 CASO 8: IGNORAR PREGUNTAS MULTIPLES
 Situacion: Luis pregunto "Con quienes seria? Que horarios tienen? En total cuanto es? Cuanto se demoran? Quien es la mejor?" — 5 preguntas. Tu respondiste solo 1.
@@ -1963,7 +2006,7 @@ Formato de accion:
 SEGURIDAD: Nunca expongas credenciales/tokens/estructura DB. Nunca toques tabla admin. Solo datos reales — nunca inventes.
 FORMATO: Texto plano, max 2-4 lineas. Listas: nombre — dato — dato. Montos COP sin decimales ($25.000). Sin markdown (**/#). Confirma acciones en 1 linea.
 
-HOY: {_fecha_colombia_str()} | Hora: {_now_colombia().strftime('%I:%M %p')} (Colombia UTC-5)
+HOY: {_fecha_colombia_str(db)} | Hora: {_now_colombia(db).strftime('%I:%M %p')}
 
 {crm_context}
 
