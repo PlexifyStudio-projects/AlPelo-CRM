@@ -3,10 +3,7 @@ import Card from '../../components/common/Card/Card';
 import { useNotification } from '../../context/NotificationContext';
 import aiService from '../../services/aiService';
 
-const MODELS = [
-  { id: 'claude-sonnet-4-5-20250929', provider: 'anthropic', label: 'Claude Sonnet 4.5', cost: '~$120 COP/msg', tag: 'Recomendado', desc: 'Inteligente y confiable' },
-  { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', cost: '~$40 COP/msg', tag: 'Economico', desc: 'Rapido y barato, menos inteligente' },
-];
+// Model is managed by Plexify (dev), not by the agency admin
 
 const PLACEHOLDER_CONTEXT = `=== DATOS DEL NEGOCIO ===
 Nombre: [Nombre de tu negocio]
@@ -39,17 +36,13 @@ const Settings = () => {
 
   const [aiConfig, setAiConfig] = useState(null);
   const [businessContext, setBusinessContext] = useState('');
-  const [selectedModel, setSelectedModel] = useState('claude-sonnet-4-5-20250929');
-  const [provider, setProvider] = useState('anthropic');
   const [aiSaving, setAiSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(true);
-  const [providerStatus, setProviderStatus] = useState(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     loadAiConfig();
-    loadProviderStatus();
   }, []);
 
   const loadAiConfig = async () => {
@@ -57,21 +50,11 @@ const Settings = () => {
       const config = await aiService.getConfig();
       setAiConfig(config);
       setBusinessContext(config.system_prompt || '');
-      setSelectedModel(config.model);
-      setProvider(config.provider || 'anthropic');
     } catch {
       // No config yet
     } finally {
       setAiLoading(false);
     }
-  };
-
-  const loadProviderStatus = async () => {
-    try {
-      const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
-      const res = await fetch(`${API}/ai/status`);
-      if (res.ok) setProviderStatus(await res.json());
-    } catch { /* ignore */ }
   };
 
   const handleTestAI = async () => {
@@ -95,8 +78,8 @@ const Settings = () => {
       const data = {
         name: 'Lina IA',
         system_prompt: businessContext,
-        model: selectedModel,
-        provider,
+        model: 'claude-sonnet-4-5-20250929',
+        provider: 'anthropic',
         temperature: 0.4,
         max_tokens: 2048,
       };
@@ -114,7 +97,7 @@ const Settings = () => {
     } finally {
       setAiSaving(false);
     }
-  }, [businessContext, selectedModel, provider, aiConfig, addNotification]);
+  }, [businessContext, aiConfig, addNotification]);
 
   const handleToggle = (setting) => {
     addNotification(`${setting} actualizado`, 'info');
@@ -150,55 +133,6 @@ const Settings = () => {
               {businessContext.length} caracteres
             </span>
           </div>
-
-          <div className={`${b}__ai-row`}>
-            <div className={`${b}__ai-field ${b}__ai-field--half`}>
-              <label className={`${b}__ai-label`}>Modelo de IA</label>
-              <select
-                className={`${b}__ai-select`}
-                value={selectedModel}
-                onChange={(e) => {
-                  const model = MODELS.find(m => m.id === e.target.value);
-                  setSelectedModel(e.target.value);
-                  if (model) setProvider(model.provider);
-                }}
-              >
-                {MODELS.map((m) => {
-                  const status = providerStatus?.[m.provider];
-                  const available = status?.configured !== false;
-                  return (
-                    <option key={m.id} value={m.id} disabled={!available}>
-                      {m.label} — {m.cost}{m.tag ? ` (${m.tag})` : ''}{!available ? ' [Sin API key]' : ''}
-                    </option>
-                  );
-                })}
-              </select>
-              {(() => {
-                const currentModel = MODELS.find(m => m.id === selectedModel);
-                return currentModel?.desc ? (
-                  <span className={`${b}__ai-label-hint`} style={{ marginTop: 4 }}>
-                    {currentModel.desc}
-                  </span>
-                ) : null;
-              })()}
-            </div>
-          </div>
-
-          {/* Provider status */}
-          {providerStatus && (
-            <div className={`${b}__providers`}>
-              <label className={`${b}__ai-label`}>Proveedor de IA</label>
-              <div className={`${b}__provider-list`}>
-                <div className={`${b}__provider ${providerStatus.anthropic?.configured ? `${b}__provider--ok ${b}__provider--active` : `${b}__provider--off`}`}>
-                  <span className={`${b}__provider-dot`} />
-                  <span className={`${b}__provider-name`}>Claude (Anthropic)</span>
-                  <span className={`${b}__provider-status`}>
-                    {providerStatus.anthropic?.configured ? 'Conectado' : 'Sin API key'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div className={`${b}__ai-actions`}>
             <button
