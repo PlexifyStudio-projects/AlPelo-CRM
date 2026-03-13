@@ -4,94 +4,110 @@ import { useNotification } from '../../context/NotificationContext';
 import aiService from '../../services/aiService';
 
 // ============================================================================
-// 15 AI PERSONALITY PRESETS — Inspired by the best conversational AI assistants
-// Each one has a unique voice, style, and approach to client interaction
+// COMMUNICATION STYLE PRESETS — Quick templates for business context
+// Each one sets a different tone/style that the admin can customize further
 // ============================================================================
-const PERSONALITY_PRESETS = [
+const STYLE_PRESETS = [
   {
-    id: 'lina',
-    name: 'Lina',
+    id: 'profesional',
     label: 'Profesional',
-    description: 'Recepcionista ejecutiva, formal y organizada. Como la mejor asistente de oficina.',
-    temperature: 0.4,
-    prompt: `Eres Lina, recepcionista de AlPelo Peluqueria en Cabecera, Bucaramanga. Eres profesional, organizada y con calidez natural. Tu tono es formal pero cercano — como una ejecutiva que tiene todo bajo control pero nunca es fria. Hablas con propiedad, en espanol colombiano formal. Nunca mas de 2-3 lineas. Maximo 1 emoji por mensaje. Tratas de usted hasta que el cliente tutea.
-
-Cuando un cliente nuevo escribe, te presentas, le preguntas su nombre y en que puedes ayudarle. Cuando un cliente conocido escribe, lo saludas por su nombre y le haces sentir recordado.`,
+    description: 'Formal, organizada, trato de usted. Ideal para negocios corporativos.',
+    icon: '💼',
   },
   {
-    id: 'valentina',
-    name: 'Valentina',
-    label: 'Humana',
-    description: 'La mas natural y cercana. Habla como una persona real por WhatsApp, calida y genuina.',
-    temperature: 0.5,
-    prompt: `Eres Valentina, recepcionista de AlPelo Peluqueria en Cabecera, Bucaramanga. Eres la persona mas genuina y humana — hablas exactamente como una persona real por WhatsApp. Nada de frases roboticas o genericas. Eres calida, cercana, y te expresas con naturalidad. Usas "jaja" cuando algo es gracioso, puntos suspensivos cuando piensas, y tu tono cambia segun la conversacion como lo haria cualquier persona real.
-
-Cuando un cliente nuevo escribe, lo saludas como lo haria una recepcionista amable: te presentas, le preguntas el nombre con naturalidad. Cuando un cliente conocido escribe, lo saludas como si fuera un conocido que aprecias — "Hola Juan! Que mas, como vas?". Si llevan tiempo sin venir, lo mencionas casual.
-
-Tu estilo: mensajes que parecen escritos por una persona real, no por una empresa. Cortos, naturales, con las imperfecciones normales de WhatsApp. Maximo 2-3 lineas. 1-2 emojis si fluye.`,
+    id: 'cercana',
+    label: 'Cercana',
+    description: 'Calida, natural, tutea. Como una persona real por WhatsApp.',
+    icon: '💬',
   },
   {
-    id: 'camila',
-    name: 'Camila',
+    id: 'ventas',
     label: 'Ventas',
-    description: 'Enfocada en convertir. Sugiere servicios, promueve ofertas y cierra agendamientos.',
-    temperature: 0.5,
-    prompt: `Eres Camila, recepcionista de ventas de AlPelo Peluqueria en Cabecera, Bucaramanga. Tu objetivo principal es que el cliente agende. Eres amable y natural, pero siempre guias la conversacion hacia un servicio o una cita. Sabes recomendar servicios segun lo que el cliente necesita, sugieres combos cuando tiene sentido, y siempre cierras con el link de reservas.
-
-Cuando un cliente nuevo escribe, te presentas con energia, le preguntas el nombre y que esta buscando. Apenas sepas que quiere, recomienda el servicio ideal y manda el link. Cuando un cliente conocido escribe, le sugieres algo nuevo o le recuerdas que ya toca su proximo corte/servicio.
-
-Tecnicas de venta que usas:
-- Sugerir combos: "Si te vas a hacer el corte, aprovecha y hazte la barba tambien, te queda en $55.000 el combo"
-- Crear urgencia suave: "Hoy tenemos espacio con Anderson a las 3pm si quieres"
-- Upselling natural: "Con el corte te recomiendo el tratamiento de alta frecuencia, deja el cabello brutal"
-
-Tu estilo: amable pero orientada a la accion. Maximo 2-3 lineas. Siempre termina con una propuesta concreta o el link.`,
+    description: 'Amable pero orientada a cerrar citas. Sugiere servicios y combos.',
+    icon: '🎯',
   },
   {
-    id: 'isabella',
-    name: 'Isabella',
+    id: 'premium',
     label: 'Premium',
-    description: 'Concierge de lujo. Trato VIP, elegante y sofisticado para clientes exigentes.',
-    temperature: 0.3,
-    prompt: `Eres Isabella, recepcionista premium de AlPelo Peluqueria en Cabecera, Bucaramanga. Encarnas la elegancia — como la concierge de un hotel cinco estrellas. Tu vocabulario es pulido, tu trato impecable, cada interaccion se siente como una experiencia exclusiva. Tratas de usted siempre, con cortesia genuina. Usas frases como "sera un placer", "con mucho gusto", "permitame".
-
-Cuando un cliente nuevo escribe, lo recibes como si llegara a un lugar exclusivo: con distincion y valorandolo. Te presentas con elegancia y le pides su nombre. Cuando un cliente conocido escribe, lo tratas como a un huesped distinguido que regresa — con reconocimiento y deferencia.
-
-Tu estilo: lenguaje refinado pero accesible, nunca pretencioso. Sin emojis. Maximo 2-3 lineas. Cada respuesta se siente como servicio premium.`,
+    description: 'Elegante, sofisticada, trato VIP. Para negocios de lujo.',
+    icon: '✨',
   },
   {
-    id: 'paola',
-    name: 'Paola',
-    label: 'Bumanguesa',
-    description: 'Autentica santandereana. Directa, con carino, y habla como la gente real de aca.',
-    temperature: 0.6,
-    prompt: `Eres Paola, recepcionista de AlPelo Peluqueria en Cabecera, Bucaramanga. Eres bumanguesa de pura cepa — directa, sin rodeos, con ese desparpajo santandereano que dice las cosas como son pero con carino. Hablas como si conocieras al cliente de toda la vida. Usas expresiones bumanguesas y colombianas: "ve", "oye", "que hubo", "hagale", "listo pues". Eres la que atiende el negocio y sabe todo porque lleva anos ahi.
-
-Cuando un cliente nuevo escribe, lo saludas con confianza directa, te presentas y le preguntas el nombre y que necesita. Cuando un cliente conocido escribe, lo saludas como a un conocido del barrio — familiar, directo.
-
-Tu estilo: mensajes cortos, directos, que suenan a mensaje de texto real bumangues. Tuteas siempre. Maximo 2-3 lineas. Maximo 1 emoji si es natural.`,
+    id: 'regional',
+    label: 'Regional',
+    description: 'Autentica, directa, usa expresiones locales. Para negocios con identidad local.',
+    icon: '🏠',
   },
 ];
+
+const STYLE_TEMPLATES = {
+  profesional: `=== ESTILO DE COMUNICACION ===
+Tono: Profesional, formal pero calido. Trata de usted.
+Maximo 2-3 lineas por mensaje. 1 emoji si aporta.
+Lenguaje correcto, sin coloquialismos. Como la mejor recepcionista de oficina.`,
+
+  cercana: `=== ESTILO DE COMUNICACION ===
+Tono: Calido, cercano, natural. Tutea a los clientes.
+Habla como una persona real por WhatsApp, no como un bot.
+Maximo 2-3 lineas por mensaje. 1 emoji si aporta.
+Expresiones naturales, puntos suspensivos cuando piensa, "jaja" si algo es gracioso.`,
+
+  ventas: `=== ESTILO DE COMUNICACION ===
+Tono: Amable, energico, orientado a la accion. Tutea.
+Siempre guia hacia un servicio o una cita. Sugiere combos cuando tiene sentido.
+Crea urgencia suave: "Hoy tenemos espacio con [nombre] a las 3pm si quieres"
+Maximo 2-3 lineas. 1 emoji por mensaje.`,
+
+  premium: `=== ESTILO DE COMUNICACION ===
+Tono: Elegante, sofisticado, trato VIP. Trata de usted siempre.
+Frases como "sera un placer", "con mucho gusto", "permitame".
+Sin emojis. Cada respuesta se siente como servicio premium.
+Maximo 2-3 lineas. Lenguaje refinado pero accesible.`,
+
+  regional: `=== ESTILO DE COMUNICACION ===
+Tono: Autentico, directo, con carino regional. Tutea siempre.
+Usa expresiones locales naturales. Habla como si conociera al cliente de toda la vida.
+Maximo 2-3 lineas. 1 emoji si es natural.
+Mensajes cortos, directos, que suenan a mensaje real.`,
+};
 
 const MODELS = [
-  { id: 'claude-sonnet-4-5-20250929', provider: 'anthropic', label: 'Claude Sonnet 4.5', cost: '~$120 COP/msg', tag: 'Recomendado', desc: 'Inteligente y confiable — ideal para Lina' },
-  { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', cost: '~$40 COP/msg', tag: 'Economico', desc: 'Rapido y barato, pero menos inteligente' },
+  { id: 'claude-sonnet-4-5-20250929', provider: 'anthropic', label: 'Claude Sonnet 4.5', cost: '~$120 COP/msg', tag: 'Recomendado', desc: 'Inteligente y confiable' },
+  { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', cost: '~$40 COP/msg', tag: 'Economico', desc: 'Rapido y barato, menos inteligente' },
 ];
+
+const DEFAULT_CONTEXT = `=== DATOS DEL NEGOCIO ===
+Nombre: [Nombre del negocio]
+Ubicacion: [Ciudad, barrio/zona]
+Tipo: [Barberia / Peluqueria / Salon de belleza / etc.]
+
+=== HORARIO ===
+Lunes a Sabado: 9:00am - 8:00pm
+Domingo: CERRADO
+Fuera de horario: Lina puede agendar citas y responder preguntas, pero informa el horario si preguntan.
+
+=== ESTILO DE COMUNICACION ===
+Tono: Calido, profesional, cercano. Tutea a los clientes.
+Maximo 2-3 lineas por mensaje. 1 emoji si aporta.
+Habla como una persona real por WhatsApp, no como un bot.
+
+=== POLITICAS ===
+Pagos: Se hacen directamente en el negocio (efectivo, Nequi, Daviplata, Bancolombia).
+Si preguntan si es IA: "No jaja, soy Lina del equipo"
+
+=== NOTAS ADICIONALES ===
+[Aqui puedes agregar cualquier instruccion especifica para tu negocio]`;
 
 const Settings = () => {
   const { addNotification } = useNotification();
 
   // AI Config state
   const [aiConfig, setAiConfig] = useState(null);
-  const [aiName, setAiName] = useState('Lina IA');
-  const [systemPrompt, setSystemPrompt] = useState(PERSONALITY_PRESETS[0].prompt);
+  const [businessContext, setBusinessContext] = useState('');
   const [selectedModel, setSelectedModel] = useState('claude-sonnet-4-5-20250929');
   const [provider, setProvider] = useState('anthropic');
-  const [temperature, setTemperature] = useState(0.4);
-  const [maxTokens, setMaxTokens] = useState(512);
   const [aiSaving, setAiSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(true);
-  const [selectedPreset, setSelectedPreset] = useState(null);
   const [providerStatus, setProviderStatus] = useState(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
@@ -105,18 +121,9 @@ const Settings = () => {
     try {
       const config = await aiService.getConfig();
       setAiConfig(config);
-      setAiName(config.name);
-      setSystemPrompt(config.system_prompt);
+      setBusinessContext(config.system_prompt || '');
       setSelectedModel(config.model);
       setProvider(config.provider || 'anthropic');
-      setTemperature(config.temperature);
-      setMaxTokens(config.max_tokens);
-
-      // Try to match current prompt to a preset
-      const match = PERSONALITY_PRESETS.find(p =>
-        config.system_prompt?.includes(`Eres ${p.name},`)
-      );
-      if (match) setSelectedPreset(match.id);
     } catch {
       // No config yet, use defaults
     } finally {
@@ -147,24 +154,38 @@ const Settings = () => {
     }
   };
 
-  const handlePresetSelect = (preset) => {
-    setSelectedPreset(preset.id);
-    setAiName(`${preset.name} IA`);
-    setSystemPrompt(preset.prompt);
-    setTemperature(preset.temperature);
-    addNotification(`Personalidad "${preset.name}" seleccionada. Guarda para aplicar.`, 'info');
+  const handleStylePreset = (presetId) => {
+    const template = STYLE_TEMPLATES[presetId];
+    if (!template) return;
+
+    // Replace only the ESTILO section, keep the rest
+    const current = businessContext;
+    const estiloRegex = /=== ESTILO DE COMUNICACION ===[\s\S]*?(?==== |$)/;
+
+    if (estiloRegex.test(current)) {
+      setBusinessContext(current.replace(estiloRegex, template + '\n\n'));
+    } else {
+      // Append before POLITICAS if exists, or at the end
+      const politicasIdx = current.indexOf('=== POLITICAS ===');
+      if (politicasIdx > -1) {
+        setBusinessContext(current.slice(0, politicasIdx) + template + '\n\n' + current.slice(politicasIdx));
+      } else {
+        setBusinessContext(current + '\n\n' + template);
+      }
+    }
+    addNotification(`Estilo "${STYLE_PRESETS.find(p => p.id === presetId)?.label}" aplicado`, 'info');
   };
 
   const handleSaveAiConfig = useCallback(async () => {
     setAiSaving(true);
     try {
       const data = {
-        name: aiName,
-        system_prompt: systemPrompt,
+        name: 'Lina IA',
+        system_prompt: businessContext,
         model: selectedModel,
         provider,
-        temperature,
-        max_tokens: maxTokens,
+        temperature: 0.4,
+        max_tokens: 2048,
       };
 
       let result;
@@ -174,13 +195,13 @@ const Settings = () => {
         result = await aiService.saveConfig(data);
       }
       setAiConfig(result);
-      addNotification(`Configuracion de ${aiName} guardada`, 'success');
+      addNotification('Configuracion de Lina guardada', 'success');
     } catch (err) {
       addNotification(`Error al guardar: ${err.message}`, 'error');
     } finally {
       setAiSaving(false);
     }
-  }, [aiName, systemPrompt, selectedModel, provider, temperature, maxTokens, aiConfig, addNotification]);
+  }, [businessContext, selectedModel, provider, aiConfig, addNotification]);
 
   const handleToggle = (setting) => {
     addNotification(`${setting} actualizado`, 'info');
@@ -192,71 +213,54 @@ const Settings = () => {
     <div className={b}>
       <div className={`${b}__header`}>
         <h2 className={`${b}__title`}>Configuracion</h2>
-        <p className={`${b}__subtitle`}>Personaliza tu experiencia</p>
+        <p className={`${b}__subtitle`}>Personaliza como Lina atiende tu negocio</p>
       </div>
 
       <div className={`${b}__content`}>
-        {/* ========== AI PERSONALITY PRESETS ========== */}
-        <Card title="Personalidad de la IA" className={`${b}__card ${b}__card--ai`}>
+        {/* ========== COMMUNICATION STYLE PRESETS ========== */}
+        <Card title="Estilo de comunicacion" className={`${b}__card ${b}__card--ai`}>
           <p className={`${b}__card-desc`}>
-            Elige como se comunica la IA con tus clientes por WhatsApp. Cada personalidad tiene un estilo unico.
-            Tambien puedes editar el prompt manualmente despues de seleccionar.
+            Elige como quieres que Lina se comunique con tus clientes. Esto ajusta el tono en tu contexto del negocio.
           </p>
 
           <div className={`${b}__presets`}>
-            {PERSONALITY_PRESETS.map((preset) => (
+            {STYLE_PRESETS.map((preset) => (
               <button
                 key={preset.id}
-                className={`${b}__preset ${selectedPreset === preset.id ? `${b}__preset--active` : ''}`}
-                onClick={() => handlePresetSelect(preset)}
+                className={`${b}__preset`}
+                onClick={() => handleStylePreset(preset.id)}
               >
                 <span className={`${b}__preset-label`}>{preset.label}</span>
-                <span className={`${b}__preset-name`}>{preset.name}</span>
                 <span className={`${b}__preset-desc`}>{preset.description}</span>
-                {selectedPreset === preset.id && <span className={`${b}__preset-check`}>Activa</span>}
               </button>
             ))}
           </div>
         </Card>
 
         {/* ========== LINA IA CONFIG ========== */}
-        <Card title={`${aiName} — Configuracion Avanzada`} className={`${b}__card ${b}__card--ai`}>
-          <div className={`${b}__ai-field`}>
-            <label className={`${b}__ai-label`}>Nombre de la IA</label>
-            <input
-              className={`${b}__ai-input`}
-              type="text"
-              value={aiName}
-              onChange={(e) => setAiName(e.target.value)}
-              placeholder="Lina IA"
-            />
-          </div>
-
+        <Card title="Lina IA — Contexto del negocio" className={`${b}__card ${b}__card--ai`}>
           <div className={`${b}__ai-field`}>
             <label className={`${b}__ai-label`}>
-              Instrucciones del sistema
+              Instrucciones del negocio
               <span className={`${b}__ai-label-hint`}>
-                Este es el prompt que define la personalidad. Puedes editarlo libremente o seleccionar un preset arriba.
+                Aqui le dices a Lina TODO sobre tu negocio: nombre, ubicacion, horarios, como hablar, politicas de pago, y cualquier instruccion especifica. Lina ya sabe como operar (agendar, responder, manejar quejas) — tu solo defines el contexto de TU negocio.
               </span>
             </label>
             <textarea
               className={`${b}__ai-textarea`}
-              value={systemPrompt}
-              onChange={(e) => {
-                setSystemPrompt(e.target.value);
-                setSelectedPreset(null);
-              }}
-              placeholder="Eres Lina, la asistente virtual de AlPelo..."
-              rows={16}
+              value={businessContext}
+              onChange={(e) => setBusinessContext(e.target.value)}
+              placeholder={DEFAULT_CONTEXT}
+              rows={20}
             />
             <span className={`${b}__ai-char-count`}>
-              {systemPrompt.length} caracteres
+              {businessContext.length} caracteres
             </span>
           </div>
 
           <div className={`${b}__ai-row`}>
             <div className={`${b}__ai-field ${b}__ai-field--half`}>
-              <label className={`${b}__ai-label`}>Modelo</label>
+              <label className={`${b}__ai-label`}>Modelo de IA</label>
               <select
                 className={`${b}__ai-select`}
                 value={selectedModel}
@@ -280,43 +284,10 @@ const Settings = () => {
                 const currentModel = MODELS.find(m => m.id === selectedModel);
                 return currentModel?.desc ? (
                   <span className={`${b}__ai-label-hint`} style={{ marginTop: 4 }}>
-                    Limite: {currentModel.desc} — Fallback automatico si se agota
+                    {currentModel.desc}
                   </span>
                 ) : null;
               })()}
-            </div>
-
-            <div className={`${b}__ai-field ${b}__ai-field--quarter`}>
-              <label className={`${b}__ai-label`}>
-                Creatividad
-                <span className={`${b}__ai-label-hint`}>{temperature}</span>
-              </label>
-              <input
-                className={`${b}__ai-range`}
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={temperature}
-                onChange={(e) => setTemperature(parseFloat(e.target.value))}
-              />
-              <div className={`${b}__ai-range-labels`}>
-                <span>Precisa</span>
-                <span>Creativa</span>
-              </div>
-            </div>
-
-            <div className={`${b}__ai-field ${b}__ai-field--quarter`}>
-              <label className={`${b}__ai-label`}>Max tokens</label>
-              <input
-                className={`${b}__ai-input`}
-                type="number"
-                value={maxTokens}
-                onChange={(e) => setMaxTokens(parseInt(e.target.value) || 512)}
-                min={256}
-                max={4096}
-                step={256}
-              />
             </div>
           </div>
 
@@ -340,7 +311,7 @@ const Settings = () => {
             <button
               className={`${b}__ai-save`}
               onClick={handleSaveAiConfig}
-              disabled={aiSaving || !systemPrompt.trim()}
+              disabled={aiSaving || !businessContext.trim()}
             >
               {aiSaving ? 'Guardando...' : aiConfig?.id ? 'Actualizar configuracion' : 'Guardar configuracion'}
             </button>
@@ -349,7 +320,7 @@ const Settings = () => {
               onClick={handleTestAI}
               disabled={testing}
             >
-              {testing ? 'Probando...' : 'Probar IA'}
+              {testing ? 'Probando...' : 'Probar Lina'}
             </button>
             {aiConfig?.updated_at && (
               <span className={`${b}__ai-last-saved`}>
