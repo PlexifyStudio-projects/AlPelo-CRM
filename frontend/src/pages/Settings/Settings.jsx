@@ -3,105 +3,40 @@ import Card from '../../components/common/Card/Card';
 import { useNotification } from '../../context/NotificationContext';
 import aiService from '../../services/aiService';
 
-// ============================================================================
-// COMMUNICATION STYLE PRESETS — Quick templates for business context
-// Each one sets a different tone/style that the admin can customize further
-// ============================================================================
-const STYLE_PRESETS = [
-  {
-    id: 'profesional',
-    label: 'Profesional',
-    description: 'Formal, organizada, trato de usted. Ideal para negocios corporativos.',
-    icon: '💼',
-  },
-  {
-    id: 'cercana',
-    label: 'Cercana',
-    description: 'Calida, natural, tutea. Como una persona real por WhatsApp.',
-    icon: '💬',
-  },
-  {
-    id: 'ventas',
-    label: 'Ventas',
-    description: 'Amable pero orientada a cerrar citas. Sugiere servicios y combos.',
-    icon: '🎯',
-  },
-  {
-    id: 'premium',
-    label: 'Premium',
-    description: 'Elegante, sofisticada, trato VIP. Para negocios de lujo.',
-    icon: '✨',
-  },
-  {
-    id: 'regional',
-    label: 'Regional',
-    description: 'Autentica, directa, usa expresiones locales. Para negocios con identidad local.',
-    icon: '🏠',
-  },
-];
-
-const STYLE_TEMPLATES = {
-  profesional: `=== ESTILO DE COMUNICACION ===
-Tono: Profesional, formal pero calido. Trata de usted.
-Maximo 2-3 lineas por mensaje. 1 emoji si aporta.
-Lenguaje correcto, sin coloquialismos. Como la mejor recepcionista de oficina.`,
-
-  cercana: `=== ESTILO DE COMUNICACION ===
-Tono: Calido, cercano, natural. Tutea a los clientes.
-Habla como una persona real por WhatsApp, no como un bot.
-Maximo 2-3 lineas por mensaje. 1 emoji si aporta.
-Expresiones naturales, puntos suspensivos cuando piensa, "jaja" si algo es gracioso.`,
-
-  ventas: `=== ESTILO DE COMUNICACION ===
-Tono: Amable, energico, orientado a la accion. Tutea.
-Siempre guia hacia un servicio o una cita. Sugiere combos cuando tiene sentido.
-Crea urgencia suave: "Hoy tenemos espacio con [nombre] a las 3pm si quieres"
-Maximo 2-3 lineas. 1 emoji por mensaje.`,
-
-  premium: `=== ESTILO DE COMUNICACION ===
-Tono: Elegante, sofisticado, trato VIP. Trata de usted siempre.
-Frases como "sera un placer", "con mucho gusto", "permitame".
-Sin emojis. Cada respuesta se siente como servicio premium.
-Maximo 2-3 lineas. Lenguaje refinado pero accesible.`,
-
-  regional: `=== ESTILO DE COMUNICACION ===
-Tono: Autentico, directo, con carino regional. Tutea siempre.
-Usa expresiones locales naturales. Habla como si conociera al cliente de toda la vida.
-Maximo 2-3 lineas. 1 emoji si es natural.
-Mensajes cortos, directos, que suenan a mensaje real.`,
-};
-
 const MODELS = [
   { id: 'claude-sonnet-4-5-20250929', provider: 'anthropic', label: 'Claude Sonnet 4.5', cost: '~$120 COP/msg', tag: 'Recomendado', desc: 'Inteligente y confiable' },
   { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', cost: '~$40 COP/msg', tag: 'Economico', desc: 'Rapido y barato, menos inteligente' },
 ];
 
-const DEFAULT_CONTEXT = `=== DATOS DEL NEGOCIO ===
-Nombre: [Nombre del negocio]
-Ubicacion: [Ciudad, barrio/zona]
-Tipo: [Barberia / Peluqueria / Salon de belleza / etc.]
+const PLACEHOLDER_CONTEXT = `=== DATOS DEL NEGOCIO ===
+Nombre: [Nombre de tu negocio]
+Ubicacion: [Ciudad, barrio/zona, pais]
+Tipo: [Barberia / Peluqueria / Salon de belleza / Spa / etc.]
 
 === HORARIO ===
-Lunes a Sabado: 9:00am - 8:00pm
+Lunes a Viernes: 9:00am - 7:00pm
+Sabado: 9:00am - 5:00pm
 Domingo: CERRADO
-Fuera de horario: Lina puede agendar citas y responder preguntas, pero informa el horario si preguntan.
+Fuera de horario: Lina responde preguntas y agenda citas, pero informa el horario si preguntan.
 
 === ESTILO DE COMUNICACION ===
-Tono: Calido, profesional, cercano. Tutea a los clientes.
-Maximo 2-3 lineas por mensaje. 1 emoji si aporta.
-Habla como una persona real por WhatsApp, no como un bot.
+Tono: [Calido y cercano / Formal y profesional / Regional y directo / etc.]
+Tutea o trata de usted: [Tutea / Usted / Depende del cliente]
+Largo de mensajes: Maximo 2-3 lineas por mensaje.
+Emojis: [1 emoji si aporta / Sin emojis / Libre]
+Expresiones tipicas: [Expresiones locales o del negocio que quieras usar]
 
 === POLITICAS ===
-Pagos: Se hacen directamente en el negocio (efectivo, Nequi, Daviplata, Bancolombia).
-Si preguntan si es IA: "No jaja, soy Lina del equipo"
+Pagos: [Como se paga, metodos aceptados]
+Cancelaciones: [Politica de cancelacion si la hay]
+Reservas: [Link o instrucciones]
 
 === NOTAS ADICIONALES ===
-[Aqui puedes agregar cualquier instruccion especifica para tu negocio]`;
+[Cualquier instruccion especifica para tu negocio: servicios estrella, barberos/estilistas destacados, promociones activas, reglas especiales, etc.]`;
 
 const Settings = () => {
   const { addNotification } = useNotification();
 
-  // AI Config state
   const [aiConfig, setAiConfig] = useState(null);
   const [businessContext, setBusinessContext] = useState('');
   const [selectedModel, setSelectedModel] = useState('claude-sonnet-4-5-20250929');
@@ -125,7 +60,7 @@ const Settings = () => {
       setSelectedModel(config.model);
       setProvider(config.provider || 'anthropic');
     } catch {
-      // No config yet, use defaults
+      // No config yet
     } finally {
       setAiLoading(false);
     }
@@ -152,28 +87,6 @@ const Settings = () => {
     } finally {
       setTesting(false);
     }
-  };
-
-  const handleStylePreset = (presetId) => {
-    const template = STYLE_TEMPLATES[presetId];
-    if (!template) return;
-
-    // Replace only the ESTILO section, keep the rest
-    const current = businessContext;
-    const estiloRegex = /=== ESTILO DE COMUNICACION ===[\s\S]*?(?==== |$)/;
-
-    if (estiloRegex.test(current)) {
-      setBusinessContext(current.replace(estiloRegex, template + '\n\n'));
-    } else {
-      // Append before POLITICAS if exists, or at the end
-      const politicasIdx = current.indexOf('=== POLITICAS ===');
-      if (politicasIdx > -1) {
-        setBusinessContext(current.slice(0, politicasIdx) + template + '\n\n' + current.slice(politicasIdx));
-      } else {
-        setBusinessContext(current + '\n\n' + template);
-      }
-    }
-    addNotification(`Estilo "${STYLE_PRESETS.find(p => p.id === presetId)?.label}" aplicado`, 'info');
   };
 
   const handleSaveAiConfig = useCallback(async () => {
@@ -217,41 +130,21 @@ const Settings = () => {
       </div>
 
       <div className={`${b}__content`}>
-        {/* ========== COMMUNICATION STYLE PRESETS ========== */}
-        <Card title="Estilo de comunicacion" className={`${b}__card ${b}__card--ai`}>
-          <p className={`${b}__card-desc`}>
-            Elige como quieres que Lina se comunique con tus clientes. Esto ajusta el tono en tu contexto del negocio.
-          </p>
-
-          <div className={`${b}__presets`}>
-            {STYLE_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                className={`${b}__preset`}
-                onClick={() => handleStylePreset(preset.id)}
-              >
-                <span className={`${b}__preset-label`}>{preset.label}</span>
-                <span className={`${b}__preset-desc`}>{preset.description}</span>
-              </button>
-            ))}
-          </div>
-        </Card>
-
         {/* ========== LINA IA CONFIG ========== */}
         <Card title="Lina IA — Contexto del negocio" className={`${b}__card ${b}__card--ai`}>
           <div className={`${b}__ai-field`}>
             <label className={`${b}__ai-label`}>
               Instrucciones del negocio
               <span className={`${b}__ai-label-hint`}>
-                Aqui le dices a Lina TODO sobre tu negocio: nombre, ubicacion, horarios, como hablar, politicas de pago, y cualquier instruccion especifica. Lina ya sabe como operar (agendar, responder, manejar quejas) — tu solo defines el contexto de TU negocio.
+                Aqui le dices a Lina TODO sobre tu negocio: nombre, ubicacion, horarios, como quieres que hable, politicas de pago, y cualquier detalle importante. Lina ya sabe como operar (agendar citas, responder precios, manejar quejas, etc.) — tu solo defines el contexto de TU negocio.
               </span>
             </label>
             <textarea
               className={`${b}__ai-textarea`}
               value={businessContext}
               onChange={(e) => setBusinessContext(e.target.value)}
-              placeholder={DEFAULT_CONTEXT}
-              rows={20}
+              placeholder={PLACEHOLDER_CONTEXT}
+              rows={22}
             />
             <span className={`${b}__ai-char-count`}>
               {businessContext.length} caracteres
