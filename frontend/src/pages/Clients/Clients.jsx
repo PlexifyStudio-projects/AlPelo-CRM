@@ -4,10 +4,12 @@ import ClientDetail from '../../components/crm/ClientDetail/ClientDetail';
 import ClientFilters from '../../components/crm/ClientFilters/ClientFilters';
 import AddClientModal from '../../components/crm/AddClientModal/AddClientModal';
 import AddVisitModal from '../../components/crm/AddVisitModal/AddVisitModal';
+import ImportClientsModal from '../../components/crm/ImportClientsModal/ImportClientsModal';
 import Button from '../../components/common/Button/Button';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 import clientService from '../../services/clientService';
+import financeService from '../../services/financeService';
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
@@ -19,6 +21,7 @@ const Clients = () => {
   const [selectedClient, setSelectedClient] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const { addNotification } = useNotification();
   const b = 'clients';
@@ -137,6 +140,39 @@ const Clients = () => {
           <h2 className={`${b}__title`}>Gestión de Clientes</h2>
           <div className={`${b}__header-actions`}>
             <Button
+              variant="ghost"
+              size="md"
+              onClick={async () => {
+                try {
+                  const blob = await financeService.exportClients();
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'clientes.csv';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  addNotification('Clientes exportados', 'success');
+                } catch (err) {
+                  addNotification('Error al exportar: ' + err.message, 'error');
+                }
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Exportar
+            </Button>
+            <Button
+              variant="ghost"
+              size="md"
+              onClick={() => setIsImportModalOpen(true)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              Importar
+            </Button>
+            <Button
               variant="secondary"
               size="md"
               onClick={() => setIsVisitModalOpen(true)}
@@ -240,6 +276,12 @@ const Clients = () => {
         onClose={() => setIsVisitModalOpen(false)}
         onSaved={loadClients}
         onNewClient={() => { setEditingClient(null); setIsAddModalOpen(true); }}
+      />
+
+      <ImportClientsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImported={loadClients}
       />
     </div>
   );

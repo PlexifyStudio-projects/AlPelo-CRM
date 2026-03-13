@@ -6,11 +6,20 @@ import { mockServices, mockBarbers } from '../../../data/mockData';
 import { formatCurrency } from '../../../utils/formatters';
 import clientService from '../../../services/clientService';
 
+const PAYMENT_METHODS = [
+  { value: 'efectivo', label: 'Efectivo' },
+  { value: 'transferencia', label: 'Transferencia' },
+  { value: 'tarjeta', label: 'Tarjeta' },
+  { value: 'nequi', label: 'Nequi' },
+  { value: 'daviplata', label: 'Daviplata' },
+];
+
 const EMPTY_ITEM = {
   service_name: '',
   amount: '',
   staff_id: '',
   status: 'completed',
+  payment_method: '',
   notes: '',
 };
 
@@ -111,6 +120,7 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
           amount: Number(it.amount),
           visit_date: visitDate,
           status: it.status,
+          payment_method: it.payment_method || null,
           notes: it.notes || null,
         })
       ));
@@ -258,6 +268,13 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
                         {activeBarbers.map((br) => (
                           <option key={br.id} value={br.id}>{br.name} - {br.specialty}</option>
                         ))}
+                      </select>
+                    </div>
+                    <div className={`${b}__select-group`}>
+                      <label className={`${b}__label`}>Metodo de Pago</label>
+                      <select className={`${b}__select`} value={item.payment_method} onChange={(e) => updateItem(idx, 'payment_method', e.target.value)}>
+                        <option value="">Sin registrar</option>
+                        {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                       </select>
                     </div>
                     <div className={`${b}__select-group`}>

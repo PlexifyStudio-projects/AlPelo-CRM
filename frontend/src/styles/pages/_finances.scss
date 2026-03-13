@@ -1033,6 +1033,1129 @@
       justify-content: space-between;
     }
   }
+
+  // ===========================================
+  // TAB SELECTOR
+  // ===========================================
+  &__tab-selector {
+    display: flex;
+    gap: 0;
+    background: $color-gray-50;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color;
+    padding: 3px;
+    margin-bottom: $spacing-lg;
+    width: fit-content;
+    animation: fin-fadeIn 300ms $ease-out-expo both 0.1s;
+  }
+
+  &__tab-btn {
+    padding: $spacing-xs $spacing-lg;
+    border: none;
+    background: transparent;
+    border-radius: $border-radius-full;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+    white-space: nowrap;
+
+    &:hover { color: $color-secondary; }
+
+    &--active {
+      background: $color-white;
+      color: $color-primary;
+      box-shadow: $shadow-xs;
+    }
+  }
+
+  // ===========================================
+  // P&L CARD
+  // ===========================================
+  &__pnl-card {
+    @include glass-card;
+    padding: $spacing-lg;
+    margin-bottom: $spacing-lg;
+    max-width: 420px;
+    animation: fin-fadeInUp 400ms $ease-out-expo both 0.1s;
+  }
+
+  &__pnl-row {
+    @include flex-between;
+    padding: $spacing-xs 0;
+    font-size: $font-size-sm;
+
+    &--total {
+      font-weight: $font-weight-bold;
+      font-size: $font-size-md;
+      padding-top: $spacing-sm;
+    }
+  }
+
+  &__pnl-label {
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+  }
+
+  &__pnl-value {
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+
+    &--positive { color: $color-success-dark; }
+    &--negative { color: $color-error; }
+  }
+
+  &__pnl-divider {
+    height: 1px;
+    background: $border-color;
+    margin: $spacing-xs 0;
+  }
+
+  &__pnl-margin {
+    display: block;
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    text-align: right;
+    margin-top: $spacing-xs;
+    font-weight: $font-weight-semibold;
+  }
+
+  // ===========================================
+  // SECTION HEADER
+  // ===========================================
+  &__section-header {
+    @include flex-between;
+    margin-bottom: $spacing-md;
+    gap: $spacing-md;
+  }
+
+  &__section-title {
+    font-family: $font-primary;
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    margin: 0;
+  }
+
+  // ===========================================
+  // ACTION BUTTON (pill)
+  // ===========================================
+  &__action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: $spacing-xs $spacing-md;
+    border: 1px solid $color-primary;
+    border-radius: $border-radius-full;
+    background: transparent;
+    color: $color-primary;
+    font-family: $font-primary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover {
+      background: $color-primary;
+      color: $color-white;
+    }
+  }
+
+  // ===========================================
+  // FORMS (Expense, Invoice)
+  // ===========================================
+  &__expense-form,
+  &__invoice-form {
+    @include glass-card;
+    padding: $spacing-lg;
+    margin-bottom: $spacing-lg;
+    animation: fin-fadeInUp 300ms $ease-out-expo both;
+  }
+
+  &__form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+  }
+
+  &__form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    margin-top: $spacing-md;
+  }
+
+  &__input {
+    width: 100%;
+    padding: $spacing-xs $spacing-sm;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    background: $color-white;
+    transition: border-color 200ms;
+    outline: none;
+    box-sizing: border-box;
+
+    &:focus { border-color: $color-primary; }
+    &::placeholder { color: $color-gray-300; }
+
+    &--inline {
+      width: 80px;
+      text-align: center;
+    }
+
+    &--sm {
+      max-width: 80px;
+    }
+  }
+
+  &__select {
+    width: 100%;
+    padding: $spacing-xs $spacing-sm;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-sm;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    background: $color-white;
+    cursor: pointer;
+    outline: none;
+
+    &:focus { border-color: $color-primary; }
+  }
+
+  &__btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: $spacing-xs $spacing-lg;
+    border: none;
+    border-radius: $border-radius-full;
+    background: $color-primary;
+    color: $color-white;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover {
+      background: $color-primary-light;
+      transform: translateY(-1px);
+    }
+  }
+
+  &__btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: $spacing-xs $spacing-md;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-full;
+    background: transparent;
+    color: $color-gray-500;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all 200ms;
+
+    &:hover { border-color: $color-gray-400; color: $color-secondary; }
+
+    &--sm {
+      padding: 4px $spacing-sm;
+      font-size: $font-size-xs;
+    }
+  }
+
+  // ===========================================
+  // INVOICE LINE ITEMS
+  // ===========================================
+  &__invoice-items {
+    @include flex-column;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+  }
+
+  &__invoice-item-row {
+    display: flex;
+    gap: $spacing-sm;
+    align-items: center;
+  }
+
+  &__invoice-totals {
+    max-width: 280px;
+    margin-left: auto;
+    margin-bottom: $spacing-md;
+  }
+
+  // ===========================================
+  // TABLE
+  // ===========================================
+  &__table-wrap {
+    @include glass-card;
+    overflow-x: auto;
+    margin-bottom: $spacing-lg;
+    animation: fin-fadeInUp 300ms $ease-out-expo both 0.15s;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: $font-size-sm;
+
+    th {
+      text-align: left;
+      padding: $spacing-sm $spacing-md;
+      font-weight: $font-weight-semibold;
+      color: $color-gray-400;
+      font-size: $font-size-xs;
+      text-transform: uppercase;
+      letter-spacing: $letter-spacing-wider;
+      border-bottom: 1px solid $border-color;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: $spacing-sm $spacing-md;
+      color: $color-secondary;
+      border-bottom: 1px solid $border-color-light;
+      vertical-align: middle;
+    }
+
+    tbody tr {
+      transition: background 150ms;
+      &:hover { background: $color-gray-50; }
+      &:last-child td { border-bottom: none; }
+    }
+  }
+
+  &__amount-cell {
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+    color: $color-primary;
+    white-space: nowrap;
+  }
+
+  &__mono {
+    font-family: monospace;
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+  }
+
+  &__tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
+    background: $color-gray-50;
+    border: 1px solid $border-color-light;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+  }
+
+  &__status-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: $border-radius-full;
+    border: 1px solid;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  &__row-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  &__icon-btn {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    border-radius: $border-radius-sm;
+    color: $color-gray-400;
+    cursor: pointer;
+    transition: all 150ms;
+
+    &:hover {
+      background: $color-gray-50;
+      color: $color-primary;
+    }
+
+    &--danger:hover {
+      background: $color-error-bg;
+      color: $color-error;
+    }
+  }
+
+  // ===========================================
+  // PAYMENT METHODS
+  // ===========================================
+  &__payment-methods {
+    @include flex-column;
+    gap: $spacing-xs;
+  }
+
+  &__pm-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-xs 0;
+  }
+
+  &__pm-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+    min-width: 100px;
+    text-transform: capitalize;
+  }
+
+  &__pm-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: $color-gray-100;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+  }
+
+  &__pm-bar {
+    height: 100%;
+    background: $color-primary;
+    border-radius: $border-radius-full;
+    transition: width 800ms $ease-out-expo;
+  }
+
+  &__pm-amount {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    font-variant-numeric: tabular-nums;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  &__pm-pct {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  // ===========================================
+  // FORM SUBTITLE
+  // ===========================================
+  &__form-subtitle {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+    margin: $spacing-md 0 $spacing-xs;
+    padding-bottom: $spacing-xs;
+    border-bottom: 1px solid $border-color-light;
+
+    &:first-of-type { margin-top: 0; }
+  }
+
+  // ===========================================
+  // COMMISSION — DISTRIBUTION BAR
+  // ===========================================
+  &__comm-dist {
+    @include glass-card;
+    padding: $spacing-lg;
+    margin-bottom: $spacing-lg;
+    animation: fin-fadeInUp 400ms $ease-out-expo both 0.15s;
+  }
+
+  &__comm-dist-bar {
+    display: flex;
+    height: 14px;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+    gap: 2px;
+    margin-bottom: $spacing-md;
+  }
+
+  &__comm-dist-seg {
+    height: 100%;
+    min-width: 6px;
+    border-radius: 2px;
+    transition: width 800ms $ease-out-expo;
+    cursor: pointer;
+
+    &:hover { opacity: 0.8; }
+  }
+
+  &__comm-dist-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $spacing-xs $spacing-lg;
+  }
+
+  &__comm-dist-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+  }
+
+  &__comm-dist-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+  }
+
+  // ===========================================
+  // COMMISSION — STAFF CARDS
+  // ===========================================
+  &__staff-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__sc-header {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+  }
+
+  &__sc-avatar {
+    @include flex-center;
+    width: 44px;
+    height: 44px;
+    border-radius: $border-radius-full;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+    border: 1.5px solid;
+    letter-spacing: -0.02em;
+  }
+
+  &__sc-info {
+    @include flex-column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__sc-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__sc-meta {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    @include truncate;
+  }
+
+  &__sc-rate-wrap {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  &__sc-rate-edit {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    input {
+      width: 48px;
+      padding: 4px 6px;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-sm;
+      font-family: $font-primary;
+      font-size: $font-size-sm;
+      font-weight: $font-weight-bold;
+      color: $color-secondary;
+      text-align: center;
+      outline: none;
+      background: $color-white;
+
+      &:focus { border-color: $color-primary; }
+    }
+  }
+
+  &__sc-rate-pct {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-400;
+  }
+
+  &__sc-rate-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: $border-radius-full;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    cursor: pointer;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover { opacity: 0.85; transform: scale(1.05); }
+  }
+
+  // --- Financial rows ---
+  &__sc-financials {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-sm $spacing-md;
+    background: $color-gray-50;
+    border-radius: $border-radius-md;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__sc-fin-item {
+    @include flex-column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__sc-fin-label {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+    white-space: nowrap;
+  }
+
+  &__sc-fin-value {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
+
+    &--highlight {
+      font-size: $font-size-md;
+    }
+  }
+
+  &__sc-fin-divider {
+    width: 1px;
+    height: 32px;
+    background: $border-color;
+    flex-shrink: 0;
+  }
+
+  // --- Progress bar ---
+  &__sc-bar-wrap {
+    padding: 0 $spacing-xs;
+  }
+
+  &__sc-bar-bg {
+    width: 100%;
+    height: 5px;
+    background: $color-gray-100;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+  }
+
+  &__sc-bar-fill {
+    height: 100%;
+    border-radius: $border-radius-full;
+    transition: width 800ms $ease-out-expo;
+  }
+
+  // ===========================================
+  // COMMISSION — SKELETON
+  // ===========================================
+  &__comm-skeleton {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: $spacing-md;
+
+    .finances__skeleton {
+      height: 180px;
+      border-radius: $border-radius-lg;
+    }
+  }
+
+  // ===========================================
+  // EMPTY STATE (rich)
+  // ===========================================
+  &__empty-state {
+    @include glass-card;
+    @include flex-column-center;
+    padding: $spacing-3xl $spacing-xl;
+    gap: $spacing-md;
+    text-align: center;
+    animation: fin-fadeInUp 400ms $ease-out-expo both 0.1s;
+  }
+
+  &__empty-state-icon {
+    @include flex-center;
+    width: 64px;
+    height: 64px;
+    border-radius: $border-radius-full;
+    background: $color-gray-50;
+    color: $color-gray-300;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__empty-state-title {
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    margin: 0;
+  }
+
+  &__empty-state-text {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    max-width: 400px;
+    margin: 0;
+    line-height: $line-height-relaxed;
+  }
+
+  // ===========================================
+  // INVOICES — CARD LIST
+  // ===========================================
+  &__inv-list {
+    @include flex-column;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__inv-card {
+    @include glass-card;
+    overflow: hidden;
+    animation: fin-fadeInUp 300ms $ease-out-expo both;
+    transition: box-shadow 200ms $ease-out-quart;
+
+    &:hover {
+      box-shadow: $shadow-glass-hover;
+    }
+  }
+
+  &__inv-main {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-md $spacing-lg;
+    cursor: pointer;
+    transition: background 150ms;
+
+    &:hover { background: $color-gray-50; }
+
+    @media (max-width: $breakpoint-md) {
+      flex-wrap: wrap;
+      gap: $spacing-sm;
+    }
+  }
+
+  &__inv-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    min-width: 160px;
+  }
+
+  &__inv-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+  }
+
+  &__inv-id-wrap {
+    @include flex-column;
+    gap: 1px;
+  }
+
+  &__inv-number {
+    font-family: monospace;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+  }
+
+  &__inv-date {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  &__inv-center {
+    flex: 1;
+    @include flex-column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__inv-client {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__inv-doc {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  &__inv-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    flex-shrink: 0;
+  }
+
+  &__inv-total {
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__inv-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
+    border: 1px solid;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+
+    svg { width: 10px; height: 10px; }
+  }
+
+  // --- Invoice details (expanded) ---
+  &__inv-details {
+    padding: $spacing-md $spacing-lg;
+    background: $color-gray-50;
+    border-top: 1px solid $border-color-light;
+    animation: fin-fadeIn 200ms $ease-out-quart;
+  }
+
+  &__inv-items-list {
+    @include flex-column;
+    gap: 0;
+    margin-bottom: $spacing-md;
+  }
+
+  &__inv-item-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-xs 0;
+    border-bottom: 1px solid $border-color-light;
+    font-size: $font-size-sm;
+
+    &:last-child { border-bottom: none; }
+  }
+
+  &__inv-item-name {
+    flex: 1;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+    min-width: 0;
+    @include truncate;
+  }
+
+  &__inv-item-qty {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-semibold;
+    flex-shrink: 0;
+  }
+
+  &__inv-item-price {
+    font-variant-numeric: tabular-nums;
+    color: $color-gray-500;
+    flex-shrink: 0;
+    min-width: 80px;
+    text-align: right;
+  }
+
+  &__inv-item-staff {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    flex-shrink: 0;
+
+    &::before {
+      content: '·';
+      margin-right: 4px;
+    }
+  }
+
+  &__inv-item-total {
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    min-width: 90px;
+    text-align: right;
+  }
+
+  &__inv-totals-row {
+    @include flex-column;
+    gap: $spacing-xs;
+    max-width: 300px;
+    margin-left: auto;
+    margin-bottom: $spacing-md;
+  }
+
+  &__inv-total-line {
+    @include flex-between;
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+
+    &--bold {
+      font-weight: $font-weight-bold;
+      font-size: $font-size-md;
+      color: $color-secondary;
+      padding-top: $spacing-xs;
+      border-top: 1px solid $border-color;
+    }
+  }
+
+  &__inv-actions {
+    display: flex;
+    gap: $spacing-xs;
+    flex-wrap: wrap;
+  }
+
+  &__inv-method {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    text-transform: capitalize;
+    margin-left: auto;
+
+    svg { width: 12px; height: 12px; }
+  }
+
+  // ===========================================
+  // STAFF CARD (individual card in grid)
+  // ===========================================
+  &__staff-card {
+    @include glass-card;
+    padding: $spacing-lg;
+    transition: all 300ms $ease-out-quart;
+    animation: fin-fadeInUp 300ms $ease-out-expo both;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-glass-hover;
+    }
+  }
+
+  // ===========================================
+  // CLIENT SEARCH (Invoice Form)
+  // ===========================================
+  &__client-search-wrap {
+    position: relative;
+    margin-bottom: $spacing-md;
+  }
+
+  &__client-search-box {
+    position: relative;
+  }
+
+  &__client-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: $color-gray-300;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  &__client-search-box .finances__input {
+    padding-left: 36px;
+  }
+
+  &__client-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: $color-white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-lg;
+    z-index: 20;
+    max-height: 280px;
+    overflow-y: auto;
+    animation: fin-fadeIn 150ms $ease-out-quart;
+  }
+
+  &__client-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 100ms;
+    font-family: $font-primary;
+
+    &:hover { background: $color-gray-50; }
+
+    &:not(:last-child) {
+      border-bottom: 1px solid $border-color-light;
+    }
+  }
+
+  &__client-dropdown-avatar {
+    @include flex-center;
+    width: 32px;
+    height: 32px;
+    border-radius: $border-radius-full;
+    background: $color-primary-ghost;
+    color: $color-primary;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+  }
+
+  &__client-dropdown-info {
+    @include flex-column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__client-dropdown-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    @include truncate;
+  }
+
+  &__client-dropdown-meta {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    @include truncate;
+  }
+
+  &__client-dropdown-empty {
+    padding: $spacing-md;
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+    text-align: center;
+    font-style: italic;
+  }
+
+  // --- Selected client card ---
+  &__client-selected {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: $color-primary-ghost;
+    border: 1px solid rgba($color-primary, 0.15);
+    border-radius: $border-radius-md;
+    animation: fin-fadeIn 200ms $ease-out-quart;
+  }
+
+  &__client-selected-avatar {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-full;
+    background: $color-primary;
+    color: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+  }
+
+  &__client-selected-info {
+    @include flex-column;
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__client-selected-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-primary-dark;
+    @include truncate;
+  }
+
+  &__client-selected-meta {
+    font-size: $font-size-2xs;
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+  }
+
+  // ===========================================
+  // TAX TOGGLE + INLINE LABEL
+  // ===========================================
+  &__tax-toggle {
+    display: flex;
+    align-items: center;
+  }
+
+  &__label-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: $color-primary;
+      cursor: pointer;
+    }
+
+    &:hover { color: $color-secondary; }
+  }
+
+  // ===========================================
+  // P&L ROWS (inside card)
+  // ===========================================
+  &__pnl-rows {
+    @include flex-column;
+    gap: 0;
+  }
 }
 
 // ===========================================

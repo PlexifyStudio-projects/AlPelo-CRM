@@ -5,6 +5,7 @@ from .delete_endpoints import router as delete_router
 from .ai_endpoints import router as ai_router
 from .whatsapp_endpoints import router as whatsapp_router
 from .dev_endpoints import router as dev_router
+from .finance_endpoints import router as finance_router
 
 __all__ = [
     "create_router",
@@ -14,4 +15,5 @@ __all__ = [
     "ai_router",
     "whatsapp_router",
     "dev_router",
+    "finance_router",
 ]

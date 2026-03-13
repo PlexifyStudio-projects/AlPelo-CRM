@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import setup_cors_middleware
 from auth import auth_router
-from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router
+from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router
 from database.connection import engine, Base
 
 
@@ -29,6 +29,8 @@ def _run_migrations(engine):
         ("tenant", "ai_model", "VARCHAR(100) NOT NULL DEFAULT 'claude-sonnet-4-5-20250929'"),
         ("tenant", "address", "TEXT"),
         ("tenant", "updated_at", "TIMESTAMP DEFAULT NOW()"),
+        # Finance module
+        ("visit_history", "payment_method", "VARCHAR"),
     ]
 
     for table, column, col_type in migrations:
@@ -221,6 +223,7 @@ app.include_router(delete_router, prefix="/api")
 app.include_router(ai_router, prefix="/api", tags=["AI"])
 app.include_router(whatsapp_router, prefix="/api", tags=["WhatsApp"])
 app.include_router(dev_router, prefix="/api", tags=["Dev Panel"])
+app.include_router(finance_router, prefix="/api", tags=["Finance"])
 
 
 # ============================================================================

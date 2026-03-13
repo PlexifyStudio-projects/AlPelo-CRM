@@ -74,6 +74,7 @@ class VisitHistory(Base):
     amount = Column(Integer, nullable=False)  # COP sin decimales
     visit_date = Column(Date, nullable=False)
     status = Column(String, nullable=False, default="completed")  # completed, no_show, cancelled
+    payment_method = Column(String, nullable=True)  # efectivo, transferencia, tarjeta, nequi, daviplata
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -264,6 +265,77 @@ class UsageMetrics(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+class StaffCommission(Base):
+    """Commission configuration per staff member."""
+    __tablename__ = "staff_commission"
+
+    id = Column(Integer, primary_key=True, index=True)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False, unique=True)
+    default_rate = Column(Float, nullable=False, default=0.40)  # e.g. 0.40 = 40%
+    service_overrides = Column(JSON, default=dict)  # {service_id: rate}
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    staff = relationship("Staff", foreign_keys=[staff_id])
+
+
+class Expense(Base):
+    """Business expense tracking."""
+    __tablename__ = "expense"
+
+    id = Column(Integer, primary_key=True, index=True)
+    category = Column(String, nullable=False)  # arriendo, nomina, productos, servicios, marketing, otros
+    description = Column(Text, nullable=False)
+    amount = Column(Integer, nullable=False)  # COP sin decimales
+    date = Column(Date, nullable=False)
+    payment_method = Column(String, nullable=True)  # efectivo, transferencia, tarjeta, nequi, daviplata
+    receipt_url = Column(Text, nullable=True)
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Invoice(Base):
+    """Invoice / factura electrónica."""
+    __tablename__ = "invoice"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_number = Column(String, unique=True, nullable=False)  # FV-0001
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
+    client_name = Column(String, nullable=False)
+    client_phone = Column(String, nullable=True)
+    client_document = Column(String, nullable=True)  # CC/NIT
+    subtotal = Column(Integer, nullable=False, default=0)
+    tax_rate = Column(Float, nullable=False, default=0.19)
+    tax_amount = Column(Integer, nullable=False, default=0)
+    total = Column(Integer, nullable=False, default=0)
+    payment_method = Column(String, nullable=True)
+    status = Column(String, nullable=False, default="draft")  # draft, sent, paid, cancelled
+    issued_date = Column(Date, nullable=False)
+    paid_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    client = relationship("Client", foreign_keys=[client_id])
+    items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
+
+
+class InvoiceItem(Base):
+    """Line item within an invoice."""
+    __tablename__ = "invoice_item"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_id = Column(Integer, ForeignKey("public.invoice.id"), nullable=False)
+    service_name = Column(String, nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    unit_price = Column(Integer, nullable=False)
+    total = Column(Integer, nullable=False)
+    staff_name = Column(String, nullable=True)
+
+    invoice = relationship("Invoice", back_populates="items")
 
 
 class BillingRecord(Base):
