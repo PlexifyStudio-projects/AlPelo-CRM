@@ -10,6 +10,9 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
+// Authenticated fetch — sends cookies for auth
+const authFetch = (url, opts = {}) => fetch(url, { ...opts, credentials: 'include' });
+
 // Helper to build query string with optional date range
 const buildQuery = (params = {}) => {
   const query = new URLSearchParams();
@@ -26,12 +29,12 @@ const financeService = {
   // ========================= EXPENSES =========================
   listExpenses: async (params = {}) => {
     const qs = buildQuery(params);
-    const res = await fetch(`${API}/expenses/${qs ? `?${qs}` : ''}`, { headers });
+    const res = await authFetch(`${API}/expenses/${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   createExpense: async (data) => {
-    const res = await fetch(`${API}/expenses/`, {
+    const res = await authFetch(`${API}/expenses/`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
@@ -40,7 +43,7 @@ const financeService = {
   },
 
   updateExpense: async (id, data) => {
-    const res = await fetch(`${API}/expenses/${id}`, {
+    const res = await authFetch(`${API}/expenses/${id}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
@@ -49,7 +52,7 @@ const financeService = {
   },
 
   deleteExpense: async (id) => {
-    const res = await fetch(`${API}/expenses/${id}`, {
+    const res = await authFetch(`${API}/expenses/${id}`, {
       method: 'DELETE',
       headers,
     });
@@ -58,18 +61,18 @@ const financeService = {
 
   expensesSummary: async (params = {}) => {
     const qs = buildQuery(params);
-    const res = await fetch(`${API}/expenses/summary${qs ? `?${qs}` : ''}`, { headers });
+    const res = await authFetch(`${API}/expenses/summary${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= COMMISSIONS =========================
   listCommissions: async () => {
-    const res = await fetch(`${API}/finances/commissions/config`, { headers });
+    const res = await authFetch(`${API}/finances/commissions/config`, { headers });
     return handleResponse(res);
   },
 
   updateCommission: async (staffId, data) => {
-    const res = await fetch(`${API}/finances/commissions/config/${staffId}`, {
+    const res = await authFetch(`${API}/finances/commissions/config/${staffId}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
@@ -79,24 +82,24 @@ const financeService = {
 
   commissionPayouts: async (params = {}) => {
     const qs = buildQuery(params);
-    const res = await fetch(`${API}/finances/commissions/payouts${qs ? `?${qs}` : ''}`, { headers });
+    const res = await authFetch(`${API}/finances/commissions/payouts${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= INVOICES =========================
   listInvoices: async (params = {}) => {
     const qs = buildQuery(params);
-    const res = await fetch(`${API}/invoices/${qs ? `?${qs}` : ''}`, { headers });
+    const res = await authFetch(`${API}/invoices/${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   getInvoice: async (id) => {
-    const res = await fetch(`${API}/invoices/${id}`, { headers });
+    const res = await authFetch(`${API}/invoices/${id}`, { headers });
     return handleResponse(res);
   },
 
   createInvoice: async (data) => {
-    const res = await fetch(`${API}/invoices/`, {
+    const res = await authFetch(`${API}/invoices/`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
@@ -105,7 +108,7 @@ const financeService = {
   },
 
   updateInvoice: async (id, data) => {
-    const res = await fetch(`${API}/invoices/${id}`, {
+    const res = await authFetch(`${API}/invoices/${id}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
@@ -114,7 +117,7 @@ const financeService = {
   },
 
   cancelInvoice: async (id) => {
-    const res = await fetch(`${API}/invoices/${id}`, {
+    const res = await authFetch(`${API}/invoices/${id}`, {
       method: 'DELETE',
       headers,
     });
@@ -124,48 +127,42 @@ const financeService = {
   // ========================= UNINVOICED VISITS =========================
   getUninvoicedVisits: async (params = {}) => {
     const qs = buildQuery(params);
-    const res = await fetch(`${API}/finances/uninvoiced-visits${qs ? `?${qs}` : ''}`, { headers });
+    const res = await authFetch(`${API}/finances/uninvoiced-visits${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= P&L =========================
   getPnL: async (params = {}) => {
     const qs = buildQuery(params);
-    const res = await fetch(`${API}/finances/pnl${qs ? `?${qs}` : ''}`, { headers });
+    const res = await authFetch(`${API}/finances/pnl${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= PAYMENT METHODS =========================
   paymentMethods: async (params = {}) => {
     const qs = buildQuery(params);
-    const res = await fetch(`${API}/finances/payment-methods${qs ? `?${qs}` : ''}`, { headers });
+    const res = await authFetch(`${API}/finances/payment-methods${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= ANALYTICS =========================
   getAnalytics: async (params = {}) => {
     const qs = buildQuery(params);
-    const res = await fetch(`${API}/finances/analytics${qs ? `?${qs}` : ''}`, {
-      headers,
-      credentials: 'include',
-    });
+    const res = await authFetch(`${API}/finances/analytics${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= EXPORT TRANSACTIONS =========================
   exportTransactions: async (params = {}) => {
     const qs = buildQuery(params);
-    const res = await fetch(`${API}/finances/export${qs ? `?${qs}` : ''}`, {
-      headers: {},
-      credentials: 'include',
-    });
+    const res = await authFetch(`${API}/finances/export${qs ? `?${qs}` : ''}`, { headers: {} });
     if (!res.ok) throw new Error('Error al exportar');
     return res.blob();
   },
 
   // ========================= EXPORT / IMPORT =========================
   exportClients: async () => {
-    const res = await fetch(`${API}/clients/export`, { headers: {} });
+    const res = await authFetch(`${API}/clients/export`, { headers: {} });
     if (!res.ok) throw new Error('Error al exportar');
     return res.blob();
   },
@@ -173,7 +170,7 @@ const financeService = {
   importClients: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${API}/clients/import`, {
+    const res = await authFetch(`${API}/clients/import`, {
       method: 'POST',
       body: formData,
     });
