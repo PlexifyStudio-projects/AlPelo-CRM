@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTenant } from '../../context/TenantContext';
 import { useNotification } from '../../context/NotificationContext';
 import financeService from '../../services/financeService';
@@ -6,6 +6,10 @@ import clientService from '../../services/clientService';
 import servicesService from '../../services/servicesService';
 import staffService from '../../services/staffService';
 import aiService from '../../services/aiService';
+import {
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+} from 'recharts';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -133,7 +137,16 @@ const Icons = {
       <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" /><path d="M4 6v12a2 2 0 0 0 2 2h14v-4" /><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z" />
     </svg>
   ),
+  download: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  ),
 };
+
+// Recharts color palette
+const CHART_COLORS = ['#2D5A3D', '#C9A84C', '#3B82F6', '#EF4444', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
+const PM_COLORS = { 'efectivo': '#2D5A3D', 'transferencia': '#3B82F6', 'tarjeta': '#C9A84C', 'nequi': '#8B5CF6', 'daviplata': '#EF4444', 'Sin registrar': '#8E8E85' };
 
 // ===== HELPERS =====
 const formatCOP = (value) => {
@@ -203,6 +216,7 @@ const PAYMENT_METHODS = [
 
 const TAB_OPTIONS = [
   { value: 'resumen', label: 'Resumen' },
+  { value: 'reportes', label: 'Reportes' },
   { value: 'gastos', label: 'Gastos' },
   { value: 'comisiones', label: 'Comisiones' },
   { value: 'facturas', label: 'Facturas' },
@@ -245,56 +259,112 @@ const GrowthBadge = ({ value }) => {
   );
 };
 
-// ===== REVENUE CHART =====
-const RevenueChart = ({ data, maxValue }) => {
-  const [hoveredIdx, setHoveredIdx] = useState(null);
-  if (!data || data.length === 0) return <div className="finances__empty">Sin datos de ingresos para este periodo</div>;
-  const max = maxValue || Math.max(...data.map(d => d.revenue), 1);
+// ===== RECHARTS CUSTOM TOOLTIP =====
+const RechartsTooltip = ({ active, payload, label, formatter }) => {
+  if (!active || !payload || !payload.length) return null;
+  return (
+    <div className="finances__recharts-tooltip">
+      <span className="finances__recharts-tooltip-label">{label}</span>
+      {payload.map((entry, i) => (
+        <div key={i} className="finances__recharts-tooltip-row">
+          <span className="finances__recharts-tooltip-dot" style={{ background: entry.color }} />
+          <span>{entry.name}: {formatter ? formatter(entry.value) : entry.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
-  const ySteps = 4;
-  const yLabels = Array.from({ length: ySteps + 1 }, (_, i) => Math.round((max / ySteps) * (ySteps - i)));
+// ===== REVENUE AREA CHART (Recharts) =====
+const RevenueAreaChart = ({ data }) => {
+  if (!data || data.length === 0) return <div className="finances__empty">Sin datos de ingresos para este periodo</div>;
+
+  const chartData = data.map(item => {
+    const { day, weekday } = formatDayLabel(item.date);
+    return { ...item, label: `${weekday} ${day}`, avg_ticket: item.visits > 0 ? Math.round(item.revenue / item.visits) : 0 };
+  });
 
   return (
-    <div className="finances__chart">
-      <div className="finances__chart-y-axis">
-        {yLabels.map((v, i) => (
-          <span key={i} className="finances__chart-y-label">{v >= 1000 ? `${Math.round(v/1000)}k` : v}</span>
-        ))}
+    <div className="finances__recharts-container">
+      <ResponsiveContainer width="100%" height={280}>
+        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#2D5A3D" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#2D5A3D" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} width={45} />
+          <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+          <Area type="monotone" dataKey="revenue" name="Ingresos" stroke="#2D5A3D" strokeWidth={2.5} fill="url(#revenueGrad)" dot={{ r: 3, fill: '#2D5A3D', strokeWidth: 0 }} activeDot={{ r: 5, fill: '#2D5A3D', stroke: '#fff', strokeWidth: 2 }} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+// ===== PAYMENT DONUT CHART (Recharts) =====
+const PaymentDonutChart = ({ data }) => {
+  if (!data || !data.items || data.items.length === 0) return null;
+  const total = data.items.reduce((s, i) => s + i.total, 0);
+
+  return (
+    <div className="finances__card">
+      <div className="finances__card-header">
+        <h2 className="finances__card-title">{Icons.wallet} Metodos de Pago</h2>
       </div>
-      <div className="finances__chart-area">
-        <div className="finances__chart-grid">
-          {yLabels.map((_, i) => <div key={i} className="finances__chart-grid-line" />)}
+      <div className="finances__donut-wrap">
+        <div className="finances__donut-chart">
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie data={data.items} dataKey="total" nameKey="method" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={2} strokeWidth={0}>
+                {data.items.map((entry, i) => (
+                  <Cell key={i} fill={PM_COLORS[entry.method] || CHART_COLORS[i % CHART_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="finances__donut-center">
+            <span className="finances__donut-total">{formatCOP(total)}</span>
+            <span className="finances__donut-label">Total</span>
+          </div>
         </div>
-        <div className="finances__chart-bars">
-          {data.map((item, i) => {
-            const { day, weekday } = formatDayLabel(item.date);
-            const pct = Math.max((item.revenue / max) * 100, 3);
-            const isHovered = hoveredIdx === i;
-            return (
-              <div
-                key={i}
-                className={`finances__chart-col ${isHovered ? 'finances__chart-col--active' : ''}`}
-                onMouseEnter={() => setHoveredIdx(i)}
-                onMouseLeave={() => setHoveredIdx(null)}
-              >
-                {isHovered && (
-                  <div className="finances__chart-tooltip">
-                    <strong>{formatCOP(item.revenue)}</strong>
-                    <span>{item.visits} {item.visits === 1 ? 'servicio' : 'servicios'}</span>
-                  </div>
-                )}
-                <div className="finances__chart-bar" style={{ height: `${pct}%` }}>
-                  <div className="finances__chart-bar-fill" />
-                </div>
-                <div className="finances__chart-label">
-                  <span className="finances__chart-label-day">{day}</span>
-                  <span className="finances__chart-label-weekday">{weekday}</span>
-                </div>
-              </div>
-            );
-          })}
+        <div className="finances__donut-legend">
+          {data.items.map((item, i) => (
+            <div key={i} className="finances__donut-legend-item">
+              <span className="finances__donut-legend-dot" style={{ background: PM_COLORS[item.method] || CHART_COLORS[i % CHART_COLORS.length] }} />
+              <span className="finances__donut-legend-name">{item.method}</span>
+              <span className="finances__donut-legend-value">{formatCOP(item.total)}</span>
+              <span className="finances__donut-legend-pct">{item.pct_of_total}%</span>
+            </div>
+          ))}
         </div>
       </div>
+    </div>
+  );
+};
+
+// ===== STAFF BAR CHART (Recharts) =====
+const StaffBarChart = ({ data }) => {
+  if (!data || data.length === 0) return null;
+  const chartData = data.map(s => ({ ...s, initials: s.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2) }));
+
+  return (
+    <div className="finances__recharts-container">
+      <ResponsiveContainer width="100%" height={Math.max(200, data.length * 50)}>
+        <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" horizontal={false} />
+          <XAxis type="number" tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} />
+          <YAxis type="category" dataKey="staff_name" tick={{ fontSize: 12, fill: '#333330' }} tickLine={false} axisLine={false} width={100} />
+          <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+          <Bar dataKey="revenue" name="Ingresos" radius={[0, 6, 6, 0]} barSize={24}>
+            {chartData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 };
@@ -385,7 +455,7 @@ const InsightsPanel = ({ data }) => {
   );
 };
 
-// ===== PAYMENT METHODS CARD =====
+// ===== PAYMENT METHODS CARD (now uses Donut) =====
 const PaymentMethodsCard = ({ period, dateFrom, dateTo }) => {
   const [data, setData] = useState(null);
 
@@ -400,25 +470,7 @@ const PaymentMethodsCard = ({ period, dateFrom, dateTo }) => {
 
   if (!data || !data.items || data.items.length === 0) return null;
 
-  return (
-    <div className="finances__card">
-      <div className="finances__card-header">
-        <h2 className="finances__card-title">{Icons.wallet} Metodos de Pago</h2>
-      </div>
-      <div className="finances__payment-methods">
-        {data.items.map((item, i) => (
-          <div key={i} className="finances__pm-row">
-            <span className="finances__pm-name">{item.method}</span>
-            <div className="finances__pm-bar-wrap">
-              <div className="finances__pm-bar" style={{ width: `${item.pct_of_total}%` }} />
-            </div>
-            <span className="finances__pm-amount">{formatCOP(item.total)}</span>
-            <span className="finances__pm-pct">{item.pct_of_total}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <PaymentDonutChart data={data} />;
 };
 
 // ================================================================
@@ -500,7 +552,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
               {[...Array(8)].map((_, i) => <SkeletonBlock key={i} width="24px" height={`${25 + Math.random() * 65}%`} />)}
             </div>
           ) : (
-            <RevenueChart data={data?.revenue_by_day || []} />
+            <RevenueAreaChart data={data?.revenue_by_day || []} />
           )}
         </div>
 
@@ -570,35 +622,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
           {loading ? (
             <div className="finances__list-skeleton">{[...Array(3)].map((_, i) => <SkeletonBlock key={i} width="100%" height="64px" />)}</div>
           ) : (
-            <div className="finances__staff-list">
-              {(data?.revenue_by_staff || []).map((staff, i) => {
-                const maxRev = data?.revenue_by_staff?.[0]?.revenue || 1;
-                const pct = Math.round((staff.revenue / maxRev) * 100);
-                return (
-                  <div key={i} className="finances__staff-row">
-                    <div className="finances__staff-left">
-                      <div className={`finances__staff-avatar ${i === 0 ? 'finances__staff-avatar--gold' : ''}`}>
-                        {staff.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="finances__staff-details">
-                        <span className="finances__staff-name">{staff.staff_name}</span>
-                        <span className="finances__staff-meta">{staff.count} servicios · Ticket prom. {formatCOP(staff.avg_ticket)}</span>
-                      </div>
-                    </div>
-                    <div className="finances__staff-right">
-                      <div className="finances__staff-bar-container">
-                        <div className="finances__staff-bar-bg">
-                          <div className="finances__staff-bar-fill" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="finances__staff-pct">{staff.pct_of_total}%</span>
-                      </div>
-                      <span className="finances__staff-revenue">{formatCOP(staff.revenue)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-              {(!data?.revenue_by_staff || data.revenue_by_staff.length === 0) && <div className="finances__empty">Sin datos para este periodo</div>}
-            </div>
+            <StaffBarChart data={data?.revenue_by_staff || []} />
           )}
         </div>
       </div>
@@ -606,7 +630,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
       {/* Owner Profit Panel */}
       {!loading && <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />}
 
-      {/* Payment Methods */}
+      {/* Payment Methods (Donut Chart) */}
       <div className="finances__body finances__body--bottom">
         {!loading && <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       </div>
@@ -782,6 +806,258 @@ const FinanceAIWidget = ({ period, dateFrom, dateTo }) => {
         </div>
       )}
     </div>
+  );
+};
+
+// ================================================================
+// TAB: REPORTES — Analytics + Period Comparison + Export
+// ================================================================
+const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
+
+const TabReportes = ({ period, dateFrom, dateTo }) => {
+  const { addNotification } = useNotification();
+  const [analytics, setAnalytics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    const params = { period };
+    if (period === 'custom' && dateFrom && dateTo) {
+      params.date_from = dateFrom;
+      params.date_to = dateTo;
+    }
+    financeService.getAnalytics(params)
+      .then(setAnalytics)
+      .catch(err => addNotification('Error cargando analytics: ' + err.message, 'error'))
+      .finally(() => setLoading(false));
+  }, [period, dateFrom, dateTo, addNotification]);
+
+  const handleExport = async () => {
+    try {
+      const params = { period };
+      if (period === 'custom' && dateFrom && dateTo) {
+        params.date_from = dateFrom;
+        params.date_to = dateTo;
+      }
+      const blob = await financeService.exportTransactions(params);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transacciones_${period}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addNotification('CSV descargado', 'success');
+    } catch (err) {
+      addNotification('Error al exportar: ' + err.message, 'error');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="finances__report-skeleton">
+        {[...Array(4)].map((_, i) => <SkeletonBlock key={i} width="100%" height="80px" />)}
+      </div>
+    );
+  }
+
+  if (!analytics) return <div className="finances__empty">Sin datos de analytics</div>;
+
+  const comparisonItems = [
+    { label: 'Ingresos', current: analytics.current_revenue, previous: analytics.previous_revenue, change: analytics.revenue_change_pct, format: formatCOP },
+    { label: 'Gastos', current: analytics.current_expenses, previous: analytics.previous_expenses, change: analytics.expenses_change_pct, format: formatCOP, invertColor: true },
+    { label: 'Ganancia Neta', current: analytics.current_profit, previous: analytics.previous_profit, change: analytics.profit_change_pct, format: formatCOP },
+    { label: 'Servicios', current: analytics.current_visits, previous: analytics.previous_visits, change: analytics.visits_change_pct, format: v => v },
+    { label: 'Ticket Promedio', current: analytics.current_avg_ticket, previous: analytics.previous_avg_ticket, change: analytics.previous_avg_ticket > 0 ? Math.round((analytics.current_avg_ticket - analytics.previous_avg_ticket) / analytics.previous_avg_ticket * 1000) / 10 : 0, format: formatCOP },
+  ];
+
+  const weekdayData = (analytics.revenue_by_weekday || []).map(d => ({
+    ...d,
+    label: WEEKDAY_LABELS[d.weekday] || d.weekday_name,
+  }));
+
+  return (
+    <>
+      {/* Export button */}
+      <div className="finances__section-header">
+        <h3 className="finances__section-title">Reportes Avanzados</h3>
+        <button className="finances__action-btn" onClick={handleExport}>
+          {Icons.download} Exportar CSV
+        </button>
+      </div>
+
+      {/* Period Comparison Cards */}
+      <div className="finances__comparison-grid">
+        {comparisonItems.map((item, i) => {
+          const isPositive = item.invertColor ? item.change <= 0 : item.change >= 0;
+          return (
+            <div key={i} className="finances__comparison-card">
+              <span className="finances__comparison-label">{item.label}</span>
+              <div className="finances__comparison-values">
+                <div className="finances__comparison-current">
+                  <span className="finances__comparison-current-value">{item.format(item.current)}</span>
+                  <span className="finances__comparison-period-label">Actual</span>
+                </div>
+                <div className="finances__comparison-vs">vs</div>
+                <div className="finances__comparison-previous">
+                  <span className="finances__comparison-previous-value">{item.format(item.previous)}</span>
+                  <span className="finances__comparison-period-label">Anterior</span>
+                </div>
+              </div>
+              <GrowthBadge value={item.change} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Revenue by Staff — Ranking + Chart */}
+      <div className="finances__body">
+        <div className="finances__card">
+          <div className="finances__card-header">
+            <h2 className="finances__card-title">{Icons.users} Ranking por Profesional</h2>
+          </div>
+          <StaffBarChart data={analytics.revenue_by_staff || []} />
+          <div className="finances__report-table">
+            <table className="finances__table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Profesional</th>
+                  <th>Servicios</th>
+                  <th>Ticket Prom.</th>
+                  <th>Ingresos</th>
+                  <th>%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(analytics.revenue_by_staff || []).map((s, i) => (
+                  <tr key={i}>
+                    <td><span className={`finances__ranking-pos ${i < 3 ? 'finances__ranking-pos--highlight' : ''}`}>{i === 0 ? Icons.star : i + 1}</span></td>
+                    <td>{s.staff_name}</td>
+                    <td>{s.count}</td>
+                    <td>{formatCOP(s.avg_ticket)}</td>
+                    <td className="finances__amount-cell">{formatCOP(s.revenue)}</td>
+                    <td>{s.pct_of_total}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Revenue by Service */}
+        <div className="finances__card">
+          <div className="finances__card-header">
+            <h2 className="finances__card-title">{Icons.scissors} Revenue por Servicio</h2>
+          </div>
+          <div className="finances__ranking-list">
+            {(analytics.revenue_by_service || []).map((svc, i) => {
+              const maxRev = (analytics.revenue_by_service?.[0]?.revenue) || 1;
+              const pct = Math.round((svc.revenue / maxRev) * 100);
+              return (
+                <div key={i} className={`finances__ranking-item ${i < 3 ? 'finances__ranking-item--top' : ''}`}>
+                  <span className={`finances__ranking-pos ${i < 3 ? 'finances__ranking-pos--highlight' : ''}`}>
+                    {i === 0 ? Icons.star : i + 1}
+                  </span>
+                  <div className="finances__ranking-info">
+                    <div className="finances__ranking-top">
+                      <div className="finances__ranking-name-wrap">
+                        <span className="finances__ranking-name">{svc.service_name}</span>
+                        {svc.category && <span className="finances__ranking-cat" style={{ color: CATEGORY_COLORS[svc.category] || CATEGORY_COLORS['Otros'] }}>{svc.category}</span>}
+                      </div>
+                      <div className="finances__ranking-amounts">
+                        <span className="finances__ranking-amount">{formatCOP(svc.revenue)}</span>
+                        <span className="finances__ranking-pct">{svc.pct_of_total}%</span>
+                      </div>
+                    </div>
+                    <div className="finances__ranking-bar-bg">
+                      <div className="finances__ranking-bar" style={{ width: `${pct}%`, background: CATEGORY_COLORS[svc.category] || CATEGORY_COLORS['Otros'] }} />
+                    </div>
+                    <span className="finances__ranking-count">{svc.count} {svc.count === 1 ? 'servicio' : 'servicios'}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Weekday Heatmap / Bar Chart */}
+      {weekdayData.length > 0 && (
+        <div className="finances__card">
+          <div className="finances__card-header">
+            <h2 className="finances__card-title">{Icons.calendar} Revenue por Dia de la Semana</h2>
+          </div>
+          <div className="finances__recharts-container">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={weekdayData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#333330' }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} width={45} />
+                <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+                <Bar dataKey="revenue" name="Ingresos" radius={[6, 6, 0, 0]} barSize={36}>
+                  {weekdayData.map((d, i) => {
+                    const maxRev = Math.max(...weekdayData.map(x => x.revenue), 1);
+                    const intensity = d.revenue / maxRev;
+                    const color = intensity > 0.8 ? '#1E3D2A' : intensity > 0.5 ? '#2D5A3D' : intensity > 0.2 ? '#3D7A52' : '#4E9466';
+                    return <Cell key={i} fill={color} />;
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="finances__weekday-stats">
+            {weekdayData.map((d, i) => (
+              <div key={i} className="finances__weekday-stat">
+                <span className="finances__weekday-label">{d.label}</span>
+                <span className="finances__weekday-value">{formatCOP(d.revenue)}</span>
+                <span className="finances__weekday-visits">{d.visits} servicios</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Category Breakdown (Stacked) */}
+      {(analytics.revenue_by_category || []).length > 0 && (
+        <div className="finances__card">
+          <div className="finances__card-header">
+            <h2 className="finances__card-title">{Icons.pieChart} Distribucion por Categoria</h2>
+          </div>
+          <div className="finances__recharts-container">
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie data={analytics.revenue_by_category} dataKey="revenue" nameKey="category" cx="50%" cy="50%" outerRadius={90} paddingAngle={2} strokeWidth={0} label={({ category, pct_of_total }) => `${category} ${pct_of_total}%`}>
+                  {analytics.revenue_by_category.map((entry, i) => (
+                    <Cell key={i} fill={CATEGORY_COLORS[entry.category] || CHART_COLORS[i % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {/* Summary Insights */}
+      <div className="finances__report-summary">
+        <div className="finances__report-summary-item">
+          <span className="finances__report-summary-label">Clientes Unicos</span>
+          <span className="finances__report-summary-value">{analytics.unique_clients}</span>
+        </div>
+        <div className="finances__report-summary-item">
+          <span className="finances__report-summary-label">Margen Neto</span>
+          <span className="finances__report-summary-value">{analytics.margin_pct}%</span>
+        </div>
+        <div className="finances__report-summary-item">
+          <span className="finances__report-summary-label">Total Comisiones</span>
+          <span className="finances__report-summary-value">{formatCOP(analytics.total_commissions)}</span>
+        </div>
+        <div className="finances__report-summary-item">
+          <span className="finances__report-summary-label">Total Gastos</span>
+          <span className="finances__report-summary-value">{formatCOP(analytics.total_expenses)}</span>
+        </div>
+      </div>
+    </>
   );
 };
 
@@ -2001,6 +2277,7 @@ const Finances = () => {
 
       {/* TAB CONTENT */}
       {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'reportes' && <TabReportes period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}

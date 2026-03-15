@@ -9,9 +9,10 @@ import io
 
 from database.connection import get_db
 from database.models import (
-    Staff, Client, VisitHistory, Expense, Invoice, InvoiceItem,
+    Admin, Staff, Client, VisitHistory, Expense, Invoice, InvoiceItem,
     StaffCommission, Service,
 )
+from middleware.auth_middleware import get_current_user
 from schemas import (
     ExpenseCreate, ExpenseUpdate, ExpenseResponse, ExpenseSummaryItem,
     CommissionConfigResponse, CommissionConfigUpdate, CommissionPayoutItem,
@@ -51,6 +52,7 @@ def list_expenses(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
 ):
     start, end = _parse_period(period, date_from, date_to)
     q = db.query(Expense).filter(Expense.date >= start, Expense.date <= end)
@@ -60,7 +62,7 @@ def list_expenses(
 
 
 @router.post("/expenses/", response_model=ExpenseResponse)
-def create_expense(data: ExpenseCreate, db: Session = Depends(get_db)):
+def create_expense(data: ExpenseCreate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     expense = Expense(**data.model_dump())
     db.add(expense)
     db.commit()
@@ -69,7 +71,7 @@ def create_expense(data: ExpenseCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/expenses/{expense_id}", response_model=ExpenseResponse)
-def update_expense(expense_id: int, data: ExpenseUpdate, db: Session = Depends(get_db)):
+def update_expense(expense_id: int, data: ExpenseUpdate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     expense = db.query(Expense).filter(Expense.id == expense_id).first()
     if not expense:
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
@@ -81,7 +83,7 @@ def update_expense(expense_id: int, data: ExpenseUpdate, db: Session = Depends(g
 
 
 @router.delete("/expenses/{expense_id}")
-def delete_expense(expense_id: int, db: Session = Depends(get_db)):
+def delete_expense(expense_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     expense = db.query(Expense).filter(Expense.id == expense_id).first()
     if not expense:
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
@@ -96,6 +98,7 @@ def expenses_summary(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
 ):
     start, end = _parse_period(period, date_from, date_to)
     expenses = (
@@ -132,7 +135,7 @@ def expenses_summary(
 # ============================================================================
 
 @router.get("/finances/commissions/config", response_model=list[CommissionConfigResponse])
-def list_commission_configs(db: Session = Depends(get_db)):
+def list_commission_configs(db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     staff_list = db.query(Staff).filter(Staff.is_active == True).all()
     result = []
     for s in staff_list:
@@ -147,7 +150,7 @@ def list_commission_configs(db: Session = Depends(get_db)):
 
 
 @router.put("/finances/commissions/config/{staff_id}", response_model=CommissionConfigResponse)
-def update_commission_config(staff_id: int, data: CommissionConfigUpdate, db: Session = Depends(get_db)):
+def update_commission_config(staff_id: int, data: CommissionConfigUpdate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     staff = db.query(Staff).filter(Staff.id == staff_id).first()
     if not staff:
         raise HTTPException(status_code=404, detail="Profesional no encontrado")
@@ -176,6 +179,7 @@ def get_commission_payouts(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
 ):
     start, end = _parse_period(period, date_from, date_to)
     visits = (
@@ -221,6 +225,7 @@ def get_uninvoiced_visits(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
 ):
     """List completed visits that haven't been invoiced yet."""
     q = (
@@ -263,6 +268,7 @@ def get_uninvoiced_visits(
 def list_invoices(
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
 ):
     q = db.query(Invoice)
     if status:
@@ -272,7 +278,7 @@ def list_invoices(
 
 
 @router.get("/invoices/{invoice_id}", response_model=InvoiceResponse)
-def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
+def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not inv:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
@@ -280,7 +286,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/invoices/", response_model=InvoiceResponse)
-def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db)):
+def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     # Auto-generate invoice number
     last = db.query(Invoice).order_by(Invoice.id.desc()).first()
     next_num = (last.id + 1) if last else 1
@@ -333,7 +339,7 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/invoices/{invoice_id}", response_model=InvoiceResponse)
-def update_invoice(invoice_id: int, data: InvoiceUpdate, db: Session = Depends(get_db)):
+def update_invoice(invoice_id: int, data: InvoiceUpdate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not inv:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
@@ -351,7 +357,7 @@ def update_invoice(invoice_id: int, data: InvoiceUpdate, db: Session = Depends(g
 
 
 @router.delete("/invoices/{invoice_id}")
-def cancel_invoice(invoice_id: int, db: Session = Depends(get_db)):
+def cancel_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
     if not inv:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
@@ -370,6 +376,7 @@ def get_pnl(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
 ):
     start, end = _parse_period(period, date_from, date_to)
 
@@ -424,6 +431,7 @@ def get_payment_methods(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
 ):
     start, end = _parse_period(period, date_from, date_to)
     visits = (
@@ -463,7 +471,7 @@ def get_payment_methods(
 # ============================================================================
 
 @router.get("/clients/export")
-def export_clients(db: Session = Depends(get_db)):
+def export_clients(db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     clients = db.query(Client).order_by(Client.name).all()
 
     output = io.StringIO()
@@ -500,7 +508,7 @@ def export_clients(db: Session = Depends(get_db)):
 
 
 @router.post("/clients/import", response_model=ImportResult)
-async def import_clients(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def import_clients(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="Archivo requerido")
 
@@ -604,3 +612,282 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
         db.commit()
 
     return ImportResult(imported=imported, skipped=skipped, errors=errors[:20])
+
+
+# ============================================================================
+# ANALYTICS
+# ============================================================================
+
+WEEKDAY_NAMES = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
+
+
+def _calc_change_pct(current, previous):
+    if previous > 0:
+        return round(((current - previous) / previous * 100), 1)
+    return 100.0 if current > 0 else 0
+
+
+def _calc_commissions(visits, db):
+    staff_rev = {}
+    for v in visits:
+        if v.staff_id not in staff_rev:
+            staff_rev[v.staff_id] = 0
+        staff_rev[v.staff_id] += v.amount
+
+    total = 0
+    for sid, rev in staff_rev.items():
+        comm = db.query(StaffCommission).filter(StaffCommission.staff_id == sid).first()
+        rate = comm.default_rate if comm else 0.40
+        total += int(rev * rate)
+    return total
+
+
+@router.get("/finances/analytics")
+def get_finance_analytics(
+    period: str = Query("month"),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    start, end = _parse_period(period, date_from, date_to)
+
+    # Previous period
+    period_days = (end - start).days + 1
+    prev_end = start - timedelta(days=1)
+    prev_start = prev_end - timedelta(days=period_days - 1)
+
+    # Current period visits & expenses
+    visits = (
+        db.query(VisitHistory)
+        .filter(VisitHistory.status == "completed")
+        .filter(VisitHistory.visit_date >= start, VisitHistory.visit_date <= end)
+        .all()
+    )
+    expenses = (
+        db.query(Expense)
+        .filter(Expense.date >= start, Expense.date <= end)
+        .all()
+    )
+
+    # Previous period visits & expenses
+    prev_visits = (
+        db.query(VisitHistory)
+        .filter(VisitHistory.status == "completed")
+        .filter(VisitHistory.visit_date >= prev_start, VisitHistory.visit_date <= prev_end)
+        .all()
+    )
+    prev_expenses = (
+        db.query(Expense)
+        .filter(Expense.date >= prev_start, Expense.date <= prev_end)
+        .all()
+    )
+
+    total_revenue = sum(v.amount for v in visits)
+    prev_revenue = sum(v.amount for v in prev_visits)
+    total_expenses = sum(e.amount for e in expenses)
+    prev_expenses_total = sum(e.amount for e in prev_expenses)
+    total_commissions = _calc_commissions(visits, db)
+    prev_commissions = _calc_commissions(prev_visits, db)
+    net_profit = total_revenue - total_expenses - total_commissions
+    prev_profit = prev_revenue - prev_expenses_total - prev_commissions
+
+    # Revenue by day
+    day_map = {}
+    for v in visits:
+        d = v.visit_date.isoformat()
+        if d not in day_map:
+            day_map[d] = {"revenue": 0, "visits": 0}
+        day_map[d]["revenue"] += v.amount
+        day_map[d]["visits"] += 1
+    revenue_by_day = sorted(
+        [
+            {
+                "date": d,
+                "revenue": info["revenue"],
+                "visits": info["visits"],
+                "avg_ticket": info["revenue"] // info["visits"] if info["visits"] else 0,
+            }
+            for d, info in day_map.items()
+        ],
+        key=lambda x: x["date"],
+    )
+
+    # Best day / busiest day
+    best_day_date = None
+    best_day_revenue = 0
+    busiest_day_date = None
+    busiest_day_visits = 0
+    for entry in revenue_by_day:
+        if entry["revenue"] > best_day_revenue:
+            best_day_revenue = entry["revenue"]
+            best_day_date = entry["date"]
+        if entry["visits"] > busiest_day_visits:
+            busiest_day_visits = entry["visits"]
+            busiest_day_date = entry["date"]
+
+    # Revenue by staff
+    staff_map = {}
+    for v in visits:
+        if v.staff_id not in staff_map:
+            staff_map[v.staff_id] = {"revenue": 0, "count": 0}
+        staff_map[v.staff_id]["revenue"] += v.amount
+        staff_map[v.staff_id]["count"] += 1
+    revenue_by_staff = []
+    for sid, info in staff_map.items():
+        staff = db.query(Staff).filter(Staff.id == sid).first()
+        revenue_by_staff.append({
+            "staff_id": sid,
+            "staff_name": staff.name if staff else "Desconocido",
+            "revenue": info["revenue"],
+            "count": info["count"],
+            "avg_ticket": info["revenue"] // info["count"] if info["count"] else 0,
+            "pct_of_total": round((info["revenue"] / total_revenue * 100), 1) if total_revenue > 0 else 0,
+        })
+    revenue_by_staff.sort(key=lambda x: x["revenue"], reverse=True)
+
+    # Revenue by service (with category lookup)
+    svc_map = {}
+    for v in visits:
+        sn = v.service_name or "Sin servicio"
+        if sn not in svc_map:
+            svc_map[sn] = {"revenue": 0, "count": 0}
+        svc_map[sn]["revenue"] += v.amount
+        svc_map[sn]["count"] += 1
+    revenue_by_service = []
+    for sn, info in svc_map.items():
+        svc = db.query(Service).filter(Service.name == sn).first()
+        category = svc.category if svc else "Otros"
+        revenue_by_service.append({
+            "service_name": sn,
+            "category": category,
+            "revenue": info["revenue"],
+            "count": info["count"],
+            "pct_of_total": round((info["revenue"] / total_revenue * 100), 1) if total_revenue > 0 else 0,
+        })
+    revenue_by_service.sort(key=lambda x: x["revenue"], reverse=True)
+
+    # Revenue by category
+    cat_map = {}
+    for item in revenue_by_service:
+        cat = item["category"]
+        if cat not in cat_map:
+            cat_map[cat] = {"revenue": 0, "count": 0}
+        cat_map[cat]["revenue"] += item["revenue"]
+        cat_map[cat]["count"] += item["count"]
+    revenue_by_category = sorted(
+        [
+            {
+                "category": cat,
+                "revenue": info["revenue"],
+                "count": info["count"],
+                "pct_of_total": round((info["revenue"] / total_revenue * 100), 1) if total_revenue > 0 else 0,
+            }
+            for cat, info in cat_map.items()
+        ],
+        key=lambda x: x["revenue"],
+        reverse=True,
+    )
+
+    # Revenue by weekday
+    wd_map = {}
+    for v in visits:
+        wd = v.visit_date.weekday()
+        if wd not in wd_map:
+            wd_map[wd] = {"revenue": 0, "visits": 0}
+        wd_map[wd]["revenue"] += v.amount
+        wd_map[wd]["visits"] += 1
+    revenue_by_weekday = sorted(
+        [
+            {
+                "weekday": wd,
+                "weekday_name": WEEKDAY_NAMES[wd],
+                "revenue": info["revenue"],
+                "visits": info["visits"],
+            }
+            for wd, info in wd_map.items()
+        ],
+        key=lambda x: x["weekday"],
+    )
+
+    return {
+        # Comparison
+        "current_revenue": total_revenue,
+        "previous_revenue": prev_revenue,
+        "revenue_change_pct": _calc_change_pct(total_revenue, prev_revenue),
+        "current_expenses": total_expenses,
+        "previous_expenses": prev_expenses_total,
+        "expenses_change_pct": _calc_change_pct(total_expenses, prev_expenses_total),
+        "current_profit": net_profit,
+        "previous_profit": prev_profit,
+        "profit_change_pct": _calc_change_pct(net_profit, prev_profit),
+        "current_visits": len(visits),
+        "previous_visits": len(prev_visits),
+        "visits_change_pct": _calc_change_pct(len(visits), len(prev_visits)),
+        "current_avg_ticket": total_revenue // len(visits) if visits else 0,
+        "previous_avg_ticket": prev_revenue // len(prev_visits) if prev_visits else 0,
+        # Breakdowns
+        "revenue_by_day": revenue_by_day,
+        "revenue_by_staff": revenue_by_staff,
+        "revenue_by_service": revenue_by_service,
+        "revenue_by_category": revenue_by_category,
+        "revenue_by_weekday": revenue_by_weekday,
+        # Insights
+        "best_day_date": best_day_date,
+        "best_day_revenue": best_day_revenue,
+        "busiest_day_date": busiest_day_date,
+        "busiest_day_visits": busiest_day_visits,
+        "unique_clients": len(set(v.client_id for v in visits if v.client_id)),
+        "avg_ticket": total_revenue // len(visits) if visits else 0,
+        "total_revenue": total_revenue,
+        "total_visits": len(visits),
+        "total_expenses": total_expenses,
+        "total_commissions": total_commissions,
+        "net_profit": net_profit,
+        "margin_pct": round((net_profit / total_revenue * 100), 1) if total_revenue > 0 else 0,
+    }
+
+
+# ============================================================================
+# EXPORT TRANSACTIONS
+# ============================================================================
+
+@router.get("/finances/export")
+def export_transactions(
+    period: str = Query("month"),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    start, end = _parse_period(period, date_from, date_to)
+    visits = (
+        db.query(VisitHistory)
+        .filter(VisitHistory.status == "completed")
+        .filter(VisitHistory.visit_date >= start, VisitHistory.visit_date <= end)
+        .order_by(VisitHistory.visit_date.desc())
+        .all()
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Fecha", "Cliente", "Servicio", "Profesional", "Monto", "Metodo de Pago"])
+
+    for v in visits:
+        client = db.query(Client).filter(Client.id == v.client_id).first()
+        staff = db.query(Staff).filter(Staff.id == v.staff_id).first()
+        writer.writerow([
+            v.visit_date.isoformat(),
+            client.name if client else "Desconocido",
+            v.service_name or "",
+            staff.name if staff else "Desconocido",
+            v.amount,
+            v.payment_method or "Sin registrar",
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=transacciones_{start}_{end}.csv"},
+    )

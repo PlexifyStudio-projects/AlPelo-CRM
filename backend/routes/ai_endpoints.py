@@ -245,7 +245,7 @@ def _build_inbox_context(db: Session) -> str:
         unread = f" [{c.unread_count} sin leer]" if c.unread_count else ""
         ai = "IA:ON" if c.is_ai_active else "IA:OFF"
         tags = f" | tags:{','.join(c.tags)}" if c.tags else ""
-        last_col = (c.last_message_at + COL_OFFSET) if c.last_message_at else None
+        last_col = (c.last_message_at + _get_tenant_offset(db)) if c.last_message_at else None
         last = last_col.strftime("%d/%m %I:%M %p") if last_col else "nunca"
 
         # Client link
@@ -792,7 +792,7 @@ def _execute_action(action: dict, db: Session) -> str:
 
         for m in msgs:
             content = (m.content or "").lower().strip()
-            col_time = (m.created_at + COL_OFFSET) if m.created_at else None
+            col_time = (m.created_at + _get_tenant_offset(db)) if m.created_at else None
             time_str = col_time.strftime("%d/%m %I:%M %p") if col_time else "?"
 
             if m.direction == "inbound":
@@ -814,7 +814,7 @@ def _execute_action(action: dict, db: Session) -> str:
         recent_lines = []
         for m in recent:
             direction = "CLIENTE" if m.direction == "inbound" else ("LINA" if m.sent_by == "lina_ia" else "ADMIN")
-            col_time = (m.created_at + COL_OFFSET) if m.created_at else None
+            col_time = (m.created_at + _get_tenant_offset(db)) if m.created_at else None
             time_str = col_time.strftime("%d/%m %I:%M %p") if col_time else "?"
             content = (m.content or "[sin contenido]")[:150]
             recent_lines.append(f"  [{time_str}] {direction}: {content}")
@@ -865,7 +865,7 @@ def _execute_action(action: dict, db: Session) -> str:
             unread = f" ({c.unread_count} sin leer)" if c.unread_count else ""
             ai = "IA ON" if c.is_ai_active else "IA OFF"
             tags = ", ".join(c.tags) if c.tags else ""
-            last_col = (c.last_message_at + COL_OFFSET) if c.last_message_at else None
+            last_col = (c.last_message_at + _get_tenant_offset(db)) if c.last_message_at else None
             last = last_col.strftime("%d/%m %I:%M %p") if last_col else "nunca"
             lines.append(f"  - {name}{unread} | {ai} | ultimo: {last}" + (f" | tags: {tags}" if tags else ""))
         return "\n".join(lines)

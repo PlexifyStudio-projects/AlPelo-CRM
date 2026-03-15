@@ -2641,3 +2641,294 @@
   0%, 100% { opacity: 0.3; transform: scale(0.8); }
   50% { opacity: 1; transform: scale(1.1); }
 }
+
+// ============================================
+// RECHARTS — Premium Charts v2
+// ============================================
+
+.finances {
+  // --- Recharts Container ---
+  &__recharts-container {
+    width: 100%;
+    min-height: 200px;
+    padding: $spacing-sm 0;
+
+    .recharts-cartesian-grid-horizontal line,
+    .recharts-cartesian-grid-vertical line {
+      stroke: $color-gray-100;
+    }
+
+    .recharts-active-dot circle {
+      filter: drop-shadow(0 2px 4px rgba(45, 90, 61, 0.3));
+    }
+  }
+
+  // --- Recharts Tooltip ---
+  &__recharts-tooltip {
+    background: $color-white;
+    border: 1px solid $border-color-light;
+    border-radius: $border-radius-md;
+    padding: $spacing-xs $spacing-sm;
+    box-shadow: $shadow-md;
+    font-size: $font-size-xs;
+  }
+
+  &__recharts-tooltip-label {
+    display: block;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    margin-bottom: 4px;
+  }
+
+  &__recharts-tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: $color-gray-600;
+    padding: 1px 0;
+  }
+
+  &__recharts-tooltip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  // --- Donut Chart ---
+  &__donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    padding: $spacing-sm;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+    }
+  }
+
+  &__donut-chart {
+    position: relative;
+    flex-shrink: 0;
+    width: 220px;
+    height: 220px;
+  }
+
+  &__donut-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+
+  &__donut-total {
+    display: block;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-gray-800;
+    line-height: 1.2;
+  }
+
+  &__donut-label {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+  }
+
+  &__donut-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+
+  &__donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: $font-size-sm;
+  }
+
+  &__donut-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__donut-legend-name {
+    flex: 1;
+    color: $color-gray-600;
+    text-transform: capitalize;
+  }
+
+  &__donut-legend-value {
+    font-weight: $font-weight-semibold;
+    color: $color-gray-800;
+  }
+
+  &__donut-legend-pct {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    min-width: 36px;
+    text-align: right;
+  }
+
+  // --- Comparison Grid (Reportes Tab) ---
+  &__comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: $spacing-md;
+    margin-bottom: $spacing-xl;
+    animation: fin-fadeIn 400ms $ease-out-expo both 0.05s;
+  }
+
+  &__comparison-card {
+    background: $color-white;
+    border: 1px solid $border-color-light;
+    border-radius: $border-radius-lg;
+    padding: $spacing-md;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: box-shadow 200ms ease;
+
+    &:hover {
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  &__comparison-label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__comparison-values {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__comparison-current,
+  &__comparison-previous {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+
+  &__comparison-current-value {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-gray-800;
+  }
+
+  &__comparison-previous-value {
+    font-size: $font-size-md;
+    font-weight: $font-weight-medium;
+    color: $color-gray-400;
+  }
+
+  &__comparison-period-label {
+    font-size: 10px;
+    color: $color-gray-300;
+    text-transform: uppercase;
+  }
+
+  &__comparison-vs {
+    font-size: $font-size-xs;
+    color: $color-gray-300;
+    font-weight: $font-weight-medium;
+    padding: 0 4px;
+  }
+
+  // --- Report Table ---
+  &__report-table {
+    margin-top: $spacing-md;
+    border-top: 1px solid $border-color-light;
+    padding-top: $spacing-md;
+  }
+
+  &__report-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  // --- Weekday Stats ---
+  &__weekday-stats {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    padding: $spacing-sm $spacing-md $spacing-md;
+    border-top: 1px solid $border-color-light;
+    margin-top: $spacing-sm;
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  &__weekday-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: $spacing-xs;
+    border-radius: $border-radius-sm;
+    background: $color-gray-50;
+  }
+
+  &__weekday-label {
+    font-size: 11px;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+  }
+
+  &__weekday-value {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-800;
+  }
+
+  &__weekday-visits {
+    font-size: 10px;
+    color: $color-gray-400;
+  }
+
+  // --- Report Summary ---
+  &__report-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: $spacing-md;
+    margin-top: $spacing-xl;
+    padding: $spacing-lg;
+    background: $color-gray-50;
+    border-radius: $border-radius-lg;
+    border: 1px solid $border-color-light;
+    animation: fin-fadeIn 400ms $ease-out-expo both 0.1s;
+  }
+
+  &__report-summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+
+  &__report-summary-label {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  &__report-summary-value {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+  }
+}

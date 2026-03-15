@@ -142,6 +142,27 @@ const financeService = {
     return handleResponse(res);
   },
 
+  // ========================= ANALYTICS =========================
+  getAnalytics: async (params = {}) => {
+    const qs = buildQuery(params);
+    const res = await fetch(`${API}/finances/analytics${qs ? `?${qs}` : ''}`, {
+      headers,
+      credentials: 'include',
+    });
+    return handleResponse(res);
+  },
+
+  // ========================= EXPORT TRANSACTIONS =========================
+  exportTransactions: async (params = {}) => {
+    const qs = buildQuery(params);
+    const res = await fetch(`${API}/finances/export${qs ? `?${qs}` : ''}`, {
+      headers: {},
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Error al exportar');
+    return res.blob();
+  },
+
   // ========================= EXPORT / IMPORT =========================
   exportClients: async () => {
     const res = await fetch(`${API}/clients/export`, { headers: {} });
