@@ -227,6 +227,32 @@ Ingreso total registrado: ${total_revenue:,} COP""")
         total_today = len([a for a in upcoming_apts if a.date == today])
         sections.append(f"=== AGENDA PROXIMA ({len(upcoming_apts)} citas, {total_today} hoy) ===\n" + "\n".join(apt_lines))
 
+    # --- Global learnings (admin-taught rules — HIGHEST PRIORITY) ---
+    from database.models import LinaLearning
+    global_learnings = (
+        db.query(LinaLearning)
+        .filter(LinaLearning.is_active == True)
+        .order_by(LinaLearning.created_at.desc())
+        .all()
+    )
+    if global_learnings:
+        rule_lines = []
+        by_category = {}
+        for gl in global_learnings:
+            cat = (gl.category or "general").upper()
+            if cat not in by_category:
+                by_category[cat] = []
+            by_category[cat].append(gl.content[:200])
+        for category, rules in by_category.items():
+            rule_lines.append(f"  [{category}]")
+            for rule in rules:
+                rule_lines.append(f"  - {rule}")
+        sections.append(
+            f"=== REGLAS APRENDIDAS DE LINA ===\n"
+            f"IMPORTANTE: Estas son reglas que el administrador te ha enseñado. DEBES seguirlas:\n"
+            + "\n".join(rule_lines)
+        )
+
     return "\n\n".join(sections)
 
 

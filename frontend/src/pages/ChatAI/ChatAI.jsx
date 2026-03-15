@@ -3,7 +3,7 @@ import aiService from '../../services/aiService';
 import { useTenant } from '../../context/TenantContext';
 
 // ============================================
-// AlPelo - Lina IA v6.0
+// Plexify - Lina IA v6.0
 // Admin assistant — persistent chat
 // ============================================
 
@@ -15,7 +15,7 @@ const SUGGESTED_PROMPTS = [
   { icon: '📊', text: 'Dame el resumen completo del negocio', desc: 'Dashboard: KPIs, ingresos, metricas' },
   { icon: '⚠️', text: 'Que clientes estan en riesgo?', desc: 'Clientes sin venir 30+ dias' },
   { icon: '📱', text: 'Como esta el inbox de WhatsApp?', desc: 'Conversaciones, sin leer, IA activa' },
-  { icon: '👥', text: 'Dame el estado completo del equipo', desc: 'Barberos, ratings, especialidades' },
+  { icon: '👥', text: 'Dame el estado completo del equipo', desc: 'Profesionales, ratings, especialidades' },
   { icon: '💰', text: 'Cuales son los servicios mas vendidos?', desc: 'Ranking de servicios y facturacion' },
   { icon: '📋', text: 'Clientes que llevan mas de 40 dias sin venir', desc: 'Filtrar clientes inactivos' },
 ];
@@ -416,7 +416,7 @@ const ChatAI = () => {
               <div className="chat-ai__sidebar-caps">
                 <span>📊 Dashboard y KPIs</span>
                 <span>👥 CRM de clientes</span>
-                <span>💈 Equipo y staff</span>
+                <span>👥 Equipo y staff</span>
                 <span>📱 Inbox WhatsApp</span>
                 <span>📨 Envio de plantillas</span>
                 <span>📝 Notas y visitas</span>

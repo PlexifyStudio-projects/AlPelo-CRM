@@ -3,9 +3,10 @@ import whatsappService from '../../services/whatsappService';
 import clientService from '../../services/clientService';
 import { formatCurrency } from '../../utils/formatters';
 import UsageMeter from '../../components/common/UsageMeter/UsageMeter';
+import { useTenant } from '../../context/TenantContext';
 
 // ============================================
-// AlPelo - Inbox WhatsApp Business v3.0
+// Plexify - Inbox WhatsApp Business v3.0
 // Full WhatsApp Web Clone — All features
 // ============================================
 
@@ -20,12 +21,32 @@ const resolveMediaUrl = (url) => {
   return API_BASE + '/' + url;
 };
 
+// ===== QUICK REPLIES =====
+const QUICK_REPLIES = [
+  { id: 1, label: 'Saludo', text: '¡Hola! Gracias por escribirnos. ¿En qué podemos ayudarte?' },
+  { id: 2, label: 'Horario', text: 'Nuestro horario es de lunes a sábado, 8:00 AM a 7:00 PM.' },
+  { id: 3, label: 'Confirmar cita', text: '¡Perfecto! Tu cita está confirmada. Te esperamos.' },
+  { id: 4, label: 'Precios', text: 'Con gusto te envío nuestros precios. ¿Qué servicio te interesa?' },
+  { id: 5, label: 'Ubicación', text: 'Estamos ubicados en [dirección]. ¿Necesitas indicaciones?' },
+  { id: 6, label: 'Despedida', text: '¡Gracias por contactarnos! Que tengas un excelente día.' },
+];
+
+// ===== CONVERSATION STATUS =====
+const CONV_STATUSES = [
+  { id: 'nuevo', label: 'Nuevo', color: '#2563EB' },
+  { id: 'pendiente', label: 'Pendiente', color: '#F59E0B' },
+  { id: 'resuelto', label: 'Resuelto', color: '#10B981' },
+  { id: 'urgente', label: 'Urgente', color: '#EF4444' },
+];
+
 // ===== LOCAL STORAGE KEYS =====
 const LS_PINNED = 'alpelo_wa_pinned';
 const LS_STARRED = 'alpelo_wa_starred';
 const LS_LABELS = 'alpelo_wa_labels';
 const LS_ARCHIVED = 'alpelo_wa_archived';
 const LS_MUTED = 'alpelo_wa_muted';
+const LS_CONV_STATUSES = 'alpelo_wa_conv_statuses';
+const LS_NOTES_PREFIX = 'inbox_notes_';
 
 const loadJson = (key, fallback) => {
   try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fallback; }
@@ -222,6 +243,17 @@ const Icons = {
       <polyline points="21 8 21 21 3 21 3 8" /><rect x="1" y="3" width="22" height="5" /><line x1="10" y1="12" x2="14" y2="12" />
     </svg>
   ),
+  lightning: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  ),
+  notepad: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z" />
+      <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" />
+    </svg>
+  ),
   label: (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" />
@@ -250,16 +282,21 @@ const LABEL_COLORS = [
 ];
 
 // ===== TEMPLATES =====
-const TEMPLATES = [
-  { id: 'welcome', label: 'Bienvenida', text: 'Hola{nombre}, soy Lina de Al Pelo! Bienvenido/a. En que te puedo ayudar? Si quieres agendar una cita: https://book.weibook.co/alpelo-peluqueria' },
-  { id: 'prices', label: 'Precios', text: 'Hola{nombre}! Estos son nuestros servicios mas solicitados:\n- Corte: $25.000\n- Barba: $12.000\n- Corte + Barba: $37.000\n\nAgenda tu cita: https://book.weibook.co/alpelo-peluqueria' },
-  { id: 'promo', label: 'Promocion', text: 'Hola{nombre}! Tenemos una promocion especial para ti! Agenda esta semana y recibe 10% de descuento: https://book.weibook.co/alpelo-peluqueria' },
-  { id: 'reactivation', label: 'Reactivacion', text: 'Hola{nombre}! Te extranamos! Hace rato no te vemos por aca. Ven a ponerte Al Pelo: https://book.weibook.co/alpelo-peluqueria' },
-  { id: 'confirm', label: 'Confirmacion', text: 'Hola{nombre}! Te recordamos tu cita en Al Pelo. Te esperamos! Confirma respondiendo SI.' },
-  { id: 'thanks', label: 'Agradecimiento', text: 'Hola{nombre}! Gracias por tu visita a Al Pelo. Esperamos verte pronto. Calificanos: https://g.page/r/alpelo' },
-  { id: 'survey', label: 'Encuesta', text: 'Hola{nombre}! Como te fue con tu ultimo servicio en Al Pelo? Califica del 1 al 5 y cuentanos como mejorar. Tu opinion es muy importante para nosotros!' },
-  { id: 'comeback', label: 'Te extrañamos', text: 'Hola{nombre}! Hace mucho no te vemos por Al Pelo. Tenemos novedades que te van a encantar. Agenda tu proxima cita: https://book.weibook.co/alpelo-peluqueria' },
-];
+// Templates are built dynamically with tenant name and booking URL
+const buildTemplates = (tenantName, bookingUrl) => {
+  const name = tenantName || 'nuestro negocio';
+  const bookLink = bookingUrl ? ` ${bookingUrl}` : '';
+  return [
+    { id: 'welcome', label: 'Bienvenida', text: `Hola{nombre}, soy Lina de ${name}! Bienvenido/a. En que te puedo ayudar?${bookingUrl ? ` Si quieres agendar una cita:${bookLink}` : ''}` },
+    { id: 'prices', label: 'Precios', text: `Hola{nombre}! Preguntanos por nuestros servicios mas solicitados y sus precios.${bookingUrl ? `\n\nAgenda tu cita:${bookLink}` : ''}` },
+    { id: 'promo', label: 'Promocion', text: `Hola{nombre}! Tenemos una promocion especial para ti! Agenda esta semana y recibe 10% de descuento.${bookLink}` },
+    { id: 'reactivation', label: 'Reactivacion', text: `Hola{nombre}! Te extranamos! Hace rato no te vemos por aca. Te esperamos de vuelta en ${name}!${bookLink}` },
+    { id: 'confirm', label: 'Confirmacion', text: `Hola{nombre}! Te recordamos tu cita en ${name}. Te esperamos! Confirma respondiendo SI.` },
+    { id: 'thanks', label: 'Agradecimiento', text: `Hola{nombre}! Gracias por tu visita a ${name}. Esperamos verte pronto.` },
+    { id: 'survey', label: 'Encuesta', text: `Hola{nombre}! Como te fue con tu ultimo servicio en ${name}? Califica del 1 al 5 y cuentanos como mejorar. Tu opinion es muy importante para nosotros!` },
+    { id: 'comeback', label: 'Te extrañamos', text: `Hola{nombre}! Hace mucho no te vemos por ${name}. Tenemos novedades que te van a encantar.${bookingUrl ? ` Agenda tu proxima cita:${bookLink}` : ''}` },
+  ];
+};
 
 // ===== HELPERS =====
 const getInitials = (name = '') => {
@@ -456,8 +493,10 @@ const MessageContextMenu = ({ msg, position, onAction, onClose, isStarred }) => 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 // ===== CLIENT PROFILE SIDEBAR =====
-const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete }) => {
+const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNotes, onAddNote, onDeleteNote }) => {
   const [activeMediaTab, setActiveMediaTab] = useState('media');
+  const [noteInput, setNoteInput] = useState('');
+  const [notes, setNotes] = useState(() => getNotes ? getNotes(conversation?.id) : []);
   const client = conversation?.client || null;
   const name = conversation?.wa_contact_name || client?.name || 'Contacto';
   const phone = client?.phone || conversation?.wa_contact_phone || '';
@@ -598,6 +637,54 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete }) => {
         </div>
       </div>
 
+      {/* Internal Notes */}
+      <div className={`${b}__client-section`}>
+        <h4 className={`${b}__client-section-title`}>{Icons.notepad} Notas internas</h4>
+        <div className={`${b}__notes-section`}>
+          {notes.length > 0 ? (
+            notes.map((note) => (
+              <div key={note.id} className={`${b}__note-item`}>
+                <div className={`${b}__note-item-header`}>
+                  <span className={`${b}__note-item-author`}>{note.author}</span>
+                  <span className={`${b}__note-item-time`}>{formatTime(note.timestamp)}</span>
+                  <button className={`${b}__note-item-delete`} onClick={() => {
+                    if (onDeleteNote) {
+                      const updated = onDeleteNote(conversation?.id, note.id);
+                      setNotes(updated);
+                    }
+                  }}>{Icons.close}</button>
+                </div>
+                <p className={`${b}__note-item-text`}>{note.text}</p>
+              </div>
+            ))
+          ) : (
+            <p className={`${b}__notes-empty`}>Sin notas internas</p>
+          )}
+          <div className={`${b}__note-input-wrap`}>
+            <textarea
+              className={`${b}__note-input`}
+              placeholder="Agregar nota interna..."
+              value={noteInput}
+              onChange={(e) => setNoteInput(e.target.value)}
+              rows={2}
+            />
+            <button
+              className={`${b}__note-submit`}
+              disabled={!noteInput.trim()}
+              onClick={() => {
+                if (onAddNote && noteInput.trim()) {
+                  const updated = onAddNote(conversation?.id, noteInput);
+                  setNotes(updated);
+                  setNoteInput('');
+                }
+              }}
+            >
+              Guardar
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Actions */}
       <div className={`${b}__client-section`}>
         <button className={`${b}__client-action`}>
@@ -710,6 +797,8 @@ const AudioPlayer = ({ src }) => {
 
 // ===== MAIN INBOX COMPONENT =====
 const Inbox = () => {
+  const { tenant } = useTenant();
+  const TEMPLATES = useMemo(() => buildTemplates(tenant.name, tenant.booking_url), [tenant.name, tenant.booking_url]);
   // --- Core state ---
   const [conversations, setConversations] = useState([]);
   const [selectedConvId, setSelectedConvId] = useState(null);
@@ -753,6 +842,12 @@ const Inbox = () => {
   const [showConvMenu, setShowConvMenu] = useState(null);
   const [showLabelPicker, setShowLabelPicker] = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [convStatuses, setConvStatuses] = useState(() => loadJson(LS_CONV_STATUSES, {}));
+  const [showStatusPicker, setShowStatusPicker] = useState(null);
+
+  // --- Internal notes state ---
+  const [noteInput, setNoteInput] = useState('');
 
   // --- Global search state ---
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
@@ -775,6 +870,33 @@ const Inbox = () => {
   useEffect(() => { localStorage.setItem(LS_LABELS, JSON.stringify(labels)); }, [labels]);
   useEffect(() => { localStorage.setItem(LS_ARCHIVED, JSON.stringify(archivedConvIds)); }, [archivedConvIds]);
   useEffect(() => { localStorage.setItem(LS_MUTED, JSON.stringify(mutedConvIds)); }, [mutedConvIds]);
+  useEffect(() => { localStorage.setItem(LS_CONV_STATUSES, JSON.stringify(convStatuses)); }, [convStatuses]);
+
+  // --- Internal notes helpers ---
+  const getNotesForConv = useCallback((convId) => {
+    return loadJson(`${LS_NOTES_PREFIX}${convId}`, []);
+  }, []);
+
+  const addNoteToConv = useCallback((convId, text) => {
+    if (!text.trim()) return;
+    const notes = loadJson(`${LS_NOTES_PREFIX}${convId}`, []);
+    const newNote = {
+      id: Date.now(),
+      text: text.trim(),
+      author: 'Admin',
+      timestamp: new Date().toISOString(),
+    };
+    const updated = [...notes, newNote];
+    localStorage.setItem(`${LS_NOTES_PREFIX}${convId}`, JSON.stringify(updated));
+    return updated;
+  }, []);
+
+  const deleteNoteFromConv = useCallback((convId, noteId) => {
+    const notes = loadJson(`${LS_NOTES_PREFIX}${convId}`, []);
+    const updated = notes.filter((n) => n.id !== noteId);
+    localStorage.setItem(`${LS_NOTES_PREFIX}${convId}`, JSON.stringify(updated));
+    return updated;
+  }, []);
 
   // --- Notification sound ---
   const playNotificationSound = useCallback(() => {
@@ -970,6 +1092,7 @@ const Inbox = () => {
     setReplyingTo(null);
     setShowEmojiPicker(false);
     setShowAttachMenu(false);
+    setShowQuickReplies(false);
 
     const tempMsg = {
       id: `temp-${Date.now()}`,
@@ -1115,6 +1238,24 @@ const Inbox = () => {
     setMessageInput(tpl.text.replace('{nombre}', nameTag));
     setShowTemplates(false);
     inputRef.current?.focus();
+  };
+
+  // --- Quick reply select ---
+  const handleQuickReplySelect = (reply) => {
+    setMessageInput(reply.text);
+    setShowQuickReplies(false);
+    inputRef.current?.focus();
+  };
+
+  // --- Conversation status ---
+  const setConvStatus = (convId, statusId) => {
+    setConvStatuses((prev) => {
+      const next = { ...prev };
+      if (statusId) next[convId] = statusId;
+      else delete next[convId];
+      return next;
+    });
+    setShowStatusPicker(null);
   };
 
   // --- Client search for new chat ---
@@ -1572,6 +1713,8 @@ const Inbox = () => {
               const isMuted = mutedConvIds.includes(conv.id);
               const convLabel = labels[conv.id];
               const labelColor = convLabel ? LABEL_COLORS.find((l) => l.id === convLabel) : null;
+              const convStatus = convStatuses[conv.id];
+              const statusObj = convStatus ? CONV_STATUSES.find((s) => s.id === convStatus) : null;
 
               return (
                 <div
@@ -1596,6 +1739,11 @@ const Inbox = () => {
                       <span className={`${b}__conv-name`}>
                         {name.split(' ').slice(0, 2).join(' ')}
                         {isVip && <mark className={`${b}__conv-tag`}>VIP</mark>}
+                        {statusObj && (
+                          <span className={`${b}__status-badge ${b}__status-badge--${statusObj.id}`}>
+                            {statusObj.label}
+                          </span>
+                        )}
                       </span>
                       <span className={`${b}__conv-time`}>{formatConvTime(conv.last_message_at)}</span>
                     </div>
@@ -1651,6 +1799,9 @@ const Inbox = () => {
             <button onClick={() => { setShowLabelPicker(showConvMenu.id); setShowConvMenu(null); }}>
               {Icons.label} Etiquetar
             </button>
+            <button onClick={() => { setShowStatusPicker(showConvMenu.id); setShowConvMenu(null); }}>
+              {Icons.lightning} Cambiar estado
+            </button>
             <button onClick={() => { toggleArchive(showConvMenu.id); setShowConvMenu(null); }}>
               {Icons.archive} {archivedConvIds.includes(showConvMenu.id) ? 'Desarchivar' : 'Archivar'}
             </button>
@@ -1684,6 +1835,26 @@ const Inbox = () => {
               >
                 <span className={`${b}__label-color`} style={{ background: lbl.color }} />
                 {lbl.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Status Picker */}
+        {showStatusPicker && (
+          <div className={`${b}__label-picker`}>
+            <div className={`${b}__label-picker-header`}>
+              <span>Estado de conversacion</span>
+              <button onClick={() => setShowStatusPicker(null)}>{Icons.close}</button>
+            </div>
+            {CONV_STATUSES.map((st) => (
+              <button
+                key={st.id}
+                className={`${b}__label-option ${convStatuses[showStatusPicker] === st.id ? `${b}__label-option--active` : ''}`}
+                onClick={() => setConvStatus(showStatusPicker, convStatuses[showStatusPicker] === st.id ? null : st.id)}
+              >
+                <span className={`${b}__label-color`} style={{ background: st.color }} />
+                {st.label}
               </button>
             ))}
           </div>
@@ -1943,6 +2114,9 @@ const Inbox = () => {
                   conversation={selectedConv}
                   onClose={() => setShowClientInfo(false)}
                   starredMsgIds={starredMsgIds.filter((id) => messages.some((m) => m.id === id))}
+                  getNotes={getNotesForConv}
+                  onAddNote={addNoteToConv}
+                  onDeleteNote={deleteNoteFromConv}
                   onDelete={async () => {
                     try {
                       await whatsappService.deleteConversation(selectedConvId);
@@ -2009,11 +2183,36 @@ const Inbox = () => {
                 <AttachmentMenu onClose={() => setShowAttachMenu(false)} />
               )}
 
-              <button className={`${b}__input-action ${showEmojiPicker ? `${b}__input-action--active` : ''}`} onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowAttachMenu(false); }} title="Emojis">
+              {/* Quick replies dropdown */}
+              {showQuickReplies && (
+                <div className={`${b}__quick-replies`}>
+                  <div className={`${b}__quick-replies-header`}>
+                    <span>Respuestas rapidas</span>
+                    <button onClick={() => setShowQuickReplies(false)}>{Icons.close}</button>
+                  </div>
+                  {QUICK_REPLIES.map((reply) => (
+                    <button
+                      key={reply.id}
+                      className={`${b}__quick-reply-item`}
+                      onClick={() => handleQuickReplySelect(reply)}
+                    >
+                      <span className={`${b}__quick-reply-item-label`}>{reply.label}</span>
+                      <span className={`${b}__quick-reply-item-text`}>{reply.text}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <button className={`${b}__input-action ${showEmojiPicker ? `${b}__input-action--active` : ''}`} onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowAttachMenu(false); setShowQuickReplies(false); }} title="Emojis">
                 {Icons.smiley}
               </button>
-              <button className={`${b}__input-action ${showAttachMenu ? `${b}__input-action--active` : ''}`} onClick={() => { setShowAttachMenu(!showAttachMenu); setShowEmojiPicker(false); }} title="Adjuntar">
+              <button className={`${b}__input-action ${showAttachMenu ? `${b}__input-action--active` : ''}`} onClick={() => { setShowAttachMenu(!showAttachMenu); setShowEmojiPicker(false); setShowQuickReplies(false); }} title="Adjuntar">
                 {Icons.attach}
+              </button>
+
+              {/* Quick reply button */}
+              <button className={`${b}__quick-reply-btn ${showQuickReplies ? `${b}__quick-reply-btn--active` : ''}`} onClick={() => { setShowQuickReplies(!showQuickReplies); setShowEmojiPicker(false); setShowAttachMenu(false); }} title="Respuestas rapidas">
+                {Icons.lightning}
               </button>
 
               <div className={`${b}__input-wrapper`}>
@@ -2050,7 +2249,7 @@ const Inbox = () => {
           <div className={`${b}__empty-chat`}>
             <div className={`${b}__empty-chat-bg`}>
               <div className={`${b}__empty-chat-icon`}>{Icons.whatsapp}</div>
-              <h3 className={`${b}__empty-chat-title`}>Al Pelo WhatsApp</h3>
+              <h3 className={`${b}__empty-chat-title`}>{tenant.name} WhatsApp</h3>
               <p className={`${b}__empty-chat-text`}>
                 Envia y recibe mensajes con tus clientes.<br />
                 Lina IA se encarga de responder por ti.

@@ -1,0 +1,1537 @@
+================================================================================
+================================================================================
+
+     PLEXIFY STUDIO — DOCUMENTACION COMPLETA DEL PROYECTO
+
+     Fecha: 15 de Marzo de 2026
+     Autor: Luis (Plexify Studio)
+     Version: 1.0
+
+================================================================================
+================================================================================
+
+
+================================================================================
+SECCION 1: VISION Y OBJETIVO
+================================================================================
+
+QUE ES PLEXIFY STUDIO
+---------------------
+Plexify Studio es una plataforma SaaS multi-tenant de gestion integral (CRM)
+disenada para negocios de servicios basados en citas. No es un software de
+barberia — es un motor empresarial que sirve a CUALQUIER negocio de servicios:
+peluquerias, spas, clinicas esteticas, veterinarias, gimnasios, estudios de
+tatuaje, consultorios, centros de bienestar, y mas.
+
+Cada tenant (negocio) personaliza su experiencia: terminologia, roles,
+categorias de servicio, branding, y flujos de trabajo. Todos corren sobre
+el mismo motor poderoso.
+
+Piensa en "Shopify para negocios de servicios."
+
+
+PARA QUIEN ES
+-------------
+- Peluquerias y barberias
+- Spas y centros de estetica
+- Clinicas de belleza y estetica
+- Consultorios medicos y dentales
+- Veterinarias
+- Gimnasios y centros de fitness
+- Estudios de tatuaje y piercing
+- Centros de masaje y bienestar
+- Cualquier negocio que trabaje con citas y clientes recurrentes
+
+
+MISION
+------
+"Conocer mejor los gustos del cliente que el propio cliente."
+
+Cada interaccion, cada visita, cada preferencia alimenta el sistema para
+ofrecer un servicio personalizado y de alto nivel. El CRM no solo almacena
+datos — los convierte en inteligencia accionable.
+
+
+VENTAJA COMPETITIVA
+-------------------
+La combinacion unica de tres pilares que NINGUN competidor ofrece juntos:
+
+   1. WhatsApp Business API nativo (no terceros)
+      - En LATAM, 95%+ de la comunicacion con clientes es por WhatsApp
+      - Los competidores estadounidenses (Fresha, Vagaro) son email-first
+      - Los competidores LATAM (AgendaPro, BEWE) tienen WhatsApp basico
+
+   2. IA Contextual (Lina)
+      - Asistente que ENTIENDE el negocio: clientes, citas, finanzas
+      - Responde autonomamente en WhatsApp (agenda, reprograma, informa)
+      - Aprende reglas ensenadas por el admin en tiempo real
+      - NADIE tiene un asistente IA asi integrado en un CRM de servicios
+
+   3. Disenado para LATAM
+      - Moneda COP, formato colombiano, espanol colombiano
+      - Metodos de pago locales: Nequi, Daviplata, efectivo, transferencia
+      - Entiende la dinamica de negocios informales de la region
+
+
+PRIMER CLIENTE
+--------------
+AlPelo Peluqueria — Cabecera, Bucaramanga, Colombia
+Reservas actuales: https://book.weibook.co/alpelo-peluqueria
+Facebook: https://www.facebook.com/SomosAlpelo/?locale=es_LA
+
+
+================================================================================
+SECCION 2: ARQUITECTURA TECNICA
+================================================================================
+
+FRONTEND
+--------
+- Framework: React 19.2 con Vite 7.3
+- Estilos: SCSS con metodologia BEM obligatoria
+- Graficos: Recharts 3.8
+- Linting: ESLint 9.39
+- Preprocesador: Sass 1.97
+- Plugin React: @vitejs/plugin-react 5.1
+
+BACKEND
+-------
+- Framework: FastAPI (Python)
+- Base de datos: PostgreSQL
+- Hosting: Railway (https://alpelo-crm-production.up.railway.app)
+- ORM: SQLAlchemy
+- Migraciones: Alembic
+
+INTELIGENCIA ARTIFICIAL
+-----------------------
+- Modelo: Claude Sonnet 4.5 (Anthropic)
+- Uso: Chat admin (Lina), auto-respuestas WhatsApp, widget financiero
+- Sistema de aprendizaje: LinaLearning (reglas por categoria ensenadas por admin)
+- Configuracion por tenant: nombre IA, personalidad, modelo, temperatura
+- Estimacion actual: ~300 tokens/mensaje (pendiente conteo real desde API)
+
+WHATSAPP
+--------
+- API: Meta Cloud API (WhatsApp Business API)
+- Webhook: configurado en el backend
+- Capacidades: envio/recepcion, templates, mensajes masivos, media
+- Token: temporal (pendiente verificacion Meta Business para permanente)
+- Soporte de media: imagenes, stickers, video, audio, documentos
+
+MULTI-TENANT
+-------------
+Tabla principal: Tenants
+Campos: id, slug, name, business_type, owner_name, owner_phone, owner_email,
+         wa_phone_id, wa_token, wa_business_id, ai_name, ai_personality,
+         ai_model, ai_temperature, plan, monthly_price, messages_used,
+         messages_limit, is_active, ai_is_paused
+
+- tenant_id presente en todas las tablas relacionadas
+- AlPelo es tenant_id = 6 (slug = 'alpelo'), NO id=1
+- Cada tenant tiene su propia configuracion de IA, WhatsApp, y branding
+
+Tablas adicionales:
+- BillingRecord: facturas reales (period, amount, status, payment_method, paid_at)
+- UsageMetrics: tracking mensual por tenant (existe, pendiente auto-poblado)
+
+ROLES DEL SISTEMA
+-----------------
+- admin: Acceso completo al CRM del tenant
+- barber: Acceso a agenda personal (vista de staff)
+- dev: Acceso al panel Plexify Studio (gestion de todos los tenants)
+- super_admin: Acceso total (futuro)
+
+AUTENTICACION
+-------------
+- JWT con cookies httponly
+- Login branded como "Plexify Studio" (generico, no especifico a un negocio)
+- Routing por rol:
+  * dev / super_admin -> DevRouter (Panel Plexify Studio)
+  * admin / barber -> MainLayout (CRM del tenant)
+- Suspension de tenant: is_active=false retorna 403 "cuenta suspendida"
+- Pausa IA: ai_is_paused=true = Lina en silencio total (0 mensajes enviados)
+
+ESTRUCTURA DE ARCHIVOS (FRONTEND)
+----------------------------------
+frontend/
+  public/
+  src/
+    assets/
+      images/
+      fonts/
+    components/
+      common/          -- Componentes reutilizables (Button, Input, Modal, EmptyState)
+      layout/          -- Sidebar, Header, MainLayout
+      dashboard/       -- Componentes del dashboard
+      crm/             -- Componentes CRM (ClientTable, ClientDetail, Filters)
+      chat/            -- Chat IA
+      appointments/    -- Componentes de agenda
+      messaging/       -- Campanas y mensajeria
+      reviews/         -- Pipeline de resenas
+      devs/            -- Panel Plexify Studio (12 carpetas)
+        DevActivity/
+        DevBilling/
+        DevClients/
+        DevDashboard/
+        DevLayout/
+        DevPerformance/
+        DevProfile/
+        DevRouter/
+        DevSystem/
+        DevTenants/
+        DevUsage/
+        DevWhatsApp/
+    pages/             -- 19 paginas principales
+      AdminProfile/
+      Agenda/
+      Appointments/
+      Campaigns/
+      ChangePassword/
+      ChatAI/
+      Clients/
+      ContentStudio/
+      Dashboard/
+      Finances/
+      Inbox/
+      LinaActivity/
+      Login/
+      Messaging/
+      NotFound/
+      Profile/
+      Services/
+      Settings/
+      Team/
+    hooks/             -- Custom hooks (si aplica)
+    context/           -- React Context
+      AuthContext.jsx
+      NotificationContext.jsx
+      TenantContext.jsx
+    services/          -- 14 servicios de API
+      aiService.js
+      api.js
+      appointmentService.js
+      authService.js
+      automationService.js
+      chatService.js
+      clientService.js
+      contentGeneratorService.js
+      financeService.js
+      messagingService.js
+      reviewService.js
+      servicesService.js
+      staffService.js
+      whatsappService.js
+    utils/             -- Constantes, helpers, formatters
+    routes/            -- Router de la app
+    data/              -- Mock data para simulacion
+    styles/            -- TODA la SCSS aqui
+      abstracts/       -- Variables, mixins, funciones
+      base/            -- Reset, tipografia, base
+      components/      -- 22 archivos SCSS de componentes
+      layout/          -- Estilos de layout
+      pages/           -- 19 archivos SCSS de paginas
+      main.scss        -- Punto de entrada SCSS
+    App.jsx
+    main.jsx
+  index.html
+  vite.config.js
+  package.json
+
+CONVENCIONES DE CODIGO
+-----------------------
+- BEM obligatorio en todo SCSS:
+  .block {}
+  .block__element {}
+  .block--modifier {}
+  .block__element--modifier {}
+  Maximo 2 niveles de anidamiento
+
+- Componentes: PascalCase (ClientTable, EmptyState)
+- Archivos SCSS: kebab-case con prefijo _ (_client-table.scss)
+- Idioma del codigo: ingles
+- Idioma de la interfaz: espanol colombiano
+- Moneda: COP sin decimales ($25,000)
+- Fechas: formato colombiano (dd de mes de yyyy)
+- Zona horaria: UTC-5 (Colombia)
+- Nunca CSS inline ni CSS modules
+- Todo estilo en src/styles/ (nunca junto al componente)
+- Usar variables de _variables.scss, nunca valores hardcodeados
+
+PALETA DE COLORES (IDENTIDAD)
+-------------------------------
+Variable             | Valor     | Uso
+---------------------|-----------|------------------------------------
+$color-primary       | #2D5A3D   | Verde bosque principal
+$color-primary-light | #3D7A52   | Verde claro para hover
+$color-primary-dark  | #1E3D2A   | Verde oscuro para active
+$color-secondary     | #1A1A1A   | Negro elegante
+$color-accent        | #8B6914   | Dorado/madera
+$bg-main             | #F0EDE8   | Fondo calido principal
+
+
+================================================================================
+SECCION 3: INVENTARIO COMPLETO DE FEATURES (LO QUE YA EXISTE)
+================================================================================
+
+A continuacion, TODAS las funcionalidades implementadas en la plataforma,
+organizadas por modulo:
+
+
+--- DASHBOARD ---
+
+- KPIs en tiempo real con datos del backend:
+  * Clientes activos (con tendencia vs periodo anterior)
+  * Citas del dia (con indicador de cambio)
+  * Ingresos del periodo (con tendencia porcentual)
+  * Clientes en riesgo (con alerta visual)
+- Grafico de tendencia de ingresos (Recharts, linea temporal)
+- Grafico donut de estados de citas (confirmadas, completadas, canceladas, no-show)
+- Indicadores de tendencia en cada KPI (flechas arriba/abajo con porcentaje)
+- Panel de Lina IA:
+  * Toggle para activar/pausar Lina
+  * Estadisticas de uso (mensajes procesados, tareas creadas)
+  * Contador de tokens consumidos
+- Alertas de pago pendiente (cuando el tenant tiene factura vencida)
+- Tareas pendientes de Lina (acciones programadas sin completar)
+
+
+--- AGENDA ---
+
+- Vista semana completa con grid visual
+- Vista dia individual
+- Grid por hora: 7am a 9pm, slots de 15 minutos
+- Creacion de citas con formulario completo:
+  * Busqueda de cliente (autocomplete)
+  * Seleccion de staff
+  * Seleccion de servicio(s)
+  * Fecha y hora
+  * Duracion y precio (auto-calculados desde servicio)
+- Multi-servicio por cita (combinar servicios en una sola visita)
+- Deteccion de conflictos (alerta si el staff ya tiene cita en ese horario)
+- Filtro por staff (ver solo las citas de un miembro del equipo)
+- Estados de cita: confirmada, completada, cancelada, no asistio
+- Indicador visual de estado con colores
+- Tracking de quien creo la cita (admin, lina_ia, client)
+
+
+--- CLIENTES (CRM) ---
+
+- Tabla de clientes con ordenamiento por columnas
+- Busqueda y filtros avanzados
+- Perfil detallado por cliente:
+  * Datos basicos (nombre, telefono, email, cumpleanos)
+  * Servicio favorito y staff preferido
+  * Historial de visitas completo (servicio, monto, fecha, metodo pago, estado)
+  * Notas del admin (con tracking de quien las creo)
+  * Estadisticas individuales (total gastado, visitas, ticket promedio)
+  * Dias desde ultima visita
+  * Tags personalizados (JSON array)
+  * WhatsApp opt-in/opt-out flag
+- Motor de estados automaticos:
+  * VIP: cliente de alto valor y frecuencia
+  * Activo: visitas recientes regulares
+  * En Riesgo: patron de ausencia detectado
+  * Inactivo: sin visitas por periodo extendido
+  * Nuevo: primera visita reciente
+- Importar clientes desde CSV
+- Exportar clientes a CSV
+- KPIs por estado (cuantos VIP, activos, en riesgo, inactivos, nuevos)
+- Componente EmptyState reutilizable (cuando no hay datos)
+- Override manual de estado (admin puede forzar un estado)
+
+
+--- CAMPANAS (3 TABS) ---
+
+Tab 1 — Campanas:
+- CRUD completo de campanas
+- 11 segmentos de audiencia:
+  * Todos los clientes
+  * VIP
+  * Activos
+  * En riesgo
+  * Inactivos
+  * Nuevos
+  * Sin visita en 30 dias
+  * Sin visita en 60 dias
+  * Cumpleanos del mes
+  * Por servicio favorito
+  * Personalizados
+- Envio masivo por WhatsApp (Meta API templates)
+- Progress tracking en tiempo real durante envio
+- Historial de campanas enviadas
+- Contador de destinatarios por segmento
+
+Tab 2 — Automatizaciones:
+- 5 workflows preset listos para activar:
+  * Recordatorio 24h antes de cita
+  * Recordatorio 1h antes de cita
+  * Seguimiento post-visita (2h despues)
+  * Felicitacion de cumpleanos
+  * Reactivacion de clientes inactivos
+- Toggle activar/desactivar por workflow
+- Configuracion de template WhatsApp por workflow
+- Indicador visual de estado (activo/pausado)
+- Servicio automationService.js para gestion
+
+Tab 3 — Resenas:
+- Pipeline de Google Reviews:
+  * Encuesta de satisfaccion automatica post-visita (1-5 estrellas)
+  * Si satisfaccion >= 4: redireccion a Google Reviews
+  * Si satisfaccion <= 3: alerta al dueno + solicitar feedback detallado
+- Estadisticas de resenas (promedio, total, distribucion)
+- Configuracion del link de Google Reviews
+- Historial de encuestas enviadas
+- NPS tracking
+
+
+--- SERVICIOS ---
+
+- Catalogo completo de servicios con categorias
+- Colores asignados por servicio (visual en agenda)
+- CRUD completo (crear, editar, eliminar servicios)
+- Asignacion de staff por servicio (que miembros pueden ofrecer cada servicio)
+- Categorias genericas (no limitadas a barberia):
+  * Configurables por tipo de negocio del tenant
+  * Ejemplos: Corte, Color, Tratamiento, Masaje, Consulta, etc.
+- Estadisticas del catalogo:
+  * Total de servicios
+  * Categorias activas
+  * Precio promedio
+  * Servicio mas popular
+- Busqueda y filtro por categoria
+- Duracion configurable por servicio
+
+
+--- FINANZAS (6 TABS) ---
+
+Tab 1 — Resumen:
+- KPIs financieros del periodo:
+  * Ingresos totales
+  * Gastos totales
+  * Comisiones pagadas
+  * Ganancia neta
+- Grafico de ingresos por dia/semana/mes (Recharts)
+- Panel del dueno (Owner Profit Panel):
+  * Hero verde con cifra de ganancia neta
+  * Barra de margen de utilidad
+  * Desglose: ingresos - comisiones - gastos = ganancia
+  * Estimacion de IVA (toggle en localStorage)
+  * Distribucion visual con barras de color
+- P&L (Profit & Loss) completo
+- Selector de periodo: Hoy, Esta Semana, Este Mes, Este Ano, Personalizado
+- Fecha personalizada con rango (dateFrom/dateTo)
+
+Tab 2 — Reportes:
+- Tabla de transacciones (visitas completadas)
+- Filtros por fecha, staff, servicio
+- Exportar a CSV
+- Metodo de pago por transaccion
+
+Tab 3 — Gastos:
+- CRUD completo de gastos con campos:
+  * Categoria (nomina, alquiler, insumos, servicios, marketing, otros)
+  * Subcategoria (cascading segun categoria)
+  * Monto
+  * Descripcion
+  * Proveedor
+  * Metodo de pago (efectivo, transferencia, tarjeta, nequi, daviplata)
+  * Recurrente (si/no) con frecuencia (semanal, quincenal, mensual, anual)
+  * Fecha
+- Badges visuales para gastos recurrentes
+- Columnas responsive (oculta proveedor/metodo en mobile)
+
+Tab 4 — Comisiones:
+- Configuracion por miembro del staff:
+  * Tasa default (porcentaje)
+  * Overrides por servicio
+- Historial de comisiones pagadas
+- Calculo automatico desde visitas completadas
+- Nota: Comision = lo que GANA el staff, no lo que gana el dueno
+
+Tab 5 — Facturas:
+- CRUD completo de facturas
+- Estados: borrador, enviada, pagada, cancelada
+- Line items por factura
+- Vinculacion de facturas con visitas:
+  * Boton "Importar desde visitas" al seleccionar cliente
+  * Endpoint GET /finances/uninvoiced-visits
+  * Al crear factura, marca visitas como facturadas (is_invoiced=True)
+
+Tab 6 — AI Widget:
+- Widget colapsable en la tab Resumen
+- 4 preguntas sugeridas (chips clickeables)
+- Input de texto libre para preguntas financieras
+- Usa aiService.chat() con contexto financiero
+- Lina responde con datos reales del negocio
+
+
+--- EQUIPO ---
+
+- Cards de staff con:
+  * Foto de perfil
+  * Rating (estrellas)
+  * Especialidad
+  * Bio
+  * Skills (tags)
+  * Fecha de contratacion
+  * Color asignado (para agenda)
+- CRUD completo:
+  * Crear miembro del equipo
+  * Editar informacion
+  * Eliminar (con confirmacion)
+- Desactivacion de staff (toggle activo/inactivo)
+  * Notificacion automatica a clientes asignados
+- Roles dinamicos por tenant (no hardcoded "barbero")
+- Filtros y busqueda por nombre, especialidad, estado
+- Configuracion de comision por miembro
+
+
+--- INBOX WHATSAPP ---
+
+- Chat en tiempo real con polling cada 5 segundos
+- Envio de mensajes de texto
+- Templates de WhatsApp (Meta API)
+- Quick Replies: 6 respuestas rapidas preconfiguradas
+- Notas internas por conversacion (visibles solo para el equipo)
+- Tags de estado por conversacion:
+  * Nuevo
+  * Pendiente
+  * Resuelto
+  * Urgente
+- Labels de colores personalizados
+- Acciones de conversacion:
+  * Pin (fijar arriba)
+  * Archive (archivar)
+  * Mute (silenciar)
+- Indicador de no leido mejorado (badge con conteo)
+- Sidebar de informacion del cliente:
+  * Datos del CRM
+  * Historial de visitas
+  * Estado del cliente
+  * Proxima cita
+- Soporte de media: imagenes, audio, video, documentos, stickers
+- Transcripcion de mensajes de audio
+- Read receipts (confirmacion de lectura)
+
+
+--- PLANTILLAS ---
+
+- Templates de WhatsApp con variables dinamicas
+- Preview con datos de ejemplo (como se vera el mensaje)
+- Envio masivo por segmento de audiencia
+- Gestion de templates aprobados por Meta
+
+
+--- LINA IA (CHAT ADMIN) ---
+
+- Chat completo con Claude (Sonnet 4.5)
+- Soporte de vision (puede analizar imagenes)
+- 6 prompts sugeridos al iniciar conversacion:
+  * Preguntas frecuentes sobre el negocio
+  * Analisis de clientes
+  * Recomendaciones de campanas
+  * Revision financiera
+  * Estado de citas
+  * Tendencias del negocio
+- 8 quick actions (acciones rapidas ejecutables):
+  * Crear cliente nuevo
+  * Agendar cita
+  * Enviar template WhatsApp
+  * Buscar cliente
+  * Ver citas del dia
+  * Resumen financiero
+  * Listar clientes en riesgo
+  * Ver proximas citas
+- Ejecucion de acciones reales (Lina crea clientes, agenda citas, envia mensajes)
+- Historial de conversacion persistente
+- Contador de tokens consumidos
+- Contexto completo del negocio en cada request
+
+
+--- ACTIVIDAD LINA ---
+
+- Feed en tiempo real de toda la actividad de Lina
+- 7 filtros por tipo de evento:
+  * Mensajes WhatsApp procesados
+  * Citas creadas
+  * Clientes creados
+  * Templates enviados
+  * Tareas programadas
+  * Errores
+  * Aprendizaje
+- 6 estadisticas en vivo:
+  * Mensajes procesados hoy
+  * Citas creadas hoy
+  * Tareas pendientes
+  * Errores hoy
+  * Tiempo promedio de respuesta
+  * Reglas aprendidas
+- Sistema de aprendizaje (LinaLearning):
+  * Admin puede ensenar reglas a Lina por categoria
+  * Reglas se almacenan en BD
+  * CORREGIDO: reglas ahora SI se incluyen en el prompt del admin chat
+  * Categorias: precios, horarios, politicas, servicios, equipo, otras
+- Estado del token WhatsApp (salud de la conexion)
+
+
+--- ESTUDIO DE CONTENIDO IA ---
+
+- Generador de imagenes con IA:
+  * Prompt personalizado
+  * Estilos predefinidos (profesional, artistico, minimalista)
+  * Preview antes de publicar
+- Generador de videos con presentador IA:
+  * Script personalizado
+  * Avatar seleccionable
+  * Duracion configurable
+- Publicacion rapida a redes:
+  * Facebook
+  * Instagram
+  * Publicacion como post o historia/reel
+- Brand Kit por tenant:
+  * Colores de marca
+  * Logo
+  * Tipografia
+  * Tono de voz
+- Historial de contenido generado
+- Integracion con Meta (Facebook/Instagram)
+- Backend con modelos:
+  * GeneratedContent (tipo, prompt, resultado, estado, tenant_id)
+  * BrandKit (colores, logo, fuentes, tono, tenant_id)
+- Servicio: contentGeneratorService.js
+
+
+--- DEV PANEL (PLEXIFY STUDIO) ---
+
+Panel de control central para gestionar TODOS los tenants. 9 paginas completas:
+
+1. Dashboard:
+   - KPIs globales: total tenants, mensajes enviados, MRR
+   - Graficos de tendencia
+   - Resumen de salud del sistema
+
+2. Agencias (Tenants):
+   - Cards por cada tenant con info clave
+   - CRUD completo (crear, editar, eliminar tenant)
+   - Acciones rapidas:
+     * Pausar/reanudar IA
+     * Suspender/activar cuenta
+     * Agregar mensajes al limite
+     * Cambiar plan
+   - Modal de edicion con:
+     * Info del negocio (nombre, tipo, ciudad, pais)
+     * Info del dueno (nombre, telefono, email)
+     * Plan y facturacion (plan, precio mensual, limite de mensajes)
+     * Credenciales admin (username, password)
+   - Slug auto-generado del nombre
+
+3. Actividad IA:
+   - Feed en tiempo real desde la BD
+   - Filtros por tipo de evento y tenant
+   - Zona horaria Colombia (UTC-5)
+
+4. WhatsApp:
+   - Dashboard de salud de WhatsApp
+   - Estado de tokens por tenant
+   - Metricas de mensajes
+
+5. Nuestros Clientes:
+   - Analiticas de agencias (NO clientes finales)
+   - Crecimiento por tenant
+   - Metricas de uso
+
+6. Rendimiento:
+   - Metricas de performance por tenant
+   - Comparativas entre agencias
+
+7. Consumo:
+   - Conteo real de mensajes desde BD WhatsApp
+   - Tokens de IA consumidos
+   - Uso por tenant por periodo
+
+8. Facturacion:
+   - CRUD completo de facturas por tenant
+   - Crear factura (periodo, monto, metodo pago)
+   - Marcar como pagada/vencida
+   - Eliminar factura
+   - Historial de pagos
+
+9. Sistema:
+   - Salud del sistema
+   - Estado de APIs
+   - Monitoreo de errores
+
+Paginas adicionales:
+- DevProfile: perfil del desarrollador
+- DevRouter: routing del panel dev
+
+
+--- OTROS MODULOS ---
+
+- Login/Auth:
+  * Formulario de login con JWT
+  * Cookies httponly
+  * Redirect por rol
+  * Pagina branded "Plexify Studio"
+
+- Perfil de Admin:
+  * Ver y editar datos personales
+  * Foto de perfil
+
+- Cambio de Contrasena:
+  * Formulario dedicado
+  * Validacion de contrasena actual
+
+- Configuracion:
+  * Ajustes generales del tenant
+  * Preferencias de notificacion
+
+- Pagina 404 (Not Found):
+  * Pagina personalizada de error
+
+- Contextos React:
+  * AuthContext: autenticacion y sesion
+  * NotificationContext: sistema de alertas
+  * TenantContext: configuracion del tenant actual
+
+- Error Boundary:
+  * Componente que captura errores de React
+  * Muestra errores en pantalla para debugging
+
+
+================================================================================
+SECCION 4: MEJORAS IMPLEMENTADAS EN ESTA SESION (15 Marzo 2026)
+================================================================================
+
+Todas las mejoras realizadas el 15 de marzo de 2026:
+
+
+1. RESPONSIVE — 7 correcciones en 6 archivos SCSS
+   - Correccion de overflow horizontal en multiples paginas
+   - Ajustes de padding y margin para mobile
+   - Tablas con scroll horizontal en pantallas pequenas
+   - Modales que respetan el viewport
+   - Cards que se apilan correctamente en mobile
+   - Sidebar colapsable mejorado
+
+
+2. DASHBOARD CHARTS — Graficos nuevos con Recharts
+   - Grafico de linea de tendencia de ingresos (por dia/semana)
+   - Grafico donut de distribucion de estados de citas
+   - Indicadores de tendencia en cada KPI (flechas con porcentaje)
+   - Comparacion con periodo anterior
+
+
+3. FIX LINA LEARNING — Bug critico corregido
+   - BUG: Las reglas que el admin ensenaba a Lina NO se incluian en el prompt
+   - FIX: Ahora las reglas aprendidas (LinaLearning) se inyectan correctamente
+          en el contexto del admin chat
+   - Impacto: Lina ahora SI respeta las reglas ensenadas por el admin
+
+
+4. TERMINOLOGIA GENERICA — 12 archivos modificados
+   - Eliminacion de referencias hardcoded a "barbero/barberia"
+   - Roles dinamicos configurables por tenant
+   - Categorias de servicio genericas
+   - Mensajes y labels que se adaptan al tipo de negocio
+   - Terminologia configurable: visita/sesion/consulta/clase segun negocio
+
+
+5. ESTUDIO DE CONTENIDO IA — Pagina nueva completa
+   - Frontend: pagina ContentStudio con UI completa
+   - Backend: modelos GeneratedContent y BrandKit
+   - Servicio: contentGeneratorService.js
+   - Estilos: _content-studio.scss
+   - Generacion de imagenes y videos con IA
+   - Brand Kit por tenant
+   - Historial de contenido
+
+
+6. THEMING DINAMICO
+   - CSS custom properties para colores por tenant
+   - Fondo moderno con gradientes sutiles
+   - Colores que se adaptan al branding del tenant
+   - Transicion suave entre temas
+
+
+7. CONFIRMACIONES — Dialogos antes de borrar
+   - Implementado en 4 paginas:
+     * Equipo (eliminar miembro)
+     * Servicios (eliminar servicio)
+     * Gastos (eliminar gasto)
+     * Facturas (eliminar factura)
+   - Dialogo con mensaje claro y botones Cancelar/Confirmar
+
+
+8. EMPTYSTATE COMPONENT
+   - Componente reutilizable para estados vacios
+   - Implementado en 5 paginas:
+     * Clientes (sin clientes)
+     * Agenda (sin citas)
+     * Campanas (sin campanas)
+     * Equipo (sin staff)
+     * Servicios (sin servicios)
+   - Icono, titulo, descripcion, y CTA personalizable
+
+
+9. WORKFLOWS WHATSAPP — 5 automatizaciones
+   - Recordatorio 24h antes de cita
+   - Recordatorio 1h antes de cita
+   - Seguimiento post-visita (2h despues de completar)
+   - Felicitacion de cumpleanos (dia del cumpleanos)
+   - Reactivacion de clientes inactivos (X dias sin visita)
+   - Toggle activar/desactivar individual
+   - Configuracion de template por workflow
+
+
+10. PIPELINE RESENAS GOOGLE
+    - Encuesta de satisfaccion post-visita (1-5 estrellas)
+    - Ruta inteligente:
+      * >= 4 estrellas: redirige a Google Reviews
+      * <= 3 estrellas: escala al dueno + pide feedback
+    - Estadisticas de resenas
+    - Configuracion de link Google Reviews
+    - Servicio: reviewService.js
+
+
+11. MEJORAS INBOX
+    - Quick Replies: 6 respuestas rapidas preconfiguradas
+    - Notas internas por conversacion
+    - Tags de estado (nuevo/pendiente/resuelto/urgente)
+    - Labels de colores
+    - Pin, archive, mute
+    - Indicador de no leido mejorado con badge
+
+
+12. SIDEBAR LIGHT MODE
+    - Transformacion completa del sidebar a diseno claro/profesional
+    - Fondo blanco con acentos del color primario
+    - Iconos y texto con mejor contraste
+    - Hover states elegantes
+    - Seccion activa con indicador visual
+
+
+13. ERROR BOUNDARY
+    - Componente React que captura errores no manejados
+    - Muestra error en pantalla (util para debugging)
+    - Evita que la app se rompa completamente
+
+
+14. BACKEND CONTENT STUDIO
+    - Modelo GeneratedContent:
+      * tipo (imagen/video)
+      * prompt
+      * resultado (URL)
+      * estado
+      * tenant_id
+    - Modelo BrandKit:
+      * colores de marca
+      * logo URL
+      * fuentes
+      * tono de voz
+      * tenant_id
+    - Endpoints CRUD para ambos modelos
+
+
+================================================================================
+SECCION 5: LO QUE NOS FALTA (PENDIENTE)
+================================================================================
+
+Organizado por prioridad:
+
+
+--- P0 — CRITICO (proxima sesion) ---
+
+1. POS / Smart Checkout
+   - Al completar una visita: desglose de servicios, split payments, propinas
+   - Descuentos y codigos promocionales
+   - Recibo digital enviado por WhatsApp
+   - Impacto: operacion diaria basica que TODOS los competidores tienen
+
+2. Recordatorios automaticos WhatsApp (backend scheduler)
+   - Los workflows estan en frontend, falta conectar con scheduler real del backend
+   - Scheduler que revise citas proximas y envie reminders automaticamente
+   - Scheduler de cumpleanos (diario)
+   - Scheduler de reactivacion (semanal)
+
+3. Plan enforcement (trial/standard/pro/enterprise)
+   - El campo 'plan' existe en Tenant pero no hay enforcement
+   - Feature flags en frontend y backend
+   - trial: 14 dias, CRM basico
+   - standard: +WhatsApp
+   - pro: +IA + campanas + finanzas
+   - enterprise: todo + soporte prioritario
+
+4. Conectar automatizaciones con backend scheduler real
+   - Los 5 workflows del frontend necesitan triggers reales en el backend
+   - Cron jobs o scheduler que ejecute las automatizaciones
+
+5. Mobile responsive polish final
+   - Finanzas: scroll horizontal residual
+   - Agenda: overflow en mobile
+   - Inbox: layout mobile
+   - Modales: viewport en pantallas pequenas
+   - General: touch targets minimo 44px
+
+
+--- P1 — ALTO (proximas 2 semanas) ---
+
+6. Programa de lealtad
+   - Puntos por visita y por gasto
+   - Tiers: Bronce, Plata, Oro, VIP
+   - Bonos por referidos
+   - Bonos de cumpleanos
+   - Canje de puntos por descuentos/servicios
+   - Visible en perfil del cliente
+
+7. Caja registradora (apertura/cierre/conciliacion)
+   - Apertura de caja con monto inicial (float)
+   - Registro de movimientos (ingresos, egresos, ajustes)
+   - Cierre de caja con conciliacion automatica
+   - Alerta de discrepancias
+   - Reporte diario de caja
+
+8. Inventario de productos
+   - Modelo Product (nombre, SKU, categoria, costo, precio, stock, min_stock)
+   - Venta de productos en checkout junto a servicios
+   - Alertas de stock bajo
+   - Tracking de uso de producto por servicio
+   - Revenue retail separado en finanzas
+
+9. Staff scheduling / shifts
+   - Horarios de trabajo por miembro del equipo por dia
+   - Bloqueo de breaks y dias libres
+   - Prevenir reservas fuera de horario laboral
+   - Solicitudes de tiempo libre (workflow)
+
+10. Staff performance dashboard
+    - Revenue por staff
+    - Servicios completados
+    - Ticket promedio
+    - Retencion de clientes por staff
+    - Utilizacion (horas reservadas / horas disponibles)
+    - Comision ganada
+
+11. Client retention analytics
+    - Tasa de retencion por mes
+    - Tasa de rebooking
+    - Tasa de churn
+    - Distribucion de dias entre visitas
+    - Lista de clientes en riesgo con accion sugerida
+    - Exportable
+
+12. Drag-and-drop en agenda
+    - Arrastrar citas para reprogramar
+    - Confirmacion al mover
+    - Mensaje automatico de WhatsApp al reprogramar
+
+13. Integracion real con OpenAI para imagenes
+    - Conectar Content Studio con DALL-E o similar
+    - Generacion real de imagenes (actualmente UI mock)
+    - Costo estimado: ~$0.04/imagen
+
+14. Integracion real con HeyGen para videos
+    - Conectar Content Studio con HeyGen API
+    - Generacion real de videos con presentador IA
+    - Costo estimado: ~$0.25/video
+
+15. OAuth con Meta para publicar en FB/IG
+    - Autenticacion OAuth real con Meta
+    - Publicacion directa desde Content Studio
+    - Soporte para posts, historias, y reels
+
+
+--- P2 — MEDIO (proximo mes) ---
+
+16. Walk-in queue
+    - Registro de clientes sin cita
+    - Cola en tiempo real
+    - Tiempo de espera estimado
+    - Notificacion WhatsApp cuando es su turno
+
+17. Recurring appointments
+    - Citas recurrentes (semanal, quincenal, mensual)
+    - Auto-creacion de citas futuras
+    - Notificacion de proxima cita recurrente
+
+18. Client scoring (CLV, RFM)
+    - Customer Lifetime Value calculado
+    - Segmentacion RFM (Recency, Frequency, Monetary)
+    - Clasificacion automatica basada en comportamiento
+
+19. Communication timeline
+    - Linea de tiempo de TODAS las interacciones con un cliente
+    - WhatsApp, visitas, campanas, notas, todo en un solo feed
+
+20. Custom segments builder
+    - Constructor de segmentos avanzado
+    - Condiciones multiples (AND/OR)
+    - Preview de audiencia antes de enviar
+
+21. A/B testing en campanas
+    - Dividir audiencia en grupos
+    - Enviar variantes del mensaje
+    - Medir cual tuvo mejor rendimiento
+
+22. Campaign analytics (delivered/read/replied)
+    - Tasa de entrega
+    - Tasa de lectura
+    - Tasa de respuesta
+    - Conversiones (mensaje a cita agendada)
+
+23. Revenue forecasting
+    - Proyeccion de ingresos basada en citas agendadas + patrones historicos
+    - Forecast a 7, 30, y 90 dias
+    - Factor de estacionalidad
+
+24. Churn prediction
+    - Risk score por cliente (ML sobre patrones de visita)
+    - Auto-trigger de campanas de reactivacion para alto riesgo
+    - Dashboard de prediccion
+
+25. Tenant onboarding wizard
+    - Setup paso a paso:
+      * Info del negocio
+      * Configurar servicios
+      * Agregar staff
+      * Configurar WhatsApp
+      * Importar clientes (CSV)
+      * Enviar primera campana
+    - Reducir time-to-value de horas a minutos
+
+26. White label branding
+    - Colores por tenant
+    - Logo por tenant
+    - Favicon personalizado
+    - Pagina de reservas con branding del tenant
+    - Los clientes ven la marca del negocio, no Plexify
+
+
+--- P3 — FUTURO (2-3 meses) ---
+
+27. PWA / mobile app
+    - Service worker para vista offline de agenda
+    - Push notifications para nuevas citas/mensajes
+    - Checkout touch-optimized
+    - Vista "Mi Dia" para staff
+
+28. Self-service tenant signup
+    - Landing page publica de Plexify Studio
+    - Registro autonomo de negocios
+    - Seleccion de plan
+    - Auto-provision de tenant, user, y WhatsApp
+
+29. Multi-location per tenant
+    - Multiples sucursales por negocio
+    - Staff y servicios por sucursal
+    - Horarios independientes
+    - Reportes cruzados entre sucursales
+
+30. Google Calendar sync
+    - Sincronizacion bidireccional
+    - Bloqueos en Google bloquean en Plexify
+    - Staff conecta su calendario personal
+
+31. Payment gateway (Mercado Pago / Stripe)
+    - Pagos online para reservas
+    - Depositos y prepagos
+    - Compra de paquetes y gift cards
+    - Procesamiento integrado
+
+32. DIAN electronic invoicing
+    - Facturacion electronica compatible con DIAN
+    - Requerido para negocios colombianos sobre cierto umbral
+    - Integracion con proveedores autorizados
+
+33. Client self-service portal
+    - Portal donde el cliente ve:
+      * Historial de citas
+      * Puntos de lealtad
+      * Proximas citas
+      * Rebook online
+    - Accesible via link de WhatsApp
+
+34. Sentiment analysis
+    - Analisis de sentimiento en conversaciones WhatsApp
+    - Alerta cuando un cliente esta insatisfecho
+    - Tendencias de sentimiento en el tiempo
+    - Alimenta prediccion de churn
+
+35. Multi-language support
+    - Soporte para portugues (Brasil)
+    - Soporte para ingles
+    - Interfaz del tenant en su idioma preferido
+
+36. Pagina publica de reservas online
+    - Booking widget embebible por tenant
+    - Seleccion: servicio -> staff -> fecha -> hora -> datos cliente
+    - Confirmacion automatica por WhatsApp
+    - Reemplaza dependencia de Weibook
+    - CRITICO: es el feature #1 que TODOS los competidores tienen
+
+37. Promotions / discount codes
+    - Modelo Promotion (codigo, tipo descuento, valor, vigencia, limite uso)
+    - Aplicar en checkout/factura
+    - Campanas con codigo promocional
+
+38. Marketplace de templates
+    - Templates preconstruidos de campanas WhatsApp
+    - Catalogos de servicios por tipo de negocio
+    - Templates de workflows
+    - Tenants navegan e instalan
+
+
+================================================================================
+SECCION 6: ANALISIS COMPETITIVO
+================================================================================
+
+COMPETIDORES GLOBALES ANALIZADOS (10)
+--------------------------------------
+1.  Fresha — "El #1 gratis" — Monetiza por transacciones, marketplace
+2.  Vagaro — Full suite (POS, marketing, payroll, website builder)
+3.  GlossGenius — Premium mobile-first, tarjeta de debito propia
+4.  Boulevard — Lujo, enterprise, CRM sofisticado
+5.  Mangomint — Minimalista, API-first, automatizacion
+6.  Booksy — Marketplace #1, fuerte en barberias
+7.  Zenoti — Enterprise, IA, multi-location, RFM segmentation
+8.  Square Appointments — Ecosistema Square, POS potente
+9.  Phorest — Retencion, marketing, Google Reviews
+10. Mindbody — Fitness/wellness, marketplace, ClassPass
+
+COMPETIDORES LATAM ANALIZADOS (8)
+-----------------------------------
+1.  AgendaPro — #1 en Colombia, Y Combinator, Sofia/Julia IA
+2.  BEWE — Belleza/bienestar, POS, reconocimiento facial
+3.  Weibook — Booking basico (lo que AlPelo usa actualmente)
+4.  Trengo — Inbox omnicanal, 8+ canales
+5.  Kommo — CRM conversacional, pipeline visual
+6.  Leadsales — CRM WhatsApp, embudos
+7.  Simla — CRM omnicanal para ecommerce
+8.  Clientify — CRM con WhatsApp integrado
+
+VENTAJA UNICA DE PLEXIFY
+--------------------------
+NINGUN competidor combina:
+
+   CRM de servicios (como Fresha/AgendaPro)
+   + Inbox WhatsApp nativo (como Trengo/Leadsales)
+   + IA contextual del negocio (como nadie)
+   + Automatizaciones inteligentes (basadas en motor de estados)
+   + Disenado para Colombia/LATAM (COP, WhatsApp-first)
+
+Los CRM omnicanal (Trengo, Kommo, Leadsales):
+   -> No entienden de citas, servicios, ni staff
+
+Los software de belleza (Fresha, AgendaPro, BEWE):
+   -> No tienen inbox WhatsApp real ni IA conversacional
+
+Plexify es EL PRIMERO en combinar ambos mundos.
+
+
+SWEET SPOT DE PRECIO
+---------------------
+Basado en competencia LATAM:
+
+Plan Basico    — COP $49,900/mes (~$12 USD)
+  CRM basico, agenda, 1 usuario, hasta 200 clientes
+
+Plan Profesional — COP $129,900/mes (~$32 USD)
+  Todo lo basico + WhatsApp + mensajeria masiva + chat IA + reportes + 5 usuarios
+
+Plan Premium   — COP $249,900/mes (~$62 USD)
+  Todo + chatbot IA 24/7 + automatizaciones + POS + usuarios ilimitados
+
+Referencia de precios competencia:
+- Koibox: EUR 25-55/mes
+- Fresha: $14.95-19.95/mes + comisiones
+- AgendaPro: ~$30-80/mes (estimado)
+- BEWE: $40.50-157/mes
+- Kommo: $15-45/usuario/mes
+- Leadsales: $97-247/mes
+
+
+================================================================================
+SECCION 7: STACK TECNICO DETALLADO
+================================================================================
+
+DEPENDENCIAS FRONTEND
+----------------------
+Produccion:
+  react              ^19.2.0    -- Framework UI
+  react-dom          ^19.2.0    -- React DOM renderer
+  recharts           ^3.8.0     -- Graficos y visualizaciones
+
+Desarrollo:
+  vite               ^7.3.1     -- Build tool y dev server
+  @vitejs/plugin-react ^5.1.1   -- Plugin React para Vite
+  sass               ^1.97.3    -- Preprocesador SCSS
+  eslint             ^9.39.1    -- Linting
+  eslint-plugin-react-hooks ^7.0.1
+  eslint-plugin-react-refresh ^0.4.24
+  globals            ^16.5.0
+  @types/react       ^19.2.7
+  @types/react-dom   ^19.2.3
+  @eslint/js         ^9.39.1
+
+BACKEND (FastAPI)
+------------------
+  FastAPI            -- Framework web async
+  SQLAlchemy         -- ORM
+  Alembic            -- Migraciones de BD
+  Pydantic           -- Validacion de schemas
+  python-jose        -- JWT tokens
+  httpx              -- HTTP client (Meta API)
+  anthropic          -- Claude API client
+  psycopg2           -- PostgreSQL driver
+
+SERVICIOS EXTERNOS
+-------------------
+  Railway            -- Hosting backend + PostgreSQL
+  Meta Cloud API     -- WhatsApp Business API
+  Anthropic          -- Claude AI (Sonnet 4.5)
+  OpenAI (futuro)    -- DALL-E para imagenes
+  HeyGen (futuro)    -- Videos con presentador IA
+
+ARCHIVOS SCSS (22 COMPONENTES + 19 PAGINAS)
+--------------------------------------------
+Componentes:
+  _add-client-modal.scss
+  _add-visit-modal.scss
+  _ai-pause-banner.scss
+  _barber-rating.scss
+  _button.scss
+  _card.scss
+  _client-detail.scss
+  _client-filters.scss
+  _client-table.scss
+  _dev-dashboard.scss
+  _dev-layout.scss
+  _dev-new-pages.scss
+  _dev-pages.scss
+  _dev-profile.scss
+  _dev-tenants.scss
+  _empty-state.scss
+  _import-modal.scss
+  _input.scss
+  _modal.scss
+  _notification.scss
+  _reviews.scss
+  _usage-meter.scss
+
+Paginas:
+  _admin-profile.scss
+  _agenda.scss
+  _automations.scss
+  _campaigns.scss
+  _change-password.scss
+  _chat-ai.scss
+  _clients.scss
+  _content-studio.scss
+  _dashboard.scss
+  _finances.scss
+  _inbox.scss
+  _lina-activity.scss
+  _login.scss
+  _messaging.scss
+  _not-found.scss
+  _profile.scss
+  _services.scss
+  _settings.scss
+  _team.scss
+
+ENDPOINTS DEL BACKEND (PRINCIPALES)
+-------------------------------------
+Auth:
+  POST /auth/login
+  POST /auth/logout
+  GET  /auth/me
+
+Clientes:
+  GET    /clients
+  POST   /clients
+  GET    /clients/{id}
+  PUT    /clients/{id}
+  DELETE /clients/{id}
+  POST   /clients/import
+  GET    /clients/export
+
+Citas:
+  GET    /appointments
+  POST   /appointments
+  PUT    /appointments/{id}
+  DELETE /appointments/{id}
+
+Staff:
+  GET    /staff
+  POST   /staff
+  PUT    /staff/{id}
+  DELETE /staff/{id}
+
+Servicios:
+  GET    /services
+  POST   /services
+  PUT    /services/{id}
+  DELETE /services/{id}
+
+Finanzas:
+  GET    /finances/summary
+  GET    /finances/transactions
+  GET    /finances/expenses
+  POST   /finances/expenses
+  PUT    /finances/expenses/{id}
+  DELETE /finances/expenses/{id}
+  GET    /finances/commissions
+  PUT    /finances/commissions/{staff_id}
+  GET    /finances/invoices
+  POST   /finances/invoices
+  PUT    /finances/invoices/{id}
+  DELETE /finances/invoices/{id}
+  GET    /finances/uninvoiced-visits
+
+WhatsApp:
+  GET    /whatsapp/conversations
+  GET    /whatsapp/messages/{phone}
+  POST   /whatsapp/send
+  POST   /whatsapp/send-template
+  POST   /whatsapp/webhook (Meta webhook)
+
+IA:
+  POST   /ai/chat
+  GET    /ai/activity
+  GET    /ai/learning
+  POST   /ai/learning
+  DELETE /ai/learning/{id}
+
+Campanas:
+  GET    /campaigns
+  POST   /campaigns
+  POST   /campaigns/{id}/send
+
+Automatizaciones:
+  GET    /automations
+  PUT    /automations/{id}
+
+Resenas:
+  GET    /reviews/stats
+  GET    /reviews/surveys
+  POST   /reviews/config
+
+Content Studio:
+  GET    /content
+  POST   /content/generate
+  GET    /brand-kit
+  PUT    /brand-kit
+
+Dev Panel:
+  GET    /dev/tenants
+  POST   /dev/tenants
+  PUT    /dev/tenants/{id}
+  DELETE /dev/tenants/{id}
+  PUT    /dev/tenants/{id}/admin-credentials
+  POST   /dev/tenants/{id}/toggle-ai
+  POST   /dev/tenants/{id}/toggle-active
+  GET    /dev/billing
+  POST   /dev/billing
+  PUT    /dev/billing/{id}
+  DELETE /dev/billing/{id}
+  GET    /dev/usage?period=YYYY-MM
+  GET    /dev/activity
+
+
+================================================================================
+SECCION 8: DATOS CLAVE
+================================================================================
+
+TENANT ALPELO
+--------------
+- tenant_id = 6
+- slug = 'alpelo'
+- Nombre: AlPelo Peluqueria
+- Ubicacion: Cabecera, Bucaramanga, Colombia
+- Tipo de negocio: barberia
+
+USUARIOS
+---------
+- Admin: id=1, username='admin', role='admin', tenant_id=6
+- Dev: id=2, username='DeveloperLuis', role='dev', tenant_id=null
+
+INFRAESTRUCTURA
+----------------
+- Backend: Railway — https://alpelo-crm-production.up.railway.app
+- Base de datos: PostgreSQL en Railway
+- Frontend: React 19 + Vite (deploy pendiente de configurar)
+
+ZONA HORARIA
+--------------
+- Colombia: UTC-5
+- Todas las fechas del backend deben convertirse a UTC-5 para display
+- La BD almacena en UTC
+
+METODOS DE PAGO SOPORTADOS
+----------------------------
+- Efectivo
+- Transferencia bancaria
+- Tarjeta (debito/credito)
+- Nequi
+- Daviplata
+
+ESTADOS DE CITA
+-----------------
+- confirmada (confirmed)
+- completada (completed)
+- cancelada (cancelled)
+- no asistio (no_show)
+
+ESTADOS DE CLIENTE
+--------------------
+- VIP
+- Activo (activo)
+- En Riesgo (en_riesgo)
+- Inactivo (inactivo)
+- Nuevo (nuevo)
+
+PLANES DE TENANT
+------------------
+- trial (14 dias)
+- standard
+- pro
+- enterprise
+
+DESPLIEGUE (FINANZAS V2)
+--------------------------
+- Fecha: 13 de Marzo de 2026
+- 6 fases completadas exitosamente
+
+
+================================================================================
+SECCION 9: COSTOS ESTIMADOS DE APIs
+================================================================================
+
+COSTOS POR SERVICIO
+---------------------
+
+Claude AI (Anthropic) — Chat Lina + Auto-respuestas WhatsApp:
+  Modelo: Claude Sonnet 4.5
+  Input: ~$3/millon tokens
+  Output: ~$15/millon tokens
+  Estimacion mensual (1000 requests): ~$13.50/mes
+  Estimacion por mensaje: ~$0.01
+
+OpenAI (futuro) — Generacion de imagenes:
+  Modelo: DALL-E 3
+  Costo por imagen: ~$0.04 (1024x1024)
+  Estimacion mensual (50 imagenes): ~$2.00/mes
+
+HeyGen (futuro) — Videos con presentador IA:
+  Costo por video (30s): ~$0.25
+  Estimacion mensual (20 videos): ~$5.00/mes
+
+Meta Cloud API — WhatsApp Business:
+  Conversaciones iniciadas por negocio: ~$0.05-0.08/conversacion (LATAM)
+  Conversaciones iniciadas por usuario: gratis (primeras 1000/mes)
+  Templates: incluidos en el costo de conversacion
+  Nota: primeras 1000 conversaciones/mes son gratis
+
+Meta API — Facebook/Instagram:
+  Publicacion via API: gratis
+  Graph API: gratis
+
+Railway — Hosting:
+  Backend + PostgreSQL: ~$5-10/mes (uso actual)
+
+COSTO TOTAL POR CAMPAÑA
+-------------------------
+Campana tipica de 500 mensajes WhatsApp:
+  Mensajes: 500 x $0.05 = $25 COP por mensaje = ~$12,500 COP total
+  (primeras 1000 conversaciones/mes son gratis)
+
+COSTO TOTAL INFRAESTRUCTURA (ESTIMADO MENSUAL)
+-------------------------------------------------
+  Railway (hosting + BD)     : $5-10 USD
+  Claude AI (Anthropic)      : $13.50 USD
+  WhatsApp API               : $7-30 USD (depende de volumen)
+  OpenAI (imagenes, futuro)  : $2 USD
+  HeyGen (videos, futuro)    : $5 USD
+  -----------------------------------------------
+  TOTAL ACTUAL              : ~$25-55 USD/mes
+  TOTAL CON CONTENT STUDIO  : ~$32-60 USD/mes
+
+
+================================================================================
+SECCION 10: NOTAS IMPORTANTES Y LECCIONES APRENDIDAS
+================================================================================
+
+1. COMISION = LO QUE GANA EL STAFF
+   La comision es lo que el STAFF se lleva, NO lo que gana el dueno.
+   Ganancia del dueno = Ingresos - Comisiones - Gastos.
+
+2. PLATAFORMA MULTI-NEGOCIO
+   Nunca hardcodear terminos especificos de barberia en codigo generico.
+   Usar terminologia configurable por tenant.
+
+3. PAUSA IA = SILENCIO TOTAL
+   Cuando la IA esta pausada, NO se envia ningun mensaje al inbox.
+   Silencio completo, no mensaje de "estoy pausada".
+
+4. DATOS REALES, NUNCA MOCKS EN PRODUCCION
+   El dev panel debe mostrar datos reales de la BD, nunca zeros o mocks.
+
+5. LINA RESPONDE AL ULTIMO MENSAJE
+   Lina debe responder al ULTIMO mensaje del cliente, no mezclar contexto
+   de citas existentes con nuevas solicitudes. No alucinar datos.
+
+6. TAREAS EJECUTABLES, NO NOTAS PASIVAS
+   Lina debe crear tareas programadas ejecutables, NO notas pasivas,
+   para acciones que dependen del tiempo.
+
+7. SQLALCHEMY: DECLARAR COLUMNAS EN EL MODELO
+   Al agregar columnas, SIEMPRE declararlas en el modelo SQLAlchemy,
+   no solo hacer ALTER TABLE.
+
+8. COMISIONES PENDIENTES DE VERIFICAR
+   Alexander Carballo y Anderson Bohorquez estan al 100% de comision.
+   Verificar con Jaime (dueno) si es intencional (socios) o error.
+
+9. TOKEN WHATSAPP
+   El token actual es temporal. Se necesita verificacion de Meta Business
+   para obtener un token permanente.
+
+
+================================================================================
+SECCION 11: COMANDOS DE DESARROLLO
+================================================================================
+
+FRONTEND
+---------
+  cd frontend
+  npm run dev        # Servidor de desarrollo (Vite)
+  npm run build      # Build de produccion
+  npm run preview    # Preview del build
+  npm run lint       # Lint con ESLint
+
+BACKEND
+--------
+  cd backend
+  uvicorn main:app --reload    # Servidor de desarrollo
+  alembic upgrade head         # Ejecutar migraciones
+  alembic revision --autogenerate -m "descripcion"  # Nueva migracion
+
+GIT
+----
+  git status                   # Ver cambios
+  git add <archivos>           # Agregar cambios
+  git commit -m "mensaje"      # Commit
+  git push origin main         # Push a produccion
+
+
+================================================================================
+================================================================================
+
+     FIN DE LA DOCUMENTACION
+
+     Plexify Studio — Documentacion Completa del Proyecto
+     Version 1.0 — 15 de Marzo de 2026
+
+     "Conocer mejor los gustos del cliente que el propio cliente."
+
+================================================================================
+================================================================================

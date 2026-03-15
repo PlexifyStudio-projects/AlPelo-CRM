@@ -42,6 +42,8 @@
 @use 'components/dev-profile';
 @use 'components/dev-new-pages';
 @use 'components/import-modal';
+@use 'components/empty-state';
+@use 'components/reviews';
 
 // --- Pages ---
 @use 'pages/login';
@@ -61,3 +63,5 @@
 @use 'pages/lina-activity';
 @use 'pages/campaigns';
 @use 'pages/admin-profile';
+@use 'pages/content-studio';
+@use 'pages/automations';

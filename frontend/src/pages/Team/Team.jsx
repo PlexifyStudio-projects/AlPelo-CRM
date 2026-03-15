@@ -3,12 +3,14 @@ import { createPortal } from 'react-dom';
 import staffService from '../../services/staffService';
 import { mockClients, mockBarbers, mockVisitHistory } from '../../data/mockData';
 import { useNotification } from '../../context/NotificationContext';
+import { useTenant } from '../../context/TenantContext';
 
 const b = 'team';
 
-const ROLES = ['Todos', 'Barbero', 'Barbera', 'Estilista', 'Manicurista'];
+// Default generic roles — can be overridden per tenant via tenant.staff_roles
+const DEFAULT_ROLES = ['Todos', 'Profesional', 'Especialista', 'Asistente', 'Practicante'];
 
-// ===== Weibook live data (synced from https://book.weibook.co/alpelo-peluqueria) =====
+// ===== Tenant-specific staff data (AlPelo example — in production comes from backend) =====
 const WEIBOOK_DATA = {
   'Victor Fernandez':        { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/c550d3ed-9cd5-4a88-86c2-563c8d5d5f75.webp', rating: 4.85, role: 'Barbero' },
   'Alexander Carballo':      { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/c34facf4-5716-40ec-a139-bc3c0233e72e.webp', rating: 4.9, role: 'Barbero' },
@@ -109,10 +111,11 @@ const getStaffClients = (memberName) => {
   return [...map.values()].sort((a, bb) => bb.lastVisit.localeCompare(a.lastVisit));
 };
 
-const DeactivateModal = ({ member, clients, onConfirm, onCancel }) => {
+const DeactivateModal = ({ member, clients, onConfirm, onCancel, tenantName, bookingUrl }) => {
   const [selected, setSelected] = useState(() => new Set(clients.map((c) => c.id)));
+  const bookingLink = bookingUrl ? ` Agenda aqui: ${bookingUrl}` : '';
   const [template, setTemplate] = useState(
-    `Hola {{nombre}}, soy Lina de Al Pelo. Queremos informarte que ${member.name} no estara disponible por el momento. Pero no te preocupes, tenemos un equipo increible listo para atenderte con la misma calidad de siempre. Como gesto especial, en tu proxima visita tienes un *10% de descuento*. Agenda aqui: https://book.weibook.co/alpelo-peluqueria Seguimos para ponerte Al Pelo!`
+    `Hola {{nombre}}, soy Lina de ${tenantName}. Queremos informarte que ${member.name} no estara disponible por el momento. Pero no te preocupes, tenemos un equipo increible listo para atenderte con la misma calidad de siempre. Como gesto especial, en tu proxima visita tienes un *10% de descuento*.${bookingLink}`
   );
 
   const toggleClient = (id) => {
@@ -138,7 +141,7 @@ const DeactivateModal = ({ member, clients, onConfirm, onCancel }) => {
           <div className={`${b}__deact-icon`}><SendIcon /></div>
           <h3>Desactivar a {member.name}</h3>
           <p>{clients.length > 0
-            ? <>Selecciona los clientes a notificar para retenerlos en Al Pelo</>
+            ? <>Selecciona los clientes a notificar para retenerlos</>
             : 'Este miembro no tiene clientes registrados'
           }</p>
         </div>
@@ -223,12 +226,13 @@ const DeactivateModal = ({ member, clients, onConfirm, onCancel }) => {
 };
 
 // ===== STAFF FORM MODAL =====
-const StaffFormModal = ({ staff, onClose, onSaved }) => {
+const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
   const isEdit = !!staff;
   const PRESET_COLORS = ['#2D5A3D', '#3B82F6', '#E05292', '#C9A84C', '#8B5CF6', '#F97316', '#14B8A6', '#EC4899', '#06B6D4', '#EF4444', '#22B07E', '#6366F1', '#D946EF', '#0EA5E9', '#84CC16'];
+  const editableRoles = (roles || DEFAULT_ROLES).filter(r => r !== 'Todos');
   const [form, setForm] = useState({
     name: staff?.name || '', phone: staff?.phone || '', email: staff?.email || '',
-    role: staff?.role || 'Barbero', specialty: staff?.specialty || '', bio: staff?.bio || '',
+    role: staff?.role || editableRoles[0] || 'Profesional', specialty: staff?.specialty || '', bio: staff?.bio || '',
     hire_date: staff?.hire_date || '', skills: staff?.skills?.join(', ') || '',
     color: staff?.color || '',
   });
@@ -272,10 +276,9 @@ const StaffFormModal = ({ staff, onClose, onSaved }) => {
             <div className={`${b}__form-field`}>
               <label>Rol</label>
               <select name="role" value={form.role} onChange={handleChange}>
-                <option value="Barbero">Barbero</option>
-                <option value="Barbera">Barbera</option>
-                <option value="Estilista">Estilista</option>
-                <option value="Manicurista">Manicurista</option>
+                {editableRoles.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -553,6 +556,14 @@ const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) =>
 // ===== MAIN COMPONENT =====
 const Team = () => {
   const { addNotification } = useNotification();
+  const { tenant } = useTenant();
+  // Use tenant-configured roles if available, otherwise build from staff data or use defaults
+  const ROLES = useMemo(() => {
+    if (tenant.staff_roles && tenant.staff_roles.length > 0) {
+      return ['Todos', ...tenant.staff_roles];
+    }
+    return DEFAULT_ROLES;
+  }, [tenant.staff_roles]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -645,8 +656,7 @@ const Team = () => {
       handleStaffUpdated(updated);
 
       // Create conversations for Inbox via localStorage
-      const roleText = member.role === 'Barbero' || member.role === 'Barbera'
-        ? 'nuestros barberos' : member.role === 'Estilista' ? 'nuestras estilistas' : 'nuestras manicuristas';
+      const roleText = 'nuestros profesionales';
       const now = new Date();
       const conversations = selectedClients.map((client, i) => {
         const firstName = client.name.split(' ')[0];
@@ -663,7 +673,7 @@ const Team = () => {
           messages: [
             { from: 'business', text: resolvedMsg, time: t1.toISOString() },
             { from: 'client', text: `Hola! Gracias por avisarme. Me gustaria agendar con otro profesional entonces. El descuento aplica para cualquier servicio?`, time: t2.toISOString() },
-            { from: 'business', text: `Claro que si, ${firstName}! El 10% aplica en cualquier servicio. Te recomiendo a ${roleText} disponibles. Agenda aqui y listo: https://book.weibook.co/alpelo-peluqueria`, time: t3.toISOString() },
+            { from: 'business', text: `Claro que si, ${firstName}! El 10% aplica en cualquier servicio. Te recomiendo a ${roleText} disponibles.${tenant.booking_url ? ` Agenda aqui y listo: ${tenant.booking_url}` : ''}`, time: t3.toISOString() },
           ],
         };
       });
@@ -833,6 +843,7 @@ const Team = () => {
           staff={editingStaff}
           onClose={() => { setShowForm(false); setEditingStaff(null); }}
           onSaved={handleFormSaved}
+          roles={ROLES}
         />
       )}
 
@@ -843,6 +854,8 @@ const Team = () => {
           clients={getStaffClients(deactivating.name)}
           onConfirm={handleDeactivateConfirm}
           onCancel={() => setDeactivating(null)}
+          tenantName={tenant.name}
+          bookingUrl={tenant.booking_url}
         />
       )}
 

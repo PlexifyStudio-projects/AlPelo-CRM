@@ -69,7 +69,8 @@ const AdminProfile = ({ user, onUpdate }) => {
       admin: 'Administrador',
       dev: 'Desarrollador',
       super_admin: 'Super Admin',
-      barber: 'Barbero',
+      barber: 'Profesional',
+      staff: 'Profesional',
     };
     return roles[role] || role;
   };

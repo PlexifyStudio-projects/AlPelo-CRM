@@ -287,7 +287,124 @@
     font-size: $font-size-2xs;
     color: $color-gray-400;
     font-weight: $font-weight-regular;
-    @include truncate;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  &__kpi-trend {
+    display: inline-flex;
+    align-items: center;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    padding: 1px 6px;
+    border-radius: $border-radius-full;
+    letter-spacing: $letter-spacing-wide;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    &--up {
+      color: $color-success-dark;
+      background: rgba(52, 211, 153, 0.12);
+    }
+
+    &--down {
+      color: $color-error-dark;
+      background: rgba(248, 113, 113, 0.12);
+    }
+  }
+
+  // ===========================================
+  // CHARTS SECTION — Revenue + Status breakdown
+  // ===========================================
+  &__chart-section {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-lg;
+    animation: db-fadeInUp 500ms $ease-out-expo both 0.3s;
+
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__revenue-chart,
+  &__status-chart {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(24px) saturate(1.3);
+    -webkit-backdrop-filter: blur(24px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: $border-radius-lg;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 4px 16px rgba(0, 0, 0, 0.03),
+      $glass-inner-glow;
+    padding: $spacing-lg;
+    overflow: hidden;
+  }
+
+  &__revenue-chart-area,
+  &__status-chart-area {
+    margin-top: $spacing-sm;
+  }
+
+  &__chart-empty {
+    @include flex-center;
+    padding: $spacing-3xl $spacing-md;
+    color: $color-gray-400;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+  }
+
+  &__chart-tooltip {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: $border-radius-md;
+    padding: $spacing-sm $spacing-md;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__chart-tooltip-label {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  &__chart-tooltip-value {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+  }
+
+  &__status-legend {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+    margin-top: $spacing-xs;
+  }
+
+  &__status-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-2xs;
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+  }
+
+  &__status-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
   }
 
   // ===========================================
@@ -1197,6 +1314,11 @@
       flex-wrap: wrap;
       gap: $spacing-xs;
     }
+
+    &__revenue-chart,
+    &__status-chart {
+      padding: $spacing-md;
+    }
   }
 }
 
@@ -1213,7 +1335,7 @@
     &__agenda-header-row,
     &__agenda-row {
       grid-template-columns: 60px 1fr 1fr 80px;
-      min-width: 400px;
+      min-width: 350px;
     }
 
     &__agenda-header-row > :nth-child(5),

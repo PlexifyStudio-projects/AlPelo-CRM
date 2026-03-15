@@ -8,6 +8,7 @@ import ImportClientsModal from '../../components/crm/ImportClientsModal/ImportCl
 import Button from '../../components/common/Button/Button';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
+import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
 import financeService from '../../services/financeService';
 
@@ -243,18 +244,20 @@ const Clients = () => {
       />
 
       {filteredClients.length === 0 && !loading && (
-        <div className={`${b}__empty`}>
-          <div className={`${b}__empty-icon`}>
+        <EmptyState
+          icon={
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
               <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
               <path d="M16 3.13a4 4 0 0 1 0 7.75" />
             </svg>
-          </div>
-          <p className={`${b}__empty-text`}>No se encontraron clientes</p>
-          <p className={`${b}__empty-hint`}>Intenta cambiar los filtros o agrega un nuevo cliente</p>
-        </div>
+          }
+          title="No hay clientes registrados"
+          description="Intenta cambiar los filtros o agrega un nuevo cliente"
+          actionLabel="Agregar Cliente"
+          onAction={() => { setEditingClient(null); setIsAddModalOpen(true); }}
+        />
       )}
 
       <ClientDetail

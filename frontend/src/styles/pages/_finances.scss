@@ -1036,7 +1036,14 @@
       flex-shrink: 1;
       overflow-x: auto;
 
-      &::-webkit-scrollbar { display: none; }
+      &::-webkit-scrollbar {
+        display: block;
+        height: 6px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
     }
 
     &__period-btn {
@@ -1127,7 +1134,14 @@
       overflow-x: auto;
       border-radius: $border-radius-lg;
 
-      &::-webkit-scrollbar { display: none; }
+      &::-webkit-scrollbar {
+        display: block;
+        height: 6px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
     }
   }
 
@@ -1438,6 +1452,17 @@
     overflow-x: auto;
     margin-bottom: $spacing-lg;
     animation: fin-fadeInUp 300ms $ease-out-expo both 0.15s;
+
+    @media (max-width: $breakpoint-md) {
+      &::-webkit-scrollbar {
+        display: block;
+        height: 6px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
+    }
   }
 
   &__table {
@@ -2883,6 +2908,8 @@
   // --- Recharts Container — Premium ---
   &__recharts-container {
     width: 100%;
+    max-width: 100%;
+    overflow: hidden;
     min-height: 200px;
     padding: $spacing-md $spacing-xs $spacing-sm;
 

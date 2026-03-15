@@ -82,10 +82,10 @@ $glass-inner-glow-subtle: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 // -----------------------------------------------
 // BACKGROUNDS
 // -----------------------------------------------
-$bg-main: #F0EDE8;
-$bg-gradient: linear-gradient(135deg, #F0EDE8 0%, #E8E4DD 50%, #F0EDE8 100%);
+$bg-main: #F8F9FC;
+$bg-gradient: linear-gradient(135deg, #F8F9FC 0%, #F1F3F9 50%, #F8F9FC 100%);
 $bg-sidebar: linear-gradient(180deg, #0F0F0F 0%, #1A1A1A 50%, #0F0F0F 100%);
-$bg-card: $glass-bg;
+$bg-card: #FFFFFF;
 $bg-input: rgba(255, 255, 255, 0.6);
 
 // Noise texture (applied via pseudo-element)

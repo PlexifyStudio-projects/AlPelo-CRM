@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date, Text, Float, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Date, Text, Float, JSON, ForeignKey, func
 from sqlalchemy.orm import relationship
 from database.connection import Base
 from datetime import datetime
@@ -358,5 +358,56 @@ class BillingRecord(Base):
     paid_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+# ============================================================================
+# CONTENT STUDIO — AI Content Generation & Publishing
+# ============================================================================
+
+class GeneratedContent(Base):
+    """AI-generated content (images, videos, posts, stories) per tenant."""
+    __tablename__ = "generated_content"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    content_type = Column(String, nullable=False)  # 'image', 'video', 'post', 'story'
+    title = Column(String, nullable=True)
+    prompt = Column(Text, nullable=True)
+    caption = Column(Text, nullable=True)
+    media_url = Column(String, nullable=True)  # URL of generated media
+    thumbnail_url = Column(String, nullable=True)
+    style = Column(String, nullable=True)
+    dimensions = Column(String, nullable=True)  # '1080x1080', '1080x1920', etc.
+    platform = Column(String, nullable=True)  # 'facebook', 'instagram', 'both'
+    status = Column(String, default='draft')  # 'draft', 'published', 'scheduled', 'failed'
+    scheduled_at = Column(DateTime, nullable=True)
+    published_at = Column(DateTime, nullable=True)
+    meta_post_id = Column(String, nullable=True)  # ID from Meta API after publishing
+    generation_cost = Column(Float, default=0)  # Cost in USD
+    metadata_json = Column(Text, nullable=True)  # JSON string for extra data
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+class BrandKit(Base):
+    """Brand identity configuration per tenant — colors, fonts, tone."""
+    __tablename__ = "brand_kits"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False, unique=True)
+    logo_url = Column(String, nullable=True)
+    primary_color = Column(String, default='#2D5A3D')
+    secondary_color = Column(String, default='#1A1A1A')
+    accent_color = Column(String, default='#C9A84C')
+    font_heading = Column(String, default='Montserrat')
+    font_body = Column(String, default='Inter')
+    tagline = Column(String, nullable=True)
+    tone = Column(String, default='profesional')  # profesional, amigable, divertido, elegante
+    created_at = Column(DateTime, default=func.now())
+    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     tenant = relationship("Tenant", foreign_keys=[tenant_id])

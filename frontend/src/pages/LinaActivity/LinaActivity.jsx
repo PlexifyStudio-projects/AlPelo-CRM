@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import EmptyState from '../../components/common/EmptyState/EmptyState';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -169,6 +170,7 @@ const LinaActivity = () => {
   }, [newRule, newRuleCategory, savingRule, fetchMemory]);
 
   const deleteItem = useCallback(async (id) => {
+    if (!window.confirm('¿Eliminar este aprendizaje? Esta acción no se puede deshacer.')) return;
     const strId = String(id);
     try {
       if (strId.startsWith('L')) {
@@ -381,11 +383,11 @@ const LinaActivity = () => {
             <span>Cargando actividad...</span>
           </div>
         ) : filteredEvents.length === 0 ? (
-          <div className="lina-activity__empty">
-            <span className="lina-activity__empty-icon">{Icons.clock}</span>
-            <h3>Sin actividad registrada</h3>
-            <p>Los eventos de Lina apareceran aqui en tiempo real cuando empiece a trabajar.</p>
-          </div>
+          <EmptyState
+            icon={Icons.clock}
+            title="Sin actividad registrada"
+            description="Los eventos de Lina aparecerán aquí en tiempo real cuando empiece a trabajar."
+          />
         ) : (
           filteredEvents.map((event, idx) => {
             const typeConf = TYPE_CONFIG[event.event_type] || TYPE_CONFIG.sistema;

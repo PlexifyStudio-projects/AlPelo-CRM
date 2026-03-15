@@ -1140,6 +1140,7 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm('¿Eliminar este gasto? Esta acción no se puede deshacer.')) return;
     try {
       await financeService.deleteExpense(id);
       addNotification('Gasto eliminado', 'success');

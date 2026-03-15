@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { mockBarbers, mockClients, mockVisitHistory } from '../../../data/mockData';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { useNotification } from '../../../context/NotificationContext';
+import { useTenant } from '../../../context/TenantContext';
 import Modal from '../../common/Modal/Modal';
 
 // ===== ICONS =====
@@ -260,6 +261,7 @@ const formatMonthLabel = (monthStr) => {
 
 const BarberRating = () => {
   const { addNotification } = useNotification();
+  const { tenant } = useTenant();
   const [selectedBarberId, setSelectedBarberId] = useState(null);
   const [expandedBarberId, setExpandedBarberId] = useState(null);
   const [sortBy, setSortBy] = useState('visits');
@@ -432,7 +434,7 @@ const BarberRating = () => {
   };
 
   const messageTemplate = expandedBarber
-    ? `Hola {nombre}! Que tal tu experiencia con ${expandedBarber.name} en AlPelo? Tu opinion nos ayuda a mejorar. Responde del 1 al 5`
+    ? `Hola {nombre}! Que tal tu experiencia con ${expandedBarber.name} en ${tenant.name}? Tu opinion nos ayuda a mejorar. Responde del 1 al 5`
     : '';
 
   const getMessagePreview = (clientName) => {
@@ -440,7 +442,7 @@ const BarberRating = () => {
   };
 
   const retentionTemplate = expandedBarber
-    ? `Hola {nombre}, soy Lina de Al Pelo. Queremos invitarte esta semana a Al Pelo con un ${retentionOffer}. Te esperamos! Agenda aquí: https://book.weibook.co/alpelo-peluqueria`
+    ? `Hola {nombre}, soy Lina de ${tenant.name}. Queremos invitarte esta semana con un ${retentionOffer}. Te esperamos!${tenant.booking_url ? ` Agenda aqui: ${tenant.booking_url}` : ''}`
     : '';
 
   const getRetentionPreview = (clientName) => {

@@ -1,0 +1,667 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ════════════════════════════════════════════════════════════════════
+// AUTOMATIONS — WhatsApp Automated Workflows
+// Premium automation recipe cards
+// ════════════════════════════════════════════════════════════════════
+
+.automations {
+
+  // ════════════════════════════════════════════════
+  // STATS SUMMARY BAR
+  // ════════════════════════════════════════════════
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-sm;
+    @include stagger-fade-in($stagger-base, 4);
+  }
+
+  &__stat {
+    @include glass-card;
+    padding: $spacing-md;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: all $transition-base;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      border-radius: $border-radius-lg $border-radius-lg 0 0;
+    }
+
+    &:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: $shadow-card-hover, $glass-inner-glow;
+    }
+
+    &--active {
+      &::before { background: linear-gradient(90deg, $color-primary, $color-primary-light, $color-primary-lighter); }
+      .automations__stat-value { color: $color-primary; }
+    }
+
+    &--sent {
+      &::before { background: linear-gradient(90deg, $wa-green-dark, $wa-green, lighten($wa-green, 10%)); }
+      .automations__stat-value { color: $wa-green-dark; }
+    }
+
+    &--rate {
+      &::before { background: linear-gradient(90deg, #7C3AED, #8B5CF6, #A78BFA); }
+      .automations__stat-value { color: #7C3AED; }
+    }
+
+    &--confirmed {
+      &::before { background: linear-gradient(90deg, $color-info-dark, $color-info, lighten($color-info, 10%)); }
+      .automations__stat-value { color: $color-info-dark; }
+    }
+  }
+
+  &__stat-icon {
+    font-size: 26px;
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $border-radius-md;
+    background: $color-gray-50;
+  }
+
+  &__stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__stat-value {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-gray-900;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: $letter-spacing-tight;
+  }
+
+  &__stat-label {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    line-height: $line-height-snug;
+  }
+
+  // ════════════════════════════════════════════════
+  // CARDS GRID
+  // ════════════════════════════════════════════════
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-md;
+    @include stagger-fade-in($stagger-base, 6);
+  }
+
+  // ════════════════════════════════════════════════
+  // AUTOMATION CARD — Recipe Style
+  // ════════════════════════════════════════════════
+  &__card {
+    @include glass-card;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    transition: all $transition-base;
+
+    &:hover {
+      transform: translateY(-3px) scale(1.003);
+      box-shadow: $shadow-card-hover, $glass-inner-glow;
+      border-color: $glass-border-bright;
+    }
+
+    // Left colored border
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--auto-color, $color-gray-300);
+      border-radius: $border-radius-lg 0 0 $border-radius-lg;
+      transition: all $transition-base;
+    }
+
+    &--active {
+      box-shadow: $shadow-glass, $glass-inner-glow, 0 0 0 1px rgba(52, 211, 153, 0.12);
+
+      &::before {
+        box-shadow: 0 0 12px var(--auto-color, $color-success);
+      }
+    }
+
+    &--inactive {
+      opacity: 0.75;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  &__card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: $spacing-md $spacing-md $spacing-sm;
+    padding-left: 20px;
+    gap: $spacing-sm;
+  }
+
+  &__card-header-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: $border-radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    background: var(--auto-bg, $color-gray-50);
+    transition: all $transition-base;
+  }
+
+  &__card-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  &__card-name {
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: $color-gray-800;
+    line-height: $line-height-snug;
+    margin: 0;
+  }
+
+  &__card-trigger {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+
+    svg {
+      flex-shrink: 0;
+      opacity: 0.5;
+    }
+  }
+
+  // Toggle switch
+  &__toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  &__toggle-input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+
+    &:checked + .automations__toggle-slider {
+      background: linear-gradient(135deg, $color-primary, $color-primary-light);
+      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.25);
+
+      &::before {
+        transform: translateX(20px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      }
+    }
+
+    &:focus-visible + .automations__toggle-slider {
+      box-shadow: 0 0 0 3px $color-primary-ghost;
+    }
+  }
+
+  &__toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: $color-gray-200;
+    border-radius: $border-radius-full;
+    cursor: pointer;
+    transition: all 300ms $ease-spring;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: $color-white;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+      transition: transform 300ms $ease-spring;
+    }
+  }
+
+  // Status badge
+  &__card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
+    letter-spacing: $letter-spacing-wide;
+    margin-left: 20px;
+    margin-right: $spacing-md;
+    align-self: flex-start;
+
+    &--active {
+      background: $color-success-bg;
+      color: $color-success-dark;
+      box-shadow: inset 0 0 0 1px $color-success-border;
+    }
+
+    &--inactive {
+      background: $color-gray-50;
+      color: $color-gray-400;
+      box-shadow: inset 0 0 0 1px $border-color;
+    }
+  }
+
+  &__card-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+
+    .automations__card-status--active & {
+      box-shadow: 0 0 6px currentColor;
+      animation: statusPulse 2.5s ease-in-out infinite;
+    }
+  }
+
+  // Message preview area
+  &__card-message {
+    padding: $spacing-sm 20px;
+    margin: 0 $spacing-md $spacing-sm 20px;
+    background: $wa-chat-bg;
+    border-radius: $border-radius-md;
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.025;
+      @include dot-grid(rgba(0, 0, 0, 0.3), 1px, 14px);
+    }
+  }
+
+  &__card-message-label {
+    @include label-text;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    position: relative;
+    z-index: 1;
+  }
+
+  &__card-bubble {
+    background: $wa-sent-bubble;
+    padding: 10px 14px;
+    border-radius: 10px 10px 0 10px;
+    font-size: $font-size-xs;
+    color: $color-gray-700;
+    line-height: 1.55;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: -7px;
+      width: 0;
+      height: 0;
+      border-left: 7px solid $wa-sent-bubble;
+      border-bottom: 7px solid transparent;
+    }
+  }
+
+  &__card-message-edit {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid $color-primary;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    font-family: $font-primary;
+    color: $color-gray-700;
+    line-height: 1.55;
+    background: $color-white;
+    resize: vertical;
+    position: relative;
+    z-index: 1;
+    min-height: 80px;
+    transition: all $transition-fast;
+    box-shadow: 0 0 0 3px $color-primary-ghost;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary-light;
+    }
+  }
+
+  // Days selector for reactivation
+  &__card-days {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 $spacing-md 0 20px;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__card-days-label {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    white-space: nowrap;
+  }
+
+  &__card-days-select {
+    padding: 6px 28px 6px 12px;
+    border: $border-width solid $border-color-medium;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    font-family: $font-primary;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    background: $color-white;
+    cursor: pointer;
+    transition: all $transition-fast;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238E8E85' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px $color-primary-ghost;
+    }
+  }
+
+  // Card footer with stats and actions
+  &__card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-sm $spacing-md $spacing-sm 20px;
+    border-top: $border-width solid $border-color-light;
+    margin-top: auto;
+    gap: $spacing-sm;
+  }
+
+  &__card-stats {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    flex-wrap: wrap;
+  }
+
+  &__card-stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+    font-variant-numeric: tabular-nums;
+
+    strong {
+      color: $color-gray-600;
+      font-weight: $font-weight-bold;
+    }
+  }
+
+  &__card-last {
+    font-size: $font-size-2xs;
+    color: $color-gray-300;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+  }
+
+  &__card-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    background: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    font-family: $font-primary;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-primary;
+      color: $color-primary;
+      background: $color-primary-ghost;
+    }
+
+    &--save {
+      background: linear-gradient(135deg, $color-primary, $color-primary-light);
+      color: $color-white;
+      border-color: transparent;
+      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(45, 90, 61, 0.3);
+        color: $color-white;
+        transform: translateY(-1px);
+      }
+    }
+
+    &--cancel {
+      &:hover {
+        border-color: $color-error;
+        color: $color-error-dark;
+        background: $color-error-bg;
+      }
+    }
+  }
+}
+
+// ════════════════════════════════════════════════
+// CAMPAIGNS TABS
+// ════════════════════════════════════════════════
+.campaigns__tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: $color-gray-50;
+  border-radius: $border-radius-lg;
+  align-self: flex-start;
+  border: $border-width solid $border-color-light;
+}
+
+.campaigns__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: $border-radius-md;
+  background: transparent;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  font-family: $font-primary;
+  color: $color-gray-400;
+  cursor: pointer;
+  transition: all $transition-fast;
+  letter-spacing: $letter-spacing-normal;
+  white-space: nowrap;
+
+  svg {
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  &:hover {
+    color: $color-gray-600;
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  &--active {
+    background: $color-white;
+    color: $color-gray-800;
+    box-shadow: $shadow-sm;
+    font-weight: $font-weight-bold;
+
+    svg {
+      opacity: 1;
+      color: $color-primary;
+    }
+
+    &:hover {
+      background: $color-white;
+      color: $color-gray-800;
+    }
+  }
+}
+
+.campaigns__tab-badge {
+  font-size: $font-size-2xs;
+  font-weight: $font-weight-bold;
+  padding: 1px 7px;
+  border-radius: $border-radius-full;
+  font-variant-numeric: tabular-nums;
+  background: $color-primary-ghost;
+  color: $color-primary;
+
+  .campaigns__tab--active & {
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+  }
+}
+
+// ════════════════════════════════════════════════
+// RESPONSIVE
+// ════════════════════════════════════════════════
+@media (max-width: $breakpoint-lg) {
+  .automations {
+    &__stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    &__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-md) {
+  .automations {
+    &__stats {
+      grid-template-columns: 1fr 1fr;
+      gap: $spacing-xs;
+    }
+
+    &__stat {
+      padding: $spacing-sm;
+      gap: 10px;
+    }
+
+    &__stat-icon {
+      width: 38px;
+      height: 38px;
+      font-size: 20px;
+    }
+
+    &__stat-value {
+      font-size: $font-size-md;
+    }
+
+    &__grid {
+      grid-template-columns: 1fr;
+    }
+
+    &__card-header {
+      flex-wrap: wrap;
+    }
+
+    &__card-footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-xs;
+    }
+
+    &__card-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
+
+  .campaigns__tabs {
+    align-self: stretch;
+  }
+
+  .campaigns__tab {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .automations {
+    &__stats {
+      grid-template-columns: 1fr;
+    }
+
+    &__card-stats {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+  }
+}
+
+// Reuse statusPulse from campaigns

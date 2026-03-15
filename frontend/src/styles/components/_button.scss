@@ -74,12 +74,12 @@
   // VARIANTS
   // -----------------------------------------------
   &--primary {
-    background: linear-gradient(135deg, $color-primary 0%, $color-primary-dark 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: $color-white;
-    box-shadow: $shadow-sm, $shadow-glow-primary;
+    box-shadow: $shadow-sm, 0 0 40px rgba(var(--color-primary-rgb, 45, 90, 61), 0.15);
 
     &:hover {
-      box-shadow: $shadow-md, 0 0 48px rgba(45, 90, 61, 0.25);
+      box-shadow: $shadow-md, 0 0 48px rgba(var(--color-primary-rgb, 45, 90, 61), 0.25);
       transform: translateY(-1px);
     }
 
@@ -90,14 +90,14 @@
   }
 
   &--secondary {
-    background: rgba(45, 90, 61, 0.06);
-    border: $border-width solid rgba(45, 90, 61, 0.2);
-    color: $color-primary;
+    background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.06);
+    border: $border-width solid rgba(var(--color-primary-rgb, 45, 90, 61), 0.2);
+    color: var(--color-primary);
     box-shadow: $shadow-xs;
 
     &:hover {
-      background: rgba(45, 90, 61, 0.1);
-      border-color: rgba(45, 90, 61, 0.3);
+      background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.1);
+      border-color: rgba(var(--color-primary-rgb, 45, 90, 61), 0.3);
       transform: translateY(-1px);
       box-shadow: $shadow-sm;
     }
@@ -135,9 +135,9 @@
     box-shadow: none;
 
     &:hover {
-      border-color: $color-primary;
-      color: $color-primary;
-      background: rgba(45, 90, 61, 0.04);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+      background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.04);
       transform: translateY(-1px);
       box-shadow: $shadow-sm;
     }
@@ -203,8 +203,8 @@
     // Dark spinner for secondary/ghost
     &.button--secondary::after,
     &.button--ghost::after {
-      border-color: rgba(45, 90, 61, 0.15);
-      border-top-color: $color-primary;
+      border-color: rgba(var(--color-primary-rgb, 45, 90, 61), 0.15);
+      border-top-color: var(--color-primary);
     }
   }
 
@@ -223,7 +223,7 @@
 
     .button--secondary &,
     .button--ghost & {
-      background: rgba(45, 90, 61, 0.12);
+      background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.12);
     }
   }
 
@@ -251,7 +251,7 @@
   // -----------------------------------------------
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-primary, 0 0 16px rgba(45, 90, 61, 0.15);
+    box-shadow: 0 0 0 2px $color-white, 0 0 0 4px var(--color-primary), 0 0 16px rgba(var(--color-primary-rgb, 45, 90, 61), 0.15);
   }
 
   &--danger:focus-visible {

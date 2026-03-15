@@ -1,16 +1,17 @@
 // ============================================
-// AlPelo CRM - Mock Data v5.0
-// Comprehensive dataset synced from Weibook
-// Real data from AlPelo Peluquería, Bucaramanga
+// Plexify CRM - Mock Data v5.0
+// EXAMPLE DATA from AlPelo tenant (for development/demo only)
+// This is tenant-specific sample data, NOT hardcoded business logic.
+// In production, all data comes from the backend per-tenant.
 // 30 clients, 20 staff, 45+ services, ~217 visit history entries
-// Services/staff/ratings synced from book.weibook.co/alpelo-peluqueria
 // totalSpent = sum of completed visit amounts
 // totalVisits = count of completed + no_show entries
 // loyaltyPoints = Math.round(totalSpent / 1000)
 // ============================================
 
 // ============================================
-// Business info — synced from Weibook (book.weibook.co/alpelo-peluqueria)
+// Business info — example data (AlPelo tenant)
+// In production, this comes from the /api/tenant/me endpoint
 // ============================================
 export const mockBusinessInfo = {
   name: 'ALPELO PELUQUERÍA',
@@ -813,7 +814,7 @@ export const mockClients = [
 ];
 
 // ============================================
-// Staff — ratings synced from Weibook (book.weibook.co/alpelo-peluqueria)
+// Staff — example data (AlPelo tenant, ratings from booking platform)
 // ============================================
 export const mockBarbers = [
   // Barberos
@@ -842,7 +843,7 @@ export const mockBarbers = [
 ];
 
 // ============================================
-// Services — synced from Weibook (book.weibook.co/alpelo-peluqueria)
+// Services — example data (AlPelo tenant, from booking platform)
 // ============================================
 export const mockServices = [
   // Barbería

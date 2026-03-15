@@ -3,10 +3,23 @@ import { createPortal } from 'react-dom';
 import servicesService from '../../services/servicesService';
 import staffService from '../../services/staffService';
 import { useNotification } from '../../context/NotificationContext';
+import { useTenant } from '../../context/TenantContext';
+import EmptyState from '../../components/common/EmptyState/EmptyState';
 
 const b = 'services';
 
+// Generic service icon used as fallback for unknown categories
+const GenericServiceIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 8v8" /><path d="M8 12h8" />
+  </svg>
+);
+
+// Predefined category styles — these cover common categories across different business types.
+// Categories not listed here will get a generic fallback style.
+// The actual categories come from the backend/tenant config.
 const CATEGORY_META = {
+  // Salon / barbershop
   'Barbería': {
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -53,9 +66,25 @@ const CATEGORY_META = {
     color: '#A78BFA',
     gradient: 'linear-gradient(135deg, #A78BFA 0%, #C4B5FD 100%)',
   },
+  // Generic categories for any business type
+  'Consulta': {
+    icon: <GenericServiceIcon />,
+    color: '#3B82F6',
+    gradient: 'linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%)',
+  },
+  'Tratamiento': {
+    icon: <GenericServiceIcon />,
+    color: '#14B8A6',
+    gradient: 'linear-gradient(135deg, #14B8A6 0%, #5EEAD4 100%)',
+  },
+  'Bienestar': {
+    icon: <GenericServiceIcon />,
+    color: '#8B5CF6',
+    gradient: 'linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%)',
+  },
 };
 
-const getCategoryMeta = (cat) => CATEGORY_META[cat] || { icon: null, color: '#6B6B63', gradient: 'linear-gradient(135deg, #6B6B63, #8E8E85)' };
+const getCategoryMeta = (cat) => CATEGORY_META[cat] || { icon: <GenericServiceIcon />, color: '#6B6B63', gradient: 'linear-gradient(135deg, #6B6B63, #8E8E85)' };
 
 const formatCurrency = (amount) => {
   if (!amount && amount !== 0) return '-';
@@ -78,8 +107,13 @@ const Services = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  const { tenant } = useTenant();
+  const defaultCategory = useMemo(() => {
+    // Use the first known category from existing services, or first from CATEGORY_META
+    return Object.keys(CATEGORY_META)[0] || 'General';
+  }, []);
   const [formData, setFormData] = useState({
-    name: '', category: 'Barbería', price: '', duration_minutes: '', description: '', staff_ids: [],
+    name: '', category: defaultCategory, price: '', duration_minutes: '', description: '', staff_ids: [],
   });
   const { addNotification } = useNotification();
 
@@ -151,7 +185,7 @@ const Services = () => {
 
   const openCreateModal = () => {
     setEditingService(null);
-    setFormData({ name: '', category: 'Barbería', price: '', duration_minutes: '', description: '', staff_ids: [] });
+    setFormData({ name: '', category: defaultCategory, price: '', duration_minutes: '', description: '', staff_ids: [] });
     setShowModal(true);
   };
 
@@ -192,7 +226,7 @@ const Services = () => {
   };
 
   const handleDelete = async (svc) => {
-    if (!window.confirm(`¿Eliminar "${svc.name}"?`)) return;
+    if (!window.confirm(`¿Eliminar "${svc.name}"? Esta acción no se puede deshacer.`)) return;
     try {
       await servicesService.delete(svc.id);
       addNotification('Servicio eliminado', 'success');
@@ -226,7 +260,7 @@ const Services = () => {
       <div className={`${b}__header`}>
         <div className={`${b}__header-left`}>
           <h1 className={`${b}__title`}>Servicios</h1>
-          <p className={`${b}__subtitle`}>Catálogo completo de AlPelo Peluquería</p>
+          <p className={`${b}__subtitle`}>Catálogo completo de {tenant.name}</p>
         </div>
         <button className={`${b}__add-btn`} onClick={openCreateModal}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
@@ -286,10 +320,15 @@ const Services = () => {
       {/* Service Grid by Category */}
       <div className={`${b}__content`}>
         {Object.keys(grouped).length === 0 ? (
-          <div className={`${b}__empty`}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M8 15h8M9 9h.01M15 9h.01" /></svg>
-            <p>No se encontraron servicios</p>
-          </div>
+          <EmptyState
+            icon={
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M8 15h8M9 9h.01M15 9h.01" /></svg>
+            }
+            title="No hay servicios configurados"
+            description="Agrega tu primer servicio para empezar a gestionar tu catálogo"
+            actionLabel="Nuevo Servicio"
+            onAction={openCreateModal}
+          />
         ) : (
           Object.entries(grouped).map(([category, items]) => {
             const meta = getCategoryMeta(category);
@@ -366,7 +405,7 @@ const Services = () => {
             <form onSubmit={handleSubmit} className={`${b}__modal-form`}>
               <div className={`${b}__form-group`}>
                 <label>Nombre del servicio</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: Corte Hipster" />
+                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: Servicio Premium" />
               </div>
 
               <div className={`${b}__form-row`}>

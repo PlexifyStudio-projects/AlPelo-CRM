@@ -181,9 +181,9 @@
       outline: none;
       width: 320px;
       background: $color-white;
-      border-color: rgba(45, 90, 61, 0.18);
+      border-color: rgba(var(--color-primary-rgb, 45, 90, 61), 0.18);
       box-shadow:
-        0 0 0 3px rgba(45, 90, 61, 0.06),
+        0 0 0 3px rgba(var(--color-primary-rgb, 45, 90, 61), 0.06),
         $shadow-md;
 
       &::placeholder {
@@ -207,7 +207,7 @@
     }
 
     .header__search-input:focus ~ & {
-      color: $color-primary;
+      color: var(--color-primary);
     }
   }
 
@@ -263,8 +263,8 @@
     }
 
     &--active {
-      background: rgba(45, 90, 61, 0.08);
-      color: $color-primary;
+      background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.08);
+      color: var(--color-primary);
     }
 
     // Subtle background glow
@@ -392,12 +392,12 @@
     min-width: 22px;
     height: 22px;
     padding: 0 $spacing-xs;
-    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
     color: $color-white;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     border-radius: $border-radius-full;
-    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
+    box-shadow: 0 2px 8px rgba(var(--color-primary-rgb, 45, 90, 61), 0.2);
     animation: bounceIn 300ms $ease-spring both 0.1s;
   }
 
@@ -514,18 +514,18 @@
 
     // --- Unread state ---
     &--unread {
-      background: rgba(45, 90, 61, 0.025);
+      background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.025);
 
       &::after {
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(90deg, rgba(45, 90, 61, 0.03), transparent 60%);
+        background: linear-gradient(90deg, rgba(var(--color-primary-rgb, 45, 90, 61), 0.03), transparent 60%);
         pointer-events: none;
       }
 
       &:hover {
-        background: rgba(45, 90, 61, 0.05);
+        background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.05);
       }
 
       .header__notif-message {
@@ -713,8 +713,8 @@
       width: 6px;
       height: 6px;
       border-radius: $border-radius-full;
-      background: $color-primary;
-      box-shadow: 0 0 8px rgba(45, 90, 61, 0.3);
+      background: var(--color-primary);
+      box-shadow: 0 0 8px rgba(var(--color-primary-rgb, 45, 90, 61), 0.3);
       animation: pulseRingPrimary 2.5s ease-in-out infinite;
     }
   }
@@ -772,7 +772,7 @@
     width: 36px;
     height: 36px;
     border-radius: $border-radius-full;
-    background: linear-gradient(145deg, $color-primary, $color-primary-dark);
+    background: linear-gradient(145deg, var(--color-primary), var(--color-primary-dark));
     color: $color-white;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
@@ -794,10 +794,10 @@
     }
 
     .header__profile-trigger:hover & {
-      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.12);
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb, 45, 90, 61), 0.12);
 
       &::after {
-        border-color: rgba(45, 90, 61, 0.12);
+        border-color: rgba(var(--color-primary-rgb, 45, 90, 61), 0.12);
       }
     }
   }
@@ -986,7 +986,7 @@
   &__notification-btn:focus-visible,
   &__profile-trigger:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.2), 0 0 0 4px rgba(45, 90, 61, 0.08);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 45, 90, 61), 0.2), 0 0 0 4px rgba(var(--color-primary-rgb, 45, 90, 61), 0.08);
   }
 }
 

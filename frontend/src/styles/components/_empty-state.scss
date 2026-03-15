@@ -1,0 +1,78 @@
+@use '../abstracts/variables' as *;
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-3xl $spacing-xl;
+  text-align: center;
+  animation: emptyStateFadeIn 400ms $ease-out-quart both;
+
+  &__icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $color-gray-300;
+    margin-bottom: $spacing-lg;
+
+    svg {
+      width: 48px;
+      height: 48px;
+    }
+  }
+
+  &__title {
+    font-family: $font-primary;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    margin: 0 0 $spacing-sm;
+    letter-spacing: $letter-spacing-tight;
+  }
+
+  &__description {
+    font-size: $font-size-base;
+    color: $color-gray-400;
+    margin: 0 0 $spacing-xl;
+    max-width: 360px;
+    line-height: $line-height-base;
+  }
+
+  &__action {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-lg;
+    background: $color-primary;
+    color: $color-white;
+    border: none;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: background $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+      background: $color-primary-light;
+      box-shadow: $shadow-sm;
+    }
+
+    &:active {
+      background: $color-primary-dark;
+    }
+  }
+}
+
+@keyframes emptyStateFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

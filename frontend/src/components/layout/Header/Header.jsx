@@ -239,7 +239,7 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
             <div className={`${b}__user-info`}>
               <span className={`${b}__user-name`}>{user?.name || 'Admin'}</span>
               <span className={`${b}__user-role`}>
-                {user?.role === 'admin' ? 'Administrador' : 'Barbero'}
+                {user?.role === 'admin' ? 'Administrador' : user?.role === 'dev' ? 'Desarrollador' : 'Profesional'}
               </span>
             </div>
             <span className={`${b}__chevron ${isProfileOpen ? `${b}__chevron--open` : ''}`}>

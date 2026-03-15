@@ -1,11 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotification } from '../../context/NotificationContext';
+import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
 import whatsappService from '../../services/whatsappService';
+import automationService from '../../services/automationService';
 import { mockWhatsAppTemplates, templateCategories } from '../../data/mockData';
+import ReviewsPipeline from '../../components/reviews/ReviewsPipeline';
 
 const B = 'campaigns';
+const A = 'automations';
 
 // ═══════════════════════════════════════════════
 // SVG Icons
@@ -24,6 +28,311 @@ const EditIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="non
 const WhatsAppIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>;
 const ChartIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
 const EyeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>;
+const ClockIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
+const ZapIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>;
+const MegaphoneIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+const SaveIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>;
+
+// ═══════════════════════════════════════════════
+// Automation Presets
+// ═══════════════════════════════════════════════
+const AUTOMATION_STORAGE_KEY = 'plexify_automations';
+
+const DEFAULT_AUTOMATIONS = [
+  {
+    id: 'auto_reminder_24h',
+    name: 'Recordatorio de Cita (24h)',
+    icon: '🔔',
+    color: '#3B82F6',
+    bg: 'rgba(59, 130, 246, 0.08)',
+    trigger: '24 horas antes de la cita',
+    message: 'Hola {{nombre}}, te recordamos tu cita mañana a las {{hora}} con {{profesional}}. ¿Confirmas? Responde SI o NO',
+    enabled: true,
+    stats: { sent: 145, responded: 89 },
+    lastTriggered: '2026-03-15T08:30:00',
+  },
+  {
+    id: 'auto_reminder_1h',
+    name: 'Recordatorio de Cita (1h)',
+    icon: '⏰',
+    color: '#F59E0B',
+    bg: 'rgba(245, 158, 11, 0.08)',
+    trigger: '1 hora antes de la cita',
+    message: '{{nombre}}, tu cita es en 1 hora a las {{hora}}. ¡Te esperamos!',
+    enabled: true,
+    stats: { sent: 132, responded: 72 },
+    lastTriggered: '2026-03-15T10:15:00',
+  },
+  {
+    id: 'auto_post_visit',
+    name: 'Agradecimiento Post-Visita',
+    icon: '💬',
+    color: '#8B5CF6',
+    bg: 'rgba(139, 92, 246, 0.08)',
+    trigger: '2 horas después de completar visita',
+    message: 'Gracias por visitarnos, {{nombre}}! ¿Cómo calificas tu experiencia del 1 al 5?',
+    enabled: false,
+    stats: { sent: 78, responded: 45 },
+    lastTriggered: '2026-03-14T18:00:00',
+  },
+  {
+    id: 'auto_birthday',
+    name: 'Feliz Cumpleaños',
+    icon: '🎂',
+    color: '#EC4899',
+    bg: 'rgba(236, 72, 153, 0.08)',
+    trigger: 'Día del cumpleaños (9:00 AM)',
+    message: '¡Feliz cumpleaños, {{nombre}}! 🎂 Te regalamos un 10% de descuento en tu próxima visita. Válido por 7 días.',
+    enabled: true,
+    stats: { sent: 23, responded: 18 },
+    lastTriggered: '2026-03-12T09:00:00',
+  },
+  {
+    id: 'auto_reactivation',
+    name: 'Reactivación de Clientes Inactivos',
+    icon: '🔄',
+    color: '#EF4444',
+    bg: 'rgba(239, 68, 68, 0.08)',
+    trigger: 'Cliente sin visita por X días',
+    message: 'Hola {{nombre}}, te extrañamos! Han pasado {{dias}} días desde tu última visita. ¿Te agendamos?',
+    enabled: false,
+    stats: { sent: 56, responded: 31 },
+    lastTriggered: '2026-03-13T11:00:00',
+    days: 30,
+    daysOptions: [30, 45, 60, 90],
+  },
+];
+
+const loadAutomations = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(AUTOMATION_STORAGE_KEY));
+    if (saved && Array.isArray(saved) && saved.length > 0) return saved;
+  } catch { /* ignore */ }
+  return DEFAULT_AUTOMATIONS;
+};
+const saveAutomations = (autos) => localStorage.setItem(AUTOMATION_STORAGE_KEY, JSON.stringify(autos));
+
+const getTimeAgo = (dateStr) => {
+  if (!dateStr) return 'Nunca';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Hace un momento';
+  if (mins < 60) return `Hace ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `Hace ${days}d`;
+};
+
+// ═══════════════════════════════════════════════
+// Automations Panel Component
+// ═══════════════════════════════════════════════
+const AutomationsPanel = ({ addNotification }) => {
+  const [automations, setAutomations] = useState(loadAutomations);
+  const [editingId, setEditingId] = useState(null);
+  const [editMessage, setEditMessage] = useState('');
+
+  useEffect(() => { saveAutomations(automations); }, [automations]);
+
+  // Try to load from API
+  useEffect(() => {
+    automationService.getAutomations().then(data => {
+      if (data && Array.isArray(data) && data.length > 0) setAutomations(data);
+    });
+  }, []);
+
+  const activeCount = automations.filter(a => a.enabled).length;
+  const totalSent = automations.reduce((s, a) => s + (a.stats?.sent || 0), 0);
+  const totalResponded = automations.reduce((s, a) => s + (a.stats?.responded || 0), 0);
+  const responseRate = totalSent > 0 ? Math.round((totalResponded / totalSent) * 100) : 0;
+  const confirmedAppts = Math.round(totalResponded * 0.72); // mock: ~72% of responded = confirmed
+
+  const handleToggle = (id) => {
+    setAutomations(prev => prev.map(a => {
+      if (a.id !== id) return a;
+      const next = { ...a, enabled: !a.enabled };
+      automationService.updateAutomation(id, { enabled: next.enabled });
+      return next;
+    }));
+    const auto = automations.find(a => a.id === id);
+    addNotification(
+      auto?.enabled ? `"${auto.name}" desactivado` : `"${auto?.name}" activado`,
+      auto?.enabled ? 'info' : 'success'
+    );
+  };
+
+  const startEdit = (auto) => {
+    setEditingId(auto.id);
+    setEditMessage(auto.message);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditMessage('');
+  };
+
+  const saveEdit = (id) => {
+    setAutomations(prev => prev.map(a =>
+      a.id === id ? { ...a, message: editMessage } : a
+    ));
+    automationService.updateAutomation(id, { message: editMessage });
+    setEditingId(null);
+    setEditMessage('');
+    addNotification('Mensaje actualizado', 'success');
+  };
+
+  const handleDaysChange = (id, days) => {
+    setAutomations(prev => prev.map(a =>
+      a.id === id ? { ...a, days: Number(days) } : a
+    ));
+    automationService.updateAutomation(id, { days: Number(days) });
+  };
+
+  return (
+    <div className={A}>
+      {/* Stats summary */}
+      <div className={`${A}__stats`}>
+        <div className={`${A}__stat ${A}__stat--active`}>
+          <div className={`${A}__stat-icon`}>⚡</div>
+          <div className={`${A}__stat-info`}>
+            <span className={`${A}__stat-value`}>{activeCount} de {automations.length}</span>
+            <span className={`${A}__stat-label`}>Automatizaciones activas</span>
+          </div>
+        </div>
+        <div className={`${A}__stat ${A}__stat--sent`}>
+          <div className={`${A}__stat-icon`}>📤</div>
+          <div className={`${A}__stat-info`}>
+            <span className={`${A}__stat-value`}>{totalSent.toLocaleString()}</span>
+            <span className={`${A}__stat-label`}>Mensajes este mes</span>
+          </div>
+        </div>
+        <div className={`${A}__stat ${A}__stat--rate`}>
+          <div className={`${A}__stat-icon`}>📊</div>
+          <div className={`${A}__stat-info`}>
+            <span className={`${A}__stat-value`}>{responseRate}%</span>
+            <span className={`${A}__stat-label`}>Tasa de respuesta</span>
+          </div>
+        </div>
+        <div className={`${A}__stat ${A}__stat--confirmed`}>
+          <div className={`${A}__stat-icon`}>✅</div>
+          <div className={`${A}__stat-info`}>
+            <span className={`${A}__stat-value`}>{confirmedAppts}</span>
+            <span className={`${A}__stat-label`}>Citas confirmadas</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Automation cards */}
+      <div className={`${A}__grid`}>
+        {automations.map(auto => (
+          <div
+            key={auto.id}
+            className={`${A}__card ${auto.enabled ? `${A}__card--active` : `${A}__card--inactive`}`}
+            style={{ '--auto-color': auto.color, '--auto-bg': auto.bg }}
+          >
+            {/* Header: icon, title, toggle */}
+            <div className={`${A}__card-header`}>
+              <div className={`${A}__card-header-left`}>
+                <div className={`${A}__card-icon`} style={{ background: auto.bg }}>
+                  {auto.icon}
+                </div>
+                <div className={`${A}__card-title-group`}>
+                  <h3 className={`${A}__card-name`}>{auto.name}</h3>
+                  <span className={`${A}__card-trigger`}>
+                    <ClockIcon /> {auto.trigger}
+                  </span>
+                </div>
+              </div>
+              <label className={`${A}__toggle`}>
+                <input
+                  type="checkbox"
+                  className={`${A}__toggle-input`}
+                  checked={auto.enabled}
+                  onChange={() => handleToggle(auto.id)}
+                />
+                <span className={`${A}__toggle-slider`} />
+              </label>
+            </div>
+
+            {/* Status badge */}
+            <span className={`${A}__card-status ${auto.enabled ? `${A}__card-status--active` : `${A}__card-status--inactive`}`}>
+              <span className={`${A}__card-status-dot`} />
+              {auto.enabled ? 'Activo' : 'Inactivo'}
+            </span>
+
+            {/* Days selector (only for reactivation) */}
+            {auto.daysOptions && (
+              <div className={`${A}__card-days`}>
+                <span className={`${A}__card-days-label`}>Inactividad mínima:</span>
+                <select
+                  className={`${A}__card-days-select`}
+                  value={auto.days}
+                  onChange={e => handleDaysChange(auto.id, e.target.value)}
+                >
+                  {auto.daysOptions.map(d => (
+                    <option key={d} value={d}>{d} días</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Message preview / edit */}
+            <div className={`${A}__card-message`}>
+              <span className={`${A}__card-message-label`}>
+                <WhatsAppIcon /> Mensaje
+              </span>
+              {editingId === auto.id ? (
+                <textarea
+                  className={`${A}__card-message-edit`}
+                  value={editMessage}
+                  onChange={e => setEditMessage(e.target.value)}
+                  rows={3}
+                  autoFocus
+                />
+              ) : (
+                <div className={`${A}__card-bubble`}>
+                  {auto.message}
+                </div>
+              )}
+            </div>
+
+            {/* Footer: stats + actions */}
+            <div className={`${A}__card-footer`}>
+              <div className={`${A}__card-stats`}>
+                <span className={`${A}__card-stat`}>
+                  Enviados: <strong>{auto.stats?.sent || 0}</strong>
+                </span>
+                <span className={`${A}__card-stat`}>
+                  Respondidos: <strong>{auto.stats?.responded || 0}</strong>
+                  {auto.stats?.sent > 0 && ` (${Math.round((auto.stats.responded / auto.stats.sent) * 100)}%)`}
+                </span>
+                <span className={`${A}__card-last`}>
+                  {getTimeAgo(auto.lastTriggered)}
+                </span>
+              </div>
+              <div className={`${A}__card-actions`}>
+                {editingId === auto.id ? (
+                  <>
+                    <button className={`${A}__card-btn ${A}__card-btn--cancel`} onClick={cancelEdit}>
+                      <CloseIcon /> Cancelar
+                    </button>
+                    <button className={`${A}__card-btn ${A}__card-btn--save`} onClick={() => saveEdit(auto.id)}>
+                      <SaveIcon /> Guardar
+                    </button>
+                  </>
+                ) : (
+                  <button className={`${A}__card-btn`} onClick={() => startEdit(auto)}>
+                    <EditIcon /> Editar mensaje
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 // ═══════════════════════════════════════════════
 // Constants
@@ -78,13 +387,14 @@ const SAMPLE_VARS = {
   dias: (c) => String(c?.days_since_visit || c?.days_since_last_visit || ''),
   visitas: (c) => String(c?.total_visits || 0),
   puntos: (c) => String(c?.loyaltyPoints || 0),
-  barbero: () => 'Anderson',
+  profesional: () => 'Anderson',
+  barbero: () => 'Anderson', // kept for backward compatibility with existing templates
   hora: () => '10:00 AM',
   fecha: () => '10 de marzo',
   dia: () => 'lunes',
   meses: () => '6',
   precio: () => '$45.000',
-  producto: () => 'Pomada Mate Premium',
+  producto: () => 'Producto Premium',
 };
 
 const resolveTemplate = (body, client) => {
@@ -161,6 +471,7 @@ const Campaigns = () => {
   const [campaigns, setCampaigns] = useState(loadCampaigns);
 
   // UI
+  const [activeTab, setActiveTab] = useState('campaigns'); // 'campaigns' | 'automations' | 'reviews'
   const [showCreate, setShowCreate] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
   const [showDetail, setShowDetail] = useState(null); // campaign id
@@ -331,6 +642,7 @@ const Campaigns = () => {
   };
 
   const deleteCampaign = (id) => {
+    if (!window.confirm('¿Eliminar esta campaña? Esta acción no se puede deshacer.')) return;
     setCampaigns(prev => prev.filter(c => c.id !== id));
     setShowDetail(null);
     addNotification('Campaña eliminada', 'info');
@@ -412,13 +724,61 @@ const Campaigns = () => {
       {/* ── Header ── */}
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
-          <h1 className={`${B}__title`}>Campañas</h1>
-          <span className={`${B}__subtitle`}>Recuperación y retención de clientes</span>
+          <h1 className={`${B}__title`}>
+            {activeTab === 'campaigns' ? 'Campanas' : activeTab === 'automations' ? 'Automatizaciones' : 'Resenas'}
+          </h1>
+          <span className={`${B}__subtitle`}>
+            {activeTab === 'campaigns' ? 'Recuperacion y retencion de clientes' : activeTab === 'automations' ? 'Flujos automaticos de WhatsApp' : 'Pipeline de resenas y Google Reviews'}
+          </span>
         </div>
-        <button className={`${B}__btn-create`} onClick={openCreate}>
-          <PlusIcon /> Nueva campaña
+        {activeTab === 'campaigns' && (
+          <button className={`${B}__btn-create`} onClick={openCreate}>
+            <PlusIcon /> Nueva campaña
+          </button>
+        )}
+      </div>
+
+      {/* ── Tabs ── */}
+      <div className={`${B}__tabs`}>
+        <button
+          className={`${B}__tab ${activeTab === 'campaigns' ? `${B}__tab--active` : ''}`}
+          onClick={() => setActiveTab('campaigns')}
+        >
+          <MegaphoneIcon /> Campañas
+          <span className={`${B}__tab-badge`}>{campaigns.length}</span>
+        </button>
+        <button
+          className={`${B}__tab ${activeTab === 'automations' ? `${B}__tab--active` : ''}`}
+          onClick={() => setActiveTab('automations')}
+        >
+          <ZapIcon /> Automatizaciones
+        </button>
+        <button
+          className={`${B}__tab ${activeTab === 'reviews' ? `${B}__tab--active` : ''}`}
+          onClick={() => setActiveTab('reviews')}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg> Resenas
         </button>
       </div>
+
+      {/* ══════════════════════════════════════════
+          AUTOMATIONS TAB
+         ══════════════════════════════════════════ */}
+      {activeTab === 'automations' && (
+        <AutomationsPanel addNotification={addNotification} />
+      )}
+
+      {/* ══════════════════════════════════════════
+          REVIEWS TAB
+         ══════════════════════════════════════════ */}
+      {activeTab === 'reviews' && (
+        <ReviewsPipeline />
+      )}
+
+      {/* ══════════════════════════════════════════
+          CAMPAIGNS TAB
+         ══════════════════════════════════════════ */}
+      {activeTab === 'campaigns' && <>
 
       {/* ── Health Dashboard ── */}
       <div className={`${B}__health`}>
@@ -523,16 +883,15 @@ const Campaigns = () => {
       {loading ? (
         <div className={`${B}__loading`}>Cargando clientes...</div>
       ) : filteredCampaigns.length === 0 ? (
-        <div className={`${B}__empty`}>
-          <TargetIcon />
-          <h3>{campaigns.length === 0 ? 'Sin campañas todavia' : 'Sin resultados'}</h3>
-          <p>{campaigns.length === 0
+        <EmptyState
+          icon={<TargetIcon />}
+          title={campaigns.length === 0 ? 'No hay campañas creadas' : 'Sin resultados'}
+          description={campaigns.length === 0
             ? 'Crea tu primera campaña para recuperar clientes inactivos, fidelizar VIPs o lanzar promociones.'
-            : 'Intenta con otro filtro o busqueda.'}</p>
-          {campaigns.length === 0 && (
-            <button className={`${B}__btn-create`} onClick={openCreate}><PlusIcon /> Crear campaña</button>
-          )}
-        </div>
+            : 'Intenta con otro filtro o búsqueda.'}
+          actionLabel={campaigns.length === 0 ? 'Nueva Campaña' : undefined}
+          onAction={campaigns.length === 0 ? openCreate : undefined}
+        />
       ) : (
         <div className={`${B}__grid`}>
           {filteredCampaigns.map(camp => {
@@ -603,6 +962,8 @@ const Campaigns = () => {
         </div>
       )}
 
+      </>}
+
       {/* ══════════════════════════════════════════
           DETAIL MODAL
          ══════════════════════════════════════════ */}
@@ -621,7 +982,7 @@ const Campaigns = () => {
             <div className={`${B}__detail-section`}>
               <span className={`${B}__detail-label`}>Plantilla: {detailCampaign.templateName}</span>
               <div className={`${B}__detail-preview`}>
-                {resolveTemplate(detailCampaign.templateBody, { name: 'Carlos', favorite_service: 'Corte', days_since_visit: 35, total_visits: 8 })}
+                {resolveTemplate(detailCampaign.templateBody, { name: 'Carlos', favorite_service: 'tu servicio favorito', days_since_visit: 35, total_visits: 8 })}
               </div>
             </div>
 
@@ -757,7 +1118,7 @@ const Campaigns = () => {
               {/* Preview */}
               {formTemplate && (() => {
                 const tpl = templates.find(t => t.id === formTemplate);
-                const sampleClient = getSegmentClients(formSegment)[0] || { name: 'Carlos', favorite_service: 'Corte', days_since_visit: 35 };
+                const sampleClient = getSegmentClients(formSegment)[0] || { name: 'Carlos', favorite_service: 'tu servicio', days_since_visit: 35 };
                 return (
                   <div className={`${B}__field`}>
                     <label><EyeIcon /> Vista previa (ejemplo con {sampleClient.name?.split(' ')[0]})</label>

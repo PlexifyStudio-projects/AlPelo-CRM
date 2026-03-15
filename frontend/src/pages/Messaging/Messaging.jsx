@@ -74,12 +74,13 @@ const SEGMENTS = [
   { id: 'inactivo', label: 'Inactivos' },
 ];
 
-const SAMPLE_CLIENT = { name: 'Juan Perez', favoriteService: 'Corte', loyaltyPoints: 150, totalVisits: 8 };
+const SAMPLE_CLIENT = { name: 'Juan Perez', favoriteService: 'tu servicio favorito', loyaltyPoints: 150, totalVisits: 8 };
 
 const SAMPLE_VARS = {
   nombre: (c) => (c?.name || 'Cliente').split(' ')[0],
   servicio: (c) => c?.favoriteService || c?.favorite_service || 'tu servicio',
-  barbero: () => 'Anderson',
+  profesional: () => 'Anderson',
+  barbero: () => 'Anderson', // kept for backward compatibility with existing templates
   hora: () => '10:00 AM',
   fecha: () => '10 de marzo',
   dia: () => 'lunes',
@@ -88,7 +89,7 @@ const SAMPLE_VARS = {
   visitas: (c) => String(c?.totalVisits || c?.total_visits || 0),
   meses: () => '6',
   precio: () => '$45.000',
-  producto: () => 'Pomada Mate Premium',
+  producto: () => 'Producto Premium',
 };
 
 const resolveTemplate = (body, client) => {
@@ -231,7 +232,8 @@ const SendModal = ({ template, onClose, onSend }) => {
         let body = template.body
           .replace(/\{\{nombre\}\}/g, firstName)
           .replace(/\{\{servicio\}\}/g, client.favorite_service || 'tu servicio')
-          .replace(/\{\{barbero\}\}/g, 'tu barbero')
+          .replace(/\{\{profesional\}\}/g, 'tu profesional')
+          .replace(/\{\{barbero\}\}/g, 'tu profesional')
           .replace(/\{\{dias\}\}/g, client.days_since_last_visit ? String(client.days_since_last_visit) : '30');
 
         // Create or get conversation, then send message

@@ -2,9 +2,9 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// SIDEBAR — Fortune 500 Premium Navigation
-// Inspired by Linear, Notion, Stripe Dashboard
-// World-class dark sidebar with crystal polish
+// SIDEBAR — Light Premium SaaS Navigation
+// Inspired by Linear, Notion, Stripe (light mode)
+// Clean, professional, trust-building design
 // ============================================
 
 .sidebar {
@@ -14,42 +14,17 @@
   width: $sidebar-width;
   height: 100vh;
   height: 100dvh;
-  background: $bg-sidebar;
-  color: $color-white;
+  background: $color-white;
+  color: $color-gray-800;
   @include flex-column;
   transition: width 400ms $ease-out-expo;
   z-index: $z-fixed;
   overflow: hidden;
-  border-right: 1px solid rgba(255, 255, 255, 0.035);
+  border-right: 1px solid #E5E7EB;
   will-change: width;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
 
-  // Subtle grain texture on dark surface
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    opacity: 0.015;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 256px 256px;
-    z-index: 0;
-  }
-
-  // Subtle top highlight for depth
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-    z-index: 1;
-    pointer-events: none;
-  }
-
-  // All children above the texture
+  // All children above any overlays
   > * {
     position: relative;
     z-index: 1;
@@ -109,7 +84,7 @@
       margin-right: $spacing-sm;
     }
 
-    // Tooltip on collapsed items
+    // Tooltip on collapsed items (keep dark for contrast)
     .sidebar__item {
       position: relative;
 
@@ -129,9 +104,7 @@
         opacity: 0;
         pointer-events: none;
         z-index: $z-tooltip;
-        box-shadow:
-          $shadow-lg,
-          0 0 0 1px rgba(255, 255, 255, 0.06);
+        box-shadow: $shadow-lg;
         letter-spacing: $letter-spacing-wide;
         transition:
           opacity 200ms $ease-out-quart,
@@ -184,10 +157,10 @@
     width: 36px;
     height: 36px;
     border-radius: $border-radius-md;
-    background: linear-gradient(135deg, rgba(201, 168, 76, 0.15), rgba(201, 168, 76, 0.06));
-    color: $color-accent;
+    background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.08);
+    color: var(--color-primary, $color-primary);
     flex-shrink: 0;
-    border: 1px solid rgba(201, 168, 76, 0.1);
+    border: 1px solid rgba(var(--color-primary-rgb, 45, 90, 61), 0.12);
     position: relative;
     transition:
       background 300ms $ease-out-quart,
@@ -195,23 +168,12 @@
       box-shadow 300ms $ease-out-quart;
 
     svg {
-      filter: drop-shadow(0 0 5px rgba(201, 168, 76, 0.2));
-    }
-
-    // Subtle breathing glow
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -4px;
-      border-radius: inherit;
-      background: radial-gradient(circle, rgba(201, 168, 76, 0.05), transparent 70%);
-      animation: sidebarLogoGlow 5s ease-in-out infinite;
-      pointer-events: none;
+      filter: none;
     }
 
     .sidebar__brand-inner:hover & {
       transform: scale(1.06) rotate(-2deg);
-      box-shadow: 0 0 20px rgba(201, 168, 76, 0.12);
+      box-shadow: 0 2px 12px rgba(var(--color-primary-rgb, 45, 90, 61), 0.1);
     }
   }
 
@@ -219,7 +181,7 @@
     font-family: $font-heading;
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
-    @include gradient-text(linear-gradient(135deg, $color-accent-light, $color-accent));
+    color: $color-gray-800;
     letter-spacing: $letter-spacing-wide;
     line-height: 1.15;
     overflow: hidden;
@@ -228,20 +190,25 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     word-break: break-word;
+    // Reset any gradient text
+    -webkit-text-fill-color: unset;
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
   }
 
   &__logo-sub {
     font-family: $font-primary;
     font-size: $font-size-2xs;
     font-weight: $font-weight-medium;
-    color: $color-gray-500;
+    color: $color-gray-400;
     letter-spacing: $letter-spacing-caps;
     text-transform: uppercase;
     line-height: 1;
     margin-top: 3px;
   }
 
-  // Animated gradient divider under brand
+  // Clean divider under brand
   &__brand-divider {
     height: 1px;
     margin: 0 $spacing-lg;
@@ -249,28 +216,10 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(201, 168, 76, 0.06) 15%,
-      rgba(201, 168, 76, 0.2) 50%,
-      rgba(201, 168, 76, 0.06) 85%,
+      #E5E7EB 15%,
+      #E5E7EB 85%,
       transparent 100%
     );
-    background-size: 200% 100%;
-    animation: gradientShift 8s ease-in-out infinite;
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -1px 25% 0 25%;
-      height: 3px;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(201, 168, 76, 0.04),
-        transparent
-      );
-      filter: blur(4px);
-    }
   }
 
   &__toggle {
@@ -278,15 +227,15 @@
     width: 28px;
     height: 28px;
     border-radius: $border-radius-sm;
-    color: $color-gray-500;
+    color: $color-gray-400;
     transition:
       background 220ms $ease-out-quart,
       color 220ms $ease-out-quart,
       transform 300ms $ease-out-quart;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.07);
-      color: $color-white;
+      background: rgba(0, 0, 0, 0.05);
+      color: $color-gray-700;
     }
 
     &:active {
@@ -296,7 +245,7 @@
 
     &:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.3);
+      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 45, 90, 61), 0.25);
     }
 
     svg {
@@ -311,12 +260,12 @@
       height: 36px;
       margin: $spacing-xs auto 0;
       border-radius: $border-radius-md;
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(0, 0, 0, 0.02);
       color: $color-gray-400;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.07);
-        color: $color-accent;
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--color-primary, $color-primary);
       }
     }
   }
@@ -329,13 +278,13 @@
     padding: $spacing-sm 0 $spacing-md;
     overflow-y: auto;
     overflow-x: hidden;
-    @include custom-scrollbar-dark;
+    @include custom-scrollbar;
     scrollbar-color: transparent transparent;
     scrollbar-width: thin;
 
     // Scrollbar only visible on hover
     &:hover {
-      scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+      scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
     }
 
     // Premium scroll fade edges
@@ -366,11 +315,11 @@
     }
 
     &:hover::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(0, 0, 0, 0.08);
     }
 
     &::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(0, 0, 0, 0.15);
     }
   }
 
@@ -387,7 +336,7 @@
         background: linear-gradient(
           90deg,
           transparent,
-          rgba(255, 255, 255, 0.04),
+          rgba(0, 0, 0, 0.06),
           transparent
         );
       }
@@ -399,7 +348,7 @@
     width: 4px;
     height: 4px;
     border-radius: $border-radius-full;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.08);
     margin: $spacing-md auto $spacing-sm;
   }
 
@@ -413,19 +362,19 @@
     font-family: $font-primary;
 
     &:hover .sidebar__section-title {
-      color: $color-gray-400;
+      color: $color-gray-500;
     }
 
     &:focus-visible {
       outline: none;
-      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.06);
       border-radius: $border-radius-sm;
     }
   }
 
   &__section-title {
     @include label-text;
-    color: $color-gray-600;
+    color: $color-gray-400;
     font-size: 0.56rem;
     letter-spacing: $letter-spacing-caps;
     transition:
@@ -436,7 +385,7 @@
   }
 
   &__section-chevron {
-    color: $color-gray-600;
+    color: $color-gray-300;
     transition:
       transform 280ms $ease-out-quart,
       color 280ms $ease-out-quart;
@@ -447,7 +396,7 @@
     }
 
     .sidebar__section-header:hover & {
-      color: $color-gray-400;
+      color: $color-gray-500;
     }
   }
 
@@ -483,64 +432,37 @@
       animation: none;
     }
 
-    // Subtle background gradient overlay
-    &::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.015) 100%
-      );
-      opacity: 0;
-      transition: opacity 250ms $ease-out-quart;
-      pointer-events: none;
-    }
-
     &:hover {
-      background: rgba(255, 255, 255, 0.05);
-
-      &::after {
-        opacity: 1;
-      }
+      background: rgba(0, 0, 0, 0.04);
 
       .sidebar__icon {
-        opacity: 0.9;
+        opacity: 0.8;
         transform: scale(1.06);
       }
 
       .sidebar__label {
-        color: rgba(255, 255, 255, 0.92);
+        color: $color-gray-800;
       }
     }
 
     &:active {
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(0, 0, 0, 0.06);
       transform: scale(0.98);
       transition-duration: 80ms;
     }
 
     &:focus-visible {
       outline: none;
-      box-shadow: inset 0 0 0 2px rgba(201, 168, 76, 0.25);
+      box-shadow: inset 0 0 0 2px rgba(var(--color-primary-rgb, 45, 90, 61), 0.2);
     }
 
     // -----------------------------------------------
-    // ACTIVE STATE — Premium left-border indicator
+    // ACTIVE STATE — Subtle brand-tinted highlight
     // -----------------------------------------------
     &--active {
-      background: linear-gradient(
-        135deg,
-        rgba(45, 90, 61, 0.45) 0%,
-        rgba(45, 90, 61, 0.3) 100%
-      );
-      box-shadow:
-        0 2px 12px rgba(45, 90, 61, 0.15),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.08);
 
-      // Gold accent bar on the left — the hero indicator
+      // Brand accent bar on the left
       &::before {
         content: '';
         position: absolute;
@@ -549,41 +471,28 @@
         transform: translateY(-50%);
         width: 3px;
         height: 50%;
-        background: linear-gradient(180deg, $color-accent-light, $color-accent);
+        background: var(--color-primary, $color-primary);
         border-radius: 0 $border-radius-full $border-radius-full 0;
         animation: slideIndicator 350ms $ease-spring both;
-        box-shadow:
-          0 0 12px rgba(201, 168, 76, 0.25),
-          0 0 4px rgba(201, 168, 76, 0.4);
-      }
-
-      // Active glow enhancement
-      &::after {
-        background: linear-gradient(
-          135deg,
-          rgba(45, 90, 61, 0.04) 0%,
-          rgba(45, 90, 61, 0) 100%
-        );
-        opacity: 1;
       }
 
       &:hover {
-        background: rgba(45, 90, 61, 0.5);
+        background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.12);
       }
 
       .sidebar__icon {
         opacity: 1;
-        color: $color-accent-light;
-        filter: drop-shadow(0 0 6px rgba(201, 168, 76, 0.2));
+        color: var(--color-primary, $color-primary);
+        filter: none;
       }
 
       .sidebar__label {
-        color: $color-white;
+        color: var(--color-primary, $color-primary);
         font-weight: $font-weight-semibold;
       }
 
       .sidebar__description {
-        color: rgba(255, 255, 255, 0.4);
+        color: $color-gray-400;
       }
     }
   }
@@ -596,7 +505,8 @@
     @include flex-center;
     width: 20px;
     height: 20px;
-    opacity: 0.5;
+    opacity: 0.45;
+    color: $color-gray-500;
     transition:
       opacity 250ms $ease-out-quart,
       color 250ms $ease-out-quart,
@@ -623,7 +533,7 @@
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     letter-spacing: $letter-spacing-wide;
-    color: rgba(255, 255, 255, 0.72);
+    color: $color-gray-600;
     transition:
       opacity 220ms $ease-out-quart,
       color 220ms $ease-out-quart;
@@ -631,7 +541,7 @@
 
   &__description {
     font-size: $font-size-2xs;
-    color: $color-gray-600;
+    color: $color-gray-400;
     letter-spacing: $letter-spacing-wider;
     text-transform: uppercase;
     @include truncate;
@@ -646,8 +556,8 @@
     min-width: 20px;
     height: 20px;
     padding: 0 6px;
-    background: linear-gradient(135deg, $color-accent, $color-accent-dark);
-    color: $color-secondary;
+    background: var(--color-primary, $color-primary);
+    color: $color-white;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     border-radius: $border-radius-full;
@@ -655,7 +565,7 @@
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
     animation: bounceIn 400ms $ease-spring both;
-    box-shadow: 0 2px 10px rgba(201, 168, 76, 0.2);
+    box-shadow: 0 2px 8px rgba(var(--color-primary-rgb, 45, 90, 61), 0.2);
     transition: transform 220ms $ease-spring;
 
     &:hover {
@@ -671,21 +581,21 @@
       height: 8px;
       min-width: 8px;
       padding: 0;
-      background: $color-accent;
-      border: 2px solid rgba(15, 15, 15, 0.9);
+      background: var(--color-primary, $color-primary);
+      border: 2px solid $color-white;
       animation: pulseRingAccent 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 
     // "Pronto" badge for maintenance items
     &--soon {
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(0, 0, 0, 0.04);
       color: $color-gray-400;
       box-shadow: none;
       font-size: 9px;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       animation: none;
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(0, 0, 0, 0.06);
     }
   }
 
@@ -718,7 +628,7 @@
       left: 0;
       right: 0;
       height: 16px;
-      background: linear-gradient(180deg, transparent, rgba(15, 15, 15, 0.4));
+      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.8));
       pointer-events: none;
     }
   }
@@ -729,9 +639,8 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.05) 30%,
-      rgba(201, 168, 76, 0.1) 50%,
-      rgba(255, 255, 255, 0.05) 70%,
+      #E5E7EB 30%,
+      #E5E7EB 70%,
       transparent 100%
     );
   }
@@ -751,8 +660,7 @@
     cursor: default;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.035);
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03);
+      background: rgba(0, 0, 0, 0.03);
     }
   }
 
@@ -761,18 +669,18 @@
     width: 34px;
     height: 34px;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     color: $color-white;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     letter-spacing: $letter-spacing-wide;
     flex-shrink: 0;
     position: relative;
-    border: 2px solid rgba(45, 90, 61, 0.25);
+    border: 2px solid rgba(var(--color-primary-rgb, 45, 90, 61), 0.15);
     transition: border-color 350ms $ease-out-quart;
 
     .sidebar__user:hover & {
-      border-color: rgba(45, 90, 61, 0.45);
+      border-color: rgba(var(--color-primary-rgb, 45, 90, 61), 0.3);
     }
 
     // Online status indicator
@@ -784,7 +692,7 @@
       width: 10px;
       height: 10px;
       background: $color-success;
-      border: 2px solid #141413;
+      border: 2px solid $color-white;
       border-radius: $border-radius-full;
       animation: sidebarOnlinePulse 3s ease-in-out infinite;
     }
@@ -800,14 +708,14 @@
   &__user-name {
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
-    color: rgba(255, 255, 255, 0.85);
+    color: $color-gray-800;
     @include truncate;
     line-height: 1.3;
   }
 
   &__user-role {
     font-size: $font-size-2xs;
-    color: $color-gray-500;
+    color: $color-gray-400;
     font-weight: $font-weight-regular;
     letter-spacing: $letter-spacing-wider;
   }
@@ -829,7 +737,7 @@
     font-family: $font-primary;
     font-size: $font-size-xs;
     font-weight: $font-weight-medium;
-    color: $color-gray-500;
+    color: $color-gray-400;
     letter-spacing: $letter-spacing-wide;
     transition:
       background 220ms $ease-out-quart,
@@ -877,8 +785,8 @@
       transform 200ms $ease-out-quart;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.07);
-      color: $color-white;
+      background: rgba(0, 0, 0, 0.05);
+      color: $color-gray-700;
     }
 
     &:active {
@@ -899,7 +807,7 @@
       transform: translateX(0);
       box-shadow:
         $shadow-2xl,
-        24px 0 60px rgba(0, 0, 0, 0.3);
+        24px 0 60px rgba(0, 0, 0, 0.15);
     }
 
     &--collapsed {
@@ -954,11 +862,6 @@
 // ============================================
 // SIDEBAR KEYFRAMES
 // ============================================
-@keyframes sidebarLogoGlow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
-}
-
 @keyframes sidebarOnlinePulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.25); }
   50% { box-shadow: 0 0 0 3px rgba(52, 211, 153, 0); }

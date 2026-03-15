@@ -1,6 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTenant } from '../../context/TenantContext';
 import UsageMeter from '../../components/common/UsageMeter/UsageMeter';
+import EmptyState from '../../components/common/EmptyState/EmptyState';
+import {
+  AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  PieChart, Pie, Cell, Legend,
+} from 'recharts';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -131,6 +136,38 @@ const timeAgo = (dateStr) => {
   return `Hace ${diffDays}d`;
 };
 
+// ===== CHART COLORS (match status badges) =====
+const CHART_COLORS = {
+  confirmed: '#34D399',
+  completed: '#60A5FA',
+  cancelled: '#F87171',
+  pending: '#FBBF24',
+  no_show: '#E05252',
+};
+
+// ===== CUSTOM TOOLTIP for revenue chart =====
+const RevenueTooltip = ({ active, payload }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="dashboard__chart-tooltip">
+      <span className="dashboard__chart-tooltip-label">{payload[0].payload.label}</span>
+      <span className="dashboard__chart-tooltip-value">{formatCOP(payload[0].value)}</span>
+    </div>
+  );
+};
+
+// ===== CUSTOM LEGEND for pie chart =====
+const StatusLegend = ({ payload }) => (
+  <div className="dashboard__status-legend">
+    {payload?.map((entry, i) => (
+      <span key={i} className="dashboard__status-legend-item">
+        <span className="dashboard__status-legend-dot" style={{ background: entry.color }} />
+        {entry.value}
+      </span>
+    ))}
+  </div>
+);
+
 // ===== STATUS BADGE CONFIG =====
 const STATUS_CONFIG = {
   confirmed: { label: 'Confirmada', modifier: 'success' },
@@ -170,6 +207,35 @@ const Dashboard = ({ onNavigate }) => {
   const [linaToggling, setLinaToggling] = useState(false);
   const [paymentAlerts, setPaymentAlerts] = useState([]);
   const [dismissingAlert, setDismissingAlert] = useState(null);
+  const [revenueData, setRevenueData] = useState([]);
+
+  // Fetch daily revenue for the last 7 days
+  const fetchRevenueChart = useCallback(async () => {
+    try {
+      const today = new Date();
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 6);
+      const fmt = (d) => d.toISOString().slice(0, 10);
+      const res = await fetch(
+        `${API_URL}/finances/analytics?date_from=${fmt(sevenDaysAgo)}&date_to=${fmt(today)}`,
+        { headers: { 'Content-Type': 'application/json' }, credentials: 'include' }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      // Try to use daily_revenue array if the API returns it
+      if (data.daily_revenue && Array.isArray(data.daily_revenue)) {
+        setRevenueData(data.daily_revenue.map(d => ({
+          label: d.date || d.day,
+          value: d.total || d.revenue || d.amount || 0,
+        })));
+      } else {
+        // Fallback: generate from available summary or leave empty
+        setRevenueData([]);
+      }
+    } catch {
+      // Revenue chart is non-critical — fail silently
+    }
+  }, []);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -194,9 +260,10 @@ const Dashboard = ({ onNavigate }) => {
   // Fetch on mount + every 30s
   useEffect(() => {
     fetchStats();
+    fetchRevenueChart();
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
-  }, [fetchStats]);
+  }, [fetchStats, fetchRevenueChart]);
 
   // Sync payment alerts from stats
   useEffect(() => {
@@ -293,6 +360,29 @@ const Dashboard = ({ onNavigate }) => {
 
   if (!stats) return null;
 
+  // Compute trend indicators from available data
+  const newClients = stats.new_clients_this_month || 0;
+  const totalCl = stats.total_clients || 1;
+  const trends = {
+    clientsTrend: totalCl > 0 ? Math.round((newClients / totalCl) * 100) : 0,
+    activePct: totalCl > 0 ? Math.round(((stats.active_clients || 0) / totalCl) * 100) - 50 : 0,
+    apptsTrend: (stats.appointments_today || 1) > 0 ? Math.round(((stats.completed_today || 0) / (stats.appointments_today || 1)) * 100) : 0,
+    revTrend: (stats.revenue_this_month || 1) > 0 ? Math.round(((stats.revenue_this_week || 0) / (stats.revenue_this_month || 1)) * 100) : 0,
+    riskTrend: (stats.at_risk_clients || 0) > 0 ? -Math.round(((stats.at_risk_clients || 0) / totalCl) * 100) : 0,
+  };
+
+  // Appointment status breakdown for pie chart
+  const statusCounts = {};
+  (stats.appointments_today_list || []).forEach(appt => {
+    const s = appt.status || 'pending';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  });
+  const appointmentStatusData = Object.entries(statusCounts).map(([status, count]) => ({
+    name: (STATUS_CONFIG[status] || STATUS_CONFIG.pending).label,
+    value: count,
+    status,
+  }));
+
   const linaActive = stats.lina_is_global_active;
   const appointments = stats.appointments_today_list || [];
   const allTasks = stats.pending_tasks || [];
@@ -323,7 +413,14 @@ const Dashboard = ({ onNavigate }) => {
               <AnimatedNumber value={stats.total_clients} />
             </span>
             <span className="dashboard__kpi-label">Total Clientes</span>
-            <span className="dashboard__kpi-sub">+{stats.new_clients_this_month || 0} este mes</span>
+            <span className="dashboard__kpi-sub">
+              +{stats.new_clients_this_month || 0} este mes
+              {trends.clientsTrend !== 0 && (
+                <span className={`dashboard__kpi-trend dashboard__kpi-trend--${trends.clientsTrend >= 0 ? 'up' : 'down'}`}>
+                  {trends.clientsTrend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trends.clientsTrend)}%
+                </span>
+              )}
+            </span>
           </div>
         </div>
 
@@ -334,7 +431,14 @@ const Dashboard = ({ onNavigate }) => {
               <AnimatedNumber value={stats.active_clients} />
             </span>
             <span className="dashboard__kpi-label">Clientes Activos</span>
-            <span className="dashboard__kpi-sub">{stats.vip_clients || 0} VIP</span>
+            <span className="dashboard__kpi-sub">
+              {stats.vip_clients || 0} VIP
+              {trends.activePct !== 0 && (
+                <span className={`dashboard__kpi-trend dashboard__kpi-trend--${trends.activePct >= 0 ? 'up' : 'down'}`}>
+                  {trends.activePct >= 0 ? '\u2191' : '\u2193'} {Math.abs(trends.activePct)}%
+                </span>
+              )}
+            </span>
           </div>
         </div>
 
@@ -345,7 +449,14 @@ const Dashboard = ({ onNavigate }) => {
               <AnimatedNumber value={stats.appointments_today} />
             </span>
             <span className="dashboard__kpi-label">Citas Hoy</span>
-            <span className="dashboard__kpi-sub">{stats.completed_today || 0} completadas</span>
+            <span className="dashboard__kpi-sub">
+              {stats.completed_today || 0} completadas
+              {stats.appointments_today > 0 && (
+                <span className={`dashboard__kpi-trend dashboard__kpi-trend--${trends.apptsTrend >= 50 ? 'up' : 'down'}`}>
+                  {trends.apptsTrend >= 50 ? '\u2191' : '\u2193'} {trends.apptsTrend}%
+                </span>
+              )}
+            </span>
           </div>
         </div>
 
@@ -356,7 +467,14 @@ const Dashboard = ({ onNavigate }) => {
               <AnimatedNumber value={stats.revenue_this_month} prefix="$" />
             </span>
             <span className="dashboard__kpi-label">Ingresos del Mes</span>
-            <span className="dashboard__kpi-sub">{formatCOP(stats.revenue_this_week)} esta semana</span>
+            <span className="dashboard__kpi-sub">
+              {formatCOP(stats.revenue_this_week)} esta semana
+              {trends.revTrend > 0 && (
+                <span className="dashboard__kpi-trend dashboard__kpi-trend--up">
+                  {'\u2191'} {trends.revTrend}%
+                </span>
+              )}
+            </span>
           </div>
         </div>
 
@@ -367,8 +485,115 @@ const Dashboard = ({ onNavigate }) => {
               <AnimatedNumber value={stats.at_risk_clients} />
             </span>
             <span className="dashboard__kpi-label">Clientes en Riesgo</span>
-            <span className="dashboard__kpi-sub">Sin visita reciente</span>
+            <span className="dashboard__kpi-sub">
+              Sin visita reciente
+              {trends.riskTrend !== 0 && (
+                <span className={`dashboard__kpi-trend dashboard__kpi-trend--${trends.riskTrend >= 0 ? 'up' : 'down'}`}>
+                  {trends.riskTrend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trends.riskTrend)}%
+                </span>
+              )}
+            </span>
           </div>
+        </div>
+      </div>
+
+      {/* ===== CHARTS SECTION ===== */}
+      <div className="dashboard__chart-section">
+        {/* Revenue sparkline */}
+        <div className="dashboard__revenue-chart">
+          <div className="dashboard__section-header">
+            <h2 className="dashboard__section-title">
+              {Icons.dollar}
+              Ingresos - Ultimos 7 dias
+            </h2>
+          </div>
+          {revenueData.length > 0 ? (
+            <div className="dashboard__revenue-chart-area">
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={revenueData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#2D5A3D" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#2D5A3D" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 10, fill: '#8E8E85' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis hide />
+                  <Tooltip content={<RevenueTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#2D5A3D"
+                    strokeWidth={2}
+                    fill="url(#revenueGradient)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: '#2D5A3D', stroke: '#fff', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="dashboard__chart-empty">
+              <p>Sin datos de ingresos diarios disponibles</p>
+              {/* TODO: Backend endpoint /finances/analytics needs daily_revenue array */}
+            </div>
+          )}
+        </div>
+
+        {/* Appointment status donut */}
+        <div className="dashboard__status-chart">
+          <div className="dashboard__section-header">
+            <h2 className="dashboard__section-title">
+              {Icons.calendar}
+              Estado de Citas
+            </h2>
+            <span className="dashboard__section-badge">{appointments.length} total</span>
+          </div>
+          {appointmentStatusData.length > 0 ? (
+            <div className="dashboard__status-chart-area">
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={appointmentStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={75}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {appointmentStatusData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={CHART_COLORS[entry.status] || '#B5B5AE'}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, name) => [`${value} citas`, name]}
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.95)',
+                      border: '1px solid rgba(0,0,0,0.06)',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                    }}
+                  />
+                  <Legend content={<StatusLegend />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="dashboard__chart-empty">
+              <p>No hay citas agendadas para hoy</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -385,9 +610,11 @@ const Dashboard = ({ onNavigate }) => {
           </div>
 
           {appointments.length === 0 ? (
-            <div className="dashboard__agenda-empty">
-              <p>No hay citas agendadas para hoy</p>
-            </div>
+            <EmptyState
+              icon={Icons.calendar}
+              title="No hay citas para hoy"
+              description="La agenda del día está vacía"
+            />
           ) : (
             <div className="dashboard__agenda-table">
               <div className="dashboard__agenda-header-row">

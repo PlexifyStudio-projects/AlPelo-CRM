@@ -2850,6 +2850,69 @@ $inbox-ai-bg: $color-accent-ghost;
 }
 
 // ===========================================
+// ULTRA-NARROW SCREENS (320-480px)
+// ===========================================
+@media (max-width: 480px) {
+  .inbox {
+    border-radius: $border-radius-md;
+
+    &__list-header {
+      padding: $spacing-sm $spacing-sm $spacing-xs;
+    }
+
+    &__list-title {
+      font-size: $font-size-base;
+    }
+
+    &__search {
+      padding: 0 $spacing-sm $spacing-xs;
+    }
+
+    &__search-input {
+      padding: 8px 10px 8px 34px;
+      font-size: $font-size-xs;
+    }
+
+    &__search-icon {
+      left: 22px;
+    }
+
+    &__filters {
+      padding: 0 $spacing-sm $spacing-xs;
+      gap: $spacing-2xs;
+    }
+
+    &__filter {
+      padding: 4px 10px;
+      font-size: $font-size-2xs;
+    }
+
+    &__conv-item {
+      gap: $spacing-sm;
+      padding: 8px $spacing-xs;
+    }
+
+    &__conv-avatar {
+      width: 38px;
+      height: 38px;
+      font-size: $font-size-2xs;
+    }
+
+    &__conv-list {
+      padding: 0 $spacing-2xs;
+    }
+
+    &__chat-header {
+      padding: $spacing-xs $spacing-sm;
+    }
+
+    &__composer {
+      padding: $spacing-xs $spacing-sm;
+    }
+  }
+}
+
+// ===========================================
 // ANIMATIONS (scoped with inbox prefix)
 // ===========================================
 @keyframes inboxMsgIn {
@@ -2932,6 +2995,290 @@ $inbox-ai-bg: $color-accent-ghost;
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+// ===========================================
+// QUICK REPLIES
+// ===========================================
+.inbox__quick-replies {
+  position: absolute;
+  bottom: 100%;
+  left: 80px;
+  z-index: $z-dropdown;
+  width: 340px;
+  max-height: 360px;
+  overflow-y: auto;
+  background: $inbox-panel-bg;
+  border-radius: $inbox-radius;
+  box-shadow: $shadow-xl, 0 0 0 1px $inbox-border;
+  animation: inboxSlideUp 200ms $ease-out-expo both;
+  margin-bottom: $spacing-xs;
+  @include custom-scrollbar;
+}
+
+.inbox__quick-replies-header {
+  @include flex-between;
+  padding: $spacing-sm $spacing-md;
+  border-bottom: 1px solid $inbox-border;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-semibold;
+  color: $inbox-text;
+  position: sticky;
+  top: 0;
+  background: $inbox-panel-bg;
+  z-index: 1;
+
+  button {
+    @include flex-center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: none;
+    color: $inbox-text-muted;
+    cursor: pointer;
+    border-radius: $border-radius-xs;
+    &:hover { background: $inbox-hover; }
+  }
+}
+
+.inbox__quick-reply-btn {
+  @include flex-center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: $color-gray-400;
+  cursor: pointer;
+  border-radius: $border-radius-md;
+  transition: all $inbox-transition;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba($color-accent, 0.08);
+    color: $color-accent;
+    transform: scale(1.05);
+  }
+
+  &--active {
+    background: rgba($color-accent, 0.12);
+    color: $color-accent;
+  }
+}
+
+.inbox__quick-reply-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: $font-primary;
+  transition: background $duration-fast ease;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: $inbox-hover; }
+}
+
+.inbox__quick-reply-item-label {
+  font-size: $font-size-xs;
+  font-weight: $font-weight-bold;
+  color: $inbox-accent;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wider;
+}
+
+.inbox__quick-reply-item-text {
+  font-size: $font-size-sm;
+  color: $inbox-text-secondary;
+  line-height: $line-height-base;
+}
+
+// ===========================================
+// INTERNAL NOTES
+// ===========================================
+.inbox__notes-section {
+  padding: 0 $spacing-sm $spacing-sm;
+}
+
+.inbox__notes-empty {
+  font-size: $font-size-xs;
+  color: $inbox-text-muted;
+  font-style: italic;
+  padding: $spacing-xs 0;
+}
+
+.inbox__note-item {
+  background: rgba(245, 158, 11, 0.08);
+  border-left: 3px solid rgba(245, 158, 11, 0.5);
+  border-radius: 0 $border-radius-sm $border-radius-sm 0;
+  padding: $spacing-xs $spacing-sm;
+  margin-bottom: $spacing-xs;
+  animation: inboxSlideUp 200ms $ease-out-expo both;
+}
+
+.inbox__note-item-header {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  margin-bottom: 2px;
+}
+
+.inbox__note-item-author {
+  font-size: 10px;
+  font-weight: $font-weight-bold;
+  color: rgba(180, 120, 10, 0.85);
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wider;
+}
+
+.inbox__note-item-time {
+  font-size: 10px;
+  color: $inbox-text-muted;
+  flex: 1;
+}
+
+.inbox__note-item-delete {
+  @include flex-center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  color: $inbox-text-muted;
+  cursor: pointer;
+  border-radius: $border-radius-xs;
+  opacity: 0;
+  transition: all $duration-fast ease;
+  flex-shrink: 0;
+
+  svg { width: 12px; height: 12px; }
+
+  .inbox__note-item:hover & { opacity: 1; }
+  &:hover { color: $color-error; background: rgba($color-error, 0.08); }
+}
+
+.inbox__note-item-text {
+  font-size: $font-size-xs;
+  color: $inbox-text;
+  line-height: $line-height-base;
+  word-break: break-word;
+}
+
+.inbox__note-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-2xs;
+  margin-top: $spacing-xs;
+}
+
+.inbox__note-input {
+  width: 100%;
+  padding: $spacing-xs $spacing-sm;
+  border: 1px solid $inbox-border;
+  border-radius: $border-radius-sm;
+  background: rgba(245, 158, 11, 0.04);
+  font-family: $font-primary;
+  font-size: $font-size-xs;
+  color: $inbox-text;
+  resize: vertical;
+  min-height: 48px;
+  transition: border-color $duration-fast ease;
+
+  &::placeholder { color: $inbox-text-muted; }
+  &:focus {
+    outline: none;
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.06);
+  }
+}
+
+.inbox__note-submit {
+  align-self: flex-end;
+  padding: 4px 14px;
+  border: none;
+  border-radius: $border-radius-sm;
+  background: rgba(245, 158, 11, 0.12);
+  color: rgba(180, 120, 10, 0.9);
+  font-family: $font-primary;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition: all $duration-fast ease;
+
+  &:hover:not(:disabled) { background: rgba(245, 158, 11, 0.2); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+// ===========================================
+// CONVERSATION STATUS BADGES
+// ===========================================
+.inbox__status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: $border-radius-full;
+  font-size: 9px;
+  font-weight: $font-weight-bold;
+  letter-spacing: $letter-spacing-wider;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.5;
+
+  &--nuevo {
+    background: rgba(37, 99, 235, 0.1);
+    color: #2563EB;
+  }
+
+  &--pendiente {
+    background: rgba(245, 158, 11, 0.12);
+    color: #D97706;
+  }
+
+  &--resuelto {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+  }
+
+  &--urgente {
+    background: rgba(239, 68, 68, 0.1);
+    color: #DC2626;
+    animation: urgentPulse 2s ease-in-out infinite;
+  }
+}
+
+// ===========================================
+// UNREAD IMPROVEMENTS
+// ===========================================
+.inbox__conv-item--unread {
+  border-left: 3px solid $inbox-accent;
+
+  .inbox__conv-name {
+    font-weight: $font-weight-bold !important;
+    color: $color-secondary !important;
+  }
+
+  .inbox__conv-preview {
+    color: $color-gray-600 !important;
+    font-weight: $font-weight-medium;
+  }
+
+  .inbox__conv-badge {
+    animation: inboxBadgePop 400ms $ease-spring both, badgePulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes badgePulse {
+  0%, 100% { box-shadow: 0 2px 6px rgba(45, 90, 61, 0.3); }
+  50% { box-shadow: 0 2px 12px rgba(45, 90, 61, 0.5), 0 0 0 4px rgba(45, 90, 61, 0.1); }
+}
+
+@keyframes urgentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 @keyframes slideInDown {

@@ -197,11 +197,11 @@
     border-radius: $border-radius-lg;
 
     &__header {
-      padding: $spacing-sm $spacing-md;
+      padding: $spacing-md 12px;
     }
 
     &__body {
-      padding: $spacing-sm $spacing-md $spacing-md;
+      padding: $spacing-md 12px;
     }
 
     &__overlay {

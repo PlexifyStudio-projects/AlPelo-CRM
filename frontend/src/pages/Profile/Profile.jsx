@@ -140,7 +140,7 @@ const Profile = ({ user, onUpdate }) => {
             </div>
             <h3 className={`${b}__user-name`}>{user?.name || 'Admin'}</h3>
             <span className={`${b}__user-role`}>
-              {user?.role === 'admin' ? 'Administrador' : 'Barbero'}
+              {user?.role === 'admin' ? 'Administrador' : user?.role === 'dev' ? 'Desarrollador' : 'Profesional'}
             </span>
             <div className={`${b}__user-meta`}>
               <div className={`${b}__meta-item`}>
