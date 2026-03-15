@@ -19,7 +19,7 @@
 .client-detail__overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
@@ -31,13 +31,12 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 500px;
+  width: 520px;
   max-width: 100vw;
   height: 100vh;
   height: 100dvh;
   background: $color-white;
-  border-left: 1px solid $border-color-medium;
-  box-shadow: -8px 0 40px rgba(0, 0, 0, 0.12), $shadow-2xl;
+  border-left: 1px solid $border-color-light;
   z-index: $z-modal + 1;
   display: flex;
   flex-direction: column;
@@ -46,6 +45,8 @@
   @media (max-width: $breakpoint-sm) {
     width: 100vw;
   }
+
+  @include custom-scrollbar;
 
   // --- Accent bar ---
   &__accent-bar {

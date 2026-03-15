@@ -3,11 +3,12 @@
 
 // ============================================
 // AlPelo - Team Page (Premium Redesign)
-// Master grid + Detail drawer
+// World-class staff grid + Detail drawer
 // ============================================
 
 .team {
   @include page-enter;
+  max-width: $max-content-width;
 
   // -----------------------------------------------
   // TOP BAR
@@ -23,12 +24,23 @@
   &__title {
     @include heading($font-size-2xl);
     margin-bottom: 0;
+    letter-spacing: $letter-spacing-tighter;
+
+    &::after {
+      content: '';
+      display: block;
+      width: 48px;
+      height: 3px;
+      background: linear-gradient(90deg, $color-primary, $color-primary-light, rgba($color-primary-light, 0));
+      border-radius: $border-radius-full;
+      margin-top: $spacing-sm;
+    }
   }
 
   &__subtitle {
     font-size: $font-size-sm;
     color: $color-gray-400;
-    margin-top: $spacing-2xs;
+    margin-top: $spacing-xs;
   }
 
   // -----------------------------------------------
@@ -48,15 +60,20 @@
     line-height: 1;
 
     &--primary {
-      padding: $spacing-sm $spacing-lg;
+      padding: $spacing-sm $spacing-xl;
       background: linear-gradient(135deg, $color-primary, $color-primary-dark);
       color: $color-white;
       box-shadow: $shadow-sm, $shadow-glow-primary;
+      border-radius: $border-radius-lg;
 
       &:hover:not(:disabled) {
         background: linear-gradient(135deg, $color-primary-light, $color-primary);
-        transform: translateY(-1px);
+        transform: translateY(-2px);
         box-shadow: $shadow-md, $shadow-glow-primary;
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(0) scale(0.98);
       }
 
       &:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -67,8 +84,9 @@
       background: transparent;
       color: $color-gray-500;
       border: 1px solid $border-color;
+      border-radius: $border-radius-md;
 
-      &:hover { background: $color-gray-50; }
+      &:hover { background: $color-gray-50; border-color: $border-color-medium; }
     }
 
     &--outline-sm {
@@ -81,7 +99,7 @@
 
       &:hover {
         background: $color-primary-ghost;
-        border-color: rgba($color-primary, 0.3);
+        border-color: rgba($color-primary, 0.35);
       }
     }
 
@@ -111,12 +129,13 @@
       color: $color-white;
       box-shadow: $shadow-sm;
 
-      &:hover { transform: translateY(-1px); box-shadow: $shadow-md, $shadow-glow-error; }
+      &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: $shadow-md, $shadow-glow-error; }
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
     }
   }
 
   // -----------------------------------------------
-  // KPI BAR
+  // KPI BAR — Role counts + rating
   // -----------------------------------------------
   &__kpis {
     display: flex;
@@ -131,40 +150,68 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 3px;
     padding: $spacing-md $spacing-sm;
     background: $glass-bg-heavy;
-    backdrop-filter: blur($glass-blur);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid $glass-border;
     border-radius: $border-radius-lg;
-    box-shadow: $shadow-xs;
+    box-shadow: $shadow-xs, $glass-inner-glow-subtle;
     transition: all $transition-base;
+    position: relative;
+    overflow: hidden;
+    @include press-effect;
 
-    &:hover {
-      box-shadow: $shadow-sm;
-      transform: translateY(-1px);
+    &::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: $color-primary;
+      opacity: 0;
+      transition: opacity $transition-fast;
     }
 
-    &--accent &-num {
-      color: $color-accent;
+    &:hover {
+      box-shadow: $shadow-md, $glass-inner-glow;
+      transform: translateY(-3px) scale(1.01);
+      border-color: $glass-border-bright;
+
+      &::before { opacity: 1; }
+    }
+
+    &--accent {
+      .team__kpi-num {
+        color: $color-accent;
+      }
+
+      &::before {
+        background: linear-gradient(90deg, $color-accent-dark, $color-accent);
+      }
     }
   }
 
   &__kpi-num {
-    font-size: $font-size-md;
+    font-size: $font-size-lg;
     font-weight: $font-weight-bold;
     color: $color-primary;
+    font-family: $font-heading;
+    font-variant-numeric: tabular-nums;
   }
 
   &__kpi-label {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
     text-transform: uppercase;
-    letter-spacing: $letter-spacing-wider;
+    letter-spacing: $letter-spacing-caps;
+    font-weight: $font-weight-semibold;
   }
 
   // -----------------------------------------------
-  // TOOLBAR
+  // TOOLBAR — Search + Filters
   // -----------------------------------------------
   &__toolbar {
     display: flex;
@@ -179,18 +226,22 @@
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
+    padding: $spacing-sm $spacing-lg;
     background: $glass-bg-heavy;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid $border-color;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-lg;
     transition: all $transition-base;
 
     &:focus-within {
-      border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost;
+      border-color: rgba($color-primary, 0.4);
+      box-shadow: 0 0 0 4px rgba($color-primary, 0.08), $shadow-sm;
     }
 
-    svg { color: $color-gray-300; flex-shrink: 0; }
+    svg { color: $color-gray-300; flex-shrink: 0; transition: color $transition-fast; }
+
+    &:focus-within svg { color: $color-primary; }
 
     input {
       flex: 1;
@@ -215,29 +266,31 @@
   &__tabs {
     display: flex;
     gap: 2px;
-    padding: 3px;
+    padding: 4px;
     background: $color-gray-50;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-full;
+    border: 1px solid $border-color-light;
   }
 
   &__tab {
-    padding: $spacing-xs $spacing-sm;
+    padding: 6px $spacing-md;
     font-family: $font-primary;
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     color: $color-gray-400;
     background: transparent;
     border: none;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-full;
     cursor: pointer;
     transition: all $transition-fast;
     white-space: nowrap;
 
-    &:hover { color: $color-gray-600; }
+    &:hover { color: $color-gray-600; background: rgba(0, 0, 0, 0.03); }
 
     &--active {
       background: $color-white;
       color: $color-primary;
+      font-weight: $font-weight-semibold;
       box-shadow: $shadow-xs;
     }
   }
@@ -250,71 +303,105 @@
     color: $color-gray-600;
     background: $color-white;
     border: 1px solid $border-color;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     cursor: pointer;
     outline: none;
+    transition: border-color $transition-fast;
 
-    &:focus { border-color: $color-primary; }
+    &:focus { border-color: $color-primary; box-shadow: 0 0 0 3px $color-primary-ghost; }
   }
 
   &__results {
     font-size: $font-size-sm;
     color: $color-gray-400;
     margin-bottom: $spacing-md;
+    font-weight: $font-weight-medium;
   }
 
   // -----------------------------------------------
-  // GRID
+  // GRID — Premium card layout
   // -----------------------------------------------
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: $spacing-md;
   }
 
   // -----------------------------------------------
-  // CARD
+  // CARD — Premium staff card
   // -----------------------------------------------
   &__card {
     display: flex;
     flex-direction: column;
     background: $glass-bg-heavy;
-    backdrop-filter: blur($glass-blur);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: 1px solid $glass-border;
     border-radius: $border-radius-xl;
-    padding: $spacing-lg $spacing-md;
-    box-shadow: $shadow-sm;
+    padding: $spacing-xl $spacing-lg $spacing-lg;
+    box-shadow: $shadow-sm, $glass-inner-glow-subtle;
     cursor: pointer;
     transition: all $transition-base;
     animation: fadeInUp 300ms $ease-out-expo both;
+    position: relative;
+    overflow: hidden;
+
+    // Subtle top accent on hover
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, $color-primary, $color-primary-light);
+      opacity: 0;
+      transition: opacity $transition-base;
+    }
 
     &:hover {
-      box-shadow: $shadow-glass-hover;
-      transform: translateY(-2px);
+      box-shadow: $shadow-card-hover, $glass-inner-glow;
+      transform: translateY(-4px) scale(1.005);
+      border-color: $glass-border-bright;
+
+      &::before { opacity: 1; }
+
+      .team__card-photo img {
+        transform: scale(1.05);
+      }
     }
 
     &--selected {
-      border-color: rgba($color-primary, 0.3);
+      border-color: rgba($color-primary, 0.35);
       box-shadow: $shadow-md, $shadow-glow-primary;
+
+      &::before { opacity: 1; }
     }
 
     &--inactive {
-      opacity: 0.55;
+      opacity: 0.5;
 
-      &:hover { opacity: 0.75; }
+      &::before {
+        background: linear-gradient(90deg, $color-gray-300, $color-gray-400);
+      }
+
+      &:hover {
+        opacity: 0.75;
+      }
     }
   }
 
   &__card-photo {
     position: relative;
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     border-radius: $border-radius-full;
     overflow: hidden;
     margin: 0 auto $spacing-md;
     flex-shrink: 0;
     background: $color-white;
-    box-shadow: $shadow-xs;
+    box-shadow: $shadow-sm, 0 0 0 3px $color-white;
+    transition: box-shadow $transition-base;
 
     img {
       width: 100%;
@@ -322,11 +409,12 @@
       object-fit: cover;
       object-position: top;
       display: block;
+      transition: transform 400ms $ease-out-expo;
     }
 
     &--fallback {
       background: linear-gradient(135deg, $color-primary, $color-primary-dark);
-      box-shadow: none;
+      box-shadow: $shadow-sm, 0 0 0 3px $color-white, $shadow-glow-primary;
     }
   }
 
@@ -346,13 +434,20 @@
     position: absolute;
     bottom: 2px;
     right: 2px;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
-    border: 2.5px solid $color-white;
+    border: 3px solid $color-white;
+    transition: transform 200ms $ease-spring;
 
-    &--on { background: $color-success; }
-    &--off { background: $color-gray-300; }
+    &--on {
+      background: $color-success;
+      box-shadow: 0 0 8px rgba($color-success, 0.3);
+    }
+
+    &--off {
+      background: $color-gray-300;
+    }
   }
 
   &__card-body {
@@ -368,6 +463,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: $line-height-snug;
   }
 
   &__card-role {
@@ -383,11 +479,15 @@
   &__card-rating {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: 4px;
     margin-top: $spacing-xs;
     font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     color: $color-accent;
+    padding: 2px $spacing-sm;
+    background: $color-accent-ghost;
+    border-radius: $border-radius-full;
+    border: 1px solid rgba($color-accent, 0.15);
 
     svg { flex-shrink: 0; }
   }
@@ -399,21 +499,23 @@
   }
 
   &__card-badge {
-    font-size: 0.65rem;
-    font-weight: $font-weight-semibold;
-    padding: 2px $spacing-sm;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    padding: 3px $spacing-sm;
     border-radius: $border-radius-full;
-    letter-spacing: 0.02em;
+    letter-spacing: $letter-spacing-wider;
     text-transform: uppercase;
 
     &--active {
       color: $color-success-dark;
       background: $color-success-bg;
+      border: 1px solid $color-success-border;
     }
 
     &--inactive {
       color: $color-error-dark;
       background: $color-error-bg;
+      border: 1px solid $color-error-border;
     }
   }
 
@@ -421,16 +523,14 @@
     display: flex;
     align-items: center;
     gap: $spacing-xs;
-    margin-top: $spacing-sm;
-    padding: $spacing-xs $spacing-sm;
+    margin-top: $spacing-md;
+    padding: $spacing-sm;
     background: $color-gray-50;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     color: $color-gray-500;
+    border: 1px solid $border-color-light;
 
-    svg {
-      flex-shrink: 0;
-      opacity: 0.5;
-    }
+    svg { flex-shrink: 0; opacity: 0.5; }
   }
 
   &__card-last-service-info {
@@ -441,16 +541,14 @@
   }
 
   &__card-last-service-name {
-    font-size: 0.7rem;
+    font-size: $font-size-xs;
     font-weight: $font-weight-medium;
     color: $color-gray-600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    @include truncate;
   }
 
   &__card-last-service-date {
-    font-size: 0.62rem;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
   }
 
@@ -459,22 +557,25 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: $spacing-2xs;
-    margin-top: $spacing-sm;
-    padding-top: $spacing-sm;
+    margin-top: $spacing-md;
+    padding-top: $spacing-md;
     border-top: 1px solid $border-color-light;
   }
 
   &__card-chip {
-    font-size: 0.65rem;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-medium;
     color: $color-primary;
     background: $color-primary-ghost;
-    padding: 2px $spacing-xs;
+    padding: 3px $spacing-sm;
     border-radius: $border-radius-full;
     white-space: nowrap;
+    border: 1px solid rgba($color-primary, 0.1);
 
     &--more {
       color: $color-gray-400;
       background: $color-gray-50;
+      border-color: $border-color;
     }
   }
 
@@ -483,9 +584,17 @@
     align-items: center;
     justify-content: space-between;
     margin-top: auto;
-    padding-top: $spacing-sm;
+    padding-top: $spacing-md;
 
-    svg { color: $color-gray-300; }
+    svg {
+      color: $color-gray-300;
+      transition: transform $transition-fast, color $transition-fast;
+    }
+
+    .team__card:hover & svg:last-child {
+      transform: translateX(3px);
+      color: $color-primary;
+    }
   }
 
   &__card-clients {
@@ -494,29 +603,39 @@
     gap: $spacing-2xs;
     font-size: $font-size-xs;
     color: $color-gray-400;
+    font-weight: $font-weight-medium;
 
     svg { width: 12px; height: 12px; }
   }
 
   // -----------------------------------------------
-  // EMPTY
+  // EMPTY STATE
   // -----------------------------------------------
   &__empty {
+    @include glass-card;
     text-align: center;
-    padding: $spacing-3xl;
+    padding: $spacing-4xl $spacing-xl;
     color: $color-gray-400;
     font-size: $font-size-base;
+    border-radius: $border-radius-xl;
+    @include dot-grid(rgba(0, 0, 0, 0.04), 1px, 28px);
+
+    p {
+      font-family: $font-heading;
+      font-weight: $font-weight-semibold;
+    }
   }
 
   // -----------------------------------------------
-  // OVERLAY (shared)
+  // OVERLAY (shared for modals)
   // -----------------------------------------------
   &__overlay {
     position: fixed;
     inset: 0;
     z-index: $z-modal-backdrop;
     background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -531,7 +650,8 @@
     inset: 0;
     z-index: $z-modal-backdrop;
     background: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
     animation: fadeIn 200ms ease both;
   }
 
@@ -543,8 +663,12 @@
     max-width: 92vw;
     height: 100vh;
     background: $color-white;
-    box-shadow: $shadow-2xl;
+    box-shadow:
+      -4px 0 16px rgba(0, 0, 0, 0.04),
+      -8px 0 40px rgba(0, 0, 0, 0.08),
+      -20px 0 80px rgba(0, 0, 0, 0.06);
     overflow-y: auto;
+    @include custom-scrollbar;
     animation: slideInRight 350ms $ease-out-expo both;
     z-index: $z-modal;
   }
@@ -559,15 +683,21 @@
     width: 36px;
     height: 36px;
     border: none;
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.9);
     border-radius: $border-radius-full;
     color: $color-gray-500;
     cursor: pointer;
     z-index: 2;
     box-shadow: $shadow-sm;
     transition: all $transition-fast;
+    backdrop-filter: blur(8px);
 
-    &:hover { background: $color-white; color: $color-secondary; box-shadow: $shadow-md; }
+    &:hover {
+      background: $color-white;
+      color: $color-secondary;
+      box-shadow: $shadow-md;
+      transform: rotate(90deg);
+    }
   }
 
   &__drawer-hero {
@@ -578,17 +708,27 @@
     background: linear-gradient(180deg, rgba($color-primary, 0.04) 0%, transparent 100%);
     border-bottom: 1px solid $border-color-light;
     text-align: center;
+    position: relative;
+
+    // Dot pattern overlay
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      @include dot-grid(rgba(0, 0, 0, 0.02), 1px, 20px);
+      pointer-events: none;
+    }
   }
 
   &__drawer-avatar {
     position: relative;
-    width: 96px;
-    height: 96px;
+    width: 100px;
+    height: 100px;
     border-radius: $border-radius-full;
     overflow: hidden;
     background: $color-white;
     margin-bottom: $spacing-md;
-    box-shadow: $shadow-md, 0 0 0 3px $color-white, $shadow-glow-primary;
+    box-shadow: $shadow-lg, 0 0 0 4px $color-white, $shadow-glow-primary;
 
     img {
       width: 140%;
@@ -617,20 +757,24 @@
 
   &__drawer-dot {
     position: absolute;
-    bottom: 3px;
-    right: 3px;
-    width: 16px;
-    height: 16px;
+    bottom: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     border: 3px solid $color-white;
 
-    &--on { background: $color-success; }
+    &--on {
+      background: $color-success;
+      box-shadow: 0 0 10px rgba($color-success, 0.4);
+    }
+
     &--off { background: $color-gray-300; }
   }
 
   &__drawer-name {
     font-family: $font-heading;
-    font-size: $font-size-lg;
+    font-size: $font-size-xl;
     font-weight: $font-weight-bold;
     color: $color-secondary;
     margin-bottom: $spacing-2xs;
@@ -645,11 +789,15 @@
   &__drawer-rating {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     color: $color-accent;
     margin-bottom: $spacing-md;
+    padding: $spacing-2xs $spacing-sm;
+    background: $color-accent-ghost;
+    border-radius: $border-radius-full;
+    border: 1px solid rgba($color-accent, 0.15);
   }
 
   &__drawer-hero-actions {
@@ -670,22 +818,28 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: $spacing-md;
+    gap: 3px;
+    padding: $spacing-lg $spacing-md;
     background: $color-white;
+    transition: background $transition-fast;
+
+    &:hover { background: $color-gray-50; }
   }
 
   &__drawer-stat-value {
-    font-size: $font-size-base;
+    font-size: $font-size-md;
     font-weight: $font-weight-bold;
     color: $color-secondary;
+    font-family: $font-heading;
+    font-variant-numeric: tabular-nums;
   }
 
   &__drawer-stat-label {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
     text-transform: uppercase;
-    letter-spacing: $letter-spacing-wider;
+    letter-spacing: $letter-spacing-caps;
+    font-weight: $font-weight-semibold;
   }
 
   // Drawer sections
@@ -704,15 +858,19 @@
     display: flex;
     align-items: center;
     gap: $spacing-sm;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+    font-size: $font-size-xs;
   }
 
   &__drawer-section-badge {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
     color: $color-primary;
     background: $color-primary-ghost;
-    padding: 1px $spacing-sm;
+    padding: 2px $spacing-sm;
     border-radius: $border-radius-full;
+    border: 1px solid rgba($color-primary, 0.1);
   }
 
   &__drawer-info-grid {
@@ -727,6 +885,11 @@
     gap: $spacing-sm;
     font-size: $font-size-sm;
     color: $color-gray-500;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-sm;
+    transition: background $transition-fast;
+
+    &:hover { background: $color-gray-50; }
 
     svg { color: $color-gray-300; flex-shrink: 0; }
   }
@@ -736,19 +899,21 @@
     color: $color-gray-500;
     line-height: $line-height-base;
     margin-top: $spacing-md;
-    padding: $spacing-sm $spacing-md;
+    padding: $spacing-md;
     background: $color-gray-50;
     border-radius: $border-radius-md;
-    border-left: 3px solid rgba($color-primary, 0.15);
+    border-left: 3px solid rgba($color-primary, 0.2);
+    font-style: italic;
   }
 
-  // Client table
+  // Client table in drawer
   &__drawer-clients {
     font-size: $font-size-sm;
     border: 1px solid $border-color;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-lg;
     overflow: hidden;
     overflow-x: auto;
+    @include custom-scrollbar;
   }
 
   &__drawer-client-header {
@@ -757,11 +922,11 @@
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-lg;
     background: $color-gray-50;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-500;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-400;
     text-transform: uppercase;
-    letter-spacing: $letter-spacing-wider;
+    letter-spacing: $letter-spacing-caps;
     border-bottom: 1px solid $border-color;
   }
 
@@ -775,7 +940,7 @@
     transition: background $transition-fast;
 
     &:last-child { border-bottom: none; }
-    &:hover { background: $color-gray-50; }
+    &:hover { background: rgba($color-primary, 0.02); }
   }
 
   &__drawer-client-id {
@@ -800,22 +965,21 @@
     color: $color-gray-400;
     font-size: $font-size-xs;
 
-    small {
-      color: $color-gray-300;
-    }
+    small { color: $color-gray-300; }
   }
 
   &__drawer-client-visits {
     text-align: center;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     color: $color-gray-600;
   }
 
   &__drawer-client-total {
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     color: $color-primary;
     font-size: $font-size-sm;
     text-align: right;
+    font-variant-numeric: tabular-nums;
   }
 
   &__drawer-empty {
@@ -823,6 +987,7 @@
     color: $color-gray-400;
     text-align: center;
     padding: $spacing-xl;
+    font-style: italic;
   }
 
   // -----------------------------------------------
@@ -849,6 +1014,12 @@
     background: $color-primary-ghost;
     padding: $spacing-2xs $spacing-sm;
     border-radius: $border-radius-full;
+    border: 1px solid rgba($color-primary, 0.1);
+    transition: all $transition-fast;
+
+    &:hover {
+      background: rgba($color-primary, 0.1);
+    }
 
     button {
       display: flex;
@@ -861,8 +1032,10 @@
       color: $color-gray-400;
       cursor: pointer;
       padding: 0;
+      border-radius: $border-radius-full;
+      transition: all $transition-fast;
 
-      &:hover { color: $color-error; }
+      &:hover { color: $color-error; background: $color-error-bg; }
     }
   }
 
@@ -884,12 +1057,12 @@
       color: $color-secondary;
       background: $bg-input;
       border: 1px solid $border-color;
-      border-radius: $border-radius-sm;
+      border-radius: $border-radius-md;
       outline: none;
 
       &:focus {
         border-color: $color-primary;
-        box-shadow: 0 0 0 2px $color-primary-ghost;
+        box-shadow: 0 0 0 3px $color-primary-ghost;
       }
     }
 
@@ -897,16 +1070,16 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border: none;
-      background: $color-primary;
+      background: linear-gradient(135deg, $color-primary, $color-primary-dark);
       color: $color-white;
-      border-radius: $border-radius-sm;
+      border-radius: $border-radius-md;
       cursor: pointer;
-      transition: background $transition-fast;
+      transition: all $transition-fast;
 
-      &:hover:not(:disabled) { background: $color-primary-light; }
+      &:hover:not(:disabled) { background: linear-gradient(135deg, $color-primary-light, $color-primary); }
       &:disabled { opacity: 0.4; cursor: not-allowed; }
     }
   }
@@ -922,6 +1095,7 @@
     max-width: 640px;
     max-height: 90vh;
     overflow-y: auto;
+    @include custom-scrollbar;
     animation: scaleIn 300ms $ease-out-expo both;
   }
 
@@ -933,9 +1107,9 @@
     border-bottom: 1px solid $border-color-light;
 
     h3 {
-      font-family: $font-primary;
+      font-family: $font-heading;
       font-size: $font-size-lg;
-      font-weight: $font-weight-semibold;
+      font-weight: $font-weight-bold;
       color: $color-secondary;
     }
   }
@@ -944,15 +1118,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border: none;
     background: $color-gray-50;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     color: $color-gray-500;
     cursor: pointer;
+    transition: all $transition-fast;
 
-    &:hover { background: $color-gray-100; }
+    &:hover { background: $color-gray-100; color: $color-gray-700; }
   }
 
   &__form-body {
@@ -990,7 +1165,7 @@
       border: 1px solid $border-color;
       border-radius: $border-radius-md;
       outline: none;
-      transition: border-color $transition-fast;
+      transition: border-color $transition-fast, box-shadow $transition-fast;
 
       &:focus {
         border-color: $color-primary;
@@ -1011,8 +1186,8 @@
   }
 
   &__color-swatch {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
@@ -1021,7 +1196,7 @@
     outline: none;
 
     &:hover {
-      transform: scale(1.15);
+      transform: scale(1.2);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
 
@@ -1033,8 +1208,8 @@
   }
 
   &__color-input {
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border: 2px solid $border-color-medium;
     border-radius: 50%;
     cursor: pointer;
@@ -1053,7 +1228,8 @@
     color: $color-error-dark;
     padding: $spacing-sm $spacing-md;
     background: $color-error-bg;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
+    border: 1px solid $color-error-border;
   }
 
   &__form-actions {
@@ -1075,6 +1251,7 @@
     max-width: 720px;
     max-height: 90vh;
     overflow-y: auto;
+    @include custom-scrollbar;
     animation: scaleIn 300ms $ease-out-expo both;
   }
 
@@ -1084,8 +1261,9 @@
     background: linear-gradient(180deg, $color-error-bg 0%, transparent 100%);
 
     h3 {
+      font-family: $font-heading;
       font-size: $font-size-lg;
-      font-weight: $font-weight-semibold;
+      font-weight: $font-weight-bold;
       color: $color-secondary;
       margin-bottom: $spacing-xs;
     }
@@ -1103,8 +1281,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: 52px;
+    height: 52px;
     background: $color-error-bg;
     border: 1px solid $color-error-border;
     border-radius: $border-radius-full;
@@ -1151,7 +1329,7 @@
     color: $color-gray-400;
     margin-top: $spacing-sm;
 
-    svg { color: #25D366; flex-shrink: 0; }
+    svg { color: $wa-green; flex-shrink: 0; }
   }
 
   // Client list with checkboxes
@@ -1185,11 +1363,12 @@
 
   &__deact-clients-badge {
     font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-bold;
     color: $color-primary;
     background: $color-primary-ghost;
-    padding: 2px $spacing-sm;
+    padding: 3px $spacing-sm;
     border-radius: $border-radius-full;
+    border: 1px solid rgba($color-primary, 0.1);
   }
 
   &__deact-clients-list {
@@ -1198,10 +1377,11 @@
     gap: 1px;
     background: $border-color;
     border: 1px solid $border-color;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-lg;
     overflow: hidden;
     max-height: 260px;
     overflow-y: auto;
+    @include custom-scrollbar;
   }
 
   &__deact-client {
@@ -1276,13 +1456,14 @@
     color: $color-warning-dark;
     padding: 0 $spacing-xs;
     border-radius: $border-radius-sm;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     font-size: $font-size-2xs;
+    border: 1px solid $color-warning-border;
   }
 
   &__deact-client-tag {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     color: $color-info-dark;
     background: $color-info-bg;
     padding: 2px $spacing-sm;
@@ -1291,6 +1472,7 @@
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wider;
     flex-shrink: 0;
+    border: 1px solid $color-info-border;
   }
 
   // Info note
@@ -1301,13 +1483,13 @@
     margin: 0 $spacing-xl $spacing-md;
     padding: $spacing-sm $spacing-md;
     background: $color-info-bg;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     border-left: 3px solid $color-info;
     font-size: $font-size-xs;
     color: $color-gray-500;
     line-height: $line-height-base;
 
-    svg { color: #25D366; flex-shrink: 0; margin-top: 2px; }
+    svg { color: $wa-green; flex-shrink: 0; margin-top: 2px; }
     strong { color: $color-info-dark; }
   }
 
@@ -1330,6 +1512,7 @@
     width: 90%;
     text-align: center;
     animation: scaleIn 200ms $ease-out-expo both;
+    box-shadow: $shadow-2xl;
 
     h3 {
       @include heading($font-size-lg);
@@ -1360,6 +1543,16 @@
 // -----------------------------------------------
 // KEYFRAMES
 // -----------------------------------------------
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
 // -----------------------------------------------
 // RESPONSIVE
 // -----------------------------------------------
@@ -1374,7 +1567,7 @@
     }
 
     &__grid {
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     }
 
     &__drawer {
@@ -1515,14 +1708,4 @@
       justify-content: center;
     }
   }
-}
-
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
 }

@@ -2,21 +2,44 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Client Table (Premium CRM)
-// Stripe/Linear/Notion quality table
+// AlPelo - Client Table (Salesforce Premium)
+// Stripe/Linear/Salesforce quality data table
 // ============================================
 
 .client-table {
-  margin-top: $spacing-lg;
+  margin-top: $spacing-md;
   animation: fadeInUp 0.4s $ease-out-expo both;
   animation-delay: 0.1s;
 
+  // -----------------------------------------------
+  // TABLE WRAPPER — Glass card with scroll shadow
+  // -----------------------------------------------
   &__wrapper {
     @include glass-card;
     overflow: hidden;
     overflow-x: auto;
     @include custom-scrollbar;
     position: relative;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm, $glass-inner-glow;
+
+    // Right scroll shadow
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 48px;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7));
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity $transition-fast;
+    }
+
+    &:hover::after {
+      opacity: 1;
+    }
   }
 
   &__table {
@@ -25,20 +48,21 @@
     min-width: 780px;
   }
 
-  // --- Table head (sticky glass with scroll shadow) ---
+  // -----------------------------------------------
+  // TABLE HEAD — Sticky glass header
+  // -----------------------------------------------
   &__head {
     position: sticky;
     top: 0;
-    z-index: $z-base;
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: blur(20px) saturate(1.2);
-    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    z-index: $z-base + 1;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(24px) saturate(1.3);
+    -webkit-backdrop-filter: blur(24px) saturate(1.3);
     border-bottom: 2px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0);
     transition: box-shadow $transition-fast;
 
     .client-table__wrapper:hover & {
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
     }
   }
 
@@ -50,12 +74,13 @@
     cursor: pointer;
     user-select: none;
     white-space: nowrap;
-    transition: color $transition-fast;
+    transition: color $transition-fast, background $transition-fast;
     letter-spacing: $letter-spacing-caps;
     color: $color-gray-400;
 
     &:hover {
       color: $color-primary;
+      background: rgba($color-primary, 0.02);
     }
 
     &--right { text-align: right; }
@@ -73,9 +98,29 @@
     display: inline-flex;
     align-items: center;
     gap: $spacing-xs;
+    position: relative;
+
+    // Underline on hover
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -$spacing-sm;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: $color-primary;
+      border-radius: $border-radius-full;
+      transition: width 250ms $ease-out-expo;
+    }
   }
 
-  // --- Sort icon (smooth rotation on direction change) ---
+  &__th:hover &__th-content::after {
+    width: 100%;
+  }
+
+  // -----------------------------------------------
+  // SORT ICON
+  // -----------------------------------------------
   &__sort-icon {
     color: $color-gray-300;
     flex-shrink: 0;
@@ -83,19 +128,21 @@
 
     &--active {
       color: $color-primary;
-      transform: scale(1.1);
+      transform: scale(1.15);
     }
 
     &--desc {
-      transform: rotate(180deg) scale(1.1);
+      transform: rotate(180deg) scale(1.15);
     }
   }
 
-  // --- Table body ---
+  // -----------------------------------------------
+  // TABLE BODY
+  // -----------------------------------------------
   &__body {
     .client-table__row {
       &:nth-child(even) {
-        background: rgba(0, 0, 0, 0.015);
+        background: rgba(0, 0, 0, 0.012);
       }
 
       &:nth-child(odd) {
@@ -104,37 +151,41 @@
     }
   }
 
-  // --- Table row ---
+  // -----------------------------------------------
+  // TABLE ROW — 56px height, hover with left accent
+  // -----------------------------------------------
   &__row {
     border-bottom: $border-width solid $border-color-light;
     cursor: pointer;
-    transition: all 250ms $ease-out-quart;
-    animation: tableRowFadeIn 0.4s $ease-out-expo both;
+    transition: all 200ms $ease-out-quart;
+    animation: tableRowFadeIn 0.35s $ease-out-expo both;
     position: relative;
+    @include stagger-children(0.025s, 30);
 
     &:hover {
-      background: rgba(45, 90, 61, 0.03);
-      box-shadow: inset 3px 0 0 $color-primary, 0 2px 8px rgba(0, 0, 0, 0.03);
+      background: rgba($color-primary, 0.025) !important;
+      box-shadow:
+        inset 3px 0 0 $color-primary,
+        0 2px 12px rgba(0, 0, 0, 0.03);
 
       .client-table__avatar {
-        transform: scale(1.08);
+        transform: scale(1.1);
       }
 
-      // Glow rings on hover per status
       .client-table__avatar--activo {
-        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(45, 90, 61, 0.3), 0 0 12px rgba(45, 90, 61, 0.15);
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba($color-primary, 0.35), 0 0 14px rgba($color-primary, 0.15);
       }
 
       .client-table__avatar--vip {
-        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(201, 168, 76, 0.35), 0 0 14px rgba(201, 168, 76, 0.15);
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba($color-accent, 0.4), 0 0 16px rgba($color-accent, 0.15);
       }
 
       .client-table__avatar--en_riesgo {
-        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(212, 133, 26, 0.3), 0 0 12px rgba(212, 133, 26, 0.15);
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(212, 133, 26, 0.35), 0 0 14px rgba(212, 133, 26, 0.15);
       }
 
       .client-table__avatar--nuevo {
-        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(59, 124, 212, 0.3), 0 0 12px rgba(59, 124, 212, 0.15);
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(59, 124, 212, 0.35), 0 0 14px rgba(59, 124, 212, 0.15);
       }
 
       .client-table__avatar--inactivo {
@@ -144,19 +195,60 @@
       .client-table__client-name {
         color: $color-primary-dark;
       }
+
+      .client-table__spent {
+        color: $color-primary;
+      }
+
+      .client-table__visits-count {
+        transform: scale(1.06);
+        color: $color-primary-dark;
+      }
+
+      .client-table__source-tag {
+        transform: translateY(-1px);
+        box-shadow: $shadow-xs;
+      }
     }
 
     &:active {
-      background: rgba(45, 90, 61, 0.04);
+      background: rgba($color-primary, 0.04) !important;
     }
 
     &:last-child { border-bottom: none; }
+
+    // Keyboard navigation
+    &:focus-visible {
+      outline: none;
+      background: rgba($color-primary, 0.04) !important;
+      box-shadow: inset 3px 0 0 $color-primary, 0 0 0 1px rgba($color-primary, 0.1);
+    }
   }
 
-  // --- Table cell ---
+  // VIP row shimmer
+  &__row--vip {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba($color-accent, 0.025), transparent);
+      pointer-events: none;
+      animation: tableVipShimmer 5s ease-in-out infinite;
+    }
+  }
+
+  // -----------------------------------------------
+  // TABLE CELL
+  // -----------------------------------------------
   &__td {
-    padding: $spacing-md $spacing-lg;
+    padding: $spacing-sm $spacing-lg;
     vertical-align: middle;
+    height: 56px;
 
     &--right { text-align: right; }
 
@@ -169,7 +261,9 @@
     }
   }
 
-  // --- Client cell (avatar + info) ---
+  // -----------------------------------------------
+  // CLIENT CELL — Avatar + info
+  // -----------------------------------------------
   &__client-cell {
     display: flex;
     align-items: center;
@@ -190,30 +284,29 @@
 
     &--activo {
       background: linear-gradient(135deg, $color-primary, $color-primary-light);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(45, 90, 61, 0.25);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba($color-primary, 0.2);
     }
 
     &--vip {
       background: linear-gradient(135deg, $color-accent-dark, $color-accent);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(201, 168, 76, 0.3);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba($color-accent, 0.25);
     }
 
     &--inactivo {
       background: linear-gradient(135deg, $color-gray-400, $color-gray-300);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(142, 142, 133, 0.2);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(142, 142, 133, 0.15);
     }
 
     &--en_riesgo {
       background: linear-gradient(135deg, #B5651D, #D4851A);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(212, 133, 26, 0.25);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(212, 133, 26, 0.2);
     }
 
     &--nuevo {
       background: linear-gradient(135deg, #2B6CB0, #3B7CD4);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(59, 124, 212, 0.25);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(59, 124, 212, 0.2);
     }
 
-    // Legacy support
     &--active { @extend .client-table__avatar--activo; }
     &--inactive { @extend .client-table__avatar--inactivo; }
   }
@@ -221,7 +314,7 @@
   &__client-info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
   }
 
@@ -231,6 +324,7 @@
     color: $color-secondary;
     @include truncate;
     transition: color $transition-fast;
+    line-height: $line-height-tight;
   }
 
   &__client-phone {
@@ -259,7 +353,9 @@
     }
   }
 
-  // --- Visit cell ---
+  // -----------------------------------------------
+  // VISIT CELL — Date + relative badge
+  // -----------------------------------------------
   &__visit-cell {
     display: flex;
     flex-direction: column;
@@ -308,7 +404,15 @@
     }
   }
 
-  // --- Visits count ---
+  &__no-visit {
+    font-size: $font-size-xs;
+    color: $color-gray-300;
+    font-style: italic;
+  }
+
+  // -----------------------------------------------
+  // VISITS COUNT
+  // -----------------------------------------------
   &__visits-count {
     font-family: $font-heading;
     font-size: $font-size-base;
@@ -318,9 +422,12 @@
     text-align: right;
     display: block;
     line-height: $line-height-tight;
+    transition: color $transition-fast, transform $transition-fast;
   }
 
-  // --- Spent ---
+  // -----------------------------------------------
+  // SPENT — Right-aligned COP
+  // -----------------------------------------------
   &__spent {
     font-family: $font-heading;
     font-size: $font-size-base;
@@ -331,6 +438,7 @@
     display: block;
     white-space: nowrap;
     line-height: $line-height-tight;
+    transition: color $transition-fast;
   }
 
   &__avg-ticket {
@@ -342,7 +450,9 @@
     margin-top: 2px;
   }
 
-  // --- Source tag ---
+  // -----------------------------------------------
+  // SOURCE TAG
+  // -----------------------------------------------
   &__source-tag {
     display: inline-flex;
     align-items: center;
@@ -390,7 +500,6 @@
       border: 1px solid rgba(107, 107, 99, 0.15);
     }
 
-    // Micro hover: darken background slightly
     &:hover {
       filter: brightness(0.96);
       transform: translateY(-1px);
@@ -398,7 +507,9 @@
     }
   }
 
-  // --- Status badge ---
+  // -----------------------------------------------
+  // STATUS BADGE — Colored pill
+  // -----------------------------------------------
   &__status {
     display: inline-flex;
     align-items: center;
@@ -408,26 +519,37 @@
     letter-spacing: $letter-spacing-wider;
     text-transform: uppercase;
     border-radius: $border-radius-full;
-    padding: $spacing-2xs $spacing-sm;
+    padding: 3px $spacing-sm;
     white-space: nowrap;
     transition: transform $transition-fast, box-shadow $transition-fast;
 
     &:hover {
-      transform: scale(1.02);
+      transform: scale(1.03);
     }
 
     &--activo {
       color: #1B7A4A;
-      background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(52, 211, 153, 0.05));
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(52, 211, 153, 0.05));
       border: $border-width solid $color-success-border;
       box-shadow: 0 1px 3px rgba(52, 211, 153, 0.08);
     }
 
     &--vip {
       color: #8A6D14;
-      background: linear-gradient(135deg, rgba(201, 168, 76, 0.12), rgba(201, 168, 76, 0.04));
-      border: $border-width solid rgba(201, 168, 76, 0.3);
-      box-shadow: 0 1px 3px rgba(201, 168, 76, 0.1);
+      background: linear-gradient(135deg, rgba($color-accent, 0.14), rgba($color-accent, 0.05));
+      border: $border-width solid rgba($color-accent, 0.3);
+      box-shadow: 0 1px 3px rgba($color-accent, 0.1);
+      position: relative;
+
+      // Subtle glow animation for VIP
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        border: 1px solid rgba($color-accent, 0.15);
+        animation: statusGlow 3s ease-in-out infinite;
+      }
     }
 
     &--inactivo {
@@ -438,149 +560,34 @@
 
     &--en_riesgo {
       color: #A85D1A;
-      background: linear-gradient(135deg, rgba(245, 158, 66, 0.12), rgba(245, 158, 66, 0.04));
+      background: linear-gradient(135deg, rgba(245, 158, 66, 0.14), rgba(245, 158, 66, 0.05));
       border: $border-width solid rgba(245, 158, 66, 0.25);
       box-shadow: 0 1px 3px rgba(245, 158, 66, 0.08);
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        border: 1px solid rgba(245, 158, 66, 0.15);
+        animation: statusGlowWarn 3s ease-in-out infinite;
+      }
     }
 
     &--nuevo {
       color: #1D5DAB;
-      background: linear-gradient(135deg, rgba(96, 165, 250, 0.12), rgba(96, 165, 250, 0.04));
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.14), rgba(96, 165, 250, 0.05));
       border: $border-width solid $color-info-border;
       box-shadow: 0 1px 3px rgba(96, 165, 250, 0.08);
     }
 
-    // Legacy
     &--active { @extend .client-table__status--activo; }
     &--inactive { @extend .client-table__status--inactivo; }
   }
 
   &__status-icon {
     flex-shrink: 0;
-  }
-
-  // -----------------------------------------------
-  // PREMIUM TABLE ENHANCEMENTS
-  // -----------------------------------------------
-
-  // Staggered row entrance
-  &__row {
-    @include stagger-children(0.03s, 20);
-  }
-
-  // Row focus for keyboard navigation
-  &__row:focus-visible {
-    outline: none;
-    background: rgba(45, 90, 61, 0.04);
-    box-shadow: inset 3px 0 0 $color-primary, 0 0 0 1px rgba(45, 90, 61, 0.1);
-  }
-
-  // VIP row shimmer effect
-  &__row--vip {
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 50%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(201, 168, 76, 0.03), transparent);
-      pointer-events: none;
-      animation: tableVipShimmer 4s ease-in-out infinite;
-    }
-  }
-
-  // Smooth column highlight on header hover
-  &__th-content {
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -$spacing-sm;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: $color-primary;
-      border-radius: $border-radius-full;
-      transition: width 250ms $ease-out-expo;
-    }
-  }
-
-  &__th:hover &__th-content::after {
-    width: 100%;
-  }
-
-  // Source tag micro-animation on row hover
-  &__row:hover &__source-tag {
-    transform: translateY(-1px);
-    box-shadow: $shadow-xs;
-  }
-
-  // Status badge pulse for important statuses
-  &__status--vip {
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: inherit;
-      border: 1px solid rgba(201, 168, 76, 0.2);
-      animation: statusGlow 3s ease-in-out infinite;
-    }
-  }
-
-  &__status--en_riesgo {
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: inherit;
-      border: 1px solid rgba(245, 158, 66, 0.15);
-      animation: statusGlowWarn 3s ease-in-out infinite;
-    }
-  }
-
-  // Wrapper scroll shadow
-  &__wrapper {
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 40px;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6));
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity $transition-fast;
-    }
-
-    &:hover::after {
-      opacity: 1;
-    }
-  }
-
-  // Money values: subtle green tint on hover
-  &__row:hover &__spent {
-    color: $color-primary;
-  }
-
-  // Visits count counter feel
-  &__visits-count {
-    transition: color $transition-fast, transform $transition-fast;
-  }
-
-  &__row:hover &__visits-count {
-    transform: scale(1.05);
-    color: $color-primary-dark;
   }
 
   // -----------------------------------------------
@@ -608,6 +615,7 @@
     cursor: pointer;
     transition: all 250ms $ease-out-quart;
     animation: fadeInUp 300ms $ease-out-expo both;
+    border-radius: $border-radius-lg;
 
     &:hover {
       transform: translateY(-2px);
@@ -660,7 +668,9 @@
     letter-spacing: $letter-spacing-wider;
   }
 
-  // Empty state
+  // -----------------------------------------------
+  // EMPTY STATE
+  // -----------------------------------------------
   &__empty {
     @include flex-column-center;
     padding: $spacing-3xl $spacing-xl;
@@ -685,19 +695,22 @@
   }
 }
 
+// -----------------------------------------------
+// KEYFRAMES
+// -----------------------------------------------
 @keyframes tableVipShimmer {
   0%, 100% { left: -100%; }
   50% { left: 200%; }
 }
 
 @keyframes statusGlow {
-  0%, 100% { border-color: rgba(201, 168, 76, 0.15); }
-  50% { border-color: rgba(201, 168, 76, 0.35); }
+  0%, 100% { border-color: rgba(201, 168, 76, 0.1); }
+  50% { border-color: rgba(201, 168, 76, 0.3); }
 }
 
 @keyframes statusGlowWarn {
-  0%, 100% { border-color: rgba(245, 158, 66, 0.1); }
-  50% { border-color: rgba(245, 158, 66, 0.3); }
+  0%, 100% { border-color: rgba(245, 158, 66, 0.08); }
+  50% { border-color: rgba(245, 158, 66, 0.25); }
 }
 
 @keyframes tableRowFadeIn {

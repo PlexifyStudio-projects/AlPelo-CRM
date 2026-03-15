@@ -2,18 +2,21 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Clients Page (Premium CRM)
-// World-class design: Stripe/Linear quality
+// AlPelo - Clients Page (Salesforce Premium)
+// World-class CRM: Stripe × Salesforce quality
 // ============================================
 
 .clients {
   @include page-enter;
+  max-width: $max-content-width;
 
-  // --- Header ---
+  // -----------------------------------------------
+  // HEADER
+  // -----------------------------------------------
   &__header {
     display: flex;
     flex-direction: column;
-    gap: $spacing-lg;
+    gap: $spacing-xl;
     margin-bottom: $spacing-xl;
     animation: fadeInLeft 400ms $ease-out-expo both;
     animation-delay: 0.05s;
@@ -29,37 +32,36 @@
     display: flex;
     gap: $spacing-sm;
     align-items: center;
-  }
-
-  &__header-left {
-    display: flex;
-    flex-direction: column;
-    gap: $spacing-sm;
+    flex-wrap: wrap;
   }
 
   &__title {
     @include heading($font-size-2xl);
     margin-bottom: 0;
     position: relative;
+    letter-spacing: $letter-spacing-tighter;
 
     &::after {
       content: '';
       display: block;
-      width: 40px;
+      width: 48px;
       height: 3px;
-      background: linear-gradient(90deg, $color-primary, $color-primary-light);
+      background: linear-gradient(90deg, $color-primary, $color-primary-light, rgba($color-primary-light, 0));
       border-radius: $border-radius-full;
-      margin-top: $spacing-xs;
+      margin-top: $spacing-sm;
     }
   }
 
-  // --- KPI Bar ---
+  // -----------------------------------------------
+  // KPI BAR — Premium stat cards
+  // -----------------------------------------------
   &__kpi-bar {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: $spacing-sm;
     animation: fadeInUp 0.4s $ease-out-expo both;
     animation-delay: 0.1s;
+    @include stagger-fade-in($stagger-fast, 6);
 
     @media (max-width: $breakpoint-lg) {
       grid-template-columns: repeat(3, 1fr);
@@ -73,19 +75,21 @@
   &__kpi-card {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    padding: $spacing-sm $spacing-lg;
+    gap: 4px;
+    padding: $spacing-md $spacing-lg;
     background: $glass-bg-heavy;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border: $border-width solid $glass-border;
-    border-radius: $border-radius-md;
-    min-width: 90px;
+    border-radius: $border-radius-lg;
+    min-width: 0;
     position: relative;
     overflow: hidden;
     transition: all $transition-base;
     box-shadow: $shadow-xs, $glass-inner-glow-subtle;
+    @include press-effect;
 
+    // Bottom accent line
     &::before {
       content: '';
       position: absolute;
@@ -98,40 +102,60 @@
       transition: opacity $transition-fast;
     }
 
+    // Subtle radial glow on hover
+    &::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120%;
+      height: 120%;
+      background: radial-gradient(ellipse, rgba($color-primary, 0.04) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity $transition-base;
+      pointer-events: none;
+    }
+
     &:hover {
       box-shadow: $shadow-md, $glass-inner-glow;
-      transform: translateY(-2px) scale(1.01);
-      border-color: rgba(255, 255, 255, 0.35);
+      transform: translateY(-3px) scale(1.01);
+      border-color: $glass-border-bright;
 
       &::before {
+        opacity: 1;
+      }
+
+      &::after {
         opacity: 1;
       }
     }
 
     &--urgent {
-      border-color: rgba(248, 113, 113, 0.3);
-      background: $color-error-bg;
-      animation: kpiPulse 2s ease-in-out infinite;
+      border-color: rgba(248, 113, 113, 0.25);
+      background: linear-gradient(135deg, rgba(248, 113, 113, 0.06), $glass-bg-heavy);
+      animation: kpiPulse 2.5s ease-in-out infinite;
 
       &::before {
-        background: $color-error;
+        background: linear-gradient(90deg, $color-error, rgba($color-error, 0.4));
         opacity: 1;
       }
 
       &:hover {
-        box-shadow: $shadow-glow-error;
+        box-shadow: $shadow-md, $shadow-glow-error;
       }
     }
-
-    @include stagger-children(0.05s, 6);
   }
 
   &__kpi-value {
-    font-size: $font-size-md;
+    font-size: $font-size-lg;
     font-weight: $font-weight-bold;
     color: $color-secondary;
     font-variant-numeric: tabular-nums;
     line-height: 1;
+    font-family: $font-heading;
+    letter-spacing: $letter-spacing-tight;
+    @include counter-roll-in(0.15s);
 
     &--success { color: #1B7A4A; }
     &--warning { color: #A85D1A; }
@@ -142,68 +166,84 @@
   &__kpi-label {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-caps;
     white-space: nowrap;
   }
 
-  // --- Loading state ---
+  // -----------------------------------------------
+  // LOADING STATE
+  // -----------------------------------------------
   &__loading {
     @include flex-column-center;
-    padding: $spacing-3xl;
-    gap: $spacing-md;
+    padding: $spacing-5xl $spacing-xl;
+    gap: $spacing-lg;
     color: $color-gray-400;
     font-size: $font-size-sm;
+    min-height: 60vh;
   }
 
   &__spinner {
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     border: 3px solid $border-color;
     border-top-color: $color-primary;
     border-radius: $border-radius-full;
     animation: clientsSpin 0.7s linear infinite;
+    box-shadow: 0 0 16px rgba($color-primary, 0.1);
   }
 
-  // --- Empty state ---
+  // -----------------------------------------------
+  // EMPTY STATE — Premium illustration feel
+  // -----------------------------------------------
   &__empty {
     @include glass-card;
     @include flex-center;
     flex-direction: column;
-    padding: $spacing-3xl $spacing-xl;
-    margin-top: $spacing-lg;
+    padding: $spacing-4xl $spacing-2xl;
+    margin-top: $spacing-xl;
     text-align: center;
-    @include dot-grid;
+    @include dot-grid(rgba(0, 0, 0, 0.04), 1px, 28px);
     animation: fadeInUp 400ms $ease-out-expo both;
     animation-delay: 0.15s;
     position: relative;
     overflow: hidden;
+    border-radius: $border-radius-xl;
 
+    // Radial ambient glow
     &::after {
       content: '';
       position: absolute;
-      top: -40%;
+      top: -30%;
       left: 20%;
       width: 60%;
       height: 100%;
-      background: radial-gradient(ellipse, rgba(45, 90, 61, 0.04) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba($color-primary, 0.05) 0%, transparent 70%);
       pointer-events: none;
     }
   }
 
   &__empty-icon {
     @include flex-center;
-    width: 80px;
-    height: 80px;
+    width: 88px;
+    height: 88px;
     border-radius: $border-radius-full;
-    background: $color-primary-ghost;
+    background: linear-gradient(135deg, $color-primary-ghost, rgba($color-primary, 0.08));
     color: $color-primary;
-    margin-bottom: $spacing-lg;
-    box-shadow: 0 0 0 8px rgba(45, 90, 61, 0.04), 0 0 0 16px rgba(45, 90, 61, 0.02);
+    margin-bottom: $spacing-xl;
+    box-shadow:
+      0 0 0 8px rgba($color-primary, 0.04),
+      0 0 0 20px rgba($color-primary, 0.02),
+      0 0 0 36px rgba($color-primary, 0.01);
     animation: emptyPulse 3s ease-in-out infinite;
     position: relative;
     z-index: 1;
+    transition: transform 400ms $ease-spring;
+
+    &:hover {
+      transform: scale(1.08);
+    }
   }
 
   &__empty-text {
@@ -213,6 +253,7 @@
     margin-bottom: $spacing-xs;
     position: relative;
     z-index: 1;
+    font-family: $font-heading;
   }
 
   &__empty-hint {
@@ -220,9 +261,14 @@
     color: $color-gray-300;
     position: relative;
     z-index: 1;
+    max-width: 360px;
+    line-height: $line-height-base;
   }
 }
 
+// -----------------------------------------------
+// KEYFRAMES
+// -----------------------------------------------
 @keyframes kpiPulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.15); }
   50%      { box-shadow: 0 0 0 6px rgba(248, 113, 113, 0); }
@@ -234,28 +280,15 @@
 
 @keyframes emptyPulse {
   0%, 100% {
-    box-shadow: 0 0 0 8px rgba(45, 90, 61, 0.04), 0 0 0 16px rgba(45, 90, 61, 0.02);
+    box-shadow:
+      0 0 0 8px rgba(45, 90, 61, 0.04),
+      0 0 0 20px rgba(45, 90, 61, 0.02),
+      0 0 0 36px rgba(45, 90, 61, 0.01);
   }
   50% {
-    box-shadow: 0 0 0 12px rgba(45, 90, 61, 0.06), 0 0 0 24px rgba(45, 90, 61, 0.02);
+    box-shadow:
+      0 0 0 12px rgba(45, 90, 61, 0.06),
+      0 0 0 28px rgba(45, 90, 61, 0.03),
+      0 0 0 44px rgba(45, 90, 61, 0.01);
   }
-}
-
-// ============================================
-// PREMIUM ENHANCEMENTS
-// ============================================
-
-// KPI card stagger entrance
-.clients__kpi-bar {
-  @include stagger-fade-in($stagger-fast, 6);
-}
-
-// KPI value counter animation
-.clients__kpi-value {
-  @include counter-roll-in(0.15s);
-}
-
-// KPI card press feedback
-.clients__kpi-card {
-  @include press-effect;
 }

@@ -9,21 +9,21 @@
 // --- Local design tokens ---
 $inbox-bg: $color-off-white;
 $inbox-panel-bg: $color-white;
-$inbox-border: rgba(0, 0, 0, 0.06);
-$inbox-hover: rgba(0, 0, 0, 0.03);
-$inbox-active-bg: $color-primary-ghost;
-$inbox-active-border: rgba(45, 90, 61, 0.15);
-$inbox-sent-bg: rgba(45, 90, 61, 0.06);
-$inbox-sent-bg-hover: rgba(45, 90, 61, 0.1);
+$inbox-border: rgba(0, 0, 0, 0.05);
+$inbox-hover: rgba(0, 0, 0, 0.025);
+$inbox-active-bg: rgba(45, 90, 61, 0.05);
+$inbox-active-border: rgba(45, 90, 61, 0.12);
+$inbox-sent-bg: rgba(45, 90, 61, 0.045);
+$inbox-sent-bg-hover: rgba(45, 90, 61, 0.08);
 $inbox-received-bg: $color-white;
 $inbox-accent: $color-primary;
-$inbox-accent-light: rgba(45, 90, 61, 0.08);
+$inbox-accent-light: rgba(45, 90, 61, 0.06);
 $inbox-text: $color-secondary;
 $inbox-text-secondary: $color-gray-500;
 $inbox-text-muted: $color-gray-400;
 $inbox-radius: $border-radius-md;
-$inbox-radius-lg: $border-radius-lg;
-$inbox-radius-msg: 8px;
+$inbox-radius-lg: $border-radius-xl;
+$inbox-radius-msg: 10px;
 $inbox-transition: 200ms $ease-out-quart;
 $inbox-ai-color: $color-accent;
 $inbox-ai-bg: $color-accent-ghost;
@@ -34,7 +34,7 @@ $inbox-ai-bg: $color-accent-ghost;
   background: $inbox-bg;
   border-radius: $inbox-radius-lg;
   overflow: hidden;
-  box-shadow: $shadow-lg;
+  box-shadow: $shadow-xl, 0 0 0 1px rgba(0, 0, 0, 0.02);
   animation: fadeInUp 400ms $ease-out-expo both;
 
   // ===========================================
@@ -59,13 +59,13 @@ $inbox-ai-bg: $color-accent-ghost;
   // --- List Header ---
   &__list-header {
     @include flex-between;
-    padding: $spacing-lg $spacing-md $spacing-sm;
+    padding: $spacing-lg $spacing-md $spacing-md;
     flex-shrink: 0;
   }
 
   &__list-title {
     font-family: $font-primary;
-    font-size: $font-size-lg;
+    font-size: $font-size-md;
     font-weight: $font-weight-bold;
     color: $inbox-text;
     letter-spacing: $letter-spacing-tight;
@@ -84,14 +84,19 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 34px;
     border: none;
     background: transparent;
-    color: $inbox-text-secondary;
+    color: $color-gray-400;
     cursor: pointer;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     transition: all $inbox-transition;
 
     &:hover {
-      background: $inbox-hover;
+      background: $color-gray-50;
       color: $inbox-accent;
+      transform: scale(1.05);
+    }
+
+    &:active {
+      transform: scale(0.95);
     }
 
     &--active {
@@ -134,23 +139,23 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__search-input {
     width: 100%;
-    padding: 8px 12px 8px 38px;
-    border-radius: $border-radius-sm;
+    padding: 10px 12px 10px 38px;
+    border-radius: $border-radius-md;
     border: 1px solid transparent;
     background: $color-gray-50;
     font-size: $font-size-sm;
     color: $inbox-text;
-    transition: all $inbox-transition;
+    transition: all 250ms $ease-out-quart;
     font-family: $font-primary;
     letter-spacing: $letter-spacing-normal;
 
-    &::placeholder { color: $inbox-text-muted; }
+    &::placeholder { color: $color-gray-300; }
 
     &:focus {
       outline: none;
       background: $inbox-panel-bg;
-      border-color: rgba($inbox-accent, 0.3);
-      box-shadow: 0 0 0 3px rgba($inbox-accent, 0.06);
+      border-color: rgba($inbox-accent, 0.25);
+      box-shadow: 0 0 0 4px rgba($inbox-accent, 0.05), $shadow-xs;
     }
   }
 
@@ -166,34 +171,35 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__filter {
-    padding: 5px 12px;
-    border-radius: $border-radius-sm;
+    padding: 5px 14px;
+    border-radius: $border-radius-full;
     border: 1px solid transparent;
     background: transparent;
     font-size: $font-size-xs;
     font-weight: $font-weight-medium;
     color: $inbox-text-secondary;
     cursor: pointer;
-    transition: all $inbox-transition;
+    transition: all 250ms $ease-out-quart;
     font-family: $font-primary;
     white-space: nowrap;
     flex-shrink: 0;
     letter-spacing: $letter-spacing-normal;
 
     &:hover {
-      background: $inbox-hover;
+      background: $color-gray-50;
       color: $inbox-text;
     }
 
     &--active {
-      background: $inbox-accent-light;
-      color: $inbox-accent;
-      border-color: $inbox-active-border;
+      background: $inbox-accent;
+      color: $color-white;
+      border-color: transparent;
       font-weight: $font-weight-semibold;
+      box-shadow: $shadow-xs, 0 2px 8px rgba(45, 90, 61, 0.2);
 
       &:hover {
-        background: rgba(45, 90, 61, 0.1);
-        color: $inbox-accent;
+        background: $color-primary-light;
+        color: $color-white;
       }
     }
   }
@@ -210,15 +216,15 @@ $inbox-ai-bg: $color-accent-ghost;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: $spacing-sm $spacing-sm;
+    padding: 10px $spacing-sm;
     cursor: pointer;
-    transition: all $duration-fast $ease-smooth;
+    transition: all 180ms $ease-out-quart;
     position: relative;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     margin-bottom: 1px;
 
     &::after {
-      content: none; // Remove the WhatsApp-style divider line
+      content: none;
     }
 
     &:hover {
@@ -227,9 +233,10 @@ $inbox-ai-bg: $color-accent-ghost;
 
     &--active {
       background: $inbox-active-bg;
+      box-shadow: inset 0 0 0 1px rgba(45, 90, 61, 0.06);
 
       &:hover {
-        background: rgba(45, 90, 61, 0.08);
+        background: rgba(45, 90, 61, 0.065);
       }
 
       // Subtle left accent bar
@@ -237,26 +244,27 @@ $inbox-ai-bg: $color-accent-ghost;
         content: '';
         position: absolute;
         left: 0;
-        top: 8px;
-        bottom: 8px;
+        top: 10px;
+        bottom: 10px;
         width: 3px;
-        border-radius: 0 2px 2px 0;
-        background: $inbox-accent;
-        opacity: 0.6;
+        border-radius: 0 3px 3px 0;
+        background: linear-gradient(180deg, $inbox-accent, $color-primary-light);
+        opacity: 0.7;
       }
     }
 
     &--unread {
-      .inbox__conv-name { font-weight: $font-weight-semibold; }
-      .inbox__conv-time { color: $inbox-accent; font-weight: $font-weight-medium; }
+      .inbox__conv-name { font-weight: $font-weight-semibold; color: $color-secondary; }
+      .inbox__conv-time { color: $inbox-accent; font-weight: $font-weight-semibold; }
+      .inbox__conv-preview { color: $color-gray-500; }
     }
   }
 
   &__conv-avatar {
     @include flex-center;
-    width: 44px;
-    height: 44px;
-    border-radius: $border-radius-md;
+    width: 46px;
+    height: 46px;
+    border-radius: $border-radius-lg;
     background: $color-gray-200;
     color: $color-white;
     font-size: $font-size-xs;
@@ -266,9 +274,11 @@ $inbox-ai-bg: $color-accent-ghost;
     letter-spacing: 0.5px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
     &--vip {
       background: linear-gradient(135deg, $color-accent, $color-accent-dark);
+      box-shadow: 0 2px 12px rgba(201, 168, 76, 0.25);
     }
   }
 
@@ -395,9 +405,9 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__conv-badge {
     @include flex-center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
     border-radius: $border-radius-full;
     background: $inbox-accent;
     color: $color-white;
@@ -406,6 +416,8 @@ $inbox-ai-bg: $color-accent-ghost;
     flex-shrink: 0;
     font-family: $font-primary;
     letter-spacing: -0.02em;
+    box-shadow: 0 2px 6px rgba(45, 90, 61, 0.3);
+    animation: inboxBadgePop 400ms $ease-spring both;
   }
 
   &__conv-typing-text {
@@ -419,18 +431,19 @@ $inbox-ai-bg: $color-accent-ghost;
     position: fixed;
     z-index: $z-dropdown;
     @include flex-column;
-    min-width: 200px;
+    min-width: 210px;
     background: $inbox-panel-bg;
-    border-radius: $inbox-radius;
-    box-shadow: $shadow-xl, 0 0 0 1px $inbox-border;
+    border-radius: $border-radius-lg;
+    box-shadow: $shadow-2xl, 0 0 0 1px rgba(0, 0, 0, 0.04);
     padding: $spacing-xs 0;
     animation: inboxMenuIn 150ms $ease-out-expo both;
+    backdrop-filter: blur(16px);
 
     button {
       display: flex;
       align-items: center;
-      gap: $spacing-sm;
-      padding: $spacing-sm $spacing-md;
+      gap: 10px;
+      padding: 9px $spacing-md;
       border: none;
       background: none;
       font-family: $font-primary;
@@ -438,10 +451,12 @@ $inbox-ai-bg: $color-accent-ghost;
       color: $inbox-text;
       cursor: pointer;
       text-align: left;
-      transition: background $duration-fast ease;
+      transition: all $duration-fast ease;
+      margin: 0 $spacing-2xs;
+      border-radius: $border-radius-sm;
 
-      svg { flex-shrink: 0; }
-      &:hover { background: $inbox-hover; }
+      svg { flex-shrink: 0; color: $color-gray-400; }
+      &:hover { background: $color-gray-50; }
     }
   }
 
@@ -523,15 +538,15 @@ $inbox-ai-bg: $color-accent-ghost;
     flex: 1;
     @include flex-column;
     min-width: 0;
-    background: $color-gray-50;
+    background: #F8F8F6;
     position: relative;
 
-    // Subtle dot grid instead of WhatsApp pattern
+    // Subtle dot grid for depth
     &::before {
       content: '';
       position: absolute;
       inset: 0;
-      @include dot-grid(rgba(0, 0, 0, 0.03), 1px, 32px);
+      @include dot-grid(rgba(0, 0, 0, 0.02), 1px, 28px);
       pointer-events: none;
       z-index: 0;
     }
@@ -550,11 +565,14 @@ $inbox-ai-bg: $color-accent-ghost;
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
+    padding: $spacing-sm $spacing-lg;
     background: $inbox-panel-bg;
     border-bottom: 1px solid $inbox-border;
     flex-shrink: 0;
-    min-height: 56px;
+    min-height: 60px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+
+    @media (max-width: $breakpoint-md) { padding: $spacing-sm $spacing-md; }
   }
 
   &__back-btn {
@@ -653,22 +671,28 @@ $inbox-ai-bg: $color-accent-ghost;
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 4px 10px;
-    border-radius: $border-radius-sm;
+    padding: 5px 12px;
+    border-radius: $border-radius-full;
     border: 1px solid;
     font-size: 11px;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     cursor: pointer;
-    transition: all $inbox-transition;
+    transition: all 250ms $ease-out-quart;
     font-family: $font-primary;
     flex-shrink: 0;
-    letter-spacing: $letter-spacing-normal;
+    letter-spacing: $letter-spacing-wide;
+    text-transform: uppercase;
 
     &--ai {
-      background: $inbox-ai-bg;
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.08), rgba(201, 168, 76, 0.04));
       border-color: rgba($color-accent, 0.2);
       color: $color-accent-dark;
-      &:hover { background: rgba($color-accent, 0.1); }
+      box-shadow: 0 1px 4px rgba(201, 168, 76, 0.1);
+
+      &:hover {
+        background: rgba($color-accent, 0.12);
+        box-shadow: 0 2px 8px rgba(201, 168, 76, 0.15);
+      }
     }
 
     &--human {
@@ -791,38 +815,38 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 6px 14px;
-    margin: 0 auto $spacing-md;
-    border-radius: $border-radius-sm;
-    background: rgba($color-accent, 0.06);
-    border: 1px solid rgba($color-accent, 0.1);
+    padding: 6px 16px;
+    margin: 0 auto $spacing-lg;
+    border-radius: $border-radius-full;
+    background: rgba($color-accent, 0.04);
+    border: 1px solid rgba($color-accent, 0.08);
     font-size: 10px;
-    color: $inbox-text-secondary;
+    color: $color-gray-400;
     max-width: 480px;
     text-align: center;
     line-height: 1.4;
     letter-spacing: $letter-spacing-normal;
-    svg { color: $color-accent; flex-shrink: 0; }
+    svg { color: rgba($color-accent, 0.6); flex-shrink: 0; }
   }
 
   // --- Date Separator ---
   &__date-separator {
     display: flex;
     justify-content: center;
-    padding: $spacing-md 0 $spacing-sm;
+    padding: $spacing-lg 0 $spacing-md;
 
     span {
-      padding: 3px 12px;
-      border-radius: $border-radius-sm;
-      background: rgba($inbox-panel-bg, 0.9);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      box-shadow: $shadow-xs;
+      padding: 4px 16px;
+      border-radius: $border-radius-full;
+      background: rgba($inbox-panel-bg, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03);
       font-size: 10px;
       color: $inbox-text-secondary;
-      font-weight: $font-weight-medium;
+      font-weight: $font-weight-semibold;
       text-transform: uppercase;
-      letter-spacing: $letter-spacing-wide;
+      letter-spacing: $letter-spacing-wider;
       font-family: $font-primary;
     }
   }
@@ -848,25 +872,33 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__message-bubble {
     max-width: 62%;
-    padding: 8px 12px 6px;
+    padding: 10px 14px 8px;
     border-radius: $inbox-radius-msg;
     position: relative;
     word-wrap: break-word;
-    box-shadow: $shadow-xs;
-    transition: box-shadow $duration-fast ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: box-shadow 200ms ease, transform 200ms ease;
 
     .inbox__message--sent & {
       background: $inbox-sent-bg;
-      border: 1px solid rgba(45, 90, 61, 0.08);
+      border: 1px solid rgba(45, 90, 61, 0.06);
       border-radius: $inbox-radius-msg $inbox-radius-msg 4px $inbox-radius-msg;
-      margin-right: 4px;
+      margin-right: 6px;
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(45, 90, 61, 0.08), 0 1px 2px rgba(0, 0, 0, 0.03);
+      }
     }
 
     .inbox__message--received & {
       background: $inbox-received-bg;
-      border: 1px solid $inbox-border;
+      border: 1px solid rgba(0, 0, 0, 0.05);
       border-radius: $inbox-radius-msg $inbox-radius-msg $inbox-radius-msg 4px;
-      margin-left: 4px;
+      margin-left: 6px;
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+      }
     }
 
     @media (max-width: $breakpoint-sm) { max-width: 85%; }
@@ -1018,12 +1050,12 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__lina-thinking-bubble {
-    background: $inbox-ai-bg;
+    background: linear-gradient(135deg, rgba(201, 168, 76, 0.06), rgba(201, 168, 76, 0.03));
     border: 1px solid rgba($color-accent, 0.12);
     border-radius: $inbox-radius-msg;
-    padding: 8px 14px 10px;
+    padding: 10px 16px 12px;
     max-width: 280px;
-    box-shadow: $shadow-xs;
+    box-shadow: 0 2px 8px rgba(201, 168, 76, 0.08), $shadow-xs;
   }
 
   &__lina-thinking-header {
@@ -1089,11 +1121,14 @@ $inbox-ai-bg: $color-accent-ghost;
   &__lina-label {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     font-size: 10px;
     color: $color-accent-dark;
-    margin-bottom: 3px;
-    font-weight: $font-weight-semibold;
+    margin-bottom: 4px;
+    padding: 2px 8px 2px 6px;
+    background: rgba(201, 168, 76, 0.08);
+    border-radius: $border-radius-full;
+    font-weight: $font-weight-bold;
     letter-spacing: $letter-spacing-wide;
     text-transform: uppercase;
 
@@ -1375,15 +1410,16 @@ $inbox-ai-bg: $color-accent-ghost;
   // CLIENT INFO SIDEBAR (right panel)
   // ===========================================
   &__client-sidebar {
-    width: 300px;
-    min-width: 300px;
+    width: 320px;
+    min-width: 320px;
     background: $inbox-panel-bg;
     border-left: 1px solid $inbox-border;
     overflow-y: auto;
     @include custom-scrollbar;
-    animation: inboxSlideRight 250ms $ease-out-expo both;
+    animation: inboxSlideRight 300ms $ease-out-expo both;
     @include flex-column;
 
+    @media (max-width: $breakpoint-xl) { width: 300px; min-width: 300px; }
     @media (max-width: $breakpoint-lg) { display: none; }
   }
 
@@ -1418,21 +1454,23 @@ $inbox-ai-bg: $color-accent-ghost;
   &__client-header {
     @include flex-column-center;
     gap: $spacing-sm;
-    padding: $spacing-xl $spacing-lg;
+    padding: $spacing-2xl $spacing-lg $spacing-xl;
     border-bottom: 1px solid $inbox-border;
+    background: linear-gradient(180deg, rgba(45, 90, 61, 0.03) 0%, transparent 100%);
   }
 
   &__client-avatar-lg {
     @include flex-center;
-    width: 72px;
-    height: 72px;
-    border-radius: $border-radius-lg;
+    width: 80px;
+    height: 80px;
+    border-radius: $border-radius-xl;
     background: $color-gray-200;
     color: $color-white;
-    font-size: $font-size-lg;
+    font-size: $font-size-xl;
     font-weight: $font-weight-bold;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   }
 
   &__client-avatar-lg-img {
@@ -1471,12 +1509,17 @@ $inbox-ai-bg: $color-accent-ghost;
   &__client-status-badge {
     font-size: 10px;
     font-weight: $font-weight-bold;
-    padding: 2px 10px;
-    border-radius: $border-radius-xs;
+    padding: 3px 12px;
+    border-radius: $border-radius-full;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wider;
+    margin-top: 2px;
 
-    &--vip { background: $color-accent-ghost; color: $color-accent-dark; }
+    &--vip {
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.1), rgba(201, 168, 76, 0.06));
+      color: $color-accent-dark;
+      box-shadow: 0 1px 4px rgba(201, 168, 76, 0.15);
+    }
     &--activo { background: $color-success-bg; color: $color-success-dark; }
     &--nuevo { background: $color-info-bg; color: $color-info-dark; }
     &--en_riesgo { background: $color-warning-bg; color: $color-warning-dark; }
@@ -1494,23 +1537,29 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__client-quick-action {
     @include flex-column-center;
-    gap: 4px;
-    padding: $spacing-xs;
+    gap: 5px;
+    padding: $spacing-sm $spacing-xs;
     border: none;
     background: none;
     cursor: pointer;
     color: $inbox-accent;
     font-family: $font-primary;
-    transition: all $duration-fast ease;
-    border-radius: $border-radius-sm;
+    transition: all 200ms $ease-out-quart;
+    border-radius: $border-radius-md;
 
     span {
       font-size: 10px;
       color: $inbox-text-secondary;
+      font-weight: $font-weight-medium;
     }
 
     &:hover {
       background: $inbox-active-bg;
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
     }
   }
 
@@ -1575,16 +1624,23 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__client-stat {
     @include flex-column-center;
-    padding: $spacing-sm $spacing-xs;
-    border-radius: $border-radius-sm;
+    padding: $spacing-md $spacing-xs;
+    border-radius: $border-radius-md;
     background: $color-gray-50;
-    border: 1px solid $inbox-border;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    transition: all 200ms $ease-out-quart;
+
+    &:hover {
+      background: $color-white;
+      box-shadow: $shadow-sm;
+      border-color: rgba(0, 0, 0, 0.06);
+    }
   }
 
   &__client-stat-value {
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
     font-weight: $font-weight-bold;
-    color: $inbox-text;
+    color: $inbox-accent;
     font-family: $font-primary;
     line-height: 1.2;
     text-align: center;
@@ -1597,6 +1653,7 @@ $inbox-ai-bg: $color-accent-ghost;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wide;
     text-align: center;
+    margin-top: 2px;
   }
 
   // --- Client Details ---
@@ -1711,55 +1768,62 @@ $inbox-ai-bg: $color-accent-ghost;
   &__input-wrapper {
     flex: 1;
     background: $color-gray-50;
-    border-radius: $border-radius-sm;
-    border: 1px solid $inbox-border;
+    border-radius: $border-radius-md;
+    border: 1px solid rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    transition: border-color $inbox-transition;
+    transition: all 250ms $ease-out-quart;
 
     &:focus-within {
-      border-color: rgba($inbox-accent, 0.3);
+      border-color: rgba($inbox-accent, 0.25);
       background: $inbox-panel-bg;
+      box-shadow: 0 0 0 4px rgba($inbox-accent, 0.04), $shadow-xs;
     }
   }
 
   &__input {
     width: 100%;
-    padding: 9px 14px;
+    padding: 11px 16px;
     border: none;
     background: none;
     font-size: $font-size-sm;
     color: $inbox-text;
     resize: none;
-    min-height: 20px;
+    min-height: 22px;
     max-height: 120px;
     font-family: $font-primary;
     line-height: 1.5;
     outline: none;
     letter-spacing: $letter-spacing-normal;
-    &::placeholder { color: $inbox-text-muted; }
+    &::placeholder { color: $color-gray-300; }
   }
 
   &__send-btn {
     @include flex-center;
-    width: 36px;
-    height: 36px;
+    width: 38px;
+    height: 38px;
     border: none;
     background: transparent;
     color: $inbox-text-muted;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     cursor: default;
-    transition: all $inbox-transition;
+    transition: all 250ms $ease-out-quart;
     flex-shrink: 0;
 
     &--active {
-      background: $inbox-accent;
+      background: linear-gradient(135deg, $inbox-accent, $color-primary-light);
       color: $color-white;
       cursor: pointer;
-      border-radius: $border-radius-sm;
+      border-radius: $border-radius-md;
+      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.25);
 
       &:hover {
-        background: $color-primary-light;
-        transform: scale(1.05);
+        background: linear-gradient(135deg, $color-primary-light, $inbox-accent);
+        transform: scale(1.08);
+        box-shadow: 0 4px 12px rgba(45, 90, 61, 0.3);
+      }
+
+      &:active {
+        transform: scale(0.95);
       }
     }
     &:disabled { cursor: default; }
@@ -1931,24 +1995,27 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__empty-chat-icon {
-    color: $inbox-text-muted;
-    margin-bottom: $spacing-sm;
-    opacity: 0.3;
-    animation: inboxFloat 6s ease-in-out infinite;
+    color: $color-gray-300;
+    margin-bottom: $spacing-md;
+    opacity: 0.2;
+    animation: inboxFloat 8s ease-in-out infinite;
+    filter: blur(0.3px);
   }
 
   &__empty-chat-title {
-    font-family: $font-primary;
-    font-size: $font-size-xl;
-    font-weight: $font-weight-semibold;
+    font-family: $font-heading;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
     color: $inbox-text;
     letter-spacing: $letter-spacing-tight;
+    line-height: $line-height-tight;
   }
 
   &__empty-chat-text {
     font-size: $font-size-sm;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     line-height: $line-height-base;
+    max-width: 320px;
   }
 
   &__empty-chat-features {
@@ -2138,17 +2205,28 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__new-chat-submit {
-    padding: 9px $spacing-md;
+    padding: 10px $spacing-lg;
     border: none;
-    border-radius: $border-radius-sm;
-    background: $inbox-accent;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, $inbox-accent, $color-primary-dark);
     color: $color-white;
     font-family: $font-primary;
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     cursor: pointer;
-    transition: all $inbox-transition;
-    &:hover:not(:disabled) { background: $color-primary-light; }
+    transition: all 250ms $ease-out-quart;
+    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, $color-primary-light, $inbox-accent);
+      box-shadow: 0 4px 12px rgba(45, 90, 61, 0.25);
+      transform: translateY(-1px);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
     &:disabled { opacity: 0.5; cursor: default; }
   }
 
@@ -2444,23 +2522,24 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__conv-error-icon {
-    color: $inbox-text-muted;
-    margin-bottom: $spacing-xs;
-    opacity: 0.3;
+    color: $color-gray-300;
+    margin-bottom: $spacing-sm;
+    opacity: 0.25;
   }
 
   &__conv-error-title {
     font-family: $font-primary;
-    font-size: $font-size-base;
-    font-weight: $font-weight-semibold;
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
     color: $inbox-text;
     margin: 0;
+    letter-spacing: $letter-spacing-tight;
   }
 
   &__conv-error-text {
     font-size: $font-size-sm;
-    color: $inbox-text-muted;
-    line-height: $line-height-base;
+    color: $color-gray-400;
+    line-height: $line-height-relaxed;
     max-width: 280px;
     margin: 0;
   }
@@ -2484,19 +2563,20 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__conv-error-retry {
-    margin-top: $spacing-sm;
-    padding: $spacing-sm $spacing-lg;
-    border: 1px solid $inbox-active-border;
-    border-radius: $border-radius-sm;
-    background: $inbox-accent-light;
-    color: $inbox-accent;
+    margin-top: $spacing-md;
+    padding: $spacing-sm $spacing-xl;
+    border: 1px solid transparent;
+    border-radius: $border-radius-md;
+    background: $inbox-accent;
+    color: $color-white;
     font-family: $font-primary;
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     cursor: pointer;
-    transition: all $inbox-transition;
+    transition: all 250ms $ease-out-quart;
+    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
     &:hover {
-      background: rgba($inbox-accent, 0.12);
+      background: $color-primary-light;
       border-color: rgba($inbox-accent, 0.3);
     }
   }
@@ -2703,10 +2783,12 @@ $inbox-ai-bg: $color-accent-ghost;
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 5px $spacing-md;
-    background: $inbox-accent-light;
-    border-bottom: 1px solid $inbox-border;
+    padding: 6px $spacing-lg;
+    background: linear-gradient(90deg, rgba(45, 90, 61, 0.04), rgba(45, 90, 61, 0.02));
+    border-bottom: 1px solid rgba(45, 90, 61, 0.06);
     font-size: $font-size-xs;
+
+    @media (max-width: $breakpoint-md) { padding: 5px $spacing-md; }
   }
 
   &__client-bar-id {
@@ -2833,6 +2915,12 @@ $inbox-ai-bg: $color-accent-ghost;
 @keyframes inboxLivePulse {
   0%, 100% { opacity: 0.4; transform: scale(1); }
   50% { opacity: 1; transform: scale(1.2); }
+}
+
+@keyframes inboxBadgePop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 // Compatibility aliases for animations referenced in JSX or other styles

@@ -3,32 +3,34 @@
 
 // ============================================
 // AlPelo - Header Component
-// Premium glass header with notification system
-// and profile dropdown
+// Premium glass header — world-class analytics feel
 // ============================================
 
 .header {
   @include flex-between;
   height: $header-height;
   padding: 0 $spacing-2xl;
-  background: $glass-bg-heavy;
-  backdrop-filter: blur($glass-blur-heavy) saturate(1.2);
-  -webkit-backdrop-filter: blur($glass-blur-heavy) saturate(1.2);
-  border-bottom: $border-width solid $border-color;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(48px) saturate(1.6);
+  -webkit-backdrop-filter: blur(48px) saturate(1.6);
+  border-bottom: $border-width solid rgba(0, 0, 0, 0.04);
   position: sticky;
   top: 0;
   z-index: $z-sticky;
   box-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.02),
-    0 4px 20px rgba(0, 0, 0, 0.02);
-  transition: box-shadow 300ms $ease-out-quart, background 300ms $ease-out-quart, border-color 300ms $ease-out-quart;
+    0 1px 0 rgba(255, 255, 255, 0.5),
+    0 4px 24px rgba(0, 0, 0, 0.03);
+  transition:
+    box-shadow 400ms $ease-out-expo,
+    background 400ms $ease-out-expo,
+    border-color 400ms $ease-out-expo;
 
-  // Intensify shadow when scrolled (via JS class or natural state)
   &--scrolled {
+    background: rgba(255, 255, 255, 0.92);
     box-shadow:
-      0 1px 0 rgba(0, 0, 0, 0.03),
-      0 8px 32px rgba(0, 0, 0, 0.05);
-    border-bottom-color: rgba(0, 0, 0, 0.04);
+      0 1px 0 rgba(255, 255, 255, 0.4),
+      0 8px 40px rgba(0, 0, 0, 0.06);
+    border-bottom-color: rgba(0, 0, 0, 0.06);
   }
 
   // -----------------------------------------------
@@ -39,19 +41,21 @@
     width: 40px;
     height: 40px;
     border-radius: $border-radius-md;
-    color: $color-gray-600;
+    color: $color-gray-500;
     flex-shrink: 0;
     transition:
       background 200ms $ease-out-quart,
-      color 200ms $ease-out-quart;
+      color 200ms $ease-out-quart,
+      transform 200ms $ease-out-quart;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
+      background: rgba(0, 0, 0, 0.05);
       color: $color-secondary;
     }
 
     &:active {
-      transform: scale(0.93);
+      transform: scale(0.92);
+      transition-duration: 80ms;
     }
   }
 
@@ -83,7 +87,7 @@
     }
   }
 
-  // Subtle inner highlight for glass effect
+  // Premium inner highlight — top edge luminance
   &::after {
     content: '';
     position: absolute;
@@ -94,9 +98,9 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.6) 30%,
-      rgba(255, 255, 255, 0.8) 50%,
-      rgba(255, 255, 255, 0.6) 70%,
+      rgba(255, 255, 255, 0.7) 20%,
+      rgba(255, 255, 255, 0.95) 50%,
+      rgba(255, 255, 255, 0.7) 80%,
       transparent 100%
     );
     pointer-events: none;
@@ -139,7 +143,7 @@
   }
 
   // -----------------------------------------------
-  // SEARCH BAR (if present)
+  // SEARCH BAR
   // -----------------------------------------------
   &__search {
     position: relative;
@@ -150,7 +154,7 @@
   &__search-input {
     width: 240px;
     height: 38px;
-    padding: 0 $spacing-md 0 36px;
+    padding: 0 $spacing-md 0 38px;
     background: rgba(0, 0, 0, 0.03);
     border: $border-width solid transparent;
     border-radius: $border-radius-full;
@@ -158,34 +162,39 @@
     font-size: $font-size-sm;
     color: $color-secondary;
     transition:
-      width 300ms $ease-out-expo,
-      background 200ms $ease-out-quart,
-      border-color 200ms $ease-out-quart,
-      box-shadow 200ms $ease-out-quart;
+      width 350ms $ease-out-expo,
+      background 250ms $ease-out-quart,
+      border-color 250ms $ease-out-quart,
+      box-shadow 250ms $ease-out-quart;
 
     &::placeholder {
       color: $color-gray-400;
       font-weight: $font-weight-regular;
+      transition: opacity 250ms $ease-out-quart;
     }
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
+      background: rgba(0, 0, 0, 0.045);
     }
 
     &:focus {
       outline: none;
       width: 320px;
       background: $color-white;
-      border-color: rgba(45, 90, 61, 0.2);
+      border-color: rgba(45, 90, 61, 0.18);
       box-shadow:
-        0 0 0 3px rgba(45, 90, 61, 0.08),
+        0 0 0 3px rgba(45, 90, 61, 0.06),
         $shadow-md;
+
+      &::placeholder {
+        opacity: 0.6;
+      }
     }
   }
 
   &__search-icon {
     position: absolute;
-    left: 12px;
+    left: 13px;
     top: 50%;
     transform: translateY(-50%);
     color: $color-gray-400;
@@ -224,8 +233,7 @@
     @include flex-center;
     width: 40px;
     height: 40px;
-    border-radius: $border-radius-md;
-    font-size: $font-size-md;
+    border-radius: $border-radius-full;
     transition:
       background 200ms $ease-out-quart,
       transform 200ms $ease-out-quart,
@@ -240,8 +248,9 @@
     }
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
-      transform: scale(1.05);
+      background: rgba(0, 0, 0, 0.05);
+      color: $color-gray-700;
+      transform: scale(1.06);
 
       svg {
         animation: bellShake 600ms $ease-out-expo both;
@@ -249,76 +258,101 @@
     }
 
     &:active {
-      transform: scale(0.95);
-      transition-duration: 100ms;
+      transform: scale(0.94);
+      transition-duration: 80ms;
     }
 
     &--active {
-      background: rgba(0, 0, 0, 0.06);
+      background: rgba(45, 90, 61, 0.08);
       color: $color-primary;
+    }
+
+    // Subtle background glow
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      transition: background 200ms $ease-out-quart;
+    }
+
+    &:hover::before {
+      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.015), transparent 70%);
     }
   }
 
-  // --- Badge with gentle pulse ring ---
+  // --- Badge: pulsing ring for urgency ---
   &__badge {
     position: absolute;
-    top: 4px;
-    right: 4px;
+    top: 3px;
+    right: 3px;
     @include flex-center;
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
-    background: linear-gradient(135deg, $color-error, $color-error-dark);
+    background: linear-gradient(135deg, #EF4444, #DC2626);
     color: $color-white;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     border-radius: $border-radius-full;
-    box-shadow: 0 2px 8px rgba(248, 113, 113, 0.35);
+    border: 2.5px solid rgba(255, 255, 255, 0.9);
+    box-shadow:
+      0 2px 8px rgba(239, 68, 68, 0.4),
+      0 0 0 0 rgba(239, 68, 68, 0.3);
     font-variant-numeric: tabular-nums;
-    animation: bounceIn 400ms $ease-spring both;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    animation: badgeAppear 400ms $ease-spring both;
 
-    // Pulsing ring for unread emphasis
     &::after {
       content: '';
       position: absolute;
-      inset: -3px;
+      inset: -4px;
       border-radius: $border-radius-full;
-      border: 2px solid rgba(248, 113, 113, 0.35);
+      border: 2px solid rgba(239, 68, 68, 0.25);
       animation: pulseRing 2.5s ease-in-out infinite;
     }
   }
 
   // -----------------------------------------------
-  // NOTIFICATION PANEL — Premium Glass Dropdown
+  // NOTIFICATION PANEL
   // -----------------------------------------------
   &__notif-panel {
     position: absolute;
-    top: calc(100% + $spacing-sm);
+    top: calc(100% + $spacing-sm + 2px);
     right: -$spacing-md;
     width: 400px;
-    max-height: 500px;
-    @include glass($glass-bg-ultra, $glass-blur-heavy);
-    border-radius: $border-radius-lg;
-    box-shadow: $shadow-2xl, $glass-inner-glow;
+    max-height: 520px;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(48px) saturate(1.4);
+    -webkit-backdrop-filter: blur(48px) saturate(1.4);
+    border: $border-width solid rgba(0, 0, 0, 0.06);
+    border-radius: $border-radius-xl;
+    box-shadow:
+      0 24px 80px rgba(0, 0, 0, 0.12),
+      0 8px 24px rgba(0, 0, 0, 0.06),
+      0 0 0 1px rgba(0, 0, 0, 0.02),
+      $glass-inner-glow;
     z-index: $z-dropdown;
-    animation: dropdownIn 280ms $ease-out-expo both;
+    animation: panelReveal 300ms $ease-out-expo both;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 
-    // Arrow pointer
+    // Soft arrow
     &::before {
       content: '';
       position: absolute;
-      top: -6px;
-      right: 28px;
-      width: 12px;
-      height: 12px;
-      background: $glass-bg-ultra;
-      border: $border-width solid $glass-border;
+      top: -7px;
+      right: 26px;
+      width: 14px;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.97);
+      border: $border-width solid rgba(0, 0, 0, 0.06);
       border-bottom: none;
       border-right: none;
       transform: rotate(45deg);
+      z-index: 1;
     }
 
     @media (max-width: $breakpoint-sm) {
@@ -332,10 +366,11 @@
     align-items: center;
     justify-content: space-between;
     padding: $spacing-md $spacing-lg;
-    border-bottom: $border-width solid $border-color-light;
+    border-bottom: $border-width solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     flex-wrap: wrap;
     gap: $spacing-sm;
+    background: rgba(0, 0, 0, 0.01);
   }
 
   &__notif-title-row {
@@ -347,27 +382,29 @@
   &__notif-title {
     font-family: $font-primary;
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     color: $color-secondary;
+    letter-spacing: $letter-spacing-tight;
   }
 
   &__notif-unread-badge {
     @include flex-center;
-    min-width: 20px;
-    height: 20px;
+    min-width: 22px;
+    height: 22px;
     padding: 0 $spacing-xs;
     background: linear-gradient(135deg, $color-primary, $color-primary-light);
     color: $color-white;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     border-radius: $border-radius-full;
+    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
     animation: bounceIn 300ms $ease-spring both 0.1s;
   }
 
   &__notif-actions {
     display: flex;
     align-items: center;
-    gap: $spacing-xs;
+    gap: $spacing-2xs;
   }
 
   &__notif-mark-read {
@@ -376,7 +413,7 @@
     gap: $spacing-2xs;
     font-size: $font-size-xs;
     color: $color-primary;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     transition: all 200ms $ease-out-quart;
     white-space: nowrap;
     padding: $spacing-2xs $spacing-sm;
@@ -432,6 +469,20 @@
     overflow-y: auto;
     flex: 1;
     @include custom-scrollbar;
+
+    // Fade bottom edge
+    mask-image: linear-gradient(
+      180deg,
+      black 0%,
+      black calc(100% - 20px),
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      black 0%,
+      black calc(100% - 20px),
+      transparent 100%
+    );
   }
 
   // --- Individual Notification Item ---
@@ -440,12 +491,13 @@
     align-items: flex-start;
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-lg;
-    border-bottom: $border-width solid $border-color-light;
+    border-bottom: $border-width solid rgba(0, 0, 0, 0.03);
     cursor: pointer;
     transition: all 200ms $ease-out-quart;
     animation: fadeInUp 250ms $ease-out-expo both;
     position: relative;
     overflow: hidden;
+    @include stagger-children(0.04s, 10);
 
     &:last-child {
       border-bottom: none;
@@ -460,11 +512,10 @@
       }
     }
 
-    // --- Unread state: subtle glow ---
+    // --- Unread state ---
     &--unread {
-      background: rgba(45, 90, 61, 0.03);
+      background: rgba(45, 90, 61, 0.025);
 
-      // Soft glow overlay
       &::after {
         content: '';
         position: absolute;
@@ -474,7 +525,7 @@
       }
 
       &:hover {
-        background: rgba(45, 90, 61, 0.06);
+        background: rgba(45, 90, 61, 0.05);
       }
 
       .header__notif-message {
@@ -512,12 +563,12 @@
   // --- Type-colored icon circle ---
   &__notif-icon {
     @include flex-center;
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border-radius: $border-radius-full;
     flex-shrink: 0;
-    margin-top: 2px;
-    transition: transform 200ms $ease-out-quart;
+    margin-top: 1px;
+    transition: transform 250ms $ease-spring, box-shadow 250ms $ease-out-quart;
 
     .header__notif-item:hover & {
       transform: scale(1.08);
@@ -531,26 +582,43 @@
     &--info {
       background: $color-info-bg;
       color: $color-info;
-      box-shadow: 0 2px 6px rgba(96, 165, 250, 0.1);
+      box-shadow: 0 2px 8px rgba(96, 165, 250, 0.08);
     }
 
     &--success {
       background: $color-success-bg;
       color: $color-success;
-      box-shadow: 0 2px 6px rgba(52, 211, 153, 0.1);
+      box-shadow: 0 2px 8px rgba(52, 211, 153, 0.08);
     }
 
     &--warning {
       background: $color-warning-bg;
       color: $color-warning;
-      box-shadow: 0 2px 6px rgba(251, 191, 36, 0.1);
+      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.08);
     }
 
     &--error {
       background: $color-error-bg;
       color: $color-error;
-      box-shadow: 0 2px 6px rgba(248, 113, 113, 0.1);
+      box-shadow: 0 2px 8px rgba(248, 113, 113, 0.08);
     }
+  }
+
+  // Hover glow for icons
+  &__notif-item:hover &__notif-icon--info {
+    box-shadow: 0 4px 16px rgba(96, 165, 250, 0.2);
+  }
+
+  &__notif-item:hover &__notif-icon--success {
+    box-shadow: 0 4px 16px rgba(52, 211, 153, 0.2);
+  }
+
+  &__notif-item:hover &__notif-icon--warning {
+    box-shadow: 0 4px 16px rgba(251, 191, 36, 0.2);
+  }
+
+  &__notif-item:hover &__notif-icon--error {
+    box-shadow: 0 4px 16px rgba(248, 113, 113, 0.2);
   }
 
   &__notif-content {
@@ -564,20 +632,20 @@
     color: $color-gray-600;
     line-height: $line-height-snug;
     font-weight: $font-weight-regular;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
   }
 
   &__notif-time {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
     font-weight: $font-weight-regular;
   }
 
-  // --- Dismiss button (slides in from right on hover) ---
+  // --- Dismiss button ---
   &__notif-dismiss {
     @include flex-center;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: $border-radius-full;
     flex-shrink: 0;
     color: $color-gray-300;
@@ -590,7 +658,6 @@
       color 200ms $ease-out-quart;
     margin-top: 2px;
 
-    // Always visible on touch devices
     @media (hover: none) {
       opacity: 1;
       transform: translateX(0);
@@ -602,7 +669,7 @@
     }
   }
 
-  // --- Empty State — Elegant ---
+  // --- Empty State ---
   &__notif-empty {
     @include flex-column-center;
     gap: $spacing-sm;
@@ -614,8 +681,9 @@
     width: 64px;
     height: 64px;
     border-radius: $border-radius-full;
-    background: $color-gray-50;
+    background: linear-gradient(135deg, $color-gray-50, rgba(45, 90, 61, 0.03));
     margin-bottom: $spacing-xs;
+    animation: floatSlow 4s ease-in-out infinite;
 
     svg {
       color: $color-gray-300;
@@ -634,18 +702,42 @@
     color: $color-gray-400;
   }
 
-  // -----------------------------------------------
-  // DIVIDER
-  // -----------------------------------------------
-  &__divider {
-    width: 1px;
-    height: 28px;
-    background: linear-gradient(180deg, transparent, $border-color-medium, transparent);
-    flex-shrink: 0;
+  // Unread indicator dot
+  &__notif-item--unread {
+    .header__notif-content::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 6px;
+      height: 6px;
+      border-radius: $border-radius-full;
+      background: $color-primary;
+      box-shadow: 0 0 8px rgba(45, 90, 61, 0.3);
+      animation: pulseRingPrimary 2.5s ease-in-out infinite;
+    }
   }
 
   // -----------------------------------------------
-  // PROFILE DROPDOWN
+  // DIVIDER — refined gradient
+  // -----------------------------------------------
+  &__divider {
+    width: 1px;
+    height: 24px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.08) 30%,
+      rgba(0, 0, 0, 0.08) 70%,
+      transparent 100%
+    );
+    flex-shrink: 0;
+    margin: 0 $spacing-2xs;
+  }
+
+  // -----------------------------------------------
+  // PROFILE SECTION
   // -----------------------------------------------
   &__profile {
     position: relative;
@@ -655,8 +747,8 @@
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: $spacing-xs $spacing-sm;
-    border-radius: $border-radius-md;
+    padding: 6px $spacing-sm 6px 6px;
+    border-radius: $border-radius-full;
     cursor: pointer;
     transition:
       background 200ms $ease-out-quart,
@@ -671,7 +763,7 @@
     &:active {
       background: rgba(0, 0, 0, 0.06);
       transform: scale(0.97);
-      transition-duration: 100ms;
+      transition-duration: 80ms;
     }
   }
 
@@ -680,18 +772,33 @@
     width: 36px;
     height: 36px;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    background: linear-gradient(145deg, $color-primary, $color-primary-dark);
     color: $color-white;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
     letter-spacing: $letter-spacing-wide;
     flex-shrink: 0;
+    position: relative;
     transition:
       box-shadow 300ms $ease-out-quart,
       transform 300ms $ease-out-quart;
 
+    // Ring glow on hover
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: $border-radius-full;
+      border: 2px solid transparent;
+      transition: border-color 300ms $ease-out-quart;
+    }
+
     .header__profile-trigger:hover & {
-      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.15);
+      box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.12);
+
+      &::after {
+        border-color: rgba(45, 90, 61, 0.12);
+      }
     }
   }
 
@@ -708,16 +815,17 @@
   }
 
   &__user-role {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
-    font-weight: $font-weight-regular;
+    font-weight: $font-weight-medium;
+    letter-spacing: $letter-spacing-wide;
   }
 
   &__chevron {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    transition: transform 250ms $ease-out-quart;
-    margin-left: $spacing-xs;
+    transition: transform 280ms $ease-out-expo;
+    margin-left: $spacing-2xs;
 
     &--open {
       transform: rotate(180deg);
@@ -729,25 +837,33 @@
   // -----------------------------------------------
   &__dropdown {
     position: absolute;
-    top: calc(100% + $spacing-sm);
+    top: calc(100% + $spacing-sm + 2px);
     right: 0;
     min-width: 240px;
-    @include glass($glass-bg-ultra, $glass-blur-heavy);
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(48px) saturate(1.4);
+    -webkit-backdrop-filter: blur(48px) saturate(1.4);
+    border: $border-width solid rgba(0, 0, 0, 0.06);
     border-radius: $border-radius-lg;
-    box-shadow: $shadow-xl, $glass-inner-glow;
-    padding: $spacing-sm;
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.1),
+      0 8px 20px rgba(0, 0, 0, 0.05),
+      0 0 0 1px rgba(0, 0, 0, 0.02),
+      $glass-inner-glow;
+    padding: $spacing-xs;
     z-index: $z-dropdown;
-    animation: dropdownIn 250ms $ease-out-expo both;
+    animation: panelReveal 250ms $ease-out-expo both;
+    transform-origin: top right;
 
     &::before {
       content: '';
       position: absolute;
-      top: -6px;
-      right: 20px;
-      width: 12px;
-      height: 12px;
-      background: $glass-bg-ultra;
-      border: $border-width solid $glass-border;
+      top: -7px;
+      right: 18px;
+      width: 14px;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.97);
+      border: $border-width solid rgba(0, 0, 0, 0.06);
       border-bottom: none;
       border-right: none;
       transform: rotate(45deg);
@@ -756,8 +872,8 @@
 
   &__dropdown-header {
     padding: $spacing-sm $spacing-md;
-    border-bottom: $border-width solid $border-color-light;
-    margin-bottom: $spacing-xs;
+    border-bottom: $border-width solid rgba(0, 0, 0, 0.04);
+    margin-bottom: $spacing-2xs;
   }
 
   &__dropdown-email {
@@ -772,21 +888,19 @@
     gap: $spacing-sm;
     width: 100%;
     padding: $spacing-sm $spacing-md;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     font-size: $font-size-sm;
     color: $color-gray-600;
     cursor: pointer;
     transition:
       background 200ms $ease-out-quart,
       color 200ms $ease-out-quart,
-      padding-left 200ms $ease-out-quart,
-      transform 200ms $ease-out-quart;
+      transform 150ms $ease-out-quart;
     @include focus-ring;
 
     &:hover {
       background: rgba(0, 0, 0, 0.04);
-      color: $color-gray-700;
-      padding-left: calc(#{$spacing-md} + 4px);
+      color: $color-secondary;
     }
 
     &:active {
@@ -799,7 +913,7 @@
 
       &:hover {
         background: $color-error-bg;
-        color: $color-error;
+        color: $color-error-dark;
       }
     }
   }
@@ -811,8 +925,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0.65;
-    font-size: $font-size-base;
+    opacity: 0.55;
+    transition: all 200ms $ease-out-quart;
 
     svg {
       width: 16px;
@@ -820,131 +934,25 @@
     }
   }
 
-  &__dropdown-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, $border-color, transparent);
-    margin: $spacing-xs 0;
-  }
-
-  // -----------------------------------------------
-  // PREMIUM ENHANCEMENTS
-  // -----------------------------------------------
-
-  // Notification bell: idle micro-animation
-  &__notification-btn {
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      transition: background 200ms $ease-out-quart;
-    }
-
-    &:hover::before {
-      background: radial-gradient(circle at center, rgba(0, 0, 0, 0.02), transparent 70%);
-    }
-  }
-
-  // Badge: enhanced layered shadow
-  &__badge {
-    border: 2px solid $glass-bg-heavy;
-    line-height: 1;
-    letter-spacing: -0.02em;
-  }
-
-  // Notification panel: scroll shadows
-  &__notif-list {
-    position: relative;
-    mask-image: linear-gradient(
-      180deg,
-      black 0%,
-      black calc(100% - 16px),
-      transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      180deg,
-      black 0%,
-      black calc(100% - 16px),
-      transparent 100%
-    );
-  }
-
-  // Notification item: staggered entrance
-  &__notif-item {
-    @include stagger-children(0.04s, 10);
-  }
-
-  // Notification icon: type-specific glow on hover
-  &__notif-item:hover &__notif-icon--info {
-    box-shadow: 0 2px 12px rgba(96, 165, 250, 0.2);
-  }
-
-  &__notif-item:hover &__notif-icon--success {
-    box-shadow: 0 2px 12px rgba(52, 211, 153, 0.2);
-  }
-
-  &__notif-item:hover &__notif-icon--warning {
-    box-shadow: 0 2px 12px rgba(251, 191, 36, 0.2);
-  }
-
-  &__notif-item:hover &__notif-icon--error {
-    box-shadow: 0 2px 12px rgba(248, 113, 113, 0.2);
-  }
-
-  // Unread indicator dot
-  &__notif-item--unread {
-    .header__notif-content::before {
-      content: '';
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 6px;
-      height: 6px;
-      border-radius: $border-radius-full;
-      background: $color-primary;
-      animation: pulseRingPrimary 2.5s ease-in-out infinite;
-    }
-  }
-
-  // Profile avatar: ring glow on hover
-  &__avatar {
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -3px;
-      border-radius: $border-radius-full;
-      border: 2px solid transparent;
-      transition: border-color 300ms $ease-out-quart;
-    }
-  }
-
-  &__profile-trigger:hover &__avatar::after {
-    border-color: rgba(45, 90, 61, 0.15);
-  }
-
-  // Dropdown items: icon transition on hover
+  // Icon hover animation
   &__dropdown-item:hover &__dropdown-icon {
     opacity: 1;
-    transform: scale(1.05);
-    transition: all 200ms $ease-spring;
+    transform: scale(1.1);
   }
 
-  // Dropdown danger: icon color shift
   &__dropdown-item--danger:hover &__dropdown-icon {
     color: $color-error;
   }
 
-  // Profile panel: enter from scale
-  &__dropdown {
-    transform-origin: top right;
+  &__dropdown-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.05), transparent);
+    margin: $spacing-2xs 0;
   }
 
-  // Breadcrumb: animated separator
+  // -----------------------------------------------
+  // BREADCRUMB ENHANCEMENTS
+  // -----------------------------------------------
   &__breadcrumb-separator {
     transition: transform 200ms $ease-out-quart;
   }
@@ -953,7 +961,6 @@
     transform: scale(1.2);
   }
 
-  // Breadcrumb active: subtle underline
   &__breadcrumb-item--active {
     position: relative;
 
@@ -965,33 +972,48 @@
       right: 0;
       height: 1px;
       background: $color-secondary;
-      opacity: 0.15;
+      opacity: 0.12;
       border-radius: $border-radius-full;
     }
   }
 
-  // Empty notification: floating icon
-  &__notif-empty-icon {
-    animation: floatSlow 4s ease-in-out infinite;
-  }
-
-  // Search expand: smooth width transition
+  // Search expand
   &__search-input {
     will-change: width;
   }
 
-  // Mark read / clear: press feedback
-  &__notif-mark-read,
-  &__notif-clear {
-    &:active {
-      transition-duration: 80ms;
-    }
-  }
-
-  // Header keyboard navigation
+  // Keyboard navigation
   &__notification-btn:focus-visible,
   &__profile-trigger:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.2), 0 0 0 4px rgba(45, 90, 61, 0.08);
+  }
+}
+
+// -----------------------------------------------
+// KEYFRAMES
+// -----------------------------------------------
+@keyframes panelReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes badgeAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
   }
 }

@@ -1,14 +1,17 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Messaging — Plantillas WhatsApp
-// ============================================
+// ════════════════════════════════════════════════════════════════════
+// MESSAGING — WhatsApp Templates Premium UI
+// World-class template management interface
+// ════════════════════════════════════════════════════════════════════
 
 .messaging {
   @include page-enter;
 
-  // --- Header ---
+  // ════════════════════════════════════════════════
+  // HEADER
+  // ════════════════════════════════════════════════
   &__header {
     @include flex-between;
     flex-wrap: wrap;
@@ -29,18 +32,23 @@
 
   &__count {
     font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     color: $color-gray-400;
-    padding: $spacing-2xs $spacing-sm;
-    background: $color-gray-50;
+    padding: 4px $spacing-sm;
+    background: $glass-bg;
     border-radius: $border-radius-full;
     border: 1px solid $border-color;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: $letter-spacing-wide;
+    backdrop-filter: blur(8px);
   }
 
-  // --- Search ---
+  // ════════════════════════════════════════════════
+  // SEARCH
+  // ════════════════════════════════════════════════
   &__search {
     position: relative;
-    width: 280px;
+    width: 300px;
 
     @media (max-width: $breakpoint-sm) {
       width: 100%;
@@ -49,23 +57,24 @@
 
   &__search-icon {
     position: absolute;
-    left: 12px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
     color: $color-gray-400;
     pointer-events: none;
+    transition: color $transition-fast;
   }
 
   &__search-input {
     width: 100%;
-    padding: $spacing-sm $spacing-sm $spacing-sm 38px;
-    border-radius: $border-radius-md;
-    border: 1px solid $border-color;
+    padding: 11px $spacing-md 11px 40px;
+    border-radius: $border-radius-lg;
+    border: $border-width solid $border-color;
     background: $glass-bg;
     font-size: $font-size-sm;
     color: $color-secondary;
     font-family: $font-primary;
-    transition: all 200ms $ease-out-quart;
+    transition: all $transition-base;
 
     &::placeholder {
       color: $color-gray-300;
@@ -74,11 +83,18 @@
     &:focus {
       outline: none;
       border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost;
+      box-shadow: 0 0 0 3px $color-primary-ghost, $shadow-sm;
+      background: $color-white;
+
+      ~ .messaging__search-icon {
+        color: $color-primary;
+      }
     }
   }
 
-  // --- Category Filters ---
+  // ════════════════════════════════════════════════
+  // CATEGORY FILTER PILLS
+  // ════════════════════════════════════════════════
   &__categories {
     display: flex;
     gap: $spacing-xs;
@@ -90,36 +106,43 @@
   }
 
   &__cat-pill {
-    padding: $spacing-2xs $spacing-sm;
+    padding: 7px 16px;
     border-radius: $border-radius-full;
-    border: 1px solid $border-color;
-    background: transparent;
+    border: $border-width solid $border-color;
+    background: $color-white;
     font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     color: $color-gray-500;
     cursor: pointer;
     white-space: nowrap;
     font-family: $font-primary;
+    transition: all $transition-fast;
     @include press-effect;
 
     &:hover {
       background: $color-gray-50;
       color: $color-secondary;
       border-color: $color-gray-200;
+      transform: translateY(-1px);
     }
 
     &--active {
       background: $color-primary;
       color: $color-white;
       border-color: $color-primary;
+      box-shadow: $shadow-colored-primary;
 
       &:hover {
         color: $color-white;
+        background: $color-primary-light;
+        border-color: $color-primary-light;
       }
     }
   }
 
-  // --- Template Grid ---
+  // ════════════════════════════════════════════════
+  // TEMPLATE CARD GRID
+  // ════════════════════════════════════════════════
   &__grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -134,14 +157,16 @@
     }
   }
 
-  // --- Template Card ---
+  // ════════════════════════════════════════════════
+  // TEMPLATE CARD — Premium Card Design
+  // ════════════════════════════════════════════════
   &__card {
-    @include glass-card;
+    @include interactive-card;
     padding: 0;
     overflow: hidden;
     @include flex-column;
     animation: fadeInUp 300ms $ease-out-expo both;
-    transition: all 250ms $ease-out-quart;
+    position: relative;
 
     @for $i from 1 through 12 {
       &:nth-child(#{$i}) {
@@ -149,9 +174,32 @@
       }
     }
 
+    // Light leak shimmer on hover
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        transparent 100%
+      );
+      transition: left 600ms $ease-out-expo;
+      pointer-events: none;
+      z-index: 1;
+    }
+
     &:hover {
-      transform: translateY(-4px);
-      box-shadow: $shadow-lg;
+      transform: translateY(-4px) scale(1.005);
+      box-shadow: $shadow-card-hover, $glass-inner-glow;
+
+      &::after {
+        left: 120%;
+      }
     }
   }
 
@@ -159,6 +207,8 @@
     height: 3px;
     width: 100%;
     flex-shrink: 0;
+    // Accent gets a subtle glow
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
   }
 
   &__card-header {
@@ -176,18 +226,24 @@
   &__card-stats {
     display: flex;
     gap: $spacing-sm;
+    align-items: center;
   }
 
   &__card-sent {
     font-size: $font-size-2xs;
     color: $color-gray-400;
     font-weight: $font-weight-medium;
+    font-variant-numeric: tabular-nums;
   }
 
   &__card-rate {
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     color: $color-success-dark;
+    padding: 2px 8px;
+    background: $color-success-bg;
+    border-radius: $border-radius-full;
+    font-variant-numeric: tabular-nums;
   }
 
   &__card-name {
@@ -195,6 +251,7 @@
     font-weight: $font-weight-bold;
     color: $color-secondary;
     padding: $spacing-xs $spacing-md 0;
+    line-height: $line-height-snug;
   }
 
   &__card-body {
@@ -203,28 +260,41 @@
     line-height: $line-height-base;
     padding: $spacing-xs $spacing-md;
     flex: 1;
+    @include line-clamp(3);
   }
 
+  // Variable chips
   &__card-vars {
     display: flex;
-    gap: $spacing-2xs;
+    gap: 5px;
     flex-wrap: wrap;
     padding: 0 $spacing-md $spacing-sm;
   }
 
   &__card-var {
     font-size: 9px;
-    font-weight: $font-weight-semibold;
-    padding: 1px $spacing-xs;
-    border-radius: $border-radius-xs;
+    font-weight: $font-weight-bold;
+    padding: 2px 8px;
+    border-radius: $border-radius-sm;
     background: $color-primary-ghost;
     color: $color-primary;
     font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(45, 90, 61, 0.08);
+    transition: all $transition-fast;
+
+    .messaging__card:hover & {
+      background: rgba(45, 90, 61, 0.1);
+      border-color: rgba(45, 90, 61, 0.15);
+    }
   }
 
+  // Card action buttons
   &__card-actions {
     display: flex;
     border-top: 1px solid $border-color-light;
+    position: relative;
+    z-index: 2;
   }
 
   &__card-btn {
@@ -233,13 +303,14 @@
     align-items: center;
     justify-content: center;
     gap: $spacing-xs;
-    padding: $spacing-sm;
+    padding: 11px $spacing-sm;
     border: none;
     background: transparent;
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
     cursor: pointer;
     font-family: $font-primary;
+    transition: all $transition-fast;
     @include press-effect;
 
     &--preview {
@@ -254,82 +325,98 @@
 
     &--send {
       color: $wa-green;
+      font-weight: $font-weight-bold;
 
       &:hover {
-        background: rgba($wa-green, 0.06);
+        background: rgba($wa-green, 0.08);
         color: $wa-green-dark;
       }
     }
   }
 
-  // --- Empty State ---
+  // ════════════════════════════════════════════════
+  // EMPTY STATE
+  // ════════════════════════════════════════════════
   &__empty {
     @include flex-column-center;
     padding: $spacing-3xl;
     color: $color-gray-400;
     font-size: $font-size-sm;
     font-style: italic;
+    @include dot-grid;
+    border: 2px dashed $border-color;
+    border-radius: $border-radius-xl;
+    min-height: 200px;
   }
 
-  // --- Modal Overlay ---
+  // ════════════════════════════════════════════════
+  // MODAL OVERLAY
+  // ════════════════════════════════════════════════
   &__overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(10, 10, 10, 0.5);
     @include flex-center;
     z-index: $z-modal;
     animation: fadeIn 200ms $ease-out-quart both;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
   }
 
-  // --- Modal ---
+  // ════════════════════════════════════════════════
+  // MODAL — Preview & Send
+  // ════════════════════════════════════════════════
   &__modal {
     background: $color-white;
-    border-radius: $border-radius-lg;
-    width: 520px;
-    max-width: 90vw;
-    max-height: 85vh;
+    border-radius: $border-radius-xl;
+    width: 540px;
+    max-width: 92vw;
+    max-height: 88vh;
     @include flex-column;
     box-shadow: $shadow-2xl;
-    animation: fadeInScale 300ms $ease-out-expo both;
+    animation: msgModalIn 300ms $ease-out-expo both;
     overflow: hidden;
 
     &--send {
-      width: 580px;
+      width: 600px;
     }
   }
 
   &__modal-header {
     @include flex-between;
-    padding: $spacing-md $spacing-lg;
+    padding: $spacing-lg $spacing-xl;
     border-bottom: 1px solid $border-color;
     flex-shrink: 0;
+    background: $color-off-white;
   }
 
   &__modal-title {
+    font-family: $font-heading;
     font-size: $font-size-md;
     font-weight: $font-weight-bold;
     color: $color-secondary;
+    letter-spacing: $letter-spacing-tight;
   }
 
   &__modal-close {
     @include flex-center;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: none;
     background: transparent;
     color: $color-gray-400;
     cursor: pointer;
-    border-radius: $border-radius-full;
+    border-radius: $border-radius-md;
+    transition: all $transition-fast;
 
     &:hover {
-      background: $color-gray-50;
+      background: $color-gray-100;
       color: $color-secondary;
+      transform: rotate(90deg);
     }
   }
 
   &__modal-body {
-    padding: $spacing-lg;
+    padding: $spacing-xl;
     overflow-y: auto;
     flex: 1;
     @include custom-scrollbar;
@@ -345,19 +432,36 @@
   }
 
   &__modal-name {
+    font-family: $font-heading;
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
     color: $color-secondary;
-    margin-bottom: $spacing-md;
+    margin-bottom: $spacing-lg;
+    letter-spacing: $letter-spacing-tight;
   }
 
-  // --- Preview Bubble ---
+  // ════════════════════════════════════════════════
+  // WHATSAPP PREVIEW BUBBLE — Realistic
+  // ════════════════════════════════════════════════
   &__preview-bubble {
     background: $wa-sent-bubble;
-    padding: $spacing-md;
-    border-radius: $border-radius-md;
-    border-bottom-right-radius: 4px;
-    margin-bottom: $spacing-md;
+    padding: $spacing-md $spacing-lg;
+    border-radius: $border-radius-lg $border-radius-lg 4px $border-radius-lg;
+    margin-bottom: $spacing-lg;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+    // WhatsApp-style tail
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: -8px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid $wa-sent-bubble;
+      border-bottom: 8px solid transparent;
+    }
 
     p {
       font-size: $font-size-sm;
@@ -370,50 +474,66 @@
     display: flex;
     flex-wrap: wrap;
     gap: $spacing-md;
+    padding: $spacing-md;
+    background: $color-gray-50;
+    border-radius: $border-radius-md;
+    border: 1px solid $border-color-light;
 
     span {
       font-size: $font-size-xs;
       color: $color-gray-400;
+      font-weight: $font-weight-medium;
+
+      &:first-child {
+        font-weight: $font-weight-semibold;
+        color: $color-gray-600;
+      }
     }
   }
 
-  // --- Send Modal: Segment Filters ---
+  // ════════════════════════════════════════════════
+  // SEND MODAL — Segment Filters
+  // ════════════════════════════════════════════════
   &__segment-filters {
     display: flex;
     gap: $spacing-xs;
     flex-wrap: wrap;
-    margin-bottom: $spacing-md;
+    margin-bottom: $spacing-lg;
   }
 
   &__segment-btn {
-    padding: $spacing-2xs $spacing-sm;
+    padding: 7px 16px;
     border-radius: $border-radius-full;
-    border: 1px solid $border-color;
-    background: transparent;
+    border: $border-width solid $border-color;
+    background: $color-white;
     font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     color: $color-gray-500;
     cursor: pointer;
     font-family: $font-primary;
-    transition: all 200ms $ease-out-quart;
+    transition: all $transition-fast;
 
     &:hover {
       background: $color-gray-50;
+      border-color: $color-gray-200;
     }
 
     &--active {
-      background: $color-primary;
+      background: linear-gradient(135deg, $color-primary, $color-primary-light);
       color: $color-white;
       border-color: $color-primary;
+      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.15);
     }
   }
 
-  // --- Send Modal: Client List ---
+  // ════════════════════════════════════════════════
+  // SEND MODAL — Client List
+  // ════════════════════════════════════════════════
   &__client-list {
-    max-height: 300px;
+    max-height: 320px;
     overflow-y: auto;
     border: 1px solid $border-color;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-lg;
     margin-bottom: $spacing-md;
     @include custom-scrollbar;
   }
@@ -425,7 +545,7 @@
     padding: $spacing-sm $spacing-md;
     border-bottom: 1px solid $border-color-light;
     cursor: pointer;
-    transition: background 150ms $ease-out-quart;
+    transition: all $transition-fast;
     animation: fadeInUp 200ms $ease-out-expo both;
 
     @for $i from 1 through 20 {
@@ -446,7 +566,7 @@
       background: $color-primary-ghost;
 
       &:hover {
-        background: rgba(45, 90, 61, 0.06);
+        background: rgba(45, 90, 61, 0.08);
       }
     }
   }
@@ -460,10 +580,10 @@
 
   &__client-avatar {
     @include flex-center;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: $border-radius-full;
-    background: $color-gray-100;
+    background: linear-gradient(135deg, $color-gray-100, $color-gray-200);
     color: $color-gray-500;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
@@ -472,7 +592,7 @@
 
   &__client-info {
     @include flex-column;
-    gap: 1px;
+    gap: 2px;
     flex: 1;
   }
 
@@ -485,9 +605,13 @@
   &__client-phone {
     font-size: $font-size-xs;
     color: $color-gray-400;
+    font-variant-numeric: tabular-nums;
+    font-weight: $font-weight-medium;
   }
 
-  // --- Send Modal: Footer ---
+  // ════════════════════════════════════════════════
+  // SEND MODAL — Footer
+  // ════════════════════════════════════════════════
   &__send-footer {
     @include flex-between;
     padding-top: $spacing-md;
@@ -501,26 +625,51 @@
     font-size: $font-size-xs;
     color: $color-gray-500;
     font-weight: $font-weight-medium;
+    font-variant-numeric: tabular-nums;
   }
 
   &__send-btn {
     display: flex;
     align-items: center;
-    gap: $spacing-xs;
-    padding: $spacing-sm $spacing-lg;
+    gap: 8px;
+    padding: 11px $spacing-xl;
     border: none;
-    border-radius: $border-radius-md;
-    background: $wa-green;
+    border-radius: $border-radius-lg;
+    background: linear-gradient(135deg, $wa-green, $wa-green-dark);
     color: $color-white;
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     cursor: pointer;
     font-family: $font-primary;
+    transition: all $transition-base;
+    box-shadow: 0 4px 16px rgba(37, 211, 102, 0.25);
     @include press-effect;
 
     &:hover {
-      background: $wa-green-dark;
-      transform: translateY(-1px);
+      background: linear-gradient(135deg, $wa-green-dark, $wa-green-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(37, 211, 102, 0.3);
     }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+// ════════════════════════════════════════════════
+// KEYFRAMES
+// ════════════════════════════════════════════════
+@keyframes msgModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }

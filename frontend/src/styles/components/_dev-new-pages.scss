@@ -26,6 +26,7 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
+  animation: fadeInUp 400ms $ease-out-expo both;
 }
 
 // Shared header
@@ -48,6 +49,7 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   color: $_text-primary;
   margin: 0;
   letter-spacing: $letter-spacing-tight;
+  line-height: $line-height-tight;
 }
 
 .dev-activity__subtitle,
@@ -57,7 +59,8 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 .dev-system__subtitle {
   font-size: $font-size-sm;
   color: $_text-muted;
-  margin-top: 4px;
+  margin-top: 6px;
+  line-height: $line-height-base;
 }
 
 .dev-activity__loading,
@@ -69,25 +72,47 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   text-align: center;
   color: $_text-muted;
   font-size: $font-size-sm;
+
+  &::before {
+    content: '';
+    display: block;
+    width: 32px;
+    height: 32px;
+    margin: 0 auto $spacing-md;
+    border: 2px solid #E8ECF1;
+    border-top-color: $_accent;
+    border-radius: 50%;
+    animation: devSpin 0.8s linear infinite;
+  }
 }
 
 // Shared refresh button
 .dev-activity__refresh,
 .dev-system__refresh {
-  padding: 8px 20px;
+  padding: 9px 22px;
   background: white;
   border: 1px solid $_card-border;
-  border-radius: 10px;
+  border-radius: $border-radius-md;
   font-size: $font-size-sm;
   font-weight: $font-weight-semibold;
   color: $_text-secondary;
   cursor: pointer;
-  transition: all 200ms;
+  transition: all 250ms $ease-out-quart;
+  letter-spacing: $letter-spacing-normal;
+  position: relative;
+  overflow: hidden;
 
   &:hover {
-    background: #F8F9FB;
+    background: $_accent-bg;
     border-color: $_accent;
     color: $_accent;
+    box-shadow: 0 2px 8px rgba(79, 110, 247, 0.1);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
   }
 }
 
@@ -174,13 +199,13 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
 // ============================================
-// DEV ACTIVITY
+// DEV ACTIVITY — Real-time Monitoring Dashboard
 // ============================================
 .dev-activity {
   &__stats {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
+    gap: 14px;
 
     @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(3, 1fr); }
     @media (max-width: $breakpoint-sm) { grid-template-columns: repeat(2, 1fr); }
@@ -190,90 +215,158 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 16px 12px;
+    padding: 20px 14px 18px;
     background: $_card-bg;
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid $_card-border;
+    transition: all 250ms $ease-out-quart;
+    position: relative;
+    overflow: hidden;
+
+    // Subtle top accent line
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 20%;
+      right: 20%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, $_accent, transparent);
+      opacity: 0;
+      transition: opacity 250ms;
+    }
+
+    &:hover {
+      box-shadow: $_card-hover-shadow;
+      border-color: $_accent-border;
+      transform: translateY(-2px);
+
+      &::before { opacity: 1; }
+    }
   }
 
   &__stat-value {
-    font-size: 1.3rem;
+    font-size: 1.5rem;
     font-weight: $font-weight-bold;
     color: $_text-primary;
     font-family: $_mono-font;
+    letter-spacing: $letter-spacing-tight;
+    line-height: 1;
   }
 
   &__stat-label {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $_text-muted;
-    margin-top: 4px;
-    font-weight: $font-weight-medium;
+    margin-top: 6px;
+    font-weight: $font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
   }
 
   &__filters {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
   }
 
   &__filter {
-    padding: 6px 16px;
+    padding: 7px 18px;
     border: 1px solid $_card-border;
     background: white;
     color: $_text-secondary;
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
-    border-radius: 20px;
+    border-radius: $border-radius-full;
     cursor: pointer;
-    transition: all 180ms;
+    transition: all 220ms $ease-out-quart;
+    letter-spacing: $letter-spacing-normal;
 
     &:hover {
       border-color: $_accent-border;
       color: $_accent;
+      background: $_accent-bg;
     }
 
     &--active {
       background: $_accent;
       border-color: $_accent;
       color: white;
-      box-shadow: 0 2px 8px rgba(79, 110, 247, 0.3);
+      box-shadow: 0 3px 12px rgba(79, 110, 247, 0.25), 0 1px 3px rgba(79, 110, 247, 0.15);
+
+      &:hover {
+        background: darken(#4F6EF7, 5%);
+        border-color: darken(#4F6EF7, 5%);
+        color: white;
+      }
     }
   }
 
   &__list {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 0;
     background: $_card-bg;
     border-radius: 16px;
     border: 1px solid $_card-border;
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   }
 
   &__empty {
-    padding: $spacing-3xl;
+    padding: $spacing-3xl $spacing-xl;
     text-align: center;
     color: $_text-muted;
     font-size: $font-size-sm;
+    line-height: $line-height-base;
+
+    &::before {
+      content: '';
+      display: block;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto $spacing-md;
+      border-radius: 12px;
+      background: $_accent-bg;
+      border: 1px solid $_accent-border;
+    }
   }
 
   &__event {
     display: flex;
-    gap: 14px;
-    padding: 14px 20px;
-    border-bottom: 1px solid #F5F6F8;
-    transition: background 120ms;
+    gap: 16px;
+    padding: 16px 22px;
+    border-bottom: 1px solid #F3F4F6;
+    transition: all 180ms $ease-out-quart;
+    position: relative;
 
-    &:hover { background: #F9FAFB; }
+    // Timeline connector line
+    &::after {
+      content: '';
+      position: absolute;
+      left: 25px;
+      top: 30px;
+      bottom: -1px;
+      width: 1px;
+      background: linear-gradient(180deg, #E5E7EB, transparent);
+    }
+
+    &:last-child::after { display: none; }
+
+    &:hover {
+      background: #FAFBFD;
+    }
     &:last-child { border-bottom: none; }
   }
 
   &__event-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
-    margin-top: 6px;
+    margin-top: 5px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 1), 0 1px 3px rgba(0, 0, 0, 0.08);
   }
 
   &__event-body {
@@ -285,46 +378,53 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 3px;
+    margin-bottom: 4px;
   }
 
   &__event-type {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wider;
   }
 
   &__event-time {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $_text-muted;
     font-family: $_mono-font;
     margin-left: auto;
+    font-weight: $font-weight-medium;
+    letter-spacing: $letter-spacing-normal;
   }
 
   &__event-desc {
     font-size: $font-size-sm;
     color: $_text-primary;
     margin: 0;
-    line-height: 1.5;
+    line-height: 1.55;
   }
 
   &__event-details {
     font-size: $font-size-xs;
     color: $_text-muted;
-    margin: 4px 0 0;
+    margin: 5px 0 0;
     font-style: italic;
+    padding-left: 1px;
+    line-height: 1.45;
   }
 
   &__event-contact {
-    display: inline-block;
-    margin-top: 4px;
-    padding: 2px 10px;
+    display: inline-flex;
+    align-items: center;
+    margin-top: 6px;
+    padding: 3px 12px;
     background: $_accent-bg;
     color: $_accent;
+    border: 1px solid $_accent-border;
     border-radius: $border-radius-full;
     font-size: 10px;
     font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-normal;
   }
 }
 
@@ -820,4 +920,11 @@ $_mono-font: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 
     &--missing { color: #EF4444; font-weight: $font-weight-bold; }
   }
+}
+
+// ============================================
+// KEYFRAMES
+// ============================================
+@keyframes devSpin {
+  to { transform: rotate(360deg); }
 }
