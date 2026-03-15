@@ -151,9 +151,13 @@ Ingreso total registrado: ${total_revenue:,} COP""")
         )
     sections.append("=== LISTA DE CLIENTES ===\n" + "\n".join(client_lines) if client_lines else "=== CLIENTES ===\nNo hay clientes registrados.")
 
-    # --- Staff (compact) ---
-    staff_all = db.query(Staff).filter(Staff.is_active == True).all()
-    staff_lines = [f"  - ID:{s.id} {s.name} ({s.role})" for s in staff_all]
+    # --- Staff (compact, show active + inactive separately) ---
+    staff_active = db.query(Staff).filter(Staff.is_active == True).all()
+    staff_inactive = db.query(Staff).filter(Staff.is_active == False).all()
+    staff_lines = [f"  - ID:{s.id} {s.name} ({s.role})" for s in staff_active]
+    if staff_inactive:
+        staff_lines.append("  --- DESACTIVADOS ---")
+        staff_lines.extend([f"  - ID:{s.id} {s.name} ({s.role}) [INACTIVO]" for s in staff_inactive])
     sections.append("=== EQUIPO ===\n" + "\n".join(staff_lines) if staff_lines else "=== EQUIPO ===\nNo hay staff.")
 
     # --- Recent visits (last 10) ---

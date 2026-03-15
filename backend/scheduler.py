@@ -41,6 +41,13 @@ def _now_colombia():
 # Days of the week in Spanish for suggestions
 _DAYS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
 
+def _replace_note_prefix(content: str, new_prefix: str) -> str:
+    """Replace PENDIENTE: or RECORDATORIO: prefix with a new one."""
+    for old in ("PENDIENTE:", "RECORDATORIO:"):
+        if old in content:
+            return content.replace(old, new_prefix, 1)
+    return content
+
 
 def _wa_headers():
     """Read token fresh from env — survives Railway env var updates without redeploy."""
@@ -264,7 +271,10 @@ def _check_custom_reminders(db):
     keyword_filter = or_(*[ClientNote.content.ilike(kw) for kw in _REMINDER_KEYWORDS])
     pending_notes = (
         db.query(ClientNote)
-        .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+        .filter(or_(
+            ClientNote.content.ilike("%PENDIENTE:%"),
+            ClientNote.content.ilike("%RECORDATORIO:%"),
+        ))
         .filter(keyword_filter)
         .all()
     )
@@ -334,7 +344,7 @@ def _check_custom_reminders(db):
 
         if not best_appt:
             # All appointments have passed — expire the note
-            note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [Todas las citas de hoy ya pasaron — {now.strftime('%H:%M')}]"
+            note.content = _replace_note_prefix(note.content, "EXPIRADO:") + f" [Todas las citas de hoy ya pasaron — {now.strftime('%H:%M')}]"
             db.commit()
             client = db.query(Client).filter(Client.id == client_id).first()
             client_first = (client.name or "").split()[0] if client else "?"
@@ -353,7 +363,7 @@ def _check_custom_reminders(db):
 
         # Appointment already passed
         if diff_min < -5:
-            note.content = note.content.replace("PENDIENTE:", "EXPIRADO:") + f" [La cita ya paso — {now.strftime('%H:%M')}]"
+            note.content = _replace_note_prefix(note.content, "EXPIRADO:") + f" [La cita ya paso — {now.strftime('%H:%M')}]"
             db.commit()
             client_first = (best_appt.client_name or "").split()[0]
             print(f"[SCHEDULER] Expired reminder note #{note.id} for {client_first} (cita {best_appt.time} passed)")
@@ -373,7 +383,7 @@ def _check_custom_reminders(db):
         # DB-SAFE DEDUP — per appointment ID to avoid conflicts with multiple appointments
         dedup_tag = f"reminder_custom_{best_appt.id}"
         if _already_sent_today(db, conv.id, dedup_tag):
-            note.content = note.content.replace("PENDIENTE:", "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
+            note.content = _replace_note_prefix(note.content, "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
             db.commit()
             continue
 
@@ -394,7 +404,7 @@ def _check_custom_reminders(db):
         _store_outbound_message(db, conv.id, msg, wa_sent, tag=dedup_tag)
 
         status_tag = "COMPLETADO:" if wa_sent else "FALLIDO:"
-        note.content = note.content.replace("PENDIENTE:", status_tag) + f" [{'Enviado' if wa_sent else 'Fallo envio'} {now.strftime('%H:%M')}]"
+        note.content = _replace_note_prefix(note.content, status_tag) + f" [{'Enviado' if wa_sent else 'Fallo envio'} {now.strftime('%H:%M')}]"
         db.commit()
 
         print(f"[SCHEDULER] Custom reminder {'sent' if wa_sent else 'FAILED'} for appt #{best_appt.id} → {client_first} (with {staff_first})")
@@ -886,7 +896,7 @@ def _execute_pending_tasks(db):
         # Dedup
         dedup_tag = f"task_{note.id}"
         if _already_sent_today(db, conv.id, dedup_tag):
-            note.content = note.content.replace("PENDIENTE:", "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
+            note.content = _replace_note_prefix(note.content, "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
             db.commit()
             continue
 
