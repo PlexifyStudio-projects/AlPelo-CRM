@@ -131,6 +131,18 @@ const Automations = () => {
     }
   };
 
+  // Update any config field
+  const handleConfigChange = async (id, key, value) => {
+    setAutomations(prev => prev.map(a =>
+      a.id === id ? { ...a, [key]: value, config: { ...a.config, [key]: value } } : a
+    ));
+    try {
+      await automationService.updateAutomation(id, { config: { [key]: value } });
+    } catch (e) {
+      addNotification('Error actualizando configuración', 'error');
+    }
+  };
+
   // Update days for reactivation
   const handleDaysChange = async (id, days) => {
     setAutomations(prev => prev.map(a =>
@@ -322,21 +334,71 @@ const Automations = () => {
                     </span>
                   </div>
 
-                  {/* Days selector (reactivation) */}
-                  {auto.days_options && (
-                    <div className={`${B}__card-days`}>
-                      <span className={`${B}__card-days-label`}>Inactividad mínima:</span>
-                      <select
-                        className={`${B}__card-days-select`}
-                        value={auto.days || 30}
-                        onChange={e => handleDaysChange(auto.id, e.target.value)}
-                      >
-                        {auto.days_options.map(d => (
-                          <option key={d} value={d}>{d} días</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+                  {/* Config row: days, send hour, template */}
+                  <div className={`${B}__card-config`}>
+                    {/* Days selector (reactivation) */}
+                    {auto.days_options && (
+                      <div className={`${B}__card-config-item`}>
+                        <span className={`${B}__card-config-label`}>Inactividad:</span>
+                        <select
+                          className={`${B}__card-config-select`}
+                          value={auto.days || 30}
+                          onChange={e => handleDaysChange(auto.id, e.target.value)}
+                        >
+                          {auto.days_options.map(d => (
+                            <option key={d} value={d}>{d} días</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Send hour selector */}
+                    {auto.send_hour_options && (
+                      <div className={`${B}__card-config-item`}>
+                        <span className={`${B}__card-config-label`}>Hora de envío:</span>
+                        <select
+                          className={`${B}__card-config-select`}
+                          value={auto.send_hour || auto.send_hour_options[0]}
+                          onChange={e => handleConfigChange(auto.id, 'send_hour', Number(e.target.value))}
+                        >
+                          {auto.send_hour_options.map(h => (
+                            <option key={h} value={h}>{h}:00 {h < 12 ? 'AM' : 'PM'}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Template selector */}
+                    {auto.channel !== 'interno' && (
+                      <div className={`${B}__card-config-item ${B}__card-config-item--full`}>
+                        <span className={`${B}__card-config-label`}>Plantilla Meta:</span>
+                        <input
+                          type="text"
+                          className={`${B}__card-config-input`}
+                          value={auto.template_name || ''}
+                          placeholder="Nombre de plantilla aprobada en Meta"
+                          onChange={e => handleConfigChange(auto.id, 'template_name', e.target.value)}
+                        />
+                        {!auto.template_name && (
+                          <span className={`${B}__card-config-hint`}>
+                            ⚠️ Sin plantilla: solo funciona si el cliente escribió en las últimas 24h
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Variables info */}
+                    {auto.variables && auto.variables.length > 0 && (
+                      <div className={`${B}__card-config-item ${B}__card-config-item--full`}>
+                        <span className={`${B}__card-config-label`}>Variables:</span>
+                        <div className={`${B}__card-variables`}>
+                          {auto.variables.map(v => (
+                            <span key={v} className={`${B}__card-variable`}>{'{{' + v + '}}'}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Message preview / edit */}
                   <div className={`${B}__card-message`}>

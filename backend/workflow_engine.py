@@ -2,10 +2,16 @@
 # WORKFLOW ENGINE — Executes automated workflows based on WorkflowTemplate DB
 # Called by the scheduler every 2 minutes. DB-safe deduplication.
 # Multi-tenant, multi-business-type.
+#
+# IMPORTANT: WhatsApp Business API requires APPROVED TEMPLATES to initiate
+# conversations outside the 24h window. This engine:
+# - Uses template messages when a template_name is configured
+# - Falls back to text messages only within active conversation windows
 # ============================================================================
 
 import os
 import time
+import httpx
 from datetime import datetime, date, timedelta
 
 from database.connection import SessionLocal
@@ -14,10 +20,15 @@ from database.models import (
     Appointment, VisitHistory, Staff, Service,
     WhatsAppConversation, WhatsAppMessage,
 )
+from routes._helpers import normalize_phone
 from activity_log import log_event
 
 # Colombia timezone offset (UTC-5)
 _COL_OFFSET = timedelta(hours=-5)
+
+WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 
 
 def _now_colombia():
@@ -34,6 +45,84 @@ def _find_conv_by_phone(db, phone):
         .filter(WhatsAppConversation.wa_contact_phone.contains(tail))
         .first()
     )
+
+
+def _is_within_24h_window(db, conv):
+    """Check if the client has sent an inbound message within the last 24 hours.
+    If yes, we can send free-form text. If no, we MUST use a template."""
+    if not conv:
+        return False
+    cutoff = datetime.utcnow() - timedelta(hours=24)
+    last_inbound = (
+        db.query(WhatsAppMessage)
+        .filter(
+            WhatsAppMessage.conversation_id == conv.id,
+            WhatsAppMessage.direction == "inbound",
+            WhatsAppMessage.created_at >= cutoff,
+        )
+        .first()
+    )
+    return last_inbound is not None
+
+
+def _send_template_sync(phone, template_name, language_code="es", parameters=None):
+    """Send an approved WhatsApp template message synchronously.
+    Parameters is a list of strings for the template body variables."""
+    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "") or WA_TOKEN
+    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "") or WA_PHONE_ID
+    api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+
+    if not token or not phone_id:
+        print(f"[WORKFLOW] No WA credentials for template send")
+        return False
+
+    # Check token pause
+    try:
+        from routes.whatsapp_endpoints import _wa_token_paused
+        if _wa_token_paused:
+            return False
+    except ImportError:
+        pass
+
+    # Build template payload
+    template_obj = {
+        "name": template_name,
+        "language": {"code": language_code},
+    }
+
+    # Add body parameters if provided
+    if parameters and len(parameters) > 0:
+        components = [{
+            "type": "body",
+            "parameters": [{"type": "text", "text": str(p)} for p in parameters],
+        }]
+        template_obj["components"] = components
+
+    try:
+        with httpx.Client(timeout=15) as client:
+            resp = client.post(
+                f"https://graph.facebook.com/{api_version}/{phone_id}/messages",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "messaging_product": "whatsapp",
+                    "to": normalize_phone(phone),
+                    "type": "template",
+                    "template": template_obj,
+                },
+            )
+            data = resp.json()
+            if resp.status_code == 200 and "messages" in data:
+                return True
+            else:
+                error_msg = data.get("error", {}).get("message", str(data)[:100])
+                print(f"[WORKFLOW] Template send failed: {error_msg}")
+                return False
+    except Exception as e:
+        print(f"[WORKFLOW] Template send error: {e}")
+        return False
 
 
 def _was_already_executed(db, workflow_id, client_id=None, appointment_id=None, today_only=True):
@@ -60,14 +149,46 @@ def _render_message(template, **kwargs):
 
 
 def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
-    """Send WhatsApp message and log the execution."""
+    """Send WhatsApp message and log the execution.
+    Uses template if configured, otherwise text (only within 24h window)."""
     from scheduler import _send_whatsapp_sync, _store_outbound_message
 
     conv = _find_conv_by_phone(db, phone)
-    if not conv:
+    config = workflow.config or {}
+    template_name = config.get("template_name")
+    template_lang = config.get("template_language", "es")
+    template_params = config.get("template_params", [])
+
+    # Decide: template or free-text?
+    if template_name:
+        # Use approved template (works always, even outside 24h window)
+        # Replace param placeholders with actual values from the rendered message
+        wa_sent = _send_template_sync(phone, template_name, template_lang, template_params)
+    elif conv and _is_within_24h_window(db, conv):
+        # Client messaged recently — free text is OK
+        wa_sent = _send_whatsapp_sync(phone, message)
+    else:
+        # No template configured AND outside 24h window — skip with warning
+        print(f"[WORKFLOW] Skipped {workflow.workflow_type} for {phone[-4:]}: no template and outside 24h window")
+        log_event(
+            "sistema",
+            f"Workflow '{workflow.name}' omitido — sin plantilla configurada",
+            detail=f"El cliente no ha escrito en 24h. Configura una plantilla aprobada de Meta para enviar este workflow.",
+            status="warning",
+        )
         return False
 
-    wa_sent = _send_whatsapp_sync(phone, message)
+    # Store in conversation thread if conversation exists
+    if conv:
+        tag = f"workflow_{workflow.workflow_type}_{workflow.id}"
+        if appointment_id:
+            tag += f"_appt_{appointment_id}"
+        _store_outbound_message(db, conv.id, message, wa_sent, tag=tag)
+    elif not conv and wa_sent:
+        # Template was sent but no conversation existed — it'll be created when client responds
+        pass
+
+    wa_sent = wa_sent if wa_sent is not None else False
 
     # Store in WhatsApp messages for conversation thread
     tag = f"workflow_{workflow.workflow_type}_{workflow.id}"

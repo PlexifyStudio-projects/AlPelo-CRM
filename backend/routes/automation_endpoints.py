@@ -20,7 +20,13 @@ router = APIRouter(prefix="/automations", tags=["Automations"])
 # ═══════════════════════════════════════════════
 
 def _get_default_workflows(tenant_name: str = "tu negocio"):
-    """Default workflow templates that work for ANY service business."""
+    """Default workflow templates that work for ANY service business.
+    Each workflow includes:
+    - message_template: preview text (shown in UI and used within 24h window)
+    - config.template_name: Meta-approved template to use outside 24h window
+    - config.send_hour: what hour to execute (where applicable)
+    - config.suggested_templates: list of template names the admin can choose from
+    """
     return [
         {
             "workflow_type": "reminder_24h",
@@ -33,8 +39,16 @@ def _get_default_workflows(tenant_name: str = "tu negocio"):
                 "con {{profesional}} para {{servicio}}.\n\n"
                 "¿Confirmas tu asistencia? Responde SI o NO"
             ),
-            "is_enabled": True,
-            "config": {"channel": "whatsapp", "category": "citas"},
+            "is_enabled": False,
+            "config": {
+                "channel": "whatsapp",
+                "category": "citas",
+                "template_name": "",
+                "template_language": "es",
+                "send_hour": None,
+                "suggested_templates": ["recordatorio_cita_24h", "appointment_reminder"],
+                "variables": ["nombre", "hora", "profesional", "servicio"],
+            },
         },
         {
             "workflow_type": "reminder_1h",
@@ -46,8 +60,16 @@ def _get_default_workflows(tenant_name: str = "tu negocio"):
                 "{{nombre}}, tu cita es en 1 hora a las {{hora}} "
                 "con {{profesional}}.\n\n¡Te esperamos en {{negocio}}!"
             ),
-            "is_enabled": True,
-            "config": {"channel": "whatsapp", "category": "citas"},
+            "is_enabled": False,
+            "config": {
+                "channel": "whatsapp",
+                "category": "citas",
+                "template_name": "",
+                "template_language": "es",
+                "send_hour": None,
+                "suggested_templates": ["recordatorio_cita_1h", "cita_hoy"],
+                "variables": ["nombre", "hora", "profesional", "negocio"],
+            },
         },
         {
             "workflow_type": "post_visit",
@@ -60,22 +82,39 @@ def _get_default_workflows(tenant_name: str = "tu negocio"):
                 "¿Cómo calificas tu experiencia del 1 al 5?"
             ),
             "is_enabled": False,
-            "config": {"channel": "whatsapp", "category": "marketing", "delay_hours": 2},
+            "config": {
+                "channel": "whatsapp",
+                "category": "marketing",
+                "delay_hours": 2,
+                "template_name": "",
+                "template_language": "es",
+                "suggested_templates": ["como_te_fue", "calificanos", "post_visita"],
+                "variables": ["nombre", "servicio", "negocio"],
+            },
         },
         {
             "workflow_type": "birthday",
             "name": "Feliz Cumpleaños",
             "icon": "🎂",
             "color": "#EC4899",
-            "trigger_description": "Día del cumpleaños (9:00 AM)",
+            "trigger_description": "Día del cumpleaños",
             "message_template": (
                 "¡Feliz cumpleaños, {{nombre}}! 🎂🎉\n\n"
                 "En {{negocio}} queremos celebrar contigo. "
                 "Te regalamos un 10% de descuento en tu próxima visita. "
                 "¡Válido por 7 días!"
             ),
-            "is_enabled": True,
-            "config": {"channel": "whatsapp", "category": "marketing", "send_hour": 9},
+            "is_enabled": False,
+            "config": {
+                "channel": "whatsapp",
+                "category": "marketing",
+                "send_hour": 9,
+                "send_hour_options": [8, 9, 10, 11, 12],
+                "template_name": "",
+                "template_language": "es",
+                "suggested_templates": ["feliz_cumpleanos", "descuento_cumpleanos"],
+                "variables": ["nombre", "negocio"],
+            },
         },
         {
             "workflow_type": "reactivation",
@@ -94,6 +133,12 @@ def _get_default_workflows(tenant_name: str = "tu negocio"):
                 "category": "marketing",
                 "days": 30,
                 "days_options": [15, 30, 45, 60, 90],
+                "send_hour": 10,
+                "send_hour_options": [9, 10, 11, 14, 15, 16],
+                "template_name": "",
+                "template_language": "es",
+                "suggested_templates": ["hace_rato_no_vienes", "te_extranamos", "reactivacion"],
+                "variables": ["nombre", "negocio", "dias"],
             },
         },
         {
@@ -108,7 +153,15 @@ def _get_default_workflows(tenant_name: str = "tu negocio"):
                 "Estamos para ayudarte."
             ),
             "is_enabled": False,
-            "config": {"channel": "whatsapp", "category": "citas"},
+            "config": {
+                "channel": "whatsapp",
+                "category": "citas",
+                "send_hour": 10,
+                "template_name": "",
+                "template_language": "es",
+                "suggested_templates": ["seguimiento_no_show", "reagendar_cita"],
+                "variables": ["nombre", "servicio", "negocio"],
+            },
         },
         {
             "workflow_type": "welcome",
@@ -123,7 +176,14 @@ def _get_default_workflows(tenant_name: str = "tu negocio"):
                 "¿En qué te podemos ayudar?"
             ),
             "is_enabled": False,
-            "config": {"channel": "whatsapp", "category": "crm"},
+            "config": {
+                "channel": "whatsapp",
+                "category": "crm",
+                "template_name": "",
+                "template_language": "es",
+                "suggested_templates": ["bienvenida", "welcome"],
+                "variables": ["nombre", "negocio"],
+            },
         },
         {
             "workflow_type": "auto_vip",
@@ -142,6 +202,10 @@ def _get_default_workflows(tenant_name: str = "tu negocio"):
                 "category": "crm",
                 "visits_threshold": 10,
                 "auto_tag": "VIP",
+                "template_name": "",
+                "template_language": "es",
+                "suggested_templates": ["gracias_vip", "cliente_vip"],
+                "variables": ["nombre", "negocio"],
             },
         },
         {
@@ -161,6 +225,10 @@ def _get_default_workflows(tenant_name: str = "tu negocio"):
                 "category": "marketing",
                 "min_rating": 4,
                 "google_review_url": "",
+                "template_name": "",
+                "template_language": "es",
+                "suggested_templates": ["dejanos_tu_resena", "review_google"],
+                "variables": ["nombre", "google_review_link"],
             },
         },
         {
@@ -182,7 +250,9 @@ def _get_default_workflows(tenant_name: str = "tu negocio"):
                 "channel": "whatsapp",
                 "category": "interno",
                 "send_hour": 20,
+                "send_hour_options": [18, 19, 20, 21],
                 "send_to": "owner",
+                "variables": ["negocio", "citas_completadas", "no_shows", "ingresos", "nuevos"],
             },
         },
     ]
@@ -387,6 +457,38 @@ async def get_executions(tenant_id: int = None, limit: int = 50):
         db.close()
 
 
+@router.post("/reset")
+async def reset_workflows(tenant_id: int = None):
+    """Delete and re-seed workflows with latest defaults. Use after config changes."""
+    db = SessionLocal()
+    try:
+        if tenant_id:
+            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        else:
+            tenant = db.query(Tenant).first()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="No tenant found")
+
+        db.query(WorkflowTemplate).filter(
+            WorkflowTemplate.tenant_id == tenant.id
+        ).delete()
+        db.commit()
+
+        seed_workflows_for_tenant(tenant.id, tenant.name)
+        db.close()
+        db = SessionLocal()
+
+        workflows = (
+            db.query(WorkflowTemplate)
+            .filter(WorkflowTemplate.tenant_id == tenant.id)
+            .order_by(WorkflowTemplate.id)
+            .all()
+        )
+        return [_serialize_workflow(w) for w in workflows]
+    finally:
+        db.close()
+
+
 def _serialize_workflow(w):
     """Serialize a WorkflowTemplate to dict."""
     config = w.config or {}
@@ -403,8 +505,17 @@ def _serialize_workflow(w):
         "config": config,
         "channel": config.get("channel", "whatsapp"),
         "category": config.get("category", "general"),
+        # Configurable options
         "days": config.get("days"),
         "days_options": config.get("days_options"),
+        "send_hour": config.get("send_hour"),
+        "send_hour_options": config.get("send_hour_options"),
+        # Template config
+        "template_name": config.get("template_name", ""),
+        "template_language": config.get("template_language", "es"),
+        "suggested_templates": config.get("suggested_templates", []),
+        "variables": config.get("variables", []),
+        # Stats
         "stats": {
             "sent": w.stats_sent or 0,
             "responded": w.stats_responded or 0,
