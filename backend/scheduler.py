@@ -1051,6 +1051,13 @@ def _scheduler_loop():
                     _morning_review(db)
                     _sweep_missed_conversations(db)
 
+                    # Automated workflows engine (all enabled workflows)
+                    try:
+                        from workflow_engine import run_workflows
+                        run_workflows(db)
+                    except Exception as e:
+                        print(f"[SCHEDULER] Workflow engine error: {e}")
+
                 _check_noshow_followups(db)
                 _expire_old_notes(db)
             finally:

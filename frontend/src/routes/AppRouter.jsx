@@ -14,6 +14,7 @@ import Finances from '../pages/Finances/Finances';
 import LinaActivity from '../pages/LinaActivity/LinaActivity';
 import Campaigns from '../pages/Campaigns/Campaigns';
 import ContentStudio from '../pages/ContentStudio/ContentStudio';
+import Automations from '../pages/Automations/Automations';
 import Profile from '../pages/Profile/Profile';
 import AdminProfile from '../pages/AdminProfile/AdminProfile';
 import Settings from '../pages/Settings/Settings';
@@ -45,6 +46,7 @@ const AppRouter = () => {
       case 'agenda': return <Agenda />;
       case 'clients': return <Clients />;
       case 'campaigns': return <Campaigns />;
+      case 'automations': return <Automations />;
       case 'content-studio': return <ContentStudio />;
       case 'services': return <Services />;
       case 'finances': return <Finances />;

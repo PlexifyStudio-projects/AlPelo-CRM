@@ -13,6 +13,7 @@ const MENU_ITEMS = [
   { id: 'finances', label: 'Finanzas', description: 'INGRESOS Y METRICAS', section: 'GESTION PRINCIPAL' },
   { id: 'lina-activity', label: 'Actividad Lina', description: 'MONITOREO EN TIEMPO REAL', section: 'GESTION PRINCIPAL' },
   { id: 'team', label: 'Equipo', description: 'RENDIMIENTO Y FEEDBACK', section: 'GESTION PRINCIPAL' },
+  { id: 'automations', label: 'Automatizaciones', description: 'WORKFLOWS INTELIGENTES', section: 'MARKETING' },
   { id: 'content-studio', label: 'Estudio IA', description: 'CONTENIDO CON INTELIGENCIA ARTIFICIAL', section: 'MARKETING' },
   { id: 'inbox', label: 'Inbox', description: 'CONVERSACIONES WHATSAPP', section: 'WHATSAPP' },
   { id: 'messaging', label: 'Plantillas', description: 'MENSAJES MASIVOS', section: 'WHATSAPP' },

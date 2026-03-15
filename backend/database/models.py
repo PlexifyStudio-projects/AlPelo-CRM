@@ -393,6 +393,52 @@ class GeneratedContent(Base):
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
 
 
+# ============================================================================
+# AUTOMATED WORKFLOWS — WhatsApp automation engine
+# ============================================================================
+
+class WorkflowTemplate(Base):
+    """Configurable automated WhatsApp workflow per tenant.
+    Each workflow type (reminder, birthday, reactivation, etc.) has its own
+    message template, on/off toggle, and execution stats."""
+    __tablename__ = "workflow_template"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    workflow_type = Column(String(50), nullable=False)  # reminder_24h, reminder_1h, post_visit, birthday, reactivation, no_show_followup, welcome
+    name = Column(String(200), nullable=False)
+    icon = Column(String(10), nullable=True)
+    color = Column(String(20), nullable=True)
+    trigger_description = Column(String(200), nullable=True)
+    message_template = Column(Text, nullable=False)  # {{nombre}}, {{hora}}, {{profesional}}, {{servicio}}, {{negocio}}, {{dias}}
+    is_enabled = Column(Boolean, default=False)
+    config = Column(JSON, default=dict)  # { days: 30 } for reactivation, etc.
+    stats_sent = Column(Integer, default=0)
+    stats_responded = Column(Integer, default=0)
+    last_triggered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+class WorkflowExecution(Base):
+    """Log of each workflow execution — tracks what was sent to whom."""
+    __tablename__ = "workflow_execution"
+
+    id = Column(Integer, primary_key=True, index=True)
+    workflow_id = Column(Integer, ForeignKey("public.workflow_template.id"), nullable=False)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
+    appointment_id = Column(Integer, ForeignKey("public.appointment.id"), nullable=True)
+    phone = Column(String, nullable=False)
+    message_sent = Column(Text, nullable=False)
+    status = Column(String(20), default="sent")  # sent, delivered, failed, responded
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    workflow = relationship("WorkflowTemplate", foreign_keys=[workflow_id])
+
+
 class BrandKit(Base):
     """Brand identity configuration per tenant — colors, fonts, tone."""
     __tablename__ = "brand_kits"

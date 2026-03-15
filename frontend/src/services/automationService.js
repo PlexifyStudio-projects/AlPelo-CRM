@@ -5,36 +5,36 @@ const automationService = {
     try {
       const res = await fetch(`${API}/automations`, { credentials: 'include' });
       if (res.ok) return await res.json();
-    } catch (e) { /* fallback below */ }
-    // Fallback to localStorage
-    return JSON.parse(localStorage.getItem('plexify_automations') || 'null');
+    } catch (e) { /* API not deployed yet */ }
+    return [];
   },
 
   updateAutomation: async (id, data) => {
-    try {
-      const res = await fetch(`${API}/automations/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data)
-      });
-      if (res.ok) return await res.json();
-    } catch (e) { /* fallback below */ }
-    // Save to localStorage as fallback
-    const all = JSON.parse(localStorage.getItem('plexify_automations') || '[]');
-    const idx = all.findIndex(a => a.id === id);
-    if (idx >= 0) all[idx] = { ...all[idx], ...data };
-    localStorage.setItem('plexify_automations', JSON.stringify(all));
-    return all[idx];
+    const res = await fetch(`${API}/automations/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update automation');
+    return await res.json();
   },
 
   getAutomationStats: async () => {
     try {
       const res = await fetch(`${API}/automations/stats`, { credentials: 'include' });
       if (res.ok) return await res.json();
-    } catch (e) { /* fallback below */ }
-    return { sent_this_month: 0, response_rate: 0, confirmed_appointments: 0 };
-  }
+    } catch (e) { /* API not deployed yet */ }
+    return { active_count: 0, total_count: 0, sent_this_month: 0, response_rate: 0, sent_total: 0 };
+  },
+
+  getExecutions: async (limit = 50) => {
+    try {
+      const res = await fetch(`${API}/automations/executions?limit=${limit}`, { credentials: 'include' });
+      if (res.ok) return await res.json();
+    } catch (e) { /* API not deployed yet */ }
+    return [];
+  },
 };
 
 export default automationService;

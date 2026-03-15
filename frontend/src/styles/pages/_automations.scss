@@ -2,11 +2,102 @@
 @use '../abstracts/mixins' as *;
 
 // ════════════════════════════════════════════════════════════════════
-// AUTOMATIONS — WhatsApp Automated Workflows
-// Premium automation recipe cards
+// AUTOMATIONS — Multi-channel Workflow Engine
+// WhatsApp + CRM + Marketing + Internal automation cards
 // ════════════════════════════════════════════════════════════════════
 
 .automations {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+
+  // ════════════════════════════════════════════════
+  // PAGE HEADER
+  // ════════════════════════════════════════════════
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+  }
+
+  &__header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  &__header-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-lg;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $color-white;
+    box-shadow: 0 4px 16px rgba(45, 90, 61, 0.25);
+    flex-shrink: 0;
+  }
+
+  &__title {
+    @include heading;
+    font-size: $font-size-xl;
+    margin: 0;
+  }
+
+  &__subtitle {
+    @include caption-text;
+    margin: 2px 0 0;
+  }
+
+  &__header-right {
+    flex-shrink: 0;
+  }
+
+  &__header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: $border-radius-full;
+    background: $color-primary-ghost;
+    color: $color-primary;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+  }
+
+  &__header-badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $color-primary;
+    box-shadow: 0 0 8px $color-primary;
+    animation: statusPulse 2.5s ease-in-out infinite;
+  }
+
+  // ════════════════════════════════════════════════
+  // LOADING
+  // ════════════════════════════════════════════════
+  &__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-3xl;
+    gap: $spacing-md;
+    color: $color-gray-400;
+    font-size: $font-size-sm;
+  }
+
+  &__loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid $border-color;
+    border-top-color: $color-primary;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
 
   // ════════════════════════════════════════════════
   // STATS SUMMARY BAR
@@ -100,17 +191,160 @@
   }
 
   // ════════════════════════════════════════════════
+  // TABS (Workflows | History)
+  // ════════════════════════════════════════════════
+  &__tabs {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: $color-gray-50;
+    border-radius: $border-radius-lg;
+    align-self: flex-start;
+    border: $border-width solid $border-color-light;
+  }
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: $border-radius-md;
+    background: transparent;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    font-family: $font-primary;
+    color: $color-gray-400;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    svg { flex-shrink: 0; opacity: 0.6; }
+
+    &:hover {
+      color: $color-gray-600;
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    &--active {
+      background: $color-white;
+      color: $color-gray-800;
+      box-shadow: $shadow-sm;
+      font-weight: $font-weight-bold;
+      svg { opacity: 1; color: $color-primary; }
+    }
+  }
+
+  &__tab-badge {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    padding: 1px 7px;
+    border-radius: $border-radius-full;
+    font-variant-numeric: tabular-nums;
+    background: $color-primary-ghost;
+    color: $color-primary;
+
+    .automations__tab--active & {
+      background: linear-gradient(135deg, $color-primary, $color-primary-light);
+      color: $color-white;
+    }
+  }
+
+  // ════════════════════════════════════════════════
+  // CATEGORY FILTERS
+  // ════════════════════════════════════════════════
+  &__filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  &__filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-full;
+    background: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    font-family: $font-primary;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-primary;
+      color: $color-primary;
+    }
+
+    &--active {
+      background: $color-primary;
+      color: $color-white;
+      border-color: $color-primary;
+    }
+  }
+
+  &__filter-count {
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    padding: 0 5px;
+    border-radius: $border-radius-full;
+    background: rgba(0, 0, 0, 0.08);
+    font-variant-numeric: tabular-nums;
+
+    .automations__filter--active & {
+      background: rgba(255, 255, 255, 0.25);
+    }
+  }
+
+  // ════════════════════════════════════════════════
+  // EMPTY STATE
+  // ════════════════════════════════════════════════
+  &__empty {
+    @include glass-card;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-3xl $spacing-xl;
+    text-align: center;
+  }
+
+  &__empty-icon {
+    font-size: 56px;
+    margin-bottom: $spacing-md;
+    opacity: 0.5;
+  }
+
+  &__empty-title {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-gray-700;
+    margin: 0 0 $spacing-xs;
+  }
+
+  &__empty-desc {
+    font-size: $font-size-sm;
+    color: $color-gray-400;
+    max-width: 480px;
+    line-height: $line-height-relaxed;
+    margin: 0;
+  }
+
+  // ════════════════════════════════════════════════
   // CARDS GRID
   // ════════════════════════════════════════════════
   &__grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: $spacing-md;
-    @include stagger-fade-in($stagger-base, 6);
+    @include stagger-fade-in($stagger-base, 10);
   }
 
   // ════════════════════════════════════════════════
-  // AUTOMATION CARD — Recipe Style
+  // AUTOMATION CARD
   // ════════════════════════════════════════════════
   &__card {
     @include glass-card;
@@ -127,7 +361,6 @@
       border-color: $glass-border-bright;
     }
 
-    // Left colored border
     &::before {
       content: '';
       position: absolute;
@@ -142,18 +375,12 @@
 
     &--active {
       box-shadow: $shadow-glass, $glass-inner-glow, 0 0 0 1px rgba(52, 211, 153, 0.12);
-
-      &::before {
-        box-shadow: 0 0 12px var(--auto-color, $color-success);
-      }
+      &::before { box-shadow: 0 0 12px var(--auto-color, $color-success); }
     }
 
     &--inactive {
       opacity: 0.75;
-
-      &:hover {
-        opacity: 1;
-      }
+      &:hover { opacity: 1; }
     }
   }
 
@@ -209,11 +436,7 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-
-    svg {
-      flex-shrink: 0;
-      opacity: 0.5;
-    }
+    svg { flex-shrink: 0; opacity: 0.5; }
   }
 
   // Toggle switch
@@ -233,7 +456,6 @@
     &:checked + .automations__toggle-slider {
       background: linear-gradient(135deg, $color-primary, $color-primary-light);
       box-shadow: 0 2px 8px rgba(45, 90, 61, 0.25);
-
       &::before {
         transform: translateX(20px);
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
@@ -267,19 +489,38 @@
     }
   }
 
-  // Status badge
+  // Badges row (channel + status)
+  &__card-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 $spacing-md 0 20px;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__card-channel {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--channel-color, $color-gray-500);
+    letter-spacing: $letter-spacing-wide;
+    text-transform: uppercase;
+  }
+
   &__card-status {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
-    padding: 3px 10px;
+    padding: 2px 8px;
     border-radius: $border-radius-full;
     letter-spacing: $letter-spacing-wide;
-    margin-left: 20px;
-    margin-right: $spacing-md;
-    align-self: flex-start;
 
     &--active {
       background: $color-success-bg;
@@ -303,6 +544,45 @@
     .automations__card-status--active & {
       box-shadow: 0 0 6px currentColor;
       animation: statusPulse 2.5s ease-in-out infinite;
+    }
+  }
+
+  // Days selector
+  &__card-days {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 $spacing-md 0 20px;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__card-days-label {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    white-space: nowrap;
+  }
+
+  &__card-days-select {
+    padding: 6px 28px 6px 12px;
+    border: $border-width solid $border-color-medium;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    font-family: $font-primary;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    background: $color-white;
+    cursor: pointer;
+    transition: all $transition-fast;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238E8E85' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px $color-primary-ghost;
     }
   }
 
@@ -344,6 +624,7 @@
     position: relative;
     z-index: 1;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    white-space: pre-line;
 
     &::after {
       content: '';
@@ -380,46 +661,7 @@
     }
   }
 
-  // Days selector for reactivation
-  &__card-days {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 $spacing-md 0 20px;
-    margin-bottom: $spacing-sm;
-  }
-
-  &__card-days-label {
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-500;
-    white-space: nowrap;
-  }
-
-  &__card-days-select {
-    padding: 6px 28px 6px 12px;
-    border: $border-width solid $border-color-medium;
-    border-radius: $border-radius-md;
-    font-size: $font-size-xs;
-    font-family: $font-primary;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-700;
-    background: $color-white;
-    cursor: pointer;
-    transition: all $transition-fast;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238E8E85' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-
-    &:focus {
-      outline: none;
-      border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost;
-    }
-  }
-
-  // Card footer with stats and actions
+  // Card footer
   &__card-footer {
     display: flex;
     align-items: center;
@@ -445,11 +687,7 @@
     color: $color-gray-400;
     font-weight: $font-weight-medium;
     font-variant-numeric: tabular-nums;
-
-    strong {
-      color: $color-gray-600;
-      font-weight: $font-weight-bold;
-    }
+    strong { color: $color-gray-600; font-weight: $font-weight-bold; }
   }
 
   &__card-last {
@@ -507,78 +745,117 @@
       }
     }
   }
-}
 
-// ════════════════════════════════════════════════
-// CAMPAIGNS TABS
-// ════════════════════════════════════════════════
-.campaigns__tabs {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  background: $color-gray-50;
-  border-radius: $border-radius-lg;
-  align-self: flex-start;
-  border: $border-width solid $border-color-light;
-}
-
-.campaigns__tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: $border-radius-md;
-  background: transparent;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
-  font-family: $font-primary;
-  color: $color-gray-400;
-  cursor: pointer;
-  transition: all $transition-fast;
-  letter-spacing: $letter-spacing-normal;
-  white-space: nowrap;
-
-  svg {
-    flex-shrink: 0;
-    opacity: 0.6;
+  // ════════════════════════════════════════════════
+  // EXECUTION HISTORY
+  // ════════════════════════════════════════════════
+  &__history {
+    @include glass-card;
+    padding: 0;
+    overflow: hidden;
   }
 
-  &:hover {
-    color: $color-gray-600;
-    background: rgba(0, 0, 0, 0.03);
+  &__history-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-3xl;
+    text-align: center;
+    color: $color-gray-500;
   }
 
-  &--active {
-    background: $color-white;
-    color: $color-gray-800;
-    box-shadow: $shadow-sm;
+  &__history-empty-icon {
+    font-size: 48px;
+    margin-bottom: $spacing-sm;
+    opacity: 0.4;
+  }
+
+  &__history-empty-sub {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    margin-top: 4px;
+  }
+
+  &__history-list {
+    width: 100%;
+  }
+
+  &__history-header {
+    display: grid;
+    grid-template-columns: 200px 140px 1fr 100px 100px;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wide;
+    border-bottom: $border-width solid $border-color;
+    background: $color-gray-50;
+  }
 
-    svg {
-      opacity: 1;
-      color: $color-primary;
-    }
+  &__history-row {
+    display: grid;
+    grid-template-columns: 200px 140px 1fr 100px 100px;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-bottom: $border-width solid $border-color-light;
+    transition: background $transition-fast;
 
     &:hover {
-      background: $color-white;
-      color: $color-gray-800;
+      background: $color-gray-50;
+    }
+
+    &:last-child {
+      border-bottom: none;
     }
   }
-}
 
-.campaigns__tab-badge {
-  font-size: $font-size-2xs;
-  font-weight: $font-weight-bold;
-  padding: 1px 7px;
-  border-radius: $border-radius-full;
-  font-variant-numeric: tabular-nums;
-  background: $color-primary-ghost;
-  color: $color-primary;
+  &__history-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: $font-size-xs;
+    color: $color-gray-600;
+    min-width: 0;
 
-  .campaigns__tab--active & {
-    background: linear-gradient(135deg, $color-primary, $color-primary-light);
-    color: $color-white;
+    &--preview {
+      color: $color-gray-400;
+      @include truncate;
+    }
+
+    &--date {
+      color: $color-gray-400;
+      font-size: $font-size-2xs;
+    }
+  }
+
+  &__history-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  &__history-status {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
+
+    &--sent {
+      background: $color-success-bg;
+      color: $color-success-dark;
+    }
+
+    &--failed {
+      background: $color-error-bg;
+      color: $color-error-dark;
+    }
+
+    &--responded {
+      background: rgba(99, 102, 241, 0.08);
+      color: #6366F1;
+    }
   }
 }
 
@@ -587,18 +864,24 @@
 // ════════════════════════════════════════════════
 @media (max-width: $breakpoint-lg) {
   .automations {
-    &__stats {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    &__grid {
-      grid-template-columns: 1fr;
+    &__stats { grid-template-columns: repeat(2, 1fr); }
+    &__grid { grid-template-columns: 1fr; }
+    &__history-header,
+    &__history-row {
+      grid-template-columns: 160px 1fr 90px 90px;
+      // Hide client name column
+      span:nth-child(2) { display: none; }
     }
   }
 }
 
 @media (max-width: $breakpoint-md) {
   .automations {
+    &__header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
     &__stats {
       grid-template-columns: 1fr 1fr;
       gap: $spacing-xs;
@@ -615,18 +898,20 @@
       font-size: 20px;
     }
 
-    &__stat-value {
-      font-size: $font-size-md;
+    &__stat-value { font-size: $font-size-md; }
+    &__grid { grid-template-columns: 1fr; }
+
+    &__tabs {
+      align-self: stretch;
     }
 
-    &__grid {
-      grid-template-columns: 1fr;
+    &__tab {
+      flex: 1;
+      justify-content: center;
+      padding: 10px 12px;
     }
 
-    &__card-header {
-      flex-wrap: wrap;
-    }
-
+    &__card-header { flex-wrap: wrap; }
     &__card-footer {
       flex-direction: column;
       align-items: flex-start;
@@ -637,25 +922,22 @@
       width: 100%;
       justify-content: flex-end;
     }
-  }
 
-  .campaigns__tabs {
-    align-self: stretch;
-  }
-
-  .campaigns__tab {
-    flex: 1;
-    justify-content: center;
-    padding: 10px 12px;
+    &__history-header,
+    &__history-row {
+      grid-template-columns: 1fr 90px;
+      span:nth-child(2),
+      span:nth-child(3),
+      span:nth-child(5) { display: none; }
+    }
   }
 }
 
 @media (max-width: $breakpoint-sm) {
   .automations {
-    &__stats {
-      grid-template-columns: 1fr;
-    }
-
+    &__stats { grid-template-columns: 1fr; }
+    &__filters { gap: 4px; }
+    &__filter { padding: 4px 10px; font-size: 10px; }
     &__card-stats {
       flex-direction: column;
       align-items: flex-start;
@@ -664,4 +946,11 @@
   }
 }
 
-// Reuse statusPulse from campaigns
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
