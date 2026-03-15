@@ -267,22 +267,22 @@
     }
 
     &--primary {
-      background: $color-primary-ghost;
+      background: linear-gradient(135deg, rgba(45, 90, 61, 0.08), rgba(45, 90, 61, 0.03));
       color: $color-primary;
     }
 
     &--accent {
-      background: $color-accent-ghost;
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.1), rgba(201, 168, 76, 0.04));
       color: $color-accent-dark;
     }
 
     &--success {
-      background: $color-success-bg;
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(52, 211, 153, 0.04));
       color: $color-success-dark;
     }
 
     &--warning {
-      background: $color-warning-bg;
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.04));
       color: $color-warning-dark;
     }
   }
@@ -636,9 +636,11 @@
   &__day-col {
     position: relative;
     border-left: $border-width solid $border-color-light;
+    transition: background-color 300ms $ease-out-quart;
 
     &--today {
-      background-color: rgba($color-primary, 0.014);
+      background-color: rgba($color-primary, 0.018);
+      border-left-color: rgba($color-primary, 0.08);
     }
 
     &--alt:not(&--today) {
@@ -700,10 +702,11 @@
     right: 0;
     z-index: 1;
     cursor: pointer;
-    transition: background 150ms ease;
+    transition: background 180ms $ease-out-quart;
 
     &:hover {
-      background: rgba($color-primary, 0.04);
+      background: rgba($color-primary, 0.045);
+      box-shadow: inset 0 0 0 1px rgba($color-primary, 0.06);
     }
   }
 

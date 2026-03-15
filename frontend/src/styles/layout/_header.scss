@@ -12,8 +12,8 @@
   height: $header-height;
   padding: 0 $spacing-2xl;
   background: $glass-bg-heavy;
-  backdrop-filter: blur($glass-blur-heavy);
-  -webkit-backdrop-filter: blur($glass-blur-heavy);
+  backdrop-filter: blur($glass-blur-heavy) saturate(1.2);
+  -webkit-backdrop-filter: blur($glass-blur-heavy) saturate(1.2);
   border-bottom: $border-width solid $border-color;
   position: sticky;
   top: 0;
@@ -21,13 +21,14 @@
   box-shadow:
     0 1px 0 rgba(0, 0, 0, 0.02),
     0 4px 20px rgba(0, 0, 0, 0.02);
-  transition: box-shadow 300ms $ease-out-quart, background 300ms $ease-out-quart;
+  transition: box-shadow 300ms $ease-out-quart, background 300ms $ease-out-quart, border-color 300ms $ease-out-quart;
 
   // Intensify shadow when scrolled (via JS class or natural state)
   &--scrolled {
     box-shadow:
       0 1px 0 rgba(0, 0, 0, 0.03),
-      0 8px 32px rgba(0, 0, 0, 0.04);
+      0 8px 32px rgba(0, 0, 0, 0.05);
+    border-bottom-color: rgba(0, 0, 0, 0.04);
   }
 
   // -----------------------------------------------

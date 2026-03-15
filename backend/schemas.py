@@ -41,6 +41,7 @@ class AdminResponse(BaseModel):
     username: str
     role: str
     is_active: bool
+    tenant_id: Optional[int] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

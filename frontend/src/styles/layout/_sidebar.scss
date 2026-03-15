@@ -293,6 +293,8 @@
     overflow-y: auto;
     overflow-x: hidden;
     @include custom-scrollbar-dark;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    scrollbar-width: thin;
   }
 
   &__section {
@@ -375,26 +377,32 @@
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.055);
 
       .sidebar__icon {
         opacity: 0.95;
         transform: scale(1.05);
       }
+
+      .sidebar__label {
+        color: rgba(255, 255, 255, 0.92);
+      }
     }
 
     &:active {
       background: rgba(255, 255, 255, 0.07);
+      transform: scale(0.98);
+      transition-duration: 80ms;
     }
 
     // -----------------------------------------------
     // ACTIVE STATE
     // -----------------------------------------------
     &--active {
-      background: rgba(45, 90, 61, 0.5);
+      background: linear-gradient(135deg, rgba(45, 90, 61, 0.5) 0%, rgba(45, 90, 61, 0.35) 100%);
       box-shadow:
         0 2px 12px rgba(45, 90, 61, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
 
       // Gold accent bar on the left
       &::before {

@@ -21,7 +21,7 @@
 
   // Hover: subtle scale + deeper shadow + brighter border
   &:hover {
-    transform: scale(1.008) translateY(-1px);
+    transform: scale(1.005) translateY(-2px);
     box-shadow: $shadow-glass-hover, $glass-inner-glow;
     border-color: $glass-border-bright;
   }

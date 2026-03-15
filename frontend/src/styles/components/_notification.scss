@@ -52,6 +52,8 @@
   animation: notifSlideIn 350ms $ease-out-expo both;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition:
     transform $transition-fast,
     box-shadow $transition-fast,

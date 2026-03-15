@@ -128,6 +128,25 @@
     }
   }
 
+  &--outline {
+    background: transparent;
+    border: 1.5px solid $border-color-medium;
+    color: $color-gray-600;
+    box-shadow: none;
+
+    &:hover {
+      border-color: $color-primary;
+      color: $color-primary;
+      background: rgba(45, 90, 61, 0.04);
+      transform: translateY(-1px);
+      box-shadow: $shadow-sm;
+    }
+
+    &::before {
+      display: none;
+    }
+  }
+
   &--accent {
     background: linear-gradient(135deg, $color-accent 0%, $color-accent-dark 100%);
     color: $color-white;

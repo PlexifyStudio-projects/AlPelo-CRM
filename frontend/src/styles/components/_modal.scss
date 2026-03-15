@@ -162,8 +162,9 @@
 
   // Overlay backdrop enhanced
   &__overlay {
-    backdrop-filter: blur(4px) saturate(0.8);
-    -webkit-backdrop-filter: blur(4px) saturate(0.8);
+    backdrop-filter: blur(8px) saturate(0.85);
+    -webkit-backdrop-filter: blur(8px) saturate(0.85);
+    background: rgba(0, 0, 0, 0.45);
   }
 
   // -----------------------------------------------

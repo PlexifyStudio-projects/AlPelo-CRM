@@ -107,10 +107,26 @@ img {
 }
 
 // -----------------------------------------------
-// GLOBAL SCROLLBAR
+// GLOBAL SCROLLBAR (both axes, Firefox + Webkit)
 // -----------------------------------------------
 html {
   @include custom-scrollbar;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+  scrollbar-width: thin;
+}
+
+// Horizontal scrollbars: thinner (4px)
+*::-webkit-scrollbar:horizontal {
+  height: 4px;
+}
+
+*::-webkit-scrollbar-thumb:horizontal {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: $border-radius-full;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.18);
+  }
 }
 
 // -----------------------------------------------
@@ -130,6 +146,29 @@ html {
 main {
   contain: layout style;
 }
+
+// -----------------------------------------------
+// GLOBAL HR / DIVIDER REFINEMENT
+// -----------------------------------------------
+hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, $border-color 20%, $border-color 80%, transparent 100%);
+  margin: $spacing-lg 0;
+}
+
+// -----------------------------------------------
+// DISABLED ELEMENTS GLOBAL
+// -----------------------------------------------
+[disabled],
+.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  user-select: none;
+}
+
+// Note: reduced-motion preferences handled in _animations.scss
 
 // -----------------------------------------------
 // INTERACTIVE ELEMENT DEFAULTS

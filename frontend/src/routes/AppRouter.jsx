@@ -14,6 +14,7 @@ import Finances from '../pages/Finances/Finances';
 import LinaActivity from '../pages/LinaActivity/LinaActivity';
 import Campaigns from '../pages/Campaigns/Campaigns';
 import Profile from '../pages/Profile/Profile';
+import AdminProfile from '../pages/AdminProfile/AdminProfile';
 import Settings from '../pages/Settings/Settings';
 import { useState } from 'react';
 
@@ -50,7 +51,7 @@ const AppRouter = () => {
       case 'messaging': return <Messaging />;
       case 'chat-ai': return <ChatAI />;
       case 'team': return <Team />;
-      case 'profile': return <Profile user={user} onUpdate={updateProfile} />;
+      case 'profile': return <AdminProfile user={user} onUpdate={updateProfile} />;
       case 'settings': return <Settings />;
       default: return <Dashboard />;
     }

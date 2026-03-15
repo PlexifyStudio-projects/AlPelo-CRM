@@ -93,14 +93,14 @@
       left: 0;
       right: 0;
       height: 2px;
-      background: $color-primary;
+      background: linear-gradient(90deg, $color-primary, $color-primary-light);
       opacity: 0;
       transition: opacity $transition-fast;
     }
 
     &:hover {
       box-shadow: $shadow-md, $glass-inner-glow;
-      transform: translateY(-2px);
+      transform: translateY(-2px) scale(1.01);
       border-color: rgba(255, 255, 255, 0.35);
 
       &::before {

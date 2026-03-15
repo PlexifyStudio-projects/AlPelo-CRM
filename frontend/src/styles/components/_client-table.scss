@@ -30,9 +30,9 @@
     position: sticky;
     top: 0;
     z-index: $z-base;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
     border-bottom: 2px solid rgba(0, 0, 0, 0.05);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0);
     transition: box-shadow $transition-fast;
@@ -95,7 +95,11 @@
   &__body {
     .client-table__row {
       &:nth-child(even) {
-        background: rgba(0, 0, 0, 0.012);
+        background: rgba(0, 0, 0, 0.015);
+      }
+
+      &:nth-child(odd) {
+        background: transparent;
       }
     }
   }
@@ -104,13 +108,13 @@
   &__row {
     border-bottom: $border-width solid $border-color-light;
     cursor: pointer;
-    transition: all 280ms $ease-out-quart;
+    transition: all 250ms $ease-out-quart;
     animation: tableRowFadeIn 0.4s $ease-out-expo both;
     position: relative;
 
     &:hover {
-      background: rgba(45, 90, 61, 0.025);
-      box-shadow: inset 3px 0 0 $color-primary, 0 1px 3px rgba(0, 0, 0, 0.04);
+      background: rgba(45, 90, 61, 0.03);
+      box-shadow: inset 3px 0 0 $color-primary, 0 2px 8px rgba(0, 0, 0, 0.03);
 
       .client-table__avatar {
         transform: scale(1.08);

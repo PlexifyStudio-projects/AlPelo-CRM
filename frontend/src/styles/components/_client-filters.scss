@@ -34,10 +34,11 @@
 
   &__search-input {
     width: 100%;
-    padding: 10px $spacing-xl 10px 42px;
+    height: 42px;
+    padding: 0 $spacing-xl 0 42px;
     background: $glass-bg-heavy;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: $border-width solid $border-color;
     border-radius: $border-radius-full;
     font-family: $font-primary;
@@ -45,10 +46,16 @@
     color: $color-secondary;
     outline: none;
     transition: all $transition-base;
-    box-shadow: $shadow-xs;
+    box-shadow: $shadow-xs, $glass-inner-glow-subtle;
 
     &::placeholder {
       color: $color-gray-300;
+      font-weight: $font-weight-regular;
+    }
+
+    &:hover {
+      border-color: $border-color-medium;
+      box-shadow: $shadow-sm;
     }
 
     &:focus {

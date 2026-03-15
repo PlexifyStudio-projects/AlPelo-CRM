@@ -201,3 +201,32 @@ code {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
+
+// -----------------------------------------------
+// MONOSPACED DATA (IDs, codes, tokens)
+// -----------------------------------------------
+.text-mono {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.9em;
+  font-variant-ligatures: none;
+  letter-spacing: $letter-spacing-wide;
+}
+
+// -----------------------------------------------
+// SUBTLE DIVIDER HEADING (section separators)
+// -----------------------------------------------
+.text-divider {
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+  @include label-text;
+  margin: $spacing-lg 0 $spacing-md;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, $border-color-medium, transparent);
+  }
+}
