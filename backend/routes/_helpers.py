@@ -22,22 +22,50 @@ def normalize_phone(phone: str) -> str:
 # FIND CLIENT — By client_id, search_name, or phone
 # ============================================================================
 
+def _strip_accents(text: str) -> str:
+    """Remove accents/diacritics from text for flexible comparison."""
+    import unicodedata
+    nfkd = unicodedata.normalize('NFKD', text)
+    return ''.join(c for c in nfkd if not unicodedata.combining(c))
+
+
 def find_client(db: Session, search_name: str = "", client_id: str = "", phone: str = ""):
-    """Find a client by client_id, name, or phone. Returns first match or None."""
+    """Find a client by client_id, name, or phone. Returns first match or None.
+    Uses accent-insensitive matching and phone normalization for flexible search.
+    """
+    # 1) Exact client_id match
     if client_id:
         c = db.query(Client).filter(Client.client_id == client_id, Client.is_active == True).first()
         if c:
             return c
-    if search_name:
-        c = db.query(Client).filter(Client.name.ilike(f"%{search_name}%"), Client.is_active == True).first()
-        if c:
-            return c
+
+    # 2) Search by phone first (most reliable identifier)
     if phone:
         clean = normalize_phone(phone)
         if len(clean) >= 7:
             c = db.query(Client).filter(Client.phone.contains(clean[-10:]), Client.is_active == True).first()
             if c:
                 return c
+
+    # 3) Search by name — exact ILIKE first
+    if search_name:
+        c = db.query(Client).filter(Client.name.ilike(f"%{search_name}%"), Client.is_active == True).first()
+        if c:
+            return c
+
+        # 4) Accent-insensitive fallback: strip accents and compare in Python
+        search_clean = _strip_accents(search_name).lower()
+        search_parts = search_clean.split()
+        if search_parts:
+            # Fetch candidates matching at least the first word (performance filter)
+            first_word = search_parts[0]
+            candidates = db.query(Client).filter(Client.is_active == True).all()
+            for candidate in candidates:
+                candidate_clean = _strip_accents(candidate.name).lower()
+                # Check if all search parts appear in the candidate name
+                if all(part in candidate_clean for part in search_parts):
+                    return candidate
+
     return None
 
 

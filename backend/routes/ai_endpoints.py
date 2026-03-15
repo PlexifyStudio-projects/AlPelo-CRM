@@ -291,6 +291,36 @@ def _build_inbox_context(db: Session) -> str:
 
 
 # ============================================================================
+# AUTO-CREATE CLIENT — When Lina needs a client that doesn't exist yet
+# ============================================================================
+
+def _auto_create_client(db: Session, name: str, phone: str) -> "Client | None":
+    """Auto-create a client when Lina can't find one but has name + phone.
+    Returns the new Client or None if phone already exists."""
+    clean_phone = normalize_phone(phone)
+    # Check if phone already exists (avoid duplicates)
+    existing = db.query(Client).filter(Client.phone.contains(clean_phone[-10:]), Client.is_active == True).first()
+    if existing:
+        return existing
+
+    last = db.query(Client).order_by(Client.id.desc()).first()
+    next_num = (last.id + 1) if last else 1
+    client_id = f"M{20200 + next_num}"
+
+    client = Client(
+        client_id=client_id,
+        name=name,
+        phone=phone,
+        accepts_whatsapp=True,
+    )
+    db.add(client)
+    db.commit()
+    db.refresh(client)
+    print(f"[AI] Auto-created client: {client.name} ({client.client_id}, tel: {client.phone})")
+    return client
+
+
+# ============================================================================
 # ACTION EXECUTOR — Executes actions requested by the AI
 # ============================================================================
 
@@ -327,7 +357,7 @@ def _execute_action(action: dict, db: Session) -> str:
         return f"Cliente creado: {client.name} (ID: {client.client_id}, Tel: {client.phone})"
 
     elif action_type == "update_client":
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""))
         if not client:
             return "ERROR: No encontre al cliente. Verifica el nombre o ID."
 
@@ -339,7 +369,7 @@ def _execute_action(action: dict, db: Session) -> str:
         return f"Cliente {client.name} actualizado."
 
     elif action_type == "delete_client":
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""))
         if not client:
             return "ERROR: No encontre al cliente."
         client.is_active = False
@@ -348,17 +378,26 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- NOTES ----
     elif action_type == "add_note":
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", ""))
+        auto_created = False
         if not client:
-            return "ERROR: No encontre al cliente."
+            # Auto-create client if we have enough data
+            auto_name = (action.get("search_name") or action.get("client_name") or "").strip()
+            auto_phone = (action.get("client_phone") or action.get("phone") or "").strip()
+            if auto_name and auto_phone:
+                client = _auto_create_client(db, auto_name, auto_phone)
+                auto_created = client is not None
+            if not client:
+                return "ERROR: No encontre al cliente."
         note = ClientNote(client_id=client.id, content=action.get("content", ""), created_by="Lina IA")
         db.add(note)
         db.commit()
-        return f"Nota agregada al perfil de {client.name}."
+        auto_tag = f" (cliente creado automaticamente: {client.client_id})" if auto_created else ""
+        return f"Nota agregada al perfil de {client.name}.{auto_tag}"
 
     elif action_type == "complete_task":
         # Find and mark a PENDIENTE/RECORDATORIO note as completed
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""))
         note_id = action.get("note_id")
         keyword = action.get("keyword", "")
 
@@ -448,7 +487,7 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- VISITS ----
     elif action_type == "add_visit":
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""))
         if not client:
             return "ERROR: No encontre al cliente."
         staff_id = action.get("staff_id")
@@ -1150,7 +1189,13 @@ def _execute_action(action: dict, db: Session) -> str:
             return msg
 
         # --- All clear — create the appointment ---
-        client_obj = db.query(Client).filter(Client.name.ilike(f"%{client_name}%")).first()
+        # Try to find existing client or auto-create if phone provided
+        client_obj = find_client(db, search_name=client_name, phone=client_phone)
+        auto_created_msg = ""
+        if not client_obj and client_phone:
+            client_obj = _auto_create_client(db, client_name, client_phone)
+            if client_obj:
+                auto_created_msg = f" Cliente creado automaticamente: {client_obj.name} ({client_obj.client_id})."
 
         new_apt = Appointment(
             client_id=client_obj.id if client_obj else None,
@@ -1169,7 +1214,7 @@ def _execute_action(action: dict, db: Session) -> str:
         db.add(new_apt)
         db.commit()
         db.refresh(new_apt)
-        return f"Cita creada (ID:{new_apt.id}): {client_name} con {staff_obj.name} para {svc_obj.name} el {apt_date} a las {apt_time}. Precio: ${svc_obj.price:,}."
+        return f"Cita creada (ID:{new_apt.id}): {client_name} con {staff_obj.name} para {svc_obj.name} el {apt_date} a las {apt_time}. Precio: ${svc_obj.price:,}.{auto_created_msg}"
 
     elif action_type == "update_appointment":
         apt = None
