@@ -39,17 +39,19 @@ def create_staff(data: StaffCreate, db: Session = Depends(get_db), user: Admin =
 def create_client(data: ClientCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_fields
 
-    existing = db.query(Client).filter(Client.client_id == data.client_id).first()
-    if existing:
-        raise HTTPException(status_code=409, detail=f"Client ID '{data.client_id}' already exists")
+    # Auto-generate client_id if not provided
+    client_data = data.model_dump()
+    if not client_data.get("client_id"):
+        last_client = db.query(Client).order_by(Client.id.desc()).first()
+        next_num = (last_client.id + 1) if last_client else 1
+        client_data["client_id"] = f"C{next_num:05d}"
 
-    if data.preferred_barber_id:
-        barber = db.query(Staff).filter(Staff.id == data.preferred_barber_id).first()
-        if not barber:
-            raise HTTPException(status_code=404, detail="Preferred barber not found")
+    existing = db.query(Client).filter(Client.client_id == client_data["client_id"]).first()
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Client ID '{client_data['client_id']}' ya existe")
 
     tid = safe_tid(user, db)
-    client = Client(tenant_id=tid, **data.model_dump())
+    client = Client(tenant_id=tid, **client_data)
     db.add(client)
     db.commit()
     db.refresh(client)

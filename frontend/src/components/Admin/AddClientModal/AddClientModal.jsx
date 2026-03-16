@@ -2,17 +2,26 @@ import { useState, useEffect } from 'react';
 import Modal from '../../common/Modal/Modal';
 import Input from '../../common/Input/Input';
 import Button from '../../common/Button/Button';
-import { mockServices, mockBarbers } from '../../../data/mockData';
+import { useTenant } from '../../../context/TenantContext';
+
+// Country code prefixes
+const COUNTRY_PREFIXES = {
+  CO: '+57', CL: '+56', AR: '+54', PE: '+51', VE: '+58', EC: '+593',
+  US: '+1', BR: '+55', MX: '+52', PA: '+507', CR: '+506', GT: '+502',
+  HN: '+504', SV: '+503', NI: '+505', DO: '+1', PY: '+595', UY: '+598',
+  BO: '+591', CU: '+53', PR: '+1',
+};
 
 const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
+  const { tenant } = useTenant();
+  const countryPrefix = COUNTRY_PREFIXES[tenant?.country] || '+57';
+
   const [form, setForm] = useState({
     client_id: '',
     name: '',
     phone: '',
     email: '',
     birthday: '',
-    favorite_service: '',
-    preferred_barber_id: '',
     accepts_whatsapp: true,
   });
   const [errors, setErrors] = useState({});
@@ -27,19 +36,17 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
         phone: editingClient.phone || '',
         email: editingClient.email || '',
         birthday: editingClient.birthday || '',
-        favorite_service: editingClient.favorite_service || '',
-        preferred_barber_id: editingClient.preferred_barber_id || '',
         accepts_whatsapp: editingClient.accepts_whatsapp ?? true,
       });
     } else {
       setForm({
-        client_id: '', name: '', phone: '', email: '', birthday: '',
-        favorite_service: '', preferred_barber_id: '', accepts_whatsapp: true,
+        client_id: '', name: '', phone: countryPrefix + ' ', email: '', birthday: '',
+        accepts_whatsapp: true,
       });
     }
     setErrors({});
     setTouched({});
-  }, [editingClient, isOpen]);
+  }, [editingClient, isOpen, countryPrefix]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,22 +64,20 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
 
   const validateField = (name, value) => {
     const fieldErrors = {};
-    if (name === 'client_id' && !value.trim()) fieldErrors.client_id = 'El ID es obligatorio';
     if (name === 'name' && !value.trim()) fieldErrors.name = 'El nombre es obligatorio';
-    if (name === 'phone' && !value.trim()) fieldErrors.phone = 'El teléfono es obligatorio';
+    if (name === 'phone' && !value.trim()) fieldErrors.phone = 'El telefono es obligatorio';
     if (name === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      fieldErrors.email = 'Email inválido';
+      fieldErrors.email = 'Email invalido';
     }
     return fieldErrors;
   };
 
   const validate = () => {
     const newErrors = {};
-    if (!form.client_id.trim()) newErrors.client_id = 'El ID es obligatorio (ej: M20201)';
     if (!form.name.trim()) newErrors.name = 'El nombre es obligatorio';
-    if (!form.phone.trim()) newErrors.phone = 'El teléfono es obligatorio';
+    if (!form.phone.trim() || form.phone.trim() === countryPrefix) newErrors.phone = 'El telefono es obligatorio';
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Email inválido';
+      newErrors.email = 'Email invalido';
     }
     return newErrors;
   };
@@ -82,16 +87,15 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setTouched({ client_id: true, name: true, phone: true, email: true });
+      setTouched({ name: true, phone: true, email: true });
       return;
     }
 
     const payload = {
       ...form,
-      preferred_barber_id: form.preferred_barber_id ? Number(form.preferred_barber_id) : null,
       birthday: form.birthday || null,
       email: form.email || null,
-      favorite_service: form.favorite_service || null,
+      client_id: form.client_id || null,
     };
 
     // When editing, don't send client_id (it's immutable)
@@ -103,9 +107,7 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
     onClose();
   };
 
-  const isFormValid = form.client_id.trim() && form.name.trim() && form.phone.trim();
-
-  const barberOptions = mockBarbers.filter((barber) => barber.available);
+  const isFormValid = form.name.trim() && form.phone.trim() && form.phone.trim() !== countryPrefix;
 
   return (
     <Modal
@@ -126,17 +128,6 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
           </h4>
           <div className={`${b}__grid`}>
             <Input
-              label="ID del cliente"
-              name="client_id"
-              value={form.client_id}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder="M20201"
-              error={touched.client_id ? errors.client_id : ''}
-              required
-              disabled={!!editingClient}
-            />
-            <Input
               label="Nombre completo"
               name="name"
               value={form.name}
@@ -147,13 +138,13 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
               required
             />
             <Input
-              label="Teléfono (WhatsApp)"
+              label="Telefono (WhatsApp)"
               name="phone"
               type="tel"
               value={form.phone}
               onChange={handleChange}
               onBlur={handleBlur}
-              placeholder="+57 300 123 4567"
+              placeholder={`${countryPrefix} 300 123 4567`}
               error={touched.phone ? errors.phone : ''}
               required
             />
@@ -168,56 +159,24 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
               error={touched.email ? errors.email : ''}
             />
             <Input
-              label="Cumpleaños"
+              label="Cumpleanos"
               name="birthday"
               type="date"
               value={form.birthday}
               onChange={handleChange}
             />
+            <Input
+              label="ID del cliente"
+              name="client_id"
+              value={form.client_id}
+              onChange={handleChange}
+              placeholder="Opcional (ej: M20201)"
+              disabled={!!editingClient}
+            />
           </div>
         </div>
 
-        {/* Section 2: Preferences */}
-        <div className={`${b}__section`}>
-          <h4 className={`${b}__section-label`}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-            </svg>
-            Preferencias
-          </h4>
-          <div className={`${b}__grid`}>
-            <div className={`${b}__select-group`}>
-              <label className={`${b}__label`}>Servicio favorito</label>
-              <select
-                className={`${b}__select`}
-                name="favorite_service"
-                value={form.favorite_service}
-                onChange={handleChange}
-              >
-                <option value="">Seleccionar servicio...</option>
-                {mockServices.map((s) => (
-                  <option key={s.id} value={s.name}>{s.name} - ${s.price.toLocaleString('es-CO')}</option>
-                ))}
-              </select>
-            </div>
-            <div className={`${b}__select-group`}>
-              <label className={`${b}__label`}>Barbero preferido</label>
-              <select
-                className={`${b}__select`}
-                name="preferred_barber_id"
-                value={form.preferred_barber_id}
-                onChange={handleChange}
-              >
-                <option value="">Sin preferencia</option>
-                {barberOptions.map((br) => (
-                  <option key={br.id} value={br.id}>{br.name} - {br.specialty}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Section 3: Consent */}
+        {/* Section 2: Consent */}
         <div className={`${b}__section`}>
           <div className={`${b}__toggle-row`}>
             <label className={`${b}__toggle-label`}>

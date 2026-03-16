@@ -110,7 +110,7 @@ class StaffResponse(BaseModel):
 #========================= CLIENT =========================#
 
 class ClientCreate(BaseModel):
-    client_id: str                              # M20201 format, assigned manually
+    client_id: Optional[str] = None              # Optional — auto-generated if not provided
     name: str
     phone: str
     email: Optional[str] = None
