@@ -223,6 +223,7 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
         ).first()
         if not existing_visit:
             visit = VisitHistory(
+                tenant_id=appointment.tenant_id,
                 client_id=appointment.client_id,
                 staff_id=appointment.staff_id,
                 service_name=service.name if service else "Servicio",
@@ -244,6 +245,7 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
         ).first()
         if not existing_visit:
             visit = VisitHistory(
+                tenant_id=appointment.tenant_id,
                 client_id=appointment.client_id,
                 staff_id=appointment.staff_id,
                 service_name=service.name if service else "Servicio",

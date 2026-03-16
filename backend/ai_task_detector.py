@@ -194,6 +194,7 @@ def create_auto_tasks(conv_id: int, client_message: str, lina_response: str):
             )
 
             note = ClientNote(
+                tenant_id=getattr(client, 'tenant_id', None),
                 client_id=client.id,
                 content=note_content,
                 created_by="Lina IA (auto-task)",
