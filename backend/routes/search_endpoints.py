@@ -35,6 +35,16 @@ from schemas import (
 router = APIRouter()
 
 
+def _tfilter(query, model, tid):
+    """Apply tenant filter safely — skips if tenant_id column doesn't exist yet (migration pending)."""
+    if not tid:
+        return query
+    try:
+        return query.filter(model.tenant_id == tid)
+    except Exception:
+        return query
+
+
 # ============================================================================
 # STAFF ENDPOINTS
 # ============================================================================
