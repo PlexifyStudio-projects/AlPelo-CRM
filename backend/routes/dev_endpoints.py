@@ -625,13 +625,22 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
             "timezone": "America/Bogota",
         }
 
+    # Count REAL messages from DB (not the static tenant.messages_used field)
+    real_used = 0
+    try:
+        real_used = db.query(func.count(WhatsAppMessage.id)).filter(
+            WhatsAppMessage.direction == "outbound"
+        ).scalar() or 0
+    except Exception:
+        real_used = getattr(tenant, 'messages_used', 0)
+
     return {
         "id": tenant.id,
         "slug": tenant.slug,
         "name": tenant.name,
         "business_type": getattr(tenant, 'business_type', 'peluqueria'),
         "plan": getattr(tenant, 'plan', 'standard'),
-        "messages_used": getattr(tenant, 'messages_used', 0),
+        "messages_used": real_used,
         "messages_limit": getattr(tenant, 'messages_limit', 5000),
         "ai_is_paused": getattr(tenant, 'ai_is_paused', False),
         "ai_name": getattr(tenant, 'ai_name', 'Lina'),

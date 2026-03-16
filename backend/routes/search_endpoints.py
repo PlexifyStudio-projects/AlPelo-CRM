@@ -464,7 +464,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     whatsapp_messages_today = (
         db.query(func.count(WhatsAppMessage.id))
         .filter(WhatsAppMessage.direction == "outbound")
-        .filter(WhatsAppMessage.sent_by == "lina_ia")
+        .filter(WhatsAppMessage.sent_by.like("lina_ia%"))
         .filter(WhatsAppMessage.created_at >= today_start_dt)
         .filter(WhatsAppMessage.created_at <= today_end_dt)
         .scalar() or 0
