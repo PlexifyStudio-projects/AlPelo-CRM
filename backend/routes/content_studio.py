@@ -263,9 +263,6 @@ async def generate_image(
     w, h = dimensions.split("x") if "x" in dimensions else ("1080", "1080")
 
     # Build enhanced prompt
-    enhanced_prompt = _build_pollinations_prompt(prompt, style, brand_colors)
-
-    # Build enhanced prompt
     short_prompt = prompt[:200]
     style_tag = {
         "profesional": "professional photography",
@@ -337,7 +334,8 @@ async def generate_image(
     if not image_base64:
         status = "failed"
 
-    image_url = image_base64 or f"https://placehold.co/{w}x{h}/2D5A3D/FFFFFF?text=Error+generando"
+    # Don't store base64 in DB (too large). Store a reference URL instead.
+    storage_url = f"generated://{generator_used}/{int(datetime.utcnow().timestamp())}"
 
     record = GeneratedContent(
         tenant_id=tid,
@@ -345,8 +343,8 @@ async def generate_image(
         prompt=prompt,
         style=style,
         dimensions=dimensions,
-        media_url=image_url,  # Store original URL for re-generation
-        thumbnail_url=image_url,
+        media_url=storage_url,
+        thumbnail_url=storage_url,
         status=status,
         generation_cost=0,
         metadata_json=json.dumps({
@@ -361,9 +359,8 @@ async def generate_image(
     db.refresh(record)
 
     result = _content_to_dict(record)
-    # Return base64 image if available (client displays this directly)
-    result["url"] = image_base64 if image_base64 else record.media_url
-    result["image_base64"] = image_base64
+    # Return base64 image directly (client displays this, NOT stored in DB)
+    result["url"] = image_base64 if image_base64 else ""
     return result
 
 
