@@ -4,7 +4,7 @@ import os
 
 
 def setup_cors_middleware(app: FastAPI):
-    default_origins = "http://localhost:3001,http://localhost:3000,http://localhost:5173,http://localhost:4173"
+    default_origins = "http://localhost:3001,http://localhost:3000,http://localhost:5173,http://localhost:4173,https://plexifystudio-projects.github.io"
     allowed_origins = os.getenv("ALLOWED_ORIGINS", default_origins).split(",")
     allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
 
