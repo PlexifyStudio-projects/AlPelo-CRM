@@ -1636,6 +1636,13 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             print(f"[Lina IA] Replied to conv {conv_id}: {clean_response[:60]}...")
             if send_status == "sent":
                 log_event("respuesta", f"Respondi a {conv.wa_contact_name or 'cliente'}", detail=clean_response[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok")
+
+                # POST-RESPONSE: Auto-detect follow-up tasks from conversation
+                try:
+                    from ai_task_detector import create_auto_tasks
+                    create_auto_tasks(conv_id, inbound_text, clean_response)
+                except Exception as task_err:
+                    print(f"[Lina IA] Auto-task detection error (non-critical): {task_err}")
             else:
                 log_event("respuesta", f"Mensaje generado pero fallo el envio", detail=clean_response[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
 
