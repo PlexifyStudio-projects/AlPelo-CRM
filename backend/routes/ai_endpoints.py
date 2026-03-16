@@ -1989,14 +1989,20 @@ Si prometiste algo y NO incluiste el ```action```, es como si NO lo hubieras hec
 NO dejas NADA a medias. NO dices "te aviso luego" sin crear la nota PENDIENTE. NO dices "te agendo" sin el create_appointment.
 
 REGLA CRITICA — TAREAS GRANDES (muchas acciones a la vez):
-Si el admin te pide algo que requiere MUCHAS acciones (ej: "crea 50 servicios", "agrega 20 clientes"):
-1. MAXIMO 5 acciones por mensaje. NO intentes crear 20, 30, 50 de una vez — el sistema se traba.
-2. Ejecuta las primeras 5 acciones en esta respuesta.
-3. Dile al admin exactamente que hiciste: "Cree estos 5: [lista]. Faltan X mas. Dime 'sigue' y agrego los siguientes 5."
-4. Cuando el admin diga "sigue" o "continua", crea los siguientes 5.
-5. Si el admin quiere algo masivo (50+ items), sugierele que lo haga desde la pagina de Servicios/Clientes que es mas rapido: "Para crear tantos servicios de una vez, te recomiendo hacerlo desde la pagina de Servicios que es mas rapido. Pero si prefieres, los voy creando de a 5."
-NUNCA digas "listo, ya los cree todos" si NO ejecutaste TODAS las acciones. Se honesta con lo que hiciste y lo que falta.
-NUNCA intentes crear mas de 5 registros en un solo mensaje. Si metes mas de 5 bloques action de tipo create, el sistema se va a trabar y el admin se queda esperando.
+Si el admin te pide crear MUCHOS registros (ej: "crea 50 servicios", "agrega 20 clientes"):
+USA la accion especial queue_bulk_task. Esto ejecuta TODOS los items de una vez.
+Formato:
+```action
+{"action": "queue_bulk_task", "task_type": "bulk_create_services", "description": "Crear servicios de spa", "items": [
+  {"action": "create_service", "name": "Masaje relajante", "category": "Spa", "price": 80000, "duration_minutes": 60},
+  {"action": "create_service", "name": "Facial profunda", "category": "Facial", "price": 70000, "duration_minutes": 45},
+  ... (TODOS los items aqui, sin limite)
+]}
+```
+El sistema ejecutara TODOS los items y te reportara cuantos se crearon.
+IMPORTANTE: Mete TODOS los items en un solo queue_bulk_task. NO hagas multiples bloques action individuales — usa UN SOLO bloque con todos los items adentro.
+Despues del bloque action, dile al admin que estas procesando todo y que le avisas cuando termine.
+Funciona para: create_service, create_client, add_note, create_appointment, y cualquier action de crear.
 
 REGLA #3 — LEE, ANALIZA, LUEGO RESPONDE (EN ESE ORDEN)
 ANTES de escribir CUALQUIER respuesta, haz esto mentalmente:
@@ -2431,8 +2437,26 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
             # Inject tenant_id from logged-in user so actions are tenant-scoped
             if user.tenant_id:
                 action["tenant_id"] = user.tenant_id
-            result = _execute_action(action, db)
-            action_results.append(result)
+
+            # BULK TASK: if it's a queue_bulk_task, execute ALL items inline
+            # (admin is waiting with "typing..." indicator — execute everything now)
+            if action.get("action") == "queue_bulk_task" and action.get("items"):
+                items = action["items"]
+                ok_count = 0
+                fail_count = 0
+                for item in items:
+                    try:
+                        if user.tenant_id:
+                            item["tenant_id"] = user.tenant_id
+                        _execute_action(item, db)
+                        ok_count += 1
+                    except Exception as item_err:
+                        fail_count += 1
+                        print(f"[AI] Bulk item failed: {item_err}")
+                action_results.append(f"Tarea completada: {ok_count} creados exitosamente" + (f", {fail_count} fallaron" if fail_count else ""))
+            else:
+                result = _execute_action(action, db)
+                action_results.append(result)
         except json.JSONDecodeError:
             action_results.append("ERROR: No pude parsear la accion.")
 
