@@ -45,6 +45,7 @@ class Client(Base):
     __tablename__ = "client"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     client_id = Column(String, unique=True, index=True, nullable=False)  # M20201 format
     name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
@@ -153,6 +154,7 @@ class WhatsAppConversation(Base):
     __tablename__ = "whatsapp_conversation"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
     wa_contact_phone = Column(String, nullable=False)
     wa_contact_name = Column(String, nullable=True)

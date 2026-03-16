@@ -238,8 +238,13 @@ async def create_client_memory_manual(request: dict, db: Session = Depends(get_d
     if not client:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
-    tenant = db.query(Tenant).first()
-    tenant_id = tenant.id if tenant else 1
+    # Get tenant from the client's data (if client has tenant_id)
+    client_tenant_id = getattr(client, 'tenant_id', None)
+    if client_tenant_id:
+        tenant_id = client_tenant_id
+    else:
+        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        tenant_id = tenant.id if tenant else 1
 
     # Generate embedding
     embedding_json = None

@@ -39,6 +39,9 @@ def _run_migrations(engine):
         ("expense", "recurring_frequency", "VARCHAR"),
         # Invoice item → visit link
         ("invoice_item", "visit_id", "INTEGER"),
+        # Multi-tenant isolation
+        ("client", "tenant_id", "INTEGER"),
+        ("whatsapp_conversation", "tenant_id", "INTEGER"),
     ]
 
     for table, column, col_type in migrations:
@@ -85,6 +88,15 @@ def _run_migrations(engine):
                 print("[MIGRATION] Created client_memory table with indexes")
     except Exception as e:
         print(f"[MIGRATION] client_memory table: {e}")
+
+    # --- Index for tenant isolation on client and conversation tables ---
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_client_tenant ON public.client(tenant_id)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_wa_conv_tenant ON public.whatsapp_conversation(tenant_id)"))
+            print("[MIGRATION] Created tenant isolation indexes")
+    except Exception as e:
+        print(f"[MIGRATION] Tenant indexes: {e}")
 
     # Fix: ensure ai_model column has a DEFAULT so raw SQL inserts don't fail
     try:

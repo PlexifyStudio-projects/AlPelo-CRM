@@ -503,11 +503,12 @@ def _morning_review(db):
 
     _last_morning_review_date = today
 
-    # Check tenant-level AI pause — skip morning review entirely if paused
+    # Check if ALL tenants have AI paused (multi-tenant safe)
     from database.models import Tenant
-    tenant = db.query(Tenant).first()
-    if tenant and tenant.ai_is_paused:
-        print(f"[SCHEDULER] Morning review SKIPPED — AI is paused for tenant '{tenant.name}'")
+    active_tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    all_paused = all(t.ai_is_paused for t in active_tenants) if active_tenants else True
+    if all_paused:
+        print(f"[SCHEDULER] Morning review SKIPPED — AI is paused for all tenants")
         return
 
     print(f"[SCHEDULER] Morning review started at {now_col.strftime('%H:%M')}")
@@ -653,10 +654,11 @@ def _sweep_missed_conversations(db):
     """
     from sqlalchemy import desc
 
-    # Check tenant-level AI pause — skip sweep entirely if paused
+    # Check if ALL tenants have AI paused (multi-tenant safe)
     from database.models import Tenant
-    tenant = db.query(Tenant).first()
-    if tenant and tenant.ai_is_paused:
+    active_tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    all_paused = all(t.ai_is_paused for t in active_tenants) if active_tenants else True
+    if all_paused:
         return
 
     now_utc = datetime.utcnow()
@@ -818,10 +820,11 @@ def _execute_pending_tasks(db):
     """
     import re as _re
 
-    # Check tenant-level AI pause — skip all pending tasks if paused
+    # Check if ALL tenants have AI paused (multi-tenant safe)
     from database.models import Tenant
-    tenant = db.query(Tenant).first()
-    if tenant and tenant.ai_is_paused:
+    active_tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    all_paused = all(t.ai_is_paused for t in active_tenants) if active_tenants else True
+    if all_paused:
         return
 
     now = _now_colombia()
@@ -1005,10 +1008,11 @@ def _detect_unresolved_messages(db):
     if _wa_token_paused:
         return  # Can't send if token is dead
 
-    # Check tenant-level AI pause
+    # Check if ALL tenants have AI paused (multi-tenant safe)
     from database.models import Tenant
-    tenant = db.query(Tenant).first()
-    if tenant and tenant.ai_is_paused:
+    active_tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    all_paused = all(t.ai_is_paused for t in active_tenants) if active_tenants else True
+    if all_paused:
         return
 
     now_utc = datetime.utcnow()

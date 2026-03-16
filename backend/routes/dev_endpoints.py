@@ -865,7 +865,11 @@ def dev_whatsapp_health(db: Session = Depends(get_db), user: Admin = Depends(get
         daily_msgs.append({"date": day.strftime("%Y-%m-%d"), "count": count})
 
     # Check WA token status from tenant
-    tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+    # Dev endpoint — use first active tenant for WA health check (dev users don't have tenant_id)
+    if user.tenant_id:
+        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
+    else:
+        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
     has_token = bool(tenant and getattr(tenant, 'wa_access_token', None))
 
     return {

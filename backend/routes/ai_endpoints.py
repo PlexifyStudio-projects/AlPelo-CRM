@@ -9,7 +9,8 @@ from sqlalchemy import func
 from datetime import datetime, date, timedelta
 
 from database.connection import get_db, SessionLocal
-from database.models import AIConfig, Staff, Client, VisitHistory, ClientNote, WhatsAppConversation, WhatsAppMessage, Service, Appointment
+from database.models import AIConfig, Staff, Client, VisitHistory, ClientNote, WhatsAppConversation, WhatsAppMessage, Service, Appointment, Tenant, Admin
+from middleware.auth_middleware import get_current_user
 from schemas import (
     AIConfigCreate, AIConfigUpdate, AIConfigResponse,
     AIChatRequest, AIChatResponse,
@@ -380,6 +381,7 @@ def _execute_action(action: dict, db: Session) -> str:
             email=action.get("email"),
             favorite_service=action.get("favorite_service"),
             accepts_whatsapp=action.get("accepts_whatsapp", True),
+            tenant_id=action.get("tenant_id"),
         )
         db.add(client)
         db.commit()
@@ -2174,10 +2176,9 @@ async def _call_anthropic(api_key: str, model: str, system_prompt: str, messages
 ACTION_PATTERN = re.compile(r'```action\s*(.*?)```', re.DOTALL)
 
 @router.post("/ai/chat", response_model=AIChatResponse)
-async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db)):
+async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     # Check tenant-level AI pause — block all AI when paused
-    from database.models import Tenant
-    tenant = db.query(Tenant).first()
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first() if user.tenant_id else db.query(Tenant).filter(Tenant.is_active == True).first()
     if tenant and tenant.ai_is_paused:
         raise HTTPException(status_code=403, detail="La IA está pausada para esta agencia. Reactívala desde el panel de desarrollo.")
 

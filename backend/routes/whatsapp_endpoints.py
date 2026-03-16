@@ -789,6 +789,12 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
             for change in entry.get("changes", []):
                 value = change.get("value", {})
 
+                # Resolve tenant from the phone_number_id in metadata
+                from database.models import Tenant
+                phone_number_id = value.get("metadata", {}).get("phone_number_id")
+                tenant = db.query(Tenant).filter(Tenant.wa_phone_number_id == phone_number_id).first() if phone_number_id else None
+                tenant_id = tenant.id if tenant else None
+
                 # Process incoming messages
                 for msg_data in value.get("messages", []):
                     from_phone = msg_data.get("from", "")
@@ -840,6 +846,7 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                             wa_contact_phone=from_phone,
                             wa_contact_name=contact_name,
                             client_id=client.id if client else None,
+                            tenant_id=tenant_id,
                             is_ai_active=True,
                         )
                         db.add(conv)
@@ -1125,7 +1132,12 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             # Check tenant-level AI pause — if paused, just stay silent (no message sent)
             from database.models import Tenant
-            tenant = db.query(Tenant).first()  # single-tenant for now
+            # Get tenant from conversation
+            conv_tenant_id = conv.tenant_id if hasattr(conv, 'tenant_id') and conv.tenant_id else None
+            if conv_tenant_id:
+                tenant = db.query(Tenant).filter(Tenant.id == conv_tenant_id).first()
+            else:
+                tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
             if tenant and tenant.ai_is_paused:
                 log_event("skip", "IA pausada a nivel de agencia", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
                 return
@@ -1364,6 +1376,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         # Force real phone from conversation for client creation
                         if action_type == "create_client":
                             action_data["phone"] = conv.wa_contact_phone
+                            # Propagate tenant from conversation to new client
+                            if hasattr(conv, 'tenant_id') and conv.tenant_id:
+                                action_data["tenant_id"] = conv.tenant_id
 
                         # For create_appointment, auto-fill client phone from conversation
                         if action_type == "create_appointment" and not action_data.get("client_phone"):

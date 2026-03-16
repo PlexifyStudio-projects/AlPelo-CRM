@@ -177,10 +177,14 @@ def save_memories_sync(conv_id: int):
         if not conv or not conv.client_id:
             return
 
-        # Get tenant_id from client
+        # Get tenant from the conversation's tenant_id (set by webhook)
         from database.models import Tenant
-        tenant = db.query(Tenant).first()
-        tenant_id = tenant.id if tenant else 1
+        conv_tenant_id = getattr(conv, 'tenant_id', None)
+        if conv_tenant_id:
+            tenant_id = conv_tenant_id
+        else:
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+            tenant_id = tenant.id if tenant else 1
 
         # Extract memories using Claude
         memories = extract_memories_from_conversation(conv_id)

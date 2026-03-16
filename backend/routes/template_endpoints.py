@@ -210,7 +210,7 @@ async def reset_templates():
     """Delete all templates and re-seed with defaults (all as draft)."""
     db = SessionLocal()
     try:
-        tenant = db.query(Tenant).first()
+        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
         if not tenant:
             raise HTTPException(status_code=404, detail="No tenant")
         db.query(MessageTemplate).filter(MessageTemplate.tenant_id == tenant.id).delete()
@@ -231,7 +231,7 @@ async def list_templates(tenant_id: int = None, status: str = None):
     """List all message templates. Auto-seeds if none exist."""
     db = SessionLocal()
     try:
-        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first() if tenant_id else db.query(Tenant).first()
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first() if tenant_id else db.query(Tenant).filter(Tenant.is_active == True).first()
         if not tenant:
             raise HTTPException(status_code=404, detail="No tenant")
 
@@ -259,7 +259,7 @@ async def create_template(data: dict):
     """Create a new template (starts as draft)."""
     db = SessionLocal()
     try:
-        tenant = db.query(Tenant).first()
+        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
         if not tenant:
             raise HTTPException(status_code=404, detail="No tenant")
 

@@ -306,7 +306,7 @@ async def list_workflows(tenant_id: int = None):
         if tenant_id:
             tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
         else:
-            tenant = db.query(Tenant).first()
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
 
         if not tenant:
             raise HTTPException(status_code=404, detail="No tenant found")
@@ -376,7 +376,7 @@ async def get_stats(tenant_id: int = None):
         if tenant_id:
             tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
         else:
-            tenant = db.query(Tenant).first()
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
 
         if not tenant:
             return {"active_count": 0, "total_count": 0, "sent_this_month": 0,
@@ -418,7 +418,7 @@ async def get_executions(tenant_id: int = None, limit: int = 50):
         if tenant_id:
             tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
         else:
-            tenant = db.query(Tenant).first()
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
 
         if not tenant:
             return []
@@ -465,7 +465,7 @@ async def reset_workflows(tenant_id: int = None):
         if tenant_id:
             tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
         else:
-            tenant = db.query(Tenant).first()
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
         if not tenant:
             raise HTTPException(status_code=404, detail="No tenant found")
 
