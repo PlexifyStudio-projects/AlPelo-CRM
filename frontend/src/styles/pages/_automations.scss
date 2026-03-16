@@ -884,6 +884,124 @@
   }
 
   // ════════════════════════════════════════════════
+  // SECTION DIVIDER
+  // ════════════════════════════════════════════════
+  &__section-divider {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    margin: $spacing-md 0;
+  }
+
+  &__section-divider-line {
+    flex: 1;
+    height: 1px;
+    background: $border-color;
+  }
+
+  &__section-divider-text {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-400;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  // ════════════════════════════════════════════════
+  // AVAILABLE (DISABLED) WORKFLOWS — Compact list
+  // ════════════════════════════════════════════════
+  &__available {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__avail-card {
+    @include glass-card;
+    padding: $spacing-md 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+    opacity: 0.8;
+    transition: all $transition-base;
+    border-left: 3px solid var(--auto-color, $color-gray-300);
+
+    &:hover {
+      opacity: 1;
+      transform: translateX(2px);
+      box-shadow: $shadow-card-hover;
+    }
+  }
+
+  &__avail-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__avail-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-md;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  &__avail-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  &__avail-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-gray-700;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  &__avail-desc {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    margin: 0;
+    line-height: $line-height-relaxed;
+    @include line-clamp(2);
+  }
+
+  &__avail-impact {
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  &__avail-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+    flex-shrink: 0;
+  }
+
+  &__avail-channel {
+    font-size: 10px;
+    font-weight: $font-weight-bold;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wide;
+  }
+
+  // ════════════════════════════════════════════════
   // EXECUTION HISTORY
   // ════════════════════════════════════════════════
   &__history {

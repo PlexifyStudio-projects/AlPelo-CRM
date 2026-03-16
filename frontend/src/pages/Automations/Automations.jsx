@@ -233,10 +233,12 @@ const Automations = () => {
     }
   };
 
-  // Filter automations by category
+  // Filter: only show ENABLED automations (+ category filter)
+  const enabledAutomations = automations.filter(a => a.enabled);
+  const disabledAutomations = automations.filter(a => !a.enabled);
   const filteredAutomations = filterCategory === 'all'
-    ? automations
-    : automations.filter(a => a.category === filterCategory);
+    ? enabledAutomations
+    : enabledAutomations.filter(a => a.category === filterCategory);
 
   // Stats computed
   const activeCount = automations.filter(a => a.enabled).length;
@@ -348,19 +350,14 @@ const Automations = () => {
             ))}
           </div>
 
-          {/* Workflow Cards Grid */}
+          {/* Active Workflows */}
           {filteredAutomations.length === 0 && (
             <div className={`${B}__empty`}>
               <div className={`${B}__empty-icon`}>⚡</div>
-              <h3 className={`${B}__empty-title`}>
-                {automations.length === 0
-                  ? 'Conectando motor de automatización...'
-                  : 'Sin workflows en esta categoría'}
-              </h3>
+              <h3 className={`${B}__empty-title`}>No tienes automatizaciones activas</h3>
               <p className={`${B}__empty-desc`}>
-                {automations.length === 0
-                  ? 'Los workflows se crean automáticamente al desplegar el backend. Incluye recordatorios de cita, cumpleaños, reactivación, bienvenida, resumen diario y más.'
-                  : 'Prueba con otra categoría o selecciona "Todos".'}
+                Activa una automatización de la sección "Disponibles" más abajo.
+                Selecciona una plantilla aprobada y prende el switch.
               </p>
             </div>
           )}
@@ -565,6 +562,55 @@ const Automations = () => {
               );
             })}
           </div>
+
+          {/* Available (disabled) workflows */}
+          {disabledAutomations.length > 0 && (
+            <>
+              <div className={`${B}__section-divider`}>
+                <span className={`${B}__section-divider-line`} />
+                <span className={`${B}__section-divider-text`}>
+                  Disponibles para activar ({disabledAutomations.length})
+                </span>
+                <span className={`${B}__section-divider-line`} />
+              </div>
+              <div className={`${B}__available`}>
+                {disabledAutomations.map(auto => {
+                  const impact = WORKFLOW_IMPACT[auto.workflow_type];
+                  const channelInfo = CHANNEL_LABELS[auto.channel] || CHANNEL_LABELS.whatsapp;
+                  return (
+                    <div key={auto.id} className={`${B}__avail-card`} style={{ '--auto-color': auto.color }}>
+                      <div className={`${B}__avail-left`}>
+                        <span className={`${B}__avail-icon`} style={{ background: auto.bg }}>{auto.icon}</span>
+                        <div className={`${B}__avail-info`}>
+                          <h4 className={`${B}__avail-name`}>{auto.name}</h4>
+                          <p className={`${B}__avail-desc`}>{impact?.description || auto.trigger}</p>
+                          {impact && (
+                            <span className={`${B}__avail-impact`} style={{ color: impact.impactColor }}>
+                              {impact.impactIcon} {impact.impact}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className={`${B}__avail-right`}>
+                        <span className={`${B}__avail-channel`} style={{ color: channelInfo.color }}>
+                          {channelInfo.icon} {channelInfo.label}
+                        </span>
+                        <label className={`${B}__toggle`}>
+                          <input
+                            type="checkbox"
+                            className={`${B}__toggle-input`}
+                            checked={false}
+                            onChange={() => handleToggle(auto.id)}
+                          />
+                          <span className={`${B}__toggle-slider`} />
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </>
       )}
 
