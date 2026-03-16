@@ -348,6 +348,7 @@ const Messaging = () => {
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [sendTemplate, setSendTemplate] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   // Load templates from DB
   useEffect(() => {
@@ -410,15 +411,21 @@ const Messaging = () => {
     }
   }, [addNotification]);
 
-  const handleDelete = useCallback(async (template) => {
+  const handleDeleteClick = useCallback((template) => {
+    setDeleteConfirm(template);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteConfirm) return;
     try {
-      await templateService.deleteTemplate(template.id);
-      setTemplates(prev => prev.filter(t => t.id !== template.id));
-      addNotification(`"${template.name}" eliminada`, 'info');
+      await templateService.deleteTemplate(deleteConfirm.id);
+      setTemplates(prev => prev.filter(t => t.id !== deleteConfirm.id));
+      addNotification(`"${deleteConfirm.name}" eliminada`, 'info');
     } catch (e) {
       addNotification('Error eliminando plantilla', 'error');
     }
-  }, [addNotification]);
+    setDeleteConfirm(null);
+  }, [deleteConfirm, addNotification]);
 
   const handleAddSave = useCallback((newTemplate) => {
     setTemplates(prev => [...prev, newTemplate]);
@@ -477,7 +484,7 @@ const Messaging = () => {
           {filteredTemplates.map((template) => (
             <TemplateCard key={template.id} template={template}
               onPreview={setPreviewTemplate} onSend={setSendTemplate}
-              onApprove={handleApprove} onDelete={handleDelete} />
+              onApprove={handleApprove} onDelete={handleDeleteClick} />
           ))}
         </div>
       )}
@@ -490,6 +497,34 @@ const Messaging = () => {
       {previewTemplate && <PreviewModal template={previewTemplate} onClose={() => setPreviewTemplate(null)} />}
       {sendTemplate && <SendModal template={sendTemplate} onClose={() => setSendTemplate(null)} onSend={handleSend} />}
       {showAddModal && <AddTemplateModal onClose={() => setShowAddModal(false)} onSave={handleAddSave} />}
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && createPortal(
+        <div className={`${B}__overlay`} onClick={() => setDeleteConfirm(null)}>
+          <div className={`${B}__modal ${B}__modal--confirm`} onClick={(e) => e.stopPropagation()}>
+            <div className={`${B}__modal-header`}>
+              <h3 className={`${B}__modal-title`}>Eliminar plantilla</h3>
+              <button className={`${B}__modal-close`} onClick={() => setDeleteConfirm(null)}><CloseIcon /></button>
+            </div>
+            <div className={`${B}__modal-body`}>
+              <div className={`${B}__confirm-icon`}>🗑️</div>
+              <p className={`${B}__confirm-text`}>
+                ¿Estás seguro de que quieres eliminar la plantilla <strong>"{deleteConfirm.name}"</strong>?
+              </p>
+              <p className={`${B}__confirm-sub`}>Esta acción no se puede deshacer.</p>
+              <div className={`${B}__form-actions`}>
+                <button className={`${B}__form-btn ${B}__form-btn--cancel`} onClick={() => setDeleteConfirm(null)}>
+                  Cancelar
+                </button>
+                <button className={`${B}__form-btn ${B}__form-btn--delete`} onClick={handleDeleteConfirm}>
+                  Sí, eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

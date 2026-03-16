@@ -504,6 +504,43 @@
         transform: none;
       }
     }
+
+    &--delete {
+      background: linear-gradient(135deg, $color-error, darken($color-error, 8%));
+      border: none;
+      color: $color-white;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
+        transform: translateY(-1px);
+      }
+    }
+  }
+
+  &__modal--confirm {
+    max-width: 420px;
+  }
+
+  &__confirm-icon {
+    font-size: 48px;
+    text-align: center;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__confirm-text {
+    font-size: $font-size-base;
+    color: $color-gray-700;
+    text-align: center;
+    line-height: $line-height-relaxed;
+    margin: 0 0 $spacing-xs;
+  }
+
+  &__confirm-sub {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    text-align: center;
+    margin: 0;
   }
 
   // ════════════════════════════════════════════════
