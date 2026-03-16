@@ -33,6 +33,80 @@ const CATEGORY_LABELS = {
   general: 'General',
 };
 
+// Business-friendly descriptions and impact for each workflow type
+const WORKFLOW_IMPACT = {
+  reminder_24h: {
+    description: 'Envía un recordatorio automático por WhatsApp a cada cliente 24 horas antes de su cita. El cliente puede confirmar o cancelar.',
+    impact: 'Reduce inasistencias hasta un 80%',
+    impactIcon: '📉',
+    impactColor: '#10B981',
+    tip: 'Esta es la automatización más importante. Un solo no-show evitado al mes ya paga tu suscripción.',
+  },
+  reminder_1h: {
+    description: 'Recordatorio final 1 hora antes. Ideal para clientes que confirmaron ayer pero podrían olvidarse.',
+    impact: 'Reduce cancelaciones de último minuto',
+    impactIcon: '⏰',
+    impactColor: '#F59E0B',
+    tip: 'Complemento perfecto del recordatorio 24h. Juntos reducen no-shows hasta un 80%.',
+  },
+  post_visit: {
+    description: 'Después de completar un servicio, pregunta al cliente cómo le fue. Las respuestas positivas alimentan Google Reviews.',
+    impact: 'Aumenta reseñas en Google 5x',
+    impactIcon: '⭐',
+    impactColor: '#8B5CF6',
+    tip: 'Los clientes que califican 4-5 reciben automáticamente un link a Google Reviews.',
+  },
+  birthday: {
+    description: 'Envía una felicitación personalizada con descuento el día del cumpleaños del cliente.',
+    impact: '25-30% de clientes redimen el descuento',
+    impactIcon: '🎂',
+    impactColor: '#EC4899',
+    tip: 'Es la automatización con mayor tasa de respuesta. Genera lealtad emocional.',
+  },
+  reactivation: {
+    description: 'Contacta automáticamente a clientes que no han visitado tu negocio en X días con un incentivo para que vuelvan.',
+    impact: 'Recupera clientes que estaban perdidos',
+    impactIcon: '🔄',
+    impactColor: '#EF4444',
+    tip: 'Recuperar 1 cliente inactivo por semana puede significar +$500,000 COP al mes.',
+  },
+  no_show_followup: {
+    description: 'Al día siguiente de una inasistencia, envía un mensaje amable para reagendar. Sin presión.',
+    impact: '40% de no-shows reagendan',
+    impactIcon: '📋',
+    impactColor: '#6366F1',
+    tip: 'No acuses al cliente. El tono amable recupera más citas que uno agresivo.',
+  },
+  welcome: {
+    description: 'Da la bienvenida a cada cliente nuevo apenas lo registras. Primera impresión profesional.',
+    impact: 'Mejora retención de clientes nuevos 35%',
+    impactIcon: '👋',
+    impactColor: '#10B981',
+    tip: 'Un cliente que recibe bienvenida tiene 3x más probabilidad de volver.',
+  },
+  auto_vip: {
+    description: 'Detecta clientes fieles automáticamente y los etiqueta como VIP cuando alcanzan X visitas. Les envía reconocimiento.',
+    impact: 'Los VIP gastan 67% más que el promedio',
+    impactIcon: '⭐',
+    impactColor: '#D97706',
+    tip: 'Tus VIP son tu 20% que genera el 80% de ingresos. Reconócelos.',
+  },
+  review_request: {
+    description: 'Después de una calificación positiva (4-5 estrellas), pide automáticamente una reseña en Google.',
+    impact: 'Multiplica tus reseñas en Google',
+    impactIcon: '🌟',
+    impactColor: '#F97316',
+    tip: 'Solo pide reseña a clientes satisfechos. Los insatisfechos van directo al dueño.',
+  },
+  daily_summary: {
+    description: 'Cada noche recibe un resumen del día en tu WhatsApp: citas completadas, no-shows, ingresos, clientes nuevos.',
+    impact: 'Controla tu negocio sin abrir la app',
+    impactIcon: '📊',
+    impactColor: '#0EA5E9',
+    tip: 'Ideal para dueños que tienen múltiples negocios o no están presentes todo el día.',
+  },
+};
+
 const getTimeAgo = (dateStr) => {
   if (!dateStr) return 'Nunca';
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -337,6 +411,21 @@ const Automations = () => {
                       {auto.enabled ? 'Activo' : 'Inactivo'}
                     </span>
                   </div>
+
+                  {/* Impact & Description */}
+                  {(() => {
+                    const impact = WORKFLOW_IMPACT[auto.workflow_type];
+                    if (!impact) return null;
+                    return (
+                      <>
+                        <p className={`${B}__card-desc`}>{impact.description}</p>
+                        <div className={`${B}__card-impact`} style={{ '--impact-color': impact.impactColor }}>
+                          <span className={`${B}__card-impact-icon`}>{impact.impactIcon}</span>
+                          <span className={`${B}__card-impact-text`}>{impact.impact}</span>
+                        </div>
+                      </>
+                    );
+                  })()}
 
                   {/* Config row: days, send hour, template */}
                   <div className={`${B}__card-config`}>

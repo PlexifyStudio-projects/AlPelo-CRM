@@ -547,6 +547,38 @@
     }
   }
 
+  // Description & Impact
+  &__card-desc {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    line-height: $line-height-relaxed;
+    padding: 0 $spacing-md 0 20px;
+    margin: 0 0 $spacing-xs;
+  }
+
+  &__card-impact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    margin: 0 $spacing-md $spacing-sm 20px;
+    border-radius: $border-radius-md;
+    background: rgba(0, 0, 0, 0.02);
+    border-left: 3px solid var(--impact-color, $color-primary);
+  }
+
+  &__card-impact-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  &__card-impact-text {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: var(--impact-color, $color-primary);
+    letter-spacing: $letter-spacing-tight;
+  }
+
   // Config section (days, hour, template)
   &__card-config {
     display: flex;
