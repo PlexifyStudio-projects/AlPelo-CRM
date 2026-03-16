@@ -318,6 +318,20 @@ async def factory_reset(request: dict = {}):
         raise HTTPException(status_code=500, detail=f"Factory reset failed: {str(e)[:200]}")
 
 
+@app.post("/api/dev/run-migrations")
+async def run_migrations_endpoint():
+    """Force run migrations without restarting the server."""
+    try:
+        _run_migrations(engine)
+        # Reset the tenant_cols_ready cache so safe_tid re-checks
+        from routes._helpers import _TENANT_COLS_READY
+        import routes._helpers
+        routes._helpers._TENANT_COLS_READY = None
+        return {"status": "ok", "message": "Migrations executed. Tenant columns should now exist."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)[:300]}
+
+
 @app.get("/")
 async def root():
     return {"status": "running", "api": "Plexify Studio"}
