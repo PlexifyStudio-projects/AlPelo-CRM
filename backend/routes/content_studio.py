@@ -272,17 +272,9 @@ async def generate_image(
     seed = int(datetime.utcnow().timestamp()) % 100000  # Unique seed per generation
     image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&seed={seed}&nologo=true"
 
-    # Verify the image actually generates by making a HEAD request
+    # Don't pre-fetch — Pollinations generates on-the-fly when the browser loads the URL.
+    # A HEAD/GET from the server would waste the rate limit quota.
     status = "completed"
-    try:
-        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
-            resp = await client.head(image_url)
-            if resp.status_code != 200:
-                status = "failed"
-                logger.warning(f"Pollinations image generation failed: {resp.status_code}")
-    except Exception as e:
-        logger.warning(f"Pollinations HEAD check failed (image may still work): {e}")
-        # Don't fail — the image URL often works even if HEAD fails
 
     record = GeneratedContent(
         tenant_id=tid,

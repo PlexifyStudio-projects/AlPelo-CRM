@@ -522,6 +522,8 @@ const ContentStudio = () => {
   const [selectedType, setSelectedType] = useState(null);
   const [metaStatus, setMetaStatus] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [genProgress, setGenProgress] = useState(0);
+  const [genMessage, setGenMessage] = useState('');
   const [generatedContent, setGeneratedContent] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showBrandKit, setShowBrandKit] = useState(false);
@@ -634,6 +636,22 @@ const ContentStudio = () => {
   }, [history]);
 
   // ─── Generators ──────────────────────────────────
+  // Progress simulation — smooth 0-100% during real API call
+  const startProgress = (messages) => {
+    setGenProgress(0);
+    setGenMessage(messages[0] || 'Iniciando...');
+    let progress = 0;
+    const msgInterval = Math.floor(90 / messages.length);
+    const interval = setInterval(() => {
+      progress += Math.random() * 4 + 1;
+      if (progress > 95) progress = 95; // Never reach 100 until done
+      setGenProgress(Math.floor(progress));
+      const msgIdx = Math.min(Math.floor(progress / msgInterval), messages.length - 1);
+      setGenMessage(messages[msgIdx]);
+    }, 300);
+    return () => { clearInterval(interval); setGenProgress(100); setGenMessage('Listo!'); };
+  };
+
   const handleGenerateImage = async () => {
     if (!imagePrompt.trim()) {
       addNotification('Escribe una descripcion para la imagen', 'error');
@@ -641,6 +659,14 @@ const ContentStudio = () => {
     }
     setGenerating(true);
     setPreviewShimmer(true);
+    const stopProgress = startProgress([
+      'Analizando tu descripción...',
+      'Configurando estilo visual...',
+      'Generando imagen con IA...',
+      'Aplicando paleta de colores...',
+      'Optimizando resolución...',
+      'Finalizando detalles...',
+    ]);
     try {
       const result = await contentGeneratorService.generateImage({
         prompt: imagePrompt,
@@ -652,6 +678,19 @@ const ContentStudio = () => {
           accent: brandKit.accent_color,
         } : null,
       });
+      stopProgress();
+      // Pre-load the image before showing preview
+      if (result.url || result.media_url) {
+        const imgUrl = result.url || result.media_url;
+        setGenMessage('Cargando imagen generada...');
+        await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = resolve;
+          img.onerror = resolve; // Still show even if preload fails
+          img.src = imgUrl;
+          setTimeout(resolve, 15000); // Max 15s wait
+        });
+      }
       setGeneratedContent({ type: 'image', ...result });
       setPublishCaption('');
       setShowPreview(true);
@@ -664,6 +703,7 @@ const ContentStudio = () => {
       reloadHistory();
       addNotification('Imagen generada exitosamente', 'success');
     } catch (err) {
+      stopProgress();
       addNotification(`Error generando imagen: ${err.message}`, 'error');
       setPreviewShimmer(false);
     }
@@ -676,6 +716,14 @@ const ContentStudio = () => {
       return;
     }
     setGenerating(true);
+    const stopProgress = startProgress([
+      'Analizando guión...',
+      'Preparando escena...',
+      'Generando video con IA...',
+      'Procesando audio...',
+      'Renderizando frames...',
+      'Compilando video final...',
+    ]);
     try {
       const result = await contentGeneratorService.generateVideo({
         script: videoScript,
@@ -684,6 +732,7 @@ const ContentStudio = () => {
         duration: videoDuration,
         background: videoBackground === 'solid' ? videoBgColor : videoBackground,
       });
+      stopProgress();
       setGeneratedContent({ type: 'video', ...result });
       setPublishCaption('');
       setShowPreview(true);
@@ -1928,6 +1977,34 @@ const ContentStudio = () => {
       {/* ════════════════════════════════════════════
           PREVIEW / PUBLISH MODAL
          ════════════════════════════════════════════ */}
+      {/* ════════════════════════════════════════════
+         GENERATION PROGRESS MODAL
+         ════════════════════════════════════════════ */}
+      {generating && createPortal(
+        <div className={`${B}__overlay ${B}__overlay--progress`}>
+          <div className={`${B}__progress-modal`} onClick={(e) => e.stopPropagation()}>
+            <div className={`${B}__progress-icon`}>
+              {selectedType === 'video' ? '🎬' : selectedType === 'story' ? '📱' : '🎨'}
+            </div>
+            <h3 className={`${B}__progress-title`}>
+              {selectedType === 'video' ? 'Generando video...' : 'Generando imagen...'}
+            </h3>
+            <p className={`${B}__progress-message`}>{genMessage}</p>
+            <div className={`${B}__progress-bar-track`}>
+              <div
+                className={`${B}__progress-bar-fill`}
+                style={{ width: `${genProgress}%` }}
+              />
+            </div>
+            <span className={`${B}__progress-percent`}>{genProgress}%</span>
+            <p className={`${B}__progress-tip`}>
+              Puedes seguir trabajando en otras secciones mientras se genera.
+            </p>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {showPreview && generatedContent && createPortal(
         <div className={`${B}__overlay`} onClick={() => setShowPreview(false)}>
           <div className={`${B}__preview-modal`} onClick={(e) => e.stopPropagation()}>
