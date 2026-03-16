@@ -1,5 +1,5 @@
 # ============================================================================
-# AlPelo - Lina IA Activity Logger
+# Plexify Studio - Lina IA Activity Logger
 # In-memory activity log for real-time monitoring of what Lina is doing.
 # Stores last 500 events with admin-friendly descriptions (no dev jargon).
 # ============================================================================

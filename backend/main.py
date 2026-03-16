@@ -138,97 +138,7 @@ def _run_migrations(engine):
     except Exception as e:
         print(f"[SEED] DeveloperLuis: {e}")
 
-    # --- Seed: AlPelo as first tenant ---
-    try:
-        with engine.begin() as conn:
-            existing = conn.execute(text(
-                "SELECT id FROM public.tenant WHERE slug = 'alpelo'"
-            )).fetchone()
-            if existing is None:
-                conn.execute(text(
-                    "INSERT INTO public.tenant (slug, name, business_type, owner_name, owner_phone, "
-                    "owner_email, ai_name, ai_model, plan, monthly_price, messages_limit, messages_used, "
-                    "city, country, is_active, ai_is_paused, timezone, currency, "
-                    "booking_url) "
-                    "VALUES (:slug, :name, :btype, :owner, :phone, "
-                    ":email, :ai_name, :ai_model, :plan, :price, :limit, 0, "
-                    ":city, :country, true, false, :tz, :currency, "
-                    ":booking)"
-                ), {
-                    "slug": "alpelo",
-                    "name": "AlPelo Peluqueria",
-                    "btype": "peluqueria",
-                    "owner": "Jaime",
-                    "phone": "+573147083182",
-                    "email": "somosalpelo@gmail.com",
-                    "ai_name": "Lina",
-                    "ai_model": "claude-sonnet-4-5-20250929",
-                    "plan": "standard",
-                    "price": 250000,
-                    "limit": 5000,
-                    "city": "Bucaramanga",
-                    "country": "CO",
-                    "tz": "America/Bogota",
-                    "currency": "COP",
-                    "booking": "https://book.weibook.co/alpelo-peluqueria",
-                })
-                print("[SEED] Created AlPelo tenant (slug=alpelo, plan=standard)")
-
-    except Exception as e:
-        print(f"[SEED] AlPelo tenant: {e}")
-
-    # --- Link admin users to AlPelo tenant ---
-    # Try multiple strategies: exact 'admin', 'admin_alpelo', or any non-dev admin without tenant
-    try:
-        with engine.begin() as conn:
-            tenant_row = conn.execute(text(
-                "SELECT id FROM public.tenant WHERE slug = 'alpelo'"
-            )).fetchone()
-            if tenant_row:
-                tid = tenant_row[0]
-                # Check if any admin is already linked to this tenant
-                already_linked = conn.execute(text(
-                    "SELECT id FROM public.admin WHERE tenant_id = :tid LIMIT 1"
-                ), {"tid": tid}).fetchone()
-
-                if not already_linked:
-                    # Try specific usernames first, then any non-dev admin
-                    for uname in ['admin', 'admin_alpelo']:
-                        admin_row = conn.execute(text(
-                            "SELECT id FROM public.admin WHERE username = :u"
-                        ), {"u": uname}).fetchone()
-                        if admin_row:
-                            conn.execute(text(
-                                "UPDATE public.admin SET tenant_id = :tid WHERE id = :aid"
-                            ), {"tid": tid, "aid": admin_row[0]})
-                            print(f"[MIGRATION] Linked '{uname}' (id={admin_row[0]}) to AlPelo tenant (id={tid})")
-                            break
-                    else:
-                        # Fallback: any admin user that's not dev and has no tenant
-                        fallback = conn.execute(text(
-                            "SELECT id, username FROM public.admin WHERE role != 'dev' AND (tenant_id IS NULL) LIMIT 1"
-                        )).fetchone()
-                        if fallback:
-                            conn.execute(text(
-                                "UPDATE public.admin SET tenant_id = :tid WHERE id = :aid"
-                            ), {"tid": tid, "aid": fallback[0]})
-                            print(f"[MIGRATION] Linked '{fallback[1]}' (id={fallback[0]}) to AlPelo tenant (id={tid})")
-    except Exception as e:
-        print(f"[MIGRATION] Link admin to tenant: {e}")
-
-    # --- Cleanup: remove duplicate admin_alpelo if 'admin' already linked ---
-    try:
-        with engine.begin() as conn:
-            real_admin = conn.execute(text(
-                "SELECT id FROM public.admin WHERE username = 'admin' AND tenant_id IS NOT NULL"
-            )).fetchone()
-            if real_admin:
-                conn.execute(text(
-                    "DELETE FROM public.admin WHERE username = 'admin_alpelo'"
-                ))
-                print("[CLEANUP] Removed duplicate admin_alpelo user")
-    except Exception as e:
-        print(f"[CLEANUP] admin_alpelo: {e}")
+    # NOTE: Tenants are created manually from the Developer panel.
 
 
 @asynccontextmanager
@@ -246,7 +156,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AlPelo API",
+    title="Plexify Studio API",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -386,7 +296,7 @@ async def factory_reset(request: dict = {}):
 
 @app.get("/")
 async def root():
-    return {"status": "running", "api": "AlPelo CRM"}
+    return {"status": "running", "api": "Plexify Studio"}
 
 
 

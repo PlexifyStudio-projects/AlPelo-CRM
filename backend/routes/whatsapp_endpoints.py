@@ -1,5 +1,5 @@
 # ============================================================================
-# AlPelo - WhatsApp Business API Endpoints
+# Plexify Studio - WhatsApp Business API Endpoints
 # Real Meta API integration + local DB storage + Lina IA auto-reply
 # ============================================================================
 
@@ -98,7 +98,7 @@ WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WA_BUSINESS_ID = os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
-WA_WEBHOOK_VERIFY_TOKEN = os.getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN", "alpelo_webhook_2026")
+WA_WEBHOOK_VERIFY_TOKEN = os.getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN", "plexify_webhook_2026")
 WA_BASE_URL = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}"
 
 
@@ -1469,7 +1469,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             ]
             if any(bp in clean_response.lower() for bp in BLOCKED_PHRASES):
                 print(f"[Lina IA] Blocked dismissive response for conv {conv_id}: {clean_response[:60]}")
-                clean_response = "Hola! Soy Lina de AlPelo Peluqueria. En que te puedo ayudar?"
+                clean_response = "Hola! Soy Lina. En que te puedo ayudar?"
 
             # Step 3.85: Strip markdown — WhatsApp doesn't render it properly
             clean_response = re.sub(r'\*\*(.+?)\*\*', r'\1', clean_response)  # **bold** → bold

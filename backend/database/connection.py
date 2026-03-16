@@ -25,7 +25,7 @@ def wait_for_db(retries=5, delay=5):
                 connect_args={
                     "options": "-c search_path=public",
                     "connect_timeout": 60,
-                    "application_name": "AlPelo-CRM",
+                    "application_name": "Plexify-Studio",
                     "client_encoding": "utf8",
                     "keepalives": 1,
                     "keepalives_idle": 30

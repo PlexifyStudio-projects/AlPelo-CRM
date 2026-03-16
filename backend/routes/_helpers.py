@@ -1,5 +1,5 @@
 # ============================================================================
-# AlPelo — Shared helper functions for routes
+# Plexify Studio — Shared helper functions for routes
 # Extracted from repeated patterns across ai_endpoints, whatsapp_endpoints, etc.
 # ============================================================================
 

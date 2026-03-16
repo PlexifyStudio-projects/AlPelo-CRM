@@ -10,7 +10,7 @@ const apiRequest = async (endpoint, options = {}) => {
     ...options,
   };
 
-  const token = localStorage.getItem('alpelo_token');
+  const token = localStorage.getItem('plexify_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

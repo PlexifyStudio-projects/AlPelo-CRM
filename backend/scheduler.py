@@ -1,5 +1,5 @@
 # ============================================================================
-# AlPelo - Background Scheduler (v3 — DB-aware, deploy-safe)
+# Plexify Studio - Background Scheduler (v3 — DB-aware, deploy-safe)
 # Runs periodic tasks:
 #   1. 30-min default reminder for ALL appointments
 #   2. Custom reminders from PENDIENTE notes (e.g. "avisame 10 min antes")
@@ -231,7 +231,7 @@ def _check_30min_reminders(db):
             if staff_first:
                 msg += f" con {staff_first}"
             msg += f" para {service_name}."
-            msg += "\n\nTe esperamos en AlPelo Peluqueria (Cabecera) 💈"
+            msg += "\n\nTe esperamos! 💈"
             msg += "\n\nSi necesitas cambiar la hora, avisame y lo ajustamos sin problema!"
 
             wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)

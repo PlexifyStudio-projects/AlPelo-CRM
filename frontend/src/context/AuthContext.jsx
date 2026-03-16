@@ -3,7 +3,7 @@ import authService from '../services/authService';
 
 const AuthContext = createContext(null);
 
-const STORAGE_KEY = 'alpelo_auth';
+const STORAGE_KEY = 'plexify_auth';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
