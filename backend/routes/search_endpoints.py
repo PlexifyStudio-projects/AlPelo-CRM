@@ -544,8 +544,9 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
         .filter(WhatsAppMessage.created_at >= today_start_dt)
         .filter(WhatsAppMessage.created_at <= today_end_dt)
     )
+    # WhatsAppMessage doesn't have tenant_id — filter through conversation join if needed
     if tid:
-        wa_msg_q = wa_msg_q.filter(WhatsAppMessage.tenant_id == tid)
+        wa_msg_q = wa_msg_q.join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id).filter(WhatsAppConversation.tenant_id == tid)
     whatsapp_messages_today = wa_msg_q.scalar() or 0
 
     wa_active_q = (
