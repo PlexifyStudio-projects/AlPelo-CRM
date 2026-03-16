@@ -393,6 +393,31 @@ class GeneratedContent(Base):
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
 
 
+class MessageTemplate(Base):
+    """WhatsApp message template — stored in DB, synced with Meta approval status.
+    These templates are what admins configure in the Plantillas page and what
+    Automations reference for sending messages."""
+    __tablename__ = "message_template"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    name = Column(String(200), nullable=False)  # Display name: "Recordatorio 24h"
+    slug = Column(String(100), nullable=False)  # Meta template name: "recordatorio_24h"
+    category = Column(String(50), nullable=False)  # recordatorio, post_servicio, reactivacion, promocion, fidelizacion, bienvenida
+    body = Column(Text, nullable=False)  # Message body with {{variables}}
+    variables = Column(JSON, default=list)  # ["nombre", "hora", "profesional"]
+    status = Column(String(20), nullable=False, default="draft")  # draft, pending, approved, rejected
+    language = Column(String(10), nullable=False, default="es")
+    times_sent = Column(Integer, default=0)
+    response_rate = Column(Float, default=0)
+    last_sent_at = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
 # ============================================================================
 # AUTOMATED WORKFLOWS — WhatsApp automation engine
 # ============================================================================

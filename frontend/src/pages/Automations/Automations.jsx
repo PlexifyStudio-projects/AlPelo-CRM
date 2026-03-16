@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
 import automationService from '../../services/automationService';
+import templateService from '../../services/templateService';
 
 const B = 'automations';
 
@@ -55,16 +56,19 @@ const Automations = () => {
   const [editMessage, setEditMessage] = useState('');
   const [activeTab, setActiveTab] = useState('workflows'); // workflows | history
   const [filterCategory, setFilterCategory] = useState('all');
+  const [approvedTemplates, setApprovedTemplates] = useState([]);
 
   // Load data
   const loadData = useCallback(async () => {
     try {
-      const [wfs, st] = await Promise.all([
+      const [wfs, st, tpls] = await Promise.all([
         automationService.getAutomations(),
         automationService.getAutomationStats(),
+        templateService.getApprovedTemplates(),
       ]);
       setAutomations(wfs || []);
       setStats(st || {});
+      setApprovedTemplates(tpls || []);
     } catch (e) {
       console.error('Failed to load automations:', e);
       addNotification('Error cargando automatizaciones', 'error');
@@ -368,18 +372,27 @@ const Automations = () => {
                       </div>
                     )}
 
-                    {/* Template selector */}
+                    {/* Template selector — from approved templates in Plantillas */}
                     {auto.channel !== 'interno' && (
                       <div className={`${B}__card-config-item ${B}__card-config-item--full`}>
-                        <span className={`${B}__card-config-label`}>Plantilla Meta:</span>
-                        <input
-                          type="text"
-                          className={`${B}__card-config-input`}
+                        <span className={`${B}__card-config-label`}>Plantilla aprobada:</span>
+                        <select
+                          className={`${B}__card-config-select ${B}__card-config-select--wide`}
                           value={auto.template_name || ''}
-                          placeholder="Nombre de plantilla aprobada en Meta"
                           onChange={e => handleConfigChange(auto.id, 'template_name', e.target.value)}
-                        />
-                        {!auto.template_name && (
+                        >
+                          <option value="">— Seleccionar plantilla —</option>
+                          {approvedTemplates.map(tpl => (
+                            <option key={tpl.id} value={tpl.slug}>
+                              {tpl.name} ({tpl.category})
+                            </option>
+                          ))}
+                        </select>
+                        {auto.template_name ? (
+                          <span className={`${B}__card-config-hint ${B}__card-config-hint--ok`}>
+                            ✅ Plantilla "{auto.template_name}" configurada — funciona siempre
+                          </span>
+                        ) : (
                           <span className={`${B}__card-config-hint`}>
                             ⚠️ Sin plantilla: solo funciona si el cliente escribió en las últimas 24h
                           </span>
