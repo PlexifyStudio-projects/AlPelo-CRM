@@ -211,36 +211,58 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
     if data.get("wa_phone_display"):
         tenant.wa_phone_display = data["wa_phone_display"]
 
-    db.add(tenant)
-    db.commit()
-    db.refresh(tenant)
-
-    # Create admin user with credentials from the form (manual, not auto-generated)
+    # Validate admin credentials BEFORE creating anything
     admin_username = (data.get("admin_username") or "").strip()
     admin_password = (data.get("admin_password") or "").strip()
 
     if not admin_username or not admin_password:
         raise HTTPException(status_code=400, detail="Usuario y contraseña del admin son requeridos")
 
-    # Check username doesn't already exist
     existing_admin = db.query(Admin).filter(Admin.username == admin_username).first()
     if existing_admin:
         raise HTTPException(status_code=400, detail=f"El usuario '{admin_username}' ya existe")
 
-    admin_user = Admin(
-        name=data.get("owner_name") or f"Admin {name}",
-        email=data.get("owner_email") or f"{slug}@plexify.studio",
-        phone=data.get("owner_phone") or "",
-        username=admin_username,
-        password=hash_password(admin_password),
-        role="admin",
-        is_active=True,
-        tenant_id=tenant.id,
-    )
-    db.add(admin_user)
-    db.commit()
+    # Create both tenant + admin in a single transaction (atomic)
+    try:
+        db.add(tenant)
+        db.flush()  # Get tenant.id without committing
+
+        admin_user = Admin(
+            name=data.get("owner_name") or f"Admin {name}",
+            email=data.get("owner_email") or f"{slug}@plexify.studio",
+            phone=data.get("owner_phone") or "",
+            username=admin_username,
+            password=hash_password(admin_password),
+            role="admin",
+            is_active=True,
+            tenant_id=tenant.id,
+        )
+        db.add(admin_user)
+        db.commit()
+        db.refresh(tenant)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al crear agencia: {str(e)[:200]}")
 
     return _safe_tenant_dict(tenant, db)
+
+
+@router.delete("/dev/tenants/{tenant_id}")
+def delete_tenant(tenant_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Delete a tenant and its admin user. Use with caution."""
+    _require_dev(user)
+
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Agencia no encontrada")
+
+    # Delete admin users linked to this tenant
+    db.query(Admin).filter(Admin.tenant_id == tenant_id, Admin.role != 'dev').delete()
+    # Delete the tenant
+    db.delete(tenant)
+    db.commit()
+
+    return {"ok": True, "message": f"Agencia '{tenant.name}' eliminada"}
 
 
 @router.put("/dev/tenants/{tenant_id}")
