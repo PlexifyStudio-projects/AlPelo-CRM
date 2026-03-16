@@ -77,13 +77,17 @@ def _strip_accents(text: str) -> str:
     return ''.join(c for c in nfkd if not unicodedata.combining(c))
 
 
-def find_client(db: Session, search_name: str = "", client_id: str = "", phone: str = ""):
+def find_client(db: Session, search_name: str = "", client_id: str = "", phone: str = "", tenant_id=None):
     """Find a client by client_id, name, or phone. Returns first match or None.
     Uses accent-insensitive matching and phone normalization for flexible search.
+    When tenant_id is provided, results are scoped to that tenant.
     """
     # 1) Exact client_id match
     if client_id:
-        c = db.query(Client).filter(Client.client_id == client_id, Client.is_active == True).first()
+        q = db.query(Client).filter(Client.client_id == client_id, Client.is_active == True)
+        if tenant_id:
+            q = q.filter(Client.tenant_id == tenant_id)
+        c = q.first()
         if c:
             return c
 
@@ -91,13 +95,19 @@ def find_client(db: Session, search_name: str = "", client_id: str = "", phone: 
     if phone:
         clean = normalize_phone(phone)
         if len(clean) >= 7:
-            c = db.query(Client).filter(Client.phone.contains(clean[-10:]), Client.is_active == True).first()
+            q = db.query(Client).filter(Client.phone.contains(clean[-10:]), Client.is_active == True)
+            if tenant_id:
+                q = q.filter(Client.tenant_id == tenant_id)
+            c = q.first()
             if c:
                 return c
 
     # 3) Search by name — exact ILIKE first
     if search_name:
-        c = db.query(Client).filter(Client.name.ilike(f"%{search_name}%"), Client.is_active == True).first()
+        q = db.query(Client).filter(Client.name.ilike(f"%{search_name}%"), Client.is_active == True)
+        if tenant_id:
+            q = q.filter(Client.tenant_id == tenant_id)
+        c = q.first()
         if c:
             return c
 
@@ -106,8 +116,10 @@ def find_client(db: Session, search_name: str = "", client_id: str = "", phone: 
         search_parts = search_clean.split()
         if search_parts:
             # Fetch candidates matching at least the first word (performance filter)
-            first_word = search_parts[0]
-            candidates = db.query(Client).filter(Client.is_active == True).all()
+            q = db.query(Client).filter(Client.is_active == True)
+            if tenant_id:
+                q = q.filter(Client.tenant_id == tenant_id)
+            candidates = q.all()
             for candidate in candidates:
                 candidate_clean = _strip_accents(candidate.name).lower()
                 # Check if all search parts appear in the candidate name
@@ -121,39 +133,56 @@ def find_client(db: Session, search_name: str = "", client_id: str = "", phone: 
 # FIND CONVERSATION — By name, phone, or client link
 # ============================================================================
 
-def find_conversation(db: Session, search_name: str = "", phone: str = ""):
-    """Find a WhatsApp conversation by contact name, linked client name, or phone."""
+def find_conversation(db: Session, search_name: str = "", phone: str = "", tenant_id=None):
+    """Find a WhatsApp conversation by contact name, linked client name, or phone.
+    When tenant_id is provided, results are scoped to that tenant.
+    """
     if search_name:
         # Try by conversation contact name
-        conv = db.query(WhatsAppConversation).filter(
+        q = db.query(WhatsAppConversation).filter(
             WhatsAppConversation.wa_contact_name.ilike(f"%{search_name}%")
-        ).first()
+        )
+        if tenant_id:
+            q = q.filter(WhatsAppConversation.tenant_id == tenant_id)
+        conv = q.first()
         if conv:
             return conv
 
         # Try by linked CRM client name
-        client = db.query(Client).filter(Client.name.ilike(f"%{search_name}%")).first()
+        cq = db.query(Client).filter(Client.name.ilike(f"%{search_name}%"))
+        if tenant_id:
+            cq = cq.filter(Client.tenant_id == tenant_id)
+        client = cq.first()
         if client:
-            conv = db.query(WhatsAppConversation).filter(
+            q = db.query(WhatsAppConversation).filter(
                 WhatsAppConversation.client_id == client.id
-            ).first()
+            )
+            if tenant_id:
+                q = q.filter(WhatsAppConversation.tenant_id == tenant_id)
+            conv = q.first()
             if conv:
                 return conv
             # Try by client phone in conversation
             if client.phone:
                 clean = normalize_phone(client.phone)
-                conv = db.query(WhatsAppConversation).filter(
+                q = db.query(WhatsAppConversation).filter(
                     WhatsAppConversation.wa_contact_phone.contains(clean[-10:])
-                ).first()
+                )
+                if tenant_id:
+                    q = q.filter(WhatsAppConversation.tenant_id == tenant_id)
+                conv = q.first()
                 if conv:
                     return conv
 
     if phone:
         clean = normalize_phone(phone)
         if len(clean) >= 7:
-            conv = db.query(WhatsAppConversation).filter(
+            q = db.query(WhatsAppConversation).filter(
                 WhatsAppConversation.wa_contact_phone.contains(clean[-10:])
-            ).first()
+            )
+            if tenant_id:
+                q = q.filter(WhatsAppConversation.tenant_id == tenant_id)
+            conv = q.first()
             if conv:
                 return conv
 

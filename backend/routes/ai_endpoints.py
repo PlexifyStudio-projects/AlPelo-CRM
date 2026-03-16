@@ -330,11 +330,17 @@ def _auto_create_client(db: Session, name: str, phone: str, tenant_id: int = Non
     Returns the new Client or None if phone already exists."""
     clean_phone = normalize_phone(phone)
     # Check if phone already exists (avoid duplicates)
-    existing = db.query(Client).filter(Client.phone.contains(clean_phone[-10:]), Client.is_active == True).first()
+    q_ac = db.query(Client).filter(Client.phone.contains(clean_phone[-10:]), Client.is_active == True)
+    if tenant_id:
+        q_ac = q_ac.filter(Client.tenant_id == tenant_id)
+    existing = q_ac.first()
     if existing:
         return existing
 
-    last = db.query(Client).order_by(Client.id.desc()).first()
+    q_ac_last = db.query(Client)
+    if tenant_id:
+        q_ac_last = q_ac_last.filter(Client.tenant_id == tenant_id)
+    last = q_ac_last.order_by(Client.id.desc()).first()
     next_num = (last.id + 1) if last else 1
     client_id = f"C{next_num:05d}"
 
@@ -368,11 +374,17 @@ def _execute_action(action: dict, db: Session) -> str:
         if not name or not phone:
             return "ERROR: Necesito al menos nombre y telefono para crear un cliente."
 
-        last = db.query(Client).order_by(Client.id.desc()).first()
+        q_last = db.query(Client)
+        if _tid:
+            q_last = q_last.filter(Client.tenant_id == _tid)
+        last = q_last.order_by(Client.id.desc()).first()
         next_num = (last.id + 1) if last else 1
         client_id = f"M{20200 + next_num}"
 
-        existing = db.query(Client).filter(Client.phone == phone, Client.is_active == True).first()
+        q_exist = db.query(Client).filter(Client.phone == phone, Client.is_active == True)
+        if _tid:
+            q_exist = q_exist.filter(Client.tenant_id == _tid)
+        existing = q_exist.first()
         if existing:
             return f"Ya existe un cliente con ese telefono: {existing.name} ({existing.client_id})"
 
@@ -391,7 +403,7 @@ def _execute_action(action: dict, db: Session) -> str:
         return f"Cliente creado: {client.name} (ID: {client.client_id}, Tel: {client.phone})"
 
     elif action_type == "update_client":
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""), tenant_id=_tid)
         if not client:
             return "ERROR: No encontre al cliente. Verifica el nombre o ID."
 
@@ -403,7 +415,7 @@ def _execute_action(action: dict, db: Session) -> str:
         return f"Cliente {client.name} actualizado."
 
     elif action_type == "delete_client":
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""), tenant_id=_tid)
         if not client:
             return "ERROR: No encontre al cliente."
         client.is_active = False
@@ -412,14 +424,14 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- NOTES ----
     elif action_type == "add_note":
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", ""), tenant_id=_tid)
         auto_created = False
         if not client:
             # Auto-create client if we have enough data
             auto_name = (action.get("search_name") or action.get("client_name") or "").strip()
             auto_phone = (action.get("client_phone") or action.get("phone") or "").strip()
             if auto_name and auto_phone:
-                client = _auto_create_client(db, auto_name, auto_phone)
+                client = _auto_create_client(db, auto_name, auto_phone, tenant_id=_tid)
                 auto_created = client is not None
             if not client:
                 return "ERROR: No encontre al cliente."
@@ -431,7 +443,7 @@ def _execute_action(action: dict, db: Session) -> str:
 
     elif action_type == "complete_task":
         # Find and mark a PENDIENTE/RECORDATORIO note as completed
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""), tenant_id=_tid)
         note_id = action.get("note_id")
         keyword = action.get("keyword", "")
 
@@ -486,11 +498,17 @@ def _execute_action(action: dict, db: Session) -> str:
         staff = None
         staff_id = action.get("staff_id")
         if staff_id:
-            staff = db.query(Staff).filter(Staff.id == staff_id).first()
+            q = db.query(Staff).filter(Staff.id == staff_id)
+            if _tid:
+                q = q.filter(Staff.tenant_id == _tid)
+            staff = q.first()
         if not staff:
             name = action.get("search_name", "")
             if name:
-                staff = db.query(Staff).filter(Staff.name.ilike(f"%{name}%")).first()
+                q = db.query(Staff).filter(Staff.name.ilike(f"%{name}%"))
+                if _tid:
+                    q = q.filter(Staff.tenant_id == _tid)
+                staff = q.first()
         if not staff:
             return "ERROR: No encontre al miembro del equipo."
 
@@ -513,6 +531,7 @@ def _execute_action(action: dict, db: Session) -> str:
             specialty=action.get("specialty"),
             bio=action.get("bio"),
             skills=action.get("skills", []),
+            tenant_id=_tid,
         )
         db.add(staff)
         db.commit()
@@ -521,11 +540,14 @@ def _execute_action(action: dict, db: Session) -> str:
 
     # ---- VISITS ----
     elif action_type == "add_visit":
-        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""))
+        client = find_client(db, search_name=action.get("search_name", ""), client_id=action.get("client_id", ""), phone=action.get("client_phone", "") or action.get("phone", ""), tenant_id=_tid)
         if not client:
             return "ERROR: No encontre al cliente."
         staff_id = action.get("staff_id")
-        staff = db.query(Staff).filter(Staff.id == staff_id).first() if staff_id else None
+        staff_q = db.query(Staff).filter(Staff.id == staff_id)
+        if _tid:
+            staff_q = staff_q.filter(Staff.tenant_id == _tid)
+        staff = staff_q.first() if staff_id else None
         visit = VisitHistory(
             tenant_id=_tid,
             client_id=client.id,
@@ -550,7 +572,7 @@ def _execute_action(action: dict, db: Session) -> str:
             return "ERROR: Necesito el texto del mensaje."
 
         # Find conversation by client name or phone
-        conv = find_conversation(db, search_name=search_name, phone=phone)
+        conv = find_conversation(db, search_name=search_name, phone=phone, tenant_id=_tid)
 
         if not conv:
             return f"ERROR: No encontre una conversacion de WhatsApp para '{search_name or phone}'. Verifica que exista un chat activo."
@@ -612,7 +634,10 @@ def _execute_action(action: dict, db: Session) -> str:
         target_phone = phone
         client_name = search_name
         if search_name and not phone:
-            client = db.query(Client).filter(Client.name.ilike(f"%{search_name}%"), Client.is_active == True).first()
+            q_tmpl_client = db.query(Client).filter(Client.name.ilike(f"%{search_name}%"), Client.is_active == True)
+            if _tid:
+                q_tmpl_client = q_tmpl_client.filter(Client.tenant_id == _tid)
+            client = q_tmpl_client.first()
             if client:
                 target_phone = client.phone
                 client_name = client.name
@@ -650,12 +675,19 @@ def _execute_action(action: dict, db: Session) -> str:
             return f"ERROR: Fallo la conexion con WhatsApp: {str(e)}"
 
         # Get or create conversation
-        conv = db.query(WhatsAppConversation).filter(
+        q_tmpl_conv = db.query(WhatsAppConversation).filter(
             WhatsAppConversation.wa_contact_phone.contains(phone_clean[-10:])
-        ).first()
+        )
+        if _tid:
+            q_tmpl_conv = q_tmpl_conv.filter(WhatsAppConversation.tenant_id == _tid)
+        conv = q_tmpl_conv.first()
         if not conv:
-            cl = db.query(Client).filter(Client.phone.contains(phone_clean[-10:])).first()
+            q_tmpl_cl = db.query(Client).filter(Client.phone.contains(phone_clean[-10:]))
+            if _tid:
+                q_tmpl_cl = q_tmpl_cl.filter(Client.tenant_id == _tid)
+            cl = q_tmpl_cl.first()
             conv = WhatsAppConversation(
+                tenant_id=_tid,
                 wa_contact_phone=target_phone,
                 wa_contact_name=client_name or (cl.name if cl else None),
                 client_id=cl.id if cl else None,
@@ -689,7 +721,10 @@ def _execute_action(action: dict, db: Session) -> str:
         limit = action.get("limit", 50)
 
         # Build client query
-        clients_all = db.query(Client).filter(Client.is_active == True).all()
+        q_bulk = db.query(Client).filter(Client.is_active == True)
+        if _tid:
+            q_bulk = q_bulk.filter(Client.tenant_id == _tid)
+        clients_all = q_bulk.all()
         enriched = [compute_client_list_item(c, db) for c in clients_all]
 
         # Apply filters
@@ -782,7 +817,10 @@ def _execute_action(action: dict, db: Session) -> str:
         status_filter = action.get("status")
         limit = action.get("limit", 20)
 
-        clients_all = db.query(Client).filter(Client.is_active == True).all()
+        q_lcf = db.query(Client).filter(Client.is_active == True)
+        if _tid:
+            q_lcf = q_lcf.filter(Client.tenant_id == _tid)
+        clients_all = q_lcf.all()
         enriched = [compute_client_list_item(c, db) for c in clients_all]
 
         filtered = enriched
@@ -808,11 +846,17 @@ def _execute_action(action: dict, db: Session) -> str:
         staff = None
         staff_id = action.get("staff_id")
         if staff_id:
-            staff = db.query(Staff).filter(Staff.id == staff_id).first()
+            q_ds = db.query(Staff).filter(Staff.id == staff_id)
+            if _tid:
+                q_ds = q_ds.filter(Staff.tenant_id == _tid)
+            staff = q_ds.first()
         if not staff:
             name = action.get("search_name", "")
             if name:
-                staff = db.query(Staff).filter(Staff.name.ilike(f"%{name}%")).first()
+                q_ds = db.query(Staff).filter(Staff.name.ilike(f"%{name}%"))
+                if _tid:
+                    q_ds = q_ds.filter(Staff.tenant_id == _tid)
+                staff = q_ds.first()
         if not staff:
             return "ERROR: No encontre al miembro del equipo."
         staff.is_active = False
@@ -824,7 +868,7 @@ def _execute_action(action: dict, db: Session) -> str:
         search_name = (action.get("search_name") or action.get("name") or action.get("client") or "").strip()
         phone = (action.get("phone") or action.get("number") or "").strip()
 
-        conv = find_conversation(db, search_name=search_name, phone=phone)
+        conv = find_conversation(db, search_name=search_name, phone=phone, tenant_id=_tid)
 
         if not conv:
             return f"ERROR: No encontre la conversacion de '{search_name or phone}'."
@@ -841,7 +885,7 @@ def _execute_action(action: dict, db: Session) -> str:
         search_name = (action.get("search_name") or action.get("name") or action.get("client") or "").strip()
         phone = (action.get("phone") or action.get("number") or "").strip()
 
-        conv = find_conversation(db, search_name=search_name, phone=phone)
+        conv = find_conversation(db, search_name=search_name, phone=phone, tenant_id=_tid)
         if not conv:
             return f"ERROR: No encontre la conversacion de '{search_name or phone}'."
 
@@ -925,7 +969,10 @@ def _execute_action(action: dict, db: Session) -> str:
         )
 
     elif action_type == "get_inbox_summary":
-        convs = db.query(WhatsAppConversation).order_by(WhatsAppConversation.last_message_at.desc()).all()
+        q_inbox = db.query(WhatsAppConversation)
+        if _tid:
+            q_inbox = q_inbox.filter(WhatsAppConversation.tenant_id == _tid)
+        convs = q_inbox.order_by(WhatsAppConversation.last_message_at.desc()).all()
         if not convs:
             return "No hay conversaciones de WhatsApp."
 
@@ -950,7 +997,7 @@ def _execute_action(action: dict, db: Session) -> str:
         phone = (action.get("phone") or action.get("number") or "").strip()
         enable = action.get("enable", True)
 
-        conv = find_conversation(db, search_name=search_name, phone=phone)
+        conv = find_conversation(db, search_name=search_name, phone=phone, tenant_id=_tid)
 
         if not conv:
             return f"ERROR: No encontre la conversacion de '{search_name or phone}'."
@@ -967,7 +1014,7 @@ def _execute_action(action: dict, db: Session) -> str:
         phone = (action.get("phone") or action.get("number") or "").strip()
         tags = action.get("tags", [])
 
-        conv = find_conversation(db, search_name=search_name, phone=phone)
+        conv = find_conversation(db, search_name=search_name, phone=phone, tenant_id=_tid)
 
         if not conv:
             return f"ERROR: No encontre la conversacion de '{search_name or phone}'."
@@ -1009,6 +1056,8 @@ def _execute_action(action: dict, db: Session) -> str:
     elif action_type == "list_services":
         category_filter = action.get("category")
         query = db.query(Service).filter(Service.is_active == True)
+        if _tid:
+            query = query.filter(Service.tenant_id == _tid)
         if category_filter:
             query = query.filter(Service.category.ilike(f"%{category_filter}%"))
         services = query.order_by(Service.category, Service.name).all()
@@ -1037,6 +1086,7 @@ def _execute_action(action: dict, db: Session) -> str:
             duration_minutes=action.get("duration_minutes"),
             description=action.get("description"),
             staff_ids=action.get("staff_ids", []),
+            tenant_id=_tid,
         )
         db.add(svc)
         db.commit()
@@ -1047,11 +1097,17 @@ def _execute_action(action: dict, db: Session) -> str:
         svc = None
         svc_id = action.get("service_id")
         if svc_id:
-            svc = db.query(Service).filter(Service.id == svc_id).first()
+            q_us = db.query(Service).filter(Service.id == svc_id)
+            if _tid:
+                q_us = q_us.filter(Service.tenant_id == _tid)
+            svc = q_us.first()
         if not svc:
             name = action.get("search_name", "")
             if name:
-                svc = db.query(Service).filter(Service.name.ilike(f"%{name}%"), Service.is_active == True).first()
+                q_us = db.query(Service).filter(Service.name.ilike(f"%{name}%"), Service.is_active == True)
+                if _tid:
+                    q_us = q_us.filter(Service.tenant_id == _tid)
+                svc = q_us.first()
         if not svc:
             return "ERROR: No encontre el servicio."
         allowed = ("name", "category", "price", "duration_minutes", "description", "staff_ids", "is_active")
@@ -1067,11 +1123,17 @@ def _execute_action(action: dict, db: Session) -> str:
         svc = None
         svc_id = action.get("service_id")
         if svc_id:
-            svc = db.query(Service).filter(Service.id == svc_id).first()
+            q_delsvc = db.query(Service).filter(Service.id == svc_id)
+            if _tid:
+                q_delsvc = q_delsvc.filter(Service.tenant_id == _tid)
+            svc = q_delsvc.first()
         if not svc:
             name = action.get("search_name", "")
             if name:
-                svc = db.query(Service).filter(Service.name.ilike(f"%{name}%"), Service.is_active == True).first()
+                q_delsvc = db.query(Service).filter(Service.name.ilike(f"%{name}%"), Service.is_active == True)
+                if _tid:
+                    q_delsvc = q_delsvc.filter(Service.tenant_id == _tid)
+                svc = q_delsvc.first()
         if not svc:
             return "ERROR: No encontre el servicio."
         svc.is_active = False
@@ -1081,6 +1143,8 @@ def _execute_action(action: dict, db: Session) -> str:
     # ── APPOINTMENTS ──────────────────────────────────
     elif action_type == "list_appointments":
         q = db.query(Appointment)
+        if _tid:
+            q = q.filter(Appointment.tenant_id == _tid)
         if action.get("date"):
             q = q.filter(Appointment.date == action["date"])
         if action.get("date_from"):
@@ -1088,7 +1152,10 @@ def _execute_action(action: dict, db: Session) -> str:
         if action.get("date_to"):
             q = q.filter(Appointment.date <= action["date_to"])
         if action.get("staff_name"):
-            st = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%")).first()
+            q_st = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%"))
+            if _tid:
+                q_st = q_st.filter(Staff.tenant_id == _tid)
+            st = q_st.first()
             if st:
                 q = q.filter(Appointment.staff_id == st.id)
         if action.get("status"):
@@ -1115,18 +1182,30 @@ def _execute_action(action: dict, db: Session) -> str:
         # Find or resolve staff
         staff_obj = None
         if action.get("staff_id"):
-            staff_obj = db.query(Staff).filter(Staff.id == action["staff_id"]).first()
+            q_cas = db.query(Staff).filter(Staff.id == action["staff_id"])
+            if _tid:
+                q_cas = q_cas.filter(Staff.tenant_id == _tid)
+            staff_obj = q_cas.first()
         elif action.get("staff_name"):
-            staff_obj = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%"), Staff.is_active == True).first()
+            q_cas = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%"), Staff.is_active == True)
+            if _tid:
+                q_cas = q_cas.filter(Staff.tenant_id == _tid)
+            staff_obj = q_cas.first()
         if not staff_obj:
             return "ERROR: No encontre al profesional."
 
         # Find or resolve service
         svc_obj = None
         if action.get("service_id"):
-            svc_obj = db.query(Service).filter(Service.id == action["service_id"]).first()
+            q_casvc = db.query(Service).filter(Service.id == action["service_id"])
+            if _tid:
+                q_casvc = q_casvc.filter(Service.tenant_id == _tid)
+            svc_obj = q_casvc.first()
         elif action.get("service_name"):
-            svc_obj = db.query(Service).filter(Service.name.ilike(f"%{action['service_name']}%"), Service.is_active == True).first()
+            q_casvc = db.query(Service).filter(Service.name.ilike(f"%{action['service_name']}%"), Service.is_active == True)
+            if _tid:
+                q_casvc = q_casvc.filter(Service.tenant_id == _tid)
+            svc_obj = q_casvc.first()
         if not svc_obj:
             return "ERROR: No encontre el servicio."
 
@@ -1138,13 +1217,16 @@ def _execute_action(action: dict, db: Session) -> str:
         apt_date_obj = date.fromisoformat(apt_date) if isinstance(apt_date, str) else apt_date
 
         # --- DUPLICATE CHECK: same client + same staff + same date + same time ---
-        duplicate = db.query(Appointment).filter(
+        q_dup = db.query(Appointment).filter(
             Appointment.client_name.ilike(f"%{client_name}%"),
             Appointment.staff_id == staff_obj.id,
             Appointment.date == apt_date_obj,
             Appointment.time == apt_time,
             Appointment.status.in_(["confirmed", "completed"]),
-        ).first()
+        )
+        if _tid:
+            q_dup = q_dup.filter(Appointment.tenant_id == _tid)
+        duplicate = q_dup.first()
         if duplicate:
             return f"DUPLICADO: Ya existe una cita para {client_name} con {staff_obj.name} el {apt_date} a las {apt_time} (ID:{duplicate.id}). No se creo otra."
 
@@ -1155,11 +1237,14 @@ def _execute_action(action: dict, db: Session) -> str:
         req_start = req_hour * 60 + req_min
         req_end = req_start + duration_mins
 
-        existing_apts = db.query(Appointment).filter(
+        q_exist_apts = db.query(Appointment).filter(
             Appointment.staff_id == staff_obj.id,
             Appointment.date == apt_date_obj,
             Appointment.status.in_(["confirmed", "completed"]),
-        ).all()
+        )
+        if _tid:
+            q_exist_apts = q_exist_apts.filter(Appointment.tenant_id == _tid)
+        existing_apts = q_exist_apts.all()
 
         conflicts = []
         for ea in existing_apts:
@@ -1190,16 +1275,22 @@ def _execute_action(action: dict, db: Session) -> str:
             next_free_str = f"{next_free_h:02d}:{next_free_m:02d}"
 
             # Find other available staff at the requested time
-            all_staff = db.query(Staff).filter(Staff.is_active == True).all()
+            q_all_staff = db.query(Staff).filter(Staff.is_active == True)
+            if _tid:
+                q_all_staff = q_all_staff.filter(Staff.tenant_id == _tid)
+            all_staff = q_all_staff.all()
             available_staff = []
             for s in all_staff:
                 if s.id == staff_obj.id:
                     continue
-                s_conflicts = db.query(Appointment).filter(
+                q_sc = db.query(Appointment).filter(
                     Appointment.staff_id == s.id,
                     Appointment.date == apt_date_obj,
                     Appointment.status.in_(["confirmed", "completed"]),
-                ).all()
+                )
+                if _tid:
+                    q_sc = q_sc.filter(Appointment.tenant_id == _tid)
+                s_conflicts = q_sc.all()
                 s_busy = False
                 for sa in s_conflicts:
                     try:
@@ -1225,7 +1316,7 @@ def _execute_action(action: dict, db: Session) -> str:
 
         # --- All clear — create the appointment ---
         # Try to find existing client or auto-create if phone provided
-        client_obj = find_client(db, search_name=client_name, phone=client_phone)
+        client_obj = find_client(db, search_name=client_name, phone=client_phone, tenant_id=_tid)
         auto_created_msg = ""
         if not client_obj and client_phone:
             client_obj = _auto_create_client(db, client_name, client_phone, tenant_id=_tid)
@@ -1256,7 +1347,10 @@ def _execute_action(action: dict, db: Session) -> str:
         apt = None
         apt_id = action.get("appointment_id")
         if apt_id:
-            apt = db.query(Appointment).filter(Appointment.id == apt_id).first()
+            q_ua = db.query(Appointment).filter(Appointment.id == apt_id)
+            if _tid:
+                q_ua = q_ua.filter(Appointment.tenant_id == _tid)
+            apt = q_ua.first()
         if not apt:
             return "ERROR: No encontre la cita. Necesito appointment_id."
 
@@ -1271,7 +1365,10 @@ def _execute_action(action: dict, db: Session) -> str:
             apt.time = action["time"]
             changed.append(f"hora={action['time']}")
         if action.get("staff_name"):
-            st = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%"), Staff.is_active == True).first()
+            q_ua_st = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%"), Staff.is_active == True)
+            if _tid:
+                q_ua_st = q_ua_st.filter(Staff.tenant_id == _tid)
+            st = q_ua_st.first()
             if st:
                 apt.staff_id = st.id
                 changed.append(f"profesional={st.name}")
@@ -1282,7 +1379,10 @@ def _execute_action(action: dict, db: Session) -> str:
             apt.notes = action["notes"]
             changed.append("notas")
         if action.get("service_name"):
-            svc = db.query(Service).filter(Service.name.ilike(f"%{action['service_name']}%"), Service.is_active == True).first()
+            q_ua_svc = db.query(Service).filter(Service.name.ilike(f"%{action['service_name']}%"), Service.is_active == True)
+            if _tid:
+                q_ua_svc = q_ua_svc.filter(Service.tenant_id == _tid)
+            svc = q_ua_svc.first()
             if svc:
                 apt.service_id = svc.id
                 apt.duration_minutes = svc.duration_minutes
@@ -1297,7 +1397,10 @@ def _execute_action(action: dict, db: Session) -> str:
         apt_id = action.get("appointment_id")
         if not apt_id:
             return "ERROR: Necesito appointment_id para eliminar."
-        apt = db.query(Appointment).filter(Appointment.id == apt_id).first()
+        q_da = db.query(Appointment).filter(Appointment.id == apt_id)
+        if _tid:
+            q_da = q_da.filter(Appointment.tenant_id == _tid)
+        apt = q_da.first()
         if not apt:
             return "ERROR: No encontre cita con ID {}.".format(apt_id)
         info = f"{apt.client_name} - {apt.date} {apt.time}"
@@ -1312,7 +1415,10 @@ def _execute_action(action: dict, db: Session) -> str:
         status_filter = action.get("status")
         limit_n = int(action.get("limit", 20))
 
-        all_clients = db.query(Client).all()
+        q_camp = db.query(Client)
+        if _tid:
+            q_camp = q_camp.filter(Client.tenant_id == _tid)
+        all_clients = q_camp.all()
         results = []
         for c in all_clients:
             computed = compute_client_fields(c, db)
@@ -1348,7 +1454,10 @@ def _execute_action(action: dict, db: Session) -> str:
         return "\n".join(lines)
 
     elif action_type == "get_campaign_stats":
-        all_clients = db.query(Client).all()
+        q_cs = db.query(Client)
+        if _tid:
+            q_cs = q_cs.filter(Client.tenant_id == _tid)
+        all_clients = q_cs.all()
         total = 0
         inactive30 = 0
         inactive60 = 0
@@ -1434,8 +1543,10 @@ def _build_whatsapp_context(db: Session, conv_id: int = None) -> str:
     from database.models import WhatsAppConversation
     sections = []
 
+    tenant_id = None
     if conv_id:
         conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+        tenant_id = getattr(conv, 'tenant_id', None) if conv else None
         if conv and conv.client_id:
             # Linked CRM client — fetch full data
             client = db.query(Client).filter(Client.id == conv.client_id).first()
@@ -1558,13 +1669,19 @@ No-shows registrados: {no_show_count}"""
             sections.append(f"=== CONTACTO NO REGISTRADO ===\nEste numero ({phone}) NO esta en la base de datos de clientes. Es un contacto nuevo o no registrado.")
 
     # Staff names + specialty (always include)
-    staff_all = db.query(Staff).filter(Staff.is_active == True).all()
+    staff_q = db.query(Staff).filter(Staff.is_active == True)
+    if tenant_id:
+        staff_q = staff_q.filter(Staff.tenant_id == tenant_id)
+    staff_all = staff_q.all()
     if staff_all:
         staff_lines = [f"  {s.name} ({s.specialty or s.role})" for s in staff_all]
         sections.append("EQUIPO:\n" + "\n".join(staff_lines))
 
     # Services catalog — COMPACT: top services per category (not all 98)
-    all_services = db.query(Service).filter(Service.is_active == True).order_by(Service.category, Service.name).all()
+    svc_q = db.query(Service).filter(Service.is_active == True)
+    if tenant_id:
+        svc_q = svc_q.filter(Service.tenant_id == tenant_id)
+    all_services = svc_q.order_by(Service.category, Service.name).all()
     if all_services:
         # Group by category, show max 8 per category to save tokens
         from collections import defaultdict
@@ -1583,10 +1700,13 @@ No-shows registrados: {no_show_count}"""
 
     # Today's appointments (so Lina can check availability before scheduling)
     today = _today_colombia(db)
-    todays_apts = db.query(Appointment).filter(
+    today_q = db.query(Appointment).filter(
         Appointment.date == today,
         Appointment.status.in_(["confirmed", "completed"]),
-    ).order_by(Appointment.time).all()
+    )
+    if tenant_id:
+        today_q = today_q.filter(Appointment.tenant_id == tenant_id)
+    todays_apts = today_q.order_by(Appointment.time).all()
     if todays_apts:
         apt_lines = []
         for a in todays_apts:
@@ -1599,10 +1719,13 @@ No-shows registrados: {no_show_count}"""
 
     # Tomorrow's appointments too (clients often book for tomorrow)
     tomorrow = today + timedelta(days=1)
-    tomorrows_apts = db.query(Appointment).filter(
+    tomorrow_q = db.query(Appointment).filter(
         Appointment.date == tomorrow,
         Appointment.status.in_(["confirmed", "completed"]),
-    ).order_by(Appointment.time).all()
+    )
+    if tenant_id:
+        tomorrow_q = tomorrow_q.filter(Appointment.tenant_id == tenant_id)
+    tomorrows_apts = tomorrow_q.order_by(Appointment.time).all()
     if tomorrows_apts:
         apt_lines = []
         for a in tomorrows_apts:
@@ -1612,9 +1735,14 @@ No-shows registrados: {no_show_count}"""
         sections.append(f"AGENDA MAÑANA ({tomorrow.strftime('%d/%m/%Y')}) — {len(tomorrows_apts)} citas (ESTAS YA EXISTEN):\n" + "\n".join(apt_lines))
 
     # Pending tasks — notes with "PENDIENTE" across ALL clients (Lina's task memory)
-    pending_notes = (
+    pending_q = (
         db.query(ClientNote)
         .filter(ClientNote.content.ilike("%PENDIENTE:%"))
+    )
+    if tenant_id:
+        pending_q = pending_q.filter(ClientNote.tenant_id == tenant_id)
+    pending_notes = (
+        pending_q
         .order_by(ClientNote.created_at.desc())
         .limit(15)
         .all()
@@ -1630,9 +1758,11 @@ No-shows registrados: {no_show_count}"""
 
     # --- Global learnings (admin-taught rules — HIGHEST PRIORITY) ---
     from database.models import LinaLearning
+    learning_q = db.query(LinaLearning).filter(LinaLearning.is_active == True)
+    if tenant_id:
+        learning_q = learning_q.filter(LinaLearning.tenant_id == tenant_id)
     global_learnings = (
-        db.query(LinaLearning)
-        .filter(LinaLearning.is_active == True)
+        learning_q
         .order_by(LinaLearning.created_at.desc())
         .all()
     )
@@ -1645,12 +1775,17 @@ No-shows registrados: {no_show_count}"""
 
     # --- Per-client learnings (APRENDIZAJE/FEEDBACK notes) ---
     from sqlalchemy import or_
-    learned_notes = (
+    learned_q = (
         db.query(ClientNote)
         .filter(or_(
             ClientNote.content.ilike("%APRENDIZAJE:%"),
             ClientNote.content.ilike("%FEEDBACK:%"),
         ))
+    )
+    if tenant_id:
+        learned_q = learned_q.filter(ClientNote.tenant_id == tenant_id)
+    learned_notes = (
+        learned_q
         .order_by(ClientNote.created_at.desc())
         .limit(20)
         .all()
