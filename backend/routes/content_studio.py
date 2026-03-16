@@ -265,49 +265,79 @@ async def generate_image(
     # Build enhanced prompt
     enhanced_prompt = _build_pollinations_prompt(prompt, style, brand_colors)
 
-    # Pollinations.ai generates real images — URL-based, no auth needed
-    # Keep prompt SHORT to avoid URL length issues
-    import urllib.parse
-    short_prompt = prompt[:150]  # Limit to 150 chars for URL safety
+    # Build enhanced prompt
+    short_prompt = prompt[:200]
     style_tag = {
         "profesional": "professional photography",
-        "moderno": "modern design",
-        "elegante": "elegant luxury",
-        "vibrante": "vibrant colorful",
-        "minimalista": "minimalist",
-        "corporativo": "corporate",
+        "moderno": "modern trendy design",
+        "elegante": "elegant luxury aesthetic",
+        "vibrante": "vibrant colorful energetic",
+        "minimalista": "minimalist clean",
+        "corporativo": "corporate business",
         "festivo": "festive celebration",
-        "premium": "premium high-end",
+        "premium": "premium high-end luxury",
     }.get(style, "professional")
 
-    final_prompt = f"{short_prompt}, {style_tag}, advertising quality, 4K"
-    encoded_prompt = urllib.parse.quote(final_prompt)
-    seed = int(datetime.utcnow().timestamp()) % 100000
-    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&seed={seed}&nologo=true&model=flux"
+    final_prompt = f"{short_prompt}, {style_tag}, advertising quality, sharp focus, 4K"
 
-    # Fetch image from Pollinations via BACKEND (Railway IP, avoids client rate limits)
+    # Try Hugging Face Inference API first (free with token), fallback to Pollinations
     import base64
     status = "completed"
-    actual_url = image_url  # fallback
     image_base64 = None
+    generator_used = "none"
 
-    try:
-        async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
-            logger.info(f"[ContentStudio] Fetching image from Pollinations: {w}x{h}")
-            resp = await client.get(image_url)
-            if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("image"):
-                img_bytes = resp.content
-                img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-                content_type = resp.headers.get("content-type", "image/jpeg")
-                image_base64 = f"data:{content_type};base64,{img_b64}"
-                actual_url = image_base64  # Use base64 as the URL
-                logger.info(f"[ContentStudio] Image generated: {len(img_bytes)} bytes")
-            else:
-                logger.warning(f"[ContentStudio] Pollinations returned {resp.status_code}")
-                status = "failed"
-    except Exception as e:
-        logger.warning(f"[ContentStudio] Image fetch error: {e}")
+    hf_token = os.getenv("HF_API_TOKEN", "")
+
+    if hf_token:
+        # Hugging Face Inference — reliable, fast, high quality (SDXL)
+        try:
+            async with httpx.AsyncClient(timeout=90) as client:
+                logger.info(f"[ContentStudio] Generating via HuggingFace SDXL...")
+                resp = await client.post(
+                    "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
+                    headers={"Authorization": f"Bearer {hf_token}"},
+                    json={"inputs": final_prompt},
+                )
+                if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("image"):
+                    img_bytes = resp.content
+                    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                    content_type = resp.headers.get("content-type", "image/jpeg")
+                    image_base64 = f"data:{content_type};base64,{img_b64}"
+                    generator_used = "huggingface_sdxl"
+                    logger.info(f"[ContentStudio] HF image: {len(img_bytes)} bytes")
+                else:
+                    error_body = resp.text[:200]
+                    logger.warning(f"[ContentStudio] HF returned {resp.status_code}: {error_body}")
+        except Exception as e:
+            logger.warning(f"[ContentStudio] HF error: {e}")
+
+    # Fallback: Pollinations (free, no auth, but unreliable)
+    if not image_base64:
+        import urllib.parse
+        encoded_prompt = urllib.parse.quote(final_prompt[:150])
+        seed = int(datetime.utcnow().timestamp()) % 100000
+        pollinations_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&seed={seed}&nologo=true"
+
+        try:
+            async with httpx.AsyncClient(timeout=90, follow_redirects=True) as client:
+                logger.info(f"[ContentStudio] Fallback: Pollinations...")
+                resp = await client.get(pollinations_url)
+                if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("image"):
+                    img_bytes = resp.content
+                    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                    content_type = resp.headers.get("content-type", "image/jpeg")
+                    image_base64 = f"data:{content_type};base64,{img_b64}"
+                    generator_used = "pollinations"
+                    logger.info(f"[ContentStudio] Pollinations image: {len(img_bytes)} bytes")
+                else:
+                    logger.warning(f"[ContentStudio] Pollinations returned {resp.status_code}")
+        except Exception as e:
+            logger.warning(f"[ContentStudio] Pollinations error: {e}")
+
+    if not image_base64:
         status = "failed"
+
+    image_url = image_base64 or f"https://placehold.co/{w}x{h}/2D5A3D/FFFFFF?text=Error+generando"
 
     record = GeneratedContent(
         tenant_id=tid,
