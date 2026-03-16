@@ -325,7 +325,7 @@ def _build_inbox_context(db: Session) -> str:
 # AUTO-CREATE CLIENT — When Lina needs a client that doesn't exist yet
 # ============================================================================
 
-def _auto_create_client(db: Session, name: str, phone: str) -> "Client | None":
+def _auto_create_client(db: Session, name: str, phone: str, tenant_id: int = None) -> "Client | None":
     """Auto-create a client when Lina can't find one but has name + phone.
     Returns the new Client or None if phone already exists."""
     clean_phone = normalize_phone(phone)
@@ -336,13 +336,14 @@ def _auto_create_client(db: Session, name: str, phone: str) -> "Client | None":
 
     last = db.query(Client).order_by(Client.id.desc()).first()
     next_num = (last.id + 1) if last else 1
-    client_id = f"M{20200 + next_num}"
+    client_id = f"C{next_num:05d}"
 
     client = Client(
         client_id=client_id,
         name=name,
         phone=phone,
         accepts_whatsapp=True,
+        tenant_id=tenant_id,
     )
     db.add(client)
     db.commit()
@@ -358,6 +359,7 @@ def _auto_create_client(db: Session, name: str, phone: str) -> "Client | None":
 def _execute_action(action: dict, db: Session) -> str:
     """Execute a business action and return a result message."""
     action_type = action.get("action")
+    _tid = action.get("tenant_id")  # Injected by caller (ai_chat or whatsapp webhook)
 
     # ---- CLIENTS ----
     if action_type == "create_client":
@@ -421,7 +423,7 @@ def _execute_action(action: dict, db: Session) -> str:
                 auto_created = client is not None
             if not client:
                 return "ERROR: No encontre al cliente."
-        note = ClientNote(client_id=client.id, content=action.get("content", ""), created_by="Lina IA")
+        note = ClientNote(tenant_id=_tid, client_id=client.id, content=action.get("content", ""), created_by="Lina IA")
         db.add(note)
         db.commit()
         auto_tag = f" (cliente creado automaticamente: {client.client_id})" if auto_created else ""
@@ -525,6 +527,7 @@ def _execute_action(action: dict, db: Session) -> str:
         staff_id = action.get("staff_id")
         staff = db.query(Staff).filter(Staff.id == staff_id).first() if staff_id else None
         visit = VisitHistory(
+            tenant_id=_tid,
             client_id=client.id,
             staff_id=staff.id if staff else None,
             service_name=action.get("service_name", "Corte"),
@@ -1225,11 +1228,12 @@ def _execute_action(action: dict, db: Session) -> str:
         client_obj = find_client(db, search_name=client_name, phone=client_phone)
         auto_created_msg = ""
         if not client_obj and client_phone:
-            client_obj = _auto_create_client(db, client_name, client_phone)
+            client_obj = _auto_create_client(db, client_name, client_phone, tenant_id=_tid)
             if client_obj:
                 auto_created_msg = f" Cliente creado automaticamente: {client_obj.name} ({client_obj.client_id})."
 
         new_apt = Appointment(
+            tenant_id=_tid,
             client_id=client_obj.id if client_obj else None,
             client_name=client_name,
             client_phone=client_phone or (client_obj.phone if client_obj else ""),
@@ -2236,6 +2240,9 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
     for action_json in action_matches:
         try:
             action = json.loads(action_json.strip())
+            # Inject tenant_id from logged-in user so actions are tenant-scoped
+            if user.tenant_id:
+                action["tenant_id"] = user.tenant_id
             result = _execute_action(action, db)
             action_results.append(result)
         except json.JSONDecodeError:
