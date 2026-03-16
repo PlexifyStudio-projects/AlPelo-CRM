@@ -775,6 +775,7 @@ def _execute_action(action: dict, db: Session) -> str:
                     if not conv:
                         real_client = db.query(Client).filter(Client.id == c.id).first()
                         conv = WhatsAppConversation(
+                            tenant_id=_tid,
                             wa_contact_phone=c.phone,
                             wa_contact_name=c.name,
                             client_id=real_client.id if real_client else None,

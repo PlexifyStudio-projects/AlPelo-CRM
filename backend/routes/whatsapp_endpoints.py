@@ -691,6 +691,7 @@ async def send_template(body: dict, db: Session = Depends(get_db)):
     else:
         cl = db.query(Client).filter(Client.phone.contains(phone_clean[-10:])).first() if len(phone_clean) >= 10 else None
         conv = WhatsAppConversation(
+            tenant_id=getattr(cl, 'tenant_id', None) if cl else None,
             wa_contact_phone=phone_raw or f"+{phone_clean}",
             wa_contact_name=contact_name or (cl.name if cl else None),
             client_id=cl.id if cl else None,
@@ -749,6 +750,7 @@ def create_conversation(body: dict, db: Session = Depends(get_db)):
     client = db.query(Client).filter(Client.phone == phone).first()
 
     conv = WhatsAppConversation(
+        tenant_id=getattr(client, 'tenant_id', None) if client else None,
         wa_contact_phone=phone,
         wa_contact_name=name or (client.name if client else None),
         client_id=client.id if client else None,
