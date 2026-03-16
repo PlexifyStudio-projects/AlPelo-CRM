@@ -248,8 +248,16 @@ async def generate_image(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    """Generate a REAL image using Pollinations.ai (free, no API key).
-    Returns a URL to the generated image."""
+    """Generate image via HuggingFace SDXL (primary) or Pollinations (fallback)."""
+    import traceback
+    try:
+        return await _do_generate_image(body, db, current_user)
+    except Exception as e:
+        logger.error(f"[ContentStudio] generate-image CRASH: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error generando imagen: {str(e)[:200]}")
+
+
+async def _do_generate_image(body, db, current_user):
     tid = _get_tenant_id(current_user)
     prompt = body.get("prompt", "")
     style = body.get("style", "modern")
