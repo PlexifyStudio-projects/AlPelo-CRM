@@ -1,6 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import MainLayout from '../components/layout/MainLayout/MainLayout';
-import DevRouter from '../components/devs/DevRouter/DevRouter';
+import DevRouter from '../components/Developer/DevRouter/DevRouter';
 import Login from '../pages/Login/Login';
 import Dashboard from '../pages/Dashboard/Dashboard';
 import Clients from '../pages/Clients/Clients';

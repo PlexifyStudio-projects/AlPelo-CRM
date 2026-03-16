@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import setup_cors_middleware
 from auth import auth_router
-from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router
+from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router
 from database.connection import engine, Base
 
 
@@ -265,386 +265,123 @@ app.include_router(finance_router, prefix="/api", tags=["Finance"])
 app.include_router(content_studio_router, prefix="/api", tags=["Content Studio"])
 app.include_router(automation_router, prefix="/api", tags=["Automations"])
 app.include_router(template_router, prefix="/api", tags=["Message Templates"])
+app.include_router(lina_router, prefix="/api", tags=["Lina IA"])
 
 
 # ============================================================================
-# LINA ACTIVITY LOG — Real-time monitoring endpoint
+# FACTORY RESET — Dev-only endpoint to wipe all tenant data
 # ============================================================================
-from activity_log import get_recent_events, get_stats as get_activity_stats
 
-@app.get("/api/lina/activity")
-async def lina_activity(limit: int = 100, offset: int = 0):
-    """Get Lina IA recent activity events for the monitoring dashboard."""
-    events = get_recent_events(limit=limit, offset=offset)
-    stats = get_activity_stats()
-    return {"events": events, "stats": stats}
+@app.post("/api/dev/factory-reset")
+async def factory_reset(request: dict = {}):
+    """
+    Wipe ALL data from the database (except DeveloperLuis).
+    Requires secret key or dev role. Use with extreme caution.
+    """
+    from fastapi import HTTPException
+    from sqlalchemy import text
 
+    # Safety: require secret key
+    secret = (request.get("secret") or "").strip()
+    expected = os.getenv("FACTORY_RESET_SECRET", "plexify-reset-2026")
+    if secret != expected:
+        raise HTTPException(status_code=403, detail="Invalid secret key")
 
-@app.get("/api/lina/memory")
-async def lina_memory():
-    """Get ALL of Lina's knowledge: global learnings + per-client patterns."""
-    from database.connection import SessionLocal
-    from database.models import ClientNote, Client, LinaLearning
-    from sqlalchemy import or_
+    # Tables in deletion order (respecting foreign keys)
+    tables = [
+        "workflow_execution",
+        "workflow_template",
+        "client_memory",
+        "invoice_item",
+        "invoice",
+        "expense",
+        "staff_commission",
+        "visit_history",
+        "client_note",
+        "appointment",
+        "whatsapp_message",
+        "whatsapp_conversation",
+        "generated_content",
+        "message_template",
+        "brand_kits",
+        "billing_record",
+        "usage_metrics",
+        "service",
+        "client",
+        "staff",
+        "lina_learning",
+        "ai_config",
+    ]
 
-    db = SessionLocal()
+    results = {}
+
     try:
-        # --- Global learnings (admin-taught rules) ---
-        learnings = (
-            db.query(LinaLearning)
-            .filter(LinaLearning.is_active == True)
-            .order_by(LinaLearning.created_at.desc())
-            .all()
-        )
-        global_items = []
-        for l in learnings:
-            global_items.append({
-                "id": f"L{l.id}",
-                "type": "regla",
-                "category": l.category,
-                "client_name": "General",
-                "content": l.content[:400],
-                "created_at": l.created_at.isoformat() if l.created_at else None,
-            })
+        with engine.begin() as conn:
+            # Delete data from each table
+            for table in tables:
+                try:
+                    result = conn.execute(text(f"DELETE FROM public.{table}"))
+                    count = result.rowcount
+                    results[table] = count
+                    print(f"[FACTORY RESET] Deleted {count} rows from {table}")
+                except Exception as e:
+                    results[table] = f"ERROR: {str(e)[:80]}"
+                    print(f"[FACTORY RESET] Error on {table}: {e}")
 
-        # --- Per-client learnings + feedback ---
-        notes = (
-            db.query(ClientNote)
-            .filter(or_(
-                ClientNote.content.ilike("%APRENDIZAJE:%"),
-                ClientNote.content.ilike("%FEEDBACK:%"),
-            ))
-            .order_by(ClientNote.created_at.desc())
-            .limit(50)
-            .all()
-        )
+            # Delete admin users EXCEPT DeveloperLuis
+            try:
+                result = conn.execute(text(
+                    "DELETE FROM public.admin WHERE username != 'DeveloperLuis'"
+                ))
+                count = result.rowcount
+                results["admin (except DeveloperLuis)"] = count
+                print(f"[FACTORY RESET] Deleted {count} admin rows (kept DeveloperLuis)")
+            except Exception as e:
+                results["admin"] = f"ERROR: {str(e)[:80]}"
+                print(f"[FACTORY RESET] Error on admin: {e}")
 
-        client_items = []
-        for n in notes:
-            client = db.query(Client).filter(Client.id == n.client_id).first()
-            content = n.content or ""
-            if "APRENDIZAJE:" in content:
-                mem_type = "aprendizaje"
-                text = content.split("APRENDIZAJE:")[-1].strip()
-            elif "FEEDBACK:" in content:
-                mem_type = "feedback"
-                text = content.split("FEEDBACK:")[-1].strip()
-            else:
-                mem_type = "otro"
-                text = content
+            # Delete all tenants
+            try:
+                result = conn.execute(text("DELETE FROM public.tenant"))
+                count = result.rowcount
+                results["tenant"] = count
+                print(f"[FACTORY RESET] Deleted {count} tenants")
+            except Exception as e:
+                results["tenant"] = f"ERROR: {str(e)[:80]}"
+                print(f"[FACTORY RESET] Error on tenant: {e}")
 
-            client_items.append({
-                "id": f"N{n.id}",
-                "type": mem_type,
-                "client_name": client.name if client else "?",
-                "content": text[:300],
-                "created_at": n.created_at.isoformat() if n.created_at else None,
-            })
+            # Reset sequences for all tables
+            all_tables = tables + ["admin", "tenant"]
+            for table in all_tables:
+                try:
+                    conn.execute(text(
+                        f"ALTER SEQUENCE IF EXISTS {table}_id_seq RESTART WITH 1"
+                    ))
+                except Exception:
+                    pass  # Some tables may not have sequences
 
-        # --- Long-term memories (pgvector client_memory table) ---
-        from database.models import ClientMemory
-        long_term = []
+            print("[FACTORY RESET] All sequences reset to 1")
+
+        # Clear DeveloperLuis tenant_id since tenants were wiped
         try:
-            lt_memories = (
-                db.query(ClientMemory)
-                .filter(ClientMemory.is_active == True)
-                .order_by(ClientMemory.updated_at.desc())
-                .limit(50)
-                .all()
-            )
-            for m in lt_memories:
-                client = db.query(Client).filter(Client.id == m.client_id).first()
-                long_term.append({
-                    "id": f"M{m.id}",
-                    "type": f"memoria_{m.memory_type}",
-                    "category": m.memory_type,
-                    "client_name": client.name if client else "?",
-                    "content": m.content[:300],
-                    "source": m.source,
-                    "confidence": m.confidence,
-                    "created_at": m.created_at.isoformat() if m.created_at else None,
-                })
-        except Exception as mem_err:
-            print(f"[MEMORY] Error loading long-term memories: {mem_err}")
-
-        all_items = global_items + client_items + long_term
-        return {
-            "total": len(all_items),
-            "global_count": len(global_items),
-            "client_count": len(client_items),
-            "longterm_count": len(long_term),
-            "items": all_items,
-        }
-    finally:
-        db.close()
-
-
-@app.get("/api/lina/learnings")
-async def list_learnings():
-    """Get all global learnings for Lina."""
-    from database.connection import SessionLocal
-    from database.models import LinaLearning
-
-    db = SessionLocal()
-    try:
-        items = db.query(LinaLearning).filter(LinaLearning.is_active == True).order_by(LinaLearning.created_at.desc()).all()
-        return [{
-            "id": l.id,
-            "category": l.category,
-            "content": l.content,
-            "original_input": l.original_input,
-            "created_by": l.created_by,
-            "created_at": l.created_at.isoformat() if l.created_at else None,
-        } for l in items]
-    finally:
-        db.close()
-
-
-@app.post("/api/lina/learnings")
-async def create_learning(request: dict):
-    """Admin teaches Lina something new. AI processes and stores it."""
-    from database.connection import SessionLocal
-    from database.models import LinaLearning
-
-    raw_input = (request.get("content") or "").strip()
-    category = (request.get("category") or "general").strip().lower()
-
-    if not raw_input:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail="Contenido vacio")
-
-    # Let AI process and improve the instruction
-    processed = await _process_learning(raw_input, category)
-
-    db = SessionLocal()
-    try:
-        learning = LinaLearning(
-            category=category,
-            original_input=raw_input,
-            content=processed,
-            created_by="admin",
-        )
-        db.add(learning)
-        db.commit()
-        db.refresh(learning)
-        return {
-            "id": learning.id,
-            "category": learning.category,
-            "content": learning.content,
-            "original_input": learning.original_input,
-            "created_at": learning.created_at.isoformat() if learning.created_at else None,
-        }
-    finally:
-        db.close()
-
-
-@app.delete("/api/lina/learnings/{learning_id}")
-async def delete_learning(learning_id: int):
-    """Delete a global learning."""
-    from database.connection import SessionLocal
-    from database.models import LinaLearning
-
-    db = SessionLocal()
-    try:
-        item = db.query(LinaLearning).filter(LinaLearning.id == learning_id).first()
-        if not item:
-            from fastapi import HTTPException
-            raise HTTPException(status_code=404, detail="No encontrado")
-        item.is_active = False
-        db.commit()
-        return {"ok": True}
-    finally:
-        db.close()
-
-
-async def _process_learning(raw_input: str, category: str) -> str:
-    """Use AI to process and improve the admin's instruction into a clear rule for Lina."""
-    import httpx
-
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    if not api_key:
-        return raw_input  # fallback: use as-is
-
-    system = """Eres un editor de instrucciones para una IA asistente de peluqueria llamada Lina.
-El admin te da una instruccion en lenguaje informal de como debe actuar Lina en una situacion.
-Tu trabajo: reescribirla como una REGLA CLARA y CONCISA que Lina pueda seguir.
-- Mantén el significado exacto
-- Hazla directa, en imperativo: "Cuando X pase, haz Y"
-- Maximo 2-3 oraciones
-- NO cambies la intencion, solo mejora la redaccion
-- Si el admin dice algo como "no hagas X", convierte en "NUNCA hagas X"
-- Responde SOLO con la regla reescrita, nada mas"""
-
-    try:
-        payload = {
-            "model": "claude-sonnet-4-5-20250929",
-            "max_tokens": 300,
-            "system": system,
-            "messages": [{"role": "user", "content": f"Categoria: {category}\nInstruccion del admin: {raw_input}"}],
-            "temperature": 0.3,
-        }
-        headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"}
-
-        async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post("https://api.anthropic.com/v1/messages", json=payload, headers=headers)
-            if resp.status_code == 200:
-                data = resp.json()
-                text = ""
-                for block in data.get("content", []):
-                    if block.get("type") == "text":
-                        text += block.get("text", "")
-                return text.strip() if text.strip() else raw_input
-    except Exception as e:
-        print(f"[Learning AI] Failed to process: {e}")
-
-    return raw_input
-
-
-# ============================================================================
-# CLIENT MEMORY — Long-term AI memory per client (pgvector phase 4)
-# ============================================================================
-
-@app.get("/api/lina/client-memories/{client_id}")
-async def get_client_memories(client_id: int):
-    """Get all long-term memories for a specific client."""
-    from database.connection import SessionLocal
-    from database.models import ClientMemory, Client
-
-    db = SessionLocal()
-    try:
-        client = db.query(Client).filter(Client.id == client_id).first()
-        if not client:
-            from fastapi import HTTPException
-            raise HTTPException(status_code=404, detail="Cliente no encontrado")
-
-        memories = (
-            db.query(ClientMemory)
-            .filter(ClientMemory.client_id == client_id, ClientMemory.is_active == True)
-            .order_by(ClientMemory.updated_at.desc())
-            .all()
-        )
-        return {
-            "client_id": client_id,
-            "client_name": client.name,
-            "total": len(memories),
-            "memories": [{
-                "id": m.id,
-                "type": m.memory_type,
-                "content": m.content,
-                "source": m.source,
-                "confidence": m.confidence,
-                "created_at": m.created_at.isoformat() if m.created_at else None,
-                "updated_at": m.updated_at.isoformat() if m.updated_at else None,
-            } for m in memories],
-        }
-    finally:
-        db.close()
-
-
-@app.delete("/api/lina/client-memories/{memory_id}")
-async def delete_client_memory(memory_id: int):
-    """Admin can delete a specific memory (soft delete)."""
-    from database.connection import SessionLocal
-    from database.models import ClientMemory
-
-    db = SessionLocal()
-    try:
-        mem = db.query(ClientMemory).filter(ClientMemory.id == memory_id).first()
-        if not mem:
-            from fastapi import HTTPException
-            raise HTTPException(status_code=404, detail="Memoria no encontrada")
-        mem.is_active = False
-        db.commit()
-        return {"ok": True, "message": "Memoria eliminada"}
-    finally:
-        db.close()
-
-
-@app.post("/api/lina/client-memories")
-async def create_client_memory_manual(request: dict):
-    """Admin manually adds a memory for a client."""
-    from database.connection import SessionLocal
-    from database.models import ClientMemory, Client, Tenant
-
-    client_id = request.get("client_id")
-    content = (request.get("content") or "").strip()
-    memory_type = request.get("type", "note")
-
-    if not client_id or not content:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=400, detail="client_id y content son requeridos")
-
-    db = SessionLocal()
-    try:
-        client = db.query(Client).filter(Client.id == client_id).first()
-        if not client:
-            from fastapi import HTTPException
-            raise HTTPException(status_code=404, detail="Cliente no encontrado")
-
-        tenant = db.query(Tenant).first()
-        tenant_id = tenant.id if tenant else 1
-
-        # Generate embedding for the new memory
-        embedding_json = None
-        try:
-            from ai_embeddings import create_embedding_sync
-            embedding = create_embedding_sync(content)
-            if embedding:
-                import json
-                embedding_json = json.dumps(embedding)
+            with engine.begin() as conn:
+                conn.execute(text(
+                    "UPDATE public.admin SET tenant_id = NULL WHERE username = 'DeveloperLuis'"
+                ))
+                print("[FACTORY RESET] Cleared DeveloperLuis tenant_id")
         except Exception:
             pass
 
-        mem = ClientMemory(
-            tenant_id=tenant_id,
-            client_id=client_id,
-            memory_type=memory_type,
-            content=content,
-            embedding=embedding_json,
-            source="admin_note",
-            confidence=1.0,
-            is_active=True,
-        )
-        db.add(mem)
-        db.commit()
-        db.refresh(mem)
-
+        print("[FACTORY RESET] === COMPLETE ===")
         return {
-            "id": mem.id,
-            "type": mem.memory_type,
-            "content": mem.content,
-            "source": mem.source,
-            "created_at": mem.created_at.isoformat() if mem.created_at else None,
+            "status": "ok",
+            "message": "Factory reset complete. Restart server to re-seed tenants.",
+            "deleted": results,
         }
-    finally:
-        db.close()
 
-
-@app.get("/api/lina/health")
-async def lina_health():
-    """Check if WhatsApp token is valid by making a test API call."""
-    import httpx
-    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
-    api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
-
-    if not token:
-        return {"status": "error", "token_set": False, "message": "Token de WhatsApp no configurado"}
-
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(
-                f"https://graph.facebook.com/{api_version}/{phone_id}",
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            data = resp.json()
-            if resp.status_code == 200:
-                return {"status": "ok", "token_set": True, "message": "Token valido, WhatsApp conectado"}
-            else:
-                error = data.get("error", {}).get("message", "Error desconocido")
-                return {"status": "error", "token_set": True, "message": f"Token invalido: {error}"}
     except Exception as e:
-        return {"status": "error", "token_set": True, "message": f"Error de conexion: {str(e)[:100]}"}
+        print(f"[FACTORY RESET] FATAL ERROR: {e}")
+        raise HTTPException(status_code=500, detail=f"Factory reset failed: {str(e)[:200]}")
 
 
 @app.get("/")

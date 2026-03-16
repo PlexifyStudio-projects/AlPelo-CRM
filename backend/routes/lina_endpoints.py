@@ -1,0 +1,349 @@
+"""
+Lina IA Endpoints — Activity monitoring, learnings, client memory, health check.
+Moved from main.py for better organization.
+"""
+
+import os
+import httpx
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import or_
+
+from database.connection import get_db, SessionLocal
+from database.models import (
+    ClientNote, Client, LinaLearning, ClientMemory, Tenant,
+)
+from activity_log import get_recent_events, get_stats as get_activity_stats
+
+router = APIRouter(prefix="/lina", tags=["Lina IA"])
+
+
+# ============================================================================
+# ACTIVITY LOG
+# ============================================================================
+
+@router.get("/activity")
+async def lina_activity(limit: int = 100, offset: int = 0):
+    """Real-time Lina activity events for the monitoring dashboard."""
+    events = get_recent_events(limit=limit, offset=offset)
+    stats = get_activity_stats()
+    return {"events": events, "stats": stats}
+
+
+# ============================================================================
+# MEMORY — Consolidated view (learnings + client notes + pgvector memories)
+# ============================================================================
+
+@router.get("/memory")
+async def lina_memory(db: Session = Depends(get_db)):
+    """Get ALL of Lina's knowledge: global learnings + per-client patterns + long-term memories."""
+    # Global learnings (admin-taught rules)
+    learnings = (
+        db.query(LinaLearning)
+        .filter(LinaLearning.is_active == True)
+        .order_by(LinaLearning.created_at.desc())
+        .all()
+    )
+    global_items = [{
+        "id": f"L{l.id}",
+        "type": "regla",
+        "category": l.category,
+        "client_name": "General",
+        "content": l.content[:400],
+        "created_at": l.created_at.isoformat() if l.created_at else None,
+    } for l in learnings]
+
+    # Per-client learnings + feedback (from notes)
+    notes = (
+        db.query(ClientNote)
+        .filter(or_(
+            ClientNote.content.ilike("%APRENDIZAJE:%"),
+            ClientNote.content.ilike("%FEEDBACK:%"),
+        ))
+        .order_by(ClientNote.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    client_items = []
+    for n in notes:
+        client = db.query(Client).filter(Client.id == n.client_id).first()
+        content = n.content or ""
+        if "APRENDIZAJE:" in content:
+            mem_type, text = "aprendizaje", content.split("APRENDIZAJE:")[-1].strip()
+        elif "FEEDBACK:" in content:
+            mem_type, text = "feedback", content.split("FEEDBACK:")[-1].strip()
+        else:
+            mem_type, text = "otro", content
+        client_items.append({
+            "id": f"N{n.id}",
+            "type": mem_type,
+            "client_name": client.name if client else "?",
+            "content": text[:300],
+            "created_at": n.created_at.isoformat() if n.created_at else None,
+        })
+
+    # Long-term memories (pgvector client_memory table)
+    long_term = []
+    try:
+        lt_memories = (
+            db.query(ClientMemory)
+            .filter(ClientMemory.is_active == True)
+            .order_by(ClientMemory.updated_at.desc())
+            .limit(50)
+            .all()
+        )
+        for m in lt_memories:
+            client = db.query(Client).filter(Client.id == m.client_id).first()
+            long_term.append({
+                "id": f"M{m.id}",
+                "type": f"memoria_{m.memory_type}",
+                "category": m.memory_type,
+                "client_name": client.name if client else "?",
+                "content": m.content[:300],
+                "source": m.source,
+                "confidence": m.confidence,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            })
+    except Exception as e:
+        print(f"[LINA] Error loading long-term memories: {e}")
+
+    all_items = global_items + client_items + long_term
+    return {
+        "total": len(all_items),
+        "global_count": len(global_items),
+        "client_count": len(client_items),
+        "longterm_count": len(long_term),
+        "items": all_items,
+    }
+
+
+# ============================================================================
+# LEARNINGS — Global rules taught by admin
+# ============================================================================
+
+@router.get("/learnings")
+async def list_learnings(db: Session = Depends(get_db)):
+    """List all active global learnings."""
+    items = (
+        db.query(LinaLearning)
+        .filter(LinaLearning.is_active == True)
+        .order_by(LinaLearning.created_at.desc())
+        .all()
+    )
+    return [{
+        "id": l.id,
+        "category": l.category,
+        "content": l.content,
+        "original_input": l.original_input,
+        "created_by": l.created_by,
+        "created_at": l.created_at.isoformat() if l.created_at else None,
+    } for l in items]
+
+
+@router.post("/learnings")
+async def create_learning(request: dict, db: Session = Depends(get_db)):
+    """Admin teaches Lina something new. AI processes and stores it."""
+    raw_input = (request.get("content") or "").strip()
+    category = (request.get("category") or "general").strip().lower()
+
+    if not raw_input:
+        raise HTTPException(status_code=400, detail="Contenido vacio")
+
+    processed = await _process_learning(raw_input, category)
+
+    learning = LinaLearning(
+        category=category,
+        original_input=raw_input,
+        content=processed,
+        created_by="admin",
+    )
+    db.add(learning)
+    db.commit()
+    db.refresh(learning)
+    return {
+        "id": learning.id,
+        "category": learning.category,
+        "content": learning.content,
+        "original_input": learning.original_input,
+        "created_at": learning.created_at.isoformat() if learning.created_at else None,
+    }
+
+
+@router.delete("/learnings/{learning_id}")
+async def delete_learning(learning_id: int, db: Session = Depends(get_db)):
+    """Soft-delete a global learning."""
+    item = db.query(LinaLearning).filter(LinaLearning.id == learning_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="No encontrado")
+    item.is_active = False
+    db.commit()
+    return {"ok": True}
+
+
+# ============================================================================
+# CLIENT MEMORIES — Long-term AI memory per client (pgvector Phase 4)
+# ============================================================================
+
+@router.get("/client-memories/{client_id}")
+async def get_client_memories(client_id: int, db: Session = Depends(get_db)):
+    """Get all long-term memories for a specific client."""
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    memories = (
+        db.query(ClientMemory)
+        .filter(ClientMemory.client_id == client_id, ClientMemory.is_active == True)
+        .order_by(ClientMemory.updated_at.desc())
+        .all()
+    )
+    return {
+        "client_id": client_id,
+        "client_name": client.name,
+        "total": len(memories),
+        "memories": [{
+            "id": m.id,
+            "type": m.memory_type,
+            "content": m.content,
+            "source": m.source,
+            "confidence": m.confidence,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+            "updated_at": m.updated_at.isoformat() if m.updated_at else None,
+        } for m in memories],
+    }
+
+
+@router.delete("/client-memories/{memory_id}")
+async def delete_client_memory(memory_id: int, db: Session = Depends(get_db)):
+    """Soft-delete a specific client memory."""
+    mem = db.query(ClientMemory).filter(ClientMemory.id == memory_id).first()
+    if not mem:
+        raise HTTPException(status_code=404, detail="Memoria no encontrada")
+    mem.is_active = False
+    db.commit()
+    return {"ok": True, "message": "Memoria eliminada"}
+
+
+@router.post("/client-memories")
+async def create_client_memory_manual(request: dict, db: Session = Depends(get_db)):
+    """Admin manually adds a memory for a client."""
+    client_id = request.get("client_id")
+    content = (request.get("content") or "").strip()
+    memory_type = request.get("type", "note")
+
+    if not client_id or not content:
+        raise HTTPException(status_code=400, detail="client_id y content son requeridos")
+
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    tenant = db.query(Tenant).first()
+    tenant_id = tenant.id if tenant else 1
+
+    # Generate embedding
+    embedding_json = None
+    try:
+        from ai_embeddings import create_embedding_sync
+        import json
+        embedding = create_embedding_sync(content)
+        if embedding:
+            embedding_json = json.dumps(embedding)
+    except Exception:
+        pass  # Embeddings are optional — memory still saved without them
+
+    mem = ClientMemory(
+        tenant_id=tenant_id,
+        client_id=client_id,
+        memory_type=memory_type,
+        content=content,
+        embedding=embedding_json,
+        source="admin_note",
+        confidence=1.0,
+        is_active=True,
+    )
+    db.add(mem)
+    db.commit()
+    db.refresh(mem)
+    return {
+        "id": mem.id,
+        "type": mem.memory_type,
+        "content": mem.content,
+        "source": mem.source,
+        "created_at": mem.created_at.isoformat() if mem.created_at else None,
+    }
+
+
+# ============================================================================
+# HEALTH — WhatsApp token check
+# ============================================================================
+
+@router.get("/health")
+async def lina_health():
+    """Check if WhatsApp token is valid."""
+    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+
+    if not token:
+        return {"status": "error", "token_set": False, "message": "Token de WhatsApp no configurado"}
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"https://graph.facebook.com/{api_version}/{phone_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            data = resp.json()
+            if resp.status_code == 200:
+                return {"status": "ok", "token_set": True, "message": "Token valido, WhatsApp conectado"}
+            else:
+                error = data.get("error", {}).get("message", "Error desconocido")
+                return {"status": "error", "token_set": True, "message": f"Token invalido: {error}"}
+    except Exception as e:
+        return {"status": "error", "token_set": True, "message": f"Error de conexion: {str(e)[:100]}"}
+
+
+# ============================================================================
+# INTERNAL — AI processing for learnings
+# ============================================================================
+
+async def _process_learning(raw_input: str, category: str) -> str:
+    """Use AI to process and improve the admin's instruction into a clear rule for Lina."""
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        return raw_input
+
+    system = """Eres un editor de instrucciones para una IA asistente llamada Lina.
+El admin te da una instruccion en lenguaje informal de como debe actuar Lina.
+Tu trabajo: reescribirla como una REGLA CLARA y CONCISA que Lina pueda seguir.
+- Mantén el significado exacto
+- Hazla directa, en imperativo: "Cuando X pase, haz Y"
+- Maximo 2-3 oraciones
+- NO cambies la intencion, solo mejora la redaccion
+- Si el admin dice algo como "no hagas X", convierte en "NUNCA hagas X"
+- Responde SOLO con la regla reescrita, nada mas"""
+
+    try:
+        payload = {
+            "model": "claude-sonnet-4-5-20250929",
+            "max_tokens": 300,
+            "system": system,
+            "messages": [{"role": "user", "content": f"Categoria: {category}\nInstruccion del admin: {raw_input}"}],
+            "temperature": 0.3,
+        }
+        headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"}
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post("https://api.anthropic.com/v1/messages", json=payload, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                text = ""
+                for block in data.get("content", []):
+                    if block.get("type") == "text":
+                        text += block.get("text", "")
+                return text.strip() if text.strip() else raw_input
+    except Exception as e:
+        print(f"[LINA] Learning AI processing failed: {e}")
+
+    return raw_input

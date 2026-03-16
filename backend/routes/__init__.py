@@ -9,6 +9,7 @@ from .finance_endpoints import router as finance_router
 from .content_studio import router as content_studio_router
 from .automation_endpoints import router as automation_router
 from .template_endpoints import router as template_router
+from .lina_endpoints import router as lina_router
 
 __all__ = [
     "create_router",
@@ -22,4 +23,5 @@ __all__ = [
     "content_studio_router",
     "automation_router",
     "template_router",
+    "lina_router",
 ]
