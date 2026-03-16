@@ -679,17 +679,13 @@ const ContentStudio = () => {
         } : null,
       });
       stopProgress();
-      // Pre-load the image before showing preview
-      if (result.url || result.media_url) {
-        const imgUrl = result.url || result.media_url;
-        setGenMessage('Cargando imagen generada...');
-        await new Promise((resolve) => {
-          const img = new Image();
-          img.onload = resolve;
-          img.onerror = resolve; // Still show even if preload fails
-          img.src = imgUrl;
-          setTimeout(resolve, 15000); // Max 15s wait
-        });
+      // Give Pollinations time to generate before showing preview
+      const imgUrl = result.url || result.media_url;
+      if (imgUrl && imgUrl.includes('pollinations')) {
+        setGenMessage('La IA está renderizando tu imagen...');
+        setGenProgress(96);
+        // Wait a bit then load — Pollinations generates when browser requests
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
       setGeneratedContent({ type: 'image', ...result });
       setPublishCaption('');
@@ -2028,16 +2024,21 @@ const ContentStudio = () => {
                   {generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url ? (
                     <img
                       src={generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url}
-                      alt="Contenido generado"
+                      alt="Imagen generada por IA"
                       loading="eager"
+                      onLoad={(e) => { e.target.style.opacity = '1'; }}
                       onError={(e) => {
-                        // Retry once after 3 seconds (Pollinations might be slow)
-                        if (!e.target.dataset.retried) {
-                          e.target.dataset.retried = 'true';
-                          setTimeout(() => { e.target.src = e.target.src + '&retry=1'; }, 3000);
+                        const retries = parseInt(e.target.dataset.retries || '0');
+                        if (retries < 3) {
+                          e.target.dataset.retries = String(retries + 1);
+                          const delay = (retries + 1) * 4000;
+                          setTimeout(() => {
+                            const url = (generatedContent.url || generatedContent.media_url);
+                            e.target.src = url + (url.includes('?') ? '&' : '?') + 'r=' + Date.now();
+                          }, delay);
                         }
                       }}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0, transition: 'opacity 0.5s ease' }}
                     />
                   ) : (
                     <div className={`${B}__preview-placeholder`}>
