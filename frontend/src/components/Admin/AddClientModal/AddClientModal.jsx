@@ -48,9 +48,27 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
     setTouched({});
   }, [editingClient, isOpen, countryPrefix]);
 
+  // Format phone: +XX (XXX) XXX-XXXX
+  const formatPhone = (raw) => {
+    // Extract prefix and digits
+    const prefixMatch = raw.match(/^(\+\d{1,3})\s*/);
+    const prefix = prefixMatch ? prefixMatch[1] : countryPrefix;
+    const afterPrefix = prefixMatch ? raw.slice(prefixMatch[0].length) : raw.replace(/^\+?\d{0,3}\s*/, '');
+    const digits = afterPrefix.replace(/\D/g, '');
+
+    if (digits.length === 0) return `${prefix} `;
+    if (digits.length <= 3) return `${prefix} (${digits}`;
+    if (digits.length <= 6) return `${prefix} (${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `${prefix} (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    if (name === 'phone') {
+      setForm((f) => ({ ...f, phone: formatPhone(value) }));
+    } else {
+      setForm((f) => ({ ...f, [name]: value }));
+    }
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
