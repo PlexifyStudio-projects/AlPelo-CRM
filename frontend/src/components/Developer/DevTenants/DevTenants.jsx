@@ -154,7 +154,8 @@ const DevTenants = () => {
       setShowForm(false);
       addNotification(editingId ? 'Agencia actualizada' : 'Agencia creada exitosamente', 'success');
       fetchTenants();
-    } catch {
+    } catch (err) {
+      console.error('[DevTenants] Save error:', err);
       addNotification('Error de conexion', 'error');
     }
   };
@@ -526,8 +527,10 @@ const DevTenants = () => {
                   <input
                     className={`${b}__form-input`}
                     type="number"
+                    min="0"
+                    max="99999999"
                     value={formData.monthly_price}
-                    onChange={(e) => setFormData({ ...formData, monthly_price: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, monthly_price: Math.min(parseInt(e.target.value) || 0, 99999999) })}
                     placeholder="250000"
                   />
                 </div>
@@ -536,8 +539,10 @@ const DevTenants = () => {
                   <input
                     className={`${b}__form-input`}
                     type="number"
+                    min="0"
+                    max="1000000"
                     value={formData.messages_limit}
-                    onChange={(e) => setFormData({ ...formData, messages_limit: parseInt(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, messages_limit: Math.min(parseInt(e.target.value) || 0, 1000000) })}
                     placeholder="5000"
                   />
                 </div>
