@@ -2,6 +2,9 @@ const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.ra
 
 const headers = { 'Content-Type': 'application/json' };
 
+// Authenticated fetch — sends cookies for auth
+const authFetch = (url, opts = {}) => fetch(url, { ...opts, credentials: 'include' });
+
 const handleResponse = async (res) => {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Error de servidor' }));
@@ -13,23 +16,23 @@ const handleResponse = async (res) => {
 const whatsappService = {
   // ========================= CONVERSATIONS =========================
   getConversations: async () => {
-    const res = await fetch(`${API}/whatsapp/conversations`, { headers });
+    const res = await authFetch(`${API}/whatsapp/conversations`, { headers });
     return handleResponse(res);
   },
 
   getConversation: async (id) => {
-    const res = await fetch(`${API}/whatsapp/conversations/${id}`, { headers });
+    const res = await authFetch(`${API}/whatsapp/conversations/${id}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= MESSAGES =========================
   getMessages: async (conversationId) => {
-    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/messages`, { headers });
+    const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/messages`, { headers });
     return handleResponse(res);
   },
 
   sendMessage: async (conversationId, text) => {
-    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/messages`, {
+    const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/messages`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ conversation_id: conversationId, content: text }),
@@ -39,12 +42,12 @@ const whatsappService = {
 
   // ========================= TEMPLATES =========================
   getMetaTemplates: async () => {
-    const res = await fetch(`${API}/whatsapp/templates`, { headers });
+    const res = await authFetch(`${API}/whatsapp/templates`, { headers });
     return handleResponse(res);
   },
 
   sendTemplate: async (phone, name, templateName, languageCode, bodyText) => {
-    const res = await fetch(`${API}/whatsapp/send-template`, {
+    const res = await authFetch(`${API}/whatsapp/send-template`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -60,7 +63,7 @@ const whatsappService = {
 
   // ========================= MARK AS READ =========================
   markAsRead: async (conversationId) => {
-    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/read`, {
+    const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/read`, {
       method: 'PUT',
       headers,
     });
@@ -69,30 +72,30 @@ const whatsappService = {
 
   // ========================= UNREAD COUNT =========================
   getUnreadCount: async () => {
-    const res = await fetch(`${API}/whatsapp/unread-count`, { headers });
+    const res = await authFetch(`${API}/whatsapp/unread-count`, { headers });
     return handleResponse(res);
   },
 
   // ========================= SEARCH MESSAGES =========================
   searchMessages: async (query) => {
-    const res = await fetch(`${API}/whatsapp/messages/search?q=${encodeURIComponent(query)}`, { headers });
+    const res = await authFetch(`${API}/whatsapp/messages/search?q=${encodeURIComponent(query)}`, { headers });
     return handleResponse(res);
   },
 
   // ========================= DELETE =========================
   deleteConversation: async (id) => {
-    const res = await fetch(`${API}/whatsapp/conversations/${id}`, { method: 'DELETE', headers });
+    const res = await authFetch(`${API}/whatsapp/conversations/${id}`, { method: 'DELETE', headers });
     return handleResponse(res);
   },
 
   deleteAllConversations: async () => {
-    const res = await fetch(`${API}/whatsapp/conversations`, { method: 'DELETE', headers });
+    const res = await authFetch(`${API}/whatsapp/conversations`, { method: 'DELETE', headers });
     return handleResponse(res);
   },
 
   // ========================= CREATE CONVERSATION =========================
   createConversation: async (phone, name) => {
-    const res = await fetch(`${API}/whatsapp/conversations`, {
+    const res = await authFetch(`${API}/whatsapp/conversations`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ phone, name }),
@@ -102,13 +105,13 @@ const whatsappService = {
 
   // ========================= STATS =========================
   getStats: async () => {
-    const res = await fetch(`${API}/whatsapp/stats`, { headers });
+    const res = await authFetch(`${API}/whatsapp/stats`, { headers });
     return handleResponse(res);
   },
 
   // ========================= TOGGLE AI =========================
   toggleAi: async (conversationId, isActive) => {
-    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/ai`, {
+    const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/ai`, {
       method: 'PUT',
       headers,
       body: JSON.stringify({ is_ai_active: isActive }),
@@ -118,7 +121,7 @@ const whatsappService = {
 
   // ========================= TAGS =========================
   updateTags: async (conversationId, tags) => {
-    const res = await fetch(`${API}/whatsapp/conversations/${conversationId}/tags`, {
+    const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/tags`, {
       method: 'PUT',
       headers,
       body: JSON.stringify({ tags }),

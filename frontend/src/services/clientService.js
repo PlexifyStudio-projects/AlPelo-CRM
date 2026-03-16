@@ -1,6 +1,7 @@
 const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
 const headers = { 'Content-Type': 'application/json' };
+const opts = { headers, credentials: 'include' };
 
 const handleResponse = async (res) => {
   if (!res.ok) {
@@ -19,19 +20,18 @@ const clientService = {
     if (params.active !== undefined) query.set('active', params.active);
     if (params.sort_by) query.set('sort_by', params.sort_by);
     const qs = query.toString();
-    const res = await fetch(`${API}/clients/${qs ? `?${qs}` : ''}`, { headers });
+    const res = await fetch(`${API}/clients/${qs ? `?${qs}` : ''}`, opts);
     return handleResponse(res);
   },
 
   get: async (id) => {
-    const res = await fetch(`${API}/clients/${id}`, { headers });
+    const res = await fetch(`${API}/clients/${id}`, opts);
     return handleResponse(res);
   },
 
   create: async (data) => {
     const res = await fetch(`${API}/clients/`, {
-      method: 'POST',
-      headers,
+      method: 'POST', ...opts,
       body: JSON.stringify(data),
     });
     return handleResponse(res);
@@ -39,8 +39,7 @@ const clientService = {
 
   update: async (id, data) => {
     const res = await fetch(`${API}/clients/${id}`, {
-      method: 'PUT',
-      headers,
+      method: 'PUT', ...opts,
       body: JSON.stringify(data),
     });
     return handleResponse(res);
@@ -48,22 +47,20 @@ const clientService = {
 
   delete: async (id) => {
     const res = await fetch(`${API}/clients/${id}`, {
-      method: 'DELETE',
-      headers,
+      method: 'DELETE', ...opts,
     });
     return handleResponse(res);
   },
 
   // ========================= VISITS =========================
   listVisits: async (clientId) => {
-    const res = await fetch(`${API}/clients/${clientId}/visits/`, { headers });
+    const res = await fetch(`${API}/clients/${clientId}/visits/`, opts);
     return handleResponse(res);
   },
 
   createVisit: async (data) => {
     const res = await fetch(`${API}/visits/`, {
-      method: 'POST',
-      headers,
+      method: 'POST', ...opts,
       body: JSON.stringify(data),
     });
     return handleResponse(res);
@@ -71,14 +68,13 @@ const clientService = {
 
   // ========================= NOTES =========================
   listNotes: async (clientId) => {
-    const res = await fetch(`${API}/clients/${clientId}/notes/`, { headers });
+    const res = await fetch(`${API}/clients/${clientId}/notes/`, opts);
     return handleResponse(res);
   },
 
   createNote: async (data) => {
     const res = await fetch(`${API}/client-notes/`, {
-      method: 'POST',
-      headers,
+      method: 'POST', ...opts,
       body: JSON.stringify(data),
     });
     return handleResponse(res);
@@ -86,15 +82,14 @@ const clientService = {
 
   deleteNote: async (id) => {
     const res = await fetch(`${API}/client-notes/${id}`, {
-      method: 'DELETE',
-      headers,
+      method: 'DELETE', ...opts,
     });
     return handleResponse(res);
   },
 
   // ========================= DASHBOARD =========================
   kpis: async () => {
-    const res = await fetch(`${API}/dashboard/kpis`, { headers });
+    const res = await fetch(`${API}/dashboard/kpis`, opts);
     return handleResponse(res);
   },
 };

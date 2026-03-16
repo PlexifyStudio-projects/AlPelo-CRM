@@ -7,9 +7,10 @@ import { useTenant } from '../../context/TenantContext';
 // Admin assistant — persistent chat
 // ============================================
 
-const STORAGE_KEY = 'alpelo_lina_chat';
-const STORAGE_TOKENS_KEY = 'alpelo_lina_tokens';
-const STORAGE_HISTORY_KEY = 'alpelo_lina_queries';
+// Storage keys are tenant-scoped so each agency has its own chat history
+const getStorageKey = (tenantId) => `plexify_lina_chat_${tenantId || 0}`;
+const getTokensKey = (tenantId) => `plexify_lina_tokens_${tenantId || 0}`;
+const getHistoryKey = (tenantId) => `plexify_lina_queries_${tenantId || 0}`;
 
 const SUGGESTED_PROMPTS = [
   { icon: '📊', text: 'Dame el resumen completo del negocio', desc: 'Dashboard: KPIs, ingresos, metricas' },
@@ -66,51 +67,43 @@ const parseAIResponse = (text) => {
   };
 };
 
-// Load from localStorage
-const loadMessages = () => {
+// Load from localStorage (tenant-scoped)
+const loadFromStorage = (key) => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-};
-const loadTokens = () => {
-  try { return parseInt(localStorage.getItem(STORAGE_TOKENS_KEY) || '0', 10); }
-  catch { return 0; }
-};
-const loadHistory = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
 };
 
 const ChatAI = () => {
   const { tenant } = useTenant();
-  const [messages, setMessages] = useState(loadMessages);
+  const tid = tenant?.id || 0;
+
+  const [messages, setMessages] = useState(() => loadFromStorage(getStorageKey(tid)) || []);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [queryHistory, setQueryHistory] = useState(loadHistory);
+  const [queryHistory, setQueryHistory] = useState(() => loadFromStorage(getHistoryKey(tid)) || []);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
-  const [tokenCount, setTokenCount] = useState(loadTokens);
+  const [tokenCount, setTokenCount] = useState(() => parseInt(localStorage.getItem(getTokensKey(tid)) || '0', 10));
   const [pendingImage, setPendingImage] = useState(null); // { base64, mime, preview }
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Persist messages
+  // Persist messages (tenant-scoped)
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
-  }, [messages]);
+    localStorage.setItem(getStorageKey(tid), JSON.stringify(messages));
+  }, [messages, tid]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_TOKENS_KEY, String(tokenCount));
-  }, [tokenCount]);
+    localStorage.setItem(getTokensKey(tid), String(tokenCount));
+  }, [tokenCount, tid]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(queryHistory));
-  }, [queryHistory]);
+    localStorage.setItem(getHistoryKey(tid), JSON.stringify(queryHistory));
+  }, [queryHistory, tid]);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -195,8 +188,8 @@ const ChatAI = () => {
   const clearChat = () => {
     setMessages([]);
     setTokenCount(0);
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(STORAGE_TOKENS_KEY);
+    localStorage.removeItem(getStorageKey(tid));
+    localStorage.removeItem(getTokensKey(tid));
   };
 
   const hasMessages = messages.length > 0;

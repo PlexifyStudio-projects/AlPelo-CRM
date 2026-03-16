@@ -2,6 +2,9 @@ const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.ra
 
 const headers = { 'Content-Type': 'application/json' };
 
+// Authenticated fetch — sends cookies for auth
+const authFetch = (url, opts = {}) => fetch(url, { ...opts, credentials: 'include' });
+
 const handleResponse = async (res) => {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Error de servidor' }));
@@ -13,12 +16,12 @@ const handleResponse = async (res) => {
 const aiService = {
   // ========================= CONFIG =========================
   getConfig: async () => {
-    const res = await fetch(`${API}/ai/config`, { headers });
+    const res = await authFetch(`${API}/ai/config`, { headers });
     return handleResponse(res);
   },
 
   saveConfig: async (data) => {
-    const res = await fetch(`${API}/ai/config`, {
+    const res = await authFetch(`${API}/ai/config`, {
       method: 'POST',
       headers,
       body: JSON.stringify(data),
@@ -27,7 +30,7 @@ const aiService = {
   },
 
   updateConfig: async (configId, data) => {
-    const res = await fetch(`${API}/ai/config/${configId}`, {
+    const res = await authFetch(`${API}/ai/config/${configId}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
@@ -42,7 +45,7 @@ const aiService = {
       body.image_base64 = imageBase64;
       body.image_mime = imageMime;
     }
-    const res = await fetch(`${API}/ai/chat`, {
+    const res = await authFetch(`${API}/ai/chat`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
