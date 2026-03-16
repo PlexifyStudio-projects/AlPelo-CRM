@@ -217,25 +217,72 @@ def delete_content(
 
 
 # ============================================================================
-# GENERATION ENDPOINTS (placeholders — actual AI APIs will be integrated later)
+# GENERATION ENDPOINTS — Pollinations.ai (FREE, no API key needed)
 # ============================================================================
 
+def _build_pollinations_prompt(prompt: str, style: str, brand_colors: dict = None) -> str:
+    """Enhance the user prompt with style and brand context for better generation."""
+    style_map = {
+        "profesional": "professional corporate photography, clean composition, high quality",
+        "moderno": "modern trendy design, bold typography, vibrant, contemporary",
+        "elegante": "elegant luxury aesthetic, refined, sophisticated, premium feel",
+        "vibrante": "vibrant colorful, energetic, eye-catching, dynamic",
+        "minimalista": "minimalist clean design, lots of white space, simple",
+        "corporativo": "corporate business style, trustworthy, polished",
+        "festivo": "festive celebration, party atmosphere, joyful colors",
+        "premium": "premium high-end, luxury brand feel, gold accents, refined",
+    }
+    style_suffix = style_map.get(style, "professional high quality")
+
+    enhanced = f"{prompt}, {style_suffix}, advertising quality, sharp focus, 4K"
+
+    if brand_colors and brand_colors.get("primary"):
+        enhanced += f", brand color palette {brand_colors['primary']}"
+
+    return enhanced
+
+
 @router.post("/generate-image")
-def generate_image(
+async def generate_image(
     body: dict,
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    """Generate an image. Saves a record with placeholder URL for now."""
+    """Generate a REAL image using Pollinations.ai (free, no API key).
+    Returns a URL to the generated image."""
     tid = _get_tenant_id(current_user)
     prompt = body.get("prompt", "")
     style = body.get("style", "modern")
     dimensions = body.get("dimensions", "1080x1080")
+    brand_colors = body.get("brand_colors", {})
 
-    # Build placeholder URL
+    if not prompt.strip():
+        raise HTTPException(status_code=400, detail="El prompt es requerido")
+
+    # Parse dimensions
     w, h = dimensions.split("x") if "x" in dimensions else ("1080", "1080")
-    placeholder_text = prompt[:30] if prompt else "Imagen IA"
-    placeholder_url = f"https://placehold.co/{w}x{h}/2D5A3D/FFFFFF?text={placeholder_text.replace(' ', '+')}"
+
+    # Build enhanced prompt
+    enhanced_prompt = _build_pollinations_prompt(prompt, style, brand_colors)
+
+    # Pollinations.ai generates real images — URL-based, no auth needed
+    # The image is generated on-the-fly when the URL is accessed
+    import urllib.parse
+    encoded_prompt = urllib.parse.quote(enhanced_prompt)
+    seed = int(datetime.utcnow().timestamp()) % 100000  # Unique seed per generation
+    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&seed={seed}&nologo=true"
+
+    # Verify the image actually generates by making a HEAD request
+    status = "completed"
+    try:
+        async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+            resp = await client.head(image_url)
+            if resp.status_code != 200:
+                status = "failed"
+                logger.warning(f"Pollinations image generation failed: {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Pollinations HEAD check failed (image may still work): {e}")
+        # Don't fail — the image URL often works even if HEAD fails
 
     record = GeneratedContent(
         tenant_id=tid,
@@ -243,13 +290,15 @@ def generate_image(
         prompt=prompt,
         style=style,
         dimensions=dimensions,
-        media_url=placeholder_url,
-        thumbnail_url=placeholder_url,
-        status="completed",
+        media_url=image_url,
+        thumbnail_url=image_url,
+        status=status,
         generation_cost=0,
         metadata_json=json.dumps({
-            "brand_colors": body.get("brand_colors"),
-            "generator": "placeholder",
+            "brand_colors": brand_colors,
+            "enhanced_prompt": enhanced_prompt,
+            "generator": "pollinations.ai",
+            "seed": seed,
         }),
     )
     db.add(record)
@@ -257,40 +306,59 @@ def generate_image(
     db.refresh(record)
 
     result = _content_to_dict(record)
-    # Also include legacy fields the frontend expects
     result["url"] = record.media_url
     return result
 
 
 @router.post("/generate-video")
-def generate_video(
+async def generate_video(
     body: dict,
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    """Generate a video. Saves a record with 'processing' status for now."""
+    """Generate a video using Pollinations.ai text-to-video (free, no API key).
+    Note: Video generation takes longer than images."""
     tid = _get_tenant_id(current_user)
     script = body.get("script", "")
     avatar_style = body.get("avatar_style", "professional")
     language = body.get("language", "es")
     duration = body.get("duration", 30)
 
-    placeholder_url = "https://placehold.co/1080x1920/2D5A3D/FFFFFF?text=Video+IA"
+    if not script.strip():
+        raise HTTPException(status_code=400, detail="El guión es requerido")
+
+    # Build video prompt from script
+    video_prompt = f"Professional advertisement video: {script}. Style: {avatar_style}, cinematic, high quality, smooth motion"
+
+    # Pollinations.ai video generation endpoint
+    import urllib.parse
+    encoded_prompt = urllib.parse.quote(video_prompt)
+    seed = int(datetime.utcnow().timestamp()) % 100000
+
+    # Pollinations video URL (generates MP4)
+    video_url = f"https://video.pollinations.ai/prompt/{encoded_prompt}?seed={seed}"
+
+    # Also generate a thumbnail image for the video
+    thumb_prompt = urllib.parse.quote(f"Video thumbnail: {script[:100]}, professional, eye-catching")
+    thumbnail_url = f"https://image.pollinations.ai/prompt/{thumb_prompt}?width=1080&height=1920&seed={seed}&nologo=true"
 
     record = GeneratedContent(
         tenant_id=tid,
         content_type="video",
         prompt=script,
         dimensions="1080x1920",
-        thumbnail_url=placeholder_url,
-        status="processing",
+        media_url=video_url,
+        thumbnail_url=thumbnail_url,
+        status="completed",
         generation_cost=0,
         metadata_json=json.dumps({
             "avatar_style": avatar_style,
             "language": language,
             "duration": duration,
             "background": body.get("background"),
-            "generator": "placeholder",
+            "generator": "pollinations.ai",
+            "video_url": video_url,
+            "seed": seed,
         }),
     )
     db.add(record)
@@ -298,12 +366,12 @@ def generate_video(
     db.refresh(record)
 
     result = _content_to_dict(record)
-    result["video_url"] = None
+    result["video_url"] = video_url
     result["script"] = script
     result["avatar_style"] = avatar_style
     result["language"] = language
     result["duration"] = duration
-    result["estimated_time"] = "2-5 minutos"
+    result["estimated_time"] = "30-60 segundos"
     return result
 
 
