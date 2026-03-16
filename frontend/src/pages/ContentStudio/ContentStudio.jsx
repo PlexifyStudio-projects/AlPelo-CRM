@@ -679,25 +679,6 @@ const ContentStudio = () => {
         } : null,
       });
       stopProgress();
-      // If Pollinations URL, fetch the image as blob (single request, no retry spam)
-      const imgUrl = result.url || result.media_url;
-      if (imgUrl && imgUrl.includes('pollinations')) {
-        setGenMessage('La IA está renderizando tu imagen...');
-        setGenProgress(96);
-        try {
-          const imgResp = await fetch(imgUrl);
-          if (imgResp.ok) {
-            const blob = await imgResp.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            result.url = blobUrl;
-            result.media_url = blobUrl;
-            result._originalUrl = imgUrl;
-          }
-        } catch (e) {
-          console.warn('Image fetch failed, using direct URL:', e);
-          // Keep original URL as fallback
-        }
-      }
       setGeneratedContent({ type: 'image', ...result });
       setPublishCaption('');
       setShowPreview(true);

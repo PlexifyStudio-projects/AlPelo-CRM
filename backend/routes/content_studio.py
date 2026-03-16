@@ -285,7 +285,29 @@ async def generate_image(
     seed = int(datetime.utcnow().timestamp()) % 100000
     image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&seed={seed}&nologo=true&model=flux"
 
+    # Fetch image from Pollinations via BACKEND (Railway IP, avoids client rate limits)
+    import base64
     status = "completed"
+    actual_url = image_url  # fallback
+    image_base64 = None
+
+    try:
+        async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
+            logger.info(f"[ContentStudio] Fetching image from Pollinations: {w}x{h}")
+            resp = await client.get(image_url)
+            if resp.status_code == 200 and resp.headers.get("content-type", "").startswith("image"):
+                img_bytes = resp.content
+                img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+                content_type = resp.headers.get("content-type", "image/jpeg")
+                image_base64 = f"data:{content_type};base64,{img_b64}"
+                actual_url = image_base64  # Use base64 as the URL
+                logger.info(f"[ContentStudio] Image generated: {len(img_bytes)} bytes")
+            else:
+                logger.warning(f"[ContentStudio] Pollinations returned {resp.status_code}")
+                status = "failed"
+    except Exception as e:
+        logger.warning(f"[ContentStudio] Image fetch error: {e}")
+        status = "failed"
 
     record = GeneratedContent(
         tenant_id=tid,
@@ -293,7 +315,7 @@ async def generate_image(
         prompt=prompt,
         style=style,
         dimensions=dimensions,
-        media_url=image_url,
+        media_url=image_url,  # Store original URL for re-generation
         thumbnail_url=image_url,
         status=status,
         generation_cost=0,
@@ -309,7 +331,9 @@ async def generate_image(
     db.refresh(record)
 
     result = _content_to_dict(record)
-    result["url"] = record.media_url
+    # Return base64 image if available (client displays this directly)
+    result["url"] = image_base64 if image_base64 else record.media_url
+    result["image_base64"] = image_base64
     return result
 
 
