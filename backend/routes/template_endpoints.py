@@ -20,7 +20,7 @@ DEFAULT_TEMPLATES = [
         "category": "recordatorio",
         "body": "Hola {{nombre}}, te recordamos tu cita mañana a las {{hora}} con {{profesional}} para {{servicio}} en {{negocio}}.\n\n¿Confirmas tu asistencia? Responde SI o NO.",
         "variables": ["nombre", "hora", "profesional", "servicio", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Recordatorio de cita (1h)",
@@ -28,7 +28,7 @@ DEFAULT_TEMPLATES = [
         "category": "recordatorio",
         "body": "{{nombre}}, tu cita es en 1 hora a las {{hora}} con {{profesional}}.\n\n¡Te esperamos en {{negocio}}! Recuerda llegar 5 minuticos antes.",
         "variables": ["nombre", "hora", "profesional", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Confirmación de cita",
@@ -36,7 +36,7 @@ DEFAULT_TEMPLATES = [
         "category": "recordatorio",
         "body": "Hola {{nombre}}! Tu cita en {{negocio}} ha sido confirmada:\n\n📅 {{fecha}}\n🕐 {{hora}}\n💇 {{servicio}}\n👤 {{profesional}}\n\n¡Te esperamos!",
         "variables": ["nombre", "negocio", "fecha", "hora", "servicio", "profesional"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Tu cita es hoy",
@@ -44,7 +44,7 @@ DEFAULT_TEMPLATES = [
         "category": "recordatorio",
         "body": "Hola {{nombre}}! Hoy tienes cita en {{negocio}} a las {{hora}}. Recuerda llegar 5 minuticos antes para que {{profesional}} te atienda puntual. ¡Te esperamos!",
         "variables": ["nombre", "negocio", "hora", "profesional"],
-        "status": "approved",
+        "status": "draft",
     },
     # === POST-SERVICIO (3) ===
     {
@@ -53,7 +53,7 @@ DEFAULT_TEMPLATES = [
         "category": "post_servicio",
         "body": "Hola {{nombre}}! Gracias por tu visita hoy en {{negocio}}. ¿Cómo te fue con tu {{servicio}}? ¿Quedaste contento/a? Cuéntanos, tu opinión nos importa mucho!",
         "variables": ["nombre", "negocio", "servicio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Califícanos del 1 al 5",
@@ -61,7 +61,7 @@ DEFAULT_TEMPLATES = [
         "category": "post_servicio",
         "body": "Hola {{nombre}}! Gracias por visitarnos en {{negocio}}. Del 1 al 5, ¿cómo calificas tu experiencia? Si hay algo que mejorar, cuéntanos con confianza.",
         "variables": ["nombre", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Déjanos tu reseña en Google",
@@ -69,7 +69,7 @@ DEFAULT_TEMPLATES = [
         "category": "post_servicio",
         "body": "Hola {{nombre}}! Si te gustó tu visita a {{negocio}}, nos ayudaría mucho una reseña en Google. Es rápido y nos ayuda a que más gente nos conozca:\n\n{{link_resena}}\n\n¡Gracias!",
         "variables": ["nombre", "negocio", "link_resena"],
-        "status": "approved",
+        "status": "draft",
     },
     # === REACTIVACIÓN (3) ===
     {
@@ -78,7 +78,7 @@ DEFAULT_TEMPLATES = [
         "category": "reactivacion",
         "body": "Hola {{nombre}}! Vemos que llevas un tiempito sin venir a {{negocio}}. Queremos regalarte un 10% de descuento en el servicio que elijas. ¿Te gustaría venir esta semana?",
         "variables": ["nombre", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Te extrañamos + regalo",
@@ -86,7 +86,7 @@ DEFAULT_TEMPLATES = [
         "category": "reactivacion",
         "body": "Hola {{nombre}}! Llevas {{dias}} días sin visitarnos en {{negocio}} y te extrañamos! Te regalamos un 10% de descuento + una bebida gratis. ¿Te gustaría venir esta semana?",
         "variables": ["nombre", "dias", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Último intento",
@@ -94,7 +94,7 @@ DEFAULT_TEMPLATES = [
         "category": "reactivacion",
         "body": "Hola {{nombre}}! Hace bastante no sabemos de ti y te echamos de menos en {{negocio}}. Tenemos un 15% de descuento esperándote en cualquier servicio. Solo hasta esta semana. ¿Te animas?",
         "variables": ["nombre", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     # === CUMPLEAÑOS / FIDELIZACIÓN (3) ===
     {
@@ -103,7 +103,7 @@ DEFAULT_TEMPLATES = [
         "category": "fidelizacion",
         "body": "¡Feliz cumpleaños, {{nombre}}! 🎂🎉\n\nDe parte de todo el equipo de {{negocio}}, te deseamos un día increíble. Te regalamos un 20% de descuento en el servicio que quieras durante esta semana. ¡Pasa cuando gustes!",
         "variables": ["nombre", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Gracias cliente VIP",
@@ -111,7 +111,7 @@ DEFAULT_TEMPLATES = [
         "category": "fidelizacion",
         "body": "Hola {{nombre}}! Quería agradecerte por ser parte de nuestros clientes más fieles en {{negocio}}. Llevas {{visitas}} visitas con nosotros y eso para nosotros vale mucho. ¡Te esperamos pronto!",
         "variables": ["nombre", "negocio", "visitas"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Tu profesional te extraña",
@@ -119,7 +119,7 @@ DEFAULT_TEMPLATES = [
         "category": "fidelizacion",
         "body": "Hola {{nombre}}! {{profesional}} me pidió que te saludara. Dice que hace rato no te ve y quiere saber cómo estás. Cuando quieras venir a {{negocio}}, aquí te esperamos con los brazos abiertos!",
         "variables": ["nombre", "profesional", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     # === PROMOCIONES (3) ===
     {
@@ -128,7 +128,7 @@ DEFAULT_TEMPLATES = [
         "category": "promocion",
         "body": "Hola {{nombre}}! Esta semana en {{negocio}} tenemos promo especial: {{servicio}} con 15% de descuento. Solo hasta el sábado. ¡Agenda antes de que se acaben los cupos!",
         "variables": ["nombre", "negocio", "servicio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "2x1 especial",
@@ -136,7 +136,7 @@ DEFAULT_TEMPLATES = [
         "category": "promocion",
         "body": "Hola {{nombre}}! En {{negocio}} esta semana tenemos 2x1 en {{servicio}}. Ven con un amigo y pagan uno solo. ¡No te lo pierdas!",
         "variables": ["nombre", "negocio", "servicio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Trae un amigo",
@@ -144,7 +144,7 @@ DEFAULT_TEMPLATES = [
         "category": "promocion",
         "body": "Hola {{nombre}}! En {{negocio}} tenemos algo para ti: trae a un amigo y los dos reciben 10% de descuento. Solo muestra este mensaje al llegar. ¡Te esperamos!",
         "variables": ["nombre", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     # === BIENVENIDA / SEGUIMIENTO (4) ===
     {
@@ -153,7 +153,7 @@ DEFAULT_TEMPLATES = [
         "category": "bienvenida",
         "body": "¡Bienvenido/a a {{negocio}}, {{nombre}}! Estamos felices de tenerte. Puedes agendar tu próxima cita escribiéndonos aquí. ¿En qué te podemos ayudar?",
         "variables": ["nombre", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Seguimiento no-show",
@@ -161,7 +161,7 @@ DEFAULT_TEMPLATES = [
         "category": "bienvenida",
         "body": "Hola {{nombre}}, notamos que no pudiste asistir a tu cita de {{servicio}} en {{negocio}}. ¿Todo bien? ¿Te gustaría reagendar? Estamos para ayudarte.",
         "variables": ["nombre", "servicio", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Gracias por tu visita",
@@ -169,7 +169,7 @@ DEFAULT_TEMPLATES = [
         "category": "post_servicio",
         "body": "Hola {{nombre}}! Gracias por tu visita hoy en {{negocio}}. Fue un placer atenderte. ¿Quieres agendar tu próxima cita? Escríbenos y te ayudamos.",
         "variables": ["nombre", "negocio"],
-        "status": "approved",
+        "status": "draft",
     },
     {
         "name": "Resumen diario",
@@ -177,7 +177,7 @@ DEFAULT_TEMPLATES = [
         "category": "interno",
         "body": "📊 Resumen del día en {{negocio}}:\n\n✅ Citas completadas: {{completadas}}\n❌ No-shows: {{no_shows}}\n💰 Ingresos: ${{ingresos}}\n👥 Clientes nuevos: {{nuevos}}\n\n¡Buen trabajo! 💪",
         "variables": ["negocio", "completadas", "no_shows", "ingresos", "nuevos"],
-        "status": "approved",
+        "status": "draft",
     },
 ]
 
@@ -201,6 +201,27 @@ def seed_templates_for_tenant(tenant_id: int):
         db.rollback()
         print(f"[TEMPLATES] Seed error: {e}")
         return 0
+    finally:
+        db.close()
+
+
+@router.post("/reset")
+async def reset_templates():
+    """Delete all templates and re-seed with defaults (all as draft)."""
+    db = SessionLocal()
+    try:
+        tenant = db.query(Tenant).first()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="No tenant")
+        db.query(MessageTemplate).filter(MessageTemplate.tenant_id == tenant.id).delete()
+        db.commit()
+        seed_templates_for_tenant(tenant.id)
+        db.close()
+        db = SessionLocal()
+        templates = db.query(MessageTemplate).filter(
+            MessageTemplate.tenant_id == tenant.id, MessageTemplate.is_active == True
+        ).order_by(MessageTemplate.category, MessageTemplate.name).all()
+        return [_serialize_template(t) for t in templates]
     finally:
         db.close()
 
