@@ -679,13 +679,24 @@ const ContentStudio = () => {
         } : null,
       });
       stopProgress();
-      // Give Pollinations time to generate before showing preview
+      // If Pollinations URL, fetch the image as blob (single request, no retry spam)
       const imgUrl = result.url || result.media_url;
       if (imgUrl && imgUrl.includes('pollinations')) {
         setGenMessage('La IA está renderizando tu imagen...');
         setGenProgress(96);
-        // Wait a bit then load — Pollinations generates when browser requests
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+          const imgResp = await fetch(imgUrl);
+          if (imgResp.ok) {
+            const blob = await imgResp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            result.url = blobUrl;
+            result.media_url = blobUrl;
+            result._originalUrl = imgUrl;
+          }
+        } catch (e) {
+          console.warn('Image fetch failed, using direct URL:', e);
+          // Keep original URL as fallback
+        }
       }
       setGeneratedContent({ type: 'image', ...result });
       setPublishCaption('');
@@ -1613,12 +1624,6 @@ const ContentStudio = () => {
                       src={generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url}
                       alt="Preview"
                       className={`${B}__phone-image`}
-                      onError={(e) => {
-                        if (!e.target.dataset.retried) {
-                          e.target.dataset.retried = 'true';
-                          setTimeout(() => { e.target.src = e.target.src + '&retry=1'; }, 3000);
-                        }
-                      }}
                     />
                   ) : selectedType === 'video' ? (
                     <div className={`${B}__phone-placeholder`}>
@@ -2025,19 +2030,7 @@ const ContentStudio = () => {
                     <img
                       src={generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url}
                       alt="Imagen generada por IA"
-                      loading="eager"
                       onLoad={(e) => { e.target.style.opacity = '1'; }}
-                      onError={(e) => {
-                        const retries = parseInt(e.target.dataset.retries || '0');
-                        if (retries < 3) {
-                          e.target.dataset.retries = String(retries + 1);
-                          const delay = (retries + 1) * 4000;
-                          setTimeout(() => {
-                            const url = (generatedContent.url || generatedContent.media_url);
-                            e.target.src = url + (url.includes('?') ? '&' : '?') + 'r=' + Date.now();
-                          }, delay);
-                        }
-                      }}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0, transition: 'opacity 0.5s ease' }}
                     />
                   ) : (
