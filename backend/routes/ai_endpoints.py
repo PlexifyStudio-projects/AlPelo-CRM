@@ -2243,6 +2243,7 @@ Visitas:
 Servicios:
   list_services: category?
   create_service: name, category, price, duration_minutes?, description?, staff_ids?
+    IMPORTANTE: La categoria debe ser una de las que YA existen en el negocio (las ves en SERVICIOS arriba). Si el admin quiere una nueva categoria, preguntale el nombre exacto. NO inventes categorias.
   update_service: service_id|search_name, + campos (name/category/price/duration_minutes/description/staff_ids/is_active)
   delete_service: service_id|search_name
 
