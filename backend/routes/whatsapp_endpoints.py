@@ -1369,6 +1369,31 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             db.commit()
                             print(f"[Lina IA] Tagged conv {conv_id}: {tags}")
 
+                    elif action_type == "queue_bulk_task" and action_data.get("items"):
+                        # BULK TASK: execute all items inline (same as admin chat)
+                        items = action_data["items"]
+                        conv_tid = getattr(conv, 'tenant_id', None)
+                        ok_count = 0
+                        fail_count = 0
+                        from routes.ai_endpoints import _execute_action
+                        for item in items:
+                            try:
+                                if conv_tid:
+                                    item["tenant_id"] = conv_tid
+                                action_db = SessionLocal()
+                                try:
+                                    _execute_action(item, action_db)
+                                    ok_count += 1
+                                except Exception:
+                                    fail_count += 1
+                                    action_db.rollback()
+                                finally:
+                                    action_db.close()
+                            except Exception:
+                                fail_count += 1
+                        log_event("accion", f"Tarea masiva completada: {ok_count} creados", detail=f"{ok_count} ok, {fail_count} fallaron. Tipo: {action_data.get('task_type','')}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok")
+                        print(f"[Lina IA] Bulk task: {ok_count} ok, {fail_count} failed")
+
                     elif action_type in (
                         "create_client", "update_client", "delete_client",
                         "add_note", "complete_task", "list_clients_by_filter",
