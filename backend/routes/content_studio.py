@@ -350,8 +350,7 @@ async def generate_image(
         metadata_json=json.dumps({
             "brand_colors": brand_colors,
             "enhanced_prompt": final_prompt,
-            "generator": "pollinations.ai",
-            "seed": seed,
+            "generator": generator_used,
         }),
     )
     db.add(record)
