@@ -13,28 +13,13 @@ const handleResponse = async (res) => {
 const contentGeneratorService = {
   // ========================= IMAGE GENERATION =========================
   generateImage: async ({ prompt, style, dimensions, brandColors }) => {
-    try {
-      const res = await fetch(`${API}/content-studio/generate-image`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({ prompt, style, dimensions, brand_colors: brandColors }),
-      });
-      return handleResponse(res);
-    } catch {
-      // Backend unreachable — return localStorage fallback
-      const [width, height] = (dimensions || '1080x1080').split('x');
-      return {
-        id: `img_${Date.now()}`,
-        url: `https://placehold.co/${width}x${height}/2D5A3D/FFFFFF?text=${encodeURIComponent(prompt?.slice(0, 20) || 'Imagen IA')}`,
-        media_url: `https://placehold.co/${width}x${height}/2D5A3D/FFFFFF?text=${encodeURIComponent(prompt?.slice(0, 20) || 'Imagen IA')}`,
-        prompt,
-        style,
-        dimensions,
-        created_at: new Date().toISOString(),
-        status: 'completed',
-      };
-    }
+    const res = await fetch(`${API}/content-studio/generate-image`, {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({ prompt, style, dimensions, brand_colors: brandColors }),
+    });
+    return handleResponse(res);
   },
 
   // ========================= VIDEO GENERATION =========================
