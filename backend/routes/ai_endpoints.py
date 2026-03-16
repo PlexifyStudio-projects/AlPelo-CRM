@@ -2387,7 +2387,7 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
     config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
     model = (config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-5-20250929")
     temperature = config.temperature if config else 0.4
-    max_tokens = config.max_tokens if config else 1024
+    max_tokens = max(config.max_tokens if config else 4096, 4096)  # Minimum 4096 for bulk operations
 
     # Build system prompt with live business data
     system_prompt = _build_system_prompt(db)
@@ -2441,10 +2441,13 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
             # BULK TASK: if it's a queue_bulk_task, execute ALL items inline
             # (admin is waiting with "typing..." indicator — execute everything now)
             if action.get("action") == "queue_bulk_task" and action.get("items"):
+                from activity_log import log_event
                 items = action["items"]
+                desc = action.get("description", "Tarea masiva")
                 ok_count = 0
                 fail_count = 0
-                for item in items:
+                log_event("accion", f"Iniciando tarea: {desc}", detail=f"{len(items)} items por procesar", status="info")
+                for i, item in enumerate(items):
                     try:
                         if user.tenant_id:
                             item["tenant_id"] = user.tenant_id
@@ -2452,11 +2455,15 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
                         ok_count += 1
                     except Exception as item_err:
                         fail_count += 1
-                        print(f"[AI] Bulk item failed: {item_err}")
-                action_results.append(f"Tarea completada: {ok_count} creados exitosamente" + (f", {fail_count} fallaron" if fail_count else ""))
+                        print(f"[AI] Bulk item {i+1} failed: {item_err}")
+                summary = f"Tarea completada: {ok_count} creados" + (f", {fail_count} fallaron" if fail_count else "")
+                log_event("accion", summary, detail=desc, status="ok" if fail_count == 0 else "warning")
+                action_results.append(summary)
             else:
+                from activity_log import log_event
                 result = _execute_action(action, db)
                 action_results.append(result)
+                log_event("accion", f"Accion ejecutada: {action.get('action','?')}", detail=result[:150], status="ok" if "ERROR" not in result else "error")
         except json.JSONDecodeError:
             action_results.append("ERROR: No pude parsear la accion.")
 
