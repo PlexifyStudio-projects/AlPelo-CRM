@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNotification } from '../../context/NotificationContext';
+import { useTenant } from '../../context/TenantContext';
 
 const API_BASE = `${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/auth`;
 
 const AdminProfile = ({ user, onUpdate }) => {
   const b = 'admin-profile';
   const { addNotification } = useNotification();
+  const { tenant } = useTenant();
 
   // Profile form
   const [form, setForm] = useState({
@@ -554,7 +556,7 @@ const AdminProfile = ({ user, onUpdate }) => {
                   <div className={`${b}__session-content`}>
                     <span className={`${b}__session-label`}>Negocio asociado</span>
                     <span className={`${b}__session-value`}>
-                      {currentData?.tenant_id ? `Tenant #${currentData.tenant_id}` : 'Sin asociar'}
+                      {currentData?.tenant_id ? `${tenant?.name || 'Negocio'} #${currentData.tenant_id}` : 'Sin asociar'}
                     </span>
                   </div>
                 </div>
