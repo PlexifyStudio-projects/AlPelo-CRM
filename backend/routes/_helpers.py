@@ -217,11 +217,26 @@ def compute_client_fields(client: Client, db: Session):
 
     status = compute_status(total_visits, days_since, client.status_override)
 
-    barber_name = None
-    if client.preferred_barber_id:
-        barber = db.query(Staff).filter(Staff.id == client.preferred_barber_id).first()
-        if barber:
-            barber_name = barber.name
+    # Calculate favorite service from visit history (3+ visits with same service)
+    from collections import Counter
+    favorite_service = None
+    preferred_professional = None
+    preferred_professional_id = None
+
+    if len(completed) >= 3:
+        service_counts = Counter(v.service_name for v in completed if v.service_name)
+        if service_counts:
+            top_service, top_count = service_counts.most_common(1)[0]
+            if top_count >= 3:
+                favorite_service = top_service
+
+        staff_counts = Counter(v.staff_id for v in completed if v.staff_id)
+        if staff_counts:
+            top_staff_id, top_staff_count = staff_counts.most_common(1)[0]
+            if top_staff_count >= 3:
+                preferred_professional_id = top_staff_id
+                staff_obj = db.query(Staff).filter(Staff.id == top_staff_id).first()
+                preferred_professional = staff_obj.name if staff_obj else None
 
     return ClientResponse(
         id=client.id,
@@ -230,9 +245,9 @@ def compute_client_fields(client: Client, db: Session):
         phone=client.phone,
         email=client.email,
         birthday=client.birthday,
-        favorite_service=client.favorite_service,
-        preferred_barber_id=client.preferred_barber_id,
-        preferred_barber_name=barber_name,
+        favorite_service=favorite_service,
+        preferred_barber_id=preferred_professional_id,
+        preferred_barber_name=preferred_professional,
         accepts_whatsapp=client.accepts_whatsapp,
         tags=client.tags or [],
         is_active=client.is_active,

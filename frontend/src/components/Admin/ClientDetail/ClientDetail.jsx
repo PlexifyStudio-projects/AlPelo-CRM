@@ -298,25 +298,31 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                 </div>
               </div>
 
-              {/* Service preferences */}
-              <div className={`${b}__info-section`}>
-                <h4 className={`${b}__section-title`}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-                  </svg>
-                  Preferencias de Servicio
-                </h4>
-                <div className={`${b}__pref-grid`}>
-                  <div className={`${b}__pref-item`}>
-                    <span className={`${b}__pref-label`}>Servicio favorito</span>
-                    <span className={`${b}__pref-value`}>{client.favorite_service || '\u2014'}</span>
-                  </div>
-                  <div className={`${b}__pref-item`}>
-                    <span className={`${b}__pref-label`}>Barbero preferido</span>
-                    <span className={`${b}__pref-value`}>{client.preferred_barber_name || '\u2014'}</span>
+              {/* Service preferences — only show if data exists (calculated from 3+ visits) */}
+              {(client.favorite_service || client.preferred_barber_name) && (
+                <div className={`${b}__info-section`}>
+                  <h4 className={`${b}__section-title`}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                    </svg>
+                    Preferencias (basado en historial)
+                  </h4>
+                  <div className={`${b}__pref-grid`}>
+                    {client.favorite_service && (
+                      <div className={`${b}__pref-item`}>
+                        <span className={`${b}__pref-label`}>Servicio frecuente</span>
+                        <span className={`${b}__pref-value`}>{client.favorite_service}</span>
+                      </div>
+                    )}
+                    {client.preferred_barber_name && (
+                      <div className={`${b}__pref-item`}>
+                        <span className={`${b}__pref-label`}>Profesional frecuente</span>
+                        <span className={`${b}__pref-value`}>{client.preferred_barber_name}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Tags */}
               {client.tags?.length > 0 && (
