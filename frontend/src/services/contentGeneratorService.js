@@ -13,13 +13,20 @@ const handleResponse = async (res) => {
 const contentGeneratorService = {
   // ========================= IMAGE GENERATION =========================
   generateImage: async ({ prompt, style, dimensions, brandColors }) => {
-    const res = await fetch(`${API}/content-studio/generate-image`, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-      body: JSON.stringify({ prompt, style, dimensions, brand_colors: brandColors }),
-    });
-    return handleResponse(res);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+    try {
+      const res = await fetch(`${API}/content-studio/generate-image`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ prompt, style, dimensions, brand_colors: brandColors }),
+        signal: controller.signal,
+      });
+      return handleResponse(res);
+    } finally {
+      clearTimeout(timeout);
+    }
   },
 
   // ========================= VIDEO GENERATION =========================

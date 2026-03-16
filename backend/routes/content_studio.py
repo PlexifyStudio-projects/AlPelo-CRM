@@ -291,7 +291,7 @@ async def generate_image(
     if hf_token:
         # Hugging Face Inference — reliable, fast, high quality (SDXL)
         try:
-            async with httpx.AsyncClient(timeout=90) as client:
+            async with httpx.AsyncClient(timeout=120) as client:
                 logger.info(f"[ContentStudio] Generating via HuggingFace SDXL...")
                 resp = await client.post(
                     "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0",
