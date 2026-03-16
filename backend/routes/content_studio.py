@@ -349,7 +349,7 @@ async def generate_image(
         generation_cost=0,
         metadata_json=json.dumps({
             "brand_colors": brand_colors,
-            "enhanced_prompt": enhanced_prompt,
+            "enhanced_prompt": final_prompt,
             "generator": "pollinations.ai",
             "seed": seed,
         }),
