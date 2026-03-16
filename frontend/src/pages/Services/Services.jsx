@@ -84,7 +84,21 @@ const CATEGORY_META = {
   },
 };
 
-const getCategoryMeta = (cat) => CATEGORY_META[cat] || { icon: <GenericServiceIcon />, color: '#6B6B63', gradient: 'linear-gradient(135deg, #6B6B63, #8E8E85)' };
+// Generate a vibrant color from any category name (deterministic hash → HSL)
+const generateCategoryColor = (name) => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  const hue = Math.abs(hash) % 360;
+  const color = `hsl(${hue}, 65%, 45%)`;
+  const light = `hsl(${hue}, 65%, 55%)`;
+  return { color, gradient: `linear-gradient(135deg, ${color} 0%, ${light} 100%)` };
+};
+
+const getCategoryMeta = (cat) => {
+  if (CATEGORY_META[cat]) return CATEGORY_META[cat];
+  const { color, gradient } = generateCategoryColor(cat);
+  return { icon: <GenericServiceIcon />, color, gradient };
+};
 
 const formatCurrency = (amount) => {
   if (!amount && amount !== 0) return '-';
