@@ -1941,6 +1941,89 @@
     }
   }
 
+  // ════════════════════════════════════════════════
+  // AD TEXT OVERLAY (live preview on image)
+  // ════════════════════════════════════════════════
+  &__ad-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: $spacing-lg;
+    gap: $spacing-xs;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  &__ad-headline {
+    font-family: $font-heading, 'Inter', sans-serif;
+    font-weight: 900;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.15;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    margin: 0;
+    word-break: break-word;
+  }
+
+  &__ad-subtext {
+    font-family: $font-primary;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    opacity: 0.9;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+    margin: 0;
+  }
+
+  // ════════════════════════════════════════════════
+  // AD EDITOR CONTROLS (in preview sidebar)
+  // ════════════════════════════════════════════════
+  &__ad-editor {
+    padding: $spacing-md;
+    background: $color-gray-50;
+    border-radius: $border-radius-lg;
+    border: 1px solid $border-color;
+    margin-bottom: $spacing-md;
+  }
+
+  &__ad-editor-title {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    margin: 0 0 $spacing-sm;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    &::before {
+      content: '✏️';
+    }
+  }
+
+  &__ad-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-sm;
+    margin-top: $spacing-sm;
+  }
+
+  &__ad-option {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__range {
+    width: 100%;
+    accent-color: $color-primary;
+    cursor: pointer;
+  }
+
   &__overlay--progress {
     z-index: $z-modal-backdrop + 10;
   }

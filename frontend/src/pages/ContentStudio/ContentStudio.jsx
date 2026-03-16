@@ -536,6 +536,15 @@ const ContentStudio = () => {
   const [calendarSelectedDay, setCalendarSelectedDay] = useState(null);
   const [previewShimmer, setPreviewShimmer] = useState(false);
 
+  // Ad overlay editor
+  const [overlayHeadline, setOverlayHeadline] = useState('');
+  const [overlaySubtext, setOverlaySubtext] = useState('');
+  const [overlayPosition, setOverlayPosition] = useState('center'); // top, center, bottom
+  const [overlayColor, setOverlayColor] = useState('#FFFFFF');
+  const [overlayBgOpacity, setOverlayBgOpacity] = useState(0.5);
+  const [overlayFontSize, setOverlayFontSize] = useState(48);
+  const canvasRef = useRef(null);
+
   // Brand Kit
   const [brandKit, setBrandKit] = useState({
     logo_url: null,
@@ -636,6 +645,90 @@ const ContentStudio = () => {
   }, [history]);
 
   // ─── Generators ──────────────────────────────────
+  // Render image with text overlay using Canvas API and download
+  const renderAndDownload = useCallback(() => {
+    const imgSrc = generatedContent?.url || generatedContent?.media_url;
+    if (!imgSrc) return;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width || 1080;
+      canvas.height = img.height || 1080;
+      const ctx = canvas.getContext('2d');
+
+      // Draw background image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Draw dark overlay for text readability
+      if (overlayHeadline || overlaySubtext) {
+        const posY = overlayPosition === 'top' ? 0 : overlayPosition === 'bottom' ? canvas.height * 0.55 : canvas.height * 0.25;
+        const boxH = overlayPosition === 'center' ? canvas.height * 0.5 : canvas.height * 0.45;
+
+        ctx.fillStyle = `rgba(0, 0, 0, ${overlayBgOpacity})`;
+        ctx.fillRect(0, posY, canvas.width, boxH);
+
+        // Draw headline
+        if (overlayHeadline) {
+          const fontSize = Math.round(overlayFontSize * (canvas.width / 1080));
+          ctx.font = `bold ${fontSize}px 'Inter', 'Helvetica Neue', Arial, sans-serif`;
+          ctx.fillStyle = overlayColor;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          const lines = wrapText(ctx, overlayHeadline.toUpperCase(), canvas.width * 0.8);
+          const lineH = fontSize * 1.2;
+          const startY = posY + boxH * 0.4 - (lines.length * lineH) / 2;
+
+          lines.forEach((line, i) => {
+            ctx.fillText(line, canvas.width / 2, startY + i * lineH);
+          });
+
+          // Draw subtext below
+          if (overlaySubtext) {
+            const subSize = Math.round(fontSize * 0.45);
+            ctx.font = `500 ${subSize}px 'Inter', 'Helvetica Neue', Arial, sans-serif`;
+            ctx.fillStyle = overlayColor;
+            ctx.globalAlpha = 0.85;
+            ctx.fillText(overlaySubtext, canvas.width / 2, startY + lines.length * lineH + subSize);
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+
+      // Download
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `promo_${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        addNotification('Imagen publicitaria descargada', 'success');
+      }, 'image/png');
+    };
+    img.src = imgSrc;
+  }, [generatedContent, overlayHeadline, overlaySubtext, overlayPosition, overlayColor, overlayBgOpacity, overlayFontSize, addNotification]);
+
+  // Helper: wrap text into lines that fit canvas width
+  const wrapText = (ctx, text, maxWidth) => {
+    const words = text.split(' ');
+    const lines = [];
+    let current = '';
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) lines.push(current);
+    return lines.length ? lines : [text];
+  };
+
   // Progress simulation — smooth 0-100% during real API call
   const startProgress = (messages) => {
     setGenProgress(0);
@@ -2004,47 +2097,112 @@ const ContentStudio = () => {
             </div>
 
             <div className={`${B}__preview-body`}>
-              {/* Preview image/video */}
+              {/* Preview image with live text overlay */}
               <div className={`${B}__preview-media`}>
-                <div className={`${B}__preview-frame ${generatedContent.dimensions === '1080x1920' || generatedContent.type === 'story' ? `${B}__preview-frame--vertical` : ''}`}>
+                <div className={`${B}__preview-frame ${generatedContent.dimensions === '1080x1920' || generatedContent.type === 'story' ? `${B}__preview-frame--vertical` : ''}`} style={{ position: 'relative' }}>
                   {generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url ? (
-                    <img
-                      src={generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url}
-                      alt="Imagen generada por IA"
-                      onLoad={(e) => { e.target.style.opacity = '1'; }}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0, transition: 'opacity 0.5s ease' }}
-                    />
+                    <>
+                      <img
+                        src={generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url}
+                        alt="Imagen generada por IA"
+                        onLoad={(e) => { e.target.style.opacity = '1'; }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0, transition: 'opacity 0.5s ease' }}
+                      />
+                      {/* Live text overlay preview */}
+                      {(overlayHeadline || overlaySubtext) && (
+                        <div className={`${B}__ad-overlay`} style={{
+                          [overlayPosition === 'top' ? 'top' : overlayPosition === 'bottom' ? 'bottom' : 'top']: overlayPosition === 'center' ? '25%' : '0',
+                          background: `rgba(0,0,0,${overlayBgOpacity})`,
+                          height: overlayPosition === 'center' ? '50%' : '45%',
+                        }}>
+                          {overlayHeadline && (
+                            <h2 className={`${B}__ad-headline`} style={{ color: overlayColor, fontSize: `${overlayFontSize * 0.6}px` }}>
+                              {overlayHeadline.toUpperCase()}
+                            </h2>
+                          )}
+                          {overlaySubtext && (
+                            <p className={`${B}__ad-subtext`} style={{ color: overlayColor }}>
+                              {overlaySubtext}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className={`${B}__preview-placeholder`}>
-                      {generatedContent.type === 'video' ? (
-                        <>
-                          <div className={`${B}__phone-play-btn`}>
-                            <PlayIcon />
-                          </div>
-                          <span>Video en procesamiento...</span>
-                          <span className={`${B}__preview-eta`}>Tiempo estimado: {generatedContent.estimated_time}</span>
-                        </>
-                      ) : (
-                        <>
-                          <ImageIcon />
-                          <span>Vista previa no disponible</span>
-                        </>
-                      )}
+                      <ImageIcon />
+                      <span>Vista previa no disponible</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Publish controls */}
+              {/* Ad text editor + publish controls */}
               <div className={`${B}__preview-controls`}>
+                {/* AD TEXT OVERLAY EDITOR */}
+                <div className={`${B}__ad-editor`}>
+                  <h4 className={`${B}__ad-editor-title`}>Texto Publicitario</h4>
+                  <div className={`${B}__field`}>
+                    <label className={`${B}__label`}>Titular principal</label>
+                    <input
+                      type="text"
+                      className={`${B}__input`}
+                      value={overlayHeadline}
+                      onChange={(e) => setOverlayHeadline(e.target.value)}
+                      placeholder="Ej: 10% DESCUENTO JUEVES"
+                    />
+                  </div>
+                  <div className={`${B}__field`}>
+                    <label className={`${B}__label`}>Subtexto</label>
+                    <input
+                      type="text"
+                      className={`${B}__input`}
+                      value={overlaySubtext}
+                      onChange={(e) => setOverlaySubtext(e.target.value)}
+                      placeholder="Ej: En todos los cortes de cabello"
+                    />
+                  </div>
+                  <div className={`${B}__ad-options`}>
+                    <div className={`${B}__ad-option`}>
+                      <label className={`${B}__label`}>Posición</label>
+                      <select className={`${B}__select`} value={overlayPosition} onChange={e => setOverlayPosition(e.target.value)}>
+                        <option value="top">Arriba</option>
+                        <option value="center">Centro</option>
+                        <option value="bottom">Abajo</option>
+                      </select>
+                    </div>
+                    <div className={`${B}__ad-option`}>
+                      <label className={`${B}__label`}>Tamaño</label>
+                      <input type="range" min="24" max="80" value={overlayFontSize} onChange={e => setOverlayFontSize(Number(e.target.value))} className={`${B}__range`} />
+                    </div>
+                    <div className={`${B}__ad-option`}>
+                      <label className={`${B}__label`}>Color</label>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        {['#FFFFFF', '#FFD700', '#FF4444', '#00FF88', '#000000'].map(c => (
+                          <button key={c} onClick={() => setOverlayColor(c)}
+                            style={{
+                              width: 28, height: 28, borderRadius: '50%', border: overlayColor === c ? '3px solid #2D5A3D' : '2px solid #ddd',
+                              background: c, cursor: 'pointer',
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div className={`${B}__ad-option`}>
+                      <label className={`${B}__label`}>Oscuridad fondo</label>
+                      <input type="range" min="0" max="80" value={overlayBgOpacity * 100} onChange={e => setOverlayBgOpacity(Number(e.target.value) / 100)} className={`${B}__range`} />
+                    </div>
+                  </div>
+                </div>
+
                 <div className={`${B}__field`}>
-                  <label className={`${B}__label`}>Caption</label>
+                  <label className={`${B}__label`}>Caption (redes sociales)</label>
                   <textarea
                     className={`${B}__textarea`}
                     value={publishCaption}
                     onChange={(e) => setPublishCaption(e.target.value)}
                     placeholder="Escribe el caption para tu publicacion..."
-                    rows={4}
+                    rows={3}
                   />
                 </div>
 
@@ -2116,8 +2274,8 @@ const ContentStudio = () => {
                       </>
                     )}
                   </button>
-                  <button className={`${B}__btn-secondary`}>
-                    <DownloadIcon /> Descargar
+                  <button className={`${B}__btn-secondary`} onClick={renderAndDownload}>
+                    <DownloadIcon /> Descargar Ad
                   </button>
                 </div>
               </div>
