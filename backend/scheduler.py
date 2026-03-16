@@ -993,6 +993,179 @@ def _execute_pending_tasks(db):
 
 
 # ============================================================================
+# UNRESOLVED MESSAGE DETECTOR — Never leave a client without reply
+# Uses the SAME pattern as sweep (sync AI call + _store_outbound_message)
+# to avoid the asyncio.new_event_loop fragility and ensure dedup works.
+# ============================================================================
+def _detect_unresolved_messages(db):
+    """Find WhatsApp conversations where the client wrote but Lina NEVER replied,
+    and generate + send a response. Catches messages that fell through the cracks.
+
+    Differs from sweep:
+    - Sweep checks conversations with unread_count > 0 and 3-120 min window
+    - This checks ALL conversations where last message is inbound with 5-30 min window
+    - Both use dedup tags (sweep / unresolved) to prevent double-replies
+    """
+    from routes.whatsapp_endpoints import _wa_token_paused
+    from sqlalchemy import desc
+
+    if _wa_token_paused:
+        return  # Can't send if token is dead
+
+    # Check tenant-level AI pause
+    from database.models import Tenant
+    tenant = db.query(Tenant).first()
+    if tenant and tenant.ai_is_paused:
+        return
+
+    now_utc = datetime.utcnow()
+    min_age = now_utc - timedelta(minutes=5)    # Give normal flow time to work
+    max_age = now_utc - timedelta(minutes=30)   # Don't touch older (sweep handles 3-120 min)
+
+    convs = (
+        db.query(WhatsAppConversation)
+        .filter(WhatsAppConversation.is_ai_active == True)
+        .all()
+    )
+
+    recovered = 0
+    for conv in convs:
+        if recovered >= 3:  # Max 3 per cycle
+            break
+
+        # Get the last message in this conversation
+        last_msg = (
+            db.query(WhatsAppMessage)
+            .filter(WhatsAppMessage.conversation_id == conv.id)
+            .order_by(desc(WhatsAppMessage.created_at))
+            .first()
+        )
+        if not last_msg or not last_msg.created_at:
+            continue
+
+        # Must be inbound (client wrote last)
+        if last_msg.direction != "inbound":
+            continue
+
+        # Must be in our 5-30 minute window
+        if last_msg.created_at > min_age or last_msg.created_at < max_age:
+            continue
+
+        # Check if there's ANY successful outbound after this inbound
+        has_reply = (
+            db.query(WhatsAppMessage)
+            .filter(
+                WhatsAppMessage.conversation_id == conv.id,
+                WhatsAppMessage.direction == "outbound",
+                WhatsAppMessage.status != "failed",
+                WhatsAppMessage.created_at > last_msg.created_at,
+            )
+            .first()
+        )
+        if has_reply:
+            continue  # Already replied
+
+        # Dedup: don't recover same conversation twice today
+        if _already_sent_today(db, conv.id, "unresolved"):
+            continue
+
+        # Also check if sweep already handled it
+        if _already_sent_today(db, conv.id, "sweep"):
+            continue
+
+        # FOUND: unresolved message!
+        client_name = conv.wa_contact_name or "cliente"
+        msg_age = int((now_utc - last_msg.created_at).total_seconds() / 60)
+        print(f"[UNRESOLVED] Found unresolved msg in conv {conv.id} ({client_name}) — {msg_age}min old")
+        log_event(
+            "sistema",
+            f"Mensaje sin respuesta detectado — recuperando",
+            detail=f"{client_name} escribio hace {msg_age} min sin respuesta. Generando respuesta.",
+            conv_id=conv.id, contact_name=client_name, status="warning",
+        )
+
+        # Generate AI response (same sync pattern as sweep — no asyncio.new_event_loop needed)
+        try:
+            from routes.ai_endpoints import _build_system_prompt, _call_ai_sync
+            import re as re_mod
+
+            system_prompt = _build_system_prompt(db, is_whatsapp=True, conv_id=conv.id)
+
+            # Build conversation history
+            recent_msgs = (
+                db.query(WhatsAppMessage)
+                .filter(WhatsAppMessage.conversation_id == conv.id)
+                .order_by(desc(WhatsAppMessage.created_at))
+                .limit(20)
+                .all()
+            )
+            recent_msgs.reverse()
+
+            history = []
+            for m in recent_msgs:
+                role = "user" if m.direction == "inbound" else "assistant"
+                if m.sent_by == "lina_ia_offhours":
+                    continue
+                history.append({"role": role, "content": m.content or ""})
+
+            # Merge consecutive same-role
+            merged = []
+            for h in history:
+                if merged and merged[-1]["role"] == h["role"]:
+                    merged[-1]["content"] += "\n" + h["content"]
+                else:
+                    merged.append(h)
+            history = merged
+
+            while history and history[-1]["role"] == "user":
+                history.pop()
+
+            inbound_text = last_msg.content or ""
+            safe_context = f"[INSTRUCCION CRITICA: SOLO responde al mensaje del cliente. NO inventes mensajes promocionales ni de seguimiento. Responde a lo que el cliente escribio.]\n\n{inbound_text}"
+
+            ai_response = _call_ai_sync(system_prompt, history, safe_context)
+
+            if not ai_response or not ai_response.strip():
+                continue
+
+            # Clean response
+            clean = ai_response
+            clean = re_mod.sub(r'\*\*(.+?)\*\*', r'\1', clean)
+            clean = re_mod.sub(r'\*(.+?)\*', r'\1', clean)
+            clean = re_mod.sub(r'#{1,3}\s+', '', clean)
+            clean = re_mod.sub(r'`([^`]+)`', r'\1', clean)
+            clean = re_mod.sub(r'[`]{1,3}\s*action.*', '', clean, flags=re_mod.DOTALL | re_mod.IGNORECASE)
+            clean = re_mod.sub(r'\{[^}]*"action"\s*:.*?\}', '', clean, flags=re_mod.DOTALL)
+            clean = re_mod.sub(r'\n{3,}', '\n\n', clean).strip()
+
+            if not clean:
+                continue
+
+            # Send via WhatsApp and store with dedup tag
+            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean)
+            _store_outbound_message(db, conv.id, clean, wa_sent, tag="unresolved")
+
+            recovered += 1
+            print(f"[UNRESOLVED] Replied to conv #{conv.id} ({client_name}) — msg was {msg_age}min old")
+            log_event(
+                "respuesta",
+                f"Mensaje recuperado de {client_name}",
+                detail=f"El mensaje tenia {msg_age} min sin respuesta. Ya lo resolvi.",
+                contact_name=client_name, conv_id=conv.id,
+                status="ok",
+            )
+
+            time.sleep(5)
+
+        except Exception as e:
+            print(f"[UNRESOLVED] Error for conv #{conv.id}: {e}")
+
+    if recovered:
+        print(f"[UNRESOLVED] Recovered {recovered} conversation(s)")
+        log_event("sistema", f"Mensajes recuperados: {recovered}", detail=f"Se respondieron {recovered} conversacion(es) que estaban sin respuesta.", status="ok")
+
+
+# ============================================================================
 # TOKEN HEALTH CHECK — Auto-resume Lina when token is restored
 # ============================================================================
 def _check_token_health():
@@ -1030,8 +1203,8 @@ def _check_token_health():
 # ============================================================================
 def _scheduler_loop():
     """Main scheduler loop — runs in a background thread."""
-    print("[SCHEDULER] Started v6 (DB-aware, deploy-safe, off-hours, sweep, token-aware)")
-    print("[SCHEDULER] Features: 30-min reminders, custom reminders, no-show status, morning review, sweep, token health")
+    print("[SCHEDULER] Started v7 (DB-aware, deploy-safe, off-hours, sweep, token-aware, unresolved detector)")
+    print("[SCHEDULER] Features: 30-min reminders, custom reminders, no-show status, morning review, sweep, token health, unresolved messages")
     log_event("sistema", "Lina IA iniciada", detail="Sistema de tareas automaticas activo: recordatorios, seguimientos, revision matutina, verificacion de token.", status="ok")
     # Wait 60 seconds on startup before first check (let everything initialize)
     time.sleep(60)
@@ -1050,6 +1223,7 @@ def _scheduler_loop():
                     _execute_pending_tasks(db)
                     _morning_review(db)
                     _sweep_missed_conversations(db)
+                    _detect_unresolved_messages(db)
 
                     # Automated workflows engine (all enabled workflows)
                     try:

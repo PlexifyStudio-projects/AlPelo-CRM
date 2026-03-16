@@ -464,6 +464,32 @@ class WorkflowExecution(Base):
     workflow = relationship("WorkflowTemplate", foreign_keys=[workflow_id])
 
 
+# ============================================================================
+# AI MEMORY — Long-term client memory with embeddings (pgvector)
+# ============================================================================
+
+class ClientMemory(Base):
+    """Permanent memory per client — extracted from conversations by AI.
+    Stores preferences, patterns, complaints, and insights that Lina
+    remembers forever. Embeddings enable semantic search."""
+    __tablename__ = "client_memory"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=False)
+    memory_type = Column(String(50), nullable=False)  # preference, complaint, pattern, insight, allergy, note
+    content = Column(Text, nullable=False)
+    embedding = Column(Text, nullable=True)  # JSON array of floats (vector for semantic search)
+    source = Column(String(50), default="conversation")  # conversation, admin_note, auto_detected
+    confidence = Column(Float, default=1.0)  # 1.0 = confirmed, 0.5 = inferred
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    client = relationship("Client", foreign_keys=[client_id])
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
 class BrandKit(Base):
     """Brand identity configuration per tenant — colors, fonts, tone."""
     __tablename__ = "brand_kits"

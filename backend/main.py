@@ -56,6 +56,36 @@ def _run_migrations(engine):
         except Exception as e:
             print(f"[MIGRATION] Error on {table}.{column}: {e}")
 
+    # --- client_memory table (long-term AI memory with embeddings) ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='client_memory'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.client_memory (
+                        id SERIAL PRIMARY KEY,
+                        tenant_id INTEGER NOT NULL REFERENCES public.tenant(id),
+                        client_id INTEGER NOT NULL REFERENCES public.client(id),
+                        memory_type VARCHAR(50) NOT NULL,
+                        content TEXT NOT NULL,
+                        embedding TEXT,
+                        source VARCHAR(50) DEFAULT 'conversation',
+                        confidence FLOAT DEFAULT 1.0,
+                        is_active BOOLEAN DEFAULT TRUE,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_client_memory_client ON public.client_memory(client_id)"))
+                conn.execute(text("CREATE INDEX idx_client_memory_tenant ON public.client_memory(tenant_id)"))
+                conn.execute(text("CREATE INDEX idx_client_memory_active ON public.client_memory(client_id, is_active)"))
+                print("[MIGRATION] Created client_memory table with indexes")
+    except Exception as e:
+        print(f"[MIGRATION] client_memory table: {e}")
+
     # Fix: ensure ai_model column has a DEFAULT so raw SQL inserts don't fail
     try:
         with engine.begin() as conn:
@@ -311,11 +341,38 @@ async def lina_memory():
                 "created_at": n.created_at.isoformat() if n.created_at else None,
             })
 
-        all_items = global_items + client_items
+        # --- Long-term memories (pgvector client_memory table) ---
+        from database.models import ClientMemory
+        long_term = []
+        try:
+            lt_memories = (
+                db.query(ClientMemory)
+                .filter(ClientMemory.is_active == True)
+                .order_by(ClientMemory.updated_at.desc())
+                .limit(50)
+                .all()
+            )
+            for m in lt_memories:
+                client = db.query(Client).filter(Client.id == m.client_id).first()
+                long_term.append({
+                    "id": f"M{m.id}",
+                    "type": f"memoria_{m.memory_type}",
+                    "category": m.memory_type,
+                    "client_name": client.name if client else "?",
+                    "content": m.content[:300],
+                    "source": m.source,
+                    "confidence": m.confidence,
+                    "created_at": m.created_at.isoformat() if m.created_at else None,
+                })
+        except Exception as mem_err:
+            print(f"[MEMORY] Error loading long-term memories: {mem_err}")
+
+        all_items = global_items + client_items + long_term
         return {
             "total": len(all_items),
             "global_count": len(global_items),
             "client_count": len(client_items),
+            "longterm_count": len(long_term),
             "items": all_items,
         }
     finally:
@@ -441,6 +498,126 @@ Tu trabajo: reescribirla como una REGLA CLARA y CONCISA que Lina pueda seguir.
         print(f"[Learning AI] Failed to process: {e}")
 
     return raw_input
+
+
+# ============================================================================
+# CLIENT MEMORY — Long-term AI memory per client (pgvector phase 4)
+# ============================================================================
+
+@app.get("/api/lina/client-memories/{client_id}")
+async def get_client_memories(client_id: int):
+    """Get all long-term memories for a specific client."""
+    from database.connection import SessionLocal
+    from database.models import ClientMemory, Client
+
+    db = SessionLocal()
+    try:
+        client = db.query(Client).filter(Client.id == client_id).first()
+        if not client:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+        memories = (
+            db.query(ClientMemory)
+            .filter(ClientMemory.client_id == client_id, ClientMemory.is_active == True)
+            .order_by(ClientMemory.updated_at.desc())
+            .all()
+        )
+        return {
+            "client_id": client_id,
+            "client_name": client.name,
+            "total": len(memories),
+            "memories": [{
+                "id": m.id,
+                "type": m.memory_type,
+                "content": m.content,
+                "source": m.source,
+                "confidence": m.confidence,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+                "updated_at": m.updated_at.isoformat() if m.updated_at else None,
+            } for m in memories],
+        }
+    finally:
+        db.close()
+
+
+@app.delete("/api/lina/client-memories/{memory_id}")
+async def delete_client_memory(memory_id: int):
+    """Admin can delete a specific memory (soft delete)."""
+    from database.connection import SessionLocal
+    from database.models import ClientMemory
+
+    db = SessionLocal()
+    try:
+        mem = db.query(ClientMemory).filter(ClientMemory.id == memory_id).first()
+        if not mem:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Memoria no encontrada")
+        mem.is_active = False
+        db.commit()
+        return {"ok": True, "message": "Memoria eliminada"}
+    finally:
+        db.close()
+
+
+@app.post("/api/lina/client-memories")
+async def create_client_memory_manual(request: dict):
+    """Admin manually adds a memory for a client."""
+    from database.connection import SessionLocal
+    from database.models import ClientMemory, Client, Tenant
+
+    client_id = request.get("client_id")
+    content = (request.get("content") or "").strip()
+    memory_type = request.get("type", "note")
+
+    if not client_id or not content:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="client_id y content son requeridos")
+
+    db = SessionLocal()
+    try:
+        client = db.query(Client).filter(Client.id == client_id).first()
+        if not client:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+        tenant = db.query(Tenant).first()
+        tenant_id = tenant.id if tenant else 1
+
+        # Generate embedding for the new memory
+        embedding_json = None
+        try:
+            from ai_embeddings import create_embedding_sync
+            embedding = create_embedding_sync(content)
+            if embedding:
+                import json
+                embedding_json = json.dumps(embedding)
+        except Exception:
+            pass
+
+        mem = ClientMemory(
+            tenant_id=tenant_id,
+            client_id=client_id,
+            memory_type=memory_type,
+            content=content,
+            embedding=embedding_json,
+            source="admin_note",
+            confidence=1.0,
+            is_active=True,
+        )
+        db.add(mem)
+        db.commit()
+        db.refresh(mem)
+
+        return {
+            "id": mem.id,
+            "type": mem.memory_type,
+            "content": mem.content,
+            "source": mem.source,
+            "created_at": mem.created_at.isoformat() if mem.created_at else None,
+        }
+    finally:
+        db.close()
 
 
 @app.get("/api/lina/health")

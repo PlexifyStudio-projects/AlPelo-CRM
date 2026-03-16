@@ -1519,6 +1519,31 @@ No-shows registrados: {no_show_count}"""
                 if total_visits == 0:
                     hints.append("CLIENTE NUEVO: Primer contacto. Da la mejor primera impresión.")
 
+                # === LONG-TERM MEMORY (pgvector / semantic search) ===
+                try:
+                    from ai_memory_extractor import get_relevant_memories
+                    # Use the client's LAST inbound message as query for relevant memories
+                    # This finds memories related to what the client is asking about NOW
+                    last_inbound = (
+                        db.query(WhatsAppMessage)
+                        .filter(
+                            WhatsAppMessage.conversation_id == conv_id,
+                            WhatsAppMessage.direction == "inbound",
+                        )
+                        .order_by(WhatsAppMessage.created_at.desc())
+                        .first()
+                    )
+                    memory_query = (last_inbound.content if last_inbound and last_inbound.content else client.name) or client.name
+                    long_term_memories = get_relevant_memories(client.id, memory_query, limit=7)
+                    if long_term_memories:
+                        memory_lines = []
+                        for ltm in long_term_memories:
+                            conf_pct = int((ltm.get('confidence', 1.0)) * 100)
+                            memory_lines.append(f"  - {ltm['content']} (confianza: {conf_pct}%)")
+                        hints.append(f"MEMORIA A LARGO PLAZO — Lina recuerda esto del cliente:\n" + "\n".join(memory_lines) + "\n  USA esta informacion para personalizar tu respuesta. Si el cliente tiene profesional preferido, sugierelo. Si tiene horario preferido, ofrece ese horario.")
+                except Exception as mem_err:
+                    print(f"[MEMORY] Error loading memories for client {client.id}: {mem_err}")
+
                 if hints:
                     client_section += "\n\nINSTRUCCIONES ESPECIALES PARA ESTE CLIENTE:\n" + "\n".join(f"  → {h}" for h in hints)
 

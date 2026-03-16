@@ -1643,6 +1643,15 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     create_auto_tasks(conv_id, inbound_text, clean_response)
                 except Exception as task_err:
                     print(f"[Lina IA] Auto-task detection error (non-critical): {task_err}")
+
+                # POST-RESPONSE: Extract and save long-term memories (non-blocking, in background thread)
+                try:
+                    import threading
+                    from ai_memory_extractor import save_memories_sync
+                    mem_thread = threading.Thread(target=save_memories_sync, args=(conv_id,), daemon=True)
+                    mem_thread.start()
+                except Exception as mem_err:
+                    print(f"[Lina IA] Memory extraction error (non-critical): {mem_err}")
             else:
                 log_event("respuesta", f"Mensaje generado pero fallo el envio", detail=clean_response[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
 
