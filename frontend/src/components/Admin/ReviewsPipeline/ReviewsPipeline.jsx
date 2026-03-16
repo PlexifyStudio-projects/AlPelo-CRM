@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNotification } from '../../context/NotificationContext';
-import reviewService from '../../services/reviewService';
+import { useNotification } from '../../../context/NotificationContext';
+import reviewService from '../../../services/reviewService';
 
 const B = 'reviews';
 
