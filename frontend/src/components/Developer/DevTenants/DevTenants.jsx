@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNotification } from '../../../context/NotificationContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const b = 'dev-tenants';
@@ -17,6 +18,7 @@ const EMPTY_TENANT = {
 };
 
 const DevTenants = () => {
+  const { addNotification } = useNotification();
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -91,7 +93,7 @@ const DevTenants = () => {
   const handleSave = async () => {
     if (!editingId) {
       if (!adminUsername.trim() || !adminPassword.trim()) {
-        alert('Usuario y contrasena son obligatorios');
+        addNotification('Usuario y contrasena son obligatorios', 'error');
         return;
       }
     }
@@ -118,15 +120,15 @@ const DevTenants = () => {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.detail || 'Error al guardar');
+        addNotification(err.detail || 'Error al guardar', 'error');
         return;
       }
 
       setShowForm(false);
-      alert(editingId ? 'Agencia actualizada' : 'Agencia creada exitosamente');
+      addNotification(editingId ? 'Agencia actualizada' : 'Agencia creada exitosamente', 'success');
       fetchTenants();
     } catch {
-      alert('Error de conexion');
+      addNotification('Error de conexion', 'error');
     }
   };
 
