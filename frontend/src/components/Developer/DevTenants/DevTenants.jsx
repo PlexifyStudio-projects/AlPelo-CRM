@@ -11,10 +11,34 @@ const EMPTY_TENANT = {
   owner_phone: '',
   owner_email: '',
   city: '',
-  country: 'CO',
+  country: '',
   monthly_price: 0,
   messages_limit: 5000,
   plan: 'standard',
+};
+
+const LATAM_COUNTRIES = {
+  CO: { name: 'Colombia', cities: ['Bogota', 'Medellin', 'Cali', 'Barranquilla', 'Cartagena', 'Bucaramanga', 'Cucuta', 'Pereira', 'Manizales', 'Santa Marta', 'Ibague', 'Villavicencio', 'Pasto', 'Monteria', 'Neiva', 'Armenia', 'Valledupar', 'Popayan', 'Sincelejo', 'Tunja'] },
+  CL: { name: 'Chile', cities: ['Santiago', 'Valparaiso', 'Concepcion', 'La Serena', 'Antofagasta', 'Temuco', 'Rancagua', 'Talca', 'Arica', 'Iquique', 'Puerto Montt', 'Chillan', 'Osorno', 'Calama', 'Copiapo', 'Punta Arenas'] },
+  AR: { name: 'Argentina', cities: ['Buenos Aires', 'Cordoba', 'Rosario', 'Mendoza', 'Tucuman', 'La Plata', 'Mar del Plata', 'Salta', 'Santa Fe', 'San Juan', 'Resistencia', 'Neuquen', 'Corrientes', 'Posadas', 'San Luis', 'Bahia Blanca'] },
+  PE: { name: 'Peru', cities: ['Lima', 'Arequipa', 'Trujillo', 'Chiclayo', 'Piura', 'Cusco', 'Iquitos', 'Huancayo', 'Tacna', 'Chimbote', 'Pucallpa', 'Cajamarca', 'Ayacucho', 'Juliaca', 'Ica'] },
+  VE: { name: 'Venezuela', cities: ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto', 'Maracay', 'Ciudad Guayana', 'Barcelona', 'Merida', 'San Cristobal', 'Cumana', 'Barinas', 'Maturin', 'Puerto La Cruz', 'Cabimas'] },
+  EC: { name: 'Ecuador', cities: ['Quito', 'Guayaquil', 'Cuenca', 'Santo Domingo', 'Ambato', 'Machala', 'Portoviejo', 'Manta', 'Loja', 'Riobamba', 'Esmeraldas', 'Ibarra', 'Latacunga'] },
+  US: { name: 'Estados Unidos', cities: ['Miami', 'New York', 'Los Angeles', 'Houston', 'Chicago', 'Dallas', 'San Antonio', 'Phoenix', 'Orlando', 'Atlanta', 'San Francisco', 'Denver', 'Boston', 'Las Vegas', 'San Diego', 'Charlotte', 'Tampa', 'Austin', 'Nashville', 'Washington DC'] },
+  BR: { name: 'Brasil', cities: ['Sao Paulo', 'Rio de Janeiro', 'Brasilia', 'Salvador', 'Fortaleza', 'Belo Horizonte', 'Manaus', 'Curitiba', 'Recife', 'Porto Alegre', 'Goiania', 'Belem', 'Campinas', 'Guarulhos', 'Florianopolis'] },
+  MX: { name: 'Mexico', cities: ['Ciudad de Mexico', 'Guadalajara', 'Monterrey', 'Puebla', 'Tijuana', 'Leon', 'Cancun', 'Merida', 'Queretaro', 'Chihuahua', 'Aguascalientes', 'Toluca', 'Morelia', 'Oaxaca', 'Veracruz'] },
+  PA: { name: 'Panama', cities: ['Ciudad de Panama', 'San Miguelito', 'David', 'Colon', 'La Chorrera', 'Santiago', 'Chitre', 'Penonomé'] },
+  CR: { name: 'Costa Rica', cities: ['San Jose', 'Alajuela', 'Cartago', 'Heredia', 'Liberia', 'Limon', 'Puntarenas'] },
+  GT: { name: 'Guatemala', cities: ['Ciudad de Guatemala', 'Quetzaltenango', 'Escuintla', 'Mixco', 'Villa Nueva', 'Huehuetenango', 'Coban'] },
+  HN: { name: 'Honduras', cities: ['Tegucigalpa', 'San Pedro Sula', 'La Ceiba', 'Choloma', 'El Progreso', 'Comayagua'] },
+  SV: { name: 'El Salvador', cities: ['San Salvador', 'Santa Ana', 'San Miguel', 'Soyapango', 'Mejicanos', 'Santa Tecla'] },
+  NI: { name: 'Nicaragua', cities: ['Managua', 'Leon', 'Masaya', 'Matagalpa', 'Chinandega', 'Esteli', 'Granada'] },
+  DO: { name: 'Republica Dominicana', cities: ['Santo Domingo', 'Santiago', 'San Pedro de Macoris', 'La Romana', 'San Cristobal', 'Puerto Plata'] },
+  PY: { name: 'Paraguay', cities: ['Asuncion', 'Ciudad del Este', 'San Lorenzo', 'Luque', 'Capiata', 'Encarnacion'] },
+  UY: { name: 'Uruguay', cities: ['Montevideo', 'Salto', 'Paysandu', 'Las Piedras', 'Rivera', 'Maldonado', 'Punta del Este'] },
+  BO: { name: 'Bolivia', cities: ['La Paz', 'Santa Cruz', 'Cochabamba', 'Sucre', 'Oruro', 'Tarija', 'Potosi', 'Trinidad'] },
+  CU: { name: 'Cuba', cities: ['La Habana', 'Santiago de Cuba', 'Camaguey', 'Holguin', 'Santa Clara', 'Guantanamo'] },
+  PR: { name: 'Puerto Rico', cities: ['San Juan', 'Bayamon', 'Carolina', 'Ponce', 'Caguas', 'Mayaguez'] },
 };
 
 const DevTenants = () => {
@@ -105,6 +129,9 @@ const DevTenants = () => {
       const method = editingId ? 'PUT' : 'POST';
 
       const payload = { ...formData, plan: 'standard' };
+      // If "Otra..." was selected, use custom city value
+      if (payload.city === '__otra') payload.city = payload._customCity || '';
+      delete payload._customCity;
       if (!editingId) {
         payload.slug = slugify(payload.name);
         payload.admin_username = adminUsername.trim();
@@ -299,7 +326,7 @@ const DevTenants = () => {
                   </div>
                   <div className={`${b}__card-info-item`}>
                     <span className={`${b}__card-info-label`}>Ciudad</span>
-                    <span className={`${b}__card-info-value`}>{t.city || '—'}</span>
+                    <span className={`${b}__card-info-value`}>{t.city || '—'}{t.country && LATAM_COUNTRIES[t.country] ? `, ${LATAM_COUNTRIES[t.country].name}` : ''}</span>
                   </div>
                   <div className={`${b}__card-info-item`}>
                     <span className={`${b}__card-info-label`}>Usuario</span>
@@ -404,22 +431,51 @@ const DevTenants = () => {
 
               <div className={`${b}__form-row`}>
                 <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Ciudad</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="Bucaramanga"
-                  />
+                  <label className={`${b}__form-label`}>Pais</label>
+                  <select
+                    className={`${b}__form-select`}
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value, city: '' })}
+                  >
+                    <option value="">Seleccionar pais...</option>
+                    {Object.entries(LATAM_COUNTRIES).map(([code, { name }]) => (
+                      <option key={code} value={code}>{name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Pais</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    placeholder="CO"
-                  />
+                  <label className={`${b}__form-label`}>Ciudad</label>
+                  {formData.country && LATAM_COUNTRIES[formData.country] ? (
+                    <select
+                      className={`${b}__form-select`}
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    >
+                      <option value="">Seleccionar ciudad...</option>
+                      {LATAM_COUNTRIES[formData.country].cities.map((city) => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                      <option value="__otra">Otra...</option>
+                    </select>
+                  ) : (
+                    <input
+                      className={`${b}__form-input`}
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      placeholder="Selecciona un pais primero"
+                      disabled={!formData.country}
+                    />
+                  )}
+                  {formData.city === '__otra' && (
+                    <input
+                      className={`${b}__form-input`}
+                      style={{ marginTop: '8px' }}
+                      value={formData._customCity || ''}
+                      onChange={(e) => setFormData({ ...formData, _customCity: e.target.value, city: e.target.value || '__otra' })}
+                      placeholder="Escribe la ciudad..."
+                      autoFocus
+                    />
+                  )}
                 </div>
               </div>
 
