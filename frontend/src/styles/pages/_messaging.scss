@@ -43,6 +43,35 @@
     backdrop-filter: blur(8px);
   }
 
+  &__header-right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    font-family: $font-primary;
+    cursor: pointer;
+    transition: all $transition-fast;
+    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
+    white-space: nowrap;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(45, 90, 61, 0.3);
+    }
+  }
+
   // ════════════════════════════════════════════════
   // SEARCH
   // ════════════════════════════════════════════════
@@ -330,6 +359,148 @@
       &:hover {
         background: rgba($wa-green, 0.08);
         color: $wa-green-dark;
+      }
+    }
+
+    &--approve {
+      color: $color-primary;
+      font-weight: $font-weight-bold;
+      border-right: 1px solid $border-color-light;
+
+      &:hover {
+        background: $color-primary-ghost;
+      }
+    }
+
+    &--delete {
+      flex: 0;
+      padding: 11px 12px;
+      color: $color-gray-300;
+
+      &:hover {
+        background: $color-error-bg;
+        color: $color-error-dark;
+      }
+    }
+  }
+
+  &__card-status-badge {
+    font-size: 9px;
+    font-weight: $font-weight-bold;
+    padding: 2px 6px;
+    border-radius: $border-radius-full;
+    border: 1px solid;
+    letter-spacing: $letter-spacing-wide;
+    text-transform: uppercase;
+  }
+
+  &__card--pending {
+    opacity: 0.8;
+    border-style: dashed;
+  }
+
+  // ════════════════════════════════════════════════
+  // ADD TEMPLATE FORM (inside modal)
+  // ════════════════════════════════════════════════
+  &__form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: $spacing-md;
+  }
+
+  &__form-label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-600;
+  }
+
+  &__form-hint {
+    font-weight: $font-weight-medium;
+    color: $color-gray-400;
+    font-size: $font-size-2xs;
+  }
+
+  &__form-input,
+  &__form-select {
+    padding: 10px 14px;
+    border: $border-width solid $border-color-medium;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-family: $font-primary;
+    color: $color-gray-700;
+    background: $color-white;
+    transition: all $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px $color-primary-ghost;
+    }
+  }
+
+  &__form-textarea {
+    padding: 10px 14px;
+    border: $border-width solid $border-color-medium;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-family: $font-primary;
+    color: $color-gray-700;
+    background: $color-white;
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.6;
+    transition: all $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px $color-primary-ghost;
+    }
+  }
+
+  &__form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    margin-top: $spacing-md;
+  }
+
+  &__form-btn {
+    padding: 10px 20px;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    font-family: $font-primary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &--cancel {
+      background: $color-white;
+      border: $border-width solid $border-color;
+      color: $color-gray-500;
+
+      &:hover {
+        border-color: $color-error;
+        color: $color-error-dark;
+      }
+    }
+
+    &--save {
+      background: linear-gradient(135deg, $color-primary, $color-primary-light);
+      border: none;
+      color: $color-white;
+      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(45, 90, 61, 0.3);
+        transform: translateY(-1px);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
       }
     }
   }

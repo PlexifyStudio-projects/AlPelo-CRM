@@ -3,67 +3,54 @@ import { createPortal } from 'react-dom';
 import { useNotification } from '../../context/NotificationContext';
 import clientService from '../../services/clientService';
 import whatsappService from '../../services/whatsappService';
-import {
-  mockWhatsAppTemplates,
-  templateCategories,
-} from '../../data/mockData';
+import templateService from '../../services/templateService';
+
 const B = 'messaging';
 
 // ===== SVG Icons =====
-const SearchIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8" />
-    <line x1="21" y1="21" x2="16.65" y2="16.65" />
-  </svg>
-);
+const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
+const EyeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>;
+const SendIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
+const CloseIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
+const WhatsAppIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>;
+const UsersIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
+const CheckIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>;
+const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>;
 
-const EyeIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-    <circle cx="12" cy="12" r="3" />
-  </svg>
-);
-
-const SendIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="22" y1="2" x2="11" y2="13" />
-    <polygon points="22 2 15 22 11 13 2 9 22 2" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
-const WhatsAppIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-  </svg>
-);
-
-const UsersIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
-// ===== Helpers =====
-const getInitials = (name) => {
-  const parts = name.split(' ');
-  return parts.length >= 2
-    ? (parts[0][0] + parts[1][0]).toUpperCase()
-    : parts[0].substring(0, 2).toUpperCase();
+// Category colors
+const CAT_COLORS = {
+  recordatorio: '#3B82F6',
+  post_servicio: '#34D399',
+  reactivacion: '#FBBF24',
+  fidelizacion: '#EC4899',
+  promocion: '#8B5CF6',
+  bienvenida: '#10B981',
+  interno: '#0EA5E9',
+  general: '#6B6B63',
 };
 
-const getCategoryMeta = (categoryId) => {
-  const cat = templateCategories.find((c) => c.id === categoryId);
-  return cat || { name: categoryId, color: '#6B6B63' };
+const CAT_LABELS = {
+  recordatorio: 'Recordatorio',
+  post_servicio: 'Post-Servicio',
+  reactivacion: 'Reactivación',
+  fidelizacion: 'Fidelización',
+  promocion: 'Promoción',
+  bienvenida: 'Bienvenida',
+  interno: 'Interno',
+  general: 'General',
+};
+
+const STATUS_LABELS = {
+  approved: { label: 'Aprobada', color: '#10B981' },
+  pending: { label: 'Pendiente', color: '#F59E0B' },
+  draft: { label: 'Borrador', color: '#6B7280' },
+  rejected: { label: 'Rechazada', color: '#EF4444' },
+};
+
+const getInitials = (name) => {
+  const parts = name.split(' ');
+  return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0].substring(0, 2).toUpperCase();
 };
 
 const SEGMENTS = [
@@ -74,46 +61,48 @@ const SEGMENTS = [
   { id: 'inactivo', label: 'Inactivos' },
 ];
 
-const SAMPLE_CLIENT = { name: 'Juan Perez', favoriteService: 'tu servicio favorito', loyaltyPoints: 150, totalVisits: 8 };
-
 const SAMPLE_VARS = {
-  nombre: (c) => (c?.name || 'Cliente').split(' ')[0],
-  servicio: (c) => c?.favoriteService || c?.favorite_service || 'tu servicio',
+  nombre: () => 'Juan',
+  servicio: () => 'Corte Clásico',
   profesional: () => 'Anderson',
-  barbero: () => 'Anderson', // kept for backward compatibility with existing templates
+  barbero: () => 'Anderson',
   hora: () => '10:00 AM',
   fecha: () => '10 de marzo',
-  dia: () => 'lunes',
-  dias: () => '15',
-  puntos: (c) => String(c?.loyaltyPoints || 0),
-  visitas: (c) => String(c?.totalVisits || c?.total_visits || 0),
-  meses: () => '6',
-  precio: () => '$45.000',
-  producto: () => 'Producto Premium',
+  dias: () => '30',
+  visitas: () => '12',
+  negocio: () => 'Tu Negocio',
+  link_resena: () => 'https://g.page/review/...',
+  completadas: () => '15',
+  no_shows: () => '2',
+  ingresos: () => '1.250.000',
+  nuevos: () => '3',
+  google_review_link: () => 'https://g.page/review/...',
 };
 
-const resolveTemplate = (body, client) => {
+const resolveTemplate = (body) => {
   return body.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     const resolver = SAMPLE_VARS[key];
-    return resolver ? resolver(client) : `{{${key}}}`;
+    return resolver ? resolver() : `{{${key}}}`;
   });
 };
 
-// ===== Sub-components =====
-
-const TemplateCard = ({ template, onPreview, onSend }) => {
-  const cat = getCategoryMeta(template.category);
+// ===== Template Card =====
+const TemplateCard = ({ template, onPreview, onSend, onApprove, onDelete }) => {
+  const catColor = CAT_COLORS[template.category] || CAT_COLORS.general;
+  const catLabel = CAT_LABELS[template.category] || template.category;
+  const statusInfo = STATUS_LABELS[template.status] || STATUS_LABELS.draft;
 
   return (
-    <div className={`${B}__card`}>
-      <div className={`${B}__card-accent`} style={{ background: cat.color }} />
+    <div className={`${B}__card ${template.status !== 'approved' ? `${B}__card--pending` : ''}`}>
+      <div className={`${B}__card-accent`} style={{ background: catColor }} />
       <div className={`${B}__card-header`}>
-        <span className={`${B}__card-cat`} style={{ color: cat.color }}>
-          {cat.name}
-        </span>
+        <span className={`${B}__card-cat`} style={{ color: catColor }}>{catLabel}</span>
         <div className={`${B}__card-stats`}>
-          <span className={`${B}__card-sent`}>{template.timesSent} env.</span>
-          <span className={`${B}__card-rate`}>{template.responseRate}%</span>
+          <span className={`${B}__card-status-badge`} style={{ color: statusInfo.color, borderColor: statusInfo.color }}>
+            {statusInfo.label}
+          </span>
+          <span className={`${B}__card-sent`}>{template.times_sent} env.</span>
+          <span className={`${B}__card-rate`}>{Math.round(template.response_rate)}%</span>
         </div>
       </div>
       <h3 className={`${B}__card-name`}>{template.name}</h3>
@@ -121,55 +110,51 @@ const TemplateCard = ({ template, onPreview, onSend }) => {
         {template.body.length > 120 ? template.body.slice(0, 120) + '...' : template.body}
       </p>
       <div className={`${B}__card-vars`}>
-        {template.variables.map((v) => (
+        {(template.variables || []).map((v) => (
           <span key={v} className={`${B}__card-var`}>{`{{${v}}}`}</span>
         ))}
       </div>
       <div className={`${B}__card-actions`}>
-        <button
-          className={`${B}__card-btn ${B}__card-btn--preview`}
-          onClick={() => onPreview(template)}
-        >
-          <EyeIcon />
-          <span>Vista previa</span>
+        {template.status !== 'approved' && (
+          <button className={`${B}__card-btn ${B}__card-btn--approve`} onClick={() => onApprove(template)}>
+            <CheckIcon /> <span>Aprobar</span>
+          </button>
+        )}
+        <button className={`${B}__card-btn ${B}__card-btn--preview`} onClick={() => onPreview(template)}>
+          <EyeIcon /> <span>Vista previa</span>
         </button>
-        <button
-          className={`${B}__card-btn ${B}__card-btn--send`}
-          onClick={() => onSend(template)}
-        >
-          <SendIcon />
-          <span>Enviar</span>
+        <button className={`${B}__card-btn ${B}__card-btn--send`} onClick={() => onSend(template)}>
+          <SendIcon /> <span>Enviar</span>
+        </button>
+        <button className={`${B}__card-btn ${B}__card-btn--delete`} onClick={() => onDelete(template)}>
+          <TrashIcon />
         </button>
       </div>
     </div>
   );
 };
 
+// ===== Preview Modal =====
 const PreviewModal = ({ template, onClose }) => {
-  const cat = getCategoryMeta(template.category);
-  const previewText = resolveTemplate(template.body, SAMPLE_CLIENT);
+  const catColor = CAT_COLORS[template.category] || CAT_COLORS.general;
+  const catLabel = CAT_LABELS[template.category] || template.category;
+  const previewText = resolveTemplate(template.body);
 
   return createPortal(
     <div className={`${B}__overlay`} onClick={onClose}>
       <div className={`${B}__modal`} onClick={(e) => e.stopPropagation()}>
         <div className={`${B}__modal-header`}>
           <h3 className={`${B}__modal-title`}>Vista previa</h3>
-          <button className={`${B}__modal-close`} onClick={onClose}>
-            <CloseIcon />
-          </button>
+          <button className={`${B}__modal-close`} onClick={onClose}><CloseIcon /></button>
         </div>
         <div className={`${B}__modal-body`}>
-          <span className={`${B}__modal-cat`} style={{ color: cat.color }}>
-            {cat.name}
-          </span>
+          <span className={`${B}__modal-cat`} style={{ color: catColor }}>{catLabel}</span>
           <h4 className={`${B}__modal-name`}>{template.name}</h4>
-          <div className={`${B}__preview-bubble`}>
-            <p>{previewText}</p>
-          </div>
+          <div className={`${B}__preview-bubble`}><p>{previewText}</p></div>
           <div className={`${B}__modal-meta`}>
-            <span>Enviada {template.timesSent} veces</span>
-            <span>Tasa de respuesta: {template.responseRate}%</span>
-            {template.lastSent && <span>Ultimo envio: {template.lastSent}</span>}
+            <span>Slug: <strong>{template.slug}</strong></span>
+            <span>Enviada {template.times_sent} veces</span>
+            <span>Estado: {STATUS_LABELS[template.status]?.label}</span>
           </div>
         </div>
       </div>
@@ -178,6 +163,7 @@ const PreviewModal = ({ template, onClose }) => {
   );
 };
 
+// ===== Send Modal =====
 const SendModal = ({ template, onClose, onSend }) => {
   const [segment, setSegment] = useState('all');
   const [selected, setSelected] = useState([]);
@@ -206,46 +192,32 @@ const SendModal = ({ template, onClose, onSend }) => {
   }, [segment, realClients]);
 
   const toggleClient = useCallback((clientId) => {
-    setSelected((prev) =>
-      prev.includes(clientId)
-        ? prev.filter((id) => id !== clientId)
-        : [...prev, clientId]
-    );
+    setSelected((prev) => prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]);
   }, []);
 
   const handleSend = async () => {
-    const targets = selected.length > 0
-      ? realClients.filter((c) => selected.includes(c.id))
-      : filteredClients;
-
+    const targets = selected.length > 0 ? realClients.filter((c) => selected.includes(c.id)) : filteredClients;
     if (targets.length === 0) return;
     setSending(true);
     setSendProgress({ sent: 0, failed: 0, total: targets.length });
-
-    let sent = 0;
-    let failed = 0;
+    let sent = 0, failed = 0;
 
     for (const client of targets) {
       try {
-        // Resolve template variables for this client
         const firstName = (client.name || '').split(' ')[0];
         let body = template.body
           .replace(/\{\{nombre\}\}/g, firstName)
           .replace(/\{\{servicio\}\}/g, client.favorite_service || 'tu servicio')
           .replace(/\{\{profesional\}\}/g, 'tu profesional')
           .replace(/\{\{barbero\}\}/g, 'tu profesional')
+          .replace(/\{\{negocio\}\}/g, 'AlPelo')
           .replace(/\{\{dias\}\}/g, client.days_since_last_visit ? String(client.days_since_last_visit) : '30');
-
-        // Create or get conversation, then send message
         const conv = await whatsappService.createConversation(client.phone, client.name);
         await whatsappService.sendMessage(conv.id, body);
         sent++;
-      } catch {
-        failed++;
-      }
+      } catch { failed++; }
       setSendProgress({ sent, failed, total: targets.length });
     }
-
     setSending(false);
     onSend(template, sent, failed);
   };
@@ -255,26 +227,15 @@ const SendModal = ({ template, onClose, onSend }) => {
       <div className={`${B}__modal ${B}__modal--send`} onClick={(e) => e.stopPropagation()}>
         <div className={`${B}__modal-header`}>
           <h3 className={`${B}__modal-title`}>Enviar: {template.name}</h3>
-          <button className={`${B}__modal-close`} onClick={onClose} disabled={sending}>
-            <CloseIcon />
-          </button>
+          <button className={`${B}__modal-close`} onClick={onClose} disabled={sending}><CloseIcon /></button>
         </div>
         <div className={`${B}__modal-body`}>
-          {/* Segment pills */}
           <div className={`${B}__segment-filters`}>
             {SEGMENTS.map((seg) => (
-              <button
-                key={seg.id}
-                className={`${B}__segment-btn ${segment === seg.id ? `${B}__segment-btn--active` : ''}`}
-                onClick={() => setSegment(seg.id)}
-                disabled={sending}
-              >
-                {seg.label}
-              </button>
+              <button key={seg.id} className={`${B}__segment-btn ${segment === seg.id ? `${B}__segment-btn--active` : ''}`}
+                onClick={() => setSegment(seg.id)} disabled={sending}>{seg.label}</button>
             ))}
           </div>
-
-          {/* Client list */}
           <div className={`${B}__client-list`}>
             {loadingClients ? (
               <p style={{ padding: '20px', textAlign: 'center', color: '#8696A0' }}>Cargando clientes...</p>
@@ -282,17 +243,9 @@ const SendModal = ({ template, onClose, onSend }) => {
               <p style={{ padding: '20px', textAlign: 'center', color: '#8696A0' }}>No hay clientes en este segmento</p>
             ) : (
               filteredClients.map((client) => (
-                <label
-                  key={client.id}
-                  className={`${B}__client-row ${selected.includes(client.id) ? `${B}__client-row--selected` : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(client.id)}
-                    onChange={() => toggleClient(client.id)}
-                    className={`${B}__client-check`}
-                    disabled={sending}
-                  />
+                <label key={client.id} className={`${B}__client-row ${selected.includes(client.id) ? `${B}__client-row--selected` : ''}`}>
+                  <input type="checkbox" checked={selected.includes(client.id)} onChange={() => toggleClient(client.id)}
+                    className={`${B}__client-check`} disabled={sending} />
                   <div className={`${B}__client-avatar`}>{getInitials(client.name)}</div>
                   <div className={`${B}__client-info`}>
                     <span className={`${B}__client-name`}>{client.name}</span>
@@ -302,8 +255,6 @@ const SendModal = ({ template, onClose, onSend }) => {
               ))
             )}
           </div>
-
-          {/* Footer */}
           <div className={`${B}__send-footer`}>
             {sending ? (
               <span className={`${B}__send-count`}>
@@ -312,15 +263,72 @@ const SendModal = ({ template, onClose, onSend }) => {
               </span>
             ) : (
               <span className={`${B}__send-count`}>
-                <UsersIcon />
-                {selected.length > 0
-                  ? `${selected.length} seleccionados`
-                  : `${filteredClients.length} clientes`}
+                <UsersIcon /> {selected.length > 0 ? `${selected.length} seleccionados` : `${filteredClients.length} clientes`}
               </span>
             )}
             <button className={`${B}__send-btn`} onClick={handleSend} disabled={sending || filteredClients.length === 0}>
-              <WhatsAppIcon />
-              <span>{sending ? 'Enviando...' : 'Enviar Plantilla'}</span>
+              <WhatsAppIcon /> <span>{sending ? 'Enviando...' : 'Enviar Plantilla'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ===== Add Template Modal =====
+const AddTemplateModal = ({ onClose, onSave }) => {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('general');
+  const [body, setBody] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!name.trim() || !body.trim()) return;
+    setSaving(true);
+    try {
+      const result = await templateService.createTemplate({ name, category, body });
+      onSave(result);
+    } catch (e) {
+      console.error('Failed to create template:', e);
+    }
+    setSaving(false);
+  };
+
+  return createPortal(
+    <div className={`${B}__overlay`} onClick={onClose}>
+      <div className={`${B}__modal`} onClick={(e) => e.stopPropagation()}>
+        <div className={`${B}__modal-header`}>
+          <h3 className={`${B}__modal-title`}>Nueva Plantilla</h3>
+          <button className={`${B}__modal-close`} onClick={onClose}><CloseIcon /></button>
+        </div>
+        <div className={`${B}__modal-body`}>
+          <div className={`${B}__form-field`}>
+            <label className={`${B}__form-label`}>Nombre</label>
+            <input type="text" className={`${B}__form-input`} value={name} onChange={e => setName(e.target.value)}
+              placeholder="Ej: Recordatorio de cita" />
+          </div>
+          <div className={`${B}__form-field`}>
+            <label className={`${B}__form-label`}>Categoría</label>
+            <select className={`${B}__form-select`} value={category} onChange={e => setCategory(e.target.value)}>
+              {Object.entries(CAT_LABELS).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div className={`${B}__form-field`}>
+            <label className={`${B}__form-label`}>
+              Mensaje <span className={`${B}__form-hint`}>Usa {'{{nombre}}'}, {'{{hora}}'}, {'{{negocio}}'}, etc.</span>
+            </label>
+            <textarea className={`${B}__form-textarea`} value={body} onChange={e => setBody(e.target.value)}
+              placeholder="Hola {{nombre}}, te recordamos tu cita..." rows={5} />
+          </div>
+          <div className={`${B}__form-actions`}>
+            <button className={`${B}__form-btn ${B}__form-btn--cancel`} onClick={onClose}>Cancelar</button>
+            <button className={`${B}__form-btn ${B}__form-btn--save`} onClick={handleSave}
+              disabled={saving || !name.trim() || !body.trim()}>
+              {saving ? 'Guardando...' : 'Crear Plantilla'}
             </button>
           </div>
         </div>
@@ -333,42 +341,93 @@ const SendModal = ({ template, onClose, onSend }) => {
 // ===== Main Component =====
 const Messaging = () => {
   const { addNotification } = useNotification();
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [sendTemplate, setSendTemplate] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Load templates from DB
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await templateService.getTemplates();
+        setTemplates(data || []);
+      } catch (e) {
+        console.error('Failed to load templates:', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Compute categories from real data
+  const categories = useMemo(() => {
+    const counts = {};
+    templates.forEach(t => {
+      counts[t.category] = (counts[t.category] || 0) + 1;
+    });
+    return Object.entries(counts).map(([id, count]) => ({
+      id,
+      name: CAT_LABELS[id] || id,
+      color: CAT_COLORS[id] || CAT_COLORS.general,
+      count,
+    }));
+  }, [templates]);
 
   const filteredTemplates = useMemo(() => {
-    let templates = [...mockWhatsAppTemplates];
-
+    let result = [...templates];
     if (activeCategory !== 'all') {
-      templates = templates.filter((t) => t.category === activeCategory);
+      result = result.filter((t) => t.category === activeCategory);
     }
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      templates = templates.filter(
+      result = result.filter(
         (t) => t.name.toLowerCase().includes(q) || t.body.toLowerCase().includes(q)
       );
     }
-
-    return templates;
-  }, [activeCategory, searchQuery]);
+    return result;
+  }, [templates, activeCategory, searchQuery]);
 
   const handleSend = useCallback((template, sent, failed) => {
     if (failed > 0) {
-      addNotification({
-        message: `Plantilla "${template.name}": ${sent} enviados, ${failed} fallidos`,
-        type: sent > 0 ? 'warning' : 'error',
-      });
+      addNotification(`Plantilla "${template.name}": ${sent} enviados, ${failed} fallidos`, sent > 0 ? 'warning' : 'error');
     } else {
-      addNotification({
-        message: `Plantilla "${template.name}" enviada a ${sent} clientes`,
-        type: 'success',
-      });
+      addNotification(`Plantilla "${template.name}" enviada a ${sent} clientes`, 'success');
     }
     setSendTemplate(null);
   }, [addNotification]);
+
+  const handleApprove = useCallback(async (template) => {
+    try {
+      await templateService.approveTemplate(template.id);
+      setTemplates(prev => prev.map(t => t.id === template.id ? { ...t, status: 'approved' } : t));
+      addNotification(`"${template.name}" marcada como aprobada`, 'success');
+    } catch (e) {
+      addNotification('Error aprobando plantilla', 'error');
+    }
+  }, [addNotification]);
+
+  const handleDelete = useCallback(async (template) => {
+    try {
+      await templateService.deleteTemplate(template.id);
+      setTemplates(prev => prev.filter(t => t.id !== template.id));
+      addNotification(`"${template.name}" eliminada`, 'info');
+    } catch (e) {
+      addNotification('Error eliminando plantilla', 'error');
+    }
+  }, [addNotification]);
+
+  const handleAddSave = useCallback((newTemplate) => {
+    setTemplates(prev => [...prev, newTemplate]);
+    setShowAddModal(false);
+    addNotification(`Plantilla "${newTemplate.name}" creada como borrador`, 'success');
+  }, [addNotification]);
+
+  const approvedCount = templates.filter(t => t.status === 'approved').length;
+  const pendingCount = templates.filter(t => t.status !== 'approved').length;
 
   return (
     <div className={B}>
@@ -376,74 +435,61 @@ const Messaging = () => {
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
           <h2 className={`${B}__title`}>Plantillas WhatsApp</h2>
-          <span className={`${B}__count`}>{mockWhatsAppTemplates.length} plantillas</span>
+          <span className={`${B}__count`}>
+            {templates.length} plantillas
+            {approvedCount > 0 && <span style={{ color: '#10B981' }}> ({approvedCount} aprobadas)</span>}
+            {pendingCount > 0 && <span style={{ color: '#F59E0B' }}> ({pendingCount} pendientes)</span>}
+          </span>
         </div>
-        <div className={`${B}__search`}>
-          <span className={`${B}__search-icon`}><SearchIcon /></span>
-          <input
-            type="text"
-            className={`${B}__search-input`}
-            placeholder="Buscar plantilla..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className={`${B}__header-right`}>
+          <div className={`${B}__search`}>
+            <span className={`${B}__search-icon`}><SearchIcon /></span>
+            <input type="text" className={`${B}__search-input`} placeholder="Buscar plantilla..."
+              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          </div>
+          <button className={`${B}__add-btn`} onClick={() => setShowAddModal(true)}>
+            <PlusIcon /> Nueva plantilla
+          </button>
         </div>
       </div>
 
       {/* Category Filters */}
       <div className={`${B}__categories`}>
-        <button
-          className={`${B}__cat-pill ${activeCategory === 'all' ? `${B}__cat-pill--active` : ''}`}
-          onClick={() => setActiveCategory('all')}
-        >
-          Todas ({mockWhatsAppTemplates.length})
+        <button className={`${B}__cat-pill ${activeCategory === 'all' ? `${B}__cat-pill--active` : ''}`}
+          onClick={() => setActiveCategory('all')}>
+          Todas ({templates.length})
         </button>
-        {templateCategories.map((cat) => (
-          <button
-            key={cat.id}
+        {categories.map((cat) => (
+          <button key={cat.id}
             className={`${B}__cat-pill ${activeCategory === cat.id ? `${B}__cat-pill--active` : ''}`}
             onClick={() => setActiveCategory(cat.id)}
-            style={activeCategory === cat.id ? { background: cat.color, borderColor: cat.color } : {}}
-          >
+            style={activeCategory === cat.id ? { background: cat.color, borderColor: cat.color } : {}}>
             {cat.name} ({cat.count})
           </button>
         ))}
       </div>
 
       {/* Template Grid */}
-      <div className={`${B}__grid`}>
-        {filteredTemplates.map((template) => (
-          <TemplateCard
-            key={template.id}
-            template={template}
-            onPreview={setPreviewTemplate}
-            onSend={setSendTemplate}
-          />
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {filteredTemplates.length === 0 && (
-        <div className={`${B}__empty`}>
-          <p>No se encontraron plantillas</p>
+      {loading ? (
+        <div className={`${B}__empty`}><p>Cargando plantillas...</p></div>
+      ) : (
+        <div className={`${B}__grid`}>
+          {filteredTemplates.map((template) => (
+            <TemplateCard key={template.id} template={template}
+              onPreview={setPreviewTemplate} onSend={setSendTemplate}
+              onApprove={handleApprove} onDelete={handleDelete} />
+          ))}
         </div>
       )}
 
-      {/* Modals */}
-      {previewTemplate && (
-        <PreviewModal
-          template={previewTemplate}
-          onClose={() => setPreviewTemplate(null)}
-        />
+      {!loading && filteredTemplates.length === 0 && (
+        <div className={`${B}__empty`}><p>No se encontraron plantillas</p></div>
       )}
 
-      {sendTemplate && (
-        <SendModal
-          template={sendTemplate}
-          onClose={() => setSendTemplate(null)}
-          onSend={handleSend}
-        />
-      )}
+      {/* Modals */}
+      {previewTemplate && <PreviewModal template={previewTemplate} onClose={() => setPreviewTemplate(null)} />}
+      {sendTemplate && <SendModal template={sendTemplate} onClose={() => setSendTemplate(null)} onSend={handleSend} />}
+      {showAddModal && <AddTemplateModal onClose={() => setShowAddModal(false)} onSave={handleAddSave} />}
     </div>
   );
 };
