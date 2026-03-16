@@ -8,7 +8,7 @@ from collections import deque
 from datetime import datetime, timedelta
 import threading
 
-_COL_OFFSET = timedelta(hours=-5)
+from routes._helpers import now_colombia as _now_col
 
 _log = deque(maxlen=500)
 _lock = threading.Lock()
@@ -23,10 +23,6 @@ _stats = {
     "skips": 0,
     "last_reset_date": None,
 }
-
-
-def _now_col():
-    return datetime.utcnow() + _COL_OFFSET
 
 
 def _reset_if_new_day():

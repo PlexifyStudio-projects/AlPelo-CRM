@@ -7,8 +7,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
 from datetime import datetime, timedelta
-import secrets
-import string
 import sys, platform
 
 from auth.security import hash_password
@@ -206,8 +204,8 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
         owner_email=data.get("owner_email"),
         ai_name=data.get("ai_name", "Lina"),
         plan="standard",
-        monthly_price=250000,
-        messages_limit=5000,
+        monthly_price=int(data.get("monthly_price", 0)),
+        messages_limit=int(data.get("messages_limit", 5000)),
         messages_used=0,
         is_active=True,
         ai_is_paused=False,
@@ -234,17 +232,24 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
     db.commit()
     db.refresh(tenant)
 
-    # Auto-create admin user for this tenant
-    alphabet = string.ascii_letters + string.digits
-    generated_password = ''.join(secrets.choice(alphabet) for _ in range(12))
-    admin_username = f"admin_{slug}"
+    # Create admin user with credentials from the form (manual, not auto-generated)
+    admin_username = (data.get("admin_username") or "").strip()
+    admin_password = (data.get("admin_password") or "").strip()
+
+    if not admin_username or not admin_password:
+        raise HTTPException(status_code=400, detail="Usuario y contraseña del admin son requeridos")
+
+    # Check username doesn't already exist
+    existing_admin = db.query(Admin).filter(Admin.username == admin_username).first()
+    if existing_admin:
+        raise HTTPException(status_code=400, detail=f"El usuario '{admin_username}' ya existe")
 
     admin_user = Admin(
-        name=f"Admin {name}",
+        name=data.get("owner_name") or f"Admin {name}",
         email=data.get("owner_email") or f"{slug}@plexify.studio",
         phone=data.get("owner_phone") or "",
         username=admin_username,
-        password=hash_password(generated_password),
+        password=hash_password(admin_password),
         role="admin",
         is_active=True,
         tenant_id=tenant.id,
@@ -252,13 +257,7 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
     db.add(admin_user)
     db.commit()
 
-    return {
-        **_safe_tenant_dict(tenant),
-        "credentials": {
-            "username": admin_username,
-            "password": generated_password,
-        },
-    }
+    return _safe_tenant_dict(tenant, db)
 
 
 @router.put("/dev/tenants/{tenant_id}")

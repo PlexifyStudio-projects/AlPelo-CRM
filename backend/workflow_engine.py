@@ -20,19 +20,12 @@ from database.models import (
     Appointment, VisitHistory, Staff, Service,
     WhatsAppConversation, WhatsAppMessage,
 )
-from routes._helpers import normalize_phone
+from routes._helpers import normalize_phone, now_colombia as _now_colombia
 from activity_log import log_event
-
-# Colombia timezone offset (UTC-5)
-_COL_OFFSET = timedelta(hours=-5)
 
 WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
 WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
-
-
-def _now_colombia():
-    return datetime.utcnow() + _COL_OFFSET
 
 
 def _find_conv_by_phone(db, phone):

@@ -6,7 +6,7 @@ import clientService from '../../services/clientService';
 import whatsappService from '../../services/whatsappService';
 import automationService from '../../services/automationService';
 import { mockWhatsAppTemplates, templateCategories } from '../../data/mockData';
-import ReviewsPipeline from '../../components/reviews/ReviewsPipeline';
+import ReviewsPipeline from '../../components/Admin/ReviewsPipeline/ReviewsPipeline';
 
 const B = 'campaigns';
 const A = 'automations';

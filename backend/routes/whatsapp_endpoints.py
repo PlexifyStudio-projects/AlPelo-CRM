@@ -14,18 +14,10 @@ from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session, joinedload
 from database.connection import get_db, SessionLocal
 from database.models import WhatsAppConversation, WhatsAppMessage, Client
-from routes._helpers import normalize_phone
+from routes._helpers import normalize_phone, now_colombia as _now_col
 from schemas import ToggleAllAIRequest as _ToggleAllAIRequest
 from activity_log import log_event
 from routes._usage_tracker import track_message_sent, track_message_received, track_ai_usage
-
-# ============================================================================
-# Colombia timezone helpers (UTC-5)
-# ============================================================================
-_COL_OFFSET = timedelta(hours=-5)
-
-def _now_col() -> datetime:
-    return datetime.utcnow() + _COL_OFFSET
 
 def _is_off_hours() -> bool:
     """True if current Colombia time is outside business hours (8:30 PM - 7:30 AM)."""

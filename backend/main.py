@@ -92,16 +92,16 @@ def _run_migrations(engine):
             conn.execute(text(
                 "ALTER TABLE public.tenant ALTER COLUMN ai_model SET DEFAULT 'claude-sonnet-4-5-20250929'"
             ))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[MIGRATION] ai_model default: {e}")
     # Also make ai_name nullable or set default (same issue)
     try:
         with engine.begin() as conn:
             conn.execute(text(
                 "ALTER TABLE public.tenant ALTER COLUMN ai_name SET DEFAULT 'Lina'"
             ))
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[MIGRATION] ai_name default: {e}")
 
     # Switch AI model from Haiku to Sonnet (Haiku too dumb for WhatsApp)
     try:
@@ -111,8 +111,8 @@ def _run_migrations(engine):
             ))
             if result.rowcount > 0:
                 print(f"[MIGRATION] Switched {result.rowcount} AI config(s) from Haiku to Sonnet")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[MIGRATION] AI model switch Haiku->Sonnet: {e}")
 
     # --- Seed: DeveloperLuis admin user (role=dev) ---
     try:
@@ -357,8 +357,8 @@ async def factory_reset(request: dict = {}):
                     conn.execute(text(
                         f"ALTER SEQUENCE IF EXISTS {table}_id_seq RESTART WITH 1"
                     ))
-                except Exception:
-                    pass  # Some tables may not have sequences
+                except Exception as e:
+                    print(f"[FACTORY RESET] Sequence reset {table}_id_seq: {e}")
 
             print("[FACTORY RESET] All sequences reset to 1")
 
@@ -369,8 +369,8 @@ async def factory_reset(request: dict = {}):
                     "UPDATE public.admin SET tenant_id = NULL WHERE username = 'DeveloperLuis'"
                 ))
                 print("[FACTORY RESET] Cleared DeveloperLuis tenant_id")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[FACTORY RESET] Clear DeveloperLuis tenant_id: {e}")
 
         print("[FACTORY RESET] === COMPLETE ===")
         return {

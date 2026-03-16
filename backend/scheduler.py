@@ -21,7 +21,7 @@ from database.models import (
     Appointment, Client, ClientNote, Staff, Service,
     WhatsAppConversation, WhatsAppMessage,
 )
-from routes._helpers import normalize_phone
+from routes._helpers import normalize_phone, now_colombia as _now_colombia, _COL_OFFSET
 from activity_log import log_event
 
 WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
@@ -30,13 +30,6 @@ WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 WA_BASE_URL = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}"
 
 SCHEDULER_INTERVAL = 120  # Check every 2 minutes
-
-# Colombia timezone offset (UTC-5)
-_COL_OFFSET = timedelta(hours=-5)
-
-def _now_colombia():
-    """Current time in Colombia (UTC-5)."""
-    return datetime.utcnow() + _COL_OFFSET
 
 # Days of the week in Spanish for suggestions
 _DAYS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]

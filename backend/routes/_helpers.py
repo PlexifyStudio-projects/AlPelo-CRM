@@ -3,10 +3,22 @@
 # Extracted from repeated patterns across ai_endpoints, whatsapp_endpoints, etc.
 # ============================================================================
 
-from datetime import date
+from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database.models import Client, VisitHistory, Staff, WhatsAppConversation
+
+
+# ============================================================================
+# COLOMBIA TIMEZONE — Single source of truth (UTC-5)
+# ============================================================================
+
+_COL_OFFSET = timedelta(hours=-5)
+
+
+def now_colombia() -> datetime:
+    """Current time in Colombia (UTC-5)."""
+    return datetime.utcnow() + _COL_OFFSET
 
 
 # ============================================================================

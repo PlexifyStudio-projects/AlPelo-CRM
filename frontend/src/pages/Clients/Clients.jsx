@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import ClientTable from '../../components/crm/ClientTable/ClientTable';
-import ClientDetail from '../../components/crm/ClientDetail/ClientDetail';
-import ClientFilters from '../../components/crm/ClientFilters/ClientFilters';
-import AddClientModal from '../../components/crm/AddClientModal/AddClientModal';
-import AddVisitModal from '../../components/crm/AddVisitModal/AddVisitModal';
-import ImportClientsModal from '../../components/crm/ImportClientsModal/ImportClientsModal';
+import ClientTable from '../../components/Admin/ClientTable/ClientTable';
+import ClientDetail from '../../components/Admin/ClientDetail/ClientDetail';
+import ClientFilters from '../../components/Admin/ClientFilters/ClientFilters';
+import AddClientModal from '../../components/Admin/AddClientModal/AddClientModal';
+import AddVisitModal from '../../components/Admin/AddVisitModal/AddVisitModal';
+import ImportClientsModal from '../../components/Admin/ImportClientsModal/ImportClientsModal';
 import Button from '../../components/common/Button/Button';
 import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';

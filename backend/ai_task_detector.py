@@ -14,12 +14,7 @@ from datetime import datetime, timedelta
 from database.connection import SessionLocal
 from database.models import Client, ClientNote, WhatsAppConversation, WhatsAppMessage
 from activity_log import log_event
-
-_COL_OFFSET = timedelta(hours=-5)
-
-
-def _now_colombia():
-    return datetime.utcnow() + _COL_OFFSET
+from routes._helpers import now_colombia as _now_colombia
 
 
 # ============================================================================

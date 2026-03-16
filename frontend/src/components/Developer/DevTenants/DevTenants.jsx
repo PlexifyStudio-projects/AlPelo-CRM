@@ -16,11 +16,6 @@ const EMPTY_TENANT = {
   plan: 'standard',
 };
 
-const generatePassword = () => {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-};
-
 const DevTenants = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,11 +24,10 @@ const DevTenants = () => {
   const [editingId, setEditingId] = useState(null);
   const [editingTenant, setEditingTenant] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
-  const [successData, setSuccessData] = useState(null);
-  const [copied, setCopied] = useState(false);
   const [fetchError, setFetchError] = useState(false);
-  // Admin credentials state (for edit mode)
+  // Admin credentials state
   const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [showNewPwd, setShowNewPwd] = useState(false);
   const [credMsg, setCredMsg] = useState(null);
@@ -66,6 +60,7 @@ const DevTenants = () => {
     setEditingId(null);
     setEditingTenant(null);
     setAdminUsername('');
+    setAdminPassword('');
     setNewPassword('');
     setCredMsg(null);
     setShowForm(true);
@@ -94,15 +89,24 @@ const DevTenants = () => {
   };
 
   const handleSave = async () => {
+    if (!editingId) {
+      if (!adminUsername.trim() || !adminPassword.trim()) {
+        alert('Usuario y contrasena son obligatorios');
+        return;
+      }
+    }
+
     try {
       const url = editingId
         ? `${API_URL}/dev/tenants/${editingId}`
         : `${API_URL}/dev/tenants`;
       const method = editingId ? 'PUT' : 'POST';
 
-      const payload = { ...formData };
+      const payload = { ...formData, plan: 'standard' };
       if (!editingId) {
         payload.slug = slugify(payload.name);
+        payload.admin_username = adminUsername.trim();
+        payload.admin_password = adminPassword.trim();
       }
 
       const res = await fetch(url, {
@@ -118,19 +122,8 @@ const DevTenants = () => {
         return;
       }
 
-      const result = await res.json().catch(() => ({}));
       setShowForm(false);
-
-      if (!editingId && result.credentials) {
-        setSuccessData({
-          name: result.name || payload.name,
-          slug: result.slug || payload.slug,
-          admin_username: result.credentials.username,
-          admin_password: result.credentials.password,
-        });
-        setCopied(false);
-      }
-
+      alert(editingId ? 'Agencia actualizada' : 'Agencia creada exitosamente');
       fetchTenants();
     } catch {
       alert('Error de conexion');
@@ -180,25 +173,6 @@ const DevTenants = () => {
       setCredMsg({ type: 'error', text: 'Error de conexion' });
     }
     setSavingCreds(false);
-  };
-
-  const handleCopyCredentials = async () => {
-    if (!successData) return;
-    const text = `Agencia: ${successData.name}\nUsuario: ${successData.admin_username}\nContrasena: ${successData.admin_password}`;
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
   };
 
   const handleToggleAI = async (tenant) => {
@@ -490,19 +464,6 @@ const DevTenants = () => {
 
               <div className={`${b}__form-row`}>
                 <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Plan</label>
-                  <select
-                    className={`${b}__form-select`}
-                    value={formData.plan}
-                    onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
-                  >
-                    <option value="trial">Trial</option>
-                    <option value="standard">Standard</option>
-                    <option value="pro">Pro</option>
-                    <option value="enterprise">Enterprise</option>
-                  </select>
-                </div>
-                <div className={`${b}__form-field`}>
                   <label className={`${b}__form-label`}>Precio mensual (COP)</label>
                   <input
                     className={`${b}__form-input`}
@@ -512,9 +473,6 @@ const DevTenants = () => {
                     placeholder="250000"
                   />
                 </div>
-              </div>
-
-              <div className={`${b}__form-row`}>
                 <div className={`${b}__form-field`}>
                   <label className={`${b}__form-label`}>Limite de mensajes IA</label>
                   <input
@@ -592,10 +550,29 @@ const DevTenants = () => {
                   </button>
                 </>
               ) : (
-                <p className={`${b}__form-note`}>
-                  Las credenciales se generan automaticamente al crear la agencia.
-                  Se mostraran en pantalla para que las copies.
-                </p>
+                <div className={`${b}__form-row`}>
+                  <div className={`${b}__form-field`}>
+                    <label className={`${b}__form-label`}>Usuario</label>
+                    <input
+                      className={`${b}__form-input`}
+                      value={adminUsername}
+                      onChange={(e) => setAdminUsername(e.target.value)}
+                      placeholder="admin-nombre"
+                      required
+                    />
+                  </div>
+                  <div className={`${b}__form-field`}>
+                    <label className={`${b}__form-label`}>Contrasena</label>
+                    <input
+                      className={`${b}__form-input`}
+                      type="password"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      placeholder="Contrasena de acceso"
+                      required
+                    />
+                  </div>
+                </div>
               )}
             </div>
 
@@ -611,54 +588,6 @@ const DevTenants = () => {
         </div>
       )}
 
-      {/* Success Modal */}
-      {successData && (
-        <div className={`${b}__modal-overlay`} onClick={() => setSuccessData(null)}>
-          <div className={`${b}__success-modal`} onClick={(e) => e.stopPropagation()}>
-            <div className={`${b}__success-icon`}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#2D5A3D" strokeWidth="2" strokeLinecap="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-            </div>
-            <h3 className={`${b}__success-title`}>Agencia creada exitosamente</h3>
-            <p className={`${b}__success-name`}>{successData.name}</p>
-
-            <div className={`${b}__success-credentials`}>
-              <div className={`${b}__success-cred-row`}>
-                <span className={`${b}__success-cred-label`}>Usuario</span>
-                <span className={`${b}__success-cred-value`}>{successData.admin_username}</span>
-              </div>
-              <div className={`${b}__success-cred-row`}>
-                <span className={`${b}__success-cred-label`}>Contrasena</span>
-                <span className={`${b}__success-cred-value`}>{successData.admin_password}</span>
-              </div>
-            </div>
-
-            <div className={`${b}__success-actions`}>
-              <button className={`${b}__success-btn ${b}__success-btn--copy`} onClick={handleCopyCredentials}>
-                {copied ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
-                    Copiado
-                  </>
-                ) : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                    </svg>
-                    Copiar credenciales
-                  </>
-                )}
-              </button>
-              <button className={`${b}__success-btn ${b}__success-btn--close`} onClick={() => setSuccessData(null)}>
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
