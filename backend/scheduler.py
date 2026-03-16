@@ -1218,6 +1218,14 @@ def _scheduler_loop():
                     _check_30min_reminders(db)
                     _check_custom_reminders(db)
                     _execute_pending_tasks(db)
+
+                    # Lina background task worker (bulk operations)
+                    try:
+                        from lina_task_worker import process_lina_tasks
+                        process_lina_tasks(db)
+                    except Exception as e:
+                        print(f"[SCHEDULER] Lina task worker error: {e}")
+
                     _morning_review(db)
                     _sweep_missed_conversations(db)
                     _detect_unresolved_messages(db)

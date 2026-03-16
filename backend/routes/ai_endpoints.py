@@ -1490,6 +1490,47 @@ def _execute_action(action: dict, db: Session) -> str:
             f"Prioridad: Contactar primero los {inactive90} de +90 dias"
         )
 
+    # ---- QUEUE BULK TASK (background worker) ----
+    elif action_type == "queue_bulk_task":
+        import json as _json
+        task_type = action.get("task_type", "bulk_operation")
+        description = action.get("description", "Tarea masiva")
+        items = action.get("items", [])
+
+        if not items:
+            return "ERROR: No hay items para procesar."
+
+        from database.models import LinaTask
+        lina_task = LinaTask(
+            tenant_id=_tid or 0,
+            task_type=task_type,
+            description=description,
+            total_items=len(items),
+            completed_items=0,
+            status="pending",
+            payload=_json.dumps(items, ensure_ascii=False),
+            result_log=_json.dumps([], ensure_ascii=False),
+        )
+        db.add(lina_task)
+        db.commit()
+        db.refresh(lina_task)
+
+        from activity_log import log_event as _log_event
+        _log_event(
+            "tarea",
+            f"Tarea masiva #{lina_task.id} creada: {description[:60]}",
+            detail=f"{len(items)} items en cola — se procesan 5 cada 2 minutos",
+            status="info",
+        )
+
+        eta_minutes = (len(items) // 5) * 2
+        return (
+            f"Tarea masiva #{lina_task.id} creada: {description}. "
+            f"{len(items)} items en cola. Se procesan automaticamente 5 cada 2 minutos. "
+            f"Tiempo estimado: ~{eta_minutes} minutos. "
+            f"Puedes ver el progreso en /api/lina/tasks/{lina_task.id}"
+        )
+
     return f"ERROR: Accion desconocida '{action_type}'"
 
 

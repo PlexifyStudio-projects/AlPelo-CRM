@@ -503,6 +503,25 @@ class ClientMemory(Base):
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
 
 
+class LinaTask(Base):
+    """Background bulk task for Lina IA — processes large operations in batches.
+    When Lina detects a bulk operation (e.g. 'create 50 services'), she queues
+    it here and the background worker processes 5 items per cycle."""
+    __tablename__ = "lina_task"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False)
+    task_type = Column(String(50), nullable=False)  # "bulk_create_services", "bulk_create_clients", etc.
+    description = Column(Text, nullable=False)  # Human-readable description
+    total_items = Column(Integer, nullable=False, default=0)
+    completed_items = Column(Integer, nullable=False, default=0)
+    status = Column(String(20), nullable=False, default="pending")  # pending, running, completed, failed
+    payload = Column(Text, nullable=False)  # JSON array of items to create
+    result_log = Column(Text, nullable=True)  # JSON array of results
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class BrandKit(Base):
     """Brand identity configuration per tenant — colors, fonts, tone."""
     __tablename__ = "brand_kits"

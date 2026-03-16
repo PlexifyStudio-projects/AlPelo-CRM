@@ -101,6 +101,35 @@ def _run_migrations(engine):
     except Exception as e:
         print(f"[MIGRATION] client_memory table: {e}")
 
+    # --- lina_task table (background bulk task worker) ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='lina_task'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.lina_task (
+                        id SERIAL PRIMARY KEY,
+                        tenant_id INTEGER NOT NULL,
+                        task_type VARCHAR(50) NOT NULL,
+                        description TEXT NOT NULL,
+                        total_items INTEGER NOT NULL DEFAULT 0,
+                        completed_items INTEGER NOT NULL DEFAULT 0,
+                        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                        payload TEXT NOT NULL,
+                        result_log TEXT,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_lina_task_tenant ON public.lina_task(tenant_id)"))
+                conn.execute(text("CREATE INDEX idx_lina_task_status ON public.lina_task(status)"))
+                print("[MIGRATION] Created lina_task table with indexes")
+    except Exception as e:
+        print(f"[MIGRATION] lina_task table: {e}")
+
     # --- Index for tenant isolation on client and conversation tables ---
     try:
         with engine.begin() as conn:
@@ -223,6 +252,7 @@ async def factory_reset(request: dict = {}):
 
     # Tables in deletion order (respecting foreign keys)
     tables = [
+        "lina_task",
         "workflow_execution",
         "workflow_template",
         "client_memory",

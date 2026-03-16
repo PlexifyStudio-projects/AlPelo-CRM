@@ -11,7 +11,7 @@ from sqlalchemy import or_
 
 from database.connection import get_db, SessionLocal
 from database.models import (
-    ClientNote, Client, LinaLearning, ClientMemory, Tenant,
+    ClientNote, Client, LinaLearning, ClientMemory, Tenant, LinaTask,
 )
 from activity_log import get_recent_events, get_stats as get_activity_stats
 
@@ -276,6 +276,79 @@ async def create_client_memory_manual(request: dict, db: Session = Depends(get_d
         "content": mem.content,
         "source": mem.source,
         "created_at": mem.created_at.isoformat() if mem.created_at else None,
+    }
+
+
+# ============================================================================
+# TASKS — Background bulk task progress
+# ============================================================================
+
+@router.get("/tasks")
+async def list_lina_tasks(
+    tenant_id: int = None,
+    status: str = None,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+):
+    """List all background tasks, optionally filtered by tenant and status."""
+    import json as _json
+
+    q = db.query(LinaTask).order_by(LinaTask.created_at.desc())
+    if tenant_id:
+        q = q.filter(LinaTask.tenant_id == tenant_id)
+    if status:
+        q = q.filter(LinaTask.status == status)
+    tasks = q.limit(limit).all()
+
+    return [{
+        "id": t.id,
+        "tenant_id": t.tenant_id,
+        "task_type": t.task_type,
+        "description": t.description,
+        "total_items": t.total_items,
+        "completed_items": t.completed_items,
+        "status": t.status,
+        "progress_pct": round((t.completed_items / t.total_items * 100) if t.total_items > 0 else 0, 1),
+        "created_at": t.created_at.isoformat() if t.created_at else None,
+        "updated_at": t.updated_at.isoformat() if t.updated_at else None,
+    } for t in tasks]
+
+
+@router.get("/tasks/{task_id}")
+async def get_lina_task(task_id: int, db: Session = Depends(get_db)):
+    """Get detailed progress for a specific background task."""
+    import json as _json
+
+    task = db.query(LinaTask).filter(LinaTask.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+
+    # Parse result_log
+    result_log = []
+    if task.result_log:
+        try:
+            result_log = _json.loads(task.result_log)
+        except (ValueError, TypeError):
+            pass
+
+    # Count successes and failures in result_log
+    ok_count = sum(1 for r in result_log if r.get("status") == "ok")
+    error_count = sum(1 for r in result_log if r.get("status") == "error")
+
+    return {
+        "id": task.id,
+        "tenant_id": task.tenant_id,
+        "task_type": task.task_type,
+        "description": task.description,
+        "total_items": task.total_items,
+        "completed_items": task.completed_items,
+        "status": task.status,
+        "progress_pct": round((task.completed_items / task.total_items * 100) if task.total_items > 0 else 0, 1),
+        "ok_count": ok_count,
+        "error_count": error_count,
+        "result_log": result_log[-20:],  # Last 20 results (avoid huge payloads)
+        "created_at": task.created_at.isoformat() if task.created_at else None,
+        "updated_at": task.updated_at.isoformat() if task.updated_at else None,
     }
 
 
