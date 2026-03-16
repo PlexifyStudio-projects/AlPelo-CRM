@@ -613,7 +613,8 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
             "timezone": "America/Bogota",
         }
 
-    tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+    # Find the tenant that THIS user belongs to (by tenant_id, not just any tenant)
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id, Tenant.is_active == True).first() if user.tenant_id else None
     if not tenant:
         return {
             "id": 0,
