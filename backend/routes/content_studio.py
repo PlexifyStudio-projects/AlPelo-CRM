@@ -266,14 +266,25 @@ async def generate_image(
     enhanced_prompt = _build_pollinations_prompt(prompt, style, brand_colors)
 
     # Pollinations.ai generates real images — URL-based, no auth needed
-    # The image is generated on-the-fly when the URL is accessed
+    # Keep prompt SHORT to avoid URL length issues
     import urllib.parse
-    encoded_prompt = urllib.parse.quote(enhanced_prompt)
-    seed = int(datetime.utcnow().timestamp()) % 100000  # Unique seed per generation
-    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&seed={seed}&nologo=true"
+    short_prompt = prompt[:150]  # Limit to 150 chars for URL safety
+    style_tag = {
+        "profesional": "professional photography",
+        "moderno": "modern design",
+        "elegante": "elegant luxury",
+        "vibrante": "vibrant colorful",
+        "minimalista": "minimalist",
+        "corporativo": "corporate",
+        "festivo": "festive celebration",
+        "premium": "premium high-end",
+    }.get(style, "professional")
 
-    # Don't pre-fetch — Pollinations generates on-the-fly when the browser loads the URL.
-    # A HEAD/GET from the server would waste the rate limit quota.
+    final_prompt = f"{short_prompt}, {style_tag}, advertising quality, 4K"
+    encoded_prompt = urllib.parse.quote(final_prompt)
+    seed = int(datetime.utcnow().timestamp()) % 100000
+    image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width={w}&height={h}&seed={seed}&nologo=true&model=flux"
+
     status = "completed"
 
     record = GeneratedContent(

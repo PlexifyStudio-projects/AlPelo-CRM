@@ -1612,11 +1612,17 @@ const ContentStudio = () => {
                       <div className={`${B}__shimmer-pulse`} />
                       <span>Generando contenido...</span>
                     </div>
-                  ) : generatedContent && (generatedContent.url || generatedContent.thumbnail_url) ? (
+                  ) : generatedContent && (generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url) ? (
                     <img
-                      src={generatedContent.url || generatedContent.thumbnail_url}
+                      src={generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url}
                       alt="Preview"
                       className={`${B}__phone-image`}
+                      onError={(e) => {
+                        if (!e.target.dataset.retried) {
+                          e.target.dataset.retried = 'true';
+                          setTimeout(() => { e.target.src = e.target.src + '&retry=1'; }, 3000);
+                        }
+                      }}
                     />
                   ) : selectedType === 'video' ? (
                     <div className={`${B}__phone-placeholder`}>
@@ -2019,8 +2025,20 @@ const ContentStudio = () => {
               {/* Preview image/video */}
               <div className={`${B}__preview-media`}>
                 <div className={`${B}__preview-frame ${generatedContent.dimensions === '1080x1920' || generatedContent.type === 'story' ? `${B}__preview-frame--vertical` : ''}`}>
-                  {generatedContent.url || generatedContent.thumbnail_url ? (
-                    <img src={generatedContent.url || generatedContent.thumbnail_url} alt="Contenido generado" />
+                  {generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url ? (
+                    <img
+                      src={generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url}
+                      alt="Contenido generado"
+                      loading="eager"
+                      onError={(e) => {
+                        // Retry once after 3 seconds (Pollinations might be slow)
+                        if (!e.target.dataset.retried) {
+                          e.target.dataset.retried = 'true';
+                          setTimeout(() => { e.target.src = e.target.src + '&retry=1'; }, 3000);
+                        }
+                      }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   ) : (
                     <div className={`${B}__preview-placeholder`}>
                       {generatedContent.type === 'video' ? (
