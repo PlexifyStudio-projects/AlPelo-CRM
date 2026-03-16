@@ -319,15 +319,36 @@ async def factory_reset(request: dict = {}):
 
 
 @app.post("/api/dev/run-migrations")
-async def run_migrations_endpoint():
-    """Force run migrations without restarting the server."""
+async def run_migrations_endpoint(request: dict = {}):
+    """Force run migrations without restarting the server.
+    Optionally pass tenant_id to assign orphan records to a tenant."""
+    from sqlalchemy import text as sql_text
     try:
         _run_migrations(engine)
         # Reset the tenant_cols_ready cache so safe_tid re-checks
-        from routes._helpers import _TENANT_COLS_READY
         import routes._helpers
         routes._helpers._TENANT_COLS_READY = None
-        return {"status": "ok", "message": "Migrations executed. Tenant columns should now exist."}
+
+        # If tenant_id provided, assign all orphan records (tenant_id=NULL) to that tenant
+        fix_tenant = request.get("fix_tenant_id")
+        fixed = {}
+        if fix_tenant:
+            tables_to_fix = ["client", "staff", "service", "appointment", "visit_history",
+                             "client_note", "expense", "invoice", "invoice_item",
+                             "staff_commission", "ai_config", "lina_learning",
+                             "whatsapp_conversation"]
+            with engine.begin() as conn:
+                for table in tables_to_fix:
+                    try:
+                        result = conn.execute(sql_text(
+                            f"UPDATE public.{table} SET tenant_id = :tid WHERE tenant_id IS NULL"
+                        ), {"tid": fix_tenant})
+                        if result.rowcount > 0:
+                            fixed[table] = result.rowcount
+                    except Exception:
+                        pass
+
+        return {"status": "ok", "message": "Migrations executed.", "orphans_fixed": fixed}
     except Exception as e:
         return {"status": "error", "message": str(e)[:300]}
 
