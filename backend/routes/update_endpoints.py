@@ -4,7 +4,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory, Service, Appointment
+from database.models import Staff, Client, VisitHistory, Service, Appointment, Admin
+from middleware.auth_middleware import get_current_user
 from schemas import (
     StaffUpdate, StaffResponse,
     ClientUpdate, ClientResponse,
@@ -21,8 +22,12 @@ router = APIRouter()
 # ============================================================================
 
 @router.put("/staff/{staff_id}", response_model=StaffResponse)
-def update_staff(staff_id: int, data: StaffUpdate, db: Session = Depends(get_db)):
-    staff = db.query(Staff).filter(Staff.id == staff_id).first()
+def update_staff(staff_id: int, data: StaffUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    q = db.query(Staff).filter(Staff.id == staff_id)
+    if tid:
+        q = q.filter(Staff.tenant_id == tid)
+    staff = q.first()
     if not staff:
         raise HTTPException(status_code=404, detail="Staff not found")
 
@@ -36,8 +41,12 @@ def update_staff(staff_id: int, data: StaffUpdate, db: Session = Depends(get_db)
 
 
 @router.put("/staff/{staff_id}/skills", response_model=StaffResponse)
-def update_skills(staff_id: int, skills: List[str], db: Session = Depends(get_db)):
-    staff = db.query(Staff).filter(Staff.id == staff_id).first()
+def update_skills(staff_id: int, skills: List[str], db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    q = db.query(Staff).filter(Staff.id == staff_id)
+    if tid:
+        q = q.filter(Staff.tenant_id == tid)
+    staff = q.first()
     if not staff:
         raise HTTPException(status_code=404, detail="Staff not found")
 
@@ -52,10 +61,14 @@ def update_skills(staff_id: int, skills: List[str], db: Session = Depends(get_db
 # ============================================================================
 
 @router.put("/clients/{client_id}", response_model=ClientResponse)
-def update_client(client_id: int, data: ClientUpdate, db: Session = Depends(get_db)):
+def update_client(client_id: int, data: ClientUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_fields
 
-    client = db.query(Client).filter(Client.id == client_id).first()
+    tid = user.tenant_id
+    q = db.query(Client).filter(Client.id == client_id)
+    if tid:
+        q = q.filter(Client.tenant_id == tid)
+    client = q.first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -85,8 +98,12 @@ def update_client(client_id: int, data: ClientUpdate, db: Session = Depends(get_
 # ============================================================================
 
 @router.put("/visits/{visit_id}", response_model=VisitHistoryResponse)
-def update_visit(visit_id: int, data: VisitHistoryUpdate, db: Session = Depends(get_db)):
-    visit = db.query(VisitHistory).filter(VisitHistory.id == visit_id).first()
+def update_visit(visit_id: int, data: VisitHistoryUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    q = db.query(VisitHistory).filter(VisitHistory.id == visit_id)
+    if tid:
+        q = q.filter(VisitHistory.tenant_id == tid)
+    visit = q.first()
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
 
@@ -118,8 +135,12 @@ def update_visit(visit_id: int, data: VisitHistoryUpdate, db: Session = Depends(
 # ============================================================================
 
 @router.put("/services/{service_id}", response_model=ServiceResponse)
-def update_service(service_id: int, data: ServiceUpdate, db: Session = Depends(get_db)):
-    service = db.query(Service).filter(Service.id == service_id).first()
+def update_service(service_id: int, data: ServiceUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    q = db.query(Service).filter(Service.id == service_id)
+    if tid:
+        q = q.filter(Service.tenant_id == tid)
+    service = q.first()
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
@@ -146,8 +167,12 @@ def update_service(service_id: int, data: ServiceUpdate, db: Session = Depends(g
 # ============================================================================
 
 @router.put("/appointments/{appointment_id}", response_model=AppointmentResponse)
-def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session = Depends(get_db)):
-    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    q = db.query(Appointment).filter(Appointment.id == appointment_id)
+    if tid:
+        q = q.filter(Appointment.tenant_id == tid)
+    appointment = q.first()
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
 

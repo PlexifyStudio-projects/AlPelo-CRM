@@ -8,9 +8,10 @@ from sqlalchemy import cast, String, func
 
 from database.connection import get_db
 from database.models import (
-    Staff, Client, VisitHistory, ClientNote, Service, Appointment,
+    Admin, Staff, Client, VisitHistory, ClientNote, Service, Appointment,
     WhatsAppConversation, WhatsAppMessage,
 )
+from middleware.auth_middleware import get_current_user
 from schemas import (
     StaffResponse,
     ClientResponse, ClientListResponse,
@@ -46,8 +47,13 @@ def list_staff(
     search: Optional[str] = Query(None),
     sort_by: Optional[str] = Query("name"),
     db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
 ):
+    tid = user.tenant_id  # None for dev users
+
     query = db.query(Staff)
+    if tid:
+        query = query.filter(Staff.tenant_id == tid)
 
     if active is not None:
         query = query.filter(Staff.is_active == active)
@@ -78,8 +84,12 @@ def list_staff(
 
 
 @router.get("/staff/{staff_id}", response_model=StaffResponse)
-def get_staff(staff_id: int, db: Session = Depends(get_db)):
-    staff = db.query(Staff).filter(Staff.id == staff_id).first()
+def get_staff(staff_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    query = db.query(Staff).filter(Staff.id == staff_id)
+    if tid:
+        query = query.filter(Staff.tenant_id == tid)
+    staff = query.first()
     if not staff:
         raise HTTPException(status_code=404, detail="Staff not found")
     return StaffResponse.model_validate(staff)
@@ -97,10 +107,15 @@ def list_clients(
     tag: Optional[str] = Query(None),
     sort_by: Optional[str] = Query("name"),
     db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
 ):
     from routes._helpers import compute_client_list_item
 
+    tid = user.tenant_id
+
     query = db.query(Client)
+    if tid:
+        query = query.filter(Client.tenant_id == tid)
 
     if active is not None:
         query = query.filter(Client.is_active == active)
@@ -135,10 +150,15 @@ def list_clients(
 
 
 @router.get("/clients/{client_id}", response_model=ClientResponse)
-def get_client(client_id: int, db: Session = Depends(get_db)):
+def get_client(client_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_fields
 
-    client = db.query(Client).filter(Client.id == client_id).first()
+    tid = user.tenant_id
+
+    query = db.query(Client).filter(Client.id == client_id)
+    if tid:
+        query = query.filter(Client.tenant_id == tid)
+    client = query.first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -154,16 +174,24 @@ def list_client_visits(
     client_id: int,
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
 ):
-    client = db.query(Client).filter(Client.id == client_id).first()
+    tid = user.tenant_id
+
+    client_q = db.query(Client).filter(Client.id == client_id)
+    if tid:
+        client_q = client_q.filter(Client.tenant_id == tid)
+    client = client_q.first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
     query = (
         db.query(VisitHistory)
         .filter(VisitHistory.client_id == client_id)
-        .order_by(VisitHistory.visit_date.desc())
     )
+    if tid:
+        query = query.filter(VisitHistory.tenant_id == tid)
+    query = query.order_by(VisitHistory.visit_date.desc())
 
     if status:
         query = query.filter(VisitHistory.status == status)
@@ -181,8 +209,13 @@ def list_client_visits(
 
 
 @router.get("/visits/{visit_id}", response_model=VisitHistoryResponse)
-def get_visit(visit_id: int, db: Session = Depends(get_db)):
-    visit = db.query(VisitHistory).filter(VisitHistory.id == visit_id).first()
+def get_visit(visit_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+
+    query = db.query(VisitHistory).filter(VisitHistory.id == visit_id)
+    if tid:
+        query = query.filter(VisitHistory.tenant_id == tid)
+    visit = query.first()
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
 
@@ -198,17 +231,23 @@ def get_visit(visit_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.get("/clients/{client_id}/notes/", response_model=List[ClientNoteResponse])
-def list_client_notes(client_id: int, db: Session = Depends(get_db)):
-    client = db.query(Client).filter(Client.id == client_id).first()
+def list_client_notes(client_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+
+    client_q = db.query(Client).filter(Client.id == client_id)
+    if tid:
+        client_q = client_q.filter(Client.tenant_id == tid)
+    client = client_q.first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
-    notes = (
+    query = (
         db.query(ClientNote)
         .filter(ClientNote.client_id == client_id)
-        .order_by(ClientNote.created_at.desc())
-        .all()
     )
+    if tid:
+        query = query.filter(ClientNote.tenant_id == tid)
+    notes = query.order_by(ClientNote.created_at.desc()).all()
 
     return [ClientNoteResponse.model_validate(n) for n in notes]
 
@@ -218,10 +257,15 @@ def list_client_notes(client_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.get("/dashboard/kpis", response_model=DashboardKPIs)
-def get_dashboard_kpis(db: Session = Depends(get_db)):
+def get_dashboard_kpis(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_list_item
 
-    clients = db.query(Client).filter(Client.is_active == True).all()
+    tid = user.tenant_id
+
+    query = db.query(Client).filter(Client.is_active == True)
+    if tid:
+        query = query.filter(Client.tenant_id == tid)
+    clients = query.all()
     enriched = [compute_client_list_item(c, db) for c in clients]
 
     total = len(enriched)
@@ -263,8 +307,13 @@ def list_services(
     active: Optional[bool] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
 ):
+    tid = user.tenant_id
+
     query = db.query(Service)
+    if tid:
+        query = query.filter(Service.tenant_id == tid)
 
     if active is not None:
         query = query.filter(Service.is_active == active)
@@ -303,8 +352,13 @@ def list_services(
 
 
 @router.get("/services/{service_id}", response_model=ServiceResponse)
-def get_service(service_id: int, db: Session = Depends(get_db)):
-    service = db.query(Service).filter(Service.id == service_id).first()
+def get_service(service_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+
+    query = db.query(Service).filter(Service.id == service_id)
+    if tid:
+        query = query.filter(Service.tenant_id == tid)
+    service = query.first()
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
@@ -330,10 +384,15 @@ def list_appointments(
     staff_id: Optional[int] = Query(None),
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
 ):
     from datetime import date as dt_date
 
+    tid = user.tenant_id
+
     query = db.query(Appointment)
+    if tid:
+        query = query.filter(Appointment.tenant_id == tid)
 
     if date_from:
         query = query.filter(Appointment.date >= dt_date.fromisoformat(date_from))
@@ -368,8 +427,13 @@ def list_appointments(
 
 
 @router.get("/appointments/{appointment_id}", response_model=AppointmentResponse)
-def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
-    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+def get_appointment(appointment_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+
+    query = db.query(Appointment).filter(Appointment.id == appointment_id)
+    if tid:
+        query = query.filter(Appointment.tenant_id == tid)
+    appointment = query.first()
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
 
@@ -388,15 +452,20 @@ def get_appointment(appointment_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.get("/dashboard/stats", response_model=DashboardStatsResponse)
-def get_dashboard_stats(db: Session = Depends(get_db)):
+def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_list_item
+
+    tid = user.tenant_id
 
     today = datetime.utcnow().date()
     week_start = today - timedelta(days=today.weekday())
     month_start = date(today.year, today.month, 1)
 
     # ---------- Client metrics ----------
-    clients = db.query(Client).filter(Client.is_active == True).all()
+    client_q = db.query(Client).filter(Client.is_active == True)
+    if tid:
+        client_q = client_q.filter(Client.tenant_id == tid)
+    clients = client_q.all()
     enriched = [compute_client_list_item(c, db) for c in clients]
 
     total_clients = len(enriched)
@@ -405,20 +474,23 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     at_risk_clients = sum(1 for c in enriched if c.status == "en_riesgo")
 
     # New clients this month
-    new_clients_this_month = (
+    new_q = (
         db.query(func.count(Client.id))
         .filter(Client.is_active == True)
         .filter(func.date(Client.created_at) >= month_start)
-        .scalar() or 0
     )
+    if tid:
+        new_q = new_q.filter(Client.tenant_id == tid)
+    new_clients_this_month = new_q.scalar() or 0
 
     # ---------- Today's appointments ----------
-    today_appointments = (
+    appt_q = (
         db.query(Appointment)
         .filter(Appointment.date == today)
-        .order_by(Appointment.time)
-        .all()
     )
+    if tid:
+        appt_q = appt_q.filter(Appointment.tenant_id == tid)
+    today_appointments = appt_q.order_by(Appointment.time).all()
 
     staff_cache = {}
     service_cache = {}
@@ -444,13 +516,15 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
     # ---------- Revenue ----------
     def revenue_in_range(start_date, end_date):
-        result = (
+        rq = (
             db.query(func.coalesce(func.sum(VisitHistory.amount), 0))
             .filter(VisitHistory.status == "completed")
             .filter(VisitHistory.visit_date >= start_date)
             .filter(VisitHistory.visit_date <= end_date)
-            .scalar()
         )
+        if tid:
+            rq = rq.filter(VisitHistory.tenant_id == tid)
+        result = rq.scalar()
         return result or 0
 
     revenue_today = revenue_in_range(today, today)
@@ -461,29 +535,34 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     today_start_dt = datetime.combine(today, datetime.min.time())
     today_end_dt = datetime.combine(today, datetime.max.time())
 
-    whatsapp_messages_today = (
+    wa_msg_q = (
         db.query(func.count(WhatsAppMessage.id))
         .filter(WhatsAppMessage.direction == "outbound")
         .filter(WhatsAppMessage.sent_by.like("lina_ia%"))
         .filter(WhatsAppMessage.created_at >= today_start_dt)
         .filter(WhatsAppMessage.created_at <= today_end_dt)
-        .scalar() or 0
     )
+    if tid:
+        wa_msg_q = wa_msg_q.filter(WhatsAppMessage.tenant_id == tid)
+    whatsapp_messages_today = wa_msg_q.scalar() or 0
 
-    whatsapp_active_conversations = (
+    wa_active_q = (
         db.query(func.count(WhatsAppConversation.id))
         .filter(WhatsAppConversation.is_ai_active == True)
-        .scalar() or 0
     )
+    if tid:
+        wa_active_q = wa_active_q.filter(WhatsAppConversation.tenant_id == tid)
+    whatsapp_active_conversations = wa_active_q.scalar() or 0
 
-    whatsapp_total_conversations = (
-        db.query(func.count(WhatsAppConversation.id)).scalar() or 0
-    )
+    wa_total_q = db.query(func.count(WhatsAppConversation.id))
+    if tid:
+        wa_total_q = wa_total_q.filter(WhatsAppConversation.tenant_id == tid)
+    whatsapp_total_conversations = wa_total_q.scalar() or 0
 
-    whatsapp_unread = (
-        db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0))
-        .scalar() or 0
-    )
+    wa_unread_q = db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0))
+    if tid:
+        wa_unread_q = wa_unread_q.filter(WhatsAppConversation.tenant_id == tid)
+    whatsapp_unread = wa_unread_q.scalar() or 0
 
     # ---------- Lina ----------
     lina_is_global_active = (
@@ -494,48 +573,62 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
     lina_messages_today = whatsapp_messages_today  # same query: outbound by lina_ia today
 
-    lina_actions_today = (
+    lina_q = (
         db.query(func.count(ClientNote.id))
         .filter(ClientNote.created_by == "lina_ia")
         .filter(ClientNote.created_at >= today_start_dt)
         .filter(ClientNote.created_at <= today_end_dt)
-        .scalar() or 0
     )
+    if tid:
+        lina_q = lina_q.filter(ClientNote.tenant_id == tid)
+    lina_actions_today = lina_q.scalar() or 0
 
     # ---------- Pending tasks (pending + recently completed) ----------
     # Pending tasks (PENDIENTE/RECORDATORIO but not resolved)
     from sqlalchemy import or_
-    pending_notes = (
+    pn_q = (
         db.query(ClientNote)
         .filter(or_(ClientNote.content.ilike("%PENDIENTE:%"), ClientNote.content.ilike("%RECORDATORIO:%")))
         .filter(~ClientNote.content.ilike("%RESUELTO:%"))
         .filter(~ClientNote.content.ilike("%COMPLETADO:%"))
         .filter(~ClientNote.content.ilike("%EXPIRADO:%"))
         .filter(~ClientNote.content.ilike("%FALLIDO:%"))
-        .order_by(ClientNote.created_at.desc())
+    )
+    if tid:
+        pn_q = pn_q.filter(ClientNote.tenant_id == tid)
+    pending_notes = (
+        pn_q.order_by(ClientNote.created_at.desc())
         .limit(20)
         .all()
     )
 
     # Recently resolved tasks (last 24h) — show as completed/strikethrough
     recent_cutoff = datetime.utcnow() - timedelta(hours=24)
-    resolved_notes = (
+    rn_q = (
         db.query(ClientNote)
         .filter(
             ClientNote.content.ilike("%RESUELTO:%") |
             ClientNote.content.ilike("%COMPLETADO:%")
         )
         .filter(ClientNote.created_at >= recent_cutoff)
-        .order_by(ClientNote.created_at.desc())
+    )
+    if tid:
+        rn_q = rn_q.filter(ClientNote.tenant_id == tid)
+    resolved_notes = (
+        rn_q.order_by(ClientNote.created_at.desc())
         .limit(10)
         .all()
     )
 
-    expired_notes = (
+    en_q = (
         db.query(ClientNote)
         .filter(ClientNote.content.ilike("%EXPIRADO:%"))
         .filter(ClientNote.created_at >= recent_cutoff)
-        .order_by(ClientNote.created_at.desc())
+    )
+    if tid:
+        en_q = en_q.filter(ClientNote.tenant_id == tid)
+    expired_notes = (
+        en_q.order_by(ClientNote.created_at.desc())
         .limit(5)
         .all()
     )
@@ -569,12 +662,14 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         ))
 
     # ---------- Payment alerts ----------
-    payment_convs = (
+    pa_q = (
         db.query(WhatsAppConversation)
         .filter(cast(WhatsAppConversation.tags, String).ilike('%Pago pendiente%'))
-        .order_by(WhatsAppConversation.last_message_at.desc())
-        .all()
     )
+    if tid:
+        pa_q = pa_q.filter(WhatsAppConversation.tenant_id == tid)
+    payment_convs = pa_q.order_by(WhatsAppConversation.last_message_at.desc()).all()
+
     payment_alerts = []
     for pc in payment_convs:
         client_name = pc.wa_contact_name or ""
@@ -635,7 +730,10 @@ def get_financial_summary(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
 ):
+    tid = user.tenant_id
+
     today = datetime.utcnow().date()
 
     # Determine date range
@@ -660,22 +758,26 @@ def get_financial_summary(
     prev_start = prev_end - timedelta(days=period_days - 1)
 
     # Base query: completed visits in range
-    visits = (
+    vq = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
         .filter(VisitHistory.visit_date >= start)
         .filter(VisitHistory.visit_date <= end)
-        .all()
     )
+    if tid:
+        vq = vq.filter(VisitHistory.tenant_id == tid)
+    visits = vq.all()
 
     # Previous period visits
-    prev_visits_list = (
+    pvq = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
         .filter(VisitHistory.visit_date >= prev_start)
         .filter(VisitHistory.visit_date <= prev_end)
-        .all()
     )
+    if tid:
+        pvq = pvq.filter(VisitHistory.tenant_id == tid)
+    prev_visits_list = pvq.all()
 
     total_revenue = sum(v.amount for v in visits)
     total_visits = len(visits)
@@ -726,7 +828,10 @@ def get_financial_summary(
 
     # Service catalog cache for category lookup
     svc_catalog = {}
-    all_services = db.query(Service).all()
+    svc_q = db.query(Service)
+    if tid:
+        svc_q = svc_q.filter(Service.tenant_id == tid)
+    all_services = svc_q.all()
     for s in all_services:
         svc_catalog[s.name.lower().strip()] = s.category or "Otros"
 
@@ -807,11 +912,13 @@ def get_financial_summary(
     )
 
     # Pending payments — conversations tagged with pago pendiente
-    pending_payments = (
+    pp_q = (
         db.query(func.count(WhatsAppConversation.id))
         .filter(cast(WhatsAppConversation.tags, String).ilike('%Pago pendiente%'))
-        .scalar() or 0
     )
+    if tid:
+        pp_q = pp_q.filter(WhatsAppConversation.tenant_id == tid)
+    pending_payments = pp_q.scalar() or 0
 
     return FinancialSummaryResponse(
         period=period,
@@ -842,19 +949,21 @@ def get_financial_summary(
 # ============================================================================
 
 @router.get("/notes/pending", response_model=List[PendingTaskItem])
-def get_pending_notes(db: Session = Depends(get_db)):
+def get_pending_notes(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+
     from sqlalchemy import or_
-    notes = (
+    query = (
         db.query(ClientNote)
         .filter(or_(ClientNote.content.ilike("%PENDIENTE:%"), ClientNote.content.ilike("%RECORDATORIO:%")))
         .filter(~ClientNote.content.ilike("%RESUELTO:%"))
         .filter(~ClientNote.content.ilike("%COMPLETADO:%"))
         .filter(~ClientNote.content.ilike("%EXPIRADO:%"))
         .filter(~ClientNote.content.ilike("%FALLIDO:%"))
-        .order_by(ClientNote.created_at.desc())
-        .limit(30)
-        .all()
     )
+    if tid:
+        query = query.filter(ClientNote.tenant_id == tid)
+    notes = query.order_by(ClientNote.created_at.desc()).limit(30).all()
 
     client_cache = {}
     result = []
@@ -874,9 +983,14 @@ def get_pending_notes(db: Session = Depends(get_db)):
 
 
 @router.put("/notes/{note_id}/resolve")
-def resolve_note(note_id: int, db: Session = Depends(get_db)):
+def resolve_note(note_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     """Mark a PENDIENTE note as RESUELTO (admin manual resolution)."""
-    note = db.query(ClientNote).filter(ClientNote.id == note_id).first()
+    tid = user.tenant_id
+
+    query = db.query(ClientNote).filter(ClientNote.id == note_id)
+    if tid:
+        query = query.filter(ClientNote.tenant_id == tid)
+    note = query.first()
     if not note:
         raise HTTPException(status_code=404, detail="Nota no encontrada")
     from datetime import datetime
@@ -891,9 +1005,14 @@ def resolve_note(note_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/payment-alert/{conversation_id}")
-def dismiss_payment_alert(conversation_id: int, db: Session = Depends(get_db)):
+def dismiss_payment_alert(conversation_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     """Remove the Pago pendiente tag from a conversation."""
-    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conversation_id).first()
+    tid = user.tenant_id
+
+    query = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conversation_id)
+    if tid:
+        query = query.filter(WhatsAppConversation.tenant_id == tid)
+    conv = query.first()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversacion no encontrada")
     if conv.tags:

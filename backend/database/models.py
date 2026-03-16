@@ -24,6 +24,7 @@ class Staff(Base):
     __tablename__ = "staff"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     name = Column(String, nullable=False)
     phone = Column(String, nullable=True)
     email = Column(String, nullable=True)
@@ -69,6 +70,7 @@ class VisitHistory(Base):
     __tablename__ = "visit_history"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=False)
     staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
     service_name = Column(String, nullable=False)
@@ -88,6 +90,7 @@ class ClientNote(Base):
     __tablename__ = "client_note"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=False)
     content = Column(Text, nullable=False)
     created_by = Column(String, nullable=True)  # nombre de quien la creo
@@ -100,6 +103,7 @@ class AIConfig(Base):
     __tablename__ = "ai_config"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     name = Column(String, nullable=False, default="Lina IA")
     system_prompt = Column(Text, nullable=False)
     model = Column(String, nullable=False, default="claude-sonnet-4-20250514")
@@ -115,6 +119,7 @@ class Service(Base):
     __tablename__ = "service"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     name = Column(String, nullable=False)
     category = Column(String, nullable=False)  # Barbería, Manicure y Pedicure, Estilismo, Tratamientos Capilares, Facial y Pestañas
     price = Column(Integer, nullable=False)  # COP sin decimales
@@ -130,6 +135,7 @@ class Appointment(Base):
     __tablename__ = "appointment"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
     client_name = Column(String, nullable=False)
     client_phone = Column(String, nullable=False)
@@ -194,6 +200,7 @@ class LinaLearning(Base):
     __tablename__ = "lina_learning"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     category = Column(String, nullable=False, default="general")  # general, rechazos, citas, pagos, quejas, audios, etc.
     original_input = Column(Text, nullable=False)  # What the admin typed
     content = Column(Text, nullable=False)  # Processed/improved by AI
@@ -275,6 +282,7 @@ class StaffCommission(Base):
     __tablename__ = "staff_commission"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False, unique=True)
     default_rate = Column(Float, nullable=False, default=0.40)  # e.g. 0.40 = 40%
     service_overrides = Column(JSON, default=dict)  # {service_id: rate}
@@ -289,6 +297,7 @@ class Expense(Base):
     __tablename__ = "expense"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     category = Column(String, nullable=False)  # arriendo, nomina, productos, servicios, marketing, otros
     description = Column(Text, nullable=False)
     amount = Column(Integer, nullable=False)  # COP sin decimales
@@ -309,6 +318,7 @@ class Invoice(Base):
     __tablename__ = "invoice"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     invoice_number = Column(String, unique=True, nullable=False)  # FV-0001
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
     client_name = Column(String, nullable=False)
@@ -335,6 +345,7 @@ class InvoiceItem(Base):
     __tablename__ = "invoice_item"
 
     id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
     invoice_id = Column(Integer, ForeignKey("public.invoice.id"), nullable=False)
     service_name = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False, default=1)

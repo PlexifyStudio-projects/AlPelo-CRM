@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment
+from database.models import Admin, Staff, Client, VisitHistory, ClientNote, Service, Appointment
+from middleware.auth_middleware import get_current_user
 from schemas import (
     StaffCreate, StaffResponse,
     ClientCreate, ClientResponse,
@@ -20,8 +21,8 @@ router = APIRouter()
 # ============================================================================
 
 @router.post("/staff/", response_model=StaffResponse)
-def create_staff(data: StaffCreate, db: Session = Depends(get_db)):
-    staff = Staff(**data.model_dump())
+def create_staff(data: StaffCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    staff = Staff(tenant_id=user.tenant_id, **data.model_dump())
     db.add(staff)
     db.commit()
     db.refresh(staff)
@@ -33,7 +34,7 @@ def create_staff(data: StaffCreate, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.post("/clients/", response_model=ClientResponse)
-def create_client(data: ClientCreate, db: Session = Depends(get_db)):
+def create_client(data: ClientCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_fields
 
     existing = db.query(Client).filter(Client.client_id == data.client_id).first()
@@ -45,7 +46,7 @@ def create_client(data: ClientCreate, db: Session = Depends(get_db)):
         if not barber:
             raise HTTPException(status_code=404, detail="Preferred barber not found")
 
-    client = Client(**data.model_dump())
+    client = Client(tenant_id=user.tenant_id, **data.model_dump())
     db.add(client)
     db.commit()
     db.refresh(client)
@@ -58,7 +59,7 @@ def create_client(data: ClientCreate, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.post("/visits/", response_model=VisitHistoryResponse)
-def create_visit(data: VisitHistoryCreate, db: Session = Depends(get_db)):
+def create_visit(data: VisitHistoryCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     client = db.query(Client).filter(Client.id == data.client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
@@ -70,7 +71,7 @@ def create_visit(data: VisitHistoryCreate, db: Session = Depends(get_db)):
     if data.status not in ("completed", "no_show", "cancelled"):
         raise HTTPException(status_code=400, detail="Invalid status. Must be: completed, no_show, cancelled")
 
-    visit = VisitHistory(**data.model_dump())
+    visit = VisitHistory(tenant_id=user.tenant_id, **data.model_dump())
     db.add(visit)
     db.commit()
     db.refresh(visit)
@@ -86,12 +87,12 @@ def create_visit(data: VisitHistoryCreate, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.post("/client-notes/", response_model=ClientNoteResponse)
-def create_client_note(data: ClientNoteCreate, db: Session = Depends(get_db)):
+def create_client_note(data: ClientNoteCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     client = db.query(Client).filter(Client.id == data.client_id).first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
-    note = ClientNote(**data.model_dump())
+    note = ClientNote(tenant_id=user.tenant_id, **data.model_dump())
     db.add(note)
     db.commit()
     db.refresh(note)
@@ -104,8 +105,8 @@ def create_client_note(data: ClientNoteCreate, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.post("/services/", response_model=ServiceResponse)
-def create_service(data: ServiceCreate, db: Session = Depends(get_db)):
-    service = Service(**data.model_dump())
+def create_service(data: ServiceCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    service = Service(tenant_id=user.tenant_id, **data.model_dump())
     db.add(service)
     db.commit()
     db.refresh(service)
@@ -126,7 +127,7 @@ def create_service(data: ServiceCreate, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.post("/appointments/", response_model=AppointmentResponse)
-def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db)):
+def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     staff = db.query(Staff).filter(Staff.id == data.staff_id).first()
     if not staff:
         raise HTTPException(status_code=404, detail="Staff not found")
@@ -141,7 +142,7 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db)):
     if appt_data.get("price") is None:
         appt_data["price"] = service.price
 
-    appointment = Appointment(**appt_data)
+    appointment = Appointment(tenant_id=user.tenant_id, **appt_data)
     db.add(appointment)
     db.commit()
     db.refresh(appointment)

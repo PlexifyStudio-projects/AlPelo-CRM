@@ -42,6 +42,18 @@ def _run_migrations(engine):
         # Multi-tenant isolation
         ("client", "tenant_id", "INTEGER"),
         ("whatsapp_conversation", "tenant_id", "INTEGER"),
+        # Multi-tenant: all remaining tables
+        ("staff", "tenant_id", "INTEGER"),
+        ("service", "tenant_id", "INTEGER"),
+        ("appointment", "tenant_id", "INTEGER"),
+        ("visit_history", "tenant_id", "INTEGER"),
+        ("client_note", "tenant_id", "INTEGER"),
+        ("expense", "tenant_id", "INTEGER"),
+        ("invoice", "tenant_id", "INTEGER"),
+        ("invoice_item", "tenant_id", "INTEGER"),
+        ("staff_commission", "tenant_id", "INTEGER"),
+        ("ai_config", "tenant_id", "INTEGER"),
+        ("lina_learning", "tenant_id", "INTEGER"),
     ]
 
     for table, column, col_type in migrations:

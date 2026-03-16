@@ -41,6 +41,13 @@ def _parse_period(period: str, date_from: Optional[str], date_to: Optional[str])
     return date(today.year, today.month, 1), today
 
 
+def _tenant_filter(query, model, tid):
+    """Apply tenant_id filter if the user belongs to a tenant."""
+    if tid:
+        return query.filter(model.tenant_id == tid)
+    return query
+
+
 # ============================================================================
 # EXPENSES
 # ============================================================================
@@ -54,8 +61,10 @@ def list_expenses(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
+    tid = current_user.tenant_id
     start, end = _parse_period(period, date_from, date_to)
     q = db.query(Expense).filter(Expense.date >= start, Expense.date <= end)
+    q = _tenant_filter(q, Expense, tid)
     if category:
         q = q.filter(Expense.category == category)
     return q.order_by(Expense.date.desc()).all()
@@ -63,7 +72,8 @@ def list_expenses(
 
 @router.post("/expenses/", response_model=ExpenseResponse)
 def create_expense(data: ExpenseCreate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    expense = Expense(**data.model_dump())
+    tid = current_user.tenant_id
+    expense = Expense(tenant_id=tid, **data.model_dump())
     db.add(expense)
     db.commit()
     db.refresh(expense)
@@ -72,7 +82,10 @@ def create_expense(data: ExpenseCreate, db: Session = Depends(get_db), current_u
 
 @router.put("/expenses/{expense_id}", response_model=ExpenseResponse)
 def update_expense(expense_id: int, data: ExpenseUpdate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    tid = current_user.tenant_id
+    q = db.query(Expense).filter(Expense.id == expense_id)
+    q = _tenant_filter(q, Expense, tid)
+    expense = q.first()
     if not expense:
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
     for k, v in data.model_dump(exclude_unset=True).items():
@@ -84,7 +97,10 @@ def update_expense(expense_id: int, data: ExpenseUpdate, db: Session = Depends(g
 
 @router.delete("/expenses/{expense_id}")
 def delete_expense(expense_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    expense = db.query(Expense).filter(Expense.id == expense_id).first()
+    tid = current_user.tenant_id
+    q = db.query(Expense).filter(Expense.id == expense_id)
+    q = _tenant_filter(q, Expense, tid)
+    expense = q.first()
     if not expense:
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
     db.delete(expense)
@@ -100,12 +116,11 @@ def expenses_summary(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
+    tid = current_user.tenant_id
     start, end = _parse_period(period, date_from, date_to)
-    expenses = (
-        db.query(Expense)
-        .filter(Expense.date >= start, Expense.date <= end)
-        .all()
-    )
+    q = db.query(Expense).filter(Expense.date >= start, Expense.date <= end)
+    q = _tenant_filter(q, Expense, tid)
+    expenses = q.all()
     total = sum(e.amount for e in expenses)
     cat_map = {}
     for e in expenses:
@@ -136,7 +151,10 @@ def expenses_summary(
 
 @router.get("/finances/commissions/config", response_model=list[CommissionConfigResponse])
 def list_commission_configs(db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    staff_list = db.query(Staff).filter(Staff.is_active == True).all()
+    tid = current_user.tenant_id
+    q = db.query(Staff).filter(Staff.is_active == True)
+    q = _tenant_filter(q, Staff, tid)
+    staff_list = q.all()
     result = []
     for s in staff_list:
         comm = db.query(StaffCommission).filter(StaffCommission.staff_id == s.id).first()
@@ -151,13 +169,16 @@ def list_commission_configs(db: Session = Depends(get_db), current_user: Admin =
 
 @router.put("/finances/commissions/config/{staff_id}", response_model=CommissionConfigResponse)
 def update_commission_config(staff_id: int, data: CommissionConfigUpdate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    staff = db.query(Staff).filter(Staff.id == staff_id).first()
+    tid = current_user.tenant_id
+    q = db.query(Staff).filter(Staff.id == staff_id)
+    q = _tenant_filter(q, Staff, tid)
+    staff = q.first()
     if not staff:
         raise HTTPException(status_code=404, detail="Profesional no encontrado")
 
     comm = db.query(StaffCommission).filter(StaffCommission.staff_id == staff_id).first()
     if not comm:
-        comm = StaffCommission(staff_id=staff_id)
+        comm = StaffCommission(tenant_id=tid, staff_id=staff_id)
         db.add(comm)
 
     comm.default_rate = data.default_rate
@@ -181,13 +202,15 @@ def get_commission_payouts(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
+    tid = current_user.tenant_id
     start, end = _parse_period(period, date_from, date_to)
-    visits = (
+    q = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
         .filter(VisitHistory.visit_date >= start, VisitHistory.visit_date <= end)
-        .all()
     )
+    q = _tenant_filter(q, VisitHistory, tid)
+    visits = q.all()
 
     # Group by staff
     staff_rev = {}
@@ -228,6 +251,7 @@ def get_uninvoiced_visits(
     current_user: Admin = Depends(get_current_user),
 ):
     """List completed visits that haven't been invoiced yet."""
+    tid = current_user.tenant_id
     q = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
@@ -235,6 +259,7 @@ def get_uninvoiced_visits(
             (VisitHistory.is_invoiced == False) | (VisitHistory.is_invoiced == None)
         )
     )
+    q = _tenant_filter(q, VisitHistory, tid)
     if client_id:
         q = q.filter(VisitHistory.client_id == client_id)
     if date_from:
@@ -270,7 +295,9 @@ def list_invoices(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
+    tid = current_user.tenant_id
     q = db.query(Invoice)
+    q = _tenant_filter(q, Invoice, tid)
     if status:
         q = q.filter(Invoice.status == status)
     invoices = q.order_by(Invoice.issued_date.desc()).all()
@@ -279,7 +306,10 @@ def list_invoices(
 
 @router.get("/invoices/{invoice_id}", response_model=InvoiceResponse)
 def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    tid = current_user.tenant_id
+    q = db.query(Invoice).filter(Invoice.id == invoice_id)
+    q = _tenant_filter(q, Invoice, tid)
+    inv = q.first()
     if not inv:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     return inv
@@ -287,8 +317,12 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Ad
 
 @router.post("/invoices/", response_model=InvoiceResponse)
 def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    # Auto-generate invoice number
-    last = db.query(Invoice).order_by(Invoice.id.desc()).first()
+    tid = current_user.tenant_id
+
+    # Auto-generate invoice number (scoped to tenant)
+    q = db.query(Invoice)
+    q = _tenant_filter(q, Invoice, tid)
+    last = q.order_by(Invoice.id.desc()).first()
     next_num = (last.id + 1) if last else 1
     invoice_number = f"FV-{next_num:04d}"
 
@@ -298,6 +332,7 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_u
     total = subtotal + tax_amount
 
     inv = Invoice(
+        tenant_id=tid,
         invoice_number=invoice_number,
         client_id=data.client_id,
         client_name=data.client_name,
@@ -317,6 +352,7 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_u
 
     for item_data in data.items:
         item = InvoiceItem(
+            tenant_id=tid,
             invoice_id=inv.id,
             service_name=item_data.service_name,
             quantity=item_data.quantity,
@@ -340,7 +376,10 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_u
 
 @router.put("/invoices/{invoice_id}", response_model=InvoiceResponse)
 def update_invoice(invoice_id: int, data: InvoiceUpdate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    tid = current_user.tenant_id
+    q = db.query(Invoice).filter(Invoice.id == invoice_id)
+    q = _tenant_filter(q, Invoice, tid)
+    inv = q.first()
     if not inv:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
 
@@ -358,7 +397,10 @@ def update_invoice(invoice_id: int, data: InvoiceUpdate, db: Session = Depends(g
 
 @router.delete("/invoices/{invoice_id}")
 def cancel_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    inv = db.query(Invoice).filter(Invoice.id == invoice_id).first()
+    tid = current_user.tenant_id
+    q = db.query(Invoice).filter(Invoice.id == invoice_id)
+    q = _tenant_filter(q, Invoice, tid)
+    inv = q.first()
     if not inv:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     inv.status = "cancelled"
@@ -378,23 +420,23 @@ def get_pnl(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
+    tid = current_user.tenant_id
     start, end = _parse_period(period, date_from, date_to)
 
     # Revenue
-    visits = (
+    q = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
         .filter(VisitHistory.visit_date >= start, VisitHistory.visit_date <= end)
-        .all()
     )
+    q = _tenant_filter(q, VisitHistory, tid)
+    visits = q.all()
     total_revenue = sum(v.amount for v in visits)
 
     # Expenses
-    expenses = (
-        db.query(Expense)
-        .filter(Expense.date >= start, Expense.date <= end)
-        .all()
-    )
+    eq = db.query(Expense).filter(Expense.date >= start, Expense.date <= end)
+    eq = _tenant_filter(eq, Expense, tid)
+    expenses = eq.all()
     total_expenses = sum(e.amount for e in expenses)
 
     # Commissions
@@ -433,13 +475,15 @@ def get_payment_methods(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
+    tid = current_user.tenant_id
     start, end = _parse_period(period, date_from, date_to)
-    visits = (
+    q = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
         .filter(VisitHistory.visit_date >= start, VisitHistory.visit_date <= end)
-        .all()
     )
+    q = _tenant_filter(q, VisitHistory, tid)
+    visits = q.all()
 
     method_map = {}
     for v in visits:
@@ -472,7 +516,10 @@ def get_payment_methods(
 
 @router.get("/clients/export")
 def export_clients(db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    clients = db.query(Client).order_by(Client.name).all()
+    tid = current_user.tenant_id
+    q = db.query(Client)
+    q = _tenant_filter(q, Client, tid)
+    clients = q.order_by(Client.name).all()
 
     output = io.StringIO()
     writer = csv.writer(output)
@@ -509,6 +556,8 @@ def export_clients(db: Session = Depends(get_db), current_user: Admin = Depends(
 
 @router.post("/clients/import", response_model=ImportResult)
 async def import_clients(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
+    tid = current_user.tenant_id
+
     if not file.filename:
         raise HTTPException(status_code=400, detail="Archivo requerido")
 
@@ -549,8 +598,10 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
                     return row[rk].strip()
         return ""
 
-    # Get max client_id number
-    existing_ids = {c.client_id for c in db.query(Client.client_id).all()}
+    # Get max client_id number (scoped to tenant)
+    client_q = db.query(Client.client_id)
+    client_q = _tenant_filter(client_q, Client, tid)
+    existing_ids = {c.client_id for c in client_q.all()}
     max_num = 0
     for cid in existing_ids:
         try:
@@ -559,7 +610,9 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
         except ValueError:
             pass
 
-    existing_phones = {c.phone for c in db.query(Client.phone).all()}
+    phone_q = db.query(Client.phone)
+    phone_q = _tenant_filter(phone_q, Client, tid)
+    existing_phones = {c.phone for c in phone_q.all()}
 
     for i, row in enumerate(rows):
         try:
@@ -592,6 +645,7 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
             tags = [t.strip() for t in tags_str.split(",") if t.strip()] if tags_str else []
 
             client = Client(
+                tenant_id=tid,
                 client_id=client_id,
                 name=name,
                 phone=phone,
@@ -650,6 +704,7 @@ def get_finance_analytics(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
+    tid = current_user.tenant_id
     start, end = _parse_period(period, date_from, date_to)
 
     # Previous period
@@ -658,30 +713,30 @@ def get_finance_analytics(
     prev_start = prev_end - timedelta(days=period_days - 1)
 
     # Current period visits & expenses
-    visits = (
+    vq = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
         .filter(VisitHistory.visit_date >= start, VisitHistory.visit_date <= end)
-        .all()
     )
-    expenses = (
-        db.query(Expense)
-        .filter(Expense.date >= start, Expense.date <= end)
-        .all()
-    )
+    vq = _tenant_filter(vq, VisitHistory, tid)
+    visits = vq.all()
+
+    eq = db.query(Expense).filter(Expense.date >= start, Expense.date <= end)
+    eq = _tenant_filter(eq, Expense, tid)
+    expenses = eq.all()
 
     # Previous period visits & expenses
-    prev_visits = (
+    pvq = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
         .filter(VisitHistory.visit_date >= prev_start, VisitHistory.visit_date <= prev_end)
-        .all()
     )
-    prev_expenses = (
-        db.query(Expense)
-        .filter(Expense.date >= prev_start, Expense.date <= prev_end)
-        .all()
-    )
+    pvq = _tenant_filter(pvq, VisitHistory, tid)
+    prev_visits = pvq.all()
+
+    peq = db.query(Expense).filter(Expense.date >= prev_start, Expense.date <= prev_end)
+    peq = _tenant_filter(peq, Expense, tid)
+    prev_expenses = peq.all()
 
     total_revenue = sum(v.amount for v in visits)
     prev_revenue = sum(v.amount for v in prev_visits)
@@ -860,14 +915,15 @@ def export_transactions(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
+    tid = current_user.tenant_id
     start, end = _parse_period(period, date_from, date_to)
-    visits = (
+    q = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
         .filter(VisitHistory.visit_date >= start, VisitHistory.visit_date <= end)
-        .order_by(VisitHistory.visit_date.desc())
-        .all()
     )
+    q = _tenant_filter(q, VisitHistory, tid)
+    visits = q.order_by(VisitHistory.visit_date.desc()).all()
 
     output = io.StringIO()
     writer = csv.writer(output)

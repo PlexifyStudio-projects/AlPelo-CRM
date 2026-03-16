@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment, WhatsAppConversation, WhatsAppMessage
+from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment, WhatsAppConversation, WhatsAppMessage, Admin
+from middleware.auth_middleware import get_current_user
 
 router = APIRouter()
 
@@ -12,8 +13,12 @@ router = APIRouter()
 # ============================================================================
 
 @router.delete("/staff/{staff_id}")
-def delete_staff(staff_id: int, db: Session = Depends(get_db)):
-    staff = db.query(Staff).filter(Staff.id == staff_id).first()
+def delete_staff(staff_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    q = db.query(Staff).filter(Staff.id == staff_id)
+    if tid:
+        q = q.filter(Staff.tenant_id == tid)
+    staff = q.first()
     if not staff:
         raise HTTPException(status_code=404, detail="Staff not found")
 
@@ -27,9 +32,13 @@ def delete_staff(staff_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.delete("/clients/{client_id}")
-def delete_client(client_id: int, hard: bool = False, db: Session = Depends(get_db)):
+def delete_client(client_id: int, hard: bool = False, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     """Delete client. soft=deactivate (default), hard=permanent delete with all history."""
-    client = db.query(Client).filter(Client.id == client_id).first()
+    tid = user.tenant_id
+    q = db.query(Client).filter(Client.id == client_id)
+    if tid:
+        q = q.filter(Client.tenant_id == tid)
+    client = q.first()
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
@@ -57,8 +66,12 @@ def delete_client(client_id: int, hard: bool = False, db: Session = Depends(get_
 # ============================================================================
 
 @router.delete("/visits/{visit_id}")
-def delete_visit(visit_id: int, db: Session = Depends(get_db)):
-    visit = db.query(VisitHistory).filter(VisitHistory.id == visit_id).first()
+def delete_visit(visit_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    q = db.query(VisitHistory).filter(VisitHistory.id == visit_id)
+    if tid:
+        q = q.filter(VisitHistory.tenant_id == tid)
+    visit = q.first()
     if not visit:
         raise HTTPException(status_code=404, detail="Visit not found")
 
@@ -72,10 +85,17 @@ def delete_visit(visit_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.delete("/client-notes/{note_id}")
-def delete_client_note(note_id: int, db: Session = Depends(get_db)):
+def delete_client_note(note_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
     note = db.query(ClientNote).filter(ClientNote.id == note_id).first()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
+
+    # ClientNote has no tenant_id — verify ownership through the parent client
+    if tid:
+        client = db.query(Client).filter(Client.id == note.client_id, Client.tenant_id == tid).first()
+        if not client:
+            raise HTTPException(status_code=404, detail="Note not found")
 
     db.delete(note)
     db.commit()
@@ -87,8 +107,12 @@ def delete_client_note(note_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.delete("/services/{service_id}")
-def delete_service(service_id: int, db: Session = Depends(get_db)):
-    service = db.query(Service).filter(Service.id == service_id).first()
+def delete_service(service_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    q = db.query(Service).filter(Service.id == service_id)
+    if tid:
+        q = q.filter(Service.tenant_id == tid)
+    service = q.first()
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
@@ -102,8 +126,12 @@ def delete_service(service_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.delete("/appointments/{appointment_id}")
-def delete_appointment(appointment_id: int, db: Session = Depends(get_db)):
-    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+def delete_appointment(appointment_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    tid = user.tenant_id
+    q = db.query(Appointment).filter(Appointment.id == appointment_id)
+    if tid:
+        q = q.filter(Appointment.tenant_id == tid)
+    appointment = q.first()
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
 
