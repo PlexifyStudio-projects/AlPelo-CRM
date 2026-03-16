@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import Modal from '../../common/Modal/Modal';
 import Input from '../../common/Input/Input';
 import Button from '../../common/Button/Button';
-import { mockServices, mockBarbers } from '../../../data/mockData';
 import { formatCurrency } from '../../../utils/formatters';
 import clientService from '../../../services/clientService';
+import servicesService from '../../../services/servicesService';
+import staffService from '../../../services/staffService';
 
 const PAYMENT_METHODS = [
   { value: 'efectivo', label: 'Efectivo' },
@@ -34,6 +35,8 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
   const [items, setItems] = useState([{ ...EMPTY_ITEM }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [services, setServices] = useState([]);
+  const [staff, setStaff] = useState([]);
   const searchTimer = useRef(null);
   const b = 'add-visit-modal';
 
@@ -42,6 +45,9 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
       clientService.list({ sort_by: 'created_at' }).then((data) => {
         setRecentClients(data.slice(0, 20));
       }).catch(() => {});
+      // Load real services and staff from API
+      servicesService.list({ active: true }).then(setServices).catch(() => {});
+      staffService.list({ active: true }).then(setStaff).catch(() => {});
     } else {
       setStep('search');
       setSearchQuery('');
@@ -83,7 +89,7 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
   };
 
   const handleServiceSelect = (index, serviceName) => {
-    const service = mockServices.find((s) => s.name === serviceName);
+    const service = services.find((s) => s.name === serviceName);
     setItems((prev) => prev.map((item, i) =>
       i === index
         ? { ...item, service_name: serviceName, amount: service ? service.price.toString() : item.amount }
@@ -136,7 +142,7 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
   const getInitials = (name) =>
     name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
-  const activeBarbers = mockBarbers.filter((br) => br.available);
+  const activeStaff = staff.filter((s) => s.is_active !== false);
   const total = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
 
   return (
@@ -156,7 +162,7 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
         {/* =================== SEARCH STEP =================== */}
         {step === 'search' && (
           <div className={`${b}__search-step`}>
-            <p className={`${b}__instruction`}>Busca al cliente por nombre, teléfono o ID</p>
+            <p className={`${b}__instruction`}>Busca al cliente por nombre, telefono o ID</p>
 
             <div className={`${b}__search-box`}>
               <svg className={`${b}__search-icon`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -199,11 +205,11 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
             })()}
 
             {searchQuery.length >= 2 && searchResults.length === 0 && !searching && (
-              <p className={`${b}__no-results`}>No se encontró ningún cliente</p>
+              <p className={`${b}__no-results`}>No se encontro ningun cliente</p>
             )}
 
             <div className={`${b}__new-client-row`}>
-              <span>¿Cliente nuevo?</span>
+              <span>Cliente nuevo?</span>
               <Button variant="ghost" size="sm" onClick={() => { onClose(); onNewClient(); }} type="button">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -255,18 +261,18 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
                       <label className={`${b}__label`}>Servicio *</label>
                       <select className={`${b}__select`} value={item.service_name} onChange={(e) => handleServiceSelect(idx, e.target.value)} required>
                         <option value="">Seleccionar...</option>
-                        {mockServices.map((s) => (
-                          <option key={s.id} value={s.name}>{s.name} - ${s.price.toLocaleString('es-CO')}</option>
+                        {services.map((s) => (
+                          <option key={s.id} value={s.name}>{s.name} - {formatCurrency(s.price)}</option>
                         ))}
                       </select>
                     </div>
                     <Input label="Valor (COP) *" name="amount" type="number" value={item.amount} onChange={(e) => updateItem(idx, 'amount', e.target.value)} placeholder="25000" required />
                     <div className={`${b}__select-group`}>
-                      <label className={`${b}__label`}>Personal *</label>
+                      <label className={`${b}__label`}>Profesional *</label>
                       <select className={`${b}__select`} value={item.staff_id} onChange={(e) => updateItem(idx, 'staff_id', e.target.value)} required>
                         <option value="">Seleccionar...</option>
-                        {activeBarbers.map((br) => (
-                          <option key={br.id} value={br.id}>{br.name} - {br.specialty}</option>
+                        {activeStaff.map((s) => (
+                          <option key={s.id} value={s.id}>{s.name} - {s.specialty || s.role}</option>
                         ))}
                       </select>
                     </div>
@@ -281,7 +287,7 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
                       <label className={`${b}__label`}>Estado</label>
                       <select className={`${b}__select`} value={item.status} onChange={(e) => updateItem(idx, 'status', e.target.value)}>
                         <option value="completed">Completada</option>
-                        <option value="no_show">No asistió</option>
+                        <option value="no_show">No asistio</option>
                         <option value="cancelled">Cancelada</option>
                       </select>
                     </div>
