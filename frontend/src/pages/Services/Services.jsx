@@ -108,13 +108,10 @@ const Services = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
   const { tenant } = useTenant();
-  const defaultCategory = useMemo(() => {
-    // Use the first known category from existing services, or first from CATEGORY_META
-    return Object.keys(CATEGORY_META)[0] || 'General';
-  }, []);
   const [formData, setFormData] = useState({
-    name: '', category: defaultCategory, price: '', duration_minutes: '', description: '', staff_ids: [],
+    name: '', category: '', price: '', duration_minutes: '', description: '', staff_ids: [],
   });
+  const [newCategoryMode, setNewCategoryMode] = useState(false);
   const { addNotification } = useNotification();
 
   const loadData = useCallback(async () => {
@@ -134,10 +131,9 @@ const Services = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const categories = useMemo(() => {
-    const cats = [...new Set(services.map(s => s.category))];
-    return ['Todos', ...Object.keys(CATEGORY_META).filter(c => cats.includes(c)), ...cats.filter(c => !CATEGORY_META[c])];
-  }, [services]);
+  // Categories come from real data only — no hardcoded list
+  const existingCategories = useMemo(() => [...new Set(services.map(s => s.category).filter(Boolean))], [services]);
+  const categories = useMemo(() => ['Todos', ...existingCategories], [existingCategories]);
 
   const filtered = useMemo(() => {
     let list = services.filter(s => s.is_active);
@@ -185,7 +181,8 @@ const Services = () => {
 
   const openCreateModal = () => {
     setEditingService(null);
-    setFormData({ name: '', category: defaultCategory, price: '', duration_minutes: '', description: '', staff_ids: [] });
+    setFormData({ name: '', category: '', price: '', duration_minutes: '', description: '', staff_ids: [] });
+    setNewCategoryMode(false);
     setShowModal(true);
   };
 
@@ -199,6 +196,7 @@ const Services = () => {
       description: svc.description || '',
       staff_ids: svc.staff_ids || [],
     });
+    setNewCategoryMode(!existingCategories.includes(svc.category));
     setShowModal(true);
   };
 
@@ -411,11 +409,38 @@ const Services = () => {
               <div className={`${b}__form-row`}>
                 <div className={`${b}__form-group`}>
                   <label>Categoría</label>
-                  <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-                    {[...new Set([...Object.keys(CATEGORY_META), ...services.map(s => s.category)])].map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  {!newCategoryMode ? (
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <select value={formData.category} onChange={(e) => {
+                        if (e.target.value === '__new') {
+                          setNewCategoryMode(true);
+                          setFormData({ ...formData, category: '' });
+                        } else {
+                          setFormData({ ...formData, category: e.target.value });
+                        }
+                      }} style={{ flex: 1 }}>
+                        <option value="">Seleccionar...</option>
+                        {existingCategories.map(cat => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                        <option value="__new">+ Nueva categoria...</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <input
+                        type="text"
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        placeholder="Ej: Manicure, Facial, Cortes..."
+                        autoFocus
+                        style={{ flex: 1 }}
+                      />
+                      <button type="button" onClick={() => setNewCategoryMode(false)} style={{ padding: '4px 10px', background: '#f3f4f6', border: '1px solid #d1d5db', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className={`${b}__form-group`}>
                   <label>Precio (COP)</label>
