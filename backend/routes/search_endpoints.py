@@ -12,6 +12,7 @@ from database.models import (
     WhatsAppConversation, WhatsAppMessage,
 )
 from middleware.auth_middleware import get_current_user
+from routes._helpers import safe_tid
 from schemas import (
     StaffResponse,
     ClientResponse, ClientListResponse,
@@ -35,15 +36,6 @@ from schemas import (
 router = APIRouter()
 
 
-def _tfilter(query, model, tid):
-    """Apply tenant filter safely — skips if tenant_id column doesn't exist yet (migration pending)."""
-    if not tid:
-        return query
-    try:
-        return query.filter(model.tenant_id == tid)
-    except Exception:
-        return query
-
 
 # ============================================================================
 # STAFF ENDPOINTS
@@ -59,7 +51,7 @@ def list_staff(
     db: Session = Depends(get_db),
     user: Admin = Depends(get_current_user),
 ):
-    tid = user.tenant_id  # None for dev users
+    tid = safe_tid(user, db)
 
     query = db.query(Staff)
     if tid:
@@ -95,7 +87,7 @@ def list_staff(
 
 @router.get("/staff/{staff_id}", response_model=StaffResponse)
 def get_staff(staff_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     query = db.query(Staff).filter(Staff.id == staff_id)
     if tid:
         query = query.filter(Staff.tenant_id == tid)
@@ -121,7 +113,7 @@ def list_clients(
 ):
     from routes._helpers import compute_client_list_item
 
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(Client)
     if tid:
@@ -163,7 +155,7 @@ def list_clients(
 def get_client(client_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_fields
 
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(Client).filter(Client.id == client_id)
     if tid:
@@ -186,7 +178,7 @@ def list_client_visits(
     db: Session = Depends(get_db),
     user: Admin = Depends(get_current_user),
 ):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     client_q = db.query(Client).filter(Client.id == client_id)
     if tid:
@@ -220,7 +212,7 @@ def list_client_visits(
 
 @router.get("/visits/{visit_id}", response_model=VisitHistoryResponse)
 def get_visit(visit_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(VisitHistory).filter(VisitHistory.id == visit_id)
     if tid:
@@ -242,7 +234,7 @@ def get_visit(visit_id: int, db: Session = Depends(get_db), user: Admin = Depend
 
 @router.get("/clients/{client_id}/notes/", response_model=List[ClientNoteResponse])
 def list_client_notes(client_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     client_q = db.query(Client).filter(Client.id == client_id)
     if tid:
@@ -270,7 +262,7 @@ def list_client_notes(client_id: int, db: Session = Depends(get_db), user: Admin
 def get_dashboard_kpis(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_list_item
 
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(Client).filter(Client.is_active == True)
     if tid:
@@ -319,7 +311,7 @@ def list_services(
     db: Session = Depends(get_db),
     user: Admin = Depends(get_current_user),
 ):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(Service)
     if tid:
@@ -363,7 +355,7 @@ def list_services(
 
 @router.get("/services/{service_id}", response_model=ServiceResponse)
 def get_service(service_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(Service).filter(Service.id == service_id)
     if tid:
@@ -398,7 +390,7 @@ def list_appointments(
 ):
     from datetime import date as dt_date
 
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(Appointment)
     if tid:
@@ -438,7 +430,7 @@ def list_appointments(
 
 @router.get("/appointments/{appointment_id}", response_model=AppointmentResponse)
 def get_appointment(appointment_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(Appointment).filter(Appointment.id == appointment_id)
     if tid:
@@ -465,7 +457,7 @@ def get_appointment(appointment_id: int, db: Session = Depends(get_db), user: Ad
 def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_list_item
 
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     today = datetime.utcnow().date()
     week_start = today - timedelta(days=today.weekday())
@@ -742,7 +734,7 @@ def get_financial_summary(
     db: Session = Depends(get_db),
     user: Admin = Depends(get_current_user),
 ):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     today = datetime.utcnow().date()
 
@@ -960,7 +952,7 @@ def get_financial_summary(
 
 @router.get("/notes/pending", response_model=List[PendingTaskItem])
 def get_pending_notes(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     from sqlalchemy import or_
     query = (
@@ -995,7 +987,7 @@ def get_pending_notes(db: Session = Depends(get_db), user: Admin = Depends(get_c
 @router.put("/notes/{note_id}/resolve")
 def resolve_note(note_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     """Mark a PENDIENTE note as RESUELTO (admin manual resolution)."""
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(ClientNote).filter(ClientNote.id == note_id)
     if tid:
@@ -1017,7 +1009,7 @@ def resolve_note(note_id: int, db: Session = Depends(get_db), user: Admin = Depe
 @router.delete("/payment-alert/{conversation_id}")
 def dismiss_payment_alert(conversation_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     """Remove the Pago pendiente tag from a conversation."""
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
 
     query = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conversation_id)
     if tid:

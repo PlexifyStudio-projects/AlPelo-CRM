@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment, WhatsAppConversation, WhatsAppMessage, Admin
 from middleware.auth_middleware import get_current_user
+from routes._helpers import safe_tid
 
 router = APIRouter()
 
@@ -14,7 +15,7 @@ router = APIRouter()
 
 @router.delete("/staff/{staff_id}")
 def delete_staff(staff_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(Staff).filter(Staff.id == staff_id)
     if tid:
         q = q.filter(Staff.tenant_id == tid)
@@ -34,7 +35,7 @@ def delete_staff(staff_id: int, db: Session = Depends(get_db), user: Admin = Dep
 @router.delete("/clients/{client_id}")
 def delete_client(client_id: int, hard: bool = False, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     """Delete client. soft=deactivate (default), hard=permanent delete with all history."""
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(Client).filter(Client.id == client_id)
     if tid:
         q = q.filter(Client.tenant_id == tid)
@@ -67,7 +68,7 @@ def delete_client(client_id: int, hard: bool = False, db: Session = Depends(get_
 
 @router.delete("/visits/{visit_id}")
 def delete_visit(visit_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(VisitHistory).filter(VisitHistory.id == visit_id)
     if tid:
         q = q.filter(VisitHistory.tenant_id == tid)
@@ -86,7 +87,7 @@ def delete_visit(visit_id: int, db: Session = Depends(get_db), user: Admin = Dep
 
 @router.delete("/client-notes/{note_id}")
 def delete_client_note(note_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     note = db.query(ClientNote).filter(ClientNote.id == note_id).first()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -108,7 +109,7 @@ def delete_client_note(note_id: int, db: Session = Depends(get_db), user: Admin 
 
 @router.delete("/services/{service_id}")
 def delete_service(service_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(Service).filter(Service.id == service_id)
     if tid:
         q = q.filter(Service.tenant_id == tid)
@@ -127,7 +128,7 @@ def delete_service(service_id: int, db: Session = Depends(get_db), user: Admin =
 
 @router.delete("/appointments/{appointment_id}")
 def delete_appointment(appointment_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(Appointment).filter(Appointment.id == appointment_id)
     if tid:
         q = q.filter(Appointment.tenant_id == tid)

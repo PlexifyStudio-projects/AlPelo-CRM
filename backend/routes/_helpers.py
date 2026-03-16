@@ -5,8 +5,44 @@
 
 from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 from database.models import Client, VisitHistory, Staff, WhatsAppConversation
+
+
+# ============================================================================
+# TENANT COLUMN CHECK — Cached per-process
+# ============================================================================
+
+_TENANT_COLS_READY: bool | None = None
+
+
+def tenant_cols_ready(db: Session) -> bool:
+    """Check (once per process) whether tenant_id columns have been migrated.
+
+    Returns True if the 'staff' table has a 'tenant_id' column in the DB.
+    Cached after first call — server restart re-checks.
+    """
+    global _TENANT_COLS_READY
+    if _TENANT_COLS_READY is not None:
+        return _TENANT_COLS_READY
+    try:
+        result = db.execute(
+            text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name='staff' AND column_name='tenant_id'"
+            )
+        )
+        _TENANT_COLS_READY = result.fetchone() is not None
+    except Exception:
+        _TENANT_COLS_READY = False
+    return _TENANT_COLS_READY
+
+
+def safe_tid(user, db: Session):
+    """Return user.tenant_id only if the DB columns are migrated, else None."""
+    if not tenant_cols_ready(db):
+        return None
+    return getattr(user, "tenant_id", None)
 
 
 # ============================================================================

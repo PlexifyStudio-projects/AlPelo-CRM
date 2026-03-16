@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import Admin, Staff, Client, VisitHistory, ClientNote, Service, Appointment
 from middleware.auth_middleware import get_current_user
+from routes._helpers import safe_tid
 from schemas import (
     StaffCreate, StaffResponse,
     ClientCreate, ClientResponse,
@@ -22,7 +23,8 @@ router = APIRouter()
 
 @router.post("/staff/", response_model=StaffResponse)
 def create_staff(data: StaffCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    staff = Staff(tenant_id=user.tenant_id, **data.model_dump())
+    tid = safe_tid(user, db)
+    staff = Staff(tenant_id=tid, **data.model_dump())
     db.add(staff)
     db.commit()
     db.refresh(staff)
@@ -46,7 +48,8 @@ def create_client(data: ClientCreate, db: Session = Depends(get_db), user: Admin
         if not barber:
             raise HTTPException(status_code=404, detail="Preferred barber not found")
 
-    client = Client(tenant_id=user.tenant_id, **data.model_dump())
+    tid = safe_tid(user, db)
+    client = Client(tenant_id=tid, **data.model_dump())
     db.add(client)
     db.commit()
     db.refresh(client)
@@ -71,7 +74,8 @@ def create_visit(data: VisitHistoryCreate, db: Session = Depends(get_db), user: 
     if data.status not in ("completed", "no_show", "cancelled"):
         raise HTTPException(status_code=400, detail="Invalid status. Must be: completed, no_show, cancelled")
 
-    visit = VisitHistory(tenant_id=user.tenant_id, **data.model_dump())
+    tid = safe_tid(user, db)
+    visit = VisitHistory(tenant_id=tid, **data.model_dump())
     db.add(visit)
     db.commit()
     db.refresh(visit)
@@ -92,7 +96,8 @@ def create_client_note(data: ClientNoteCreate, db: Session = Depends(get_db), us
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
-    note = ClientNote(tenant_id=user.tenant_id, **data.model_dump())
+    tid = safe_tid(user, db)
+    note = ClientNote(tenant_id=tid, **data.model_dump())
     db.add(note)
     db.commit()
     db.refresh(note)
@@ -106,7 +111,8 @@ def create_client_note(data: ClientNoteCreate, db: Session = Depends(get_db), us
 
 @router.post("/services/", response_model=ServiceResponse)
 def create_service(data: ServiceCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    service = Service(tenant_id=user.tenant_id, **data.model_dump())
+    tid = safe_tid(user, db)
+    service = Service(tenant_id=tid, **data.model_dump())
     db.add(service)
     db.commit()
     db.refresh(service)
@@ -142,7 +148,8 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), u
     if appt_data.get("price") is None:
         appt_data["price"] = service.price
 
-    appointment = Appointment(tenant_id=user.tenant_id, **appt_data)
+    tid = safe_tid(user, db)
+    appointment = Appointment(tenant_id=tid, **appt_data)
     db.add(appointment)
     db.commit()
     db.refresh(appointment)

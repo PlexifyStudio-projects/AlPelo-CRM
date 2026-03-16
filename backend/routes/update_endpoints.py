@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import Staff, Client, VisitHistory, Service, Appointment, Admin
 from middleware.auth_middleware import get_current_user
+from routes._helpers import safe_tid
 from schemas import (
     StaffUpdate, StaffResponse,
     ClientUpdate, ClientResponse,
@@ -23,7 +24,7 @@ router = APIRouter()
 
 @router.put("/staff/{staff_id}", response_model=StaffResponse)
 def update_staff(staff_id: int, data: StaffUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(Staff).filter(Staff.id == staff_id)
     if tid:
         q = q.filter(Staff.tenant_id == tid)
@@ -42,7 +43,7 @@ def update_staff(staff_id: int, data: StaffUpdate, db: Session = Depends(get_db)
 
 @router.put("/staff/{staff_id}/skills", response_model=StaffResponse)
 def update_skills(staff_id: int, skills: List[str], db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(Staff).filter(Staff.id == staff_id)
     if tid:
         q = q.filter(Staff.tenant_id == tid)
@@ -64,7 +65,7 @@ def update_skills(staff_id: int, skills: List[str], db: Session = Depends(get_db
 def update_client(client_id: int, data: ClientUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_fields
 
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(Client).filter(Client.id == client_id)
     if tid:
         q = q.filter(Client.tenant_id == tid)
@@ -99,7 +100,7 @@ def update_client(client_id: int, data: ClientUpdate, db: Session = Depends(get_
 
 @router.put("/visits/{visit_id}", response_model=VisitHistoryResponse)
 def update_visit(visit_id: int, data: VisitHistoryUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(VisitHistory).filter(VisitHistory.id == visit_id)
     if tid:
         q = q.filter(VisitHistory.tenant_id == tid)
@@ -136,7 +137,7 @@ def update_visit(visit_id: int, data: VisitHistoryUpdate, db: Session = Depends(
 
 @router.put("/services/{service_id}", response_model=ServiceResponse)
 def update_service(service_id: int, data: ServiceUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(Service).filter(Service.id == service_id)
     if tid:
         q = q.filter(Service.tenant_id == tid)
@@ -168,7 +169,7 @@ def update_service(service_id: int, data: ServiceUpdate, db: Session = Depends(g
 
 @router.put("/appointments/{appointment_id}", response_model=AppointmentResponse)
 def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    tid = user.tenant_id
+    tid = safe_tid(user, db)
     q = db.query(Appointment).filter(Appointment.id == appointment_id)
     if tid:
         q = q.filter(Appointment.tenant_id == tid)

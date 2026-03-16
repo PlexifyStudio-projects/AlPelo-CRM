@@ -13,6 +13,7 @@ from database.models import (
     StaffCommission, Service,
 )
 from middleware.auth_middleware import get_current_user
+from routes._helpers import safe_tid
 from schemas import (
     ExpenseCreate, ExpenseUpdate, ExpenseResponse, ExpenseSummaryItem,
     CommissionConfigResponse, CommissionConfigUpdate, CommissionPayoutItem,
@@ -61,7 +62,7 @@ def list_expenses(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     start, end = _parse_period(period, date_from, date_to)
     q = db.query(Expense).filter(Expense.date >= start, Expense.date <= end)
     q = _tenant_filter(q, Expense, tid)
@@ -72,7 +73,7 @@ def list_expenses(
 
 @router.post("/expenses/", response_model=ExpenseResponse)
 def create_expense(data: ExpenseCreate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     expense = Expense(tenant_id=tid, **data.model_dump())
     db.add(expense)
     db.commit()
@@ -82,7 +83,7 @@ def create_expense(data: ExpenseCreate, db: Session = Depends(get_db), current_u
 
 @router.put("/expenses/{expense_id}", response_model=ExpenseResponse)
 def update_expense(expense_id: int, data: ExpenseUpdate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = db.query(Expense).filter(Expense.id == expense_id)
     q = _tenant_filter(q, Expense, tid)
     expense = q.first()
@@ -97,7 +98,7 @@ def update_expense(expense_id: int, data: ExpenseUpdate, db: Session = Depends(g
 
 @router.delete("/expenses/{expense_id}")
 def delete_expense(expense_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = db.query(Expense).filter(Expense.id == expense_id)
     q = _tenant_filter(q, Expense, tid)
     expense = q.first()
@@ -116,7 +117,7 @@ def expenses_summary(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     start, end = _parse_period(period, date_from, date_to)
     q = db.query(Expense).filter(Expense.date >= start, Expense.date <= end)
     q = _tenant_filter(q, Expense, tid)
@@ -151,7 +152,7 @@ def expenses_summary(
 
 @router.get("/finances/commissions/config", response_model=list[CommissionConfigResponse])
 def list_commission_configs(db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = db.query(Staff).filter(Staff.is_active == True)
     q = _tenant_filter(q, Staff, tid)
     staff_list = q.all()
@@ -169,7 +170,7 @@ def list_commission_configs(db: Session = Depends(get_db), current_user: Admin =
 
 @router.put("/finances/commissions/config/{staff_id}", response_model=CommissionConfigResponse)
 def update_commission_config(staff_id: int, data: CommissionConfigUpdate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = db.query(Staff).filter(Staff.id == staff_id)
     q = _tenant_filter(q, Staff, tid)
     staff = q.first()
@@ -202,7 +203,7 @@ def get_commission_payouts(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     start, end = _parse_period(period, date_from, date_to)
     q = (
         db.query(VisitHistory)
@@ -251,7 +252,7 @@ def get_uninvoiced_visits(
     current_user: Admin = Depends(get_current_user),
 ):
     """List completed visits that haven't been invoiced yet."""
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = (
         db.query(VisitHistory)
         .filter(VisitHistory.status == "completed")
@@ -295,7 +296,7 @@ def list_invoices(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = db.query(Invoice)
     q = _tenant_filter(q, Invoice, tid)
     if status:
@@ -306,7 +307,7 @@ def list_invoices(
 
 @router.get("/invoices/{invoice_id}", response_model=InvoiceResponse)
 def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = db.query(Invoice).filter(Invoice.id == invoice_id)
     q = _tenant_filter(q, Invoice, tid)
     inv = q.first()
@@ -317,7 +318,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Ad
 
 @router.post("/invoices/", response_model=InvoiceResponse)
 def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
 
     # Auto-generate invoice number (scoped to tenant)
     q = db.query(Invoice)
@@ -376,7 +377,7 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_u
 
 @router.put("/invoices/{invoice_id}", response_model=InvoiceResponse)
 def update_invoice(invoice_id: int, data: InvoiceUpdate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = db.query(Invoice).filter(Invoice.id == invoice_id)
     q = _tenant_filter(q, Invoice, tid)
     inv = q.first()
@@ -397,7 +398,7 @@ def update_invoice(invoice_id: int, data: InvoiceUpdate, db: Session = Depends(g
 
 @router.delete("/invoices/{invoice_id}")
 def cancel_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = db.query(Invoice).filter(Invoice.id == invoice_id)
     q = _tenant_filter(q, Invoice, tid)
     inv = q.first()
@@ -420,7 +421,7 @@ def get_pnl(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     start, end = _parse_period(period, date_from, date_to)
 
     # Revenue
@@ -475,7 +476,7 @@ def get_payment_methods(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     start, end = _parse_period(period, date_from, date_to)
     q = (
         db.query(VisitHistory)
@@ -516,7 +517,7 @@ def get_payment_methods(
 
 @router.get("/clients/export")
 def export_clients(db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     q = db.query(Client)
     q = _tenant_filter(q, Client, tid)
     clients = q.order_by(Client.name).all()
@@ -556,7 +557,7 @@ def export_clients(db: Session = Depends(get_db), current_user: Admin = Depends(
 
 @router.post("/clients/import", response_model=ImportResult)
 async def import_clients(file: UploadFile = File(...), db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="Archivo requerido")
@@ -704,7 +705,7 @@ def get_finance_analytics(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     start, end = _parse_period(period, date_from, date_to)
 
     # Previous period
@@ -915,7 +916,7 @@ def export_transactions(
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
-    tid = current_user.tenant_id
+    tid = safe_tid(current_user, db)
     start, end = _parse_period(period, date_from, date_to)
     q = (
         db.query(VisitHistory)
