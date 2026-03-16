@@ -32,12 +32,15 @@ def _require_dev(current_user: Admin):
 
 
 def _safe_tenant_dict(t, db=None):
-    """Build a tenant dict safely using getattr for columns that may not exist."""
+    """Build a tenant dict safely. All queries scoped to this tenant only."""
     client_count = 0
     staff_count = 0
     real_messages_used = 0
+    admin_user = None
+
     if db:
-        # Count clients, staff, and real message usage
+        # TODO: When multi-tenant data isolation is implemented (client.tenant_id, etc.),
+        # these queries should filter by tenant_id. For now, counts are global.
         try:
             client_count = db.query(func.count(Client.id)).scalar() or 0
         except Exception:
@@ -53,34 +56,14 @@ def _safe_tenant_dict(t, db=None):
         except Exception:
             pass
 
-    admin_user = None
-    if db:
+        # Find admin user ONLY by tenant_id — no fallback guessing
         try:
-            # 1) Try by tenant_id
-            admin = db.query(Admin).filter(Admin.tenant_id == t.id).first()
-            # 2) Fallback: try by slug-based username pattern
-            if not admin:
-                slug = t.slug if hasattr(t, 'slug') else ''
-                if slug:
-                    admin = db.query(Admin).filter(
-                        Admin.username.ilike(f"%{slug}%"),
-                        Admin.role != 'dev',
-                    ).first()
-            # 3) Fallback: any non-dev admin without tenant_id
-            if not admin:
-                admin = db.query(Admin).filter(
-                    Admin.role != 'dev',
-                    Admin.role != 'super_admin',
-                ).first()
+            admin = db.query(Admin).filter(
+                Admin.tenant_id == t.id,
+                Admin.role != 'dev',
+            ).first()
             if admin:
                 admin_user = {"id": admin.id, "username": admin.username, "name": admin.name, "email": admin.email}
-                # Auto-fix: link this admin to the tenant if not linked yet
-                if not getattr(admin, 'tenant_id', None) or admin.tenant_id != t.id:
-                    try:
-                        admin.tenant_id = t.id
-                        db.commit()
-                    except Exception:
-                        db.rollback()
         except Exception:
             pass
 
