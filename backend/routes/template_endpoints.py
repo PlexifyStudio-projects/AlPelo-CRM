@@ -1,7 +1,12 @@
+import os
+import re
+import httpx
 from fastapi import APIRouter, HTTPException
 from database.connection import SessionLocal
 from database.models import MessageTemplate, Tenant
 from datetime import datetime
+
+WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 
 router = APIRouter(prefix="/message-templates", tags=["Message Templates"])
 
@@ -311,6 +316,228 @@ async def approve_template(template_id: int):
         tpl.updated_at = datetime.utcnow()
         db.commit()
         return _serialize_template(tpl)
+    finally:
+        db.close()
+
+
+# ═══════════════════════════════════════════════
+# META INTEGRATION — Submit & check template status
+# ═══════════════════════════════════════════════
+
+# Map our categories to Meta's required categories
+_META_CATEGORY_MAP = {
+    "recordatorio": "UTILITY",
+    "post_servicio": "MARKETING",
+    "reactivacion": "MARKETING",
+    "fidelizacion": "MARKETING",
+    "promocion": "MARKETING",
+    "bienvenida": "UTILITY",
+    "interno": "UTILITY",
+    "general": "MARKETING",
+}
+
+
+def _convert_variables_to_meta(body):
+    """Convert {{nombre}}, {{hora}} to Meta's {{1}}, {{2}} format.
+    Returns (converted_body, variable_order)."""
+    variables = []
+    seen = set()
+
+    def replacer(match):
+        var_name = match.group(1)
+        if var_name not in seen:
+            seen.add(var_name)
+            variables.append(var_name)
+        idx = variables.index(var_name) + 1
+        return "{{" + str(idx) + "}}"
+
+    converted = re.sub(r'\{\{(\w+)\}\}', replacer, body)
+    return converted, variables
+
+
+@router.post("/{template_id}/submit-to-meta")
+async def submit_to_meta(template_id: int):
+    """Submit a template to Meta for approval. Changes status to 'pending'."""
+    db = SessionLocal()
+    try:
+        tpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
+        if not tpl:
+            raise HTTPException(status_code=404, detail="Template not found")
+
+        # Get tenant's WA credentials
+        tenant = db.query(Tenant).filter(Tenant.id == tpl.tenant_id).first()
+        wa_business_id = None
+        wa_token = None
+
+        if tenant:
+            wa_business_id = tenant.wa_business_account_id
+            wa_token = tenant.wa_access_token
+
+        # Fallback to env vars
+        if not wa_business_id:
+            wa_business_id = os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+        if not wa_token:
+            wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+
+        if not wa_business_id or not wa_token:
+            raise HTTPException(
+                status_code=400,
+                detail="WhatsApp Business Account ID o Token no configurados"
+            )
+
+        # Convert body variables to Meta format
+        meta_body, var_order = _convert_variables_to_meta(tpl.body)
+        meta_category = _META_CATEGORY_MAP.get(tpl.category, "MARKETING")
+
+        # Build Meta API payload
+        components = [{
+            "type": "BODY",
+            "text": meta_body,
+        }]
+
+        # Add example values for variables (Meta requires examples)
+        if var_order:
+            example_values = {
+                "nombre": "Juan",
+                "hora": "10:00 AM",
+                "profesional": "Carlos",
+                "servicio": "Corte Clásico",
+                "negocio": tenant.name if tenant else "Mi Negocio",
+                "fecha": "15 de marzo",
+                "dias": "30",
+                "visitas": "12",
+                "link_resena": "https://g.page/review/example",
+                "google_review_link": "https://g.page/review/example",
+                "completadas": "15",
+                "no_shows": "2",
+                "ingresos": "1.250.000",
+                "nuevos": "3",
+            }
+            examples = [example_values.get(v, f"valor_{v}") for v in var_order]
+            components[0]["example"] = {"body_text": [examples]}
+
+        payload = {
+            "name": tpl.slug,
+            "language": tpl.language or "es",
+            "category": meta_category,
+            "components": components,
+        }
+
+        # Submit to Meta API
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                resp = await client.post(
+                    f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
+                    headers={
+                        "Authorization": f"Bearer {wa_token}",
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                )
+                data = resp.json()
+
+                if resp.status_code in (200, 201):
+                    # Success — Meta accepted for review
+                    meta_status = data.get("status", "PENDING")
+                    if meta_status == "APPROVED":
+                        tpl.status = "approved"
+                    else:
+                        tpl.status = "pending"
+
+                    tpl.updated_at = datetime.utcnow()
+                    db.commit()
+
+                    return {
+                        "success": True,
+                        "meta_status": meta_status,
+                        "meta_id": data.get("id"),
+                        "template": _serialize_template(tpl),
+                    }
+                else:
+                    error_msg = data.get("error", {}).get("message", str(data)[:200])
+                    error_code = data.get("error", {}).get("code", 0)
+
+                    # If template already exists, try to get its current status
+                    if error_code == 2388023 or "already exists" in error_msg.lower():
+                        tpl.status = "pending"
+                        tpl.updated_at = datetime.utcnow()
+                        db.commit()
+                        return {
+                            "success": True,
+                            "meta_status": "ALREADY_EXISTS",
+                            "message": "La plantilla ya existe en Meta. Verificando estado...",
+                            "template": _serialize_template(tpl),
+                        }
+
+                    raise HTTPException(status_code=400, detail=f"Meta rechazó la solicitud: {error_msg}")
+
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=500, detail=f"Error conectando con Meta: {str(e)[:100]}")
+
+    finally:
+        db.close()
+
+
+@router.post("/{template_id}/check-status")
+async def check_meta_status(template_id: int):
+    """Check the current approval status of a template in Meta."""
+    db = SessionLocal()
+    try:
+        tpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
+        if not tpl:
+            raise HTTPException(status_code=404, detail="Template not found")
+
+        tenant = db.query(Tenant).filter(Tenant.id == tpl.tenant_id).first()
+        wa_business_id = (tenant.wa_business_account_id if tenant else None) or os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+        wa_token = (tenant.wa_access_token if tenant else None) or os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+
+        if not wa_business_id or not wa_token:
+            raise HTTPException(status_code=400, detail="Credenciales de WhatsApp no configuradas")
+
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(
+                    f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
+                    headers={"Authorization": f"Bearer {wa_token}"},
+                    params={"name": tpl.slug, "limit": 1},
+                )
+                data = resp.json()
+
+                templates = data.get("data", [])
+                if templates:
+                    meta_tpl = templates[0]
+                    meta_status = meta_tpl.get("status", "").upper()
+
+                    # Map Meta status to our status
+                    status_map = {
+                        "APPROVED": "approved",
+                        "PENDING": "pending",
+                        "REJECTED": "rejected",
+                        "PAUSED": "inactive",
+                        "DISABLED": "inactive",
+                    }
+                    new_status = status_map.get(meta_status, tpl.status)
+
+                    if new_status != tpl.status:
+                        tpl.status = new_status
+                        tpl.updated_at = datetime.utcnow()
+                        db.commit()
+
+                    return {
+                        "meta_status": meta_status,
+                        "plexify_status": new_status,
+                        "template": _serialize_template(tpl),
+                    }
+                else:
+                    return {
+                        "meta_status": "NOT_FOUND",
+                        "plexify_status": tpl.status,
+                        "message": "Plantilla no encontrada en Meta. ¿Ya la enviaste?",
+                    }
+
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=500, detail=f"Error conectando con Meta: {str(e)[:100]}")
+
     finally:
         db.close()
 

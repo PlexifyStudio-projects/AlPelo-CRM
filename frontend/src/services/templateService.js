@@ -45,6 +45,27 @@ const templateService = {
     return await res.json();
   },
 
+  submitToMeta: async (id) => {
+    const res = await fetch(`${API}/message-templates/${id}/submit-to-meta`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to submit to Meta');
+    }
+    return await res.json();
+  },
+
+  checkMetaStatus: async (id) => {
+    const res = await fetch(`${API}/message-templates/${id}/check-status`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to check status');
+    return await res.json();
+  },
+
   deleteTemplate: async (id) => {
     const res = await fetch(`${API}/message-templates/${id}`, {
       method: 'DELETE',

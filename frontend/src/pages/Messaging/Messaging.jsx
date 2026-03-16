@@ -42,10 +42,11 @@ const CAT_LABELS = {
 };
 
 const STATUS_LABELS = {
-  approved: { label: 'Aprobada', color: '#10B981' },
-  pending: { label: 'Pendiente', color: '#F59E0B' },
-  draft: { label: 'Borrador', color: '#6B7280' },
-  rejected: { label: 'Rechazada', color: '#EF4444' },
+  approved: { label: 'Aprobada', color: '#10B981', icon: '✅' },
+  pending: { label: 'Pendiente Meta', color: '#F59E0B', icon: '⏳' },
+  draft: { label: 'Borrador', color: '#6B7280', icon: '📝' },
+  rejected: { label: 'Rechazada', color: '#EF4444', icon: '❌' },
+  inactive: { label: 'Inactiva', color: '#9CA3AF', icon: '⏸️' },
 };
 
 const getInitials = (name) => {
@@ -87,7 +88,10 @@ const resolveTemplate = (body) => {
 };
 
 // ===== Template Card =====
-const TemplateCard = ({ template, onPreview, onSend, onApprove, onDelete }) => {
+const MetaIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" /></svg>;
+const RefreshIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /></svg>;
+
+const TemplateCard = ({ template, onPreview, onSend, onApprove, onDelete, onSubmitMeta, onCheckStatus }) => {
   const catColor = CAT_COLORS[template.category] || CAT_COLORS.general;
   const catLabel = CAT_LABELS[template.category] || template.category;
   const statusInfo = STATUS_LABELS[template.status] || STATUS_LABELS.draft;
@@ -115,17 +119,24 @@ const TemplateCard = ({ template, onPreview, onSend, onApprove, onDelete }) => {
         ))}
       </div>
       <div className={`${B}__card-actions`}>
-        {template.status !== 'approved' && (
-          <button className={`${B}__card-btn ${B}__card-btn--approve`} onClick={() => onApprove(template)}>
-            <CheckIcon /> <span>Aprobar</span>
+        {template.status === 'draft' && (
+          <button className={`${B}__card-btn ${B}__card-btn--meta`} onClick={() => onSubmitMeta(template)}>
+            <MetaIcon /> <span>Enviar a Meta</span>
+          </button>
+        )}
+        {template.status === 'pending' && (
+          <button className={`${B}__card-btn ${B}__card-btn--check`} onClick={() => onCheckStatus(template)}>
+            <RefreshIcon /> <span>Verificar</span>
           </button>
         )}
         <button className={`${B}__card-btn ${B}__card-btn--preview`} onClick={() => onPreview(template)}>
           <EyeIcon /> <span>Vista previa</span>
         </button>
-        <button className={`${B}__card-btn ${B}__card-btn--send`} onClick={() => onSend(template)}>
-          <SendIcon /> <span>Enviar</span>
-        </button>
+        {template.status === 'approved' && (
+          <button className={`${B}__card-btn ${B}__card-btn--send`} onClick={() => onSend(template)}>
+            <SendIcon /> <span>Enviar</span>
+          </button>
+        )}
         <button className={`${B}__card-btn ${B}__card-btn--delete`} onClick={() => onDelete(template)}>
           <TrashIcon />
         </button>
@@ -411,6 +422,36 @@ const Messaging = () => {
     }
   }, [addNotification]);
 
+  const handleSubmitMeta = useCallback(async (template) => {
+    try {
+      addNotification(`Enviando "${template.name}" a Meta para aprobación...`, 'info');
+      const result = await templateService.submitToMeta(template.id);
+      setTemplates(prev => prev.map(t => t.id === template.id ? (result.template || { ...t, status: 'pending' }) : t));
+      if (result.meta_status === 'APPROVED') {
+        addNotification(`"${template.name}" aprobada por Meta`, 'success');
+      } else if (result.meta_status === 'ALREADY_EXISTS') {
+        addNotification(`"${template.name}" ya existe en Meta. Verifica el estado.`, 'info');
+      } else {
+        addNotification(`"${template.name}" enviada a Meta. Estado: pendiente de aprobación.`, 'success');
+      }
+    } catch (e) {
+      addNotification(`Error: ${e.message}`, 'error');
+    }
+  }, [addNotification]);
+
+  const handleCheckStatus = useCallback(async (template) => {
+    try {
+      const result = await templateService.checkMetaStatus(template.id);
+      if (result.template) {
+        setTemplates(prev => prev.map(t => t.id === template.id ? result.template : t));
+      }
+      const statusLabel = STATUS_LABELS[result.plexify_status]?.label || result.meta_status;
+      addNotification(`"${template.name}": ${statusLabel}`, result.plexify_status === 'approved' ? 'success' : 'info');
+    } catch (e) {
+      addNotification('Error verificando estado en Meta', 'error');
+    }
+  }, [addNotification]);
+
   const handleDeleteClick = useCallback((template) => {
     setDeleteConfirm(template);
   }, []);
@@ -484,7 +525,8 @@ const Messaging = () => {
           {filteredTemplates.map((template) => (
             <TemplateCard key={template.id} template={template}
               onPreview={setPreviewTemplate} onSend={setSendTemplate}
-              onApprove={handleApprove} onDelete={handleDeleteClick} />
+              onApprove={handleApprove} onDelete={handleDeleteClick}
+              onSubmitMeta={handleSubmitMeta} onCheckStatus={handleCheckStatus} />
           ))}
         </div>
       )}
