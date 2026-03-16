@@ -1015,6 +1015,38 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             log_event("skip", "Token expirado — respuesta en pausa", detail="Esperando a que se renueve el token de WhatsApp.", conv_id=conv_id, status="warning")
             return
 
+        # Step -0.4: PROMPT INJECTION PROTECTION
+        from ai_security import detect_prompt_injection, get_safe_response_for_injection
+        is_injection, matched = detect_prompt_injection(inbound_text or "")
+        if is_injection:
+            print(f"[Lina IA] PROMPT INJECTION BLOCKED for conv {conv_id}: '{matched}'")
+            log_event("sistema", f"Intento de manipulación bloqueado", detail=f"Patrón detectado: {matched}", conv_id=conv_id, status="warning")
+            # Send safe generic response instead of processing with AI
+            safe_response = get_safe_response_for_injection()
+            try:
+                async with httpx.AsyncClient(timeout=15) as http:
+                    await http.post(
+                        f"{WA_BASE_URL}/messages", headers=wa_headers(),
+                        json={"messaging_product": "whatsapp", "to": normalize_phone(to_phone),
+                              "type": "text", "text": {"body": safe_response}},
+                    )
+            except Exception:
+                pass
+            db = SessionLocal()
+            try:
+                msg = WhatsAppMessage(
+                    conversation_id=conv_id, wa_message_id=None, direction="outbound",
+                    content=safe_response, message_type="text", status="sent", sent_by="lina_ia",
+                )
+                db.add(msg)
+                conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+                if conv:
+                    conv.last_message_at = datetime.utcnow()
+                db.commit()
+            finally:
+                db.close()
+            return
+
         # Step 0: Read receipt is sent LATER (right before Lina's response) so the client
         # sees blue ticks only when Lina is about to reply, not immediately.
         # OFF-HOURS: Removed hardcoded check. Lina decides based on the business context
@@ -1452,6 +1484,27 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             clean_response = re.sub(r'\*(.+?)\*', r'\1', clean_response)      # *italic* → italic
             clean_response = re.sub(r'#{1,3}\s+', '', clean_response)         # ## heading → heading
             clean_response = re.sub(r'`([^`]+)`', r'\1', clean_response)      # `code` → code
+
+            # Step 3.86: RESPONSE VALIDATOR — check before sending
+            from ai_security import validate_response
+            is_valid, issues = validate_response(clean_response)
+            if not is_valid:
+                print(f"[Lina IA] Response validation issues for conv {conv_id}: {issues}")
+                log_event("sistema", f"Respuesta con problemas: {', '.join(issues)}", conv_id=conv_id, status="warning")
+                if "reveals_ai_nature" in issues:
+                    clean_response = re.sub(
+                        r'(soy|como)\s+(un[ao]?\s+)?(bot|ia|inteligencia\s+artificial|modelo|chatbot|asistente\s+virtual\s+de\s+ia)[\.,]?',
+                        '', clean_response, flags=re.IGNORECASE
+                    ).strip()
+                if "contains_action_block" in issues:
+                    clean_response = re.sub(r'```.*?```', '', clean_response, flags=re.DOTALL).strip()
+                if "too_long" in issues:
+                    # Truncate at last sentence before 1200 chars
+                    if len(clean_response) > 1200:
+                        truncated = clean_response[:1200]
+                        last_period = max(truncated.rfind('.'), truncated.rfind('!'), truncated.rfind('?'))
+                        if last_period > 500:
+                            clean_response = truncated[:last_period + 1]
 
             # Step 3.9: Payment/comprobante detection — tag alert + pause AI
             # ONLY trigger for ACTUAL payment confirmations (receipts, proof of payment)

@@ -1470,6 +1470,27 @@ def _build_whatsapp_context(db: Session, conv_id: int = None) -> str:
                 status = computed.status if hasattr(computed, 'status') else "activo"
                 tags = ", ".join(client.tags) if client.tags else "Sin etiquetas"
 
+                # Birthday info
+                birthday_str = "No registrado"
+                is_birthday_soon = False
+                if client.birthday:
+                    birthday_str = client.birthday.strftime('%d de %B')
+                    today = datetime.now().date()
+                    bday_this_year = client.birthday.replace(year=today.year)
+                    days_to_bday = (bday_this_year - today).days
+                    if days_to_bday < 0:
+                        bday_this_year = client.birthday.replace(year=today.year + 1)
+                        days_to_bday = (bday_this_year - today).days
+                    if 0 <= days_to_bday <= 7:
+                        is_birthday_soon = True
+                        birthday_str += f" (en {days_to_bday} dias!)"
+                    elif days_to_bday == 0:
+                        is_birthday_soon = True
+                        birthday_str += " (HOY ES SU CUMPLEAÑOS!)"
+
+                # No-show count
+                no_show_count = sum(1 for v in (client.visits or []) if v.status == 'no_show')
+
                 client_section = f"""=== CLIENTE EN ESTA CONVERSACION ===
 Nombre: {client.name}
 Telefono: {client.phone}
@@ -1481,7 +1502,25 @@ Total gastado: ${total_spent:,} COP
 Ultima visita: {last_visit or 'Nunca'}
 Dias sin visita: {days_since if days_since is not None else 'N/A'}
 Servicio favorito: {favorite_svc}
-Barbero preferido: {preferred_barber}"""
+Profesional preferido: {preferred_barber}
+Cumpleaños: {birthday_str}
+No-shows registrados: {no_show_count}"""
+
+                # Smart hints for Lina
+                hints = []
+                if is_birthday_soon:
+                    hints.append("CUMPLEAÑOS CERCANO: Felicita al cliente y ofrece descuento de cumpleaños si aplica.")
+                if days_since and days_since > 60:
+                    hints.append(f"CLIENTE INACTIVO: Lleva {days_since} días sin venir. Sé especialmente cálida y ofrece incentivo para que vuelva.")
+                if total_visits >= 10:
+                    hints.append(f"CLIENTE VIP: Tiene {total_visits} visitas. Trátalo con atención premium.")
+                if no_show_count >= 3:
+                    hints.append(f"HISTORIAL DE INASISTENCIAS: {no_show_count} no-shows. Confirma bien la cita antes de agendar.")
+                if total_visits == 0:
+                    hints.append("CLIENTE NUEVO: Primer contacto. Da la mejor primera impresión.")
+
+                if hints:
+                    client_section += "\n\nINSTRUCCIONES ESPECIALES PARA ESTE CLIENTE:\n" + "\n".join(f"  → {h}" for h in hints)
 
                 # Last 5 visits
                 last_5 = client.visits[:5] if client.visits else []
@@ -1622,7 +1661,12 @@ def _build_system_prompt(db: Session, is_whatsapp: bool = False, conv_id: int = 
     if is_whatsapp:
         wa_context = _build_whatsapp_context(db, conv_id=conv_id)
 
+        # Core safety prompt (immutable, controlled by Plexify — NOT editable by tenants)
+        from ai_security import CORE_SAFETY_PROMPT
+
         return f"""Eres Lina, asistente virtual por WhatsApp. NO eres un bot — eres una persona real que atiende el WhatsApp del negocio. Tienes control total del CRM.
+
+{CORE_SAFETY_PROMPT}
 
 HOY: {_fecha_colombia_str(db)} | Hora: {_now_colombia(db).strftime('%I:%M %p')} | Mañana: {(_today_colombia(db) + timedelta(days=1)).strftime('%Y-%m-%d')} ({_DIAS_ES[(_today_colombia(db) + timedelta(days=1)).weekday()]})
 
