@@ -476,11 +476,6 @@ const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) =>
           </div>
           <h2 className={`${b}__drawer-name`}>{member.name}</h2>
           <p className={`${b}__drawer-role`}>{member.specialty || member.role}</p>
-          {(getWeibookRating(member.name) || member.rating) && (
-            <div className={`${b}__drawer-rating`}>
-              <StarIcon filled /> {(getWeibookRating(member.name) || member.rating).toFixed(1)}
-            </div>
-          )}
           <div className={`${b}__drawer-hero-actions`}>
             <button className={`${b}__btn ${b}__btn--outline-sm`} onClick={() => onEdit(member)}>
               <EditIcon /> Editar
@@ -752,10 +747,6 @@ const Team = () => {
             <span className={`${b}__kpi-label`}>{r.role}s</span>
           </div>
         ))}
-        <div className={`${b}__kpi ${b}__kpi--accent`}>
-          <span className={`${b}__kpi-num`}>{stats.avgRating}</span>
-          <span className={`${b}__kpi-label`}>Rating</span>
-        </div>
       </div>
 
       {/* Filters */}
@@ -777,7 +768,7 @@ const Team = () => {
           </div>
           <select className={`${b}__select`} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
             <option value="name">Nombre</option>
-            <option value="rating">Rating</option>
+            {/* Rating removed — not used */}
             <option value="hire_date">Antiguedad</option>
             <option value="role">Rol</option>
           </select>
@@ -813,11 +804,6 @@ const Team = () => {
               <div className={`${b}__card-body`}>
                 <span className={`${b}__card-name`}>{member.name}</span>
                 <span className={`${b}__card-role`}>{member.specialty || member.role}</span>
-                {rating && (
-                  <span className={`${b}__card-rating`}>
-                    <StarIcon filled /> {rating.toFixed(1)}
-                  </span>
-                )}
               </div>
               <div className={`${b}__card-status-badge`}>
                 <span className={`${b}__card-badge ${member.is_active ? `${b}__card-badge--active` : `${b}__card-badge--inactive`}`}>
