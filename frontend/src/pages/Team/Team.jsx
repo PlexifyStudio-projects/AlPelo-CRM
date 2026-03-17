@@ -342,8 +342,12 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles, tenant }) => {
                   onClick={() => setForm({ ...form, color: c })}
                   title={c} />
               ))}
-              <input type="color" value={form.color || '#2D5A3D'} onChange={e => setForm({ ...form, color: e.target.value })}
-                className={`${b}__color-input`} title="Color personalizado" />
+              <label className={`${b}__color-custom`} style={{ position: 'relative', display: 'inline-block' }}>
+                <input type="color" value={form.color || '#2D5A3D'} onChange={e => setForm({ ...form, color: e.target.value })}
+                  style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
+                <span className={`${b}__color-swatch ${!PRESET_COLORS.includes(form.color) && form.color ? `${b}__color-swatch--on` : ''}`}
+                  style={{ background: form.color || '#ccc', display: 'inline-block' }} title="Color personalizado" />
+              </label>
             </div>
           </div>
           <div className={`${b}__form-field`}>
