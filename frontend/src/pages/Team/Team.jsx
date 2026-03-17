@@ -1,42 +1,17 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import staffService from '../../services/staffService';
-import { mockClients, mockBarbers, mockVisitHistory } from '../../data/mockData';
+// No mock data — all data from API
+const mockClients = [];
+const mockBarbers = [];
+const mockVisitHistory = [];
 import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
 
 const b = 'team';
 
-// Default generic roles — can be overridden per tenant via tenant.staff_roles
-const DEFAULT_ROLES = ['Todos', 'Profesional', 'Especialista', 'Asistente', 'Practicante'];
-
-// ===== Tenant-specific staff data (AlPelo example — in production comes from backend) =====
-const WEIBOOK_DATA = {
-  'Victor Fernandez':        { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/c550d3ed-9cd5-4a88-86c2-563c8d5d5f75.webp', rating: 4.85, role: 'Barbero' },
-  'Alexander Carballo':      { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/c34facf4-5716-40ec-a139-bc3c0233e72e.webp', rating: 4.9, role: 'Barbero' },
-  'Daniel Nunez':            { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/ee61be80-e8ab-44bc-abfe-3d264e3d6755.webp', rating: 4.71, role: 'Barbero' },
-  'Angel Pabon':             { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/7bdf5545-b7ab-4b98-bfaf-4b1579be83c1.webp', rating: 5.0, role: 'Barbero' },
-  'Anderson Bohorquez':      { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/2ee51b69-6e11-40b2-9d81-66941a6a1baf.webp', rating: 4.5, role: 'Barbero' },
-  'Camilo Gutierrez':        { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/4618975a-6401-4000-ae8d-4a0474e59608.webp', rating: 4.7, role: 'Barbero' },
-  'Yhon Estrada':            { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/5aac79e5-7abd-4044-917b-8966e672fae3.webp', rating: 5.0, role: 'Barbero' },
-  'Josemith':                { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/5aac79e5-7abd-4044-917b-8966e672fae3.webp', rating: 5.0, role: 'Estilista', bio: 'Más de 10 años de experiencia en técnicas innovadoras de color' },
-  'Liliana Gisella Romero':  { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/68062947-a86f-49a2-b1fb-15f3a659607b.webp', rating: 4.57, role: 'Estilista' },
-  'Marcela Leal':            { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/822b9e68-7138-4be8-a085-aa620830b02b.webp', rating: 4.66, role: 'Estilista', bio: 'Tricoterapeuta especialista en recuperación capilar' },
-  'Dulce Araque':            { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/08ce01d1-bf20-499a-9208-b767b2684f12.webp', rating: 4.66, role: 'Estilista' },
-  'Fanny Lizarazo':          { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/08ce01d1-bf20-499a-9208-b767b2684f12.webp', rating: null, role: 'Estilista' },
-  'Jazmin Aponte Montano':   { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/72102b0e-d7f0-4053-b4d1-b0c89d064e54.webp', rating: 4.92, role: 'Manicurista' },
-  'Maria Jose Bastos':       { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/eb5b2f5e-cf13-49a2-a653-f312974c748a.webp', rating: 5.0, role: 'Manicurista' },
-  'Carolina Banderas':       { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/598e4c9d-2dd9-46d8-bd09-b4bcd182ea6b.webp', rating: 4.8, role: 'Manicurista' },
-  'Nicole Serrano':          { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/76710cba-c022-4459-9e81-fccc4e9cf0dc.webp', rating: 4.66, role: 'Manicurista' },
-  'Zuleidy Yepes':           { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/f8dba059-c971-4af7-ae27-7025651ae7e7.webp', rating: 4.33, role: 'Manicurista', bio: '3 años de experiencia en todas las técnicas' },
-  'Stefania Bustamante':     { photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/67183df2-8db1-4006-9af4-035c523c3ab2.webp', rating: 4.5, role: 'Manicurista' },
-  'Astrid Carolina Leon':    { photo: null, rating: null, role: 'Barbera' },
-  'Tatiana':                 { photo: null, rating: null, role: 'Barbera' },
-};
-
-const getWeibook = (name) => WEIBOOK_DATA[name] || {};
-const getPhoto = (name) => getWeibook(name).photo || null;
-const getWeibookRating = (name) => getWeibook(name).rating || null;
+// Default roles for the form dropdown — actual role filters are built dynamically from staff data
+const DEFAULT_ROLES = ['Todos'];
 
 // ===== Name normalization for matching mock data =====
 const normalize = (n) => n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -458,17 +433,15 @@ const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) =>
   }, [visits]);
 
   const totalRevenue = visits.reduce((s, v) => s + v.amount, 0);
-  const photo = getPhoto(member.name);
-
   return createPortal(
     <div className={`${b}__drawer-overlay`} onClick={onClose}>
       <div className={`${b}__drawer`} onClick={(e) => e.stopPropagation()}>
-        {/* Header with photo */}
+        {/* Header */}
         <div className={`${b}__drawer-hero`}>
           <button className={`${b}__drawer-close`} onClick={onClose}><XIcon size={18} /></button>
-          <div className={`${b}__drawer-avatar ${!photo ? `${b}__drawer-avatar--fallback` : ''}`}>
-            {photo ? (
-              <img src={photo} alt={member.name} />
+          <div className={`${b}__drawer-avatar ${b}__drawer-avatar--fallback`}>
+            {false ? (
+              <img alt={member.name} />
             ) : (
               <span>{getInitials(member.name)}</span>
             )}
@@ -583,13 +556,12 @@ const Team = () => {
   const { addNotification } = useNotification();
   const { tenant } = useTenant();
   // Use tenant-configured roles if available, otherwise build from staff data or use defaults
-  const ROLES = useMemo(() => {
-    if (tenant.staff_roles && tenant.staff_roles.length > 0) {
-      return ['Todos', ...tenant.staff_roles];
-    }
-    return DEFAULT_ROLES;
-  }, [tenant.staff_roles]);
   const [staff, setStaff] = useState([]);
+  // Build roles dynamically from actual staff data
+  const ROLES = useMemo(() => {
+    const realRoles = [...new Set(staff.map(s => s.role).filter(Boolean))];
+    return realRoles.length > 0 ? ['Todos', ...realRoles] : DEFAULT_ROLES;
+  }, [staff]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('Todos');
@@ -781,9 +753,6 @@ const Team = () => {
       {/* Grid */}
       <div className={`${b}__grid`}>
         {filtered.map((member, i) => {
-          const photo = getPhoto(member.name);
-          const wRating = getWeibookRating(member.name);
-          const rating = wRating || member.rating;
           const lastSvc = getStaffClients(member.name)[0];
           const isSelected = selectedId === member.id;
           return (
@@ -793,12 +762,8 @@ const Team = () => {
               style={{ animationDelay: `${0.03 * (i + 1)}s` }}
               onClick={() => setSelectedId(isSelected ? null : member.id)}
             >
-              <div className={`${b}__card-photo ${!photo ? `${b}__card-photo--fallback` : ''}`}>
-                {photo ? (
-                  <img src={photo} alt={member.name} />
-                ) : (
-                  <span className={`${b}__card-initials`}>{getInitials(member.name)}</span>
-                )}
+              <div className={`${b}__card-photo ${b}__card-photo--fallback`}>
+                <span className={`${b}__card-initials`}>{getInitials(member.name)}</span>
                 <span className={`${b}__card-status ${member.is_active ? `${b}__card-status--on` : `${b}__card-status--off`}`} />
               </div>
               <div className={`${b}__card-body`}>
