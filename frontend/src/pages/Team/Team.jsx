@@ -225,13 +225,31 @@ const DeactivateModal = ({ member, clients, onConfirm, onCancel, tenantName, boo
   );
 };
 
+// Phone formatting
+const COUNTRY_PREFIXES = {
+  CO: '+57', CL: '+56', AR: '+54', PE: '+51', VE: '+58', EC: '+593',
+  US: '+1', BR: '+55', MX: '+52', PA: '+507', CR: '+506',
+};
+
+const formatPhoneInput = (raw, prefix) => {
+  const prefixMatch = raw.match(/^(\+\d{1,3})\s*/);
+  const pfx = prefixMatch ? prefixMatch[1] : prefix;
+  const afterPrefix = prefixMatch ? raw.slice(prefixMatch[0].length) : raw.replace(/^\+?\d{0,3}\s*/, '');
+  const digits = afterPrefix.replace(/\D/g, '');
+  if (digits.length === 0) return `${pfx} `;
+  if (digits.length <= 3) return `${pfx} (${digits}`;
+  if (digits.length <= 6) return `${pfx} (${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `${pfx} (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
+};
+
 // ===== STAFF FORM MODAL =====
-const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
+const StaffFormModal = ({ staff, onClose, onSaved, roles, tenant }) => {
   const isEdit = !!staff;
+  const countryPrefix = COUNTRY_PREFIXES[tenant?.country] || '+57';
   const PRESET_COLORS = ['#2D5A3D', '#3B82F6', '#E05292', '#C9A84C', '#8B5CF6', '#F97316', '#14B8A6', '#EC4899', '#06B6D4', '#EF4444', '#22B07E', '#6366F1', '#D946EF', '#0EA5E9', '#84CC16'];
   const editableRoles = (roles || DEFAULT_ROLES).filter(r => r !== 'Todos');
   const [form, setForm] = useState({
-    name: staff?.name || '', phone: staff?.phone || '', email: staff?.email || '',
+    name: staff?.name || '', phone: staff?.phone || (isEdit ? '' : countryPrefix + ' '), email: staff?.email || '',
     role: staff?.role || editableRoles[0] || 'Profesional', specialty: staff?.specialty || '', bio: staff?.bio || '',
     hire_date: staff?.hire_date || '', skills: staff?.skills?.join(', ') || '',
     color: staff?.color || '',
@@ -239,7 +257,15 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); if (error) setError(''); };
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'phone') {
+      setForm({ ...form, phone: formatPhoneInput(value, countryPrefix) });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
+    if (error) setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -285,11 +311,11 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
           <div className={`${b}__form-row`}>
             <div className={`${b}__form-field`}>
               <label>Telefono</label>
-              <input name="phone" value={form.phone} onChange={handleChange} placeholder="+57 3XX XXX XXXX" />
+              <input name="phone" value={form.phone} onChange={handleChange} placeholder={`${countryPrefix} (300) 123-4567`} />
             </div>
             <div className={`${b}__form-field`}>
               <label>Email</label>
-              <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="correo@alpelo.co" />
+              <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="correo@email.com" />
             </div>
           </div>
           <div className={`${b}__form-row`}>
@@ -844,6 +870,7 @@ const Team = () => {
           onClose={() => { setShowForm(false); setEditingStaff(null); }}
           onSaved={handleFormSaved}
           roles={ROLES}
+          tenant={tenant}
         />
       )}
 
