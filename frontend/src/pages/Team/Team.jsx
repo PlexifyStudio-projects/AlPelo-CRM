@@ -1,25 +1,28 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import staffService from '../../services/staffService';
-// No mock data — all data from API
-const mockClients = [];
-const mockBarbers = [];
-const mockVisitHistory = [];
 import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
 
 const b = 'team';
 
-// Default roles for the form dropdown — actual role filters are built dynamically from staff data
+// Default generic roles — built dynamically from staff data
 const DEFAULT_ROLES = ['Todos'];
 
-// ===== Name normalization for matching mock data =====
-const normalize = (n) => n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-const getMockBarberId = (staffName) => {
-  const norm = normalize(staffName);
-  const match = mockBarbers.find((mb) => normalize(mb.name) === norm);
-  return match?.id || null;
+// ===== Avatar color by name initial (vibrant, deterministic) =====
+const AVATAR_COLORS = [
+  '#E05292', '#3B82F6', '#F97316', '#8B5CF6', '#14B8A6',
+  '#EF4444', '#22B07E', '#C9A84C', '#06B6D4', '#D946EF',
+  '#6366F1', '#84CC16', '#EC4899', '#0EA5E9', '#F59E0B',
+  '#10B981', '#7C3AED', '#FB923C', '#2563EB', '#E11D48',
+  '#059669', '#9333EA', '#DC2626', '#0891B2', '#CA8A04',
+  '#4F46E5',
+];
+const getAvatarColor = (name) => {
+  if (!name) return AVATAR_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 };
 
 const getInitials = (name) => {
@@ -65,25 +68,8 @@ const ChevronRight = () => <svg width="16" height="16" viewBox="0 0 24 24" fill=
 const WhatsAppIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>;
 const CheckIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>;
 
-const getStaffClients = (memberName) => {
-  const mockId = getMockBarberId(memberName);
-  if (!mockId) return [];
-  const map = new Map();
-  mockVisitHistory
-    .filter((v) => v.barberId === mockId && v.status === 'completed')
-    .forEach((v) => {
-      const client = mockClients.find((c) => c.id === v.clientId);
-      if (!client) return;
-      if (!map.has(v.clientId)) {
-        map.set(v.clientId, {
-          id: client.id, clientId: client.clientId, name: client.name,
-          phone: client.phone, lastVisit: v.date, lastService: v.service,
-        });
-      }
-      const entry = map.get(v.clientId);
-      if (v.date > entry.lastVisit) { entry.lastVisit = v.date; entry.lastService = v.service; }
-    });
-  return [...map.values()].sort((a, bb) => bb.lastVisit.localeCompare(a.lastVisit));
+const getStaffClients = () => {
+  return [];
 };
 
 const DeactivateModal = ({ member, clients, onConfirm, onCancel, tenantName, bookingUrl }) => {
@@ -200,31 +186,13 @@ const DeactivateModal = ({ member, clients, onConfirm, onCancel, tenantName, boo
   );
 };
 
-// Phone formatting
-const COUNTRY_PREFIXES = {
-  CO: '+57', CL: '+56', AR: '+54', PE: '+51', VE: '+58', EC: '+593',
-  US: '+1', BR: '+55', MX: '+52', PA: '+507', CR: '+506',
-};
-
-const formatPhoneInput = (raw, prefix) => {
-  const prefixMatch = raw.match(/^(\+\d{1,3})\s*/);
-  const pfx = prefixMatch ? prefixMatch[1] : prefix;
-  const afterPrefix = prefixMatch ? raw.slice(prefixMatch[0].length) : raw.replace(/^\+?\d{0,3}\s*/, '');
-  const digits = afterPrefix.replace(/\D/g, '');
-  if (digits.length === 0) return `${pfx} `;
-  if (digits.length <= 3) return `${pfx} (${digits}`;
-  if (digits.length <= 6) return `${pfx} (${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `${pfx} (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
-};
-
 // ===== STAFF FORM MODAL =====
-const StaffFormModal = ({ staff, onClose, onSaved, roles, tenant }) => {
+const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
   const isEdit = !!staff;
-  const countryPrefix = COUNTRY_PREFIXES[tenant?.country] || '+57';
   const PRESET_COLORS = ['#2D5A3D', '#3B82F6', '#E05292', '#C9A84C', '#8B5CF6', '#F97316', '#14B8A6', '#EC4899', '#06B6D4', '#EF4444', '#22B07E', '#6366F1', '#D946EF', '#0EA5E9', '#84CC16'];
   const editableRoles = (roles || DEFAULT_ROLES).filter(r => r !== 'Todos');
   const [form, setForm] = useState({
-    name: staff?.name || '', phone: staff?.phone || (isEdit ? '' : countryPrefix + ' '), email: staff?.email || '',
+    name: staff?.name || '', phone: staff?.phone || '', email: staff?.email || '',
     role: staff?.role || editableRoles[0] || 'Profesional', specialty: staff?.specialty || '', bio: staff?.bio || '',
     hire_date: staff?.hire_date || '', skills: staff?.skills?.join(', ') || '',
     color: staff?.color || '',
@@ -232,15 +200,7 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles, tenant }) => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'phone') {
-      setForm({ ...form, phone: formatPhoneInput(value, countryPrefix) });
-    } else {
-      setForm({ ...form, [name]: value });
-    }
-    if (error) setError('');
-  };
+  const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); if (error) setError(''); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -286,11 +246,11 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles, tenant }) => {
           <div className={`${b}__form-row`}>
             <div className={`${b}__form-field`}>
               <label>Telefono</label>
-              <input name="phone" value={form.phone} onChange={handleChange} placeholder={`${countryPrefix} (300) 123-4567`} />
+              <input name="phone" value={form.phone} onChange={handleChange} placeholder="+57 3XX XXX XXXX" />
             </div>
             <div className={`${b}__form-field`}>
               <label>Email</label>
-              <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="correo@email.com" />
+              <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="correo@alpelo.co" />
             </div>
           </div>
           <div className={`${b}__form-row`}>
@@ -317,12 +277,8 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles, tenant }) => {
                   onClick={() => setForm({ ...form, color: c })}
                   title={c} />
               ))}
-              <label className={`${b}__color-custom`} style={{ position: 'relative', display: 'inline-block' }}>
-                <input type="color" value={form.color || '#2D5A3D'} onChange={e => setForm({ ...form, color: e.target.value })}
-                  style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
-                <span className={`${b}__color-swatch ${!PRESET_COLORS.includes(form.color) && form.color ? `${b}__color-swatch--on` : ''}`}
-                  style={{ background: form.color || '#ccc', display: 'inline-block' }} title="Color personalizado" />
-              </label>
+              <input type="color" value={form.color || '#2D5A3D'} onChange={e => setForm({ ...form, color: e.target.value })}
+                className={`${b}__color-input`} title="Color personalizado" />
             </div>
           </div>
           <div className={`${b}__form-field`}>
@@ -393,62 +349,28 @@ const SkillEditor = ({ staff, onUpdated }) => {
 
 // ===== DETAIL DRAWER =====
 const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) => {
-  const mockId = getMockBarberId(member.name);
+  // Visit data comes from the API — no mock data
+  const visits = [];
+  const clientHistory = [];
+  const totalRevenue = 0;
 
-  // Get visit history for this staff member
-  const visits = useMemo(() => {
-    if (!mockId) return [];
-    return mockVisitHistory
-      .filter((v) => v.barberId === mockId && v.status === 'completed')
-      .sort((a, bb) => bb.date.localeCompare(a.date));
-  }, [mockId]);
-
-  // Get unique clients with their latest visit info
-  const clientHistory = useMemo(() => {
-    const map = new Map();
-    visits.forEach((v) => {
-      const client = mockClients.find((c) => c.id === v.clientId);
-      if (!client) return;
-      if (!map.has(v.clientId)) {
-        map.set(v.clientId, {
-          id: client.id,
-          clientId: client.clientId,
-          name: client.name,
-          phone: client.phone,
-          lastVisit: v.date,
-          lastService: v.service,
-          totalVisits: 0,
-          totalSpent: 0,
-        });
-      }
-      const entry = map.get(v.clientId);
-      entry.totalVisits += 1;
-      entry.totalSpent += v.amount;
-      if (v.date > entry.lastVisit) {
-        entry.lastVisit = v.date;
-        entry.lastService = v.service;
-      }
-    });
-    return [...map.values()].sort((a, bb) => bb.lastVisit.localeCompare(a.lastVisit));
-  }, [visits]);
-
-  const totalRevenue = visits.reduce((s, v) => s + v.amount, 0);
   return createPortal(
     <div className={`${b}__drawer-overlay`} onClick={onClose}>
       <div className={`${b}__drawer`} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
+        {/* Header with photo */}
         <div className={`${b}__drawer-hero`}>
           <button className={`${b}__drawer-close`} onClick={onClose}><XIcon size={18} /></button>
-          <div className={`${b}__drawer-avatar ${b}__drawer-avatar--fallback`}>
-            {false ? (
-              <img alt={member.name} />
-            ) : (
-              <span>{getInitials(member.name)}</span>
-            )}
+          <div className={`${b}__drawer-avatar`} style={{ background: getAvatarColor(member.name) }}>
+            <span>{getInitials(member.name)}</span>
             <span className={`${b}__drawer-dot ${member.is_active ? `${b}__drawer-dot--on` : `${b}__drawer-dot--off`}`} />
           </div>
           <h2 className={`${b}__drawer-name`}>{member.name}</h2>
           <p className={`${b}__drawer-role`}>{member.specialty || member.role}</p>
+          {member.rating && (
+            <div className={`${b}__drawer-rating`}>
+              <StarIcon filled /> {member.rating.toFixed(1)}
+            </div>
+          )}
           <div className={`${b}__drawer-hero-actions`}>
             <button className={`${b}__btn ${b}__btn--outline-sm`} onClick={() => onEdit(member)}>
               <EditIcon /> Editar
@@ -555,13 +477,15 @@ const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) =>
 const Team = () => {
   const { addNotification } = useNotification();
   const { tenant } = useTenant();
-  // Use tenant-configured roles if available, otherwise build from staff data or use defaults
   const [staff, setStaff] = useState([]);
-  // Build roles dynamically from actual staff data
+  // Build roles dynamically from staff data, with tenant overrides
   const ROLES = useMemo(() => {
-    const realRoles = [...new Set(staff.map(s => s.role).filter(Boolean))];
-    return realRoles.length > 0 ? ['Todos', ...realRoles] : DEFAULT_ROLES;
-  }, [staff]);
+    if (tenant.staff_roles && tenant.staff_roles.length > 0) {
+      return ['Todos', ...tenant.staff_roles];
+    }
+    const rolesFromStaff = [...new Set(staff.map(s => s.role).filter(Boolean))];
+    return ['Todos', ...rolesFromStaff];
+  }, [tenant.staff_roles, staff]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('Todos');
@@ -694,7 +618,7 @@ const Team = () => {
     setSimpleDeactivating(null);
   };
 
-  const getClientCount = (member) => getStaffClients(member.name).length;
+  const getClientCount = () => 0;
 
   if (loading) return <div className={b}><p style={{ padding: '2rem', color: '#8E8E85' }}>Cargando equipo...</p></div>;
 
@@ -719,6 +643,10 @@ const Team = () => {
             <span className={`${b}__kpi-label`}>{r.role}s</span>
           </div>
         ))}
+        <div className={`${b}__kpi ${b}__kpi--accent`}>
+          <span className={`${b}__kpi-num`}>{stats.avgRating}</span>
+          <span className={`${b}__kpi-label`}>Rating</span>
+        </div>
       </div>
 
       {/* Filters */}
@@ -740,7 +668,7 @@ const Team = () => {
           </div>
           <select className={`${b}__select`} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
             <option value="name">Nombre</option>
-            {/* Rating removed — not used */}
+            <option value="rating">Rating</option>
             <option value="hire_date">Antiguedad</option>
             <option value="role">Rol</option>
           </select>
@@ -753,7 +681,7 @@ const Team = () => {
       {/* Grid */}
       <div className={`${b}__grid`}>
         {filtered.map((member, i) => {
-          const lastSvc = getStaffClients(member.name)[0];
+          const rating = member.rating;
           const isSelected = selectedId === member.id;
           return (
             <div
@@ -762,28 +690,24 @@ const Team = () => {
               style={{ animationDelay: `${0.03 * (i + 1)}s` }}
               onClick={() => setSelectedId(isSelected ? null : member.id)}
             >
-              <div className={`${b}__card-photo ${b}__card-photo--fallback`}>
+              <div className={`${b}__card-photo`} style={{ background: getAvatarColor(member.name) }}>
                 <span className={`${b}__card-initials`}>{getInitials(member.name)}</span>
                 <span className={`${b}__card-status ${member.is_active ? `${b}__card-status--on` : `${b}__card-status--off`}`} />
               </div>
               <div className={`${b}__card-body`}>
                 <span className={`${b}__card-name`}>{member.name}</span>
                 <span className={`${b}__card-role`}>{member.specialty || member.role}</span>
+                {rating && (
+                  <span className={`${b}__card-rating`}>
+                    <StarIcon filled /> {rating.toFixed(1)}
+                  </span>
+                )}
               </div>
               <div className={`${b}__card-status-badge`}>
                 <span className={`${b}__card-badge ${member.is_active ? `${b}__card-badge--active` : `${b}__card-badge--inactive`}`}>
                   {member.is_active ? 'Activo' : 'Inactivo'}
                 </span>
               </div>
-              {lastSvc && (
-                <div className={`${b}__card-last-service`}>
-                  <CalendarIcon />
-                  <div className={`${b}__card-last-service-info`}>
-                    <span className={`${b}__card-last-service-name`}>{lastSvc.lastService}</span>
-                    <span className={`${b}__card-last-service-date`}>{formatDate(lastSvc.lastVisit)}</span>
-                  </div>
-                </div>
-              )}
               {(member.skills || []).length > 0 && (
                 <div className={`${b}__card-skills`}>
                   {member.skills.slice(0, 2).map((sk) => (
@@ -825,7 +749,6 @@ const Team = () => {
           onClose={() => { setShowForm(false); setEditingStaff(null); }}
           onSaved={handleFormSaved}
           roles={ROLES}
-          tenant={tenant}
         />
       )}
 
