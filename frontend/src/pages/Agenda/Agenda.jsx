@@ -545,7 +545,14 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             notes: formData.notes || null, status: formData.status, created_by: 'admin',
           });
         }
-        addNotification(serviceAssignments.length > 1 ? `${serviceAssignments.length} citas creadas` : 'Cita creada', 'success');
+        {
+          const firstSvc = serviceMap[serviceAssignments[0]?.serviceId];
+          const staffName = staff.find(s => s.id === parseInt(serviceAssignments[0]?.staffId))?.name?.split(' ')[0] || '';
+          const msg = serviceAssignments.length > 1
+            ? `${serviceAssignments.length} citas creadas para ${clientName}`
+            : `Cita creada: ${clientName} con ${staffName} — ${firstSvc?.name || 'Servicio'}`;
+          addNotification(msg, 'success');
+        }
       }
       setShowModal(false);
       loadData();

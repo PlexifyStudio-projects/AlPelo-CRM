@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from '../../layout/Sidebar/Sidebar';
 import Header from '../../layout/Header/Header';
 import StaffDashboard from '../StaffDashboard/StaffDashboard';
 import StaffAgenda from '../StaffAgenda/StaffAgenda';
 import StaffFinances from '../StaffFinances/StaffFinances';
+import staffMeService from '../../../services/staffMeService';
+import { useNotification } from '../../../context/NotificationContext';
 
 const MENU_ITEMS = [
   { id: 'staff-dashboard', label: 'Mi Panel', description: 'RESUMEN DEL DIA', section: 'MI DIA' },
@@ -18,6 +20,46 @@ const StaffRouter = ({ user, onLogout }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
+  const { addNotification } = useNotification();
+  const knownApptIds = useRef(new Set());
+
+  // Poll for new appointments and create notifications
+  useEffect(() => {
+    const checkAppointments = async () => {
+      try {
+        const notifs = await staffMeService.getNotifications();
+        notifs.forEach((n) => {
+          if (!knownApptIds.current.has(n.id)) {
+            knownApptIds.current.add(n.id);
+            // Only notify on subsequent polls (not the initial load)
+            if (knownApptIds.current.size > notifs.length) return;
+          }
+        });
+        // On first load, seed all as known + create notifs for today's appointments
+        if (knownApptIds.current.size === 0 && notifs.length > 0) {
+          notifs.forEach((n) => {
+            knownApptIds.current.add(n.id);
+            addNotification(`Cita con ${n.client_name} a las ${n.time} — ${n.service_name}`, 'info');
+          });
+        }
+      } catch { /* silent */ }
+    };
+
+    checkAppointments();
+    const interval = setInterval(async () => {
+      try {
+        const notifs = await staffMeService.getNotifications();
+        notifs.forEach((n) => {
+          if (!knownApptIds.current.has(n.id)) {
+            knownApptIds.current.add(n.id);
+            addNotification(`Nueva cita asignada: ${n.client_name} a las ${n.time} — ${n.service_name}`, 'info');
+          }
+        });
+      } catch { /* silent */ }
+    }, 30000); // Check every 30s
+
+    return () => clearInterval(interval);
+  }, [addNotification]);
 
   useEffect(() => {
     const handleResize = () => {
