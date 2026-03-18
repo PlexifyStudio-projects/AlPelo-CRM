@@ -19,13 +19,25 @@ import Automations from '../pages/Automations/Automations';
 import Profile from '../pages/Profile/Profile';
 import AdminProfile from '../pages/AdminProfile/AdminProfile';
 import Settings from '../pages/Settings/Settings';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNotification } from '../context/NotificationContext';
 
 const DEV_ROLES = ['dev', 'super_admin'];
 
 const AppRouter = () => {
   const { isAuthenticated, loading, user, login, logout, updateProfile } = useAuth();
+  const { clearAll } = useNotification();
   const [activeSection, setActiveSection] = useState('dashboard');
+  const prevUserId = useRef(null);
+
+  // Clear notifications when user changes (login/logout/switch)
+  useEffect(() => {
+    const currentId = user?.id || null;
+    if (prevUserId.current !== null && prevUserId.current !== currentId) {
+      clearAll();
+    }
+    prevUserId.current = currentId;
+  }, [user?.id, clearAll]);
 
   if (loading) {
     return null;

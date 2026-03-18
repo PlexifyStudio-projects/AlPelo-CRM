@@ -112,7 +112,8 @@ class AgendaErrorBoundary extends React.Component {
 }
 
 // ═════════════════════════════════════════════════════
-const AgendaInner = () => {
+const AgendaInner = ({ staffOnlyId = null }) => {
+  const isStaffMode = !!staffOnlyId;
   // ── Calendar states ──
   const [view, setView] = useState('week');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -120,7 +121,7 @@ const AgendaInner = () => {
   const [staff, setStaff] = useState([]);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [staffFilter, setStaffFilter] = useState('');
+  const [staffFilter, setStaffFilter] = useState(staffOnlyId ? String(staffOnlyId) : '');
   const [showStaffDrop, setShowStaffDrop] = useState(false);
   const staffDropRef = useRef(null);
 
@@ -321,9 +322,10 @@ const AgendaInner = () => {
   // ─── Calendar filtered & laid out ──────────────────
   const filtered = useMemo(() => {
     let list = [...appointments];
-    if (staffFilter) list = list.filter(a => a.staff_id === parseInt(staffFilter));
+    const activeFilter = isStaffMode ? String(staffOnlyId) : staffFilter;
+    if (activeFilter) list = list.filter(a => a.staff_id === parseInt(activeFilter));
     return list;
-  }, [appointments, staffFilter]);
+  }, [appointments, staffFilter, isStaffMode, staffOnlyId]);
 
   // ─── Per-column appointments ─────────────────────
   const colApts = useMemo(() => {
@@ -615,9 +617,11 @@ const AgendaInner = () => {
             <button className={`${b}__vt-btn ${view === 'week' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('week')}>Semana</button>
             <button className={`${b}__vt-btn ${view === 'day' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('day')}>Dia</button>
           </div>
-          <button className={`${b}__create-btn`} onClick={() => openCreate()}>
-            <PlusIcon /> Nueva cita
-          </button>
+          {!isStaffMode && (
+            <button className={`${b}__create-btn`} onClick={() => openCreate()}>
+              <PlusIcon /> Nueva cita
+            </button>
+          )}
         </div>
       </div>
 
@@ -658,8 +662,8 @@ const AgendaInner = () => {
         </div>
 
         <div className={`${b}__ov-right`}>
-          {/* Staff color legend */}
-          {staff.length > 0 && (
+          {/* Staff color legend — hidden in staff mode */}
+          {!isStaffMode && staff.length > 0 && (
             <div className={`${b}__staff-legend`}>
               {staff.slice(0, 5).map((s, i) => (
                 <div key={s.id} className={`${b}__staff-dot`} title={s.name}>
@@ -670,7 +674,7 @@ const AgendaInner = () => {
               {staff.length > 5 && <span className={`${b}__staff-dot-more`}>+{staff.length - 5}</span>}
             </div>
           )}
-          <div className={`${b}__staff-drop`} ref={staffDropRef}>
+          <div className={`${b}__staff-drop`} ref={staffDropRef} style={isStaffMode ? { display: 'none' } : undefined}>
             <button type="button" className={`${b}__staff-drop-btn`} onClick={() => setShowStaffDrop(p => !p)}>
               {staffFilter ? (
                 <>
@@ -790,7 +794,7 @@ const AgendaInner = () => {
                           <div key={apt.id}
                             className={`${b}__event ${apt.status === 'completed' ? `${b}__event--done` : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''}`}
                             style={{ '--c': staffColor, '--sc': statusColor, animationDelay: `${evIdx * 30}ms` }}
-                            onClick={(e) => { e.stopPropagation(); openEdit(apt); }}
+                            onClick={(e) => { e.stopPropagation(); if (!isStaffMode) openEdit(apt); }}
                             title={`${apt.client_name} - ${apt.service_name || ''} (${formatTime12(apt.time)} - ${formatTime12(endTime)})`}>
                             <div className={`${b}__event-accent`} />
                             <div className={`${b}__event-body`}>
@@ -1194,5 +1198,5 @@ const AgendaInner = () => {
   );
 };
 
-const Agenda = () => <AgendaErrorBoundary><AgendaInner /></AgendaErrorBoundary>;
+const Agenda = ({ staffOnlyId = null } = {}) => <AgendaErrorBoundary><AgendaInner staffOnlyId={staffOnlyId} /></AgendaErrorBoundary>;
 export default Agenda;
