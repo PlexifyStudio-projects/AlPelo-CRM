@@ -86,12 +86,7 @@ const STATUS_META = {
   paused: { label: 'Pausada', color: '#FBBF24' },
 };
 
-const SUGGESTED_CAMPAIGNS = [
-  { name: 'Recuperar clientes inactivos', type: 'recovery', segment: 'inactive_30', desc: 'Contactar clientes que llevan mas de 30 dias sin venir con un mensaje personalizado', priority: 'alta' },
-  { name: 'Rescate urgente', type: 'reactivation', segment: 'inactive_60', desc: 'Ultimo intento con clientes que casi perdemos — oferta agresiva de descuento', priority: 'urgente' },
-  { name: 'Fidelizacion VIP', type: 'vip', segment: 'vip', desc: 'Agradece a tus mejores clientes y mantenlos comprometidos con tu negocio', priority: 'media' },
-  { name: 'Promocion semanal', type: 'promo', segment: 'active', desc: 'Impulsa las ventas con una oferta especial para clientes activos esta semana', priority: 'media' },
-];
+const SUGGESTED_CAMPAIGNS = [];
 
 const SAMPLE_VARS = {
   nombre: (c) => (c?.name || 'Cliente').split(' ')[0],
@@ -498,47 +493,12 @@ const Campaigns = () => {
       </div>
 
       {/* ─── Suggested Campaigns (when empty or always as inspiration) ─── */}
-      {campaigns.length === 0 && (
-        <div className={`${B}__suggested`}>
-          <h3 className={`${B}__suggested-title`}>
-            <ZapIcon /> Campanas sugeridas para tu negocio
-          </h3>
-          <p className={`${B}__suggested-subtitle`}>
-            Basado en tus {stats.totalClients} clientes — {stats.inactive30} inactivos, {stats.vips} VIP, {stats.atRisk} en riesgo
-          </p>
-          <div className={`${B}__suggested-grid`}>
-            {SUGGESTED_CAMPAIGNS.map((s, i) => {
-              const t = CAMPAIGN_TYPES.find(ct => ct.id === s.type);
-              // Show real client count for each segment
-              const getDays = c => c.days_since_last_visit ?? null;
-              const segCounts = {
-                inactive_30: clients.filter(c => c.phone && getDays(c) !== null && getDays(c) >= 30).length,
-                inactive_60: clients.filter(c => c.phone && getDays(c) !== null && getDays(c) >= 60).length,
-                inactive_90: clients.filter(c => c.phone && getDays(c) !== null && getDays(c) >= 90).length,
-                vip: clients.filter(c => c.phone && c.status === 'vip').length,
-                active: clients.filter(c => c.phone && (c.status === 'activo' || c.status === 'active')).length,
-              };
-              const count = segCounts[s.segment] || 0;
-              return (
-                <div key={i} className={`${B}__suggested-card`} onClick={() => openWizard(s)}>
-                  <div className={`${B}__suggested-card-icon`} style={{ color: t?.color }}>{(() => { const I = CAMPAIGN_ICONS[s.type]; return I ? <I /> : null; })()}</div>
-                  <div className={`${B}__suggested-card-name`}>{s.name}</div>
-                  <div className={`${B}__suggested-card-desc`}>{s.desc}</div>
-                  <div className={`${B}__suggested-card-footer`}>
-                    <span className={`${B}__suggested-card-priority`} data-priority={s.priority}>
-                      {s.priority}
-                    </span>
-                    {count > 0 && (
-                      <span className={`${B}__suggested-card-count`}>
-                        <UsersIcon /> {count}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {campaigns.length === 0 && filteredCampaigns.length === 0 && (
+        <EmptyState
+          icon={<MegaphoneIcon />}
+          title="Sin campanas aun"
+          description="Crea tu primera campana para enviar mensajes masivos a tus clientes por WhatsApp"
+        />
       )}
 
       {/* ─── Campaign List ─── */}
