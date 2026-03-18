@@ -4,9 +4,7 @@ import { useNotification } from '../../context/NotificationContext';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
 import whatsappService from '../../services/whatsappService';
-import automationService from '../../services/automationService';
 import templateService from '../../services/templateService';
-import ReviewsPipeline from '../../components/Admin/ReviewsPipeline/ReviewsPipeline';
 
 // Category display metadata (static — just names and colors)
 const templateCategories = [
@@ -44,309 +42,9 @@ const MegaphoneIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill
 const SaveIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>;
 
 // ═══════════════════════════════════════════════
-// Automation Presets
+// Helpers
 // ═══════════════════════════════════════════════
-const AUTOMATION_STORAGE_KEY = 'plexify_automations';
-
-const DEFAULT_AUTOMATIONS = [
-  {
-    id: 'auto_reminder_24h',
-    name: 'Recordatorio de Cita (24h)',
-    icon: '🔔',
-    color: '#3B82F6',
-    bg: 'rgba(59, 130, 246, 0.08)',
-    trigger: '24 horas antes de la cita',
-    message: 'Hola {{nombre}}, te recordamos tu cita mañana a las {{hora}} con {{profesional}}. ¿Confirmas? Responde SI o NO',
-    enabled: true,
-    stats: { sent: 145, responded: 89 },
-    lastTriggered: '2026-03-15T08:30:00',
-  },
-  {
-    id: 'auto_reminder_1h',
-    name: 'Recordatorio de Cita (1h)',
-    icon: '⏰',
-    color: '#F59E0B',
-    bg: 'rgba(245, 158, 11, 0.08)',
-    trigger: '1 hora antes de la cita',
-    message: '{{nombre}}, tu cita es en 1 hora a las {{hora}}. ¡Te esperamos!',
-    enabled: true,
-    stats: { sent: 132, responded: 72 },
-    lastTriggered: '2026-03-15T10:15:00',
-  },
-  {
-    id: 'auto_post_visit',
-    name: 'Agradecimiento Post-Visita',
-    icon: '💬',
-    color: '#8B5CF6',
-    bg: 'rgba(139, 92, 246, 0.08)',
-    trigger: '2 horas después de completar visita',
-    message: 'Gracias por visitarnos, {{nombre}}! ¿Cómo calificas tu experiencia del 1 al 5?',
-    enabled: false,
-    stats: { sent: 78, responded: 45 },
-    lastTriggered: '2026-03-14T18:00:00',
-  },
-  {
-    id: 'auto_birthday',
-    name: 'Feliz Cumpleaños',
-    icon: '🎂',
-    color: '#EC4899',
-    bg: 'rgba(236, 72, 153, 0.08)',
-    trigger: 'Día del cumpleaños (9:00 AM)',
-    message: '¡Feliz cumpleaños, {{nombre}}! 🎂 Te regalamos un 10% de descuento en tu próxima visita. Válido por 7 días.',
-    enabled: true,
-    stats: { sent: 23, responded: 18 },
-    lastTriggered: '2026-03-12T09:00:00',
-  },
-  {
-    id: 'auto_reactivation',
-    name: 'Reactivación de Clientes Inactivos',
-    icon: '🔄',
-    color: '#EF4444',
-    bg: 'rgba(239, 68, 68, 0.08)',
-    trigger: 'Cliente sin visita por X días',
-    message: 'Hola {{nombre}}, te extrañamos! Han pasado {{dias}} días desde tu última visita. ¿Te agendamos?',
-    enabled: false,
-    stats: { sent: 56, responded: 31 },
-    lastTriggered: '2026-03-13T11:00:00',
-    days: 30,
-    daysOptions: [30, 45, 60, 90],
-  },
-];
-
-const loadAutomations = () => {
-  try {
-    const saved = JSON.parse(localStorage.getItem(AUTOMATION_STORAGE_KEY));
-    if (saved && Array.isArray(saved) && saved.length > 0) return saved;
-  } catch { /* ignore */ }
-  return DEFAULT_AUTOMATIONS;
-};
-const saveAutomations = (autos) => localStorage.setItem(AUTOMATION_STORAGE_KEY, JSON.stringify(autos));
-
-const getTimeAgo = (dateStr) => {
-  if (!dateStr) return 'Nunca';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Hace un momento';
-  if (mins < 60) return `Hace ${mins} min`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Hace ${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `Hace ${days}d`;
-};
-
-// ═══════════════════════════════════════════════
-// Automations Panel Component
-// ═══════════════════════════════════════════════
-const AutomationsPanel = ({ addNotification }) => {
-  const [automations, setAutomations] = useState(loadAutomations);
-  const [editingId, setEditingId] = useState(null);
-  const [editMessage, setEditMessage] = useState('');
-
-  useEffect(() => { saveAutomations(automations); }, [automations]);
-
-  // Try to load from API
-  useEffect(() => {
-    automationService.getAutomations().then(data => {
-      if (data && Array.isArray(data) && data.length > 0) setAutomations(data);
-    });
-  }, []);
-
-  const activeCount = automations.filter(a => a.enabled).length;
-  const totalSent = automations.reduce((s, a) => s + (a.stats?.sent || 0), 0);
-  const totalResponded = automations.reduce((s, a) => s + (a.stats?.responded || 0), 0);
-  const responseRate = totalSent > 0 ? Math.round((totalResponded / totalSent) * 100) : 0;
-  const confirmedAppts = Math.round(totalResponded * 0.72); // mock: ~72% of responded = confirmed
-
-  const handleToggle = (id) => {
-    setAutomations(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      const next = { ...a, enabled: !a.enabled };
-      automationService.updateAutomation(id, { enabled: next.enabled });
-      return next;
-    }));
-    const auto = automations.find(a => a.id === id);
-    addNotification(
-      auto?.enabled ? `"${auto.name}" desactivado` : `"${auto?.name}" activado`,
-      auto?.enabled ? 'info' : 'success'
-    );
-  };
-
-  const startEdit = (auto) => {
-    setEditingId(auto.id);
-    setEditMessage(auto.message);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditMessage('');
-  };
-
-  const saveEdit = (id) => {
-    setAutomations(prev => prev.map(a =>
-      a.id === id ? { ...a, message: editMessage } : a
-    ));
-    automationService.updateAutomation(id, { message: editMessage });
-    setEditingId(null);
-    setEditMessage('');
-    addNotification('Mensaje actualizado', 'success');
-  };
-
-  const handleDaysChange = (id, days) => {
-    setAutomations(prev => prev.map(a =>
-      a.id === id ? { ...a, days: Number(days) } : a
-    ));
-    automationService.updateAutomation(id, { days: Number(days) });
-  };
-
-  return (
-    <div className={A}>
-      {/* Stats summary */}
-      <div className={`${A}__stats`}>
-        <div className={`${A}__stat ${A}__stat--active`}>
-          <div className={`${A}__stat-icon`}>⚡</div>
-          <div className={`${A}__stat-info`}>
-            <span className={`${A}__stat-value`}>{activeCount} de {automations.length}</span>
-            <span className={`${A}__stat-label`}>Automatizaciones activas</span>
-          </div>
-        </div>
-        <div className={`${A}__stat ${A}__stat--sent`}>
-          <div className={`${A}__stat-icon`}>📤</div>
-          <div className={`${A}__stat-info`}>
-            <span className={`${A}__stat-value`}>{totalSent.toLocaleString()}</span>
-            <span className={`${A}__stat-label`}>Mensajes este mes</span>
-          </div>
-        </div>
-        <div className={`${A}__stat ${A}__stat--rate`}>
-          <div className={`${A}__stat-icon`}>📊</div>
-          <div className={`${A}__stat-info`}>
-            <span className={`${A}__stat-value`}>{responseRate}%</span>
-            <span className={`${A}__stat-label`}>Tasa de respuesta</span>
-          </div>
-        </div>
-        <div className={`${A}__stat ${A}__stat--confirmed`}>
-          <div className={`${A}__stat-icon`}>✅</div>
-          <div className={`${A}__stat-info`}>
-            <span className={`${A}__stat-value`}>{confirmedAppts}</span>
-            <span className={`${A}__stat-label`}>Citas confirmadas</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Automation cards */}
-      <div className={`${A}__grid`}>
-        {automations.map(auto => (
-          <div
-            key={auto.id}
-            className={`${A}__card ${auto.enabled ? `${A}__card--active` : `${A}__card--inactive`}`}
-            style={{ '--auto-color': auto.color, '--auto-bg': auto.bg }}
-          >
-            {/* Header: icon, title, toggle */}
-            <div className={`${A}__card-header`}>
-              <div className={`${A}__card-header-left`}>
-                <div className={`${A}__card-icon`} style={{ background: auto.bg }}>
-                  {auto.icon}
-                </div>
-                <div className={`${A}__card-title-group`}>
-                  <h3 className={`${A}__card-name`}>{auto.name}</h3>
-                  <span className={`${A}__card-trigger`}>
-                    <ClockIcon /> {auto.trigger}
-                  </span>
-                </div>
-              </div>
-              <label className={`${A}__toggle`}>
-                <input
-                  type="checkbox"
-                  className={`${A}__toggle-input`}
-                  checked={auto.enabled}
-                  onChange={() => handleToggle(auto.id)}
-                />
-                <span className={`${A}__toggle-slider`} />
-              </label>
-            </div>
-
-            {/* Status badge */}
-            <span className={`${A}__card-status ${auto.enabled ? `${A}__card-status--active` : `${A}__card-status--inactive`}`}>
-              <span className={`${A}__card-status-dot`} />
-              {auto.enabled ? 'Activo' : 'Inactivo'}
-            </span>
-
-            {/* Days selector (only for reactivation) */}
-            {auto.daysOptions && (
-              <div className={`${A}__card-days`}>
-                <span className={`${A}__card-days-label`}>Inactividad mínima:</span>
-                <select
-                  className={`${A}__card-days-select`}
-                  value={auto.days}
-                  onChange={e => handleDaysChange(auto.id, e.target.value)}
-                >
-                  {auto.daysOptions.map(d => (
-                    <option key={d} value={d}>{d} días</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Message preview / edit */}
-            <div className={`${A}__card-message`}>
-              <span className={`${A}__card-message-label`}>
-                <WhatsAppIcon /> Mensaje
-              </span>
-              {editingId === auto.id ? (
-                <textarea
-                  className={`${A}__card-message-edit`}
-                  value={editMessage}
-                  onChange={e => setEditMessage(e.target.value)}
-                  rows={3}
-                  autoFocus
-                />
-              ) : (
-                <div className={`${A}__card-bubble`}>
-                  {auto.message}
-                </div>
-              )}
-            </div>
-
-            {/* Footer: stats + actions */}
-            <div className={`${A}__card-footer`}>
-              <div className={`${A}__card-stats`}>
-                <span className={`${A}__card-stat`}>
-                  Enviados: <strong>{auto.stats?.sent || 0}</strong>
-                </span>
-                <span className={`${A}__card-stat`}>
-                  Respondidos: <strong>{auto.stats?.responded || 0}</strong>
-                  {auto.stats?.sent > 0 && ` (${Math.round((auto.stats.responded / auto.stats.sent) * 100)}%)`}
-                </span>
-                <span className={`${A}__card-last`}>
-                  {getTimeAgo(auto.lastTriggered)}
-                </span>
-              </div>
-              <div className={`${A}__card-actions`}>
-                {editingId === auto.id ? (
-                  <>
-                    <button className={`${A}__card-btn ${A}__card-btn--cancel`} onClick={cancelEdit}>
-                      <CloseIcon /> Cancelar
-                    </button>
-                    <button className={`${A}__card-btn ${A}__card-btn--save`} onClick={() => saveEdit(auto.id)}>
-                      <SaveIcon /> Guardar
-                    </button>
-                  </>
-                ) : (
-                  <button className={`${A}__card-btn`} onClick={() => startEdit(auto)}>
-                    <EditIcon /> Editar mensaje
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-// ═══════════════════════════════════════════════
-// Constants
-// ═══════════════════════════════════════════════
+// (Automations moved to dedicated Automations page)
 const CAMPAIGN_TYPES = [
   { id: 'recovery', label: 'Recuperación', desc: 'Clientes inactivos (+30 dias)', color: '#FBBF24', icon: '🔄' },
   { id: 'vip', label: 'VIP', desc: 'Clientes VIP y frecuentes', color: '#8B5CF6', icon: '⭐' },
@@ -428,26 +126,23 @@ const saveCampaigns = (campaigns) => {
 // Pre-built campaign suggestions (shown when no campaigns exist)
 const SUGGESTED_CAMPAIGNS = [
   {
-    name: 'Recuperar clientes marzo',
+    name: 'Recuperar clientes +30 dias',
     type: 'recovery',
     segment: 'inactive_30',
-    templateId: 'tpl-4',
-    desc: 'Contactar clientes que llevan +30 días sin venir con descuento del 10%',
+    desc: 'Contactar clientes que llevan +30 dias sin venir',
     priority: 'alta',
   },
   {
-    name: 'Rescate urgente +60 días',
+    name: 'Rescate urgente +60 dias',
     type: 'reactivation',
     segment: 'inactive_60',
-    templateId: 'tpl-5',
-    desc: 'Clientes que casi perdemos. Descuento + bebida gratis para que vuelvan',
+    desc: 'Clientes que casi perdemos — descuento agresivo para que vuelvan',
     priority: 'urgente',
   },
   {
-    name: 'Fidelización VIP',
+    name: 'Fidelizacion VIP',
     type: 'vip',
     segment: 'vip',
-    templateId: 'tpl-11',
     desc: 'Mantener contentos a los mejores clientes con seguimiento personalizado',
     priority: 'media',
   },
@@ -455,16 +150,14 @@ const SUGGESTED_CAMPAIGNS = [
     name: 'Promo de la semana',
     type: 'promo',
     segment: 'active',
-    templateId: 'tpl-9',
-    desc: 'Promoción semanal para clientes activos con descuento en servicios',
+    desc: 'Promocion semanal para clientes activos con descuento en servicios',
     priority: 'media',
   },
   {
-    name: 'Clientes casi perdidos +90 días',
+    name: 'Clientes casi perdidos +90 dias',
     type: 'reactivation',
     segment: 'inactive_90',
-    templateId: 'tpl-14',
-    desc: 'Último intento con clientes que llevan 3 meses sin venir — descuento agresivo',
+    desc: 'Ultimo intento con clientes que llevan 3 meses sin venir',
     priority: 'urgente',
   },
 ];
@@ -481,7 +174,6 @@ const Campaigns = () => {
   const [campaigns, setCampaigns] = useState(loadCampaigns);
 
   // UI
-  const [activeTab, setActiveTab] = useState('campaigns'); // 'campaigns' | 'automations' | 'reviews'
   const [showCreate, setShowCreate] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
   const [showDetail, setShowDetail] = useState(null); // campaign id
@@ -733,61 +425,18 @@ const Campaigns = () => {
       {/* ── Header ── */}
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
-          <h1 className={`${B}__title`}>
-            {activeTab === 'campaigns' ? 'Campanas' : activeTab === 'automations' ? 'Automatizaciones' : 'Resenas'}
-          </h1>
-          <span className={`${B}__subtitle`}>
-            {activeTab === 'campaigns' ? 'Recuperacion y retencion de clientes' : activeTab === 'automations' ? 'Flujos automaticos de WhatsApp' : 'Pipeline de resenas y Google Reviews'}
-          </span>
+          <h1 className={`${B}__title`}>Campañas</h1>
+          <span className={`${B}__subtitle`}>Recuperacion y retencion de clientes</span>
         </div>
-        {activeTab === 'campaigns' && (
-          <button className={`${B}__btn-create`} onClick={openCreate}>
-            <PlusIcon /> Nueva campaña
-          </button>
-        )}
-      </div>
-
-      {/* ── Tabs ── */}
-      <div className={`${B}__tabs`}>
-        <button
-          className={`${B}__tab ${activeTab === 'campaigns' ? `${B}__tab--active` : ''}`}
-          onClick={() => setActiveTab('campaigns')}
-        >
-          <MegaphoneIcon /> Campañas
-          <span className={`${B}__tab-badge`}>{campaigns.length}</span>
-        </button>
-        <button
-          className={`${B}__tab ${activeTab === 'automations' ? `${B}__tab--active` : ''}`}
-          onClick={() => setActiveTab('automations')}
-        >
-          <ZapIcon /> Automatizaciones
-        </button>
-        <button
-          className={`${B}__tab ${activeTab === 'reviews' ? `${B}__tab--active` : ''}`}
-          onClick={() => setActiveTab('reviews')}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg> Resenas
+        <button className={`${B}__btn-create`} onClick={openCreate}>
+          <PlusIcon /> Nueva campaña
         </button>
       </div>
 
       {/* ══════════════════════════════════════════
-          AUTOMATIONS TAB
+          CAMPAIGNS CONTENT
          ══════════════════════════════════════════ */}
-      {activeTab === 'automations' && (
-        <AutomationsPanel addNotification={addNotification} />
-      )}
-
-      {/* ══════════════════════════════════════════
-          REVIEWS TAB
-         ══════════════════════════════════════════ */}
-      {activeTab === 'reviews' && (
-        <ReviewsPipeline />
-      )}
-
-      {/* ══════════════════════════════════════════
-          CAMPAIGNS TAB
-         ══════════════════════════════════════════ */}
-      {activeTab === 'campaigns' && <>
+      <>
 
       {/* ── Health Dashboard ── */}
       <div className={`${B}__health`}>
@@ -834,7 +483,7 @@ const Campaigns = () => {
       </div>
 
       {/* ── Suggested Campaigns ── */}
-      {!loading && clients.length > 0 && campaigns.length === 0 && (
+      {!loading && clients.length > 0 && (
         <div className={`${B}__suggestions`}>
           <div className={`${B}__suggestions-head`}>
             <h3>Campañas sugeridas para ti</h3>
@@ -971,7 +620,7 @@ const Campaigns = () => {
         </div>
       )}
 
-      </>}
+      </>
 
       {/* ══════════════════════════════════════════
           DETAIL MODAL
