@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import setup_cors_middleware
 from auth import auth_router
-from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router, staff_router, settings_router
+from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router, staff_router, settings_router, campaign_router
 from database.connection import engine, Base
 
 
@@ -133,6 +133,42 @@ def _run_migrations(engine):
     except Exception as e:
         print(f"[MIGRATION] lina_task table: {e}")
 
+    # --- campaign table (marketing campaigns) ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='campaign'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.campaign (
+                        id SERIAL PRIMARY KEY,
+                        tenant_id INTEGER NOT NULL REFERENCES public.tenant(id),
+                        name VARCHAR(200) NOT NULL,
+                        campaign_type VARCHAR(50),
+                        status VARCHAR(30) DEFAULT 'draft',
+                        message_body TEXT,
+                        meta_template_name VARCHAR(100),
+                        meta_template_id VARCHAR(100),
+                        meta_status VARCHAR(30),
+                        segment_filters JSON DEFAULT '{}',
+                        audience_count INTEGER DEFAULT 0,
+                        sent_count INTEGER DEFAULT 0,
+                        failed_count INTEGER DEFAULT 0,
+                        responded_count INTEGER DEFAULT 0,
+                        ai_variants JSON,
+                        created_by VARCHAR(100),
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_campaign_tenant ON public.campaign(tenant_id)"))
+                conn.execute(text("CREATE INDEX idx_campaign_status ON public.campaign(status)"))
+                print("[MIGRATION] Created campaign table with indexes")
+    except Exception as e:
+        print(f"[MIGRATION] campaign table: {e}")
+
     # --- Index for tenant isolation on client and conversation tables ---
     try:
         with engine.begin() as conn:
@@ -244,6 +280,7 @@ app.include_router(template_router, prefix="/api", tags=["Message Templates"])
 app.include_router(lina_router, prefix="/api", tags=["Lina IA"])
 app.include_router(staff_router, prefix="/api", tags=["Staff Portal"])
 app.include_router(settings_router, prefix="/api", tags=["Settings"])
+app.include_router(campaign_router, prefix="/api", tags=["Campaigns"])
 
 
 # ============================================================================
@@ -267,6 +304,7 @@ async def factory_reset(request: dict = {}):
 
     # Tables in deletion order (respecting foreign keys)
     tables = [
+        "campaign",
         "lina_task",
         "workflow_execution",
         "workflow_template",

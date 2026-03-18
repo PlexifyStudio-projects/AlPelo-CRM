@@ -12,6 +12,7 @@ from .template_endpoints import router as template_router
 from .lina_endpoints import router as lina_router
 from .staff_endpoints import router as staff_router
 from .settings_endpoints import router as settings_router
+from .campaign_endpoints import router as campaign_router
 
 __all__ = [
     "create_router",
@@ -28,4 +29,5 @@ __all__ = [
     "lina_router",
     "staff_router",
     "settings_router",
+    "campaign_router",
 ]

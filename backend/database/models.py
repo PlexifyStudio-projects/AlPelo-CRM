@@ -542,3 +542,39 @@ class BrandKit(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+class Campaign(Base):
+    """Marketing campaign — created by admin, optionally AI-generated copy,
+    submitted to Meta for approval, then sent to segmented audience."""
+    __tablename__ = "campaign"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    campaign_type = Column(String(50))  # recovery, promo, vip, reactivation, followup
+    status = Column(String(30), default="draft")  # draft, pending_meta, approved, rejected, sending, sent, paused
+
+    # Copy/template
+    message_body = Column(Text)  # the copy with {{variables}}
+    meta_template_name = Column(String(100))  # slug for Meta
+    meta_template_id = Column(String(100))  # ID from Meta after submit
+    meta_status = Column(String(30))  # pending, approved, rejected
+
+    # Segmentation
+    segment_filters = Column(JSON, default=dict)  # {"status": "vip", "days_inactive": 30, ...}
+    audience_count = Column(Integer, default=0)
+
+    # Stats
+    sent_count = Column(Integer, default=0)
+    failed_count = Column(Integer, default=0)
+    responded_count = Column(Integer, default=0)
+
+    # AI
+    ai_variants = Column(JSON)  # [{"body": "...", "reason": "..."}, ...]
+
+    created_by = Column(String(100))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])
