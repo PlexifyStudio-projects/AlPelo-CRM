@@ -320,9 +320,9 @@
     }
 
     &--empty {
-      opacity: 0.45;
+      opacity: 0.55;
       cursor: not-allowed;
-      filter: grayscale(0.6);
+      filter: grayscale(0.4);
     }
   }
 
@@ -369,15 +369,15 @@
   }
 
   &__suggestion-name {
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
     font-weight: $font-weight-bold;
     color: $color-gray-800;
     line-height: $line-height-snug;
   }
 
   &__suggestion-desc {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
+    font-size: $font-size-xs;
+    color: $color-gray-500;
     line-height: 1.5;
     @include line-clamp(2);
   }
