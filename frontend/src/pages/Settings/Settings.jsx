@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Card from '../../components/common/Card/Card';
 import { useNotification } from '../../context/NotificationContext';
+import { useTenant } from '../../context/TenantContext';
 import aiService from '../../services/aiService';
 
 // Model is managed by Plexify (dev), not by the agency admin
@@ -33,6 +34,7 @@ Reservas: [Link o instrucciones]
 
 const Settings = () => {
   const { addNotification } = useNotification();
+  const { tenant } = useTenant();
 
   const [aiConfig, setAiConfig] = useState(null);
   const [businessContext, setBusinessContext] = useState('');
@@ -99,9 +101,19 @@ const Settings = () => {
     }
   }, [businessContext, aiConfig, addNotification]);
 
-  const handleToggle = (setting) => {
-    addNotification(`${setting} actualizado`, 'info');
+  const [notifPrefs, setNotifPrefs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('plexify_notif_prefs') || '{}'); } catch { return {}; }
+  });
+
+  const handleToggle = (key) => {
+    setNotifPrefs(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      localStorage.setItem('plexify_notif_prefs', JSON.stringify(updated));
+      return updated;
+    });
   };
+
+  const waConnected = !!(tenant?.wa_phone_number_id && tenant?.wa_access_token);
 
   const b = 'settings';
 
@@ -169,7 +181,7 @@ const Settings = () => {
               <span className={`${b}__option-label`}>Notificaciones de citas</span>
               <span className={`${b}__option-desc`}>Recibir alertas cuando se agende una cita</span>
             </div>
-            <button className={`${b}__toggle ${b}__toggle--active`} onClick={() => handleToggle('Notificaciones de citas')}>
+            <button className={`${b}__toggle ${notifPrefs.citas !== false ? `${b}__toggle--active` : ''}`} onClick={() => handleToggle('citas')}>
               <span className={`${b}__toggle-knob`} />
             </button>
           </div>
@@ -178,7 +190,7 @@ const Settings = () => {
               <span className={`${b}__option-label`}>Alertas de mensajeria</span>
               <span className={`${b}__option-desc`}>Notificar cuando se complete un envio masivo</span>
             </div>
-            <button className={`${b}__toggle ${b}__toggle--active`} onClick={() => handleToggle('Alertas de mensajeria')}>
+            <button className={`${b}__toggle ${notifPrefs.mensajeria !== false ? `${b}__toggle--active` : ''}`} onClick={() => handleToggle('mensajeria')}>
               <span className={`${b}__toggle-knob`} />
             </button>
           </div>
@@ -187,7 +199,7 @@ const Settings = () => {
               <span className={`${b}__option-label`}>Sonidos</span>
               <span className={`${b}__option-desc`}>Reproducir sonido con las notificaciones</span>
             </div>
-            <button className={`${b}__toggle`} onClick={() => handleToggle('Sonidos')}>
+            <button className={`${b}__toggle ${notifPrefs.sonidos ? `${b}__toggle--active` : ''}`} onClick={() => handleToggle('sonidos')}>
               <span className={`${b}__toggle-knob`} />
             </button>
           </div>
@@ -198,16 +210,20 @@ const Settings = () => {
           <div className={`${b}__option`}>
             <div className={`${b}__option-info`}>
               <span className={`${b}__option-label`}>WhatsApp Business</span>
-              <span className={`${b}__option-desc`}>Conectar con la API de WhatsApp Business</span>
+              <span className={`${b}__option-desc`}>
+                {waConnected ? `Conectado — ${tenant.wa_phone_display || 'Numero configurado'}` : 'Sin configurar — contacta a soporte'}
+              </span>
             </div>
-            <span className={`${b}__status ${b}__status--connected`}>Conectado</span>
+            <span className={`${b}__status ${waConnected ? `${b}__status--connected` : `${b}__status--pending`}`}>
+              {waConnected ? 'Conectado' : 'No configurado'}
+            </span>
           </div>
           <div className={`${b}__option`}>
             <div className={`${b}__option-info`}>
               <span className={`${b}__option-label`}>Meta (Facebook/Instagram)</span>
-              <span className={`${b}__option-desc`}>Conectar con Meta Business Suite</span>
+              <span className={`${b}__option-desc`}>Publicacion de contenido en redes sociales</span>
             </div>
-            <span className={`${b}__status ${b}__status--pending`}>Pendiente</span>
+            <span className={`${b}__status ${b}__status--pending`}>Proximamente</span>
           </div>
         </Card>
       </div>

@@ -222,14 +222,14 @@ const Dashboard = ({ onNavigate }) => {
       );
       if (!res.ok) return;
       const data = await res.json();
-      // Try to use daily_revenue array if the API returns it
-      if (data.daily_revenue && Array.isArray(data.daily_revenue)) {
-        setRevenueData(data.daily_revenue.map(d => ({
+      // Use revenue_by_day (backend) or daily_revenue (legacy)
+      const dayData = data.revenue_by_day || data.daily_revenue || [];
+      if (Array.isArray(dayData) && dayData.length > 0) {
+        setRevenueData(dayData.map(d => ({
           label: d.date || d.day,
           value: d.total || d.revenue || d.amount || 0,
         })));
       } else {
-        // Fallback: generate from available summary or leave empty
         setRevenueData([]);
       }
     } catch {
@@ -540,7 +540,7 @@ const Dashboard = ({ onNavigate }) => {
           ) : (
             <div className="dashboard__chart-empty">
               <p>Sin datos de ingresos diarios disponibles</p>
-              {/* TODO: Backend endpoint /finances/analytics needs daily_revenue array */}
+              {/* Revenue chart - data from /finances/analytics → revenue_by_day */}
             </div>
           )}
         </div>

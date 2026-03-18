@@ -5,8 +5,18 @@ import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
 import whatsappService from '../../services/whatsappService';
 import automationService from '../../services/automationService';
-import { mockWhatsAppTemplates, templateCategories } from '../../data/mockData';
+import templateService from '../../services/templateService';
 import ReviewsPipeline from '../../components/Admin/ReviewsPipeline/ReviewsPipeline';
+
+// Category display metadata (static — just names and colors)
+const templateCategories = [
+  { id: 'post_servicio', name: 'Post-Servicio', color: '#34D399' },
+  { id: 'reactivacion', name: 'Reactivacion', color: '#FBBF24' },
+  { id: 'recordatorio', name: 'Recordatorio', color: '#60A5FA' },
+  { id: 'promocion', name: 'Promocion', color: '#8B5CF6' },
+  { id: 'fidelizacion', name: 'Fidelizacion', color: '#EC4899' },
+  { id: 'bienvenida', name: 'Bienvenida', color: '#22B07E' },
+];
 
 const B = 'campaigns';
 const A = 'automations';
@@ -489,13 +499,19 @@ const Campaigns = () => {
   const [executing, setExecuting] = useState(null); // campaign id
   const [execProgress, setExecProgress] = useState({ sent: 0, failed: 0, total: 0 });
 
-  // Load clients
+  const [templates, setTemplates] = useState([]);
+
+  // Load clients + templates from API
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await clientService.list({});
-        setClients(Array.isArray(data) ? data : []);
-      } catch { setClients([]); }
+        const [clientData, templateData] = await Promise.all([
+          clientService.list({}),
+          templateService.getTemplates(),
+        ]);
+        setClients(Array.isArray(clientData) ? clientData : []);
+        setTemplates(Array.isArray(templateData) ? templateData : []);
+      } catch { setClients([]); setTemplates([]); }
       finally { setLoading(false); }
     };
     load();
@@ -503,13 +519,6 @@ const Campaigns = () => {
 
   // Persist campaigns
   useEffect(() => { saveCampaigns(campaigns); }, [campaigns]);
-
-  // ─── Computed ──────────────────────────────────
-  const templates = useMemo(() => {
-    return mockWhatsAppTemplates.filter(t =>
-      ['reactivacion', 'promocion', 'post-servicio', 'fidelizacion'].includes(t.category)
-    );
-  }, []);
 
   const filteredCampaigns = useMemo(() => {
     let list = [...campaigns];

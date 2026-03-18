@@ -1,0 +1,106 @@
+============================================================
+PLEXIFY STUDIO CRM — AUDITORÍA COMPLETA
+Fecha: 18 de marzo de 2026
+============================================================
+
+═══════════════════════════════════════════════════════════
+A. LO QUE TENEMOS (14 MÓDULOS FUNCIONANDO)
+═══════════════════════════════════════════════════════════
+
+1. Agenda — Calendario semana/día, multi-staff, colores, status flow
+2. CRM Clientes — Perfiles 360°, historial, notas, tags, segmentación, import/export
+3. Equipo — Perfiles, credentials, portal staff, comisiones
+4. Servicios — CRUD con categorías, precios, duración, staff assignment
+5. Finanzas — Revenue, gastos, P&L, facturas, comisiones, export
+6. WhatsApp — Meta API real, inbox, media, AI auto-reply, rate limiting
+7. Plantillas — CRUD + Meta approval workflow
+8. Automatizaciones — 10 workflows, scheduler cada 2min
+9. Lina IA — Chat admin, WhatsApp auto-reply, memory, learnings, tasks
+10. Dashboard — 5 KPIs, charts, agenda, Lina panel, alerts
+11. Multi-tenant — Dev panel completo, tenant CRUD, billing
+12. Auth — JWT, 3 roles (dev/admin/staff), sessions
+13. Content Studio — OCULTO (no tocar por ahora, mucho problema)
+14. Staff Portal — Dashboard, agenda (read-only), finanzas, completar citas
+
+═══════════════════════════════════════════════════════════
+B. LO QUE ESTÁ ROTO (ARREGLAR PRIMERO)
+═══════════════════════════════════════════════════════════
+
+BUG #1 — BarberRating usa mock data
+  Archivo: components/Admin/BarberRating/
+  Problema: Importa mockBarbers, mockClients, mockVisitHistory
+  Fix: Conectar a endpoints reales o eliminar si no se usa
+
+BUG #2 — Campaigns importa mockWhatsAppTemplates
+  Archivo: pages/Campaigns/Campaigns.jsx
+  Problema: Datos estáticos mezclados con reales
+  Fix: Reemplazar mocks con datos de la API de templates
+
+BUG #3 — Settings: toggles de notificaciones decorativos
+  Archivo: pages/Settings/Settings.jsx
+  Problema: handleToggle solo muestra toast, no persiste nada
+  Fix: Conectar a config del tenant o remover toggles falsos
+
+BUG #4 — Settings: estados de integración hardcoded
+  Archivo: pages/Settings/Settings.jsx
+  Problema: "Conectado" y "Pendiente" son strings fijos
+  Fix: Leer estado real de WhatsApp y Meta desde tenant config
+
+BUG #5 — Dashboard: gráfico revenue puede estar vacío
+  Archivo: pages/Dashboard/Dashboard.jsx
+  Problema: Depende de daily_revenue del endpoint analytics
+  Fix: Verificar que el endpoint devuelve el array correcto
+
+BUG #6 — Campaigns + Automations se solapan
+  Archivos: pages/Campaigns/ + pages/Automations/
+  Problema: Campaigns usa localStorage, Automations usa DB
+  Fix: Unificar lógica, Campaigns debería usar templates reales
+
+BUG #7 — Inbox: pins/stars/archived en localStorage
+  Archivo: pages/Inbox/Inbox.jsx
+  Problema: No se sincronizan entre dispositivos
+  Prioridad: BAJA (funcional para un solo dispositivo)
+
+BUG #8 — WhatsApp token renewal manual
+  Problema: No hay flujo self-service
+  Prioridad: MEDIA (admin depende del dev para renovar)
+
+═══════════════════════════════════════════════════════════
+C. LO QUE FALTA (ROADMAP FUTURO)
+═══════════════════════════════════════════════════════════
+
+PRIORIDAD ALTA:
+- Booking online (widget embebible, reemplaza Weibook)
+- Programa de lealtad (puntos, tiers, referidos)
+- Google Reviews integration (pedir reviews automáticos)
+- Horario de trabajo por staff (working hours, breaks)
+
+PRIORIDAD MEDIA:
+- Inventario/productos (retail)
+- Membresías/paquetes prepagados
+- Gift cards digitales
+- Email campaigns
+- Shift scheduling (turnos)
+- Staff performance dashboard real (sin mocks)
+- Config de negocio en Settings (horarios, dirección)
+- Propinas (tips) tracking
+
+PRIORIDAD BAJA:
+- App móvil (PWA)
+- Waitlist management
+- Fotos before/after
+- Formularios de consentimiento
+- 2FA / OAuth
+- Merge duplicados de clientes
+- Drag & drop rescheduling
+
+═══════════════════════════════════════════════════════════
+D. DECISIONES DEL CLIENTE
+═══════════════════════════════════════════════════════════
+
+- Content Studio: DEJARLO OCULTO. No tocar por ahora.
+- Gateway de pagos: NO IMPLEMENTAR. Los clientes pagan
+  directamente en el local. Si hay pagos online, un personal
+  se encarga de gestionarlo manualmente.
+
+═══════════════════════════════════════════════════════════
