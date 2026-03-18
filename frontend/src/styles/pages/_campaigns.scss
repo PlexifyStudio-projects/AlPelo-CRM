@@ -98,16 +98,16 @@
   // ════════════════════════════════════════════════
   &__health {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: $spacing-sm;
-    @include stagger-fade-in($stagger-base, 5);
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-md;
+    @include stagger-fade-in($stagger-base, 4);
   }
 
   &__health-card {
     @include glass-card;
-    padding: $spacing-md $spacing-md;
+    padding: 20px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 14px;
     position: relative;
     overflow: hidden;
@@ -1802,7 +1802,18 @@
     }
   }
 
-  &__type-option-icon { font-size: 28px; }
+  &__type-option-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.04);
+    color: inherit;
+
+    svg { width: 22px; height: 22px; }
+  }
 
   &__type-option-label {
     font-size: 13px;
@@ -2286,20 +2297,42 @@
     font-size: 14px;
   }
 
-  // ── Health card value/label ──
+  // ── Health card — Apple style with dot indicator ──
+  &__health-card-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+
+  &__health-card-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
   &__health-card-value {
-    font-size: $font-size-xl;
+    font-size: 28px;
     font-weight: $font-weight-bold;
     color: $color-gray-900;
     font-variant-numeric: tabular-nums;
     line-height: 1;
+    letter-spacing: -0.5px;
   }
 
   &__health-card-label {
-    font-size: $font-size-2xs;
+    font-size: 13px;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    margin-top: 6px;
+  }
+
+  &__health-card-sub {
+    font-size: 11px;
     font-weight: $font-weight-medium;
     color: $color-gray-400;
-    margin-top: 4px;
+    margin-top: 2px;
   }
 
   // ── Suggested ──
@@ -2380,7 +2413,17 @@
     }
   }
 
-  &__suggested-card-icon { font-size: 28px; }
+  &__suggested-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.04);
+
+    svg { width: 20px; height: 20px; }
+  }
 
   &__suggested-card-name {
     font-size: 14px;

@@ -43,16 +43,24 @@ const MegaphoneIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill
 const SaveIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>;
 const RefreshIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>;
 const SparkleIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" /></svg>;
+// Professional campaign type icons (SVG)
+const RecoveryIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>;
+const VipIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z" /></svg>;
+const ReactivationIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
+const PromoIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>;
+const FollowupIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>;
+
+const CAMPAIGN_ICONS = { recovery: RecoveryIcon, vip: VipIcon, reactivation: ReactivationIcon, promo: PromoIcon, followup: FollowupIcon };
 
 // ═══════════════════════════════════════════════
 // Constants
 // ═══════════════════════════════════════════════
 const CAMPAIGN_TYPES = [
-  { id: 'recovery', label: 'Recuperacion', desc: 'Clientes inactivos (+30 dias)', color: '#FBBF24', icon: '🔄' },
-  { id: 'vip', label: 'VIP', desc: 'Clientes VIP y frecuentes', color: '#8B5CF6', icon: '⭐' },
-  { id: 'reactivation', label: 'Reactivacion', desc: 'En riesgo de perderse', color: '#F87171', icon: '🔥' },
-  { id: 'promo', label: 'Promocion', desc: 'Ofertas y descuentos', color: '#34D399', icon: '🎯' },
-  { id: 'followup', label: 'Seguimiento', desc: 'Post-servicio y feedback', color: '#60A5FA', icon: '💬' },
+  { id: 'recovery', label: 'Recuperacion', desc: 'Clientes inactivos (+30 dias)', color: '#D97706' },
+  { id: 'vip', label: 'VIP', desc: 'Clientes VIP y frecuentes', color: '#7C3AED' },
+  { id: 'reactivation', label: 'Reactivacion', desc: 'En riesgo de perderse', color: '#DC2626' },
+  { id: 'promo', label: 'Promocion', desc: 'Ofertas y descuentos', color: '#059669' },
+  { id: 'followup', label: 'Seguimiento', desc: 'Post-servicio y feedback', color: '#2563EB' },
 ];
 
 const SEGMENT_OPTIONS = [
@@ -79,11 +87,10 @@ const STATUS_META = {
 };
 
 const SUGGESTED_CAMPAIGNS = [
-  { name: 'Recuperar clientes +30 dias', type: 'recovery', segment: 'inactive_30', desc: 'Contactar clientes que llevan +30 dias sin venir', priority: 'alta' },
-  { name: 'Rescate urgente +60 dias', type: 'reactivation', segment: 'inactive_60', desc: 'Clientes que casi perdemos — descuento agresivo', priority: 'urgente' },
-  { name: 'Fidelizacion VIP', type: 'vip', segment: 'vip', desc: 'Mantener contentos a los mejores clientes', priority: 'media' },
-  { name: 'Promo de la semana', type: 'promo', segment: 'active', desc: 'Promocion semanal con descuento en servicios', priority: 'media' },
-  { name: 'Clientes casi perdidos +90 dias', type: 'reactivation', segment: 'inactive_90', desc: 'Ultimo intento con clientes de 3 meses', priority: 'urgente' },
+  { name: 'Recuperar clientes inactivos', type: 'recovery', segment: 'inactive_30', desc: 'Contactar clientes que llevan mas de 30 dias sin venir con un mensaje personalizado', priority: 'alta' },
+  { name: 'Rescate urgente', type: 'reactivation', segment: 'inactive_60', desc: 'Ultimo intento con clientes que casi perdemos — oferta agresiva de descuento', priority: 'urgente' },
+  { name: 'Fidelizacion VIP', type: 'vip', segment: 'vip', desc: 'Agradece a tus mejores clientes y mantenlos comprometidos con tu negocio', priority: 'media' },
+  { name: 'Promocion semanal', type: 'promo', segment: 'active', desc: 'Impulsa las ventas con una oferta especial para clientes activos esta semana', priority: 'media' },
 ];
 
 const SAMPLE_VARS = {
@@ -416,7 +423,7 @@ const Campaigns = () => {
     if (!t) return null;
     return (
       <span className={`${B}__type-badge`} style={{ background: t.color + '18', color: t.color }}>
-        {t.icon} {t.label}
+        {(() => { const I = CAMPAIGN_ICONS[t.id]; return I ? <I /> : null; })()} {t.label}
       </span>
     );
   };
@@ -439,35 +446,30 @@ const Campaigns = () => {
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
           <h1 className={`${B}__title`}>Campanas</h1>
-          <span className={`${B}__subtitle`}>Marketing & WhatsApp masivo</span>
+          <span className={`${B}__subtitle`}>Marketing & comunicacion masiva</span>
         </div>
         <button className={`${B}__btn-create`} onClick={() => openWizard()}>
-          <PlusIcon /> Nueva Campana
+          <PlusIcon /> Nueva campana
         </button>
       </div>
 
       {/* ─── Health Dashboard ─── */}
       <div className={`${B}__health`}>
-        <div className={`${B}__health-card`}>
-          <div className={`${B}__health-card-value`}>{stats.totalClients}</div>
-          <div className={`${B}__health-card-label`}>Clientes con WhatsApp</div>
-        </div>
-        <div className={`${B}__health-card`}>
-          <div className={`${B}__health-card-value`} style={{ color: '#F59E0B' }}>{stats.inactive30}</div>
-          <div className={`${B}__health-card-label`}>Inactivos +30 dias</div>
-        </div>
-        <div className={`${B}__health-card`}>
-          <div className={`${B}__health-card-value`} style={{ color: '#EF4444' }}>{stats.atRisk}</div>
-          <div className={`${B}__health-card-label`}>En riesgo</div>
-        </div>
-        <div className={`${B}__health-card`}>
-          <div className={`${B}__health-card-value`} style={{ color: '#34D399' }}>{stats.totalSent}</div>
-          <div className={`${B}__health-card-label`}>Mensajes enviados</div>
-        </div>
-        <div className={`${B}__health-card`}>
-          <div className={`${B}__health-card-value`} style={{ color: '#8B5CF6' }}>{stats.total}</div>
-          <div className={`${B}__health-card-label`}>Campanas creadas</div>
-        </div>
+        {[
+          { value: stats.totalClients, label: 'Alcance', sub: 'clientes con WhatsApp', color: '#2D5A3D' },
+          { value: stats.inactive30, label: 'Inactivos', sub: 'mas de 30 dias', color: '#D97706' },
+          { value: stats.atRisk, label: 'En riesgo', sub: 'necesitan atencion', color: '#DC2626' },
+          { value: stats.totalSent, label: 'Enviados', sub: 'mensajes totales', color: '#059669' },
+        ].map((item, i) => (
+          <div key={i} className={`${B}__health-card`}>
+            <div className={`${B}__health-card-dot`} style={{ background: item.color }} />
+            <div className={`${B}__health-card-info`}>
+              <div className={`${B}__health-card-value`}>{item.value}</div>
+              <div className={`${B}__health-card-label`}>{item.label}</div>
+              <div className={`${B}__health-card-sub`}>{item.sub}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ─── Toolbar ─── */}
@@ -519,7 +521,7 @@ const Campaigns = () => {
               const count = segCounts[s.segment] || 0;
               return (
                 <div key={i} className={`${B}__suggested-card`} onClick={() => openWizard(s)}>
-                  <div className={`${B}__suggested-card-icon`} style={{ color: t?.color }}>{t?.icon}</div>
+                  <div className={`${B}__suggested-card-icon`} style={{ color: t?.color }}>{(() => { const I = CAMPAIGN_ICONS[s.type]; return I ? <I /> : null; })()}</div>
                   <div className={`${B}__suggested-card-name`}>{s.name}</div>
                   <div className={`${B}__suggested-card-desc`}>{s.desc}</div>
                   <div className={`${B}__suggested-card-footer`}>
@@ -675,7 +677,7 @@ const Campaigns = () => {
                           style={{ '--type-color': t.color }}
                           onClick={() => setFormType(t.id)}
                         >
-                          <span className={`${B}__type-option-icon`}>{t.icon}</span>
+                          <span className={`${B}__type-option-icon`}>{(() => { const I = CAMPAIGN_ICONS[t.id]; return I ? <I /> : null; })()}</span>
                           <span className={`${B}__type-option-label`}>{t.label}</span>
                           <span className={`${B}__type-option-desc`}>{t.desc}</span>
                         </div>
