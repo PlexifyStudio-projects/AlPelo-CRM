@@ -58,6 +58,42 @@ def now_colombia() -> datetime:
 
 
 # ============================================================================
+# WHATSAPP TOKEN — Read from tenant DB first, fallback to env var
+# ============================================================================
+
+def get_wa_token(db: Session, tenant_id=None) -> str:
+    """Get WhatsApp access token: tenant DB > env var."""
+    import os
+    from database.models import Tenant
+
+    if tenant_id:
+        try:
+            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+            if tenant and tenant.wa_access_token:
+                return tenant.wa_access_token
+        except Exception:
+            pass
+
+    return os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+
+
+def get_wa_phone_id(db: Session, tenant_id=None) -> str:
+    """Get WhatsApp phone number ID: tenant DB > env var."""
+    import os
+    from database.models import Tenant
+
+    if tenant_id:
+        try:
+            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+            if tenant and tenant.wa_phone_number_id:
+                return tenant.wa_phone_number_id
+        except Exception:
+            pass
+
+    return os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+
+
+# ============================================================================
 # PHONE NORMALIZATION
 # ============================================================================
 

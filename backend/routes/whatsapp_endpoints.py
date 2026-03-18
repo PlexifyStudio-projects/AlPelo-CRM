@@ -92,26 +92,50 @@ def _trigger_token_resume():
 _in_flight_convs: set[int] = set()
 
 # ============================================================================
-# Config from .env
+# Config — reads from tenant DB first, falls back to env vars
 # ============================================================================
-WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
-WA_BUSINESS_ID = os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 WA_WEBHOOK_VERIFY_TOKEN = os.getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN", "plexify_webhook_2026")
-WA_BASE_URL = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}"
-
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 
-def wa_headers():
-    """Read token fresh from env on every call — survives Railway env var updates without redeploy."""
-    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "") or WA_TOKEN
+def _get_wa_config_cached(db=None):
+    """Get WA token + phone_id from tenant DB or env vars."""
+    from routes._helpers import get_wa_token, get_wa_phone_id
+    # Find first active tenant for config
+    tid = None
+    if db:
+        try:
+            t = db.query(Tenant).filter(Tenant.is_active == True).first()
+            tid = t.id if t else None
+        except Exception:
+            pass
+    token = get_wa_token(db, tid) if db else os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    phone_id = get_wa_phone_id(db, tid) if db else os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    return token, phone_id
+
+
+# Legacy globals for backward compat (updated lazily)
+WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+WA_BUSINESS_ID = os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+WA_BASE_URL = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}"
+
+
+def wa_headers(db=None):
+    """Read token from tenant DB first, fallback to env."""
+    token, _ = _get_wa_config_cached(db)
     return {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
+
+
+def _get_wa_base_url(db=None):
+    """Get the base URL for WA API calls."""
+    _, phone_id = _get_wa_config_cached(db)
+    return f"https://graph.facebook.com/{WA_API_VERSION}/{phone_id}"
 
 
 async def _transcribe_audio(media_id: str) -> str:
@@ -528,8 +552,8 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                f"{WA_BASE_URL}/messages",
-                headers=wa_headers(),
+                f"{_get_wa_base_url(db)}/messages",
+                headers=wa_headers(db),
                 json={
                     "messaging_product": "whatsapp",
                     "to": normalize_phone(conv.wa_contact_phone),
@@ -589,7 +613,7 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
 # LIST TEMPLATES — Fetch approved templates from Meta Business Account
 # ============================================================================
 @router.get("/templates")
-async def list_templates():
+async def list_templates(db: Session = Depends(get_db)):
     """List all message templates from Meta Business Account."""
     if not WA_BUSINESS_ID:
         raise HTTPException(status_code=500, detail="WHATSAPP_BUSINESS_ACCOUNT_ID no configurado")
@@ -597,7 +621,7 @@ async def list_templates():
     try:
         url = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_BUSINESS_ID}/message_templates"
         async with httpx.AsyncClient(timeout=15) as client:
-            resp = await client.get(url, headers=wa_headers(), params={"limit": 50})
+            resp = await client.get(url, headers=wa_headers(db), params={"limit": 50})
             data = resp.json()
 
             if "data" not in data:
@@ -648,8 +672,8 @@ async def send_template(body: dict, db: Session = Depends(get_db)):
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                f"{WA_BASE_URL}/messages",
-                headers=wa_headers(),
+                f"{_get_wa_base_url(db)}/messages",
+                headers=wa_headers(db),
                 json={
                     "messaging_product": "whatsapp",
                     "to": phone_clean,
@@ -981,8 +1005,8 @@ async def _send_read_receipt(wa_msg_id: str):
     try:
         async with httpx.AsyncClient(timeout=5) as http_client:
             await http_client.post(
-                f"{WA_BASE_URL}/messages",
-                headers=wa_headers(),
+                f"{_get_wa_base_url(db)}/messages",
+                headers=wa_headers(db),
                 json={
                     "messaging_product": "whatsapp",
                     "status": "read",
@@ -1027,7 +1051,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             try:
                 async with httpx.AsyncClient(timeout=15) as http:
                     await http.post(
-                        f"{WA_BASE_URL}/messages", headers=wa_headers(),
+                        f"{_get_wa_base_url(db)}/messages", headers=wa_headers(db),
                         json={"messaging_product": "whatsapp", "to": normalize_phone(to_phone),
                               "type": "text", "text": {"body": safe_response}},
                     )
@@ -1613,8 +1637,8 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 try:
                     async with httpx.AsyncClient(timeout=15) as client:
                         resp = await client.post(
-                            f"{WA_BASE_URL}/messages",
-                            headers=wa_headers(),
+                            f"{_get_wa_base_url(db)}/messages",
+                            headers=wa_headers(db),
                             json={
                                 "messaging_product": "whatsapp",
                                 "to": normalize_phone(to_phone),

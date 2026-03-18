@@ -24,10 +24,7 @@ from database.models import (
 from routes._helpers import normalize_phone, now_colombia as _now_colombia, _COL_OFFSET
 from activity_log import log_event
 
-WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
-WA_BASE_URL = f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}"
 
 SCHEDULER_INTERVAL = 120  # Check every 2 minutes
 
@@ -42,16 +39,34 @@ def _replace_note_prefix(content: str, new_prefix: str) -> str:
     return content
 
 
-def _wa_headers():
-    """Read token fresh from env — survives Railway env var updates without redeploy."""
-    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "") or WA_TOKEN
+def _get_wa_config(db=None):
+    """Get WA token and phone_id from tenant DB (first active) or env vars."""
+    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    if db:
+        try:
+            from database.models import Tenant
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+            if tenant:
+                if tenant.wa_access_token:
+                    token = tenant.wa_access_token
+                if tenant.wa_phone_number_id:
+                    phone_id = tenant.wa_phone_number_id
+        except Exception:
+            pass
+    return token, phone_id
+
+
+def _wa_headers(db=None):
+    """Read token from tenant DB first, fallback to env."""
+    token, _ = _get_wa_config(db)
     return {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
 
 
-def _send_whatsapp_sync(phone: str, text: str) -> bool:
+def _send_whatsapp_sync(phone: str, text: str, db=None) -> bool:
     """Send a WhatsApp message synchronously (for use in scheduler thread)."""
     # Check token pause before attempting send
     try:
@@ -63,10 +78,12 @@ def _send_whatsapp_sync(phone: str, text: str) -> bool:
         pass
 
     try:
+        _, phone_id = _get_wa_config(db)
+        wa_url = f"https://graph.facebook.com/{WA_API_VERSION}/{phone_id}/messages"
         with httpx.Client(timeout=15) as client:
             resp = client.post(
-                f"{WA_BASE_URL}/messages",
-                headers=_wa_headers(),
+                wa_url,
+                headers=_wa_headers(db),
                 json={
                     "messaging_product": "whatsapp",
                     "to": normalize_phone(phone),

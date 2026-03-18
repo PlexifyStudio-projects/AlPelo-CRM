@@ -357,10 +357,14 @@ async def get_lina_task(task_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.get("/health")
-async def lina_health():
+async def lina_health(db: Session = Depends(get_db)):
     """Check if WhatsApp token is valid."""
-    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    from routes._helpers import get_wa_token, get_wa_phone_id
+    # Try to get tenant_id from first active tenant (health check is global)
+    _tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+    _tid = _tenant.id if _tenant else None
+    token = get_wa_token(db, _tid)
+    phone_id = get_wa_phone_id(db, _tid)
     api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 
     if not token:

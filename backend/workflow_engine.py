@@ -23,8 +23,6 @@ from database.models import (
 from routes._helpers import normalize_phone, now_colombia as _now_colombia
 from activity_log import log_event
 
-WA_TOKEN = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-WA_PHONE_ID = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 
 
@@ -58,11 +56,20 @@ def _is_within_24h_window(db, conv):
     return last_inbound is not None
 
 
-def _send_template_sync(phone, template_name, language_code="es", parameters=None):
+def _send_template_sync(phone, template_name, language_code="es", parameters=None, db=None):
     """Send an approved WhatsApp template message synchronously.
     Parameters is a list of strings for the template body variables."""
-    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "") or WA_TOKEN
-    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "") or WA_PHONE_ID
+    from routes._helpers import get_wa_token, get_wa_phone_id
+    # Try to get tenant from first active tenant
+    _tid = None
+    if db:
+        try:
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+            _tid = tenant.id if tenant else None
+        except Exception:
+            pass
+    token = get_wa_token(db, _tid) if db else os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    phone_id = get_wa_phone_id(db, _tid) if db else os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
     api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 
     if not token or not phone_id:

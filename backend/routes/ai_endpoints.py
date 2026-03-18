@@ -15,7 +15,7 @@ from schemas import (
     AIConfigCreate, AIConfigUpdate, AIConfigResponse,
     AIChatRequest, AIChatResponse,
 )
-from routes._helpers import compute_client_list_item, compute_client_fields, find_client, find_conversation, normalize_phone
+from routes._helpers import compute_client_list_item, compute_client_fields, find_client, find_conversation, normalize_phone, get_wa_token, get_wa_phone_id
 
 # Timezone offsets for supported regions (UTC offset in hours)
 _TIMEZONE_OFFSETS = {
@@ -578,8 +578,8 @@ def _execute_action(action: dict, db: Session) -> str:
             return f"ERROR: No encontre una conversacion de WhatsApp para '{search_name or phone}'. Verifica que exista un chat activo."
 
         # Send via Meta WhatsApp API
-        wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-        wa_phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+        wa_token = get_wa_token(db, tid)
+        wa_phone_id = get_wa_phone_id(db, tid)
         wa_api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
         wa_base = f"https://graph.facebook.com/{wa_api_version}/{wa_phone_id}"
 
@@ -648,8 +648,8 @@ def _execute_action(action: dict, db: Session) -> str:
             return "ERROR: Necesito el telefono o nombre del cliente."
 
         phone_clean = normalize_phone(target_phone)
-        wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-        wa_phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+        wa_token = get_wa_token(db, tid)
+        wa_phone_id = get_wa_phone_id(db, tid)
         wa_api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
         wa_base = f"https://graph.facebook.com/{wa_api_version}/{wa_phone_id}"
 
@@ -740,8 +740,8 @@ def _execute_action(action: dict, db: Session) -> str:
         if not filtered:
             return "No encontre clientes que coincidan con esos filtros."
 
-        wa_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-        wa_phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+        wa_token = get_wa_token(db, tid)
+        wa_phone_id = get_wa_phone_id(db, tid)
         wa_api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
         wa_base = f"https://graph.facebook.com/{wa_api_version}/{wa_phone_id}"
 
