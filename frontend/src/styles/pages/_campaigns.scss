@@ -231,7 +231,7 @@
     @include glass-card;
     padding: $spacing-lg $spacing-xl;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 
     // Decorative gradient background
     &::before {
@@ -270,8 +270,9 @@
 
   &__suggestions-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: $spacing-md;
+    align-items: start;
     position: relative;
     z-index: 1;
   }
@@ -289,7 +290,8 @@
     text-align: left;
     font-family: $font-primary;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    min-height: 140px;
 
     // Soft top glow accent using CSS variable
     &::before {
