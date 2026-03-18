@@ -23,6 +23,20 @@ const staffMeService = {
     return res.json();
   },
 
+  completeAppointment: async (appointmentId, paymentCode) => {
+    const res = await fetch(`${_API}/staff/me/appointments/${appointmentId}/complete`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payment_code: paymentCode }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al completar cita');
+    }
+    return res.json();
+  },
+
   getCommissions: async (params = {}) => {
     const query = new URLSearchParams();
     if (params.period) query.set('period', params.period);

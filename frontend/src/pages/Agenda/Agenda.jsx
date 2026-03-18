@@ -25,6 +25,7 @@ const STAFF_COLORS = ['#2D5A3D', '#3B82F6', '#E05292', '#C9A84C', '#8B5CF6', '#F
 const STATUS_META = {
   confirmed: { label: 'Confirmada', color: '#2D5A3D', icon: 'check' },
   completed: { label: 'Completada', color: '#22B07E', icon: 'done' },
+  paid: { label: 'Pagada', color: '#3B82F6', icon: 'done' },
   cancelled: { label: 'Cancelada', color: '#E05252', icon: 'x' },
   no_show: { label: 'No asistió', color: '#D4A017', icon: 'alert' },
 };
@@ -148,6 +149,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   const { addNotification } = useNotification();
   const scrollRef = useRef(null);
+
+  // ── Staff completion modal ──
+  const [staffCompleteApt, setStaffCompleteApt] = useState(null);
+  const [staffPaymentCode, setStaffPaymentCode] = useState('');
+  const [staffCompleting, setStaffCompleting] = useState(false);
 
   // ─── Calendar derived ──────────────────────────────
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
@@ -799,9 +805,16 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                         const endTime = getEndTime(apt.time, apt.duration_minutes || svc?.duration_minutes || 30);
                         return (
                           <div key={apt.id}
-                            className={`${b}__event ${apt.status === 'completed' ? `${b}__event--done` : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''}`}
+                            className={`${b}__event ${apt.status === 'completed' || apt.status === 'paid' ? `${b}__event--done` : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''}`}
                             style={{ '--c': staffColor, '--sc': statusColor, animationDelay: `${evIdx * 30}ms` }}
-                            onClick={(e) => { e.stopPropagation(); if (!isStaffMode) openEdit(apt); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isStaffMode) {
+                                if (apt.status === 'confirmed') { setStaffCompleteApt(apt); setStaffPaymentCode(''); }
+                              } else {
+                                openEdit(apt);
+                              }
+                            }}
                             title={`${apt.client_name} - ${apt.service_name || ''} (${formatTime12(apt.time)} - ${formatTime12(endTime)})`}>
                             <div className={`${b}__event-accent`} />
                             <div className={`${b}__event-body`}>
@@ -1197,6 +1210,73 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 );
               })()}
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── STAFF COMPLETION MODAL ── */}
+      {staffCompleteApt && isStaffMode && createPortal(
+        <div className={`${b}__overlay`} onClick={() => setStaffCompleteApt(null)}>
+          <div className={`${b}__staff-complete`} onClick={e => e.stopPropagation()}>
+            <div className={`${b}__staff-complete-header`}>
+              <h3>Completar cita</h3>
+              <button className={`${b}__modal-x`} onClick={() => setStaffCompleteApt(null)}><CloseIcon /></button>
+            </div>
+            <div className={`${b}__staff-complete-body`}>
+              <div className={`${b}__staff-complete-info`}>
+                <div className={`${b}__staff-complete-row`}>
+                  <span className={`${b}__staff-complete-label`}>Cliente</span>
+                  <span className={`${b}__staff-complete-value`}>{staffCompleteApt.client_name}</span>
+                </div>
+                <div className={`${b}__staff-complete-row`}>
+                  <span className={`${b}__staff-complete-label`}>Servicio</span>
+                  <span className={`${b}__staff-complete-value`}>{staffCompleteApt.service_name || 'Servicio'}</span>
+                </div>
+                <div className={`${b}__staff-complete-row`}>
+                  <span className={`${b}__staff-complete-label`}>Hora</span>
+                  <span className={`${b}__staff-complete-value`}>{formatTime12(staffCompleteApt.time)}</span>
+                </div>
+                <div className={`${b}__staff-complete-row`}>
+                  <span className={`${b}__staff-complete-label`}>Precio</span>
+                  <span className={`${b}__staff-complete-value`}>{formatCOP(staffCompleteApt.price)}</span>
+                </div>
+              </div>
+              <div className={`${b}__staff-complete-field`}>
+                <label>Codigo de referencia *</label>
+                <input
+                  type="text"
+                  value={staffPaymentCode}
+                  onChange={e => setStaffPaymentCode(e.target.value.toUpperCase())}
+                  placeholder="Ej: M1010"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className={`${b}__staff-complete-foot`}>
+              <button className={`${b}__btn--ghost`} onClick={() => setStaffCompleteApt(null)}>Cancelar</button>
+              <button
+                className={`${b}__btn--primary`}
+                disabled={staffCompleting || !staffPaymentCode.trim()}
+                onClick={async () => {
+                  setStaffCompleting(true);
+                  try {
+                    const { default: staffMeService } = await import('../../services/staffMeService');
+                    await staffMeService.completeAppointment(staffCompleteApt.id, staffPaymentCode.trim());
+                    addNotification(`Cita completada — ${staffCompleteApt.client_name} [${staffPaymentCode.trim()}]`, 'success');
+                    setStaffCompleteApt(null);
+                    setStaffPaymentCode('');
+                    loadData();
+                  } catch (err) {
+                    addNotification(err.message, 'error');
+                  } finally {
+                    setStaffCompleting(false);
+                  }
+                }}
+              >
+                {staffCompleting ? 'Completando...' : 'Completar cita'}
+              </button>
+            </div>
           </div>
         </div>,
         document.body

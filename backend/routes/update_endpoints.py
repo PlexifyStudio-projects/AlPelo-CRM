@@ -248,7 +248,7 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
         except (ValueError, TypeError):
             raise HTTPException(status_code=400, detail="Invalid date format, use YYYY-MM-DD")
 
-    if "status" in update_data and update_data["status"] not in ("confirmed", "completed", "cancelled", "no_show"):
+    if "status" in update_data and update_data["status"] not in ("confirmed", "completed", "cancelled", "no_show", "paid"):
         raise HTTPException(status_code=400, detail="Invalid status")
 
     if "staff_id" in update_data:

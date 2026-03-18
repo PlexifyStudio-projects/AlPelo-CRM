@@ -161,6 +161,69 @@ def staff_notifications(db: Session = Depends(get_db), current_user=Depends(get_
 
 
 # ============================================================================
+# STAFF: COMPLETE APPOINTMENT (with payment code)
+# ============================================================================
+
+@router.put("/staff/me/appointments/{appointment_id}/complete")
+def staff_complete_appointment(
+    appointment_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Staff marks their own appointment as completed with a payment/reference code."""
+    staff = _get_staff_user(current_user)
+    tid = staff.tenant_id
+
+    appt = db.query(Appointment).filter(
+        Appointment.id == appointment_id,
+        Appointment.staff_id == staff.id,
+        Appointment.tenant_id == tid,
+    ).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Cita no encontrada")
+
+    if appt.status not in ("confirmed",):
+        raise HTTPException(status_code=400, detail=f"No se puede completar una cita con estado '{appt.status}'")
+
+    payment_code = (data.get("payment_code") or "").strip()
+    if not payment_code:
+        raise HTTPException(status_code=400, detail="El codigo de referencia es obligatorio")
+
+    # Update appointment
+    old_status = appt.status
+    appt.status = "completed"
+    appt.notes = f"[REF:{payment_code}]" + (f" {appt.notes}" if appt.notes else "")
+    db.commit()
+
+    # Auto-create VisitHistory (same logic as update_endpoints)
+    if appt.client_id:
+        svc = db.query(Service).filter(Service.id == appt.service_id).first()
+        existing_visit = db.query(VisitHistory).filter(
+            VisitHistory.client_id == appt.client_id,
+            VisitHistory.visit_date == appt.date,
+            VisitHistory.staff_id == appt.staff_id,
+            VisitHistory.service_name == (svc.name if svc else "Servicio"),
+        ).first()
+        if not existing_visit:
+            visit = VisitHistory(
+                tenant_id=tid,
+                client_id=appt.client_id,
+                staff_id=appt.staff_id,
+                service_name=svc.name if svc else "Servicio",
+                amount=appt.price or 0,
+                visit_date=appt.date,
+                status="completed",
+                payment_method=None,
+                notes=f"Completada por {staff.name} — Ref: {payment_code}",
+            )
+            db.add(visit)
+            db.commit()
+
+    return {"success": True, "message": f"Cita completada con referencia {payment_code}"}
+
+
+# ============================================================================
 # STAFF COMMISSIONS / FINANCES
 # ============================================================================
 
