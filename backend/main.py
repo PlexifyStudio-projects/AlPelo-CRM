@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import setup_cors_middleware
 from auth import auth_router
-from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router
+from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router, staff_router
 from database.connection import engine, Base
 
 
@@ -54,6 +54,9 @@ def _run_migrations(engine):
         ("staff_commission", "tenant_id", "INTEGER"),
         ("ai_config", "tenant_id", "INTEGER"),
         ("lina_learning", "tenant_id", "INTEGER"),
+        # Staff login credentials
+        ("staff", "username", "VARCHAR"),
+        ("staff", "password", "VARCHAR"),
     ]
 
     for table, column, col_type in migrations:
@@ -138,6 +141,16 @@ def _run_migrations(engine):
             print("[MIGRATION] Created tenant isolation indexes")
     except Exception as e:
         print(f"[MIGRATION] Tenant indexes: {e}")
+
+    # --- Unique index for staff login username ---
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_username ON public.staff(username) WHERE username IS NOT NULL"
+            ))
+            print("[MIGRATION] Created unique index on staff.username")
+    except Exception as e:
+        print(f"[MIGRATION] staff username index: {e}")
 
     # Fix: ensure ai_model column has a DEFAULT so raw SQL inserts don't fail
     try:
@@ -229,6 +242,7 @@ app.include_router(content_studio_router, prefix="/api", tags=["Content Studio"]
 app.include_router(automation_router, prefix="/api", tags=["Automations"])
 app.include_router(template_router, prefix="/api", tags=["Message Templates"])
 app.include_router(lina_router, prefix="/api", tags=["Lina IA"])
+app.include_router(staff_router, prefix="/api", tags=["Staff Portal"])
 
 
 # ============================================================================

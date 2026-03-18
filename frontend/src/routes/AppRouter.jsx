@@ -1,6 +1,7 @@
 import { useAuth } from '../context/AuthContext';
 import MainLayout from '../components/layout/MainLayout/MainLayout';
 import DevRouter from '../components/Developer/DevRouter/DevRouter';
+import StaffRouter from '../components/Staff/StaffRouter/StaffRouter';
 import Login from '../pages/Login/Login';
 import Dashboard from '../pages/Dashboard/Dashboard';
 import Clients from '../pages/Clients/Clients';
@@ -37,6 +38,11 @@ const AppRouter = () => {
   // Dev/Super Admin → Plexify Studio panel
   if (DEV_ROLES.includes(user?.role)) {
     return <DevRouter user={user} onLogout={logout} />;
+  }
+
+  // Staff → Staff portal
+  if (user?.role === 'staff') {
+    return <StaffRouter user={user} onLogout={logout} />;
   }
 
   // Regular tenant user → CRM

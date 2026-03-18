@@ -1,0 +1,210 @@
+@use '../abstracts/variables' as *;
+
+.staff-finances {
+  padding: 1.5rem;
+  max-width: 900px;
+
+  &__loading {
+    color: $color-gray-400;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  // ---- Header ----
+  &__header {
+    margin-bottom: 1rem;
+
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: $color-gray-800;
+      margin: 0 0 0.15rem;
+    }
+
+    p {
+      font-size: 0.8rem;
+      color: $color-gray-400;
+      margin: 0;
+    }
+  }
+
+  // ---- Period tabs ----
+  &__tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+    padding: 0.2rem;
+    background: $color-gray-50;
+    border-radius: 10px;
+    width: fit-content;
+  }
+
+  &__tab {
+    padding: 0.4rem 1rem;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &--active {
+      background: $color-white;
+      color: $color-primary;
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  // ---- Summary cards ----
+  &__summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__card {
+    padding: 1rem;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    &--highlight {
+      background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+      border-color: transparent;
+      color: $color-white;
+
+      .staff-finances__card-value { color: $color-white; }
+      .staff-finances__card-label { color: rgba(255, 255, 255, 0.8); }
+    }
+  }
+
+  &__card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__card-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__card-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $color-gray-800;
+    line-height: 1.2;
+  }
+
+  &__card-label {
+    font-size: 0.65rem;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  // ---- Commission bar ----
+  &__bar-container {
+    margin-bottom: 1.5rem;
+  }
+
+  &__bar {
+    height: 8px;
+    background: $color-gray-100;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.35rem;
+  }
+
+  &__bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, $color-primary, $color-primary-light);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  &__bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: $color-gray-400;
+  }
+
+  // ---- Detail table ----
+  &__detail {
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  &__detail-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $color-gray-600;
+    border-bottom: 1px solid $color-gray-100;
+    margin: 0;
+  }
+
+  &__table {
+    width: 100%;
+  }
+
+  &__table-head {
+    display: grid;
+    grid-template-columns: 70px 1fr 1fr 90px 50px 90px;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid $color-gray-50;
+  }
+
+  &__table-row {
+    display: grid;
+    grid-template-columns: 70px 1fr 1fr 90px 50px 90px;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    color: $color-gray-600;
+    border-bottom: 1px solid $color-gray-50;
+    align-items: center;
+
+    &:last-child { border-bottom: none; }
+  }
+
+  &__table-date {
+    font-size: 0.75rem;
+    color: $color-gray-400;
+  }
+
+  &__table-commission {
+    font-weight: 700;
+    color: $color-primary;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: $color-gray-400;
+    font-size: 0.9rem;
+  }
+}

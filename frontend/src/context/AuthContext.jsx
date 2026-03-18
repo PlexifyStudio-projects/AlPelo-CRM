@@ -63,6 +63,9 @@ export const AuthProvider = ({ children }) => {
       loggedUser.name = profile.name;
       loggedUser.email = profile.email;
       loggedUser.phone = profile.phone;
+      if (profile.tenant_id) loggedUser.tenant_id = profile.tenant_id;
+      if (profile.staff_role) loggedUser.staff_role = profile.staff_role;
+      if (profile.specialty) loggedUser.specialty = profile.specialty;
     }
 
     setUser(loggedUser);

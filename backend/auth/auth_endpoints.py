@@ -73,18 +73,66 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 
 @router.post("/verify-credentials")
 def verify_credentials(login_data: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(Admin).filter(Admin.username == login_data.username).first()
+    from database.models import Staff, Tenant
 
-    if not user or not verify_password(login_data.password, user.password):
+    # 1) Try Admin table first
+    user = db.query(Admin).filter(Admin.username == login_data.username).first()
+    is_staff = False
+
+    # 2) If no admin found, try Staff table
+    if not user:
+        staff = db.query(Staff).filter(
+            Staff.username == login_data.username,
+            Staff.username.isnot(None),
+            Staff.password.isnot(None),
+        ).first()
+        if staff and verify_password(login_data.password, staff.password):
+            user = staff
+            is_staff = True
+        else:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Invalid username or password"},
+                headers=CORS_HEADERS
+            )
+    elif not verify_password(login_data.password, user.password):
         return JSONResponse(
             status_code=401,
             content={"detail": "Invalid username or password"},
             headers=CORS_HEADERS
         )
 
-    # Check if tenant is suspended (only for non-dev users with tenant_id)
+    # 3) Staff-specific checks
+    if is_staff:
+        if not user.is_active:
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": "staff_deactivated",
+                    "message": "Tu cuenta esta desactivada. Comunicate con tu empleador."
+                },
+                headers=CORS_HEADERS
+            )
+        # Check tenant suspension for staff
+        if getattr(user, "tenant_id", None):
+            tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
+            if tenant and not tenant.is_active:
+                return JSONResponse(
+                    status_code=403,
+                    content={
+                        "detail": "suspended",
+                        "message": "El negocio ha sido suspendido. Comunicate con tu empleador."
+                    },
+                    headers=CORS_HEADERS
+                )
+        return UserCredentials(
+            user_id=user.id,
+            username=user.username,
+            role="staff"
+        )
+
+    # 4) Admin checks — tenant suspension (only for non-dev users)
     if user.role != "dev" and getattr(user, "tenant_id", None):
-        from database.models import Tenant
         tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
         if tenant and not tenant.is_active:
             return JSONResponse(
@@ -176,9 +224,44 @@ def logout(request: Request):
     return response
 
 
-@router.get("/me", response_model=AdminResponse)
-def get_profile(current_user: Admin = Depends(get_current_user)):
-    return AdminResponse.model_validate(current_user)
+@router.get("/me")
+def get_profile(request: Request, db: Session = Depends(get_db)):
+    """Returns profile for current user (admin or staff)."""
+    from database.models import Staff
+    from auth.jwt_handler import verify_token as _verify
+
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    payload = _verify(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    role = payload.get("role")
+    username = payload.get("sub")
+
+    if role == "staff":
+        staff = db.query(Staff).filter(Staff.username == username).first()
+        if not staff:
+            raise HTTPException(status_code=404, detail="Staff not found")
+        return {
+            "id": staff.id,
+            "name": staff.name,
+            "email": staff.email,
+            "phone": staff.phone,
+            "username": staff.username,
+            "role": "staff",
+            "staff_role": staff.role,
+            "specialty": staff.specialty,
+            "is_active": staff.is_active,
+            "tenant_id": staff.tenant_id,
+        }
+
+    admin = db.query(Admin).filter(Admin.username == username).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="User not found")
+    return AdminResponse.model_validate(admin)
 
 
 @router.put("/me", response_model=AdminResponse)

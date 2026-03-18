@@ -76,6 +76,20 @@ const staffService = {
     if (!res.ok) throw new Error('Error al eliminar habilidad');
     return res.json();
   },
+
+  updateCredentials: async (id, { username, password }) => {
+    const res = await fetch(`${API_BASE}/${id}/credentials`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al actualizar credenciales');
+    }
+    return res.json();
+  },
 };
 
 export default staffService;

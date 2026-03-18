@@ -187,6 +187,10 @@ const DeactivateModal = ({ member, clients, onConfirm, onCancel, tenantName, boo
 };
 
 // ===== STAFF FORM MODAL =====
+const LockIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>;
+const EyeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>;
+const EyeOffIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>;
+
 const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
   const isEdit = !!staff;
   const PRESET_COLORS = ['#2D5A3D', '#3B82F6', '#E05292', '#C9A84C', '#8B5CF6', '#F97316', '#14B8A6', '#EC4899', '#06B6D4', '#EF4444', '#22B07E', '#6366F1', '#D946EF', '#0EA5E9', '#84CC16'];
@@ -196,15 +200,20 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
     role: staff?.role || editableRoles[0] || 'Profesional', specialty: staff?.specialty || '', bio: staff?.bio || '',
     hire_date: staff?.hire_date || '', skills: staff?.skills?.join(', ') || '',
     color: staff?.color || '',
+    username: staff?.username || '', password: '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); if (error) setError(''); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) { setError('El nombre es obligatorio'); return; }
+    if (!isEdit && form.username.trim() && form.password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres'); return;
+    }
     setSaving(true);
     try {
       const data = {
@@ -214,6 +223,9 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
         skills: form.skills ? form.skills.split(',').map((s) => s.trim()).filter(Boolean) : [],
         color: form.color || null,
       };
+      // Include credentials
+      if (form.username.trim()) data.username = form.username.trim();
+      if (form.password) data.password = form.password;
       if (isEdit) await staffService.update(staff.id, data);
       else await staffService.create(data);
       onSaved();
@@ -228,64 +240,118 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
           <h3>{isEdit ? 'Editar miembro' : 'Nuevo miembro del equipo'}</h3>
           <button className={`${b}__close-btn`} onClick={onClose}><XIcon /></button>
         </div>
-        <form className={`${b}__form-body`} onSubmit={handleSubmit}>
-          <div className={`${b}__form-row`}>
-            <div className={`${b}__form-field`}>
-              <label>Nombre completo *</label>
-              <input name="name" value={form.name} onChange={handleChange} placeholder="Ej: Juan Perez" required />
+        <form onSubmit={handleSubmit}>
+          <div className={`${b}__form-body`}>
+            {/* Section: Informacion personal */}
+            <div className={`${b}__form-section`}>
+              <div className={`${b}__form-section-title`}>
+                <UserIcon /> Informacion personal
+              </div>
+              <div className={`${b}__form-section-fields`}>
+                <div className={`${b}__form-row`}>
+                  <div className={`${b}__form-field`}>
+                    <label>Nombre completo *</label>
+                    <input name="name" value={form.name} onChange={handleChange} placeholder="Ej: Juan Perez" required />
+                  </div>
+                  <div className={`${b}__form-field`}>
+                    <label>Rol en el equipo</label>
+                    <select name="role" value={form.role} onChange={handleChange}>
+                      {editableRoles.map(r => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className={`${b}__form-row`}>
+                  <div className={`${b}__form-field`}>
+                    <label>Telefono</label>
+                    <input name="phone" value={form.phone} onChange={handleChange} placeholder="+57 3XX XXX XXXX" />
+                  </div>
+                  <div className={`${b}__form-field`}>
+                    <label>Email</label>
+                    <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="correo@ejemplo.com" />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className={`${b}__form-field`}>
-              <label>Rol</label>
-              <select name="role" value={form.role} onChange={handleChange}>
-                {editableRoles.map(r => (
-                  <option key={r} value={r}>{r}</option>
-                ))}
-              </select>
+
+            {/* Section: Acceso a la plataforma */}
+            <div className={`${b}__form-section`}>
+              <div className={`${b}__form-section-title`}>
+                <LockIcon /> Acceso a la plataforma
+              </div>
+              <div className={`${b}__form-section-fields`}>
+                <div className={`${b}__form-row`}>
+                  <div className={`${b}__form-field`}>
+                    <label>Usuario de acceso</label>
+                    <input name="username" value={form.username} onChange={handleChange} placeholder="nombre.usuario" autoComplete="off" />
+                  </div>
+                  <div className={`${b}__form-field`}>
+                    <label>{isEdit ? 'Nueva contraseña' : 'Contraseña'}</label>
+                    <div className={`${b}__password-wrap`}>
+                      <input
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={form.password}
+                        onChange={handleChange}
+                        placeholder={isEdit ? 'Dejar vacio para mantener' : 'Min. 6 caracteres'}
+                        autoComplete="new-password"
+                      />
+                      <button type="button" className={`${b}__eye-btn`} onClick={() => setShowPassword(!showPassword)}>
+                        {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* Section: Perfil profesional */}
+            <div className={`${b}__form-section`}>
+              <div className={`${b}__form-section-title`}>
+                <StarIcon filled={false} /> Perfil profesional
+              </div>
+              <div className={`${b}__form-section-fields`}>
+                <div className={`${b}__form-row`}>
+                  <div className={`${b}__form-field`}>
+                    <label>Especialidad</label>
+                    <input name="specialty" value={form.specialty} onChange={handleChange} placeholder="Ej: Especialista en color" />
+                  </div>
+                  <div className={`${b}__form-field`}>
+                    <label>Fecha de ingreso</label>
+                    <input name="hire_date" type="date" value={form.hire_date} onChange={handleChange} />
+                  </div>
+                </div>
+                <div className={`${b}__form-field`}>
+                  <label>Habilidades</label>
+                  <input name="skills" value={form.skills} onChange={handleChange} placeholder="Separadas por coma: Degradados, Cortes clasicos" />
+                </div>
+                <div className={`${b}__form-row`}>
+                  <div className={`${b}__form-field`}>
+                    <label>Color en agenda</label>
+                    <div className={`${b}__color-picker`}>
+                      {PRESET_COLORS.map(c => (
+                        <button key={c} type="button"
+                          className={`${b}__color-swatch ${form.color === c ? `${b}__color-swatch--on` : ''}`}
+                          style={{ background: c }}
+                          onClick={() => setForm({ ...form, color: c })}
+                          title={c} />
+                      ))}
+                      <input type="color" value={form.color || '#2D5A3D'} onChange={e => setForm({ ...form, color: e.target.value })}
+                        className={`${b}__color-input`} title="Color personalizado" />
+                    </div>
+                  </div>
+                </div>
+                <div className={`${b}__form-field`}>
+                  <label>Biografia</label>
+                  <textarea name="bio" value={form.bio} onChange={handleChange} rows={3} placeholder="Breve descripcion del profesional..." />
+                </div>
+              </div>
+            </div>
+
+            {error && <div className={`${b}__form-error`}>{error}</div>}
           </div>
-          <div className={`${b}__form-row`}>
-            <div className={`${b}__form-field`}>
-              <label>Telefono</label>
-              <input name="phone" value={form.phone} onChange={handleChange} placeholder="+57 3XX XXX XXXX" />
-            </div>
-            <div className={`${b}__form-field`}>
-              <label>Email</label>
-              <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="correo@alpelo.co" />
-            </div>
-          </div>
-          <div className={`${b}__form-row`}>
-            <div className={`${b}__form-field`}>
-              <label>Especialidad</label>
-              <input name="specialty" value={form.specialty} onChange={handleChange} placeholder="Ej: Especialista en color" />
-            </div>
-            <div className={`${b}__form-field`}>
-              <label>Fecha de ingreso</label>
-              <input name="hire_date" type="date" value={form.hire_date} onChange={handleChange} />
-            </div>
-          </div>
-          <div className={`${b}__form-field`}>
-            <label>Habilidades (separadas por coma)</label>
-            <input name="skills" value={form.skills} onChange={handleChange} placeholder="Degradados, Cortes clasicos, Disenos" />
-          </div>
-          <div className={`${b}__form-field`}>
-            <label>Color en agenda</label>
-            <div className={`${b}__color-picker`}>
-              {PRESET_COLORS.map(c => (
-                <button key={c} type="button"
-                  className={`${b}__color-swatch ${form.color === c ? `${b}__color-swatch--on` : ''}`}
-                  style={{ background: c }}
-                  onClick={() => setForm({ ...form, color: c })}
-                  title={c} />
-              ))}
-              <input type="color" value={form.color || '#2D5A3D'} onChange={e => setForm({ ...form, color: e.target.value })}
-                className={`${b}__color-input`} title="Color personalizado" />
-            </div>
-          </div>
-          <div className={`${b}__form-field`}>
-            <label>Biografia</label>
-            <textarea name="bio" value={form.bio} onChange={handleChange} rows={3} placeholder="Breve descripcion del profesional..." />
-          </div>
-          {error && <div className={`${b}__form-error`}>{error}</div>}
+
           <div className={`${b}__form-actions`}>
             <button type="button" className={`${b}__btn ${b}__btn--ghost`} onClick={onClose}>Cancelar</button>
             <button type="submit" className={`${b}__btn ${b}__btn--primary`} disabled={saving}>
@@ -348,6 +414,110 @@ const SkillEditor = ({ staff, onUpdated }) => {
 };
 
 // ===== DETAIL DRAWER =====
+const CopyIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>;
+const KeyIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></svg>;
+
+const CredentialEditor = ({ member, onUpdated }) => {
+  const { addNotification } = useNotification();
+  const [editing, setEditing] = useState(false);
+  const [username, setUsername] = useState(member.username || '');
+  const [password, setPassword] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [showPw, setShowPw] = useState(false);
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      addNotification('Copiado al portapapeles', 'success');
+    }).catch(() => {});
+  };
+
+  const handleSave = async () => {
+    if (!username.trim()) return;
+    if (password.length < 6) { addNotification('La contraseña debe tener al menos 6 caracteres', 'error'); return; }
+    setSaving(true);
+    try {
+      await staffService.updateCredentials(member.id, { username: username.trim(), password });
+      addNotification('Credenciales actualizadas', 'success');
+      setEditing(false);
+      setPassword('');
+      if (onUpdated) onUpdated({ ...member, username: username.trim() });
+    } catch (err) { addNotification(err.message, 'error'); }
+    finally { setSaving(false); }
+  };
+
+  if (!editing) {
+    return (
+      <div className={`${b}__creds`}>
+        {member.username ? (
+          <>
+            <div className={`${b}__creds-card`}>
+              <div className={`${b}__creds-row`}>
+                <div className={`${b}__creds-label`}><UserIcon /> Usuario</div>
+                <div className={`${b}__creds-value`}>
+                  <strong>{member.username}</strong>
+                  <button className={`${b}__creds-copy`} onClick={() => copyToClipboard(member.username)} title="Copiar"><CopyIcon /></button>
+                </div>
+              </div>
+              <div className={`${b}__creds-row`}>
+                <div className={`${b}__creds-label`}><KeyIcon /> Contraseña</div>
+                <div className={`${b}__creds-value`}>
+                  <span className={`${b}__creds-masked`}>••••••••</span>
+                </div>
+              </div>
+            </div>
+            <button className={`${b}__btn ${b}__btn--outline-sm`} onClick={() => { setEditing(true); setUsername(member.username || ''); }}>
+              <EditIcon /> Cambiar credenciales
+            </button>
+          </>
+        ) : (
+          <div className={`${b}__creds-empty`}>
+            <LockIcon />
+            <div>
+              <span className={`${b}__creds-empty-title`}>Sin acceso configurado</span>
+              <span className={`${b}__creds-empty-desc`}>Este miembro no puede iniciar sesion en la plataforma</span>
+            </div>
+            <button className={`${b}__btn ${b}__btn--primary-sm`} onClick={() => setEditing(true)}>
+              Configurar acceso
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${b}__creds-edit`}>
+      <div className={`${b}__creds-edit-header`}>
+        <LockIcon /> {member.username ? 'Cambiar credenciales' : 'Configurar acceso'}
+      </div>
+      <div className={`${b}__creds-field`}>
+        <label>Usuario de acceso</label>
+        <input value={username} onChange={e => setUsername(e.target.value)} placeholder="nombre.usuario" />
+      </div>
+      <div className={`${b}__creds-field`}>
+        <label>{member.username ? 'Nueva contraseña' : 'Contraseña'}</label>
+        <div className={`${b}__password-wrap`}>
+          <input
+            type={showPw ? 'text' : 'password'}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="Min. 6 caracteres"
+          />
+          <button type="button" className={`${b}__eye-btn`} onClick={() => setShowPw(!showPw)}>
+            {showPw ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
+        </div>
+      </div>
+      <div className={`${b}__creds-actions`}>
+        <button className={`${b}__btn ${b}__btn--ghost`} onClick={() => { setEditing(false); setPassword(''); }}>Cancelar</button>
+        <button className={`${b}__btn ${b}__btn--primary`} onClick={handleSave} disabled={saving || !username.trim() || password.length < 6}>
+          {saving ? 'Guardando...' : 'Guardar'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) => {
   // Visit data comes from the API — no mock data
   const visits = [];
@@ -423,6 +593,12 @@ const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) =>
             </div>
           </div>
           {member.bio && <p className={`${b}__drawer-bio`}>{member.bio}</p>}
+        </div>
+
+        {/* Credentials section */}
+        <div className={`${b}__drawer-section`}>
+          <h4 className={`${b}__drawer-section-title`}>Acceso a la plataforma</h4>
+          <CredentialEditor member={member} onUpdated={onUpdated} />
         </div>
 
         {/* Skills section */}

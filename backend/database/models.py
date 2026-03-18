@@ -36,6 +36,8 @@ class Staff(Base):
     skills = Column(JSON, default=list)
     rating = Column(Float, nullable=True)
     color = Column(String, nullable=True)  # hex color for calendar, e.g. "#2D5A3D"
+    username = Column(String, unique=True, index=True, nullable=True)  # login credential (nullable = no login)
+    password = Column(String, nullable=True)  # hashed password
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

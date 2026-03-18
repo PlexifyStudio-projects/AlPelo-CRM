@@ -73,6 +73,8 @@ class StaffCreate(BaseModel):
     skills: List[str] = []
     rating: Optional[float] = None
     color: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
 
 class StaffUpdate(BaseModel):
     name: Optional[str] = None
@@ -86,6 +88,8 @@ class StaffUpdate(BaseModel):
     skills: Optional[List[str]] = None
     rating: Optional[float] = None
     color: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
 
 class StaffResponse(BaseModel):
     id: int
@@ -100,11 +104,16 @@ class StaffResponse(BaseModel):
     skills: List[str] = []
     rating: Optional[float] = None
     color: Optional[str] = None
+    username: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+class StaffCredentialsUpdate(BaseModel):
+    username: str
+    password: str
 
 
 #========================= CLIENT =========================#

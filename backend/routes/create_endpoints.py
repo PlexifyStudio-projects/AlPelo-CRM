@@ -23,8 +23,29 @@ router = APIRouter()
 
 @router.post("/staff/", response_model=StaffResponse)
 def create_staff(data: StaffCreate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    from auth.security import hash_password
+
     tid = safe_tid(user, db)
-    staff = Staff(tenant_id=tid, **data.model_dump())
+    staff_data = data.model_dump()
+
+    # Handle credentials
+    username = staff_data.pop("username", None)
+    password = staff_data.pop("password", None)
+
+    if username and password:
+        username = username.strip()
+        if len(password) < 6:
+            raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+        # Check uniqueness across Admin AND Staff
+        from database.models import Admin as AdminModel
+        if db.query(AdminModel).filter(AdminModel.username == username).first():
+            raise HTTPException(status_code=409, detail=f"El usuario '{username}' ya esta en uso")
+        if db.query(Staff).filter(Staff.username == username).first():
+            raise HTTPException(status_code=409, detail=f"El usuario '{username}' ya esta en uso")
+        staff_data["username"] = username
+        staff_data["password"] = hash_password(password)
+
+    staff = Staff(tenant_id=tid, **staff_data)
     db.add(staff)
     db.commit()
     db.refresh(staff)

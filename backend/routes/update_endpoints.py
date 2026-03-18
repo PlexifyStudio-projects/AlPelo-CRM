@@ -24,6 +24,8 @@ router = APIRouter()
 
 @router.put("/staff/{staff_id}", response_model=StaffResponse)
 def update_staff(staff_id: int, data: StaffUpdate, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    from auth.security import hash_password
+
     tid = safe_tid(user, db)
     q = db.query(Staff).filter(Staff.id == staff_id)
     if tid:
@@ -33,12 +35,71 @@ def update_staff(staff_id: int, data: StaffUpdate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Staff not found")
 
     update_data = data.model_dump(exclude_unset=True)
+
+    # Handle credential fields separately
+    new_username = update_data.pop("username", None)
+    new_password = update_data.pop("password", None)
+
+    if new_username is not None:
+        new_username = new_username.strip()
+        if new_username and new_username != staff.username:
+            # Check uniqueness across Admin AND Staff
+            if db.query(Admin).filter(Admin.username == new_username).first():
+                raise HTTPException(status_code=409, detail=f"El usuario '{new_username}' ya esta en uso")
+            existing = db.query(Staff).filter(Staff.username == new_username, Staff.id != staff_id).first()
+            if existing:
+                raise HTTPException(status_code=409, detail=f"El usuario '{new_username}' ya esta en uso")
+        staff.username = new_username if new_username else None
+
+    if new_password is not None:
+        if new_password:
+            if len(new_password) < 6:
+                raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+            staff.password = hash_password(new_password)
+        else:
+            staff.password = None
+
     for field, value in update_data.items():
         setattr(staff, field, value)
 
     db.commit()
     db.refresh(staff)
     return StaffResponse.model_validate(staff)
+
+
+@router.put("/staff/{staff_id}/credentials")
+def update_staff_credentials(staff_id: int, data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Admin-only: update staff login credentials."""
+    from auth.security import hash_password
+    from schemas import StaffCredentialsUpdate
+
+    creds = StaffCredentialsUpdate(**data)
+
+    tid = safe_tid(user, db)
+    q = db.query(Staff).filter(Staff.id == staff_id)
+    if tid:
+        q = q.filter(Staff.tenant_id == tid)
+    staff = q.first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+
+    username = creds.username.strip()
+    if len(creds.password) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+
+    # Check uniqueness
+    if username != staff.username:
+        if db.query(Admin).filter(Admin.username == username).first():
+            raise HTTPException(status_code=409, detail=f"El usuario '{username}' ya esta en uso")
+        existing = db.query(Staff).filter(Staff.username == username, Staff.id != staff_id).first()
+        if existing:
+            raise HTTPException(status_code=409, detail=f"El usuario '{username}' ya esta en uso")
+
+    staff.username = username
+    staff.password = hash_password(creds.password)
+    db.commit()
+
+    return {"success": True, "message": f"Credenciales actualizadas para '{staff.name}'"}
 
 
 @router.put("/staff/{staff_id}/skills", response_model=StaffResponse)
