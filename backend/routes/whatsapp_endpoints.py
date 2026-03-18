@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func as sa_func
 from database.connection import get_db, SessionLocal
 from database.models import WhatsAppConversation, WhatsAppMessage, Client, Tenant
 from routes._helpers import normalize_phone, now_colombia as _now_col
@@ -1196,6 +1197,20 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 log_event("skip", "IA pausada a nivel de agencia", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
                 return
 
+            # Check message limit — count only Lina's messages
+            if tenant and tenant.messages_limit and tenant.messages_limit > 0:
+                lina_msg_count = db.query(sa_func.count(WhatsAppMessage.id)).filter(
+                    WhatsAppMessage.direction == "outbound",
+                    WhatsAppMessage.sent_by == "lina_ia",
+                ).scalar() or 0
+                if lina_msg_count >= tenant.messages_limit:
+                    # Auto-pause Lina
+                    if not tenant.ai_is_paused:
+                        tenant.ai_is_paused = True
+                        db.commit()
+                        log_event("limit", f"Limite de mensajes alcanzado ({lina_msg_count}/{tenant.messages_limit}) — Lina pausada automaticamente", status="error")
+                    return
+
             last_ai_msg = (
                 db.query(WhatsAppMessage)
                 .filter(
@@ -1904,6 +1919,20 @@ def set_profile_photo(conv_id: int, body: dict, db: Session = Depends(get_db)):
 async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """Enable or disable Lina IA on ALL conversations at once.
     When enabling, immediately catch-up on all conversations with unread inbound messages."""
+    # Block reactivation if message limit reached
+    if body.enable:
+        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        if tenant and tenant.messages_limit and tenant.messages_limit > 0:
+            lina_count = db.query(sa_func.count(WhatsAppMessage.id)).filter(
+                WhatsAppMessage.direction == "outbound",
+                WhatsAppMessage.sent_by == "lina_ia",
+            ).scalar() or 0
+            if lina_count >= tenant.messages_limit:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Limite de mensajes alcanzado ({lina_count}/{tenant.messages_limit}). Contacta a soporte para recargar."
+                )
+
     updated = (
         db.query(WhatsAppConversation)
         .update({WhatsAppConversation.is_ai_active: body.enable})

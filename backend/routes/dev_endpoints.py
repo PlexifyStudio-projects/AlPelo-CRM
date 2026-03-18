@@ -52,6 +52,7 @@ def _safe_tenant_dict(t, db=None):
         try:
             real_messages_used = db.query(func.count(WhatsAppMessage.id)).filter(
                 WhatsAppMessage.direction == 'outbound',
+                WhatsAppMessage.sent_by == 'lina_ia',
             ).scalar() or 0
         except Exception:
             pass
@@ -630,11 +631,12 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
             "timezone": "America/Bogota",
         }
 
-    # Count REAL messages from DB (not the static tenant.messages_used field)
+    # Count REAL Lina IA messages (not manual sends by admin)
     real_used = 0
     try:
         real_used = db.query(func.count(WhatsAppMessage.id)).filter(
-            WhatsAppMessage.direction == "outbound"
+            WhatsAppMessage.direction == "outbound",
+            WhatsAppMessage.sent_by == "lina_ia",
         ).scalar() or 0
     except Exception:
         real_used = getattr(tenant, 'messages_used', 0)
