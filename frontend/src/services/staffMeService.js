@@ -2,7 +2,7 @@ const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.r
 
 const staffMeService = {
   getStats: async () => {
-    const res = await fetch(`${_API}/staff/me/stats`, { credentials: 'include' });
+    const res = await fetch(`${_API}/my/stats`, { credentials: 'include' });
     if (!res.ok) throw new Error('Error al cargar estadisticas');
     return res.json();
   },
@@ -11,20 +11,20 @@ const staffMeService = {
     const query = new URLSearchParams();
     if (params.date_from) query.set('date_from', params.date_from);
     if (params.date_to) query.set('date_to', params.date_to);
-    const url = query.toString() ? `${_API}/staff/me/appointments?${query}` : `${_API}/staff/me/appointments`;
+    const url = query.toString() ? `${_API}/my/appointments?${query}` : `${_API}/my/appointments`;
     const res = await fetch(url, { credentials: 'include' });
     if (!res.ok) throw new Error('Error al cargar citas');
     return res.json();
   },
 
   getNotifications: async () => {
-    const res = await fetch(`${_API}/staff/me/notifications`, { credentials: 'include' });
+    const res = await fetch(`${_API}/my/notifications`, { credentials: 'include' });
     if (!res.ok) throw new Error('Error al cargar notificaciones');
     return res.json();
   },
 
   completeAppointment: async (appointmentId, paymentCode) => {
-    const res = await fetch(`${_API}/staff/me/appointments/${appointmentId}/complete`, {
+    const res = await fetch(`${_API}/my/appointments/${appointmentId}/complete`, {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -42,7 +42,7 @@ const staffMeService = {
     if (params.period) query.set('period', params.period);
     if (params.date_from) query.set('date_from', params.date_from);
     if (params.date_to) query.set('date_to', params.date_to);
-    const url = query.toString() ? `${_API}/staff/me/commissions?${query}` : `${_API}/staff/me/commissions`;
+    const url = query.toString() ? `${_API}/my/commissions?${query}` : `${_API}/my/commissions`;
     const res = await fetch(url, { credentials: 'include' });
     if (!res.ok) throw new Error('Error al cargar comisiones');
     return res.json();

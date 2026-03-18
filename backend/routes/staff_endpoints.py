@@ -26,7 +26,7 @@ def _get_staff_user(current_user) -> Staff:
 # STAFF DASHBOARD STATS
 # ============================================================================
 
-@router.get("/staff/me/stats")
+@router.get("/my/stats")
 def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     staff = _get_staff_user(current_user)
     today = now_colombia().date()
@@ -87,7 +87,7 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
 # STAFF APPOINTMENTS (own only)
 # ============================================================================
 
-@router.get("/staff/me/appointments")
+@router.get("/my/appointments")
 def staff_appointments(
     date_from: str = None,
     date_to: str = None,
@@ -131,7 +131,7 @@ def staff_appointments(
 # STAFF NOTIFICATIONS (upcoming appointments)
 # ============================================================================
 
-@router.get("/staff/me/notifications")
+@router.get("/my/notifications")
 def staff_notifications(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     staff = _get_staff_user(current_user)
     tid = staff.tenant_id
@@ -164,7 +164,7 @@ def staff_notifications(db: Session = Depends(get_db), current_user=Depends(get_
 # STAFF: COMPLETE APPOINTMENT (with payment code)
 # ============================================================================
 
-@router.put("/staff/me/appointments/{appointment_id}/complete")
+@router.put("/my/appointments/{appointment_id}/complete")
 def staff_complete_appointment(
     appointment_id: int,
     data: dict,
@@ -227,7 +227,7 @@ def staff_complete_appointment(
 # STAFF COMMISSIONS / FINANCES
 # ============================================================================
 
-@router.get("/staff/me/commissions")
+@router.get("/my/commissions")
 def staff_commissions(
     period: str = "today",
     date_from: str = None,
