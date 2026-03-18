@@ -222,16 +222,20 @@ const Dashboard = ({ onNavigate }) => {
       );
       if (!res.ok) return;
       const data = await res.json();
-      // Use revenue_by_day (backend) or daily_revenue (legacy)
+      // Build full 7-day array, filling gaps with $0
       const dayData = data.revenue_by_day || data.daily_revenue || [];
-      if (Array.isArray(dayData) && dayData.length > 0) {
-        setRevenueData(dayData.map(d => ({
-          label: d.date || d.day,
-          value: d.total || d.revenue || d.amount || 0,
-        })));
-      } else {
-        setRevenueData([]);
+      const dayMap = {};
+      if (Array.isArray(dayData)) {
+        dayData.forEach(d => { dayMap[d.date || d.day] = d.total || d.revenue || d.amount || 0; });
       }
+      const full7Days = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(sevenDaysAgo);
+        d.setDate(d.getDate() + i);
+        const key = fmt(d);
+        full7Days.push({ label: key, value: dayMap[key] || 0 });
+      }
+      setRevenueData(full7Days);
     } catch {
       // Revenue chart is non-critical — fail silently
     }
