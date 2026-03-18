@@ -3,6 +3,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
 import automationService from '../../services/automationService';
 import templateService from '../../services/templateService';
+import settingsService from '../../services/settingsService';
 
 const B = 'automations';
 
@@ -131,18 +132,23 @@ const Automations = () => {
   const [activeTab, setActiveTab] = useState('workflows'); // workflows | history
   const [filterCategory, setFilterCategory] = useState('all');
   const [approvedTemplates, setApprovedTemplates] = useState([]);
+  const [metaTemplates, setMetaTemplates] = useState([]);
 
   // Load data
   const loadData = useCallback(async () => {
     try {
-      const [wfs, st, tpls] = await Promise.all([
+      const [wfs, st, tpls, metaData] = await Promise.all([
         automationService.getAutomations(),
         automationService.getAutomationStats(),
         templateService.getApprovedTemplates(),
+        settingsService.getMetaTemplates().catch(() => ({ templates: [] })),
       ]);
       setAutomations(wfs || []);
       setStats(st || {});
       setApprovedTemplates(tpls || []);
+      // Only keep Meta-approved templates
+      const metaApproved = (metaData?.templates || []).filter(t => t.status === 'approved');
+      setMetaTemplates(metaApproved);
     } catch (e) {
       console.error('Failed to load automations:', e);
       addNotification('Error cargando automatizaciones', 'error');
@@ -458,7 +464,7 @@ const Automations = () => {
                       </div>
                     )}
 
-                    {/* Template selector — from approved templates in Plantillas */}
+                    {/* Template selector — Meta approved + DB approved */}
                     {auto.channel !== 'interno' && (
                       <div className={`${B}__card-config-item ${B}__card-config-item--full`}>
                         <span className={`${B}__card-config-label`}>Plantilla aprobada:</span>
@@ -468,19 +474,32 @@ const Automations = () => {
                           onChange={e => handleConfigChange(auto.id, 'template_name', e.target.value)}
                         >
                           <option value="">— Seleccionar plantilla —</option>
-                          {approvedTemplates.map(tpl => (
-                            <option key={tpl.id} value={tpl.slug}>
-                              {tpl.name} ({tpl.category})
-                            </option>
-                          ))}
+                          {metaTemplates.length > 0 && (
+                            <optgroup label="Aprobadas por Meta">
+                              {metaTemplates.map(tpl => (
+                                <option key={`meta-${tpl.name}`} value={tpl.name}>
+                                  {tpl.name} ({tpl.category})
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {approvedTemplates.length > 0 && (
+                            <optgroup label="Plantillas locales">
+                              {approvedTemplates.map(tpl => (
+                                <option key={`db-${tpl.id}`} value={tpl.slug}>
+                                  {tpl.name} ({tpl.category})
+                                </option>
+                              ))}
+                            </optgroup>
+                          )}
                         </select>
                         {auto.template_name ? (
                           <span className={`${B}__card-config-hint ${B}__card-config-hint--ok`}>
-                            ✅ Plantilla "{auto.template_name}" configurada — funciona siempre
+                            Plantilla "{auto.template_name}" configurada — funciona siempre
                           </span>
                         ) : (
                           <span className={`${B}__card-config-hint`}>
-                            ⚠️ Sin plantilla: solo funciona si el cliente escribió en las últimas 24h
+                            Sin plantilla: solo funciona si el cliente escribio en las ultimas 24h
                           </span>
                         )}
                       </div>
