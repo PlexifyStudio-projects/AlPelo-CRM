@@ -25,39 +25,26 @@ const StaffRouter = ({ user, onLogout }) => {
 
   // Poll for new appointments and create notifications
   useEffect(() => {
-    const checkAppointments = async () => {
+    let firstLoad = true;
+
+    const pollAppointments = async () => {
       try {
         const notifs = await staffMeService.getNotifications();
         notifs.forEach((n) => {
           if (!knownApptIds.current.has(n.id)) {
             knownApptIds.current.add(n.id);
-            // Only notify on subsequent polls (not the initial load)
-            if (knownApptIds.current.size > notifs.length) return;
+            const msg = firstLoad
+              ? `Cita con ${n.client_name} a las ${n.time} — ${n.service_name}`
+              : `Nueva cita asignada: ${n.client_name} a las ${n.time} — ${n.service_name}`;
+            addNotification(msg, 'info');
           }
         });
-        // On first load, seed all as known + create notifs for today's appointments
-        if (knownApptIds.current.size === 0 && notifs.length > 0) {
-          notifs.forEach((n) => {
-            knownApptIds.current.add(n.id);
-            addNotification(`Cita con ${n.client_name} a las ${n.time} — ${n.service_name}`, 'info');
-          });
-        }
+        firstLoad = false;
       } catch { /* silent */ }
     };
 
-    checkAppointments();
-    const interval = setInterval(async () => {
-      try {
-        const notifs = await staffMeService.getNotifications();
-        notifs.forEach((n) => {
-          if (!knownApptIds.current.has(n.id)) {
-            knownApptIds.current.add(n.id);
-            addNotification(`Nueva cita asignada: ${n.client_name} a las ${n.time} — ${n.service_name}`, 'info');
-          }
-        });
-      } catch { /* silent */ }
-    }, 30000); // Check every 30s
-
+    pollAppointments();
+    const interval = setInterval(pollAppointments, 30000);
     return () => clearInterval(interval);
   }, [addNotification]);
 
