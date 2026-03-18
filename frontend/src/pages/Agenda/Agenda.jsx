@@ -805,7 +805,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                         const endTime = getEndTime(apt.time, apt.duration_minutes || svc?.duration_minutes || 30);
                         return (
                           <div key={apt.id}
-                            className={`${b}__event ${apt.status === 'completed' || apt.status === 'paid' ? `${b}__event--done` : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''}`}
+                            className={`${b}__event ${(apt.status === 'completed' || apt.status === 'paid') ? (isStaffMode ? `${b}__event--done-staff` : `${b}__event--done`) : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''}`}
                             style={{ '--c': staffColor, '--sc': statusColor, animationDelay: `${evIdx * 30}ms` }}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -845,8 +845,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                       <div className={`${b}__now-line`} />
                     </div>
                   )}
-                  {/* Clickable slots (30-min each) */}
-                  {HOURS.map(h => [
+                  {/* Clickable slots (30-min each) — hidden for staff */}
+                  {!isStaffMode && HOURS.map(h => [
                     <div key={`a${h}`} className={`${b}__slot`}
                       style={{ top: `${hourTop(h)}px`, height: `${slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2] - hourTop(h)}px` }}
                       onClick={() => openCreate(day, `${pad2(h)}:00`)} />,

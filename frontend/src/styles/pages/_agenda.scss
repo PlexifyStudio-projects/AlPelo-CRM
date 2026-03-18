@@ -804,9 +804,42 @@
     }
 
     &--done {
-      opacity: 0.5;
+      opacity: 0.55;
       background: color-mix(in srgb, var(--c, $color-primary) 4%, $color-gray-50);
       &:hover { opacity: 0.75; }
+    }
+
+    &--done-staff {
+      opacity: 1;
+      background: rgba($color-success-dark, 0.08);
+      border-color: rgba($color-success-dark, 0.2);
+
+      .agenda__event-accent { background: $color-success-dark; }
+      .agenda__event-time,
+      .agenda__event-name { color: $color-success-dark; }
+
+      &::after {
+        content: '\2713';
+        position: absolute;
+        right: 6px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: $color-success-dark;
+        background: rgba($color-success-dark, 0.1);
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      &:hover {
+        background: rgba($color-success-dark, 0.12);
+        border-color: rgba($color-success-dark, 0.3);
+      }
     }
 
     &--cancel {
