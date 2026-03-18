@@ -569,7 +569,10 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
             else:
                 status = "failed"
                 error_msg = data.get("error", {}).get("message", str(data))
-                print(f"[WA] Send failed ({resp.status_code}): {error_msg}")
+                error_code = data.get("error", {}).get("code", "?")
+                _, phone_id_used = _get_wa_config_cached(db)
+                print(f"[WA] Send failed ({resp.status_code}, code={error_code}): {error_msg}")
+                print(f"[WA] Phone ID used: {phone_id_used}, Token starts: {wa_headers(db)['Authorization'][:20]}...")
     except Exception as e:
         status = "failed"
         print(f"[WA] Send error: {e}")
