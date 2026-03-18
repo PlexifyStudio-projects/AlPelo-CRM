@@ -12,10 +12,10 @@ import aiService from '../../services/aiService';
 // Category display metadata
 const templateCategories = [
   { id: 'post_servicio', name: 'Post-Servicio', color: '#34D399' },
-  { id: 'reactivacion', name: 'Reactivacion', color: '#FBBF24' },
+  { id: 'reactivacion', name: 'Reactivación', color: '#FBBF24' },
   { id: 'recordatorio', name: 'Recordatorio', color: '#60A5FA' },
-  { id: 'promocion', name: 'Promocion', color: '#8B5CF6' },
-  { id: 'fidelizacion', name: 'Fidelizacion', color: '#EC4899' },
+  { id: 'promocion', name: 'Promoción', color: '#8B5CF6' },
+  { id: 'fidelizacion', name: 'Fidelización', color: '#EC4899' },
   { id: 'bienvenida', name: 'Bienvenida', color: '#22B07E' },
 ];
 
@@ -44,29 +44,39 @@ const SaveIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="non
 const RefreshIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>;
 const SparkleIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" /></svg>;
 // Professional campaign type icons (SVG)
-const RecoveryIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>;
-const VipIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z" /></svg>;
-const ReactivationIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
-const PromoIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>;
-const FollowupIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>;
-
-const CAMPAIGN_ICONS = { recovery: RecoveryIcon, vip: VipIcon, reactivation: ReactivationIcon, promo: PromoIcon, followup: FollowupIcon };
+// Professional SVG icons for campaign types
+const CampaignTypeIcons = {
+  recovery: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>,
+  vip: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z" /></svg>,
+  reactivation: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
+  promo: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>,
+  followup: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>,
+  birthday: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-3-3.87" /><path d="M4 21v-2a4 4 0 0 1 3-3.87" /><circle cx="12" cy="7" r="4" /><path d="M12 3v1" /><path d="M9 14h6" /><rect x="2" y="17" width="20" height="4" rx="2" /></svg>,
+  welcome: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" /></svg>,
+  noshow: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg>,
+  custom: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>,
+};
+const CAMPAIGN_ICONS = CampaignTypeIcons;
 
 // ═══════════════════════════════════════════════
 // Constants
 // ═══════════════════════════════════════════════
 const CAMPAIGN_TYPES = [
-  { id: 'recovery', label: 'Recuperacion', desc: 'Clientes inactivos (+30 dias)', color: '#D97706' },
-  { id: 'vip', label: 'VIP', desc: 'Clientes VIP y frecuentes', color: '#7C3AED' },
-  { id: 'reactivation', label: 'Reactivacion', desc: 'En riesgo de perderse', color: '#DC2626' },
-  { id: 'promo', label: 'Promocion', desc: 'Ofertas y descuentos', color: '#059669' },
-  { id: 'followup', label: 'Seguimiento', desc: 'Post-servicio y feedback', color: '#2563EB' },
+  { id: 'recovery', label: 'Recuperación', desc: 'Clientes inactivos', color: '#D97706' },
+  { id: 'vip', label: 'VIP', desc: 'Mejores clientes', color: '#7C3AED' },
+  { id: 'reactivation', label: 'Reactivación', desc: 'En riesgo de irse', color: '#DC2626' },
+  { id: 'promo', label: 'Promoción', desc: 'Ofertas y descuentos', color: '#059669' },
+  { id: 'followup', label: 'Seguimiento', desc: 'Post-servicio', color: '#2563EB' },
+  { id: 'birthday', label: 'Cumpleaños', desc: 'Felicitaciones', color: '#EC4899' },
+  { id: 'welcome', label: 'Bienvenida', desc: 'Nuevos clientes', color: '#14B8A6' },
+  { id: 'noshow', label: 'No-show', desc: 'Citas perdidas', color: '#F97316' },
+  { id: 'custom', label: 'Personalizada', desc: 'Tu propio tipo', color: '#6B7280' },
 ];
 
 const SEGMENT_OPTIONS = [
-  { id: 'inactive_30', label: '+30 dias sin venir', filters: { days_inactive: 30 } },
-  { id: 'inactive_60', label: '+60 dias sin venir', filters: { days_inactive: 60 } },
-  { id: 'inactive_90', label: '+90 dias sin venir', filters: { days_inactive: 90 } },
+  { id: 'inactive_30', label: '+30 días sin venir', filters: { days_inactive: 30 } },
+  { id: 'inactive_60', label: '+60 días sin venir', filters: { days_inactive: 60 } },
+  { id: 'inactive_90', label: '+90 días sin venir', filters: { days_inactive: 90 } },
   { id: 'vip', label: 'Clientes VIP', filters: { status: 'vip' } },
   { id: 'at_risk', label: 'En riesgo', filters: { status: 'en_riesgo' } },
   { id: 'inactive_all', label: 'Inactivos', filters: { status: 'inactivo' } },
@@ -252,7 +262,7 @@ const Campaigns = () => {
 
   const handleSaveStep1 = async () => {
     if (!formName.trim()) {
-      addNotification('Dale un nombre a la campana', 'error');
+      addNotification('Dale un nombre a la campaña', 'error');
       return;
     }
     const seg = SEGMENT_OPTIONS.find(s => s.id === formSegment);
@@ -299,7 +309,7 @@ const Campaigns = () => {
     if (!linaPrompt.trim()) return;
     setLinaLoading(true);
     try {
-      const campaignContext = `Estoy creando una campana de marketing tipo "${CAMPAIGN_TYPES.find(t => t.id === formType)?.label || formType}" llamada "${formName}". `;
+      const campaignContext = `Estoy creando una campaña de marketing tipo "${CAMPAIGN_TYPES.find(t => t.id === formType)?.label || formType}" llamada "${formName}". `;
       const fullPrompt = campaignContext + linaPrompt;
       const res = await aiService.chat(fullPrompt);
       setLinaResponse(res.response || '');
@@ -340,7 +350,7 @@ const Campaigns = () => {
   const handleFinishWizard = () => {
     setShowWizard(false);
     loadCampaigns();
-    addNotification('Campana guardada. Enviala a Meta para aprobacion.', 'success');
+    addNotification('Campaña guardada. Envíala a Meta para aprobación.', 'success');
   };
 
   // ─── Campaign actions ────────────────────────
@@ -375,7 +385,7 @@ const Campaigns = () => {
   };
 
   const handleSend = (id) => {
-    requestConfirm('Enviar esta campana a todos los clientes del segmento?', async () => {
+    requestConfirm('Enviar esta campaña a todos los clientes del segmento?', async () => {
       setConfirmModal(null);
       setActionLoading(id);
       try {
@@ -391,12 +401,12 @@ const Campaigns = () => {
   };
 
   const handleDelete = (id) => {
-    requestConfirm('Eliminar esta campana?', async () => {
+    requestConfirm('Eliminar esta campaña?', async () => {
       setConfirmModal(null);
       try {
         await campaignService.delete(id);
         setCampaigns(prev => prev.filter(c => c.id !== id));
-        addNotification('Campana eliminada', 'success');
+        addNotification('Campaña eliminada', 'success');
       } catch (e) {
         addNotification(e.message, 'error');
       }
@@ -427,7 +437,7 @@ const Campaigns = () => {
   if (loading) {
     return (
       <div className={B}>
-        <div className={`${B}__loading`}>Cargando campanas...</div>
+        <div className={`${B}__loading`}>Cargando campañas...</div>
       </div>
     );
   }
@@ -440,11 +450,11 @@ const Campaigns = () => {
       {/* ─── Header ─── */}
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
-          <h1 className={`${B}__title`}>Campanas</h1>
-          <span className={`${B}__subtitle`}>Marketing & comunicacion masiva</span>
+          <h1 className={`${B}__title`}>Campañas</h1>
+          <span className={`${B}__subtitle`}>Marketing & comunicación masiva</span>
         </div>
         <button className={`${B}__btn-create`} onClick={() => openWizard()}>
-          <PlusIcon /> Nueva campana
+          <PlusIcon /> Nueva campaña
         </button>
       </div>
 
@@ -452,8 +462,8 @@ const Campaigns = () => {
       <div className={`${B}__health`}>
         {[
           { value: stats.totalClients, label: 'Alcance', sub: 'clientes con WhatsApp', color: '#2D5A3D' },
-          { value: stats.inactive30, label: 'Inactivos', sub: 'mas de 30 dias', color: '#D97706' },
-          { value: stats.atRisk, label: 'En riesgo', sub: 'necesitan atencion', color: '#DC2626' },
+          { value: stats.inactive30, label: 'Inactivos', sub: 'más de 30 días', color: '#D97706' },
+          { value: stats.atRisk, label: 'En riesgo', sub: 'necesitan atención', color: '#DC2626' },
           { value: stats.totalSent, label: 'Enviados', sub: 'mensajes totales', color: '#059669' },
         ].map((item, i) => (
           <div key={i} className={`${B}__health-card`}>
@@ -473,7 +483,7 @@ const Campaigns = () => {
           <SearchIcon />
           <input
             type="text"
-            placeholder="Buscar campana..."
+            placeholder="Buscar campaña..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className={`${B}__search-input`}
@@ -496,8 +506,8 @@ const Campaigns = () => {
       {campaigns.length === 0 && filteredCampaigns.length === 0 && (
         <EmptyState
           icon={<MegaphoneIcon />}
-          title="Sin campanas aun"
-          description="Crea tu primera campana para enviar mensajes masivos a tus clientes por WhatsApp"
+          title="Sin campañas aun"
+          description="Crea tu primera campaña para enviar mensajes masivos a tus clientes por WhatsApp"
         />
       )}
 
@@ -549,7 +559,7 @@ const Campaigns = () => {
                 {c.status === 'approved' && (
                   <>
                     <button className={`${B}__btn-action ${B}__btn-action--send`} onClick={() => handleSend(c.id)} disabled={actionLoading === c.id}>
-                      <PlayIcon /> {actionLoading === c.id ? 'Enviando...' : 'Enviar campana'}
+                      <PlayIcon /> {actionLoading === c.id ? 'Enviando...' : 'Enviar campaña'}
                     </button>
                     <button className={`${B}__btn-action ${B}__btn-action--delete`} onClick={() => handleDelete(c.id)}>
                       <TrashIcon />
@@ -581,7 +591,7 @@ const Campaigns = () => {
         <EmptyState
           icon={<MegaphoneIcon />}
           title="Sin resultados"
-          description="No hay campanas que coincidan con tu busqueda"
+          description="No hay campañas que coincidan con tu búsqueda"
         />
       )}
 
@@ -593,7 +603,7 @@ const Campaigns = () => {
           <div className={`${B}__modal`} onClick={e => e.stopPropagation()}>
             <div className={`${B}__modal-header`}>
               <h2 className={`${B}__modal-title`}>
-                {editingId ? 'Editar Campana' : 'Nueva Campana'}
+                {editingId ? 'Editar Campaña' : 'Nueva Campaña'}
               </h2>
               <button className={`${B}__modal-close`} onClick={() => setShowWizard(false)}>
                 <CloseIcon />
@@ -617,7 +627,7 @@ const Campaigns = () => {
               {wizardStep === 1 && (
                 <div className={`${B}__wizard-step`}>
                   <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Nombre de la campana</label>
+                    <label className={`${B}__label`}>Nombre de la campaña</label>
                     <input
                       type="text"
                       className={`${B}__input`}
@@ -628,7 +638,7 @@ const Campaigns = () => {
                   </div>
 
                   <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Tipo de campana</label>
+                    <label className={`${B}__label`}>Tipo de campaña</label>
                     <div className={`${B}__type-grid`}>
                       {CAMPAIGN_TYPES.map(t => (
                         <div
@@ -708,7 +718,7 @@ const Campaigns = () => {
                       className={`${B}__textarea`}
                       value={formBody}
                       onChange={e => setFormBody(e.target.value)}
-                      placeholder="Hola {{nombre}}, te extranamos en..."
+                      placeholder="Hola {{nombre}}, te extrañamos en..."
                       rows={4}
                       maxLength={500}
                     />
@@ -720,7 +730,7 @@ const Campaigns = () => {
                     <div className={`${B}__lina-header`}>
                       <SparkleIcon /> Consultar a Lina
                     </div>
-                    <p className={`${B}__lina-hint`}>Preguntale a Lina sobre tu campana, audiencia o estrategia</p>
+                    <p className={`${B}__lina-hint`}>Pregúntale a Lina sobre tu campaña, audiencia o estrategia</p>
                     <div className={`${B}__lina-input-row`}>
                       <input
                         type="text"
@@ -766,7 +776,7 @@ const Campaigns = () => {
 
                   <div className={`${B}__wizard-actions`}>
                     <button className={`${B}__btn-secondary`} onClick={() => setWizardStep(1)}>
-                      Atras
+                      Atrás
                     </button>
                     <button className={`${B}__btn-primary`} onClick={handleSaveStep2}>
                       Siguiente
@@ -885,10 +895,10 @@ const Campaigns = () => {
 
                   <div className={`${B}__wizard-actions`}>
                     <button className={`${B}__btn-secondary`} onClick={() => setWizardStep(2)}>
-                      Atras
+                      Atrás
                     </button>
                     <button className={`${B}__btn-primary`} onClick={handleFinishWizard}>
-                      <CheckIcon /> Guardar campana
+                      <CheckIcon /> Guardar campaña
                     </button>
                   </div>
                 </div>
