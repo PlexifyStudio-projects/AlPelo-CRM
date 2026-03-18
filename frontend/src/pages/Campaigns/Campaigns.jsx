@@ -7,6 +7,7 @@ import clientService from '../../services/clientService';
 import staffService from '../../services/staffService';
 import servicesService from '../../services/servicesService';
 import templateService from '../../services/templateService';
+import aiService from '../../services/aiService';
 
 // Category display metadata
 const templateCategories = [
@@ -47,17 +48,17 @@ const SparkleIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="
 // Constants
 // ═══════════════════════════════════════════════
 const CAMPAIGN_TYPES = [
-  { id: 'recovery', label: 'Recuperación', desc: 'Clientes inactivos (+30 dias)', color: '#FBBF24', icon: '🔄' },
+  { id: 'recovery', label: 'Recuperacion', desc: 'Clientes inactivos (+30 dias)', color: '#FBBF24', icon: '🔄' },
   { id: 'vip', label: 'VIP', desc: 'Clientes VIP y frecuentes', color: '#8B5CF6', icon: '⭐' },
-  { id: 'reactivation', label: 'Reactivación', desc: 'En riesgo de perderse', color: '#F87171', icon: '🔥' },
-  { id: 'promo', label: 'Promoción', desc: 'Ofertas y descuentos', color: '#34D399', icon: '🎯' },
+  { id: 'reactivation', label: 'Reactivacion', desc: 'En riesgo de perderse', color: '#F87171', icon: '🔥' },
+  { id: 'promo', label: 'Promocion', desc: 'Ofertas y descuentos', color: '#34D399', icon: '🎯' },
   { id: 'followup', label: 'Seguimiento', desc: 'Post-servicio y feedback', color: '#60A5FA', icon: '💬' },
 ];
 
 const SEGMENT_OPTIONS = [
-  { id: 'inactive_30', label: '+30 días sin venir', filters: { days_inactive: 30 } },
-  { id: 'inactive_60', label: '+60 días sin venir', filters: { days_inactive: 60 } },
-  { id: 'inactive_90', label: '+90 días sin venir', filters: { days_inactive: 90 } },
+  { id: 'inactive_30', label: '+30 dias sin venir', filters: { days_inactive: 30 } },
+  { id: 'inactive_60', label: '+60 dias sin venir', filters: { days_inactive: 60 } },
+  { id: 'inactive_90', label: '+90 dias sin venir', filters: { days_inactive: 90 } },
   { id: 'vip', label: 'Clientes VIP', filters: { status: 'vip' } },
   { id: 'at_risk', label: 'En riesgo', filters: { status: 'en_riesgo' } },
   { id: 'inactive_all', label: 'Inactivos', filters: { status: 'inactivo' } },
@@ -135,12 +136,20 @@ const Campaigns = () => {
   const [aiVariants, setAiVariants] = useState([]);
   const [generatingAI, setGeneratingAI] = useState(false);
 
+  // Lina chat (Step 2)
+  const [linaPrompt, setLinaPrompt] = useState('');
+  const [linaResponse, setLinaResponse] = useState('');
+  const [linaLoading, setLinaLoading] = useState(false);
+
   // Audience
   const [audiencePreview, setAudiencePreview] = useState(null);
   const [loadingAudience, setLoadingAudience] = useState(false);
 
   // Actions
   const [actionLoading, setActionLoading] = useState(null);
+
+  // Confirm modal (replaces native confirm())
+  const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
 
   // ─── Load all data ──────────────────────────
   const loadCampaigns = useCallback(async () => {
@@ -205,6 +214,8 @@ const Campaigns = () => {
     setAudiencePreview(null);
     setFormStaffFilter('');
     setFormServiceFilter('');
+    setLinaPrompt('');
+    setLinaResponse('');
     if (suggestion) {
       setFormName(suggestion.name);
       setFormType(suggestion.type);
@@ -227,6 +238,8 @@ const Campaigns = () => {
     setFormBody(campaign.message_body || '');
     setAiVariants(campaign.ai_variants || []);
     setAudiencePreview(null);
+    setLinaPrompt('');
+    setLinaResponse('');
     const seg = SEGMENT_OPTIONS.find(s => {
       const f = campaign.segment_filters || {};
       return JSON.stringify(s.filters) === JSON.stringify(f);
@@ -237,7 +250,7 @@ const Campaigns = () => {
 
   const handleSaveStep1 = async () => {
     if (!formName.trim()) {
-      addNotification('Dale un nombre a la campaña', 'error');
+      addNotification('Dale un nombre a la campana', 'error');
       return;
     }
     const seg = SEGMENT_OPTIONS.find(s => s.id === formSegment);
@@ -272,11 +285,26 @@ const Campaigns = () => {
       if (res.variants?.length && !formBody) {
         setFormBody(res.variants[0].body);
       }
-      addNotification('Lina IA generó 3 variantes de copy', 'success');
+      addNotification('Lina IA genero 3 variantes de copy', 'success');
     } catch (e) {
       addNotification(`Error generando copy: ${e.message}`, 'error');
     } finally {
       setGeneratingAI(false);
+    }
+  };
+
+  const handleAskLina = async () => {
+    if (!linaPrompt.trim()) return;
+    setLinaLoading(true);
+    try {
+      const campaignContext = `Estoy creando una campana de marketing tipo "${CAMPAIGN_TYPES.find(t => t.id === formType)?.label || formType}" llamada "${formName}". `;
+      const fullPrompt = campaignContext + linaPrompt;
+      const res = await aiService.chat(fullPrompt);
+      setLinaResponse(res.response || '');
+    } catch (e) {
+      setLinaResponse('Error consultando a Lina: ' + e.message);
+    } finally {
+      setLinaLoading(false);
     }
   };
 
@@ -310,7 +338,7 @@ const Campaigns = () => {
   const handleFinishWizard = () => {
     setShowWizard(false);
     loadCampaigns();
-    addNotification('Campaña guardada. Envíala a Meta para aprobación.', 'success');
+    addNotification('Campana guardada. Enviala a Meta para aprobacion.', 'success');
   };
 
   // ─── Campaign actions ────────────────────────
@@ -340,29 +368,37 @@ const Campaigns = () => {
     }
   };
 
-  const handleSend = async (id) => {
-    if (!confirm('¿Enviar esta campaña a todos los clientes del segmento?')) return;
-    setActionLoading(id);
-    try {
-      const res = await campaignService.send(id);
-      setCampaigns(prev => prev.map(c => c.id === id ? res.campaign : c));
-      addNotification(`Enviados: ${res.sent} | Fallidos: ${res.failed} de ${res.total}`, 'success');
-    } catch (e) {
-      addNotification(e.message, 'error');
-    } finally {
-      setActionLoading(null);
-    }
+  const requestConfirm = (message, onConfirm) => {
+    setConfirmModal({ message, onConfirm });
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('¿Eliminar esta campaña?')) return;
-    try {
-      await campaignService.delete(id);
-      setCampaigns(prev => prev.filter(c => c.id !== id));
-      addNotification('Campaña eliminada', 'success');
-    } catch (e) {
-      addNotification(e.message, 'error');
-    }
+  const handleSend = (id) => {
+    requestConfirm('Enviar esta campana a todos los clientes del segmento?', async () => {
+      setConfirmModal(null);
+      setActionLoading(id);
+      try {
+        const res = await campaignService.send(id);
+        setCampaigns(prev => prev.map(c => c.id === id ? res.campaign : c));
+        addNotification(`Enviados: ${res.sent} | Fallidos: ${res.failed} de ${res.total}`, 'success');
+      } catch (e) {
+        addNotification(e.message, 'error');
+      } finally {
+        setActionLoading(null);
+      }
+    });
+  };
+
+  const handleDelete = (id) => {
+    requestConfirm('Eliminar esta campana?', async () => {
+      setConfirmModal(null);
+      try {
+        await campaignService.delete(id);
+        setCampaigns(prev => prev.filter(c => c.id !== id));
+        addNotification('Campana eliminada', 'success');
+      } catch (e) {
+        addNotification(e.message, 'error');
+      }
+    });
   };
 
   // ─── Render helpers ──────────────────────────
@@ -389,7 +425,7 @@ const Campaigns = () => {
   if (loading) {
     return (
       <div className={B}>
-        <div className={`${B}__loading`}>Cargando campañas...</div>
+        <div className={`${B}__loading`}>Cargando campanas...</div>
       </div>
     );
   }
@@ -402,11 +438,11 @@ const Campaigns = () => {
       {/* ─── Header ─── */}
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
-          <h1 className={`${B}__title`}>Campañas</h1>
+          <h1 className={`${B}__title`}>Campanas</h1>
           <span className={`${B}__subtitle`}>Marketing & WhatsApp masivo</span>
         </div>
         <button className={`${B}__btn-create`} onClick={() => openWizard()}>
-          <PlusIcon /> Nueva Campaña
+          <PlusIcon /> Nueva Campana
         </button>
       </div>
 
@@ -418,7 +454,7 @@ const Campaigns = () => {
         </div>
         <div className={`${B}__health-card`}>
           <div className={`${B}__health-card-value`} style={{ color: '#F59E0B' }}>{stats.inactive30}</div>
-          <div className={`${B}__health-card-label`}>Inactivos +30 días</div>
+          <div className={`${B}__health-card-label`}>Inactivos +30 dias</div>
         </div>
         <div className={`${B}__health-card`}>
           <div className={`${B}__health-card-value`} style={{ color: '#EF4444' }}>{stats.atRisk}</div>
@@ -430,7 +466,7 @@ const Campaigns = () => {
         </div>
         <div className={`${B}__health-card`}>
           <div className={`${B}__health-card-value`} style={{ color: '#8B5CF6' }}>{stats.total}</div>
-          <div className={`${B}__health-card-label`}>Campañas creadas</div>
+          <div className={`${B}__health-card-label`}>Campanas creadas</div>
         </div>
       </div>
 
@@ -440,7 +476,7 @@ const Campaigns = () => {
           <SearchIcon />
           <input
             type="text"
-            placeholder="Buscar campaña..."
+            placeholder="Buscar campana..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className={`${B}__search-input`}
@@ -463,9 +499,9 @@ const Campaigns = () => {
       {campaigns.length === 0 && (
         <div className={`${B}__suggested`}>
           <h3 className={`${B}__suggested-title`}>
-            <ZapIcon /> Campañas sugeridas para tu negocio
+            <ZapIcon /> Campanas sugeridas para tu negocio
           </h3>
-          <p style={{ fontSize: '13px', color: '#8E8E85', margin: '-8px 0 16px' }}>
+          <p className={`${B}__suggested-subtitle`}>
             Basado en tus {stats.totalClients} clientes — {stats.inactive30} inactivos, {stats.vips} VIP, {stats.atRisk} en riesgo
           </p>
           <div className={`${B}__suggested-grid`}>
@@ -486,12 +522,12 @@ const Campaigns = () => {
                   <div className={`${B}__suggested-card-icon`} style={{ color: t?.color }}>{t?.icon}</div>
                   <div className={`${B}__suggested-card-name`}>{s.name}</div>
                   <div className={`${B}__suggested-card-desc`}>{s.desc}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+                  <div className={`${B}__suggested-card-footer`}>
                     <span className={`${B}__suggested-card-priority`} data-priority={s.priority}>
                       {s.priority}
                     </span>
                     {count > 0 && (
-                      <span style={{ fontSize: '11px', color: '#6B6B63', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span className={`${B}__suggested-card-count`}>
                         <UsersIcon /> {count}
                       </span>
                     )}
@@ -551,7 +587,7 @@ const Campaigns = () => {
                 {c.status === 'approved' && (
                   <>
                     <button className={`${B}__btn-action ${B}__btn-action--send`} onClick={() => handleSend(c.id)} disabled={actionLoading === c.id}>
-                      <PlayIcon /> {actionLoading === c.id ? 'Enviando...' : 'Enviar campaña'}
+                      <PlayIcon /> {actionLoading === c.id ? 'Enviando...' : 'Enviar campana'}
                     </button>
                     <button className={`${B}__btn-action ${B}__btn-action--delete`} onClick={() => handleDelete(c.id)}>
                       <TrashIcon />
@@ -583,7 +619,7 @@ const Campaigns = () => {
         <EmptyState
           icon={<MegaphoneIcon />}
           title="Sin resultados"
-          description="No hay campañas que coincidan con tu búsqueda"
+          description="No hay campanas que coincidan con tu busqueda"
         />
       )}
 
@@ -595,7 +631,7 @@ const Campaigns = () => {
           <div className={`${B}__modal`} onClick={e => e.stopPropagation()}>
             <div className={`${B}__modal-header`}>
               <h2 className={`${B}__modal-title`}>
-                {editingId ? 'Editar Campaña' : 'Nueva Campaña'}
+                {editingId ? 'Editar Campana' : 'Nueva Campana'}
               </h2>
               <button className={`${B}__modal-close`} onClick={() => setShowWizard(false)}>
                 <CloseIcon />
@@ -619,7 +655,7 @@ const Campaigns = () => {
               {wizardStep === 1 && (
                 <div className={`${B}__wizard-step`}>
                   <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Nombre de la campaña</label>
+                    <label className={`${B}__label`}>Nombre de la campana</label>
                     <input
                       type="text"
                       className={`${B}__input`}
@@ -630,7 +666,7 @@ const Campaigns = () => {
                   </div>
 
                   <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Tipo de campaña</label>
+                    <label className={`${B}__label`}>Tipo de campana</label>
                     <div className={`${B}__type-grid`}>
                       {CAMPAIGN_TYPES.map(t => (
                         <div
@@ -658,37 +694,51 @@ const Campaigns = () => {
                 </div>
               )}
 
-              {/* ─── Step 2: Message / AI ─── */}
+              {/* ─── Step 2: Message / AI + Lina ─── */}
               {wizardStep === 2 && (
                 <div className={`${B}__wizard-step`}>
+                  {/* AI Generate section */}
                   <div className={`${B}__ai-section`}>
-                    <button
-                      className={`${B}__btn-ai`}
-                      onClick={handleGenerateAI}
-                      disabled={generatingAI}
-                    >
-                      <SparkleIcon />
-                      {generatingAI ? 'Lina IA generando...' : 'Generar con IA'}
-                    </button>
-                    <span className={`${B}__ai-hint`}>Lina analiza tus datos y genera 3 variantes</span>
+                    <div className={`${B}__ai-section-top`}>
+                      <div className={`${B}__ai-section-info`}>
+                        <SparkleIcon />
+                        <span className={`${B}__ai-section-title`}>Generar con IA</span>
+                      </div>
+                      <button
+                        className={`${B}__btn-ai`}
+                        onClick={handleGenerateAI}
+                        disabled={generatingAI}
+                      >
+                        {generatingAI ? 'Generando...' : 'Generar'}
+                      </button>
+                    </div>
+                    <span className={`${B}__ai-hint`}>Lina analiza tus datos reales y genera 3 variantes</span>
                   </div>
 
                   {aiVariants.length > 0 && (
                     <div className={`${B}__variants`}>
-                      <label className={`${B}__label`}>Variantes de Lina IA</label>
                       {aiVariants.map((v, i) => (
                         <div
                           key={i}
                           className={`${B}__variant ${formBody === v.body ? `${B}__variant--selected` : ''}`}
                           onClick={() => setFormBody(v.body)}
                         >
+                          <div className={`${B}__variant-header`}>
+                            <span className={`${B}__variant-tag`}>
+                              <SparkleIcon /> Variante {i + 1} {formBody === v.body ? '(seleccionada)' : ''}
+                            </span>
+                            {formBody === v.body && <CheckIcon />}
+                          </div>
                           <div className={`${B}__variant-body`}>{v.body}</div>
                           <div className={`${B}__variant-reason`}>{v.reason}</div>
-                          {formBody === v.body && <CheckIcon />}
                         </div>
                       ))}
                     </div>
                   )}
+
+                  <div className={`${B}__divider`}>
+                    <span>o escribe tu propio mensaje</span>
+                  </div>
 
                   <div className={`${B}__field`}>
                     <label className={`${B}__label`}>Mensaje (usa {"{{nombre}}"} para personalizar)</label>
@@ -696,13 +746,53 @@ const Campaigns = () => {
                       className={`${B}__textarea`}
                       value={formBody}
                       onChange={e => setFormBody(e.target.value)}
-                      placeholder="Hola {{nombre}}, te extrañamos en..."
+                      placeholder="Hola {{nombre}}, te extranamos en..."
                       rows={4}
                       maxLength={500}
                     />
                     <div className={`${B}__char-count`}>{formBody.length}/500</div>
                   </div>
 
+                  {/* ── Consultar a Lina ── */}
+                  <div className={`${B}__lina-section`}>
+                    <div className={`${B}__lina-header`}>
+                      <SparkleIcon /> Consultar a Lina
+                    </div>
+                    <p className={`${B}__lina-hint`}>Preguntale a Lina sobre tu campana, audiencia o estrategia</p>
+                    <div className={`${B}__lina-input-row`}>
+                      <input
+                        type="text"
+                        className={`${B}__input`}
+                        value={linaPrompt}
+                        onChange={e => setLinaPrompt(e.target.value)}
+                        placeholder="Ej: que mensaje funciona mejor para clientes VIP?"
+                        onKeyDown={e => e.key === 'Enter' && handleAskLina()}
+                      />
+                      <button className={`${B}__btn-ai`} onClick={handleAskLina} disabled={linaLoading || !linaPrompt.trim()}>
+                        {linaLoading ? '...' : 'Preguntar'}
+                      </button>
+                    </div>
+                    {linaResponse && (
+                      <div className={`${B}__lina-response`}>
+                        <div className={`${B}__lina-response-label`}>
+                          <SparkleIcon /> Lina dice:
+                        </div>
+                        <div className={`${B}__lina-response-text`}>{linaResponse}</div>
+                        <button
+                          className={`${B}__btn-use-text`}
+                          onClick={() => {
+                            const clean = linaResponse.replace(/\n+/g, ' ').trim();
+                            setFormBody(clean.length > 300 ? clean.slice(0, 300) : clean);
+                            addNotification('Texto de Lina aplicado al mensaje', 'success');
+                          }}
+                        >
+                          Usar este texto
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* WhatsApp preview */}
                   {formBody && (
                     <div className={`${B}__preview-bubble`}>
                       <div className={`${B}__preview-bubble-label`}>Vista previa WhatsApp</div>
@@ -714,7 +804,7 @@ const Campaigns = () => {
 
                   <div className={`${B}__wizard-actions`}>
                     <button className={`${B}__btn-secondary`} onClick={() => setWizardStep(1)}>
-                      Atrás
+                      Atras
                     </button>
                     <button className={`${B}__btn-primary`} onClick={handleSaveStep2}>
                       Siguiente
@@ -755,7 +845,7 @@ const Campaigns = () => {
                   {/* Advanced filters: Staff + Service */}
                   <div className={`${B}__field`}>
                     <label className={`${B}__label`}>Filtros avanzados (opcional)</label>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <div className={`${B}__advanced-filters`}>
                       <select
                         className={`${B}__input`}
                         value={formStaffFilter}
@@ -769,7 +859,6 @@ const Campaigns = () => {
                             try { await campaignService.update(editingId, { segment_filters: filters }); } catch {}
                           }
                         }}
-                        style={{ flex: 1, minWidth: '180px' }}
                       >
                         <option value="">Todos los profesionales</option>
                         {staffList.filter(s => s.is_active).map(s => (
@@ -790,7 +879,6 @@ const Campaigns = () => {
                             try { await campaignService.update(editingId, { segment_filters: filters }); } catch {}
                           }
                         }}
-                        style={{ flex: 1, minWidth: '180px' }}
                       >
                         <option value="">Todos los servicios</option>
                         {servicesList.filter(s => s.is_active).map(s => (
@@ -825,7 +913,7 @@ const Campaigns = () => {
                           ))}
                           {audiencePreview.count > 8 && (
                             <div className={`${B}__audience-more`}>
-                              +{audiencePreview.count - 8} más
+                              +{audiencePreview.count - 8} mas
                             </div>
                           )}
                         </div>
@@ -835,10 +923,10 @@ const Campaigns = () => {
 
                   <div className={`${B}__wizard-actions`}>
                     <button className={`${B}__btn-secondary`} onClick={() => setWizardStep(2)}>
-                      Atrás
+                      Atras
                     </button>
                     <button className={`${B}__btn-primary`} onClick={handleFinishWizard}>
-                      <CheckIcon /> Guardar campaña
+                      <CheckIcon /> Guardar campana
                     </button>
                   </div>
                 </div>
@@ -922,9 +1010,32 @@ const Campaigns = () => {
                   <div><strong>Creada:</strong> {new Date(showDetail.created_at).toLocaleDateString('es-CO')}</div>
                 )}
                 {showDetail.updated_at && (
-                  <div><strong>Última actualización:</strong> {new Date(showDetail.updated_at).toLocaleDateString('es-CO')}</div>
+                  <div><strong>Ultima actualizacion:</strong> {new Date(showDetail.updated_at).toLocaleDateString('es-CO')}</div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ═══════════════════════════════════════════════
+          CONFIRM MODAL — Replaces native confirm()
+          ═══════════════════════════════════════════════ */}
+      {confirmModal && createPortal(
+        <div className={`${B}__modal-overlay`} onClick={() => setConfirmModal(null)}>
+          <div className={`${B}__confirm`} onClick={e => e.stopPropagation()}>
+            <div className={`${B}__confirm-icon`}>
+              <SendIcon />
+            </div>
+            <p className={`${B}__confirm-text`}>{confirmModal.message}</p>
+            <div className={`${B}__confirm-actions`}>
+              <button className={`${B}__btn-secondary`} onClick={() => setConfirmModal(null)}>
+                Cancelar
+              </button>
+              <button className={`${B}__btn-primary`} onClick={confirmModal.onConfirm}>
+                Confirmar
+              </button>
             </div>
           </div>
         </div>,
