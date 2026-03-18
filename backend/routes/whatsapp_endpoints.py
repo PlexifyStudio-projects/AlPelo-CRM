@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query, Backgroun
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session, joinedload
 from database.connection import get_db, SessionLocal
-from database.models import WhatsAppConversation, WhatsAppMessage, Client
+from database.models import WhatsAppConversation, WhatsAppMessage, Client, Tenant
 from routes._helpers import normalize_phone, now_colombia as _now_col
 from schemas import ToggleAllAIRequest as _ToggleAllAIRequest
 from activity_log import log_event
