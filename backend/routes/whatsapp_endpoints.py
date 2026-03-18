@@ -102,17 +102,32 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 def _get_wa_config_cached(db=None):
     """Get WA token + phone_id from tenant DB or env vars."""
-    from routes._helpers import get_wa_token, get_wa_phone_id
-    # Find first active tenant for config
-    tid = None
+    # Strategy: try tenant DB first, then env vars
+    token = ""
+    phone_id = ""
+    source = "none"
+
+    # 1) Try tenant DB
     if db:
         try:
             t = db.query(Tenant).filter(Tenant.is_active == True).first()
-            tid = t.id if t else None
-        except Exception:
-            pass
-    token = get_wa_token(db, tid) if db else os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-    phone_id = get_wa_phone_id(db, tid) if db else os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+            if t:
+                if t.wa_access_token:
+                    token = t.wa_access_token
+                    source = f"tenant_db(id={t.id})"
+                if t.wa_phone_number_id:
+                    phone_id = t.wa_phone_number_id
+        except Exception as e:
+            print(f"[WA-DEBUG] Error reading tenant: {e}")
+
+    # 2) Fallback to env vars
+    if not token:
+        token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+        source = "env_var" if token else "EMPTY"
+    if not phone_id:
+        phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+
+    print(f"[WA-DEBUG] Token source={source}, token_len={len(token)}, token_start={token[:15]}..., phone_id={phone_id}")
     return token, phone_id
 
 
@@ -550,10 +565,17 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
     status = "sent"
 
     try:
+        send_url = f"{_get_wa_base_url(db)}/messages"
+        send_headers = wa_headers(db)
+        send_to = normalize_phone(conv.wa_contact_phone)
+        print(f"[WA-SEND] URL={send_url}")
+        print(f"[WA-SEND] To={send_to}")
+        print(f"[WA-SEND] Auth header len={len(send_headers.get('Authorization', ''))}")
+
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
-                f"{_get_wa_base_url(db)}/messages",
-                headers=wa_headers(db),
+                send_url,
+                headers=send_headers,
                 json={
                     "messaging_product": "whatsapp",
                     "to": normalize_phone(conv.wa_contact_phone),
@@ -563,19 +585,22 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
             )
             data = resp.json()
 
+            print(f"[WA-SEND] Response status={resp.status_code}")
+            print(f"[WA-SEND] Response body={str(data)[:300]}")
+
             if resp.status_code == 200 and "messages" in data:
                 wa_message_id = data["messages"][0].get("id")
                 status = "sent"
+                print(f"[WA-SEND] SUCCESS — msg_id={wa_message_id}")
             else:
                 status = "failed"
                 error_msg = data.get("error", {}).get("message", str(data))
                 error_code = data.get("error", {}).get("code", "?")
-                _, phone_id_used = _get_wa_config_cached(db)
-                print(f"[WA] Send failed ({resp.status_code}, code={error_code}): {error_msg}")
-                print(f"[WA] Phone ID used: {phone_id_used}, Token starts: {wa_headers(db)['Authorization'][:20]}...")
+                error_subcode = data.get("error", {}).get("error_subcode", "?")
+                print(f"[WA-SEND] FAILED — code={error_code}, subcode={error_subcode}: {error_msg}")
     except Exception as e:
         status = "failed"
-        print(f"[WA] Send error: {e}")
+        print(f"[WA-SEND] EXCEPTION: {type(e).__name__}: {e}")
 
     # Store in DB regardless of API result
     msg = WhatsAppMessage(
