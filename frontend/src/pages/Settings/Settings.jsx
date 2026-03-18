@@ -3,6 +3,7 @@ import Card from '../../components/common/Card/Card';
 import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
 import aiService from '../../services/aiService';
+import settingsService from '../../services/settingsService';
 
 // Model is managed by Plexify (dev), not by the agency admin
 
@@ -113,7 +114,71 @@ const Settings = () => {
     });
   };
 
-  const waConnected = !!(tenant?.wa_phone_number_id && tenant?.wa_access_token);
+  // Meta token management
+  const [metaToken, setMetaToken] = useState('');
+  const [metaPhoneId, setMetaPhoneId] = useState('');
+  const [metaBizId, setMetaBizId] = useState('');
+  const [metaStatus, setMetaStatus] = useState(null); // { connected, phone_display, message }
+  const [metaSaving, setMetaSaving] = useState(false);
+  const [metaChecking, setMetaChecking] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+  const [metaTemplates, setMetaTemplates] = useState(null); // { templates, approved, pending, rejected }
+
+  useEffect(() => {
+    // Pre-fill from tenant config
+    if (tenant?.wa_access_token) setMetaToken(tenant.wa_access_token);
+    if (tenant?.wa_phone_number_id) setMetaPhoneId(tenant.wa_phone_number_id);
+    if (tenant?.wa_business_account_id) setMetaBizId(tenant.wa_business_account_id);
+  }, [tenant]);
+
+  useEffect(() => {
+    // Check token status on load
+    settingsService.getMetaTokenStatus().then(setMetaStatus).catch(() => {});
+  }, []);
+
+  const handleSaveToken = async () => {
+    if (!metaToken.trim()) return;
+    setMetaSaving(true);
+    try {
+      const result = await settingsService.updateMetaToken({
+        wa_access_token: metaToken.trim(),
+        wa_phone_number_id: metaPhoneId.trim(),
+        wa_business_account_id: metaBizId.trim(),
+      });
+      setMetaStatus({ connected: result.verified, phone_display: result.phone_display });
+      addNotification(result.message, result.verified ? 'success' : 'warning');
+      // Reload templates after token update
+      loadMetaTemplates();
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setMetaSaving(false);
+    }
+  };
+
+  const handleCheckStatus = async () => {
+    setMetaChecking(true);
+    try {
+      const status = await settingsService.getMetaTokenStatus();
+      setMetaStatus(status);
+      addNotification(status.connected ? 'Token valido — conexion activa' : `Token invalido: ${status.message}`, status.connected ? 'success' : 'error');
+    } catch {
+      addNotification('Error al verificar token', 'error');
+    } finally {
+      setMetaChecking(false);
+    }
+  };
+
+  const loadMetaTemplates = async () => {
+    try {
+      const data = await settingsService.getMetaTemplates();
+      setMetaTemplates(data);
+    } catch { /* silent */ }
+  };
+
+  useEffect(() => { loadMetaTemplates(); }, []);
+
+  const maskToken = (t) => t ? `${t.slice(0, 12)}...${t.slice(-8)}` : '';
 
   const b = 'settings';
 
@@ -205,26 +270,106 @@ const Settings = () => {
           </div>
         </Card>
 
-        {/* ========== INTEGRATIONS ========== */}
-        <Card title="Integraciones" className={`${b}__card`}>
-          <div className={`${b}__option`}>
-            <div className={`${b}__option-info`}>
-              <span className={`${b}__option-label`}>WhatsApp Business</span>
-              <span className={`${b}__option-desc`}>
-                {waConnected ? `Conectado — ${tenant.wa_phone_display || 'Numero configurado'}` : 'Sin configurar — contacta a soporte'}
+        {/* ========== META / WHATSAPP ========== */}
+        <Card title="Meta / WhatsApp Business" className={`${b}__card ${b}__card--meta`}>
+          {/* Status indicator */}
+          <div className={`${b}__meta-status`}>
+            <div className={`${b}__meta-status-dot ${metaStatus?.connected ? `${b}__meta-status-dot--on` : `${b}__meta-status-dot--off`}`} />
+            <div className={`${b}__meta-status-info`}>
+              <span className={`${b}__meta-status-label`}>
+                {metaStatus?.connected ? 'Conectado' : 'Desconectado'}
+              </span>
+              <span className={`${b}__meta-status-detail`}>
+                {metaStatus?.connected
+                  ? `WhatsApp: ${metaStatus.phone_display || 'Activo'}`
+                  : metaStatus?.message || 'Configura tu token de acceso'
+                }
               </span>
             </div>
-            <span className={`${b}__status ${waConnected ? `${b}__status--connected` : `${b}__status--pending`}`}>
-              {waConnected ? 'Conectado' : 'No configurado'}
+            <button className={`${b}__meta-check`} onClick={handleCheckStatus} disabled={metaChecking}>
+              {metaChecking ? 'Verificando...' : 'Verificar conexion'}
+            </button>
+          </div>
+
+          {/* Token input */}
+          <div className={`${b}__meta-field`}>
+            <label>Token de acceso (Meta Business)</label>
+            <span className={`${b}__meta-hint`}>
+              Generalo en developers.facebook.com → Tu app → Configuracion de la API → Generar token de acceso
             </span>
-          </div>
-          <div className={`${b}__option`}>
-            <div className={`${b}__option-info`}>
-              <span className={`${b}__option-label`}>Meta (Facebook/Instagram)</span>
-              <span className={`${b}__option-desc`}>Publicacion de contenido en redes sociales</span>
+            <div className={`${b}__meta-token-input`}>
+              <input
+                type={showToken ? 'text' : 'password'}
+                value={metaToken}
+                onChange={e => setMetaToken(e.target.value)}
+                placeholder="EAAxxxxxxxxxxxxxxx..."
+              />
+              <button type="button" className={`${b}__meta-eye`} onClick={() => setShowToken(!showToken)}>
+                {showToken ? 'Ocultar' : 'Ver'}
+              </button>
             </div>
-            <span className={`${b}__status ${b}__status--pending`}>Proximamente</span>
           </div>
+
+          {/* Phone Number ID + Business Account ID */}
+          <div className={`${b}__meta-row`}>
+            <div className={`${b}__meta-field`}>
+              <label>Phone Number ID</label>
+              <input
+                type="text"
+                value={metaPhoneId}
+                onChange={e => setMetaPhoneId(e.target.value)}
+                placeholder="Ej: 123456789012345"
+              />
+            </div>
+            <div className={`${b}__meta-field`}>
+              <label>WhatsApp Business Account ID</label>
+              <input
+                type="text"
+                value={metaBizId}
+                onChange={e => setMetaBizId(e.target.value)}
+                placeholder="Ej: 123456789012345"
+              />
+            </div>
+          </div>
+
+          <div className={`${b}__meta-actions`}>
+            <button
+              className={`${b}__ai-save`}
+              onClick={handleSaveToken}
+              disabled={metaSaving || !metaToken.trim()}
+            >
+              {metaSaving ? 'Guardando...' : 'Guardar configuracion Meta'}
+            </button>
+          </div>
+
+          {/* Approved templates from Meta */}
+          {metaTemplates && metaTemplates.templates && metaTemplates.templates.length > 0 && (
+            <div className={`${b}__meta-templates`}>
+              <div className={`${b}__meta-templates-header`}>
+                <span>Plantillas en Meta</span>
+                <div className={`${b}__meta-templates-badges`}>
+                  {metaTemplates.approved > 0 && <span className={`${b}__meta-badge ${b}__meta-badge--approved`}>{metaTemplates.approved} aprobadas</span>}
+                  {metaTemplates.pending > 0 && <span className={`${b}__meta-badge ${b}__meta-badge--pending`}>{metaTemplates.pending} pendientes</span>}
+                  {metaTemplates.rejected > 0 && <span className={`${b}__meta-badge ${b}__meta-badge--rejected`}>{metaTemplates.rejected} rechazadas</span>}
+                </div>
+              </div>
+              <div className={`${b}__meta-templates-list`}>
+                {metaTemplates.templates.filter(t => t.status === 'approved').map(t => (
+                  <div key={t.id} className={`${b}__meta-tpl`}>
+                    <span className={`${b}__meta-tpl-name`}>{t.name}</span>
+                    <span className={`${b}__meta-tpl-cat`}>{t.category}</span>
+                    <span className={`${b}__meta-tpl-body`}>{t.body?.slice(0, 80)}{t.body?.length > 80 ? '...' : ''}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {metaTemplates?.error && (
+            <div className={`${b}__test-result ${b}__test-result--err`}>
+              Meta API: {metaTemplates.error}
+            </div>
+          )}
         </Card>
       </div>
     </div>

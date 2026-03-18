@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import setup_cors_middleware
 from auth import auth_router
-from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router, staff_router
+from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router, staff_router, settings_router
 from database.connection import engine, Base
 
 
@@ -243,6 +243,7 @@ app.include_router(automation_router, prefix="/api", tags=["Automations"])
 app.include_router(template_router, prefix="/api", tags=["Message Templates"])
 app.include_router(lina_router, prefix="/api", tags=["Lina IA"])
 app.include_router(staff_router, prefix="/api", tags=["Staff Portal"])
+app.include_router(settings_router, prefix="/api", tags=["Settings"])
 
 
 # ============================================================================

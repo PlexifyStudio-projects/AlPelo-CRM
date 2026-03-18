@@ -673,4 +673,208 @@
       gap: $spacing-sm;
     }
   }
+
+  // ============================================
+  // META / WHATSAPP CONFIG
+  // ============================================
+  &__meta-status {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: $color-gray-50;
+    border-radius: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  &__meta-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &--on { background: $color-success-dark; box-shadow: 0 0 6px rgba($color-success-dark, 0.4); }
+    &--off { background: $color-gray-300; }
+  }
+
+  &__meta-status-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  &__meta-status-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: $color-gray-700;
+  }
+
+  &__meta-status-detail {
+    font-size: 0.72rem;
+    color: $color-gray-400;
+  }
+
+  &__meta-check {
+    padding: 0.4rem 0.85rem;
+    border: 1px solid $color-gray-200;
+    border-radius: 8px;
+    background: $color-white;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: $color-gray-600;
+    cursor: pointer;
+    transition: all 150ms;
+    white-space: nowrap;
+
+    &:hover { border-color: $color-primary; color: $color-primary; }
+    &:disabled { opacity: 0.5; }
+  }
+
+  &__meta-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-bottom: 0.85rem;
+
+    label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: $color-gray-600;
+    }
+
+    input {
+      padding: 0.6rem 0.85rem;
+      border: 1.5px solid $color-gray-200;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-family: $font-primary;
+      background: $color-white;
+      transition: all 200ms;
+
+      &:focus {
+        outline: none;
+        border-color: $color-primary;
+        box-shadow: 0 0 0 3px $color-primary-ghost;
+      }
+
+      &::placeholder { color: $color-gray-300; }
+    }
+  }
+
+  &__meta-hint {
+    font-size: 0.68rem;
+    color: $color-gray-400;
+    line-height: 1.4;
+  }
+
+  &__meta-token-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    input { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+  }
+
+  &__meta-eye {
+    padding: 0.4rem 0.7rem;
+    border: 1px solid $color-gray-200;
+    border-radius: 8px;
+    background: $color-white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: $color-gray-500;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover { border-color: $color-primary; color: $color-primary; }
+  }
+
+  &__meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+  }
+
+  &__meta-actions {
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  // Templates from Meta
+  &__meta-templates {
+    border-top: 1px solid $color-gray-100;
+    padding-top: 1rem;
+  }
+
+  &__meta-templates-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+
+    > span {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: $color-gray-700;
+    }
+  }
+
+  &__meta-templates-badges {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  &__meta-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+
+    &--approved { background: rgba($color-success-dark, 0.1); color: $color-success-dark; }
+    &--pending { background: rgba($color-warning, 0.1); color: $color-warning-dark; }
+    &--rejected { background: rgba($color-error, 0.1); color: $color-error-dark; }
+  }
+
+  &__meta-templates-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  &__meta-tpl {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    background: $color-gray-50;
+    border-radius: 8px;
+    border: 1px solid $color-gray-100;
+  }
+
+  &__meta-tpl-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: $color-gray-700;
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 140px;
+  }
+
+  &__meta-tpl-cat {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    min-width: 70px;
+  }
+
+  &__meta-tpl-body {
+    font-size: 0.72rem;
+    color: $color-gray-500;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }

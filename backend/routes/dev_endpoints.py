@@ -655,6 +655,11 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
         "city": getattr(tenant, 'city', None),
         "logo_url": None,
         "primary_color": "#2D5A3D",
+        # WhatsApp/Meta config (for Settings page)
+        "wa_phone_number_id": getattr(tenant, 'wa_phone_number_id', None),
+        "wa_business_account_id": getattr(tenant, 'wa_business_account_id', None),
+        "wa_access_token": getattr(tenant, 'wa_access_token', None),
+        "wa_phone_display": getattr(tenant, 'wa_phone_display', None),
     }
 
 
