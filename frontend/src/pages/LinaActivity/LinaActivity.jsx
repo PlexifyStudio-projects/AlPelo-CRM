@@ -108,7 +108,7 @@ const LinaActivity = () => {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [tokenStatus, setTokenStatus] = useState(null);
   const [memory, setMemory] = useState(null);
-  const [showMemory, setShowMemory] = useState(true);
+  const [showMemory, setShowMemory] = useState(false);
   const [newRule, setNewRule] = useState('');
   const [newRuleCategory, setNewRuleCategory] = useState('general');
   const [savingRule, setSavingRule] = useState(false);

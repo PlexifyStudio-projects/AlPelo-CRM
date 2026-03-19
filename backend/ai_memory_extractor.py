@@ -33,33 +33,35 @@ def _safe_parse_embedding(emb) -> Optional[list]:
             pass
     return None
 
-EXTRACTION_PROMPT = """Analiza esta conversación de WhatsApp entre un cliente y Lina (asistente del negocio).
+EXTRACTION_PROMPT = """Analiza esta conversación de WhatsApp entre un cliente y Lina (asistente de un negocio de servicios).
 
-Extrae SOLO información que sea útil recordar A LARGO PLAZO para futuras conversaciones.
+Tu trabajo es extraer SOLO información CONCRETA y ACCIONABLE que mejore el servicio futuro a este cliente.
 
-TIPOS DE MEMORIA:
-- preference: Preferencias del cliente (profesional favorito, horario preferido, servicio usual)
-- pattern: Patrones de comportamiento (siempre viene los viernes, siempre pregunta por precios primero)
-- complaint: Quejas o problemas recurrentes (no le gusta esperar, tuvo mala experiencia con X)
-- allergy: Alergias o restricciones (alérgico al gel, no puede ciertos productos)
-- insight: Datos personales relevantes (cumpleaños, trabajo, familia, mascotas)
-- note: Otra información relevante que no encaje en las categorías anteriores
+TIPOS DE MEMORIA (solo estos):
+- preference: Preferencias EXPLÍCITAS del cliente (ej: "Siempre pide cita con Anderson", "Prefiere por la mañana")
+- pattern: Patrones CLAROS de comportamiento (ej: "Viene con su primo Javier Vargas", "Siempre agenda para dos personas")
+- complaint: Quejas ESPECÍFICAS con detalle (ej: "Tuvo mala experiencia con Yorguin — le hicieron corte diferente al pedido")
+- relationship: Relaciones familiares/sociales mencionadas (ej: "Tiene un primo llamado Javier Vargas tel 424-280-0888")
+- insight: Datos personales CONCRETOS (ej: "Cumpleaños el 15 de marzo", "Trabaja en una oficina cerca")
 
-REGLAS:
-1. SOLO extrae información NUEVA y RELEVANTE para el servicio
-2. NO extraigas saludos, despedidas o conversación trivial
-3. NO extraigas información que ya está en el sistema (nombre, teléfono, etc.)
-4. Cada memoria debe ser una frase CLARA y CONCRETA
-5. Máximo 5 memorias por conversación
-6. Si NO hay información relevante, retorna un array vacío []
-7. Asigna confidence: 1.0 si el cliente lo dijo explícitamente, 0.7 si es inferido
+REGLAS ESTRICTAS — LEE CADA UNA:
+1. MÁXIMO 3 memorias por conversación. Si no hay 3, pon menos. Si no hay NINGUNA relevante, retorna []
+2. SOLO extrae hechos CONCRETOS que el cliente DIJO o DEMOSTRÓ claramente
+3. PROHIBIDO inferir emociones o actitudes vagas como "se frustra", "se molesta", "es impaciente", "no le gusta esperar"
+4. PROHIBIDO extraer información obvia: "quiere un corte", "preguntó el precio", "pidió una cita"
+5. PROHIBIDO duplicar info con diferentes palabras. UNA memoria por concepto
+6. PROHIBIDO extraer preferencias de horario/servicio si solo lo pidieron UNA vez — eso no es un patrón
+7. Solo es "preference" si el cliente lo DIJO EXPLÍCITAMENTE ("siempre quiero con Anderson", "prefiero en la mañana")
+8. Si el cliente simplemente pidió una cita normal sin revelar nada personal o especial → retorna []
+9. NO extraigas nada sobre el TONO del chat (rápido, lento, corto, largo)
+10. Cada memoria debe ser UNA FRASE CONCRETA que ayude a dar MEJOR servicio en el FUTURO
 
 CONVERSACIÓN:
 {conversation}
 
 Responde SOLO con un JSON array válido. NADA más. Sin markdown, sin explicación.
-Ejemplo: [{"type": "preference", "content": "Prefiere corte con Alexander los viernes después de las 5pm", "confidence": 1.0}]
-Si no hay nada relevante: []"""
+Ejemplo: [{{"type": "relationship", "content": "Tiene un primo llamado Javier Vargas (424-280-0888) que también viene a cortarse", "confidence": 1.0}}]
+Si no hay nada relevante (la mayoría de conversaciones NO tienen nada): []"""
 
 
 def extract_memories_from_conversation(conv_id: int) -> List[Dict]:
@@ -140,7 +142,7 @@ def extract_memories_from_conversation(conv_id: int) -> List[Dict]:
 
                 # Validate structure
                 valid = []
-                for m in memories[:5]:  # Max 5
+                for m in memories[:3]:  # Max 3 — quality over quantity
                     if isinstance(m, dict) and "type" in m and "content" in m:
                         valid.append({
                             "type": m["type"],
@@ -216,7 +218,7 @@ def save_memories_sync(conv_id: int):
                             if not existing_emb:
                                 continue
                             sim = cosine_similarity(embedding, existing_emb)
-                            if sim > 0.9:
+                            if sim > 0.8:  # Lower threshold = catch more duplicates
                                 # Update existing memory instead of creating duplicate
                                 existing.content = mem["content"]
                                 existing.confidence = max(existing.confidence or 0, mem["confidence"])
