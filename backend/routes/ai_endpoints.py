@@ -1208,24 +1208,36 @@ def _execute_action(action: dict, db: Session) -> str:
             if _tid:
                 q_casvc = q_casvc.filter(Service.tenant_id == _tid)
             svc_obj = q_casvc.first()
-            # Fuzzy fallback: try each word individually (e.g. "Corte de Cabello" → search "Corte")
+            # Fuzzy fallback: try each word individually, prioritize Barbería category
             if not svc_obj and " " in svc_search:
+                _barberia_keywords = ["corte", "barba", "fade", "hipster", "cabello"]
+                _is_barberia = any(kw in svc_search.lower() for kw in _barberia_keywords)
                 for word in svc_search.split():
-                    if len(word) > 3:  # Skip short words like "de", "el", "un"
+                    if len(word) > 3:
                         q_fb = db.query(Service).filter(Service.name.ilike(f"%{word}%"), Service.is_active == True)
                         if _tid:
                             q_fb = q_fb.filter(Service.tenant_id == _tid)
-                        svc_obj = q_fb.first()
+                        # If barbería context, prioritize Barbería category
+                        if _is_barberia:
+                            svc_obj = q_fb.filter(Service.category.ilike("%barber%")).first()
+                        if not svc_obj:
+                            svc_obj = q_fb.first()
                         if svc_obj:
                             break
+            # Single-word search (no spaces): try direct fuzzy
+            if not svc_obj and " " not in svc_search and len(svc_search) > 2:
+                q_single = db.query(Service).filter(Service.name.ilike(f"%{svc_search}%"), Service.is_active == True)
+                if _tid:
+                    q_single = q_single.filter(Service.tenant_id == _tid)
+                _barberia_kw = ["corte", "barba", "fade", "hipster", "cabello"]
+                if any(kw in svc_search.lower() for kw in _barberia_kw):
+                    svc_obj = q_single.filter(Service.category.ilike("%barber%")).first()
+                if not svc_obj:
+                    svc_obj = q_single.first()
         if not svc_obj:
-            # Last resort: get the first active service as default
-            q_default = db.query(Service).filter(Service.is_active == True)
-            if _tid:
-                q_default = q_default.filter(Service.tenant_id == _tid)
-            svc_obj = q_default.first()
-            if not svc_obj:
-                return "ERROR: No encontre el servicio."
+            return "ERROR: No encontre el servicio. Servicios disponibles: " + ", ".join(
+                s.name for s in db.query(Service).filter(Service.is_active == True, Service.tenant_id == _tid).limit(10).all()
+            ) if _tid else "ERROR: No encontre el servicio."
 
         apt_date = action.get("date")
         apt_time = action.get("time")
