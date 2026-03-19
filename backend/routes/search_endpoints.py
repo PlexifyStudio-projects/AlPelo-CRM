@@ -505,6 +505,15 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
             svc = db.query(Service).filter(Service.id == a.service_id).first()
             service_cache[a.service_id] = svc.name if svc else None
 
+        # Calculate no-show risk for each appointment
+        _ns_risk = 0
+        try:
+            from client_intelligence import calculate_noshow_risk
+            _ns_data = calculate_noshow_risk(a.id, db=db)
+            _ns_risk = _ns_data.get("risk_score", 0)
+        except Exception:
+            pass
+
         appointments_today_list.append(AppointmentTodayItem(
             id=a.id,
             time=a.time,
@@ -512,6 +521,7 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
             service_name=service_cache.get(a.service_id),
             staff_name=staff_cache.get(a.staff_id),
             status=a.status,
+            noshow_risk=_ns_risk,
         ))
 
     completed_today = sum(1 for a in today_appointments if a.status in ("completed", "paid"))

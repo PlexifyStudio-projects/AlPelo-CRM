@@ -1213,6 +1213,128 @@ def _check_token_health():
 
 
 # ============================================================================
+# PROACTIVE RECONNECT — Contact clients overdue for visits
+# ============================================================================
+_reconnect_ran_today = None  # Track daily execution
+
+def _proactive_reconnect(db):
+    """Once daily at ~10 AM, find overdue clients and send them a personalized
+    reconnect message via approved WhatsApp template."""
+    global _reconnect_ran_today
+
+    now = now_colombia()
+    today = now.date()
+
+    # Only run once per day, between 10:00-10:30 AM
+    if _reconnect_ran_today == today:
+        return
+    if not (10 <= now.hour <= 10 and now.minute < 30):
+        return
+
+    _reconnect_ran_today = today
+
+    try:
+        from client_intelligence import get_reconnect_candidates
+        from database.models import Tenant, MessageTemplate, ClientNote, WhatsAppConversation, WhatsAppMessage
+
+        # Process each active tenant
+        tenants = db.query(Tenant).filter(Tenant.is_active == True, Tenant.ai_is_paused == False).all()
+
+        for tenant in tenants:
+            candidates = get_reconnect_candidates(tenant.id, limit=5, db=db)
+            if not candidates:
+                continue
+
+            # Find approved reconnect template for this tenant
+            template = db.query(MessageTemplate).filter(
+                MessageTemplate.tenant_id == tenant.id,
+                MessageTemplate.category == "reactivacion",
+                MessageTemplate.status == "approved",
+            ).first()
+
+            for client in candidates:
+                phone = client.get("phone")
+                name = client.get("client_name", "")
+                if not phone:
+                    continue
+
+                # Check if we already sent a reconnect to this client today
+                first_name = name.split()[0] if name else ""
+
+                # Find or create conversation
+                conv = db.query(WhatsAppConversation).filter(
+                    WhatsAppConversation.wa_contact_phone == phone,
+                ).first()
+
+                if template:
+                    # Use approved template (works outside 24h window)
+                    try:
+                        from routes.whatsapp_endpoints import _get_wa_base_url, wa_headers, _get_wa_phone_id
+                        import httpx
+
+                        # Build template params
+                        params = []
+                        for var in (template.variables or []):
+                            if var == "nombre":
+                                params.append(first_name or "cliente")
+                            elif var == "negocio":
+                                params.append(tenant.name or "nuestro negocio")
+                            elif var == "dias":
+                                params.append(str(client.get("days_since", "?")))
+                            elif var == "profesional":
+                                params.append(client.get("preferred_staff") or "nuestro equipo")
+                            elif var == "servicio":
+                                params.append(client.get("favorite_service") or "tu servicio favorito")
+                            else:
+                                params.append("")
+
+                        body_components = [{"type": "body", "parameters": [{"type": "text", "text": p} for p in params]}] if params else []
+
+                        with httpx.Client(timeout=15) as http:
+                            resp = http.post(
+                                f"{_get_wa_base_url(db)}/messages",
+                                headers=wa_headers(db),
+                                json={
+                                    "messaging_product": "whatsapp",
+                                    "to": phone,
+                                    "type": "template",
+                                    "template": {
+                                        "name": template.slug,
+                                        "language": {"code": template.language or "es"},
+                                        "components": body_components,
+                                    },
+                                },
+                            )
+
+                        if resp.status_code == 200:
+                            # Log reconnect note to prevent re-sending
+                            note = ClientNote(
+                                tenant_id=tenant.id,
+                                client_id=client["client_id"],
+                                content=f"RECONNECT: Mensaje de reactivacion enviado (llevaba {client.get('days_since', '?')} dias sin venir, ciclo normal: {client.get('avg_cycle', '?')} dias)",
+                                created_by="lina_ia",
+                            )
+                            db.add(note)
+                            db.commit()
+
+                            log_event("tarea", f"Reconnect enviado a {first_name}", detail=f"Llevaba {client.get('days_since', '?')} dias sin venir (ciclo: {client.get('avg_cycle', '?')}d). Template: {template.slug}", contact_name=name, conv_id=conv.id if conv else None, status="ok", tenant_id=tenant.id)
+                        else:
+                            log_event("error", f"Reconnect fallido para {first_name}", detail=f"HTTP {resp.status_code}: {resp.text[:200]}", contact_name=name, status="error", tenant_id=tenant.id)
+
+                    except Exception as send_err:
+                        log_event("error", f"Error enviando reconnect a {first_name}", detail=str(send_err)[:200], contact_name=name, status="error", tenant_id=tenant.id)
+                else:
+                    # No approved template — log warning (admin needs to create one)
+                    log_event("skip", f"Reconnect pendiente: {first_name} ({client.get('days_since', '?')}d)", detail=f"No hay template de reactivacion aprobada. Crea una en Plantillas y enviala a Meta.", contact_name=name, status="warning", tenant_id=tenant.id)
+
+        print(f"[SCHEDULER] Proactive reconnect completed for {len(tenants)} tenant(s)")
+
+    except Exception as e:
+        print(f"[SCHEDULER] Reconnect error: {e}")
+        log_event("error", "Error en reconnect automatico", detail=str(e)[:200], status="error")
+
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 def _scheduler_loop():
@@ -1256,6 +1378,12 @@ def _scheduler_loop():
 
                 _check_noshow_followups(db)
                 _expire_old_notes(db)
+
+                # Proactive Reconnect — contact overdue clients (once daily at 10 AM)
+                try:
+                    _proactive_reconnect(db)
+                except Exception as e:
+                    print(f"[SCHEDULER] Reconnect error: {e}")
             finally:
                 db.close()
         except Exception as e:

@@ -356,6 +356,7 @@ class AppointmentTodayItem(BaseModel):
     service_name: Optional[str] = None
     staff_name: Optional[str] = None
     status: str
+    noshow_risk: int = 0  # 0-100 risk score
 
 class PendingTaskItem(BaseModel):
     id: int

@@ -254,6 +254,31 @@ Ingreso total registrado: ${total_revenue:,} COP""")
             + "\n".join(rule_lines)
         )
 
+    # --- Client Intelligence: Revenue forecast + at-risk clients ---
+    try:
+        from client_intelligence import forecast_revenue, get_reconnect_candidates
+        # Get first active tenant for forecast
+        _tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        if _tenant:
+            fc7 = forecast_revenue(_tenant.id, days=7, db=db)
+            fc30 = forecast_revenue(_tenant.id, days=30, db=db)
+            reconnect = get_reconnect_candidates(_tenant.id, limit=10, db=db)
+
+            intel_lines = [
+                f"Proyeccion ingresos 7 dias: ${fc7.get('total_forecast', 0):,} COP ({fc7.get('confirmed_appointments', 0)} citas confirmadas)",
+                f"Proyeccion ingresos 30 dias: ${fc30.get('total_forecast', 0):,} COP",
+                f"Promedio diario historico: ${fc7.get('daily_avg_historical', 0):,} COP",
+            ]
+
+            if reconnect:
+                intel_lines.append(f"\nClientes que necesitan atencion ({len(reconnect)}):")
+                for rc in reconnect[:5]:
+                    intel_lines.append(f"  - {rc['client_name']}: {rc['days_since']}d sin venir (ciclo: {rc['avg_cycle']}d) | Staff: {rc.get('preferred_staff', 'sin preferencia')}")
+
+            sections.append("=== INTELIGENCIA DE NEGOCIO ===\n" + "\n".join(intel_lines))
+    except Exception as intel_err:
+        print(f"[AI] Client intelligence context error: {intel_err}")
+
     return "\n\n".join(sections)
 
 
