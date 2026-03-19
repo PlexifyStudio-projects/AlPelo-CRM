@@ -154,19 +154,25 @@ def _get_wa_base_url(db=None):
     return f"https://graph.facebook.com/{WA_API_VERSION}/{phone_id}"
 
 
-async def _transcribe_audio(media_id: str) -> str:
+async def _transcribe_audio(media_id: str, db=None) -> str:
     """Download audio from Meta and transcribe with Groq Whisper."""
     if not GROQ_API_KEY:
         return "[Audio recibido - transcripcion no disponible]"
+
+    # Get token from tenant DB first, fallback to env var
+    token, _ = _get_wa_config_cached(db)
+    if not token:
+        return "[Audio recibido - token no configurado]"
 
     try:
         # Step 1: Get download URL from Meta
         async with httpx.AsyncClient(timeout=15) as client:
             meta_resp = await client.get(
                 f"https://graph.facebook.com/{WA_API_VERSION}/{media_id}",
-                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+                headers={"Authorization": f"Bearer {token}"},
             )
             if meta_resp.status_code != 200:
+                print(f"[AUDIO] Meta download failed ({meta_resp.status_code}): {meta_resp.text[:100]}")
                 return "[Audio recibido - no se pudo descargar]"
             download_url = meta_resp.json().get("url")
             mime_type = meta_resp.json().get("mime_type", "audio/ogg")
@@ -178,7 +184,7 @@ async def _transcribe_audio(media_id: str) -> str:
         async with httpx.AsyncClient(timeout=30) as client:
             audio_resp = await client.get(
                 download_url,
-                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+                headers={"Authorization": f"Bearer {token}"},
             )
             if audio_resp.status_code != 200:
                 return "[Audio recibido - descarga fallida]"
@@ -1110,7 +1116,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         # Step 0.5a: Transcribe audio if needed
         if needs_transcription and media_id:
             print(f"[Lina IA] Transcribing audio for conv {conv_id}...")
-            transcript = await _transcribe_audio(media_id)
+            transcript = await _transcribe_audio(media_id, db=db)
             inbound_text = f"[Audio del cliente]: {transcript}"
             print(f"[Lina IA] Transcript: {transcript[:100]}...")
 
