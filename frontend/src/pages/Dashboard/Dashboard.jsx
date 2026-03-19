@@ -140,6 +140,7 @@ const timeAgo = (dateStr) => {
 const CHART_COLORS = {
   confirmed: '#34D399',
   completed: '#60A5FA',
+  paid: '#3B82F6',
   cancelled: '#F87171',
   pending: '#FBBF24',
   no_show: '#E05252',
@@ -172,6 +173,7 @@ const StatusLegend = ({ payload }) => (
 const STATUS_CONFIG = {
   confirmed: { label: 'Confirmada', modifier: 'success' },
   completed: { label: 'Completada', modifier: 'info' },
+  paid: { label: 'Pagada', modifier: 'info' },
   cancelled: { label: 'Cancelada', modifier: 'error' },
   pending: { label: 'Pendiente', modifier: 'warning' },
   no_show: { label: 'No asistio', modifier: 'error' },
