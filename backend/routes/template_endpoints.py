@@ -503,7 +503,10 @@ async def submit_to_meta(template_id: int):
                     if error_type:
                         full_msg += f" (type: {error_type})"
                     print(f"[META SUBMIT] FULL ERROR: {error_detail}")
-                    raise HTTPException(status_code=400, detail=f"Meta rechazó la solicitud: {full_msg}")
+                    print(f"[META SUBMIT] WABA ID USED: '{wa_business_id}'")
+                    print(f"[META SUBMIT] FULL URL: https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates")
+                    print(f"[META SUBMIT] FULL RESPONSE: {data}")
+                    raise HTTPException(status_code=400, detail=f"Meta rechazó: {full_msg} | WABA_ID={wa_business_id} | URL=graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates")
 
         except httpx.HTTPError as e:
             raise HTTPException(status_code=500, detail=f"Error conectando con Meta: {str(e)[:100]}")
