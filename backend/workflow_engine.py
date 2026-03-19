@@ -617,7 +617,7 @@ def execute_daily_summary(db, workflow, tenant):
 
     # Gather stats
     completed = db.query(sqlfunc.count(Appointment.id)).filter(
-        Appointment.date == today, Appointment.status == "completed"
+        Appointment.date == today, Appointment.status.in_(["completed", "paid"])
     ).scalar() or 0
 
     no_shows = db.query(sqlfunc.count(Appointment.id)).filter(

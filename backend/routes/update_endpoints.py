@@ -274,8 +274,9 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
     staff = db.query(Staff).filter(Staff.id == appointment.staff_id).first()
     service = db.query(Service).filter(Service.id == appointment.service_id).first()
 
-    # ── Auto-create VisitHistory when appointment is completed ──
-    if new_status == "completed" and old_status != "completed" and appointment.client_id:
+    # ── Auto-create VisitHistory when appointment is completed or paid ──
+    _done_statuses = ("completed", "paid")
+    if new_status in _done_statuses and old_status not in _done_statuses and appointment.client_id:
         existing_visit = db.query(VisitHistory).filter(
             VisitHistory.client_id == appointment.client_id,
             VisitHistory.visit_date == appointment.date,

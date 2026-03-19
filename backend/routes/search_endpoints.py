@@ -514,7 +514,7 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
             status=a.status,
         ))
 
-    completed_today = sum(1 for a in today_appointments if a.status == "completed")
+    completed_today = sum(1 for a in today_appointments if a.status in ("completed", "paid"))
 
     # ---------- Revenue ----------
     def revenue_in_range(start_date, end_date):

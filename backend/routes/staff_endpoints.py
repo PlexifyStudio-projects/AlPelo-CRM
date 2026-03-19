@@ -40,7 +40,7 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
     ).all()
 
     confirmed = [a for a in appts_today if a.status == "confirmed"]
-    completed = [a for a in appts_today if a.status == "completed"]
+    completed = [a for a in appts_today if a.status in ("completed", "paid")]
 
     # Revenue today (from completed visits)
     revenue_today = db.query(func.coalesce(func.sum(VisitHistory.amount), 0)).filter(

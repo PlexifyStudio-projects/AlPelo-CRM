@@ -394,10 +394,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const stats = useMemo(() => {
     const todayStr = toISO(new Date());
     const todayAll = appointments.filter(a => a.date === todayStr);
+    const isDone = a => a.status === 'completed' || a.status === 'paid';
     return {
       total: todayAll.length,
-      revenue: todayAll.filter(a => a.status === 'completed').reduce((s, a) => s + (a.price || 0), 0),
-      completed: todayAll.filter(a => a.status === 'completed').length,
+      revenue: todayAll.filter(isDone).reduce((s, a) => s + (a.price || 0), 0),
+      completed: todayAll.filter(isDone).length,
       pending: todayAll.filter(a => a.status === 'confirmed').length,
       cancelled: todayAll.filter(a => a.status === 'cancelled').length,
       noShow: todayAll.filter(a => a.status === 'no_show').length,

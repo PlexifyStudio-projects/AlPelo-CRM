@@ -991,7 +991,7 @@ def dev_performance(db: Session = Depends(get_db), user: Admin = Depends(get_cur
 
     # Appointments stats
     total_appointments = db.query(func.count(Appointment.id)).scalar()
-    completed_appts = db.query(func.count(Appointment.id)).filter(Appointment.status == 'completed').scalar()
+    completed_appts = db.query(func.count(Appointment.id)).filter(Appointment.status.in_(['completed', 'paid'])).scalar()
     cancelled_appts = db.query(func.count(Appointment.id)).filter(Appointment.status == 'cancelled').scalar()
     noshow_appts = db.query(func.count(Appointment.id)).filter(Appointment.status == 'no_show').scalar()
     lina_created_appts = db.query(func.count(Appointment.id)).filter(Appointment.created_by == 'lina_ia').scalar()
