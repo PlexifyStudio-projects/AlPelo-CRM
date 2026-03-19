@@ -1283,19 +1283,18 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 elif m.sent_by == "lina_ia":
                     pending_inbound = []  # Reset — only care about msgs after last AI reply
 
-            # Combine all pending inbound messages into the prompt
-            # This catches: image + separate text, or multiple texts before AI responds
-            # Preserve audio transcript if already set
-            _audio_transcript = inbound_text if needs_transcription and inbound_text and inbound_text.startswith("[Audio") else None
+            # Combine pending inbound messages BUT keep the CURRENT message as priority
+            # inbound_text already has the LATEST message (the one that triggered this reply)
+            # pending_inbound has ALL messages since last Lina reply (including old ones)
+            # Strategy: put old context first, then the CURRENT message last (most important)
+            _current_msg = inbound_text  # Save the original trigger message
             if len(pending_inbound) > 1:
-                combined_text = "\n".join(t for t in pending_inbound if t and not t.startswith("📎"))
-                if combined_text.strip():
-                    inbound_text = combined_text.strip()
-                    print(f"[Lina IA] Combined {len(pending_inbound)} pending messages: {inbound_text[:100]}")
-            # If audio was transcribed, make sure it's the LAST thing Lina reads (most recent message)
-            if _audio_transcript:
-                inbound_text = f"{inbound_text}\n\n{_audio_transcript}" if inbound_text and not inbound_text.startswith("[Audio") else _audio_transcript
-                print(f"[Lina IA] Audio transcript included in prompt: {_audio_transcript[:80]}")
+                # Filter out the current message from pending to avoid duplication
+                other_msgs = [t for t in pending_inbound if t and t.strip() != (_current_msg or "").strip() and not t.startswith("📎")]
+                if other_msgs:
+                    context_text = "\n".join(other_msgs)
+                    inbound_text = f"{context_text}\n\n{_current_msg}"
+                    print(f"[Lina IA] Combined {len(other_msgs)} old + current message: ...{_current_msg[:80]}")
 
             # Build history with proper role alternation (Claude API requires user/assistant/user/assistant)
             raw_history = []
