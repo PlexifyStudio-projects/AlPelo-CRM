@@ -413,6 +413,9 @@ class DashboardStatsResponse(BaseModel):
     # Top services today
     top_services_today: List[TopServiceItem] = []
 
+    # Revenue chart (last 7 days from paid appointments)
+    revenue_by_day: List[dict] = []
+
 
 #========================= FINANCES =========================#
 

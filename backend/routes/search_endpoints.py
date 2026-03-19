@@ -516,16 +516,16 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
 
     completed_today = sum(1 for a in today_appointments if a.status in ("completed", "paid"))
 
-    # ---------- Revenue ----------
+    # ---------- Revenue (from PAID appointments — the real money) ----------
     def revenue_in_range(start_date, end_date):
         rq = (
-            db.query(func.coalesce(func.sum(VisitHistory.amount), 0))
-            .filter(VisitHistory.status == "completed")
-            .filter(VisitHistory.visit_date >= start_date)
-            .filter(VisitHistory.visit_date <= end_date)
+            db.query(func.coalesce(func.sum(Appointment.price), 0))
+            .filter(Appointment.status == "paid")
+            .filter(Appointment.date >= start_date)
+            .filter(Appointment.date <= end_date)
         )
         if tid:
-            rq = rq.filter(VisitHistory.tenant_id == tid)
+            rq = rq.filter(Appointment.tenant_id == tid)
         result = rq.scalar()
         return result or 0
 
@@ -731,7 +731,29 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
         pending_tasks=pending_tasks,
         payment_alerts=payment_alerts,
         top_services_today=top_services_today,
+        revenue_by_day=_revenue_by_day_paid(db, tid, today),
     )
+
+
+def _revenue_by_day_paid(db, tid, today):
+    """Revenue per day for last 7 days — from PAID appointments only."""
+    from collections import defaultdict
+    start = today - timedelta(days=6)
+    q = db.query(Appointment.date, func.coalesce(func.sum(Appointment.price), 0)).filter(
+        Appointment.status == "paid",
+        Appointment.date >= start,
+        Appointment.date <= today,
+    )
+    if tid:
+        q = q.filter(Appointment.tenant_id == tid)
+    rows = q.group_by(Appointment.date).all()
+    day_map = {str(r[0]): int(r[1]) for r in rows}
+    result = []
+    for i in range(7):
+        d = start + timedelta(days=i)
+        key = str(d)
+        result.append({"date": key, "revenue": day_map.get(key, 0)})
+    return result
 
 
 # ============================================================================

@@ -211,38 +211,6 @@ const Dashboard = ({ onNavigate }) => {
   const [dismissingAlert, setDismissingAlert] = useState(null);
   const [revenueData, setRevenueData] = useState([]);
 
-  // Fetch daily revenue for the last 7 days
-  const fetchRevenueChart = useCallback(async () => {
-    try {
-      const today = new Date();
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(today.getDate() - 6);
-      const fmt = (d) => d.toISOString().slice(0, 10);
-      const res = await fetch(
-        `${API_URL}/finances/analytics?date_from=${fmt(sevenDaysAgo)}&date_to=${fmt(today)}`,
-        { headers: { 'Content-Type': 'application/json' }, credentials: 'include' }
-      );
-      if (!res.ok) return;
-      const data = await res.json();
-      // Build full 7-day array, filling gaps with $0
-      const dayData = data.revenue_by_day || data.daily_revenue || [];
-      const dayMap = {};
-      if (Array.isArray(dayData)) {
-        dayData.forEach(d => { dayMap[d.date || d.day] = d.total || d.revenue || d.amount || 0; });
-      }
-      const full7Days = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(sevenDaysAgo);
-        d.setDate(d.getDate() + i);
-        const key = fmt(d);
-        full7Days.push({ label: key, value: dayMap[key] || 0 });
-      }
-      setRevenueData(full7Days);
-    } catch {
-      // Revenue chart is non-critical — fail silently
-    }
-  }, []);
-
   const fetchStats = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/dashboard/stats`, {
@@ -256,6 +224,10 @@ const Dashboard = ({ onNavigate }) => {
       const data = await res.json();
       setStats(data);
       setError(null);
+      // Build revenue chart from paid appointments data
+      if (data.revenue_by_day && Array.isArray(data.revenue_by_day)) {
+        setRevenueData(data.revenue_by_day.map(d => ({ label: d.date, value: d.revenue || 0 })));
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -266,10 +238,9 @@ const Dashboard = ({ onNavigate }) => {
   // Fetch on mount + every 30s
   useEffect(() => {
     fetchStats();
-    fetchRevenueChart();
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
-  }, [fetchStats, fetchRevenueChart]);
+  }, [fetchStats]);
 
   // Sync payment alerts from stats
   useEffect(() => {
