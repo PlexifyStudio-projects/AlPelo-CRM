@@ -158,16 +158,22 @@ const RevenueTooltip = ({ active, payload }) => {
 };
 
 // ===== CUSTOM LEGEND for pie chart =====
-const StatusLegend = ({ payload }) => (
-  <div className="dashboard__status-legend">
-    {payload?.map((entry, i) => (
-      <span key={i} className="dashboard__status-legend-item">
-        <span className="dashboard__status-legend-dot" style={{ background: entry.color }} />
-        {entry.value}
-      </span>
-    ))}
-  </div>
-);
+const StatusLegend = ({ payload }) => {
+  const total = payload?.reduce((s, e) => s + (e.payload?.value || 0), 0) || 0;
+  return (
+    <div className="dashboard__status-legend">
+      {payload?.map((entry, i) => {
+        const pct = total > 0 ? Math.round((entry.payload.value / total) * 100) : 0;
+        return (
+          <span key={i} className="dashboard__status-legend-item">
+            <span className="dashboard__status-legend-dot" style={{ background: entry.color }} />
+            {entry.value} {pct}%
+          </span>
+        );
+      })}
+    </div>
+  );
+};
 
 // ===== STATUS BADGE CONFIG =====
 const STATUS_CONFIG = {
@@ -553,7 +559,11 @@ const Dashboard = ({ onNavigate }) => {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value, name) => [`${value} citas`, name]}
+                    formatter={(value, name, props) => {
+                      const total = appointmentStatusData.reduce((s, e) => s + e.value, 0);
+                      const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                      return [`${value} cita${value !== 1 ? 's' : ''} (${pct}%)`, name];
+                    }}
                     contentStyle={{
                       background: 'rgba(255,255,255,0.95)',
                       border: '1px solid rgba(0,0,0,0.06)',
