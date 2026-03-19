@@ -524,6 +524,21 @@ class LinaTask(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class LinaActivityEvent(Base):
+    """Persistent activity log for Lina IA — survives restarts."""
+    __tablename__ = "lina_activity_event"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
+    event_type = Column(String(30), nullable=False)  # respuesta, accion, tarea, error, sistema, skip
+    description = Column(String(500), nullable=False)
+    detail = Column(Text, nullable=True)
+    contact_name = Column(String(200), nullable=True)
+    conv_id = Column(Integer, nullable=True)
+    status = Column(String(20), default="info")  # ok, info, warning, error
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class BrandKit(Base):
     """Brand identity configuration per tenant — colors, fonts, tone."""
     __tablename__ = "brand_kits"
