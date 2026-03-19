@@ -670,6 +670,126 @@
   }
 
   // ════════════════════════════════════════════════
+  // EDIT MODAL
+  // ════════════════════════════════════════════════
+  &__modal--edit {
+    width: 600px;
+  }
+
+  &__edit-field {
+    margin-bottom: $spacing-md;
+  }
+
+  &__edit-label {
+    display: block;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    margin-bottom: $spacing-2xs;
+  }
+
+  &__edit-hint {
+    font-weight: $font-weight-regular;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: $font-size-2xs;
+  }
+
+  &__edit-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-family: $font-primary;
+    transition: border-color 200ms;
+    &:focus { outline: none; border-color: $color-primary; }
+  }
+
+  &__edit-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-family: $font-primary;
+    appearance: auto;
+    &:focus { outline: none; border-color: $color-primary; }
+  }
+
+  &__edit-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-family: $font-primary;
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+    &:focus { outline: none; border-color: $color-primary; }
+  }
+
+  &__edit-count {
+    display: block;
+    text-align: right;
+    font-size: $font-size-2xs;
+    color: rgba(0, 0, 0, 0.45);
+    margin-top: 4px;
+  }
+
+  &__edit-preview {
+    margin-top: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: 1px solid $border-color;
+  }
+
+  &__edit-preview-label {
+    display: block;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: rgba(0, 0, 0, 0.45);
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wide;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__modal-footer {
+    padding: $spacing-md $spacing-xl;
+    border-top: 1px solid $border-color;
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+  }
+
+  &__modal-btn {
+    padding: 10px 20px;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    border: none;
+    transition: all 200ms;
+
+    &--cancel {
+      background: rgba(0, 0, 0, 0.05);
+      color: rgba(0, 0, 0, 0.45);
+      &:hover { background: darken(rgba(0, 0, 0, 0.05), 5%); }
+    }
+
+    &--save {
+      background: $color-primary;
+      color: $color-white;
+      &:hover { background: $color-primary-dark; }
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
+    }
+  }
+
+  &__card-btn--edit {
+    color: $color-primary;
+    &:hover { background: rgba($color-primary, 0.08); }
+  }
+
+  // ════════════════════════════════════════════════
   // WHATSAPP PREVIEW BUBBLE — Realistic
   // ════════════════════════════════════════════════
   &__preview-bubble {

@@ -91,7 +91,9 @@ const resolveTemplate = (body) => {
 const MetaIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 2L11 13" /><path d="M22 2L15 22L11 13L2 9L22 2Z" /></svg>;
 const RefreshIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3v5h5" /><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /></svg>;
 
-const TemplateCard = ({ template, onPreview, onSend, onApprove, onDelete, onSubmitMeta, onCheckStatus }) => {
+const EditIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>;
+
+const TemplateCard = ({ template, onPreview, onSend, onApprove, onDelete, onSubmitMeta, onCheckStatus, onEdit }) => {
   const catColor = CAT_COLORS[template.category] || CAT_COLORS.general;
   const catLabel = CAT_LABELS[template.category] || template.category;
   const statusInfo = STATUS_LABELS[template.status] || STATUS_LABELS.draft;
@@ -137,6 +139,9 @@ const TemplateCard = ({ template, onPreview, onSend, onApprove, onDelete, onSubm
             <SendIcon /> <span>Enviar</span>
           </button>
         )}
+        <button className={`${B}__card-btn ${B}__card-btn--edit`} onClick={() => onEdit(template)}>
+          <EditIcon /> <span>Editar</span>
+        </button>
         <button className={`${B}__card-btn ${B}__card-btn--delete`} onClick={() => onDelete(template)}>
           <TrashIcon />
         </button>
@@ -167,6 +172,70 @@ const PreviewModal = ({ template, onClose }) => {
             <span>Enviada {template.times_sent} veces</span>
             <span>Estado: {STATUS_LABELS[template.status]?.label}</span>
           </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+// ===== Edit Modal =====
+const EditModal = ({ template, onClose, onSave }) => {
+  const [name, setName] = useState(template.name);
+  const [body, setBody] = useState(template.body);
+  const [category, setCategory] = useState(template.category);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    if (!name.trim() || !body.trim()) return;
+    setSaving(true);
+    try {
+      await onSave(template.id, { name: name.trim(), body: body.trim(), category });
+      onClose();
+    } catch {
+      setSaving(false);
+    }
+  };
+
+  return createPortal(
+    <div className={`${B}__overlay`} onClick={onClose}>
+      <div className={`${B}__modal ${B}__modal--edit`} onClick={(e) => e.stopPropagation()}>
+        <div className={`${B}__modal-header`}>
+          <h3 className={`${B}__modal-title`}>Editar plantilla</h3>
+          <button className={`${B}__modal-close`} onClick={onClose}><CloseIcon /></button>
+        </div>
+        <div className={`${B}__modal-body`}>
+          <div className={`${B}__edit-field`}>
+            <label className={`${B}__edit-label`}>Nombre</label>
+            <input className={`${B}__edit-input`} value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className={`${B}__edit-field`}>
+            <label className={`${B}__edit-label`}>Categoria</label>
+            <select className={`${B}__edit-select`} value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="recordatorio">Recordatorio</option>
+              <option value="post_servicio">Post-Servicio</option>
+              <option value="reactivacion">Reactivacion</option>
+              <option value="fidelizacion">Fidelizacion</option>
+              <option value="promocion">Promocion</option>
+              <option value="bienvenida">Bienvenida</option>
+              <option value="interno">Interno</option>
+            </select>
+          </div>
+          <div className={`${B}__edit-field`}>
+            <label className={`${B}__edit-label`}>Mensaje <span className={`${B}__edit-hint`}>Usa {'{{nombre}}'}, {'{{hora}}'}, {'{{servicio}}'}, {'{{profesional}}'}, {'{{fecha}}'}, {'{{dias}}'}, {'{{negocio}}'}</span></label>
+            <textarea className={`${B}__edit-textarea`} value={body} onChange={(e) => setBody(e.target.value)} rows={6} />
+            <span className={`${B}__edit-count`}>{body.length}/1024 caracteres</span>
+          </div>
+          <div className={`${B}__edit-preview`}>
+            <span className={`${B}__edit-preview-label`}>Vista previa:</span>
+            <div className={`${B}__preview-bubble`}><p>{resolveTemplate(body)}</p></div>
+          </div>
+        </div>
+        <div className={`${B}__modal-footer`}>
+          <button className={`${B}__modal-btn ${B}__modal-btn--cancel`} onClick={onClose}>Cancelar</button>
+          <button className={`${B}__modal-btn ${B}__modal-btn--save`} onClick={handleSave} disabled={saving || !name.trim() || !body.trim()}>
+            {saving ? 'Guardando...' : 'Guardar cambios'}
+          </button>
         </div>
       </div>
     </div>,
@@ -360,6 +429,13 @@ const Messaging = () => {
   const [sendTemplate, setSendTemplate] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [editTemplate, setEditTemplate] = useState(null);
+
+  const handleEditSave = useCallback(async (id, data) => {
+    const result = await templateService.updateTemplate(id, data);
+    setTemplates(prev => prev.map(t => t.id === id ? (result || { ...t, ...data }) : t));
+    addNotification('Plantilla actualizada', 'success');
+  }, [addNotification]);
 
   // Load templates from DB
   useEffect(() => {
@@ -526,7 +602,8 @@ const Messaging = () => {
             <TemplateCard key={template.id} template={template}
               onPreview={setPreviewTemplate} onSend={setSendTemplate}
               onApprove={handleApprove} onDelete={handleDeleteClick}
-              onSubmitMeta={handleSubmitMeta} onCheckStatus={handleCheckStatus} />
+              onSubmitMeta={handleSubmitMeta} onCheckStatus={handleCheckStatus}
+              onEdit={setEditTemplate} />
           ))}
         </div>
       )}
@@ -539,6 +616,7 @@ const Messaging = () => {
       {previewTemplate && <PreviewModal template={previewTemplate} onClose={() => setPreviewTemplate(null)} />}
       {sendTemplate && <SendModal template={sendTemplate} onClose={() => setSendTemplate(null)} onSend={handleSend} />}
       {showAddModal && <AddTemplateModal onClose={() => setShowAddModal(false)} onSave={handleAddSave} />}
+      {editTemplate && <EditModal template={editTemplate} onClose={() => setEditTemplate(null)} onSave={handleEditSave} />}
 
       {/* Delete confirmation modal */}
       {deleteConfirm && createPortal(
