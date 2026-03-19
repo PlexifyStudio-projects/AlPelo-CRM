@@ -568,15 +568,22 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
     whatsapp_unread = wa_unread_q.scalar() or 0
 
     # ---------- Lina ----------
-    # Active = tenant not paused AND at least one conversation has AI on
-    _tenant_paused = False
+    # Active = tenant not paused by support AND at least one conversation has AI on
+    # When toggle-all-ai sets all convos to off, active_conversations = 0 → inactive
+    # When no conversations exist yet, inactive (nothing to respond to)
+    _tenant_blocked = False
     if tid:
         _t = db.query(Tenant).filter(Tenant.id == tid).first()
-        _tenant_paused = _t.ai_is_paused if _t else False
+        _tenant_blocked = _t.ai_is_paused if _t else False
 
-    lina_is_global_active = (
-        (not _tenant_paused) and whatsapp_active_conversations > 0
-    ) if whatsapp_total_conversations > 0 else (not _tenant_paused)
+    if _tenant_blocked:
+        lina_is_global_active = False
+    elif whatsapp_total_conversations == 0:
+        # No conversations yet — check if any conversation would default to AI on
+        # For now, show as inactive since there's nothing to respond to
+        lina_is_global_active = False
+    else:
+        lina_is_global_active = whatsapp_active_conversations > 0
 
     lina_messages_today = whatsapp_messages_today  # same query: outbound by lina_ia today
 
