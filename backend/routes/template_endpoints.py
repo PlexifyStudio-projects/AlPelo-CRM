@@ -505,7 +505,8 @@ async def submit_to_meta(template_id: int):
                         )
                         print(f"[META SUBMIT] Delete: {del_resp.status_code} {del_resp.json()}")
                         if del_resp.status_code == 200:
-                            # Re-submit with correct category
+                            # Re-submit with MARKETING (Meta forces this after delete)
+                            payload["category"] = "MARKETING"
                             re_resp = await client.post(
                                 f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
                                 headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
