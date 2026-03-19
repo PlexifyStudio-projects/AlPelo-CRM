@@ -1054,7 +1054,7 @@ $inbox-ai-bg: $color-accent-ghost;
     border: 1px solid rgba($color-accent, 0.12);
     border-radius: $inbox-radius-msg;
     padding: 10px 16px 12px;
-    max-width: 280px;
+    max-width: 320px;
     box-shadow: 0 2px 8px rgba(201, 168, 76, 0.08), $shadow-xs;
   }
 
@@ -1062,7 +1062,7 @@ $inbox-ai-bg: $color-accent-ghost;
     display: flex;
     align-items: center;
     gap: 5px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
 
   &__lina-thinking-icon {
@@ -1077,15 +1077,52 @@ $inbox-ai-bg: $color-accent-ghost;
     text-transform: uppercase;
   }
 
+  &__lina-thinking-pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__lina-thinking-done {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    animation: inboxFadeIn 0.3s ease;
+  }
+
+  &__lina-thinking-check {
+    font-size: 10px;
+    color: $color-primary;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+    width: 14px;
+    text-align: center;
+  }
+
+  &__lina-thinking-done-text {
+    font-size: 11px;
+    color: $inbox-text-muted;
+    opacity: 0.6;
+  }
+
   &__lina-thinking-step {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    margin-top: 2px;
+  }
+
+  &__lina-thinking-step-icon {
+    font-size: 12px;
+    flex-shrink: 0;
+    width: 14px;
+    text-align: center;
   }
 
   &__lina-thinking-text {
     font-size: $font-size-xs;
     color: $inbox-text-secondary;
+    font-weight: $font-weight-medium;
     animation: inboxStepFade 3.5s ease infinite;
   }
 
@@ -1093,6 +1130,7 @@ $inbox-ai-bg: $color-accent-ghost;
     display: inline-flex;
     gap: 3px;
     align-items: center;
+    flex-shrink: 0;
 
     span {
       width: 4px;

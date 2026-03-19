@@ -1318,7 +1318,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             from routes.ai_endpoints import _build_system_prompt, _call_ai
 
-            log_event("sistema", f"Leyendo conversacion de {conv.wa_contact_name or 'cliente'}", detail=f"Analizando {len(history)} mensajes de historial + contexto del negocio", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
+            log_event("sistema", f"💬 Paso 1: Leyendo chat de {conv.wa_contact_name or 'cliente'}", detail=f"Analizando {len(history)} mensajes del historial", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
+
+            log_event("sistema", f"👤 Paso 2: Cargando contexto del cliente y agenda", detail=f"Verificando perfil, citas, servicios y disponibilidad del equipo", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
 
             system_prompt = _build_system_prompt(db, is_whatsapp=True, conv_id=conv_id)
 
@@ -1328,7 +1330,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             while history and history[-1]["role"] == "user":
                 history.pop()
 
-            log_event("sistema", f"Generando respuesta para {conv.wa_contact_name or 'cliente'}", detail=f"Mensaje del cliente: {(inbound_text or '')[:100]}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
+            log_event("sistema", f"🧠 Paso 3: Analizando y generando respuesta", detail=f"Mensaje del cliente: {(inbound_text or '')[:100]}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
 
             ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type)
 
@@ -1688,6 +1690,8 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 name_suffix = f" {client_name}" if client_name else ""
                 # Lina acknowledges and takes ownership — SHE verifies, not "the team"
                 clean_response = f"Permiteme un momento en lo que verifico la informacion del pago{name_suffix}, gracias! 🙏"
+
+            log_event("sistema", f"✅ Paso 4: Verificación completa, enviando respuesta", detail=f"Respuesta: {clean_response[:120]}...", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok")
 
             # Step 4: Send read receipt NOW (blue ticks appear right before Lina replies)
             if inbound_wa_msg_id:

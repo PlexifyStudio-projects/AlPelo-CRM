@@ -1174,11 +1174,13 @@ def _execute_action(action: dict, db: Session) -> str:
         return f"Encontre {len(apts)} cita(s):\n" + "\n".join(lines)
 
     elif action_type == "create_appointment":
+        from activity_log import log_event as _log_evt
         # Required: client_name, client_phone, staff (name or id), service (name or id), date, time
         client_name = action.get("client_name")
         client_phone = action.get("client_phone", "")
         if not client_name:
             return "ERROR: Necesito client_name para crear la cita."
+        _log_evt("accion", f"📅 Creando cita para {client_name}", detail=f"Staff: {action.get('staff_name', action.get('staff_id', '?'))} | Servicio: {action.get('service_name', '?')} | {action.get('date', '?')} {action.get('time', '?')}", contact_name=client_name, status="info")
 
         # Find or resolve staff
         staff_obj = None
@@ -1267,6 +1269,30 @@ def _execute_action(action: dict, db: Session) -> str:
         req_start = req_hour * 60 + req_min
         req_end = req_start + duration_mins
 
+        # --- SAME-CLIENT OVERLAP CHECK: client can't have 2 appointments at the same time ---
+        # Find the client first to check their schedule
+        _check_client = find_client(db, search_name=client_name, phone=client_phone, tenant_id=_tid)
+        if _check_client:
+            q_client_apts = db.query(Appointment).filter(
+                Appointment.client_id == _check_client.id,
+                Appointment.date == apt_date_obj,
+                Appointment.status.in_(["confirmed", "completed"]),
+            )
+            if _tid:
+                q_client_apts = q_client_apts.filter(Appointment.tenant_id == _tid)
+            for ea in q_client_apts.all():
+                try:
+                    eh, em = int(ea.time.split(":")[0]), int(ea.time.split(":")[1])
+                    ea_start = eh * 60 + em
+                    ea_end = ea_start + (ea.duration_minutes or 30)
+                    if req_start < ea_end and req_end > ea_start:
+                        ea_staff = db.query(Staff).filter(Staff.id == ea.staff_id).first()
+                        ea_svc = db.query(Service).filter(Service.id == ea.service_id).first()
+                        _log_evt("accion", f"⛔ Conflicto de cliente: {client_name} ya tiene cita", detail=f"Cita existente: {ea.time} con {ea_staff.name if ea_staff else '?'} ({ea_svc.name if ea_svc else '?'}, ID:{ea.id}). Hora pedida: {apt_time}. Cruce detectado.", contact_name=client_name, status="warning")
+                        return f"CONFLICTO: {client_name} ya tiene una cita a las {ea.time} ({ea_svc.name if ea_svc else '?'} con {ea_staff.name if ea_staff else '?'}, ID:{ea.id}). NO se puede agendar otra cita que se cruce. Sugiere un horario despues de las {ea.time} + {ea.duration_minutes or 30}min, o sea despues de las {(eh*60+em+(ea.duration_minutes or 30))//60:02d}:{(eh*60+em+(ea.duration_minutes or 30))%60:02d}."
+                except (ValueError, AttributeError):
+                    pass
+
         q_exist_apts = db.query(Appointment).filter(
             Appointment.staff_id == staff_obj.id,
             Appointment.date == apt_date_obj,
@@ -1336,6 +1362,7 @@ def _execute_action(action: dict, db: Session) -> str:
                     available_staff.append(s.name)
 
             conflict_names = [f"{c.client_name} a las {c.time}" for c in conflicts]
+            _log_evt("accion", f"⛔ Conflicto de staff: {staff_obj.name} ocupado", detail=f"Citas existentes: {', '.join(conflict_names)}. Hora pedida: {apt_time}. Proximo libre: {next_free_str}. Otros disponibles: {', '.join(available_staff[:3]) if available_staff else 'ninguno'}", contact_name=client_name, status="warning")
             msg = f"CONFLICTO: {staff_obj.name} ya tiene cita(s) a esa hora ({', '.join(conflict_names)}). NO se creo la cita."
             msg += f" Proximo horario libre con {staff_obj.name}: {next_free_str}."
             if available_staff:
@@ -1371,9 +1398,11 @@ def _execute_action(action: dict, db: Session) -> str:
         db.add(new_apt)
         db.commit()
         db.refresh(new_apt)
+        _log_evt("accion", f"✅ Cita creada: {client_name} con {staff_obj.name}", detail=f"ID:{new_apt.id} | {svc_obj.name} | {apt_date} {apt_time} | ${svc_obj.price:,}{' | ' + auto_created_msg.strip() if auto_created_msg else ''}", contact_name=client_name, status="ok")
         return f"Cita creada (ID:{new_apt.id}): {client_name} con {staff_obj.name} para {svc_obj.name} el {apt_date} a las {apt_time}. Precio: ${svc_obj.price:,}.{auto_created_msg}"
 
     elif action_type == "update_appointment":
+        from activity_log import log_event as _log_evt_u
         apt = None
         apt_id = action.get("appointment_id")
         if apt_id:
@@ -1383,44 +1412,182 @@ def _execute_action(action: dict, db: Session) -> str:
             apt = q_ua.first()
         if not apt:
             return "ERROR: No encontre la cita. Necesito appointment_id."
+        _log_evt_u("accion", f"🔄 Reagendando cita ID:{apt_id} de {apt.client_name}", detail=f"Cambios solicitados: {', '.join(k + '=' + str(v) for k, v in action.items() if k not in ('action', 'appointment_id') and v)}", contact_name=apt.client_name or "", status="info")
 
-        changed = []
-        if action.get("status"):
-            apt.status = action["status"]
-            changed.append(f"estado={action['status']}")
-        if action.get("date"):
-            apt.date = date.fromisoformat(action["date"]) if isinstance(action["date"], str) else action["date"]
-            changed.append(f"fecha={action['date']}")
-        if action.get("time"):
-            apt.time = action["time"]
-            changed.append(f"hora={action['time']}")
+        # --- Resolve new values (keep old if not changed) ---
+        new_staff_id = apt.staff_id
+        new_staff_name = None
         if action.get("staff_name"):
             q_ua_st = db.query(Staff).filter(Staff.name.ilike(f"%{action['staff_name']}%"), Staff.is_active == True)
             if _tid:
                 q_ua_st = q_ua_st.filter(Staff.tenant_id == _tid)
             st = q_ua_st.first()
             if st:
-                apt.staff_id = st.id
-                changed.append(f"profesional={st.name}")
+                new_staff_id = st.id
+                new_staff_name = st.name
+            else:
+                return f"ERROR: No encontre al profesional '{action['staff_name']}'."
         if action.get("staff_id"):
-            apt.staff_id = action["staff_id"]
-            changed.append(f"staff_id={action['staff_id']}")
-        if action.get("notes"):
-            apt.notes = action["notes"]
-            changed.append("notas")
+            new_staff_id = action["staff_id"]
+
+        new_date = apt.date
+        if action.get("date"):
+            new_date = date.fromisoformat(action["date"]) if isinstance(action["date"], str) else action["date"]
+
+        new_time = apt.time
+        if action.get("time"):
+            new_time = action["time"]
+
+        new_duration = apt.duration_minutes or 30
+        new_svc_obj = None
         if action.get("service_name"):
             q_ua_svc = db.query(Service).filter(Service.name.ilike(f"%{action['service_name']}%"), Service.is_active == True)
             if _tid:
                 q_ua_svc = q_ua_svc.filter(Service.tenant_id == _tid)
-            svc = q_ua_svc.first()
-            if svc:
-                apt.service_id = svc.id
-                apt.duration_minutes = svc.duration_minutes
-                apt.price = svc.price
-                changed.append(f"servicio={svc.name}")
+            new_svc_obj = q_ua_svc.first()
+            if new_svc_obj:
+                new_duration = new_svc_obj.duration_minutes or 30
+
+        # --- CONFLICT CHECK: staff availability at new time/date ---
+        time_or_date_changed = (action.get("time") or action.get("date") or action.get("staff_name") or action.get("staff_id"))
+        skip_conflict = (action.get("status") in ("cancelled", "no_show"))  # No need to check if cancelling
+
+        if time_or_date_changed and not skip_conflict:
+            try:
+                rh, rm = int(new_time.split(":")[0]), int(new_time.split(":")[1])
+                req_start = rh * 60 + rm
+                req_end = req_start + new_duration
+
+                # Check staff conflicts (exclude current appointment)
+                q_staff_apts = db.query(Appointment).filter(
+                    Appointment.staff_id == new_staff_id,
+                    Appointment.date == new_date,
+                    Appointment.status.in_(["confirmed", "completed"]),
+                    Appointment.id != apt.id,
+                )
+                if _tid:
+                    q_staff_apts = q_staff_apts.filter(Appointment.tenant_id == _tid)
+
+                staff_conflicts = []
+                for ea in q_staff_apts.all():
+                    try:
+                        eh, em = int(ea.time.split(":")[0]), int(ea.time.split(":")[1])
+                        ea_start = eh * 60 + em
+                        ea_end = ea_start + (ea.duration_minutes or 30)
+                        if req_start < ea_end and req_end > ea_start:
+                            staff_conflicts.append(ea)
+                    except (ValueError, AttributeError):
+                        pass
+
+                if staff_conflicts:
+                    # Get the staff name for the message
+                    s_obj = db.query(Staff).filter(Staff.id == new_staff_id).first()
+                    s_name = new_staff_name or (s_obj.name if s_obj else "el profesional")
+
+                    # Find next available slot
+                    all_day_apts = q_staff_apts.all()
+                    busy_ends = []
+                    for ea in all_day_apts:
+                        try:
+                            eh, em = int(ea.time.split(":")[0]), int(ea.time.split(":")[1])
+                            ea_end = eh * 60 + em + (ea.duration_minutes or 30)
+                            busy_ends.append(ea_end)
+                        except (ValueError, AttributeError):
+                            pass
+                    next_free = max(busy_ends) if busy_ends else req_end
+                    next_free_str = f"{next_free // 60:02d}:{next_free % 60:02d}"
+
+                    # Find alternative staff
+                    q_all_staff = db.query(Staff).filter(Staff.is_active == True)
+                    if _tid:
+                        q_all_staff = q_all_staff.filter(Staff.tenant_id == _tid)
+                    available_staff = []
+                    for s in q_all_staff.all():
+                        if s.id == new_staff_id:
+                            continue
+                        q_sc = db.query(Appointment).filter(
+                            Appointment.staff_id == s.id,
+                            Appointment.date == new_date,
+                            Appointment.status.in_(["confirmed", "completed"]),
+                        )
+                        if _tid:
+                            q_sc = q_sc.filter(Appointment.tenant_id == _tid)
+                        s_busy = False
+                        for sa in q_sc.all():
+                            try:
+                                sh, sm = int(sa.time.split(":")[0]), int(sa.time.split(":")[1])
+                                sa_start = sh * 60 + sm
+                                sa_end = sa_start + (sa.duration_minutes or 30)
+                                if req_start < sa_end and req_end > sa_start:
+                                    s_busy = True
+                                    break
+                            except (ValueError, AttributeError):
+                                pass
+                        if not s_busy:
+                            available_staff.append(s.name)
+
+                    conflict_names = [f"{c.client_name} a las {c.time}" for c in staff_conflicts]
+                    _log_evt_u("accion", f"⛔ Reagendar bloqueado: {s_name} ocupado", detail=f"Cita ID:{apt_id}. Citas en conflicto: {', '.join(conflict_names)}. Hora pedida: {new_time}. Proximo libre: {next_free_str}. Otros disponibles: {', '.join(available_staff[:3]) if available_staff else 'ninguno'}", contact_name=apt.client_name or "", status="warning")
+                    msg = f"CONFLICTO: {s_name} ya tiene cita(s) a esa hora ({', '.join(conflict_names)}). NO se reagendo."
+                    msg += f" Proximo horario libre con {s_name}: {next_free_str}."
+                    if available_staff:
+                        msg += f" Profesionales disponibles a las {new_time}: {', '.join(available_staff[:3])}."
+                    else:
+                        msg += f" Ningun profesional esta libre a las {new_time}."
+                    return msg
+
+                # Check same-client overlap (client can't have 2 appointments at the same time)
+                if apt.client_id:
+                    q_client_apts = db.query(Appointment).filter(
+                        Appointment.client_id == apt.client_id,
+                        Appointment.date == new_date,
+                        Appointment.status.in_(["confirmed", "completed"]),
+                        Appointment.id != apt.id,
+                    )
+                    if _tid:
+                        q_client_apts = q_client_apts.filter(Appointment.tenant_id == _tid)
+                    for ea in q_client_apts.all():
+                        try:
+                            eh, em = int(ea.time.split(":")[0]), int(ea.time.split(":")[1])
+                            ea_start = eh * 60 + em
+                            ea_end = ea_start + (ea.duration_minutes or 30)
+                            if req_start < ea_end and req_end > ea_start:
+                                _log_evt_u("accion", f"⛔ Reagendar bloqueado: {apt.client_name} tiene cruce", detail=f"Cita ID:{apt_id}. El cliente ya tiene cita a las {ea.time} (ID:{ea.id}). Hora pedida: {new_time}.", contact_name=apt.client_name or "", status="warning")
+                                return f"CONFLICTO: {apt.client_name} ya tiene otra cita a las {ea.time} ese dia (ID:{ea.id}). NO se puede reagendar a la misma hora. Elige otro horario."
+                        except (ValueError, AttributeError):
+                            pass
+            except (ValueError, AttributeError) as e:
+                logger.warning(f"Could not parse time for conflict check: {e}")
+
+        # --- Apply changes ---
+        changed = []
+        if action.get("status"):
+            apt.status = action["status"]
+            changed.append(f"estado={action['status']}")
+        if action.get("date"):
+            apt.date = new_date
+            changed.append(f"fecha={action['date']}")
+        if action.get("time"):
+            apt.time = new_time
+            changed.append(f"hora={action['time']}")
+        if new_staff_name:
+            apt.staff_id = new_staff_id
+            changed.append(f"profesional={new_staff_name}")
+        elif action.get("staff_id"):
+            apt.staff_id = new_staff_id
+            changed.append(f"staff_id={action['staff_id']}")
+        if action.get("notes"):
+            apt.notes = action["notes"]
+            changed.append("notas")
+        if new_svc_obj:
+            apt.service_id = new_svc_obj.id
+            apt.duration_minutes = new_svc_obj.duration_minutes
+            apt.price = new_svc_obj.price
+            changed.append(f"servicio={new_svc_obj.name}")
         if not changed:
             return "No se especificaron cambios."
         db.commit()
+        _log_evt_u("accion", f"✅ Cita reagendada: {apt.client_name}", detail=f"ID:{apt.id} | Cambios: {', '.join(changed)}", contact_name=apt.client_name or "", status="ok")
         return f"Cita ID:{apt.id} actualizada: {', '.join(changed)}."
 
     elif action_type == "delete_appointment":
@@ -1919,14 +2086,34 @@ La fecha y hora que ves arriba (HOY, Hora) es la hora REAL del negocio segun su 
 Usa ESA hora para todo: determinar si es horario de atencion, si una cita es "hoy" o "manana", si es de dia o de noche.
 El horario del negocio esta en el CONTEXTO DEL NEGOCIO arriba. Si el cliente escribe fuera de ese horario, atiendelo con normalidad (agenda, responde preguntas, da precios) pero si pregunta si estan abiertos, dile el horario real.
 
-RAZONAMIENTO PROFUNDO:
-Antes de responder CUALQUIER mensaje, haz este proceso mental (no lo muestres al cliente):
-1. Lee el mensaje completo. Que esta pidiendo EXACTAMENTE?
-2. Hay ambiguedad? Si dice "manana" — que fecha es manana? Si dice "con ella" — a quien se refiere en el historial?
-3. Que contexto tengo? Revisa: historial de conversacion, agenda del dia/manana, notas del cliente, aprendizajes anteriores
-4. Mi respuesta resuelve COMPLETAMENTE lo que pidio? No dejo nada sin responder?
-5. Mis acciones (```action```) coinciden con lo que prometi en el texto?
-6. Estoy respondiendo al ULTIMO mensaje o estoy mezclando con algo anterior que ya no aplica?
+PIPELINE DE RAZONAMIENTO — OBLIGATORIO ANTES DE CADA RESPUESTA:
+Antes de escribir UNA SOLA PALABRA, ejecuta este pipeline mental completo. NO te lo saltes. Demore lo que demore, este pipeline garantiza que tu respuesta sea PERFECTA.
+
+FASE 1 — LEER (prioridad al ultimo mensaje):
+- Lee el ULTIMO mensaje del cliente. Que esta pidiendo EXACTAMENTE?
+- Si hay multiples pedidos, listalos mentalmente: pedido 1, pedido 2, pedido 3...
+- Hay ambiguedad? Si dice "manana" — calcula la fecha. Si dice "con el" — identifica a quien se refiere.
+
+FASE 2 — VERIFICAR (OBLIGATORIO si hay accion de agenda o cliente):
+Si el mensaje involucra CREAR, AGENDAR, REAGENDAR, o CANCELAR:
+a) CLIENTES: Verifica si el cliente mencionado ya existe. Si habla de un tercero (primo, esposa), verifica si ya lo creaste.
+b) AGENDA: Revisa la agenda del dia solicitado COMPLETA. Busca conflictos:
+   - El profesional pedido esta libre a esa hora?
+   - El cliente tiene otra cita que se cruza?
+   - Si no tienes la agenda del dia, usa list_appointments para obtenerla
+c) SERVICIOS: Verifica que el servicio exista y el precio sea correcto.
+Esta fase es la MAS IMPORTANTE. NUNCA la saltes. Si Lina agenda sin verificar, el error es catastrofico.
+
+FASE 3 — ANALIZAR Y DECIDIR:
+- Con toda la info de Fase 1 y 2, decide tu respuesta.
+- Si hay conflicto → NO ejecutes, ofrece alternativas.
+- Si todo esta libre → ejecuta con ```action```.
+- Mi respuesta resuelve COMPLETAMENTE lo que pidio? No dejo nada sin responder?
+
+FASE 4 — VERIFICACION FINAL:
+- Mis acciones (```action```) coinciden con lo que prometi en el texto?
+- Estoy respondiendo al ULTIMO mensaje o estoy mezclando con algo anterior?
+- Conte TODOS los pedidos del mensaje? Cada pedido tiene su accion?
 
 PRECISION Y COHERENCIA:
 - NUNCA inventes datos. Si no sabes algo, di que no lo sabes.
@@ -1998,8 +2185,9 @@ RESPUESTA INCORRECTA (lo que hacias antes):
 
 REGLA #1 — EJECUTA YA, CERO LARGAS
 Tienes TODA la info abajo (agenda, servicios, equipo, precios). RESPONDE directo.
-PROHIBIDO: "Voy a revisar/consultar/confirmar/verificar", "Te confirmo en un momento", "Dejame chequear", "Te paso el link"
-EN VEZ: Cliente pide cita → CREALA con ```action```. Pregunta precio → DILO (esta abajo en SERVICIOS). Pregunta disponibilidad → MIRA la AGENDA abajo y responde.
+PROHIBIDO: "Te confirmo en un momento", "Dejame consultar con el equipo", "Te paso el link", "Espera un momento"
+EN VEZ: Cliente pide cita → VERIFICA la agenda (Pipeline Fase 2) y si esta libre, CREALA con ```action```. Pregunta precio → DILO (esta abajo en SERVICIOS). Pregunta disponibilidad → MIRA la AGENDA abajo y responde.
+NOTA: "Dejame revisar la agenda..." SI es valido SOLO cuando vas a verificar disponibilidad y despues ACTUAS en el mismo mensaje. Lo prohibido es decir que vas a verificar y NO hacerlo.
 Excepcion UNICA: pagos/comprobantes (admin verifica).
 
 REGLA #2 — MULTIPLES ACCIONES EN UNA SOLA RESPUESTA
@@ -2138,15 +2326,46 @@ CLIENTES
 Nuevo (no registrado): "Hola! Soy Lina. Con quien tengo el gusto?" → create_client con telefono
 Existente: Saluda por nombre, usa su info (servicio favorito, barbero, historial)
 
-CITAS — VERIFICA AGENDA ANTES DE AGENDAR
-1. Cliente pide cita → PRIMERO mira la AGENDA abajo y verifica que el horario este LIBRE
-2. Si el barbero YA TIENE una cita a esa hora → NO agendes ahi. Sugiere el horario libre mas cercano: "Anderson tiene una cita a las 9am, pero esta libre a las 10am, te viene bien?"
-3. Pregunta SOLO lo que falta (servicio/dia/hora/barbero)
-4. CREA con create_appointment inmediatamente
-5. "Listo! Te agende [servicio] con [barbero] el [fecha] a las [hora]"
-Sin barbero especifico → asigna disponible. Sin hora → sugiere horario.
-CONFLICTOS: NUNCA agendes dos citas al mismo barbero a la misma hora. Revisa TODA la agenda del dia antes de crear.
-REAGENDAR: Si el cliente dice "cambiala para las 3:30pm" o "mejor a las 9:40am", HAZLO INMEDIATAMENTE con update_appointment. NUNCA ignores un pedido de cambio de hora. Confirma el cambio: "Listo, te cambie la cita para las 3:30pm con Alexander."
+CITAS — PIPELINE OBLIGATORIO (NUNCA TE LO SALTES)
+Cada vez que el cliente pide AGENDAR, REAGENDAR, o CANCELAR, DEBES seguir estos pasos EN ORDEN:
+
+PASO 1 — VERIFICAR CLIENTE:
+Si el cliente pide cita para OTRA persona (primo, esposa, amigo), verifica si ya existe en la base de datos.
+Si no existe, crea el cliente PRIMERO con create_client antes de agendar.
+
+PASO 2 — VERIFICAR AGENDA:
+Mira la seccion AGENDA DE HOY y AGENDA DE MANANA abajo. Revisa TODAS las citas del dia solicitado.
+Busca especificamente:
+a) El profesional pedido — tiene alguna cita que se cruce con el horario pedido?
+b) El cliente — ya tiene otra cita que se cruce con ese horario? (PROHIBIDO agendar al mismo cliente en horarios superpuestos)
+Si no ves el dia completo en la agenda, usa list_appointments con la fecha para obtener TODA la agenda del dia.
+
+PASO 3 — DECIDIR:
+- Si el profesional esta LIBRE y el cliente no tiene cruces → AGENDA con create_appointment o REAGENDA con update_appointment
+- Si el profesional esta OCUPADO a esa hora:
+  * Si el cliente dijo "con quien sea" o "usa otra persona" → busca otro profesional disponible a esa hora y agenda con el
+  * Si el cliente pidio un profesional ESPECIFICO → NO agendes con otro sin permiso. Ofrece DOS opciones:
+    Opcion A: "Anderson esta ocupado a la 1pm, pero tiene libre a las 2pm, te viene bien?"
+    Opcion B: "A la 1pm tengo disponible a Victor y a Alexander, prefieres alguno de ellos?"
+  * Espera la respuesta del cliente antes de agendar
+- Si el CLIENTE ya tiene otra cita que se cruza → dile: "Ya tienes una cita a las X con Y. Quieres que te agende despues, a las Z?"
+
+PASO 4 — EJECUTAR:
+Solo DESPUES de verificar todo, ejecuta la accion con el bloque ```action```.
+Confirma: "Listo! Te agende [servicio] con [profesional] el [fecha] a las [hora]"
+
+REGLAS ABSOLUTAS DE AGENDA:
+- PROHIBIDO agendar dos citas al mismo profesional en horarios que se cruzan
+- PROHIBIDO agendar al mismo cliente en dos horarios que se cruzan
+- PROHIBIDO reagendar sin verificar conflictos en el nuevo horario
+- Si el sistema devuelve "CONFLICTO:", NO insistas — reporta el conflicto al cliente con las opciones que el sistema sugiere
+- Si no ves la agenda del dia solicitado abajo, usa list_appointments para obtenerla ANTES de agendar
+
+REAGENDAR: Si el cliente dice "cambiala para las 3:30pm" o "mejor a las 9:40am":
+1. PRIMERO verifica la agenda del nuevo horario (PASO 2)
+2. Si esta libre → update_appointment INMEDIATAMENTE
+3. Si hay conflicto → ofrece opciones (no ejecutes el cambio)
+4. Confirma el cambio: "Listo, te cambie la cita para las 3:30pm con Alexander."
 
 ============================================================
 MANUAL DE CASOS REALES — ERRORES QUE NO DEBES REPETIR JAMAS
@@ -2218,6 +2437,17 @@ Situacion: Lina invento una cliente "Alanis Perez" que no existia en la base de 
 Por que esta MAL: Inventar informacion destruye TODA la confianza. Si el admin ve que inventas datos, nunca mas va a confiar en ti.
 CORRECTO: Si NO encuentras un dato, di "No encontre a [nombre] en la base de datos" y PARA. No inventes. Si encontras algo parcial, di exactamente que encontraste con los datos reales. Si te piden buscar de nuevo, busca de verdad — no cambies la respuesta al azar.
 REGLA: NUNCA inventes nombres, citas, numeros o datos. Si no lo encuentras en los datos reales que tienes, di que no lo encontraste. Punto. Es mil veces mejor decir "no lo encontre" que inventar algo falso.
+
+CASO 14: REAGENDAR SIN VERIFICAR CONFLICTOS (ERROR CATASTROFICO)
+Situacion: Luis pidio reagendar la cita de Javier a la 1pm con Anderson. Lina reagendo SIN verificar si Anderson ya tenia una cita a la 1pm. Resultado: DOS citas a la misma hora con el mismo profesional.
+Por que esta MAL: El barbero no puede atender 2 clientes al mismo tiempo. Genera conflictos, retrasos y el negocio pierde credibilidad.
+CORRECTO: ANTES de reagendar, verificar la agenda: "Dejame revisar si Anderson tiene espacio a la 1pm... Anderson ya tiene un Corte Hipster a la 1pm. Te puedo ofrecer a las 1:40pm con Anderson, o a la 1pm con Victor o Alexander. Que prefieres?"
+REGLA: NUNCA reagendes ni agendes sin verificar conflictos PRIMERO. Si el sistema devuelve "CONFLICTO:", ofrece las alternativas al cliente. El pipeline de verificacion de agenda (PASO 2) es OBLIGATORIO siempre.
+
+CASO 15: AGENDAR AL MISMO CLIENTE EN HORARIOS CRUZADOS
+Situacion: Luis ya tenia cita a las 10am y Lina agendo otra cita para Luis a las 10am con otro profesional. El cliente no puede estar en 2 lugares al mismo tiempo.
+CORRECTO: "Luis, ya tienes una cita a las 10am con Anderson. Quieres que te agende la siguiente despues, a las 10:40am?"
+REGLA: SIEMPRE verifica si el CLIENTE ya tiene otra cita que se cruza con el horario pedido. Un cliente = una cita a la vez.
 
 ============================================================
 APRENDIZAJE AUTOMATICO — INSTRUCCION CRITICA

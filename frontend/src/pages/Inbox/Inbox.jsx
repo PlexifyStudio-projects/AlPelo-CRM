@@ -709,27 +709,40 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
   );
 };
 
-// ===== LINA THINKING INDICATOR — Shows rotating status while AI processes =====
-const LINA_STEPS = [
-  '🔍 Revisando conversación...',
-  '👤 Verificando perfil del cliente...',
-  '📅 Consultando agenda disponible...',
-  '💈 Revisando catálogo de servicios...',
-  '👥 Verificando personal disponible...',
-  '✍️ Elaborando respuesta...',
+// ===== LINA THINKING INDICATOR — Sequential pipeline steps =====
+const LINA_PIPELINE = [
+  { icon: '💬', text: 'Leyendo mensajes del chat...', duration: 3000 },
+  { icon: '👤', text: 'Verificando cliente en el sistema...', duration: 3000 },
+  { icon: '📅', text: 'Revisando agenda y disponibilidad...', duration: 4000 },
+  { icon: '🔍', text: 'Verificando conflictos de horario...', duration: 3500 },
+  { icon: '👥', text: 'Comprobando personal disponible...', duration: 3000 },
+  { icon: '🧠', text: 'Analizando y preparando respuesta...', duration: 4000 },
+  { icon: '✅', text: 'Verificación final antes de responder...', duration: 3000 },
 ];
 
 const LinaThinking = () => {
   const [stepIdx, setStepIdx] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState([]);
 
   useEffect(() => {
-    // Start from a random step for variety
-    setStepIdx(Math.floor(Math.random() * 3));
-    const interval = setInterval(() => {
-      setStepIdx(prev => (prev + 1) % LINA_STEPS.length);
-    }, 3500);
-    return () => clearInterval(interval);
+    setStepIdx(0);
+    setCompletedSteps([]);
+
+    let currentStep = 0;
+    const advanceStep = () => {
+      if (currentStep < LINA_PIPELINE.length - 1) {
+        setCompletedSteps(prev => [...prev, currentStep]);
+        currentStep += 1;
+        setStepIdx(currentStep);
+        timeout = setTimeout(advanceStep, LINA_PIPELINE[currentStep].duration);
+      }
+    };
+
+    let timeout = setTimeout(advanceStep, LINA_PIPELINE[0].duration);
+    return () => clearTimeout(timeout);
   }, []);
+
+  const currentPipe = LINA_PIPELINE[stepIdx];
 
   return (
     <div className={`${b}__lina-thinking`}>
@@ -738,11 +751,20 @@ const LinaThinking = () => {
           <span className={`${b}__lina-thinking-icon`}>🤖</span>
           <span className={`${b}__lina-thinking-label`}>Lina IA</span>
         </div>
-        <div className={`${b}__lina-thinking-step`}>
-          <span className={`${b}__lina-thinking-text`}>{LINA_STEPS[stepIdx]}</span>
-          <span className={`${b}__lina-thinking-dots`}>
-            <span /><span /><span />
-          </span>
+        <div className={`${b}__lina-thinking-pipeline`}>
+          {completedSteps.map(idx => (
+            <div key={idx} className={`${b}__lina-thinking-done`}>
+              <span className={`${b}__lina-thinking-check`}>✓</span>
+              <span className={`${b}__lina-thinking-done-text`}>{LINA_PIPELINE[idx].text.replace('...', '')}</span>
+            </div>
+          ))}
+          <div className={`${b}__lina-thinking-step`}>
+            <span className={`${b}__lina-thinking-step-icon`}>{currentPipe.icon}</span>
+            <span className={`${b}__lina-thinking-text`}>{currentPipe.text}</span>
+            <span className={`${b}__lina-thinking-dots`}>
+              <span /><span /><span />
+            </span>
+          </div>
         </div>
       </div>
     </div>
