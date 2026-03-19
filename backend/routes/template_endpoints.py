@@ -11,172 +11,164 @@ WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 router = APIRouter(prefix="/message-templates", tags=["Message Templates"])
 
 
-# 20 universal service business templates
+# Templates universales para negocios de servicios — tono colombiano natural
+# Meta requiere: categoría UTILITY o MARKETING, max 1024 chars, {{1}} formato
 DEFAULT_TEMPLATES = [
-    # === RECORDATORIOS (4) ===
+    # ═══════════════════════════════════════════════════════
+    # UTILITY — Recordatorios y confirmaciones (Meta aprueba rápido)
+    # ═══════════════════════════════════════════════════════
     {
         "name": "Recordatorio de cita (24h)",
         "slug": "recordatorio_cita_24h",
         "category": "recordatorio",
-        "body": "Hola {{nombre}}, te recordamos tu cita mañana a las {{hora}} con {{profesional}} para {{servicio}} en {{negocio}}.\n\n¿Confirmas tu asistencia? Responde SI o NO.",
-        "variables": ["nombre", "hora", "profesional", "servicio", "negocio"],
+        "body": "Hola {{nombre}}, te recuerdo que mañana tienes cita a las {{hora}} con {{profesional}} para tu {{servicio}}. ¿Todo bien para esa hora? Responde SI para confirmar o escríbeme si necesitas cambiarla.",
+        "variables": ["nombre", "hora", "profesional", "servicio"],
         "status": "draft",
     },
     {
         "name": "Recordatorio de cita (1h)",
         "slug": "recordatorio_cita_1h",
         "category": "recordatorio",
-        "body": "{{nombre}}, tu cita es en 1 hora a las {{hora}} con {{profesional}}.\n\n¡Te esperamos en {{negocio}}! Recuerda llegar 5 minuticos antes.",
-        "variables": ["nombre", "hora", "profesional", "negocio"],
+        "body": "{{nombre}}, tu cita es en 1 hora a las {{hora}} con {{profesional}}. Llega 5 minuticos antes para que te atienda puntual. Te esperamos!",
+        "variables": ["nombre", "hora", "profesional"],
         "status": "draft",
     },
     {
-        "name": "Confirmación de cita",
+        "name": "Cita confirmada",
         "slug": "confirmacion_cita",
         "category": "recordatorio",
-        "body": "Hola {{nombre}}! Tu cita en {{negocio}} ha sido confirmada:\n\n📅 {{fecha}}\n🕐 {{hora}}\n💇 {{servicio}}\n👤 {{profesional}}\n\n¡Te esperamos!",
-        "variables": ["nombre", "negocio", "fecha", "hora", "servicio", "profesional"],
+        "body": "Listo {{nombre}}! Tu cita quedo confirmada:\n\n{{fecha}} a las {{hora}}\n{{servicio}} con {{profesional}}\n\nTe esperamos!",
+        "variables": ["nombre", "fecha", "hora", "servicio", "profesional"],
         "status": "draft",
     },
     {
-        "name": "Tu cita es hoy",
-        "slug": "cita_hoy",
+        "name": "Cita reagendada",
+        "slug": "cita_reagendada",
         "category": "recordatorio",
-        "body": "Hola {{nombre}}! Hoy tienes cita en {{negocio}} a las {{hora}}. Recuerda llegar 5 minuticos antes para que {{profesional}} te atienda puntual. ¡Te esperamos!",
-        "variables": ["nombre", "negocio", "hora", "profesional"],
+        "body": "Hola {{nombre}}, tu cita fue reagendada para el {{fecha}} a las {{hora}} con {{profesional}}. Si necesitas otro cambio escribeme sin problema.",
+        "variables": ["nombre", "fecha", "hora", "profesional"],
         "status": "draft",
     },
-    # === POST-SERVICIO (3) ===
+    # ═══════════════════════════════════════════════════════
+    # UTILITY — Post-servicio y seguimiento
+    # ═══════════════════════════════════════════════════════
     {
-        "name": "¿Cómo te fue?",
+        "name": "Gracias por venir",
+        "slug": "gracias_visita",
+        "category": "post_servicio",
+        "body": "{{nombre}}, gracias por venir hoy! Fue un gusto atenderte. Si te gusto el resultado cuentanos, y si hay algo que mejorar tambien. Tu opinion nos importa mucho.",
+        "variables": ["nombre"],
+        "status": "draft",
+    },
+    {
+        "name": "Como te fue (rating)",
         "slug": "como_te_fue",
         "category": "post_servicio",
-        "body": "Hola {{nombre}}! Gracias por tu visita hoy en {{negocio}}. ¿Cómo te fue con tu {{servicio}}? ¿Quedaste contento/a? Cuéntanos, tu opinión nos importa mucho!",
-        "variables": ["nombre", "negocio", "servicio"],
+        "body": "Hola {{nombre}}! Como te fue con tu {{servicio}}? Del 1 al 5, que nota nos pones? Si fue 5 estrellas nos ayudaria mucho una reseña en Google. Gracias!",
+        "variables": ["nombre", "servicio"],
         "status": "draft",
     },
     {
-        "name": "Califícanos del 1 al 5",
-        "slug": "calificanos",
-        "category": "post_servicio",
-        "body": "Hola {{nombre}}! Gracias por visitarnos en {{negocio}}. Del 1 al 5, ¿cómo calificas tu experiencia? Si hay algo que mejorar, cuéntanos con confianza.",
-        "variables": ["nombre", "negocio"],
+        "name": "Seguimiento no-show",
+        "slug": "seguimiento_no_show",
+        "category": "recordatorio",
+        "body": "Hola {{nombre}}, vimos que no pudiste venir a tu cita de {{servicio}}. Todo bien? Si quieres reagendarla escribeme y te busco un horario que te sirva.",
+        "variables": ["nombre", "servicio"],
         "status": "draft",
     },
+    # ═══════════════════════════════════════════════════════
+    # MARKETING — Reactivación (clientes que no vienen)
+    # ═══════════════════════════════════════════════════════
     {
-        "name": "Déjanos tu reseña en Google",
-        "slug": "resena_google",
-        "category": "post_servicio",
-        "body": "Hola {{nombre}}! Si te gustó tu visita a {{negocio}}, nos ayudaría mucho una reseña en Google. Es rápido y nos ayuda a que más gente nos conozca:\n\n{{link_resena}}\n\n¡Gracias!",
-        "variables": ["nombre", "negocio", "link_resena"],
-        "status": "draft",
-    },
-    # === REACTIVACIÓN (3) ===
-    {
-        "name": "Hace rato no vienes",
-        "slug": "hace_rato_no_vienes",
-        "category": "reactivacion",
-        "body": "Hola {{nombre}}! Vemos que llevas un tiempito sin venir a {{negocio}}. Queremos regalarte un 10% de descuento en el servicio que elijas. ¿Te gustaría venir esta semana?",
-        "variables": ["nombre", "negocio"],
-        "status": "draft",
-    },
-    {
-        "name": "Te extrañamos + regalo",
+        "name": "Te extrañamos",
         "slug": "te_extranamos",
         "category": "reactivacion",
-        "body": "Hola {{nombre}}! Llevas {{dias}} días sin visitarnos en {{negocio}} y te extrañamos! Te regalamos un 10% de descuento + una bebida gratis. ¿Te gustaría venir esta semana?",
-        "variables": ["nombre", "dias", "negocio"],
+        "body": "Hola {{nombre}}! Hace {{dias}} dias que no te vemos por aca y te extrañamos. Tenemos un detalle especial para ti: 10% en tu proximo servicio. Te animas a venir esta semana?",
+        "variables": ["nombre", "dias"],
         "status": "draft",
     },
     {
-        "name": "Último intento",
-        "slug": "ultimo_intento",
+        "name": "Tu profesional te espera",
+        "slug": "profesional_te_espera",
         "category": "reactivacion",
-        "body": "Hola {{nombre}}! Hace bastante no sabemos de ti y te echamos de menos en {{negocio}}. Tenemos un 15% de descuento esperándote en cualquier servicio. Solo hasta esta semana. ¿Te animas?",
-        "variables": ["nombre", "negocio"],
+        "body": "Hola {{nombre}}! {{profesional}} tiene horarios disponibles esta semana y queria saber si te gustaria agendar. Dime que dia y hora te queda bien y te cuadro.",
+        "variables": ["nombre", "profesional"],
         "status": "draft",
     },
-    # === CUMPLEAÑOS / FIDELIZACIÓN (3) ===
+    {
+        "name": "Oferta especial para volver",
+        "slug": "oferta_volver",
+        "category": "reactivacion",
+        "body": "{{nombre}}, hace rato no sabemos de ti! Queremos que vuelvas: te regalamos un 15% de descuento en el servicio que quieras. Solo valido esta semana. Te espero?",
+        "variables": ["nombre"],
+        "status": "draft",
+    },
+    # ═══════════════════════════════════════════════════════
+    # MARKETING — Cumpleaños y fidelización
+    # ═══════════════════════════════════════════════════════
     {
         "name": "Feliz cumpleaños",
         "slug": "feliz_cumpleanos",
         "category": "fidelizacion",
-        "body": "¡Feliz cumpleaños, {{nombre}}! 🎂🎉\n\nDe parte de todo el equipo de {{negocio}}, te deseamos un día increíble. Te regalamos un 20% de descuento en el servicio que quieras durante esta semana. ¡Pasa cuando gustes!",
-        "variables": ["nombre", "negocio"],
+        "body": "Feliz cumpleaños {{nombre}}! De parte de todo el equipo te deseamos un dia increible. Te regalamos un 20% de descuento en el servicio que quieras esta semana. Pasa cuando gustes!",
+        "variables": ["nombre"],
         "status": "draft",
     },
     {
         "name": "Gracias cliente VIP",
         "slug": "gracias_vip",
         "category": "fidelizacion",
-        "body": "Hola {{nombre}}! Quería agradecerte por ser parte de nuestros clientes más fieles en {{negocio}}. Llevas {{visitas}} visitas con nosotros y eso para nosotros vale mucho. ¡Te esperamos pronto!",
-        "variables": ["nombre", "negocio", "visitas"],
+        "body": "{{nombre}}, queria darte las gracias por ser parte de nuestros clientes mas fieles. Llevas {{visitas}} visitas con nosotros y eso lo valoramos mucho. La proxima vez pregunta por tu beneficio VIP!",
+        "variables": ["nombre", "visitas"],
         "status": "draft",
     },
-    {
-        "name": "Tu profesional te extraña",
-        "slug": "profesional_te_extrana",
-        "category": "fidelizacion",
-        "body": "Hola {{nombre}}! {{profesional}} me pidió que te saludara. Dice que hace rato no te ve y quiere saber cómo estás. Cuando quieras venir a {{negocio}}, aquí te esperamos con los brazos abiertos!",
-        "variables": ["nombre", "profesional", "negocio"],
-        "status": "draft",
-    },
-    # === PROMOCIONES (3) ===
+    # ═══════════════════════════════════════════════════════
+    # MARKETING — Promociones
+    # ═══════════════════════════════════════════════════════
     {
         "name": "Promo de la semana",
         "slug": "promo_semana",
         "category": "promocion",
-        "body": "Hola {{nombre}}! Esta semana en {{negocio}} tenemos promo especial: {{servicio}} con 15% de descuento. Solo hasta el sábado. ¡Agenda antes de que se acaben los cupos!",
-        "variables": ["nombre", "negocio", "servicio"],
-        "status": "draft",
-    },
-    {
-        "name": "2x1 especial",
-        "slug": "dos_por_uno",
-        "category": "promocion",
-        "body": "Hola {{nombre}}! En {{negocio}} esta semana tenemos 2x1 en {{servicio}}. Ven con un amigo y pagan uno solo. ¡No te lo pierdas!",
-        "variables": ["nombre", "negocio", "servicio"],
+        "body": "Hola {{nombre}}! Esta semana tenemos promo: {{servicio}} con descuento especial. Cupos limitados, si te interesa escribeme y te agendo. No te lo pierdas!",
+        "variables": ["nombre", "servicio"],
         "status": "draft",
     },
     {
         "name": "Trae un amigo",
         "slug": "trae_amigo",
         "category": "promocion",
-        "body": "Hola {{nombre}}! En {{negocio}} tenemos algo para ti: trae a un amigo y los dos reciben 10% de descuento. Solo muestra este mensaje al llegar. ¡Te esperamos!",
-        "variables": ["nombre", "negocio"],
+        "body": "{{nombre}}, tenemos algo bueno: trae a un amigo y los dos se llevan 10% de descuento. Solo muestren este mensaje al llegar. Los espero!",
+        "variables": ["nombre"],
         "status": "draft",
     },
-    # === BIENVENIDA / SEGUIMIENTO (4) ===
+    {
+        "name": "Combo especial",
+        "slug": "combo_especial",
+        "category": "promocion",
+        "body": "Hola {{nombre}}! Combo especial esta semana: {{servicio}} + barba por un precio unico. Escribeme si te interesa y te reservo horario.",
+        "variables": ["nombre", "servicio"],
+        "status": "draft",
+    },
+    # ═══════════════════════════════════════════════════════
+    # UTILITY — Bienvenida
+    # ═══════════════════════════════════════════════════════
     {
         "name": "Bienvenida nuevo cliente",
         "slug": "bienvenida",
         "category": "bienvenida",
-        "body": "¡Bienvenido/a a {{negocio}}, {{nombre}}! Estamos felices de tenerte. Puedes agendar tu próxima cita escribiéndonos aquí. ¿En qué te podemos ayudar?",
-        "variables": ["nombre", "negocio"],
+        "body": "Bienvenido {{nombre}}! Soy Lina del equipo. Puedes escribirme aqui para agendar tu proxima cita, preguntar por precios o lo que necesites. En que te puedo ayudar?",
+        "variables": ["nombre"],
         "status": "draft",
     },
-    {
-        "name": "Seguimiento no-show",
-        "slug": "seguimiento_no_show",
-        "category": "bienvenida",
-        "body": "Hola {{nombre}}, notamos que no pudiste asistir a tu cita de {{servicio}} en {{negocio}}. ¿Todo bien? ¿Te gustaría reagendar? Estamos para ayudarte.",
-        "variables": ["nombre", "servicio", "negocio"],
-        "status": "draft",
-    },
-    {
-        "name": "Gracias por tu visita",
-        "slug": "gracias_visita",
-        "category": "post_servicio",
-        "body": "Hola {{nombre}}! Gracias por tu visita hoy en {{negocio}}. Fue un placer atenderte. ¿Quieres agendar tu próxima cita? Escríbenos y te ayudamos.",
-        "variables": ["nombre", "negocio"],
-        "status": "draft",
-    },
+    # ═══════════════════════════════════════════════════════
+    # UTILITY — Interno (resumen para el dueño)
+    # ═══════════════════════════════════════════════════════
     {
         "name": "Resumen diario",
         "slug": "resumen_diario",
         "category": "interno",
-        "body": "📊 Resumen del día en {{negocio}}:\n\n✅ Citas completadas: {{completadas}}\n❌ No-shows: {{no_shows}}\n💰 Ingresos: ${{ingresos}}\n👥 Clientes nuevos: {{nuevos}}\n\n¡Buen trabajo! 💪",
-        "variables": ["negocio", "completadas", "no_shows", "ingresos", "nuevos"],
+        "body": "Resumen del dia:\n\nCitas completadas: {{completadas}}\nNo-shows: {{no_shows}}\nIngresos: ${{ingresos}}\nClientes nuevos: {{nuevos}}\n\nBuen trabajo!",
+        "variables": ["completadas", "no_shows", "ingresos", "nuevos"],
         "status": "draft",
     },
 ]
