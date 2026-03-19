@@ -110,7 +110,7 @@ def extract_memories_from_conversation(conv_id: int) -> List[Dict]:
                         "content-type": "application/json",
                     },
                     json={
-                        "model": "claude-sonnet-4-5-20250929",  # Same model Lina uses — precise extraction matters
+                        "model": "claude-sonnet-4-20250514",  # Same model Lina uses — precise extraction matters
                         "max_tokens": 500,
                         "temperature": 0.1,
                         "messages": [{"role": "user", "content": prompt}],

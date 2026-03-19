@@ -9,7 +9,7 @@ from sqlalchemy import cast, String, func
 from database.connection import get_db
 from database.models import (
     Admin, Staff, Client, VisitHistory, ClientNote, Service, Appointment,
-    WhatsAppConversation, WhatsAppMessage,
+    WhatsAppConversation, WhatsAppMessage, Tenant,
 )
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
@@ -568,11 +568,15 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
     whatsapp_unread = wa_unread_q.scalar() or 0
 
     # ---------- Lina ----------
+    # Active = tenant not paused AND at least one conversation has AI on
+    _tenant_paused = False
+    if tid:
+        _t = db.query(Tenant).filter(Tenant.id == tid).first()
+        _tenant_paused = _t.ai_is_paused if _t else False
+
     lina_is_global_active = (
-        whatsapp_active_conversations > (whatsapp_total_conversations / 2)
-        if whatsapp_total_conversations > 0
-        else False
-    )
+        (not _tenant_paused) and whatsapp_active_conversations > 0
+    ) if whatsapp_total_conversations > 0 else (not _tenant_paused)
 
     lina_messages_today = whatsapp_messages_today  # same query: outbound by lina_ia today
 

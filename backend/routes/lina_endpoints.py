@@ -408,7 +408,7 @@ Tu trabajo: reescribirla como una REGLA CLARA y CONCISA que Lina pueda seguir.
 
     try:
         payload = {
-            "model": "claude-sonnet-4-5-20250929",
+            "model": "claude-sonnet-4-20250514",
             "max_tokens": 300,
             "system": system,
             "messages": [{"role": "user", "content": f"Categoria: {category}\nInstruccion del admin: {raw_input}"}],

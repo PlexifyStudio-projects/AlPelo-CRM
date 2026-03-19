@@ -26,7 +26,7 @@ def _run_migrations(engine):
         ("tenant", "wa_webhook_token", "VARCHAR(100)"),
         ("tenant", "wa_phone_display", "VARCHAR(20)"),
         ("tenant", "ai_personality", "TEXT"),
-        ("tenant", "ai_model", "VARCHAR(100) NOT NULL DEFAULT 'claude-sonnet-4-5-20250929'"),
+        ("tenant", "ai_model", "VARCHAR(100) NOT NULL DEFAULT 'claude-sonnet-4-20250514'"),
         ("tenant", "address", "TEXT"),
         ("tenant", "updated_at", "TIMESTAMP DEFAULT NOW()"),
         # Finance module
@@ -192,7 +192,7 @@ def _run_migrations(engine):
     try:
         with engine.begin() as conn:
             conn.execute(text(
-                "ALTER TABLE public.tenant ALTER COLUMN ai_model SET DEFAULT 'claude-sonnet-4-5-20250929'"
+                "ALTER TABLE public.tenant ALTER COLUMN ai_model SET DEFAULT 'claude-sonnet-4-20250514'"
             ))
     except Exception as e:
         print(f"[MIGRATION] ai_model default: {e}")
@@ -205,16 +205,25 @@ def _run_migrations(engine):
     except Exception as e:
         print(f"[MIGRATION] ai_name default: {e}")
 
-    # Switch AI model from Haiku to Sonnet (Haiku too dumb for WhatsApp)
+    # Switch AI model to Sonnet 4 (available on all billing tiers)
     try:
         with engine.begin() as conn:
-            result = conn.execute(text(
-                "UPDATE public.ai_config SET model = 'claude-sonnet-4-5-20250929' WHERE model = 'claude-haiku-4-5-20251001'"
+            # Fix ai_config table
+            r1 = conn.execute(text(
+                "UPDATE public.ai_config SET model = 'claude-sonnet-4-20250514' "
+                "WHERE model NOT IN ('claude-sonnet-4-20250514')"
             ))
-            if result.rowcount > 0:
-                print(f"[MIGRATION] Switched {result.rowcount} AI config(s) from Haiku to Sonnet")
+            if r1.rowcount > 0:
+                print(f"[MIGRATION] Switched {r1.rowcount} AI config(s) to Sonnet 4")
+            # Fix tenant table
+            r2 = conn.execute(text(
+                "UPDATE public.tenant SET ai_model = 'claude-sonnet-4-20250514' "
+                "WHERE ai_model != 'claude-sonnet-4-20250514'"
+            ))
+            if r2.rowcount > 0:
+                print(f"[MIGRATION] Switched {r2.rowcount} tenant(s) to Sonnet 4")
     except Exception as e:
-        print(f"[MIGRATION] AI model switch Haiku->Sonnet: {e}")
+        print(f"[MIGRATION] AI model switch: {e}")
 
     # --- Seed: DeveloperLuis admin user (role=dev) ---
     try:

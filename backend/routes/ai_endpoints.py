@@ -2385,7 +2385,7 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada en el servidor.")
 
     config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
-    model = (config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-5-20250929")
+    model = (config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-20250514")
     temperature = config.temperature if config else 0.4
     max_tokens = max(config.max_tokens if config else 4096, 4096)  # Minimum 4096 for bulk operations
 
@@ -2493,7 +2493,7 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
         db_temp = SessionLocal()
         try:
             config = db_temp.query(AIConfig).filter(AIConfig.is_active == True).first()
-            model_override = config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-5-20250929"
+            model_override = config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-20250514"
         finally:
             db_temp.close()
 
@@ -2532,7 +2532,7 @@ def _call_ai_sync(system_prompt: str, history: list, user_message: str) -> str:
     messages = list(history) + [{"role": "user", "content": user_message}]
 
     payload = {
-        "model": "claude-sonnet-4-5-20250929",
+        "model": "claude-sonnet-4-20250514",
         "max_tokens": 2048,
         "system": system_prompt,
         "messages": messages,

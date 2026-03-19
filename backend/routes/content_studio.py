@@ -726,7 +726,7 @@ async def _generate_caption_with_ai(
 
     try:
         payload = {
-            "model": "claude-sonnet-4-5-20250929",
+            "model": "claude-sonnet-4-20250514",
             "max_tokens": 500,
             "system": system_prompt,
             "messages": [{"role": "user", "content": f"Genera un caption sobre: {topic}"}],
@@ -799,7 +799,7 @@ async def _generate_suggestions_with_ai(business_name: str, business_type: str) 
 
     try:
         payload = {
-            "model": "claude-sonnet-4-5-20250929",
+            "model": "claude-sonnet-4-20250514",
             "max_tokens": 800,
             "system": system_prompt,
             "messages": [{"role": "user", "content": "Dame 5 ideas de contenido para esta semana."}],

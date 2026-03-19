@@ -309,7 +309,7 @@ Responde SOLO en JSON con este formato exacto (sin markdown, sin explicaciones):
                     "content-type": "application/json",
                 },
                 json={
-                    "model": tenant.ai_model if tenant else "claude-sonnet-4-5-20250929",
+                    "model": tenant.ai_model if tenant else "claude-sonnet-4-20250514",
                     "max_tokens": 1024,
                     "messages": [{"role": "user", "content": prompt}],
                 },
