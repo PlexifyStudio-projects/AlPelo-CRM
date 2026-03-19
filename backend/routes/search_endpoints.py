@@ -419,11 +419,14 @@ def list_appointments(
             svc = db.query(Service).filter(Service.id == a.service_id).first()
             service_cache[a.service_id] = svc.name if svc else None
 
-        result.append(AppointmentResponse(
-            **{c.name: getattr(a, c.name) for c in a.__table__.columns},
-            staff_name=staff_cache.get(a.staff_id),
-            service_name=service_cache.get(a.service_id),
-        ))
+        # Build response — filter to only fields in AppointmentResponse
+        apt_data = {}
+        for c in a.__table__.columns:
+            if hasattr(AppointmentResponse, c.name) or c.name in AppointmentResponse.model_fields:
+                apt_data[c.name] = getattr(a, c.name)
+        apt_data["staff_name"] = staff_cache.get(a.staff_id)
+        apt_data["service_name"] = service_cache.get(a.service_id)
+        result.append(AppointmentResponse(**apt_data))
 
     return result
 

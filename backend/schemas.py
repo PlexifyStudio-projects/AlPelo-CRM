@@ -327,16 +327,16 @@ class AppointmentUpdate(BaseModel):
 class AppointmentResponse(BaseModel):
     id: int
     client_id: Optional[int] = None
-    client_name: str
-    client_phone: str
-    staff_id: int
+    client_name: Optional[str] = ""
+    client_phone: Optional[str] = ""
+    staff_id: Optional[int] = None
     staff_name: Optional[str] = None
-    service_id: int
+    service_id: Optional[int] = None
     service_name: Optional[str] = None
     date: date
     time: str
-    duration_minutes: int
-    price: int
+    duration_minutes: Optional[int] = 30
+    price: Optional[int] = 0
     status: str
     notes: Optional[str] = None
     created_by: Optional[str] = None
