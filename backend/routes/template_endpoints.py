@@ -504,28 +504,31 @@ async def submit_to_meta(template_id: int):
                             params={"name": clean_slug},
                         )
                         print(f"[META SUBMIT] Delete: {del_resp.status_code} {del_resp.json()}")
-                        if del_resp.status_code == 200:
-                            # Re-submit with MARKETING (Meta forces this after delete)
-                            payload["category"] = "MARKETING"
-                            re_resp = await client.post(
-                                f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
-                                headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
-                                json=payload,
-                            )
-                            re_data = re_resp.json()
-                            print(f"[META SUBMIT] Re-create: {re_resp.status_code} {re_data}")
-                            if re_resp.status_code in (200, 201):
-                                re_status = re_data.get("status", "PENDING")
-                                tpl.status = "approved" if re_status == "APPROVED" else "pending"
-                                tpl.updated_at = datetime.utcnow()
-                                db.commit()
-                                return {
-                                    "success": True,
-                                    "meta_status": re_status,
-                                    "meta_id": re_data.get("id"),
-                                    "message": "Plantilla corregida y reenviada a Meta.",
-                                    "template": _serialize_template(tpl),
-                                }
+                        # Don't delete — just retry with a new slug (_v2) and MARKETING category
+                        new_slug = clean_slug + "_v2" if not clean_slug.endswith("_v2") else clean_slug + "_v3"
+                        payload["name"] = new_slug
+                        payload["category"] = "MARKETING"
+                        print(f"[META SUBMIT] Retrying with new slug: {new_slug} + MARKETING category")
+                        re_resp = await client.post(
+                            f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
+                            headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
+                            json=payload,
+                        )
+                        re_data = re_resp.json()
+                        print(f"[META SUBMIT] Re-create: {re_resp.status_code} {re_data}")
+                        if re_resp.status_code in (200, 201):
+                            re_status = re_data.get("status", "PENDING")
+                            tpl.slug = new_slug  # Update slug in DB to match Meta
+                            tpl.status = "approved" if re_status == "APPROVED" else "pending"
+                            tpl.updated_at = datetime.utcnow()
+                            db.commit()
+                            return {
+                                "success": True,
+                                "meta_status": re_status,
+                                "meta_id": re_data.get("id"),
+                                "message": f"Enviada como '{new_slug}' (Meta requirio nuevo nombre).",
+                                "template": _serialize_template(tpl),
+                            }
 
                     raise HTTPException(status_code=400, detail=f"Meta rechazó: {error_msg}")
 
