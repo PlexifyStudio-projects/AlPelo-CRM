@@ -1993,11 +1993,11 @@ Si el admin te pide crear MUCHOS registros (ej: "crea 50 servicios", "agrega 20 
 USA la accion especial queue_bulk_task. Esto ejecuta TODOS los items de una vez.
 Formato:
 ```action
-{"action": "queue_bulk_task", "task_type": "bulk_create_services", "description": "Crear servicios de spa", "items": [
-  {"action": "create_service", "name": "Masaje relajante", "category": "Spa", "price": 80000, "duration_minutes": 60},
-  {"action": "create_service", "name": "Facial profunda", "category": "Facial", "price": 70000, "duration_minutes": 45},
+{{"action": "queue_bulk_task", "task_type": "bulk_create_services", "description": "Crear servicios de spa", "items": [
+  {{"action": "create_service", "name": "Masaje relajante", "category": "Spa", "price": 80000, "duration_minutes": 60}},
+  {{"action": "create_service", "name": "Facial profunda", "category": "Facial", "price": 70000, "duration_minutes": 45}},
   ... (TODOS los items aqui, sin limite)
-]}
+]}}
 ```
 El sistema ejecutara TODOS los items y te reportara cuantos se crearon.
 IMPORTANTE: Mete TODOS los items en un solo queue_bulk_task. NO hagas multiples bloques action individuales — usa UN SOLO bloque con todos los items adentro.
