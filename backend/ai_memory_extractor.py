@@ -337,3 +337,4 @@ def get_relevant_memories(client_id: int, query_text: str, limit: int = 5) -> Li
         return []
     finally:
         db.close()
+
