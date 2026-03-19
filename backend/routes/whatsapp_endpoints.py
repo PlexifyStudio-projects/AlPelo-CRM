@@ -1116,7 +1116,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         # Step 0.5a: Transcribe audio if needed
         if needs_transcription and media_id:
             print(f"[Lina IA] Transcribing audio for conv {conv_id}...")
-            transcript = await _transcribe_audio(media_id, db=db)
+            _audio_db = SessionLocal()
+            try:
+                transcript = await _transcribe_audio(media_id, db=_audio_db)
+            finally:
+                _audio_db.close()
             inbound_text = f"[Audio del cliente]: {transcript}"
             print(f"[Lina IA] Transcript: {transcript[:100]}...")
 
