@@ -1483,19 +1483,14 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         "list_services", "add_visit",
                         "create_service", "update_service", "delete_service",
                     ):
+                        # ALWAYS propagate tenant_id from conversation to ALL actions
+                        if hasattr(conv, 'tenant_id') and conv.tenant_id:
+                            action_data["tenant_id"] = conv.tenant_id
+
                         # Client creation: use conversation phone ONLY if Lina didn't specify a different one
-                        # This allows creating clients for third parties (primo, esposa, amigo)
                         if action_type == "create_client":
                             if not action_data.get("phone") or action_data["phone"] == conv.wa_contact_phone:
                                 action_data["phone"] = conv.wa_contact_phone
-                            # Propagate tenant from conversation to new client
-                            if hasattr(conv, 'tenant_id') and conv.tenant_id:
-                                action_data["tenant_id"] = conv.tenant_id
-
-                        # Propagate tenant for service creation
-                        if action_type in ("create_service", "update_service", "delete_service"):
-                            if hasattr(conv, 'tenant_id') and conv.tenant_id:
-                                action_data["tenant_id"] = conv.tenant_id
 
                         # For create_appointment, auto-fill client phone from conversation
                         if action_type == "create_appointment" and not action_data.get("client_phone"):
