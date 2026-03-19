@@ -92,6 +92,10 @@ def _trigger_token_resume():
 # ============================================================================
 _in_flight_convs: set[int] = set()
 
+# Message queue for conversations that are in-flight (max 3 per conv)
+_pending_queue: dict[int, list] = {}
+_PENDING_QUEUE_MAX = 3
+
 # ============================================================================
 # Config — reads from tenant DB first, falls back to env vars
 # ============================================================================
@@ -1064,8 +1068,14 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
     try:
         # Step -1: In-flight lock — prevent concurrent replies to same conversation
         if conv_id in _in_flight_convs:
-            print(f"[Lina IA] Already processing conv {conv_id}, skipping duplicate task.")
-            log_event("skip", "Ya estoy procesando esta conversacion", conv_id=conv_id, status="warning")
+            # Queue the message instead of dropping it
+            if conv_id not in _pending_queue:
+                _pending_queue[conv_id] = []
+            if len(_pending_queue[conv_id]) < _PENDING_QUEUE_MAX:
+                _pending_queue[conv_id].append(inbound_text)
+                log_event("sistema", "Mensaje encolado (Lina ocupada)", detail=f"Cola: {len(_pending_queue[conv_id])} mensaje(s) pendiente(s). Se procesara al terminar.", conv_id=conv_id, status="info")
+            else:
+                log_event("skip", "Cola llena — mensaje descartado", detail=f"Ya hay {_PENDING_QUEUE_MAX} mensajes en cola.", conv_id=conv_id, status="warning")
             return
         _in_flight_convs.add(conv_id)
 
@@ -1791,6 +1801,16 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
     finally:
         # Always release the in-flight lock
         _in_flight_convs.discard(conv_id)
+
+        # Process queued messages for this conversation
+        queued = _pending_queue.pop(conv_id, [])
+        if queued:
+            combined = queued[-1]  # Use the LATEST queued message (most relevant)
+            log_event("sistema", f"Procesando mensaje encolado", detail=f"Habia {len(queued)} mensaje(s) en cola. Procesando el mas reciente.", conv_id=conv_id, status="info")
+            try:
+                await ai_auto_reply(conv_id, combined)
+            except Exception as q_err:
+                logger.warning(f"Error processing queued message for conv {conv_id}: {q_err}")
 
 
 # ============================================================================

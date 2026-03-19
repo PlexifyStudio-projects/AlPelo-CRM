@@ -416,6 +416,14 @@ class DashboardStatsResponse(BaseModel):
     # Revenue chart (last 7 days from paid appointments)
     revenue_by_day: List[dict] = []
 
+    # Revenue forecast
+    revenue_forecast_7d: int = 0
+    revenue_forecast_30d: int = 0
+
+    # Client intelligence
+    clients_overdue: int = 0
+    clients_critical: int = 0
+
 
 #========================= FINANCES =========================#
 

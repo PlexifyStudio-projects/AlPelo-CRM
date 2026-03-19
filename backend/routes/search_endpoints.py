@@ -732,6 +732,7 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
         payment_alerts=payment_alerts,
         top_services_today=top_services_today,
         revenue_by_day=_revenue_by_day_paid(db, tid, today),
+        **_client_intelligence_stats(db, tid),
     )
 
 
@@ -754,6 +755,42 @@ def _revenue_by_day_paid(db, tid, today):
         key = str(d)
         result.append({"date": key, "revenue": day_map.get(key, 0)})
     return result
+
+
+def _client_intelligence_stats(db, tid):
+    """Calculate client intelligence metrics for dashboard."""
+    try:
+        from client_intelligence import forecast_revenue, calculate_visit_cycle
+        forecast_7 = forecast_revenue(tid, days=7, db=db) if tid else {}
+        forecast_30 = forecast_revenue(tid, days=30, db=db) if tid else {}
+
+        # Count overdue/critical clients
+        clients = db.query(Client).filter(Client.is_active == True)
+        if tid:
+            clients = clients.filter(Client.tenant_id == tid)
+        overdue = 0
+        critical = 0
+        for c in clients.all():
+            cycle = calculate_visit_cycle(c.id, db)
+            if cycle["cycle_status"] == "overdue":
+                overdue += 1
+            elif cycle["cycle_status"] == "critical":
+                critical += 1
+
+        return {
+            "revenue_forecast_7d": forecast_7.get("total_forecast", 0),
+            "revenue_forecast_30d": forecast_30.get("total_forecast", 0),
+            "clients_overdue": overdue,
+            "clients_critical": critical,
+        }
+    except Exception as e:
+        logger.warning(f"Client intelligence stats error: {e}")
+        return {
+            "revenue_forecast_7d": 0,
+            "revenue_forecast_30d": 0,
+            "clients_overdue": 0,
+            "clients_critical": 0,
+        }
 
 
 # ============================================================================

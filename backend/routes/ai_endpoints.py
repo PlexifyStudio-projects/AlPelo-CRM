@@ -1843,18 +1843,40 @@ Profesional preferido: {preferred_barber}
 Cumpleaños: {birthday_str}
 No-shows registrados: {no_show_count}"""
 
-                # Smart hints for Lina
+                # Smart hints for Lina (powered by Client Intelligence Engine)
                 hints = []
                 if is_birthday_soon:
                     hints.append("CUMPLEAÑOS CERCANO: Felicita al cliente y ofrece descuento de cumpleaños si aplica.")
-                if days_since and days_since > 60:
-                    hints.append(f"CLIENTE INACTIVO: Lleva {days_since} días sin venir. Sé especialmente cálida y ofrece incentivo para que vuelva.")
+
+                # Client Intelligence: visit cycle + risk score
+                try:
+                    from client_intelligence import calculate_visit_cycle, calculate_risk_score
+                    _cycle = calculate_visit_cycle(client.id, db)
+                    _risk = calculate_risk_score(client.id, db)
+
+                    if _cycle["avg_cycle_days"] and _cycle["days_since_last"]:
+                        if _cycle["cycle_status"] == "critical":
+                            hints.append(f"ALERTA CRITICA: Lleva {_cycle['days_since_last']} dias sin venir (su ciclo normal es cada {_cycle['avg_cycle_days']} dias). Riesgo de perderlo: {_risk['risk_score']}%. Se calida, ofrece incentivo para que vuelva.")
+                        elif _cycle["cycle_status"] == "overdue":
+                            hints.append(f"CLIENTE ATRASADO: Lleva {_cycle['days_since_last']} dias sin venir (normalmente viene cada {_cycle['avg_cycle_days']} dias). Sugierele agendar pronto.")
+                        elif _cycle["cycle_status"] == "on_track":
+                            hints.append(f"CICLO DE VISITA: Viene cada ~{_cycle['avg_cycle_days']} dias. Ultima visita hace {_cycle['days_since_last']} dias. Esta dentro de lo normal.")
+                    elif days_since and days_since > 60:
+                        hints.append(f"CLIENTE INACTIVO: Lleva {days_since} dias sin venir. Se especialmente calida y ofrece incentivo para que vuelva.")
+
+                    if _risk["risk_score"] >= 60:
+                        hints.append(f"RIESGO DE CHURN: Score {_risk['risk_score']}/100. Motivos: {'; '.join(_risk['factors'][:3])}")
+                except Exception as intel_err:
+                    logger.warning(f"Client intelligence error: {intel_err}")
+                    if days_since and days_since > 60:
+                        hints.append(f"CLIENTE INACTIVO: Lleva {days_since} dias sin venir. Se especialmente calida y ofrece incentivo para que vuelva.")
+
                 if total_visits >= 10:
-                    hints.append(f"CLIENTE VIP: Tiene {total_visits} visitas. Trátalo con atención premium.")
+                    hints.append(f"CLIENTE VIP: Tiene {total_visits} visitas. Tratalo con atencion premium.")
                 if no_show_count >= 3:
                     hints.append(f"HISTORIAL DE INASISTENCIAS: {no_show_count} no-shows. Confirma bien la cita antes de agendar.")
                 if total_visits == 0:
-                    hints.append("CLIENTE NUEVO: Primer contacto. Da la mejor primera impresión.")
+                    hints.append("CLIENTE NUEVO: Primer contacto. Da la mejor primera impresion.")
 
                 # === LONG-TERM MEMORY (pgvector / semantic search) ===
                 try:
