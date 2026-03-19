@@ -36,7 +36,7 @@ def _reset_if_new_day():
         _stats["last_reset_date"] = today
 
 
-def _save_to_db(event_type, description, detail, contact_name, conv_id, status):
+def _save_to_db(event_type, description, detail, contact_name, conv_id, status, tenant_id):
     """Save event to database (fire-and-forget, never blocks main flow)."""
     try:
         from database.connection import SessionLocal
@@ -44,6 +44,7 @@ def _save_to_db(event_type, description, detail, contact_name, conv_id, status):
         db = SessionLocal()
         try:
             evt = LinaActivityEvent(
+                tenant_id=tenant_id,
                 event_type=event_type,
                 description=description[:500],
                 detail=(detail or "")[:2000],
@@ -62,7 +63,8 @@ def _save_to_db(event_type, description, detail, contact_name, conv_id, status):
 
 
 def log_event(event_type: str, description: str, detail: str = "",
-              contact_name: str = "", conv_id: int = None, status: str = "info"):
+              contact_name: str = "", conv_id: int = None, status: str = "info",
+              tenant_id: int = None):
     """
     Log a Lina IA activity event — saved to DB + in-memory cache.
 
@@ -72,6 +74,7 @@ def log_event(event_type: str, description: str, detail: str = "",
     contact_name: Client/contact name if applicable
     conv_id: Conversation ID if applicable
     status: "ok", "info", "warning", "error"
+    tenant_id: Tenant ID for multi-tenant isolation
     """
     now = _now_col()
 
@@ -109,7 +112,7 @@ def log_event(event_type: str, description: str, detail: str = "",
     import threading
     threading.Thread(
         target=_save_to_db,
-        args=(event_type, description, detail, contact_name, conv_id, status),
+        args=(event_type, description, detail, contact_name, conv_id, status, tenant_id),
         daemon=True,
     ).start()
 
