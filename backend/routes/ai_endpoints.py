@@ -1092,7 +1092,7 @@ def _execute_action(action: dict, db: Session) -> str:
         db.add(svc)
         db.commit()
         db.refresh(svc)
-        return f"Servicio creado: {svc.name} (ID:{svc.id}, {svc.category}, ${svc.price:,})"
+        return f"Servicio creado: {svc.name} (ID:{svc.id}, {svc.category}, ${int(svc.price or 0):,})"
 
     elif action_type == "update_service":
         svc = None

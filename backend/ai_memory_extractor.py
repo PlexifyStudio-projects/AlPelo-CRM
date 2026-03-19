@@ -98,7 +98,8 @@ def extract_memories_from_conversation(conv_id: int) -> List[Dict]:
             conv_text += f"{sender}: {m.content}\n"
 
         # Call Claude to extract memories
-        prompt = EXTRACTION_PROMPT.format(conversation=conv_text)
+        # Use replace instead of .format() to avoid interpreting {action...} in conv_text as format placeholders
+        prompt = EXTRACTION_PROMPT.replace("{conversation}", conv_text)
 
         try:
             with httpx.Client(timeout=30) as client:

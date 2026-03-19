@@ -1769,8 +1769,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             db.close()
 
     except Exception as e:
-        print(f"[Lina IA] Auto-reply error: {e}")
-        log_event("error", "Error interno al procesar respuesta", detail=str(e)[:200], conv_id=conv_id, status="error")
+        err_msg = str(e)[:200].replace("{", "(").replace("}", ")")  # Sanitize braces to prevent format errors in logging
+        print(f"[Lina IA] Auto-reply error: {err_msg}")
+        log_event("error", "Error interno al procesar respuesta", detail=err_msg, conv_id=conv_id, status="error")
     finally:
         # Always release the in-flight lock
         _in_flight_convs.discard(conv_id)
