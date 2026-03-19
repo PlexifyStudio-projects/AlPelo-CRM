@@ -1222,7 +1222,7 @@ def _proactive_reconnect(db):
     reconnect message via approved WhatsApp template."""
     global _reconnect_ran_today
 
-    now = now_colombia()
+    now = _now_colombia()
     today = now.date()
 
     # Only run once per day, between 10:00-10:30 AM

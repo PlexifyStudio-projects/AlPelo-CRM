@@ -493,20 +493,40 @@ async def submit_to_meta(template_id: int):
                             "template": _serialize_template(tpl),
                         }
 
-                    # Include full error details for debugging
-                    error_detail = data.get("error", {})
-                    error_subcode = error_detail.get("error_subcode", "")
-                    error_type = error_detail.get("type", "")
-                    full_msg = f"{error_msg}"
-                    if error_subcode:
-                        full_msg += f" (subcode: {error_subcode})"
-                    if error_type:
-                        full_msg += f" (type: {error_type})"
-                    print(f"[META SUBMIT] FULL ERROR: {error_detail}")
-                    print(f"[META SUBMIT] WABA ID USED: '{wa_business_id}'")
-                    print(f"[META SUBMIT] FULL URL: https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates")
-                    print(f"[META SUBMIT] FULL RESPONSE: {data}")
-                    raise HTTPException(status_code=400, detail=f"Meta rechazó: {full_msg} | WABA_ID={wa_business_id} | URL=graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates")
+                    # Category mismatch — auto-fix: delete old template in Meta, re-create
+                    error_user_msg = data.get("error", {}).get("error_user_msg", "")
+                    if "categor" in error_user_msg.lower() and "no coincide" in error_user_msg.lower():
+                        print(f"[META SUBMIT] Category mismatch — deleting old template and re-creating...")
+                        # Delete existing template in Meta
+                        del_resp = await client.delete(
+                            f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
+                            headers={"Authorization": f"Bearer {wa_token}"},
+                            params={"name": clean_slug},
+                        )
+                        print(f"[META SUBMIT] Delete: {del_resp.status_code} {del_resp.json()}")
+                        if del_resp.status_code == 200:
+                            # Re-submit with correct category
+                            re_resp = await client.post(
+                                f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
+                                headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
+                                json=payload,
+                            )
+                            re_data = re_resp.json()
+                            print(f"[META SUBMIT] Re-create: {re_resp.status_code} {re_data}")
+                            if re_resp.status_code in (200, 201):
+                                re_status = re_data.get("status", "PENDING")
+                                tpl.status = "approved" if re_status == "APPROVED" else "pending"
+                                tpl.updated_at = datetime.utcnow()
+                                db.commit()
+                                return {
+                                    "success": True,
+                                    "meta_status": re_status,
+                                    "meta_id": re_data.get("id"),
+                                    "message": "Plantilla corregida y reenviada a Meta.",
+                                    "template": _serialize_template(tpl),
+                                }
+
+                    raise HTTPException(status_code=400, detail=f"Meta rechazó: {error_msg}")
 
         except httpx.HTTPError as e:
             raise HTTPException(status_code=500, detail=f"Error conectando con Meta: {str(e)[:100]}")
