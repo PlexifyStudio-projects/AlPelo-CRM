@@ -1203,12 +1203,29 @@ def _execute_action(action: dict, db: Session) -> str:
                 q_casvc = q_casvc.filter(Service.tenant_id == _tid)
             svc_obj = q_casvc.first()
         elif action.get("service_name"):
-            q_casvc = db.query(Service).filter(Service.name.ilike(f"%{action['service_name']}%"), Service.is_active == True)
+            svc_search = action['service_name']
+            q_casvc = db.query(Service).filter(Service.name.ilike(f"%{svc_search}%"), Service.is_active == True)
             if _tid:
                 q_casvc = q_casvc.filter(Service.tenant_id == _tid)
             svc_obj = q_casvc.first()
+            # Fuzzy fallback: try each word individually (e.g. "Corte de Cabello" → search "Corte")
+            if not svc_obj and " " in svc_search:
+                for word in svc_search.split():
+                    if len(word) > 3:  # Skip short words like "de", "el", "un"
+                        q_fb = db.query(Service).filter(Service.name.ilike(f"%{word}%"), Service.is_active == True)
+                        if _tid:
+                            q_fb = q_fb.filter(Service.tenant_id == _tid)
+                        svc_obj = q_fb.first()
+                        if svc_obj:
+                            break
         if not svc_obj:
-            return "ERROR: No encontre el servicio."
+            # Last resort: get the first active service as default
+            q_default = db.query(Service).filter(Service.is_active == True)
+            if _tid:
+                q_default = q_default.filter(Service.tenant_id == _tid)
+            svc_obj = q_default.first()
+            if not svc_obj:
+                return "ERROR: No encontre el servicio."
 
         apt_date = action.get("date")
         apt_time = action.get("time")
