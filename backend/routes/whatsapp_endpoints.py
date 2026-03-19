@@ -1466,11 +1466,17 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         "add_note", "complete_task", "list_clients_by_filter",
                         "create_appointment", "update_appointment", "delete_appointment", "list_appointments",
                         "list_services", "add_visit",
+                        "create_service", "update_service", "delete_service",
                     ):
                         # Force real phone from conversation for client creation
                         if action_type == "create_client":
                             action_data["phone"] = conv.wa_contact_phone
                             # Propagate tenant from conversation to new client
+                            if hasattr(conv, 'tenant_id') and conv.tenant_id:
+                                action_data["tenant_id"] = conv.tenant_id
+
+                        # Propagate tenant for service creation
+                        if action_type in ("create_service", "update_service", "delete_service"):
                             if hasattr(conv, 'tenant_id') and conv.tenant_id:
                                 action_data["tenant_id"] = conv.tenant_id
 
@@ -1495,6 +1501,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             "list_clients_by_filter": "Buscando clientes",
                             "tag_conversation": "Etiquetando conversacion",
                             "send_whatsapp": "Enviando mensaje WhatsApp",
+                            "create_service": "Creando servicio",
+                            "update_service": "Actualizando servicio",
+                            "delete_service": "Eliminando servicio",
                         }
                         action_label = _action_labels.get(action_type, f"Ejecutando: {action_type}")
                         log_event("accion", action_label, detail=str(action_data)[:200], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
