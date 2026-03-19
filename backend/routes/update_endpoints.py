@@ -271,6 +271,21 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
     db.commit()
     db.refresh(appointment)
 
+    # Notify on status changes
+    if new_status and new_status != old_status:
+        try:
+            from notifications import notify
+            _tid = appointment.tenant_id
+            _status_labels = {"completed": "completada", "paid": "pagada", "cancelled": "cancelada", "no_show": "no asistio"}
+            _icons = {"completed": "✅", "paid": "💰", "cancelled": "❌", "no_show": "⚠️"}
+            _label = _status_labels.get(new_status, new_status)
+            notify(_tid or 1, f"appointment_{new_status}",
+                   f"Cita {_label}: {appointment.client_name}",
+                   f"{appointment.date} {appointment.time} | {staff.name if staff else ''} | {service.name if service else ''}",
+                   _icons.get(new_status, "📋"), "/agenda")
+        except Exception:
+            pass
+
     staff = db.query(Staff).filter(Staff.id == appointment.staff_id).first()
     service = db.query(Service).filter(Service.id == appointment.service_id).first()
 

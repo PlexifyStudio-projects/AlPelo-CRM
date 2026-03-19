@@ -524,6 +524,21 @@ class LinaTask(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class Notification(Base):
+    """Business notifications — new clients, appointments, cancellations, etc."""
+    __tablename__ = "notification"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False)
+    type = Column(String(50), nullable=False)  # new_client, new_appointment, cancelled, no_show, lina_action, system
+    title = Column(String(300), nullable=False)
+    detail = Column(Text, nullable=True)
+    icon = Column(String(10), nullable=True)  # emoji
+    is_read = Column(Boolean, default=False)
+    link = Column(String(200), nullable=True)  # e.g. /agenda, /clientes
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class LinaActivityEvent(Base):
     """Persistent activity log for Lina IA — survives restarts."""
     __tablename__ = "lina_activity_event"

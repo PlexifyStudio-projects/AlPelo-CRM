@@ -425,6 +425,12 @@ def _execute_action(action: dict, db: Session) -> str:
         db.add(client)
         db.commit()
         db.refresh(client)
+        # Business notification
+        try:
+            from notifications import notify
+            notify(_tid or 1, "new_client", f"Nuevo cliente: {client.name}", f"Tel: {client.phone} | Creado por Lina IA", "👤", "/clientes")
+        except Exception:
+            pass
         return f"Cliente creado: {client.name} (ID: {client.client_id}, Tel: {client.phone})"
 
     elif action_type == "update_client":
@@ -1424,6 +1430,13 @@ def _execute_action(action: dict, db: Session) -> str:
         db.commit()
         db.refresh(new_apt)
         _log_evt("accion", f"✅ Cita creada: {client_name} con {staff_obj.name}", detail=f"ID:{new_apt.id} | {svc_obj.name} | {apt_date} {apt_time} | ${svc_obj.price:,}{' | ' + auto_created_msg.strip() if auto_created_msg else ''}", contact_name=client_name, status="ok")
+        # Business notification
+        try:
+            from notifications import notify
+            _created_by = "Lina IA" if True else "Admin"
+            notify(_tid or 1, "new_appointment", f"{client_name} agendo {svc_obj.name} con {staff_obj.name}", f"{apt_date} a las {apt_time} | ${svc_obj.price:,} | Creada por {_created_by}", "📅", "/agenda")
+        except Exception:
+            pass
         return f"Cita creada (ID:{new_apt.id}): {client_name} con {staff_obj.name} para {svc_obj.name} el {apt_date} a las {apt_time}. Precio: ${svc_obj.price:,}.{auto_created_msg}"
 
     elif action_type == "update_appointment":
@@ -1613,6 +1626,11 @@ def _execute_action(action: dict, db: Session) -> str:
             return "No se especificaron cambios."
         db.commit()
         _log_evt_u("accion", f"✅ Cita reagendada: {apt.client_name}", detail=f"ID:{apt.id} | Cambios: {', '.join(changed)}", contact_name=apt.client_name or "", status="ok")
+        try:
+            from notifications import notify
+            notify(_tid or 1, "appointment_updated", f"Cita reagendada: {apt.client_name}", f"Cambios: {', '.join(changed)}", "🔄", "/agenda")
+        except Exception:
+            pass
         return f"Cita ID:{apt.id} actualizada: {', '.join(changed)}."
 
     elif action_type == "delete_appointment":

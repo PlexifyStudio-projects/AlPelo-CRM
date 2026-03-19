@@ -77,6 +77,16 @@ def create_client(data: ClientCreate, db: Session = Depends(get_db), user: Admin
     db.commit()
     db.refresh(client)
 
+    # Notify: new client
+    try:
+        from notifications import notify
+        notify(db, tid, "new_client",
+               f"Nuevo cliente: {client.name}",
+               f"Tel: {client.phone or 'sin tel'} | Creado por admin",
+               icon="👤", link="/clientes")
+    except Exception:
+        pass
+
     return compute_client_fields(client, db)
 
 
@@ -177,8 +187,21 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), u
     db.commit()
     db.refresh(appointment)
 
-    return AppointmentResponse(
-        **{c.name: getattr(appointment, c.name) for c in appointment.__table__.columns},
-        staff_name=staff.name,
-        service_name=service.name,
-    )
+    # Notify: new appointment
+    try:
+        from notifications import notify
+        notify(db, tid, "new_appointment",
+               f"Nueva cita: {data.client_name} con {staff.name}",
+               f"{service.name} — {data.date} a las {data.time}",
+               icon="📅", link="/agenda")
+    except Exception:
+        pass
+
+    # Filter to schema fields only
+    apt_data = {}
+    for c in appointment.__table__.columns:
+        if c.name in AppointmentResponse.model_fields:
+            apt_data[c.name] = getattr(appointment, c.name)
+    apt_data["staff_name"] = staff.name
+    apt_data["service_name"] = service.name
+    return AppointmentResponse(**apt_data)

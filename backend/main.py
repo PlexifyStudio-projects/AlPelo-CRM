@@ -291,6 +291,9 @@ app.include_router(staff_router, prefix="/api", tags=["Staff Portal"])
 app.include_router(settings_router, prefix="/api", tags=["Settings"])
 app.include_router(campaign_router, prefix="/api", tags=["Campaigns"])
 
+from routes.notification_endpoints import router as notification_router
+app.include_router(notification_router, prefix="/api", tags=["Notifications"])
+
 
 # ============================================================================
 # FACTORY RESET — Dev-only endpoint to wipe all tenant data
