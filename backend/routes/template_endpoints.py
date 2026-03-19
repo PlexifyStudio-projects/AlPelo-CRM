@@ -429,12 +429,22 @@ async def submit_to_meta(template_id: int):
             examples = [example_values.get(v, f"valor_{v}") for v in var_order]
             components[0]["example"] = {"body_text": [examples]}
 
+        # Meta requires specific language codes — "es" is valid for Spanish
+        # Template name: only lowercase letters, numbers, underscores
+        import re as _re
+        clean_slug = _re.sub(r'[^a-z0-9_]', '_', tpl.slug.lower())
+
         payload = {
-            "name": tpl.slug,
+            "name": clean_slug,
             "language": tpl.language or "es",
             "category": meta_category,
             "components": components,
         }
+
+        # Log the full payload for debugging
+        print(f"[META SUBMIT] URL: https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates")
+        print(f"[META SUBMIT] Payload: {payload}")
+        print(f"[META SUBMIT] Token: {wa_token[:20]}...{wa_token[-10:]}" if wa_token else "[META SUBMIT] NO TOKEN")
 
         # Submit to Meta API
         try:
@@ -448,6 +458,7 @@ async def submit_to_meta(template_id: int):
                     json=payload,
                 )
                 data = resp.json()
+                print(f"[META SUBMIT] Response {resp.status_code}: {data}")
 
                 if resp.status_code in (200, 201):
                     # Success — Meta accepted for review
@@ -482,7 +493,17 @@ async def submit_to_meta(template_id: int):
                             "template": _serialize_template(tpl),
                         }
 
-                    raise HTTPException(status_code=400, detail=f"Meta rechazó la solicitud: {error_msg}")
+                    # Include full error details for debugging
+                    error_detail = data.get("error", {})
+                    error_subcode = error_detail.get("error_subcode", "")
+                    error_type = error_detail.get("type", "")
+                    full_msg = f"{error_msg}"
+                    if error_subcode:
+                        full_msg += f" (subcode: {error_subcode})"
+                    if error_type:
+                        full_msg += f" (type: {error_type})"
+                    print(f"[META SUBMIT] FULL ERROR: {error_detail}")
+                    raise HTTPException(status_code=400, detail=f"Meta rechazó la solicitud: {full_msg}")
 
         except httpx.HTTPError as e:
             raise HTTPException(status_code=500, detail=f"Error conectando con Meta: {str(e)[:100]}")
