@@ -493,32 +493,26 @@ async def submit_to_meta(template_id: int):
                             "template": _serialize_template(tpl),
                         }
 
-                    # Category mismatch — auto-fix: delete old template in Meta, re-create
+                    # Category mismatch or any conflict — retry with _v2 slug
                     error_user_msg = data.get("error", {}).get("error_user_msg", "")
-                    if "categor" in error_user_msg.lower() and "no coincide" in error_user_msg.lower():
-                        print(f"[META SUBMIT] Category mismatch — deleting old template and re-creating...")
-                        # Delete existing template in Meta
-                        del_resp = await client.delete(
-                            f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
-                            headers={"Authorization": f"Bearer {wa_token}"},
-                            params={"name": clean_slug},
-                        )
-                        print(f"[META SUBMIT] Delete: {del_resp.status_code} {del_resp.json()}")
-                        # Don't delete — just retry with a new slug (_v2) and MARKETING category
-                        new_slug = clean_slug + "_v2" if not clean_slug.endswith("_v2") else clean_slug + "_v3"
+                    if error_code == 100 or "categor" in error_user_msg.lower() or "already" in error_msg.lower():
+                        # Create with new slug (no delete needed)
+                        new_slug = clean_slug + "_v2"
+                        if new_slug == clean_slug:
+                            new_slug = clean_slug + "_v3"
                         payload["name"] = new_slug
                         payload["category"] = "MARKETING"
-                        print(f"[META SUBMIT] Retrying with new slug: {new_slug} + MARKETING category")
+                        print(f"[META SUBMIT] Conflict — retrying with slug '{new_slug}' + MARKETING")
                         re_resp = await client.post(
                             f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
                             headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
                             json=payload,
                         )
                         re_data = re_resp.json()
-                        print(f"[META SUBMIT] Re-create: {re_resp.status_code} {re_data}")
+                        print(f"[META SUBMIT] Retry result: {re_resp.status_code} {re_data}")
                         if re_resp.status_code in (200, 201):
                             re_status = re_data.get("status", "PENDING")
-                            tpl.slug = new_slug  # Update slug in DB to match Meta
+                            tpl.slug = new_slug
                             tpl.status = "approved" if re_status == "APPROVED" else "pending"
                             tpl.updated_at = datetime.utcnow()
                             db.commit()
@@ -526,11 +520,14 @@ async def submit_to_meta(template_id: int):
                                 "success": True,
                                 "meta_status": re_status,
                                 "meta_id": re_data.get("id"),
-                                "message": f"Enviada como '{new_slug}' (Meta requirio nuevo nombre).",
+                                "message": f"Enviada como '{new_slug}'.",
                                 "template": _serialize_template(tpl),
                             }
+                        # Retry also failed — show BOTH errors
+                        re_error = re_data.get("error", {}).get("error_user_msg", re_data.get("error", {}).get("message", ""))
+                        raise HTTPException(status_code=400, detail=f"Meta rechazó '{clean_slug}': {error_user_msg or error_msg}. Tambien rechazó '{new_slug}': {re_error}")
 
-                    raise HTTPException(status_code=400, detail=f"Meta rechazó: {error_msg}")
+                    raise HTTPException(status_code=400, detail=f"Meta rechazó: {error_user_msg or error_msg}")
 
         except httpx.HTTPError as e:
             raise HTTPException(status_code=500, detail=f"Error conectando con Meta: {str(e)[:100]}")
