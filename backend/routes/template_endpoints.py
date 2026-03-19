@@ -29,7 +29,7 @@ DEFAULT_TEMPLATES = [
         "name": "Recordatorio de cita (1h)",
         "slug": "recordatorio_cita_1h",
         "category": "recordatorio",
-        "body": "{{nombre}}, tu cita es en 1 hora a las {{hora}} con {{profesional}}. Llega 5 minuticos antes para que te atienda puntual. Te esperamos!",
+        "body": "Hola {{nombre}}, tu cita es en 1 hora a las {{hora}} con {{profesional}}. Llega 5 minuticos antes para que te atienda puntual. Te esperamos!",
         "variables": ["nombre", "hora", "profesional"],
         "status": "draft",
     },
@@ -56,7 +56,7 @@ DEFAULT_TEMPLATES = [
         "name": "Gracias por venir",
         "slug": "gracias_visita",
         "category": "post_servicio",
-        "body": "{{nombre}}, gracias por venir hoy! Fue un gusto atenderte. Si te gusto el resultado cuentanos, y si hay algo que mejorar tambien. Tu opinion nos importa mucho.",
+        "body": "Hola {{nombre}}, gracias por venir hoy! Fue un gusto atenderte. Si te gusto el resultado cuentanos, y si hay algo que mejorar tambien. Tu opinion nos importa mucho.",
         "variables": ["nombre"],
         "status": "draft",
     },
@@ -99,7 +99,7 @@ DEFAULT_TEMPLATES = [
         "name": "Oferta especial para volver",
         "slug": "oferta_volver",
         "category": "reactivacion",
-        "body": "{{nombre}}, hace rato no sabemos de ti! Queremos que vuelvas: te regalamos un 15% de descuento en el servicio que quieras. Solo valido esta semana. Te espero?",
+        "body": "Hola {{nombre}}, hace rato no sabemos de ti! Queremos que vuelvas: te regalamos un 15% de descuento en el servicio que quieras. Solo valido esta semana. Te espero?",
         "variables": ["nombre"],
         "status": "draft",
     },
@@ -118,7 +118,7 @@ DEFAULT_TEMPLATES = [
         "name": "Gracias cliente VIP",
         "slug": "gracias_vip",
         "category": "fidelizacion",
-        "body": "{{nombre}}, queria darte las gracias por ser parte de nuestros clientes mas fieles. Llevas {{visitas}} visitas con nosotros y eso lo valoramos mucho. La proxima vez pregunta por tu beneficio VIP!",
+        "body": "Hola {{nombre}}, queria darte las gracias por ser parte de nuestros clientes mas fieles. Llevas {{visitas}} visitas con nosotros y eso lo valoramos mucho. La proxima vez pregunta por tu beneficio VIP!",
         "variables": ["nombre", "visitas"],
         "status": "draft",
     },
@@ -137,7 +137,7 @@ DEFAULT_TEMPLATES = [
         "name": "Trae un amigo",
         "slug": "trae_amigo",
         "category": "promocion",
-        "body": "{{nombre}}, tenemos algo bueno: trae a un amigo y los dos se llevan 10% de descuento. Solo muestren este mensaje al llegar. Los espero!",
+        "body": "Hola {{nombre}}, tenemos algo bueno: trae a un amigo y los dos se llevan 10% de descuento. Solo muestren este mensaje al llegar. Los espero!",
         "variables": ["nombre"],
         "status": "draft",
     },
@@ -398,8 +398,15 @@ async def submit_to_meta(template_id: int):
                 detail="WhatsApp Business Account ID o Token no configurados"
             )
 
+        # Auto-fix: Meta doesn't allow variables at start or end of body
+        _body = tpl.body.strip()
+        if _body.startswith("{{"):
+            _body = "Hola " + _body
+        if _body.endswith("}}"):
+            _body = _body + "."
+
         # Convert body variables to Meta format
-        meta_body, var_order = _convert_variables_to_meta(tpl.body)
+        meta_body, var_order = _convert_variables_to_meta(_body)
         meta_category = _META_CATEGORY_MAP.get(tpl.category, "MARKETING")
 
         # Build Meta API payload
