@@ -243,8 +243,8 @@ const Automations = () => {
   const enabledAutomations = automations.filter(a => a.enabled);
   const disabledAutomations = automations.filter(a => !a.enabled);
   const filteredAutomations = filterCategory === 'all'
-    ? enabledAutomations
-    : enabledAutomations.filter(a => a.category === filterCategory);
+    ? automations
+    : automations.filter(a => a.category === filterCategory);
 
   // Stats computed
   const activeCount = automations.filter(a => a.enabled).length;
