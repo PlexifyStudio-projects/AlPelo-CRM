@@ -459,13 +459,13 @@ const Campaigns = () => {
         </button>
       </div>
 
-      {/* ─── Health Dashboard ─── */}
+      {/* ─── Stats ─── */}
       <div className={`${B}__health`}>
         {[
-          { value: stats.totalClients, label: 'Alcance', sub: 'clientes con WhatsApp', color: '#2D5A3D' },
-          { value: stats.inactive30, label: 'Inactivos', sub: 'más de 30 días', color: '#D97706' },
-          { value: stats.atRisk, label: 'En riesgo', sub: 'necesitan atención', color: '#DC2626' },
+          { value: templates.filter(t => t.status === 'approved').length, label: 'Listas', sub: 'plantillas aprobadas', color: '#2D5A3D' },
+          { value: stats.totalClients, label: 'Alcance', sub: 'clientes con WhatsApp', color: '#3B82F6' },
           { value: stats.totalSent, label: 'Enviados', sub: 'mensajes totales', color: '#059669' },
+          { value: stats.inactive30 + (stats.atRisk || 0), label: 'Por recuperar', sub: 'inactivos + en riesgo', color: '#D97706' },
         ].map((item, i) => (
           <div key={i} className={`${B}__health-card`}>
             <div className={`${B}__health-card-dot`} style={{ background: item.color }} />
@@ -476,31 +476,6 @@ const Campaigns = () => {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* ─── Toolbar ─── */}
-      <div className={`${B}__toolbar`}>
-        <div className={`${B}__search`}>
-          <SearchIcon />
-          <input
-            type="text"
-            placeholder="Buscar campaña..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className={`${B}__search-input`}
-          />
-        </div>
-        <div className={`${B}__filters`}>
-          {['all', 'draft', 'pending_meta', 'approved', 'sent'].map(f => (
-            <button
-              key={f}
-              className={`${B}__filter-btn ${filter === f ? `${B}__filter-btn--active` : ''}`}
-              onClick={() => setFilter(f)}
-            >
-              {f === 'all' ? 'Todas' : STATUS_META[f]?.label || f}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* ─── Approved Templates — Ready to send ─── */}
