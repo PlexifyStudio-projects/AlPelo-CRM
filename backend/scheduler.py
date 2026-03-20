@@ -474,12 +474,45 @@ def _expire_old_notes(db):
     )
 
     for note in old_notes:
-        if note.created_at and (now - note.created_at).total_seconds() > 86400:  # 24h
+        should_expire = False
+        expire_reason = ""
+
+        # Expire if older than 24h
+        if note.created_at and (now - note.created_at).total_seconds() > 86400:
+            should_expire = True
+            expire_reason = "tarea tenia mas de 24h"
+
+        # Expire reminder notes if the referenced appointment has passed
+        if not should_expire and note.created_at:
+            note_lower = note.content.lower()
+            _is_reminder = any(kw in note_lower for kw in ["recordatorio", "avisar", "aviso", "min antes", "minutos antes"])
+            if _is_reminder:
+                # Check if client has any upcoming appointments today
+                col_now = _now_colombia()
+                client_future_apts = (
+                    db.query(Appointment)
+                    .filter(Appointment.client_id == note.client_id, Appointment.date == col_now.date(), Appointment.status.in_(["confirmed", "completed", "paid"]))
+                    .all()
+                )
+                all_passed = True
+                for a in client_future_apts:
+                    try:
+                        ah, am = map(int, a.time.split(":"))
+                        if ah * 60 + am > col_now.hour * 60 + col_now.minute - 5:
+                            all_passed = False
+                            break
+                    except (ValueError, AttributeError):
+                        pass
+                if not client_future_apts or all_passed:
+                    should_expire = True
+                    expire_reason = "todas las citas del dia ya pasaron"
+
+        if should_expire:
             for prefix in ["PENDIENTE:", "RECORDATORIO:"]:
                 note.content = note.content.replace(prefix, "EXPIRADO:")
-            note.content += f" [Expirado — tarea tenia mas de 24h {now.strftime('%d/%m %H:%M')}]"
+            note.content += f" [Expirado — {expire_reason} {now.strftime('%d/%m %H:%M')}]"
             db.commit()
-            print(f"[SCHEDULER] Expired old note #{note.id}")
+            print(f"[SCHEDULER] Expired note #{note.id}: {expire_reason}")
 
 
 # ============================================================================
