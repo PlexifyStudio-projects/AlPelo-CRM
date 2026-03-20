@@ -176,12 +176,71 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), u
         raise HTTPException(status_code=404, detail="Service not found")
 
     appt_data = data.model_dump()
-    if appt_data.get("duration_minutes") is None:
-        appt_data["duration_minutes"] = service.duration_minutes or 30
+    duration_mins = appt_data.get("duration_minutes") or service.duration_minutes or 30
+    appt_data["duration_minutes"] = duration_mins
     if appt_data.get("price") is None:
         appt_data["price"] = service.price
 
     tid = safe_tid(user, db)
+
+    # --- CONFLICT VALIDATION ---
+    req_hour, req_min = int(data.time.split(":")[0]), int(data.time.split(":")[1])
+    req_start = req_hour * 60 + req_min
+    req_end = req_start + duration_mins
+
+    # 1. CLIENT CONFLICT: same client can't have overlapping appointments
+    if data.client_name:
+        client = db.query(Client).filter(
+            Client.name.ilike(f"%{data.client_name.strip()}%"),
+            Client.is_active == True,
+        )
+        if tid:
+            client = client.filter(Client.tenant_id == tid)
+        client = client.first()
+        if client:
+            client_apts = db.query(Appointment).filter(
+                Appointment.client_id == client.id,
+                Appointment.date == data.date,
+                Appointment.status.in_(["confirmed", "completed"]),
+            ).all()
+            for ea in client_apts:
+                try:
+                    eh, em = int(ea.time.split(":")[0]), int(ea.time.split(":")[1])
+                    ea_start = eh * 60 + em
+                    ea_end = ea_start + (ea.duration_minutes or 30)
+                    if req_start < ea_end and req_end > ea_start:
+                        ea_end_h, ea_end_m = ea_end // 60, ea_end % 60
+                        raise HTTPException(
+                            status_code=409,
+                            detail=f"{data.client_name} ya tiene una cita a las {ea.time} hasta las {ea_end_h:02d}:{ea_end_m:02d}. No se puede agendar otra cita que se cruce."
+                        )
+                except HTTPException:
+                    raise
+                except Exception:
+                    pass
+
+    # 2. STAFF CONFLICT: same staff can't have overlapping appointments
+    staff_apts = db.query(Appointment).filter(
+        Appointment.staff_id == data.staff_id,
+        Appointment.date == data.date,
+        Appointment.status.in_(["confirmed", "completed"]),
+    ).all()
+    for ea in staff_apts:
+        try:
+            eh, em = int(ea.time.split(":")[0]), int(ea.time.split(":")[1])
+            ea_start = eh * 60 + em
+            ea_end = ea_start + (ea.duration_minutes or 30)
+            if req_start < ea_end and req_end > ea_start:
+                ea_end_h, ea_end_m = ea_end // 60, ea_end % 60
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"{staff.name} ya tiene una cita a las {ea.time} hasta las {ea_end_h:02d}:{ea_end_m:02d}. No se puede agendar otra cita que se cruce."
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
     appointment = Appointment(tenant_id=tid, **appt_data)
     db.add(appointment)
     db.commit()
