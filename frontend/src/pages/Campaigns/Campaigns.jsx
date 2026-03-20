@@ -503,6 +503,31 @@ const Campaigns = () => {
         </div>
       </div>
 
+      {/* ─── Approved Templates — Ready to send ─── */}
+      {(() => {
+        const approved = templates.filter(t => t.status === 'approved');
+        if (approved.length === 0) return null;
+        return (
+          <div className={`${B}__ready-section`}>
+            <h3 className={`${B}__ready-title`}>Plantillas listas para enviar</h3>
+            <div className={`${B}__ready-grid`}>
+              {approved.map(t => (
+                <div key={t.id} className={`${B}__ready-card`}>
+                  <div className={`${B}__ready-card-header`}>
+                    <span className={`${B}__ready-card-name`}>{t.name}</span>
+                    <span className={`${B}__ready-card-badge`}>Aprobada</span>
+                  </div>
+                  <p className={`${B}__ready-card-body`}>{t.body.length > 100 ? t.body.slice(0, 100) + '...' : t.body}</p>
+                  <button className={`${B}__ready-card-btn`} onClick={() => { setFormBody(t.body); setFormTemplateName(t.slug); setFormName(t.name); setShowWizard(true); setWizardStep(3); }}>
+                    Enviar
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ─── Suggested Campaigns (when empty or always as inspiration) ─── */}
       {campaigns.length === 0 && filteredCampaigns.length === 0 && (
         <EmptyState

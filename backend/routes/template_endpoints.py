@@ -248,7 +248,7 @@ async def list_templates(tenant_id: int = None, status: str = None):
                 print(f"[TEMPLATE SYNC] WABA={wa_business_id[:10] if wa_business_id else 'EMPTY'}... Token={'YES' if wa_token else 'EMPTY'}")
                 if wa_business_id and wa_token:
                     import httpx as _httpx
-                    with _httpx.Client(timeout=10) as _client:
+                    with _httpx.Client(timeout=5) as _client:
                         resp = _client.get(
                             f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
                             headers={"Authorization": f"Bearer {wa_token}"},

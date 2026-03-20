@@ -2624,6 +2624,79 @@
     }
   }
 
+  // ── Ready to send section ──
+  &__ready-section {
+    margin-bottom: 24px;
+  }
+
+  &__ready-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: $color-secondary;
+    margin-bottom: 12px;
+  }
+
+  &__ready-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  &__ready-card {
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: all 200ms;
+    &:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); }
+  }
+
+  &__ready-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &__ready-card-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: $color-secondary;
+  }
+
+  &__ready-card-badge {
+    font-size: 10px;
+    font-weight: 600;
+    color: $color-primary;
+    background: rgba($color-primary, 0.08);
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__ready-card-body {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.5);
+    line-height: 1.5;
+    flex: 1;
+  }
+
+  &__ready-card-btn {
+    background: $color-primary;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 200ms;
+    &:hover { background: $color-primary-dark; }
+  }
+
   // ── Template list (approved by Meta) ──
   &__template-list {
     display: flex;
