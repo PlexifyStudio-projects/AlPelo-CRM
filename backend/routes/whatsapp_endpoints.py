@@ -1342,7 +1342,8 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             log_event("sistema", f"🧠 Paso 3: Analizando y generando respuesta", detail=f"Mensaje del cliente: {(inbound_text or '')[:100]}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
 
-            ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type)
+            _conv_tid = getattr(conv, 'tenant_id', None) or 1
+            ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type, tenant_id=_conv_tid)
 
             if not ai_response or not ai_response.strip():
                 print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")

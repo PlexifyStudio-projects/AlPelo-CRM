@@ -2891,6 +2891,14 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
             results_str = "\n".join(f"✅ {r}" for r in action_results)
             clean_text += f"\n\n{results_str}"
 
+    # Track AI usage per tenant in DB
+    try:
+        from routes._usage_tracker import track_ai_usage
+        _tenant_id = user.tenant_id or (tenant.id if tenant else 1)
+        track_ai_usage(tokens, tenant_id=_tenant_id)
+    except Exception as e:
+        print(f"[AI] Usage tracking error: {e}")
+
     return AIChatResponse(response=clean_text, tokens_used=tokens)
 
 
@@ -2898,7 +2906,7 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
 # STANDALONE AI CALL — Used by WhatsApp auto-reply
 # ============================================================================
 
-async def _call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None, model_override: str = None) -> str:
+async def _call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None, model_override: str = None, tenant_id: int = 1) -> str:
     """Standalone AI call for WhatsApp auto-reply. Uses Claude only. Supports image vision.
     model_override: if provided, use this model. Otherwise reads from AIConfig."""
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
@@ -2933,7 +2941,13 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
     messages = list(history) + [{"role": "user", "content": user_content}]
 
     try:
-        text, _ = await _call_anthropic(anthropic_key, model_override, system_prompt, messages, 0.4, 2048)
+        text, tokens = await _call_anthropic(anthropic_key, model_override, system_prompt, messages, 0.4, 2048)
+        # Track AI usage per tenant
+        try:
+            from routes._usage_tracker import track_ai_usage
+            track_ai_usage(tokens, tenant_id=tenant_id)
+        except Exception:
+            pass
         return text.strip()
     except Exception as e:
         print(f"[AI WhatsApp] Claude ({model_override}) failed: {e}")
@@ -2967,6 +2981,13 @@ def _call_ai_sync(system_prompt: str, history: list, user_message: str) -> str:
         for block in result.get("content", []):
             if block.get("type") == "text":
                 text += block.get("text", "")
+        # Track AI usage for scheduler calls
+        tokens = result.get("usage", {}).get("input_tokens", 0) + result.get("usage", {}).get("output_tokens", 0)
+        try:
+            from routes._usage_tracker import track_ai_usage
+            track_ai_usage(tokens, tenant_id=1)
+        except Exception:
+            pass
         return text.strip() if text else None
     except Exception as e:
         print(f"[AI Sync] Claude failed: {e}")
