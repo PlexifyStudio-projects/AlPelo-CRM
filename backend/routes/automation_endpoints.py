@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException
 from database.connection import SessionLocal
 from database.models import (
     WorkflowTemplate, WorkflowExecution, Tenant, Client,
-    Appointment, VisitHistory, WhatsAppMessage,
+    Appointment, VisitHistory, WhatsAppMessage, MessageTemplate,
 )
 from datetime import datetime, timedelta
 from sqlalchemy import func
