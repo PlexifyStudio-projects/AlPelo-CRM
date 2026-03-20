@@ -74,16 +74,23 @@ const CAMPAIGN_TYPES = [
 ];
 
 const SEGMENT_OPTIONS = [
-  { id: 'inactive_30', label: '+30 días sin venir', filters: { days_inactive: 30 } },
-  { id: 'inactive_60', label: '+60 días sin venir', filters: { days_inactive: 60 } },
-  { id: 'inactive_90', label: '+90 días sin venir', filters: { days_inactive: 90 } },
-  { id: 'vip', label: 'Clientes VIP', filters: { status: 'vip' } },
-  { id: 'at_risk', label: 'En riesgo', filters: { status: 'en_riesgo' } },
-  { id: 'inactive_all', label: 'Inactivos', filters: { status: 'inactivo' } },
-  { id: 'active', label: 'Activos', filters: { status: 'activo' } },
-  { id: 'new', label: 'Nuevos', filters: { status: 'nuevo' } },
-  { id: 'high_value', label: 'Alto valor (+$500k)', filters: { min_spent: 500000 } },
-  { id: 'frequent', label: 'Frecuentes (+10 visitas)', filters: { min_visits: 10 } },
+  // Estado del cliente
+  { id: 'all', label: 'Todos los clientes', group: 'estado', filters: {} },
+  { id: 'active', label: 'Activos', group: 'estado', filters: { status: 'activo' } },
+  { id: 'vip', label: 'VIP', group: 'estado', filters: { status: 'vip' } },
+  { id: 'new', label: 'Nuevos', group: 'estado', filters: { status: 'nuevo' } },
+  { id: 'at_risk', label: 'En riesgo', group: 'estado', filters: { status: 'en_riesgo' } },
+  { id: 'inactive_all', label: 'Inactivos', group: 'estado', filters: { status: 'inactivo' } },
+  // Por inactividad
+  { id: 'inactive_15', label: '+15 dias sin venir', group: 'inactividad', filters: { days_inactive: 15 } },
+  { id: 'inactive_30', label: '+30 dias sin venir', group: 'inactividad', filters: { days_inactive: 30 } },
+  { id: 'inactive_60', label: '+60 dias sin venir', group: 'inactividad', filters: { days_inactive: 60 } },
+  { id: 'inactive_90', label: '+90 dias sin venir', group: 'inactividad', filters: { days_inactive: 90 } },
+  // Especiales
+  { id: 'birthday_month', label: 'Cumpleañeros del mes', group: 'especial', filters: { birthday_month: true } },
+  { id: 'frequent', label: 'Clientes frecuentes', group: 'especial', filters: { min_visits: 5 } },
+  { id: 'high_value', label: 'Alto valor (top 20%)', group: 'especial', filters: { top_spenders: 20 } },
+  { id: 'first_visit', label: 'Solo 1 visita', group: 'especial', filters: { max_visits: 1 } },
 ];
 
 const STATUS_META = {
@@ -818,28 +825,36 @@ const Campaigns = () => {
               {wizardStep === 3 && (
                 <div className={`${B}__wizard-step`}>
                   <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Segmento de audiencia</label>
-                    <div className={`${B}__segment-grid`}>
-                      {SEGMENT_OPTIONS.map(s => (
-                        <button
-                          key={s.id}
-                          className={`${B}__segment-btn ${formSegment === s.id ? `${B}__segment-btn--selected` : ''}`}
-                          onClick={async () => {
-                            setFormSegment(s.id);
-                            // Build composite filters
-                            const baseFilters = { ...s.filters };
-                            if (formStaffFilter) baseFilters.staff_id = Number(formStaffFilter);
-                            if (formServiceFilter) baseFilters.service_name = formServiceFilter;
-                            if (editingId) {
-                              try {
-                                await campaignService.update(editingId, { segment_filters: baseFilters });
-                              } catch {}
-                            }
-                          }}
-                        >
-                          {s.label}
-                        </button>
-                      ))}
+                    <label className={`${B}__label`}>¿A quienes va dirigida?</label>
+
+                    <div className={`${B}__segment-section`}>
+                      <span className={`${B}__segment-group-label`}>Por estado</span>
+                      <div className={`${B}__segment-grid`}>
+                        {SEGMENT_OPTIONS.filter(s => s.group === 'estado').map(s => (
+                          <button key={s.id} className={`${B}__segment-btn ${formSegment === s.id ? `${B}__segment-btn--selected` : ''}`}
+                            onClick={() => setFormSegment(s.id)}>{s.label}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={`${B}__segment-section`}>
+                      <span className={`${B}__segment-group-label`}>Por inactividad</span>
+                      <div className={`${B}__segment-grid`}>
+                        {SEGMENT_OPTIONS.filter(s => s.group === 'inactividad').map(s => (
+                          <button key={s.id} className={`${B}__segment-btn ${formSegment === s.id ? `${B}__segment-btn--selected` : ''}`}
+                            onClick={() => setFormSegment(s.id)}>{s.label}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={`${B}__segment-section`}>
+                      <span className={`${B}__segment-group-label`}>Especiales</span>
+                      <div className={`${B}__segment-grid`}>
+                        {SEGMENT_OPTIONS.filter(s => s.group === 'especial').map(s => (
+                          <button key={s.id} className={`${B}__segment-btn ${formSegment === s.id ? `${B}__segment-btn--selected` : ''}`}
+                            onClick={() => setFormSegment(s.id)}>{s.label}</button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
