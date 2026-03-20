@@ -1540,14 +1540,10 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             action_ok = "ERROR" not in result and "CONFLICTO" not in result
                             log_event("accion", f"{action_label} — {'Listo' if action_ok else 'Error'}", detail=result[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok" if action_ok else "error")
 
-                            # CRITICAL: If action failed with CONFLICT, override AI response
-                            if "CONFLICTO" in result:
-                                # Replace the "Listo! Ya agende..." lie with the real conflict message
-                                conflict_msg = result.replace("CONFLICTO: ", "").strip()
-                                ai_response = f"No pude completar la accion: {conflict_msg}"
-                                print(f"[Lina IA] CONFLICT OVERRIDE — replaced response with: {ai_response[:100]}")
-                            elif "ERROR" in result:
-                                ai_response = f"Hubo un problema: {result.replace('ERROR: ', '').strip()}"
+                            # Track results for override
+                            if not hasattr(ai_auto_reply, '_action_results'):
+                                ai_auto_reply._action_results = []
+                            ai_auto_reply._action_results.append(result)
 
                             # If client was created, link to conversation
                             if action_type == "create_client" and "ERROR" not in result:
@@ -1573,6 +1569,23 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 except Exception as action_err:
                     print(f"[Lina IA] Action parse error: {action_err}")
                     log_event("error", "Error parseando accion", detail=str(action_err)[:200], conv_id=conv_id, status="error")
+
+            # CONFLICT/ERROR OVERRIDE: If any action failed, replace the response entirely
+            _all_results = getattr(ai_auto_reply, '_action_results', [])
+            _conflicts = [r for r in _all_results if "CONFLICTO" in r]
+            _errors = [r for r in _all_results if "ERROR" in r and "CONFLICTO" not in r]
+            if _conflicts:
+                # Build honest response from conflict details
+                conflict_parts = []
+                for c in _conflicts:
+                    clean_c = c.replace("CONFLICTO: ", "").strip()
+                    conflict_parts.append(clean_c)
+                ai_response = "No pude agendar la cita: " + " ".join(conflict_parts)
+                print(f"[Lina IA] CONFLICT OVERRIDE — {len(_conflicts)} conflict(s) detected, response replaced")
+            elif _errors:
+                ai_response = "Hubo un problema: " + " | ".join(e.replace("ERROR: ", "") for e in _errors)
+            # Reset for next call
+            ai_auto_reply._action_results = []
 
             # NUCLEAR STRIP: Remove ALL traces of action blocks from client-facing text
             clean_response = ai_response

@@ -2816,19 +2816,30 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
     clean_text = ACTION_PATTERN.sub('', text).strip()
 
     if action_results:
-        # If any action had CONFLICT, override the "Listo" text
-        has_conflict = any("CONFLICTO" in r for r in action_results)
-        has_error = any("ERROR" in r for r in action_results)
-        if has_conflict or has_error:
-            # Replace misleading confirmation with the real result
-            for phrase in ["Listo!", "Listo,", "Ya agendé", "Ya agende", "Ya lo agendé", "Ya cambie", "Ya cambié", "Te confirmo"]:
-                clean_text = clean_text.replace(phrase, "")
-            clean_text = clean_text.strip()
-            if not clean_text:
-                clean_text = "Resultado de las acciones:"
+        # Separate successful and failed results
+        conflicts = [r for r in action_results if "CONFLICTO" in r]
+        errors = [r for r in action_results if "ERROR" in r and "CONFLICTO" not in r]
+        successes = [r for r in action_results if "CONFLICTO" not in r and "ERROR" not in r]
 
-        results_str = "\n".join(f"-> {r}" for r in action_results)
-        clean_text += f"\n\n{results_str}"
+        if conflicts or errors:
+            # OVERRIDE: Replace Lina's entire text with honest response
+            parts = []
+            if successes:
+                parts.append("Lo que sí se hizo:")
+                for s in successes:
+                    parts.append(f"  ✅ {s}")
+            if conflicts:
+                parts.append("\nNo se pudo completar:")
+                for c in conflicts:
+                    parts.append(f"  ⚠️ {c}")
+            if errors:
+                for e in errors:
+                    parts.append(f"  ❌ {e}")
+            clean_text = "\n".join(parts)
+        else:
+            # All actions succeeded — keep Lina's text + append results
+            results_str = "\n".join(f"✅ {r}" for r in action_results)
+            clean_text += f"\n\n{results_str}"
 
     return AIChatResponse(response=clean_text, tokens_used=tokens)
 
