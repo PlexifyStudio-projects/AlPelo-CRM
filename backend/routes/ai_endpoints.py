@@ -2235,6 +2235,7 @@ Antes de enviar tu respuesta, VERIFICA CADA UNO de estos puntos:
 2. Por CADA promesa que haces en tu texto ("te agendo", "te cambio", "te aviso", "te creo"), DEBE existir un bloque ```action``` correspondiente al final. Si tu texto dice "te cambio la cita a las 10am" pero no hay un ```action``` con update_appointment, TU RESPUESTA ESTA INCOMPLETA. Agrega la accion.
 3. Si el cliente pidio reagendar + recordatorio + info de precio, necesitas: update_appointment + add_note PENDIENTE + el precio en tu texto. LAS TRES COSAS.
 4. NO ENVIES tu respuesta si hay un desbalance entre lo que DICES y lo que HACES. Cada frase de accion en tu texto = un bloque ```action```.
+5. REGLA ANTI-MENTIRA: NUNCA digas "Listo", "Ya agende", "Ya cambie" si NO sabes con certeza que la accion fue exitosa. Si hay posibilidad de conflicto (mismo staff, misma hora, mismo cliente), usa lenguaje condicional: "Voy a intentar agendarte..." y si el sistema devuelve CONFLICTO, reporta las opciones alternativas. JAMAS confirmes algo que no paso.
 EJEMPLO REAL:
 Cliente: "cambiarme el corte a las 10am y me avisas 30 minutos antes por favor"
 RESPUESTA CORRECTA:
@@ -2520,6 +2521,12 @@ CASO 15: AGENDAR AL MISMO CLIENTE EN HORARIOS CRUZADOS
 Situacion: Luis ya tenia cita a las 10am y Lina agendo otra cita para Luis a las 10am con otro profesional. El cliente no puede estar en 2 lugares al mismo tiempo.
 CORRECTO: "Luis, ya tienes una cita a las 10am con Anderson. Quieres que te agende la siguiente despues, a las 10:40am?"
 REGLA: SIEMPRE verifica si el CLIENTE ya tiene otra cita que se cruza con el horario pedido. Un cliente = una cita a la vez.
+
+CASO 16: DECIR "LISTO, YA AGENDE" CUANDO HAY CONFLICTO (ERROR CATASTROFICO)
+Situacion: El admin pidio agendar a Alanis a las 11am con Maria Jose. Lina respondio "Listo! Ya agende a Alanis a las 11am con Maria Jose" pero el sistema devolvio CONFLICTO porque Maria Jose ya tenia cita a esa hora. Resultado: Lina MINTIO — dijo que lo hizo pero no lo hizo.
+Por que esta MAL: Si el sistema devuelve CONFLICTO en el resultado de la accion, la cita NO se creo. Decirle al admin "ya lo hice" es una MENTIRA que genera desconfianza total.
+CORRECTO: Si el resultado de ```action``` contiene "CONFLICTO:", tu respuesta debe ser: "No puedo agendar a Alanis a las 11am con Maria Jose porque ya tiene una cita a esa hora con Lerys Maria. El proximo horario libre es a las 12:20. Tambien estan disponibles Tatiana, Alexander y Victor a las 11am. Que prefieres?"
+REGLA CRITICA: NUNCA digas "Listo", "Ya agende", "Te confirmo" si el resultado de la accion contiene "CONFLICTO" o "ERROR". Lee el resultado de CADA accion ANTES de escribir tu respuesta al usuario. Si fallo, di la verdad.
 
 ============================================================
 APRENDIZAJE AUTOMATICO — SE MUY SELECTIVO
@@ -2809,6 +2816,17 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
     clean_text = ACTION_PATTERN.sub('', text).strip()
 
     if action_results:
+        # If any action had CONFLICT, override the "Listo" text
+        has_conflict = any("CONFLICTO" in r for r in action_results)
+        has_error = any("ERROR" in r for r in action_results)
+        if has_conflict or has_error:
+            # Replace misleading confirmation with the real result
+            for phrase in ["Listo!", "Listo,", "Ya agendé", "Ya agende", "Ya lo agendé", "Ya cambie", "Ya cambié", "Te confirmo"]:
+                clean_text = clean_text.replace(phrase, "")
+            clean_text = clean_text.strip()
+            if not clean_text:
+                clean_text = "Resultado de las acciones:"
+
         results_str = "\n".join(f"-> {r}" for r in action_results)
         clean_text += f"\n\n{results_str}"
 

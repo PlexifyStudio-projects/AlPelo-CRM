@@ -1537,8 +1537,17 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         try:
                             result = _execute_action(action_data, action_db)
                             print(f"[Lina IA] Action {action_type}: {result}")
-                            action_ok = "ERROR" not in result
+                            action_ok = "ERROR" not in result and "CONFLICTO" not in result
                             log_event("accion", f"{action_label} — {'Listo' if action_ok else 'Error'}", detail=result[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok" if action_ok else "error")
+
+                            # CRITICAL: If action failed with CONFLICT, override AI response
+                            if "CONFLICTO" in result:
+                                # Replace the "Listo! Ya agende..." lie with the real conflict message
+                                conflict_msg = result.replace("CONFLICTO: ", "").strip()
+                                ai_response = f"No pude completar la accion: {conflict_msg}"
+                                print(f"[Lina IA] CONFLICT OVERRIDE — replaced response with: {ai_response[:100]}")
+                            elif "ERROR" in result:
+                                ai_response = f"Hubo un problema: {result.replace('ERROR: ', '').strip()}"
 
                             # If client was created, link to conversation
                             if action_type == "create_client" and "ERROR" not in result:
