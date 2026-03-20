@@ -159,29 +159,83 @@ def _already_sent_for_date(db, conv_id: int, tag: str, target_date: date) -> boo
     return existing is not None
 
 
+def _match_phone_to_conversation(db, phone_str, client_name=""):
+    """Find WhatsApp conversation by phone, with name validation.
+    Returns conversation or None. NEVER returns a wrong-person match."""
+    if not phone_str:
+        return None
+    phone_clean = normalize_phone(phone_str)
+    if len(phone_clean) < 7:
+        return None
+    phone_tail = phone_clean[-10:]
+    client_name_lower = (client_name or "").lower().strip()
+    client_first = client_name_lower.split()[0] if client_name_lower else ""
+
+    candidates = (
+        db.query(WhatsAppConversation)
+        .filter(WhatsAppConversation.wa_contact_phone.contains(phone_tail))
+        .all()
+    )
+
+    if not candidates:
+        return None
+
+    if len(candidates) == 1:
+        conv = candidates[0]
+        # Validate name if we have both
+        if client_first:
+            contact_first = ((conv.wa_contact_name or "").split()[0]).lower()
+            if contact_first and client_first != contact_first:
+                print(f"[SCHEDULER] SAFETY: Conv '{conv.wa_contact_name}' != client '{client_name}'. Skipping.")
+                return None
+        return conv
+
+    # Multiple matches — find by name
+    if client_first:
+        for c in candidates:
+            contact_first = ((c.wa_contact_name or "").split()[0]).lower()
+            if contact_first and client_first == contact_first:
+                return c
+        print(f"[SCHEDULER] WARNING: {len(candidates)} convs match phone ...{phone_tail[-4:]} but none match '{client_name}'. Skipping.")
+    return None
+
+
+def _create_conversation_for_client(db, client, tenant_id=None):
+    """Create a new WhatsAppConversation for a client who has a phone but no existing conversation."""
+    phone = normalize_phone(client.phone)
+    conv = WhatsAppConversation(
+        tenant_id=tenant_id or client.tenant_id,
+        client_id=client.id,
+        wa_contact_phone=phone,
+        wa_contact_name=client.name or "",
+        is_ai_active=True,
+        unread_count=0,
+    )
+    db.add(conv)
+    db.commit()
+    db.refresh(conv)
+    print(f"[SCHEDULER] Created new WA conversation #{conv.id} for {client.name} ({phone[-4:]})")
+    return conv
+
+
 def _find_conversation(db, appt):
-    """Find WhatsApp conversation for an appointment's client."""
+    """Find WhatsApp conversation for an appointment's client.
+    If client has a phone but no conversation, creates one automatically."""
+    client_name = (appt.client_name or "").strip()
     conv = None
 
     # Try by phone in appointment
     if appt.client_phone:
-        phone_tail = appt.client_phone[-10:]
-        conv = (
-            db.query(WhatsAppConversation)
-            .filter(WhatsAppConversation.wa_contact_phone.contains(phone_tail))
-            .first()
-        )
+        conv = _match_phone_to_conversation(db, appt.client_phone, client_name)
 
     # Try by client record phone
     if not conv and appt.client_id:
         client = db.query(Client).filter(Client.id == appt.client_id).first()
         if client and client.phone:
-            phone_tail = client.phone[-10:]
-            conv = (
-                db.query(WhatsAppConversation)
-                .filter(WhatsAppConversation.wa_contact_phone.contains(phone_tail))
-                .first()
-            )
+            conv = _match_phone_to_conversation(db, client.phone, client_name)
+            # No conversation found but client has phone → create one
+            if not conv:
+                conv = _create_conversation_for_client(db, client)
 
     return conv
 
@@ -251,11 +305,29 @@ def _check_30min_reminders(db):
             msg += "\n\nTe esperamos! 💈"
             msg += "\n\nSi necesitas cambiar la hora, avisame y lo ajustamos sin problema!"
 
-            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
+            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg, db=db)
+
+            # If free text fails (24h window expired), try with approved template
+            if not wa_sent:
+                try:
+                    from workflow_engine import _send_template_sync
+                    # Use "recordatorio_de_cita_1h" or similar approved template
+                    params = [client_first, appt.time, staff_first or "tu profesional", service_name]
+                    wa_sent = _send_template_sync(conv.wa_contact_phone, "recordatorio_de_cita_1h", parameters=params, db=db)
+                    if wa_sent:
+                        msg = f"[Template] Recordatorio de cita a las {appt.time} con {staff_first} para {service_name}"
+                        print(f"[SCHEDULER] 30-min reminder sent via TEMPLATE for appt #{appt.id}")
+                except Exception as e:
+                    print(f"[SCHEDULER] Template fallback failed: {e}")
+
             _store_outbound_message(db, conv.id, msg, wa_sent, tag=f"reminder_30min_{appt.id}")
 
-            print(f"[SCHEDULER] 30-min reminder sent for appt #{appt.id} → {client_first} ({conv.wa_contact_phone})")
-            log_event("tarea", f"Recordatorio 30min enviado a {client_first}", detail=f"Cita a las {appt.time} con {staff_first} para {service_name}", contact_name=client_first, conv_id=conv.id, status="ok")
+            if wa_sent:
+                print(f"[SCHEDULER] 30-min reminder sent for appt #{appt.id} → {client_first} ({conv.wa_contact_phone})")
+                log_event("tarea", f"Recordatorio 30min enviado a {client_first}", detail=f"Cita a las {appt.time} con {staff_first} para {service_name}", contact_name=client_first, conv_id=conv.id, status="ok")
+            else:
+                print(f"[SCHEDULER] 30-min reminder FAILED for appt #{appt.id} → {client_first}")
+                log_event("error", f"Recordatorio 30min fallido para {client_first}", detail=f"No se pudo enviar recordatorio de cita {appt.time}. Texto y template fallaron.", contact_name=client_first, conv_id=conv.id, status="error")
 
 
 # ============================================================================
@@ -388,6 +460,12 @@ def _check_custom_reminders(db):
 
         conv = _find_conversation(db, best_appt)
         if not conv:
+            # No WA conversation found — mark as failed instead of silently skipping
+            client_first = (best_appt.client_name or "").split()[0]
+            note.content = _replace_note_prefix(note.content, "FALLIDO:") + f" [Sin WhatsApp para {client_first} — {now.strftime('%H:%M')}]"
+            db.commit()
+            print(f"[SCHEDULER] No WA conv for reminder note #{note.id} ({client_first}). Marked as FALLIDO.")
+            log_event("error", f"Recordatorio fallido: {client_first} sin WhatsApp", detail=f"No se pudo enviar recordatorio de cita {best_appt.time} — no hay conversacion WA", contact_name=client_first, status="error")
             continue
 
         # DB-SAFE DEDUP — per appointment ID to avoid conflicts with multiple appointments
@@ -927,16 +1005,23 @@ def _execute_pending_tasks(db):
         if not client:
             continue
 
-        # Find WA conversation
+        client_name = (client.name or "").strip()
+        client_first = client_name.split()[0] if client_name else ""
+
+        # Find WA conversation — with safety validation
         conv = None
         if client.phone:
-            phone_tail = client.phone[-10:]
-            conv = (
-                db.query(WhatsAppConversation)
-                .filter(WhatsAppConversation.wa_contact_phone.contains(phone_tail))
-                .first()
-            )
+            conv = _match_phone_to_conversation(db, client.phone, client_name)
+            # No conversation but has phone → create one
+            if not conv:
+                conv = _create_conversation_for_client(db, client)
+
         if not conv:
+            # No conversation found — mark as failed, don't silently skip
+            print(f"[SCHEDULER] No WA conversation found for {client_name} (task #{note.id}). Marking as failed.")
+            note.content = _replace_note_prefix(note.content, "FALLIDO:") + f" [Sin conversacion WhatsApp para este cliente — {now.strftime('%H:%M')}]"
+            db.commit()
+            log_event("error", f"Tarea fallida: {client_first} sin WhatsApp", detail=f"No se encontro conversacion WhatsApp para '{client_name}'", contact_name=client_first, status="error")
             continue
 
         # Dedup
