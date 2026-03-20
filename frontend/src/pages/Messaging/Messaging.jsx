@@ -139,12 +139,16 @@ const TemplateCard = ({ template, onPreview, onSend, onApprove, onDelete, onSubm
             <SendIcon /> <span>Enviar</span>
           </button>
         )}
-        <button className={`${B}__card-btn ${B}__card-btn--edit`} onClick={() => onEdit(template)}>
-          <EditIcon /> <span>Editar</span>
-        </button>
-        <button className={`${B}__card-btn ${B}__card-btn--delete`} onClick={() => onDelete(template)}>
-          <TrashIcon />
-        </button>
+        {template.status !== 'approved' && template.status !== 'pending' && (
+          <button className={`${B}__card-btn ${B}__card-btn--edit`} onClick={() => onEdit(template)}>
+            <EditIcon /> <span>Editar</span>
+          </button>
+        )}
+        {template.status !== 'approved' && template.status !== 'pending' && (
+          <button className={`${B}__card-btn ${B}__card-btn--delete`} onClick={() => onDelete(template)}>
+            <TrashIcon />
+          </button>
+        )}
       </div>
     </div>
   );

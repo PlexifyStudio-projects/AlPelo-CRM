@@ -1,10 +1,9 @@
 @use '../abstracts/variables' as *;
-@use '../abstracts/mixins' as *;
 
-// ════════════════════════════════════════════════════════════════════
-// AUTOMATIONS — Multi-channel Workflow Engine
-// WhatsApp + CRM + Marketing + Internal automation cards
-// ════════════════════════════════════════════════════════════════════
+// ============================================
+// Automations — Plexify Studio v3
+// Workflow engine cards, toggles, stats
+// ============================================
 
 .automations {
   display: flex;
@@ -31,23 +30,27 @@
     width: 48px;
     height: 48px;
     border-radius: $border-radius-lg;
-    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    background: linear-gradient(135deg, #8B5CF6, #A78BFA);
     display: flex;
     align-items: center;
     justify-content: center;
     color: $color-white;
-    box-shadow: 0 4px 16px rgba(45, 90, 61, 0.25);
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.25);
     flex-shrink: 0;
   }
 
   &__title {
-    @include heading;
+    font-family: $font-heading;
     font-size: $font-size-xl;
     margin: 0;
+    font-weight: 800;
+    color: $color-gray-900;
+    letter-spacing: -0.03em;
   }
 
   &__subtitle {
-    @include caption-text;
+    font-size: $font-size-xs;
+    color: $color-gray-400;
     margin: 2px 0 0;
   }
 
@@ -61,19 +64,20 @@
     gap: 8px;
     padding: 8px 16px;
     border-radius: $border-radius-full;
-    background: $color-primary-ghost;
-    color: $color-primary;
+    background: $color-success-bg;
+    color: $color-success-dark;
     font-size: $font-size-xs;
-    font-weight: $font-weight-bold;
+    font-weight: 700;
+    border: 1px solid $color-success-border;
   }
 
   &__header-badge-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: $color-primary;
-    box-shadow: 0 0 8px $color-primary;
-    animation: statusPulse 2.5s ease-in-out infinite;
+    background: $color-success;
+    box-shadow: 0 0 8px rgba($color-success, 0.4);
+    animation: auto-pulse 2.5s ease-in-out infinite;
   }
 
   // ════════════════════════════════════════════════
@@ -93,25 +97,31 @@
   &__loading-spinner {
     width: 32px;
     height: 32px;
-    border: 3px solid $border-color;
+    border: 3px solid $color-gray-200;
     border-top-color: $color-primary;
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: auto-spin 0.8s linear infinite;
   }
 
   // ════════════════════════════════════════════════
-  // STATS SUMMARY BAR
+  // STATS
   // ════════════════════════════════════════════════
   &__stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: $spacing-sm;
-    @include stagger-fade-in($stagger-base, 4);
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   &__stat {
-    @include glass-card;
-    padding: $spacing-md;
+    background: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
+    padding: $spacing-lg;
     display: flex;
     align-items: center;
     gap: 14px;
@@ -126,31 +136,30 @@
       left: 0;
       width: 100%;
       height: 3px;
-      border-radius: $border-radius-lg $border-radius-lg 0 0;
     }
 
     &:hover {
-      transform: translateY(-3px) scale(1.01);
-      box-shadow: $shadow-card-hover, $glass-inner-glow;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
     }
 
     &--active {
-      &::before { background: linear-gradient(90deg, $color-primary, $color-primary-light, $color-primary-lighter); }
-      .automations__stat-value { color: $color-primary; }
+      &::before { background: linear-gradient(90deg, $color-success-dark, $color-success); }
+      .automations__stat-value { color: $color-success-dark; }
     }
 
     &--sent {
-      &::before { background: linear-gradient(90deg, $wa-green-dark, $wa-green, lighten($wa-green, 10%)); }
-      .automations__stat-value { color: $wa-green-dark; }
+      &::before { background: linear-gradient(90deg, #128C7E, #25D366); }
+      .automations__stat-value { color: #128C7E; }
     }
 
     &--rate {
-      &::before { background: linear-gradient(90deg, #7C3AED, #8B5CF6, #A78BFA); }
+      &::before { background: linear-gradient(90deg, #8B5CF6, #A78BFA); }
       .automations__stat-value { color: #7C3AED; }
     }
 
     &--confirmed {
-      &::before { background: linear-gradient(90deg, $color-info-dark, $color-info, lighten($color-info, 10%)); }
+      &::before { background: linear-gradient(90deg, $color-info-dark, $color-info); }
       .automations__stat-value { color: $color-info-dark; }
     }
   }
@@ -175,191 +184,189 @@
   }
 
   &__stat-value {
-    font-size: $font-size-xl;
-    font-weight: $font-weight-bold;
+    font-size: $font-size-2xl;
+    font-weight: 800;
     color: $color-gray-900;
     font-variant-numeric: tabular-nums;
     line-height: 1;
-    letter-spacing: $letter-spacing-tight;
+    letter-spacing: -0.02em;
   }
 
   &__stat-label {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
+    font-weight: 600;
     color: $color-gray-500;
-    line-height: $line-height-snug;
+    line-height: 1.3;
   }
 
   // ════════════════════════════════════════════════
-  // TABS (Workflows | History)
+  // TABS
   // ════════════════════════════════════════════════
   &__tabs {
     display: flex;
     gap: 4px;
-    padding: 4px;
-    background: $color-gray-50;
-    border-radius: $border-radius-lg;
-    align-self: flex-start;
-    border: $border-width solid $border-color-light;
+    border-bottom: 1.5px solid $color-gray-100;
+    padding-bottom: 0;
   }
 
   &__tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
     padding: 10px 20px;
+    background: none;
     border: none;
-    border-radius: $border-radius-md;
-    background: transparent;
+    border-bottom: 2px solid transparent;
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    font-family: $font-primary;
+    font-weight: 600;
     color: $color-gray-400;
     cursor: pointer;
     transition: all $transition-fast;
-    white-space: nowrap;
-
-    svg { flex-shrink: 0; opacity: 0.6; }
+    font-family: $font-primary;
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
 
     &:hover {
       color: $color-gray-600;
-      background: rgba(0, 0, 0, 0.03);
     }
 
     &--active {
-      background: $color-white;
-      color: $color-gray-800;
-      box-shadow: $shadow-sm;
-      font-weight: $font-weight-bold;
-      svg { opacity: 1; color: $color-primary; }
+      color: $color-gray-900;
+      border-bottom-color: $color-gray-900;
+      font-weight: 700;
     }
   }
 
   &__tab-badge {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    padding: 1px 7px;
+    font-weight: 800;
+    background: $color-gray-100;
+    color: $color-gray-500;
+    padding: 2px 8px;
     border-radius: $border-radius-full;
     font-variant-numeric: tabular-nums;
-    background: $color-primary-ghost;
-    color: $color-primary;
 
     .automations__tab--active & {
-      background: linear-gradient(135deg, $color-primary, $color-primary-light);
-      color: $color-white;
+      background: $color-gray-200;
+      color: $color-gray-800;
     }
   }
 
   // ════════════════════════════════════════════════
-  // CATEGORY FILTERS
+  // FILTERS
   // ════════════════════════════════════════════════
   &__filters {
     display: flex;
-    gap: 6px;
+    gap: $spacing-xs;
     flex-wrap: wrap;
   }
 
   &__filter {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border: $border-width solid $border-color;
+    padding: 7px 16px;
     border-radius: $border-radius-full;
-    background: $color-white;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    font-family: $font-primary;
+    border: 1.5px solid $color-gray-200;
+    background: transparent;
+    font-size: $font-size-xs;
+    font-weight: 600;
     color: $color-gray-500;
     cursor: pointer;
+    font-family: $font-primary;
     transition: all $transition-fast;
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
 
     &:hover {
-      border-color: $color-primary;
-      color: $color-primary;
+      border-color: $color-gray-300;
+      color: $color-gray-700;
     }
 
     &--active {
-      background: $color-primary;
+      background: $color-gray-900;
       color: $color-white;
-      border-color: $color-primary;
+      border-color: $color-gray-900;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+      &:hover {
+        background: $color-gray-800;
+        color: $color-white;
+      }
     }
   }
 
   &__filter-count {
-    font-size: 10px;
-    font-weight: $font-weight-bold;
-    padding: 0 5px;
-    border-radius: $border-radius-full;
-    background: rgba(0, 0, 0, 0.08);
+    font-size: $font-size-2xs;
+    font-weight: 800;
     font-variant-numeric: tabular-nums;
-
-    .automations__filter--active & {
-      background: rgba(255, 255, 255, 0.25);
-    }
   }
 
   // ════════════════════════════════════════════════
-  // EMPTY STATE
+  // EMPTY
   // ════════════════════════════════════════════════
   &__empty {
-    @include glass-card;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: $spacing-3xl $spacing-xl;
+    gap: $spacing-md;
+    padding: $spacing-3xl;
     text-align: center;
   }
 
   &__empty-icon {
-    font-size: 56px;
-    margin-bottom: $spacing-md;
-    opacity: 0.5;
+    width: 64px;
+    height: 64px;
+    border-radius: $border-radius-xl;
+    background: $color-gray-50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $color-gray-300;
   }
 
   &__empty-title {
-    font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
-    color: $color-gray-700;
-    margin: 0 0 $spacing-xs;
+    font-size: $font-size-base;
+    font-weight: 800;
+    color: $color-gray-600;
+    margin: 0;
   }
 
   &__empty-desc {
     font-size: $font-size-sm;
     color: $color-gray-400;
-    max-width: 480px;
-    line-height: $line-height-relaxed;
     margin: 0;
+    max-width: 400px;
   }
 
   // ════════════════════════════════════════════════
-  // CARDS GRID
+  // GRID
   // ════════════════════════════════════════════════
   &__grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: $spacing-md;
-    @include stagger-fade-in($stagger-base, 10);
+    gap: $spacing-lg;
+
+    @media (max-width: $breakpoint-xl) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+    }
   }
 
   // ════════════════════════════════════════════════
-  // AUTOMATION CARD
+  // CARD
   // ════════════════════════════════════════════════
   &__card {
-    @include glass-card;
-    padding: 0;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
+    padding: $spacing-xl $spacing-lg;
     display: flex;
     flex-direction: column;
+    gap: $spacing-md;
+    transition: all 250ms $ease-out-expo;
     position: relative;
     overflow: hidden;
-    transition: all $transition-base;
-
-    &:hover {
-      transform: translateY(-3px) scale(1.003);
-      box-shadow: $shadow-card-hover, $glass-inner-glow;
-      border-color: $glass-border-bright;
-    }
 
     &::before {
       content: '';
@@ -368,19 +375,23 @@
       left: 0;
       width: 4px;
       height: 100%;
-      background: var(--auto-color, $color-gray-300);
-      border-radius: $border-radius-lg 0 0 $border-radius-lg;
-      transition: all $transition-base;
+      background: $color-gray-200;
+      border-radius: 0 4px 4px 0;
+      transition: background $transition-fast;
     }
 
     &--active {
-      box-shadow: $shadow-glass, $glass-inner-glow, 0 0 0 1px rgba(52, 211, 153, 0.12);
-      &::before { box-shadow: 0 0 12px var(--auto-color, $color-success); }
+      border-color: rgba($color-success, 0.15);
+      &::before { background: $color-success; }
     }
 
     &--inactive {
-      opacity: 0.75;
-      &:hover { opacity: 1; }
+      &::before { background: $color-gray-200; }
+    }
+
+    &:hover {
+      box-shadow: $shadow-md;
+      border-color: $color-gray-200;
     }
   }
 
@@ -388,55 +399,47 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    padding: $spacing-md $spacing-md $spacing-sm;
-    padding-left: 20px;
     gap: $spacing-sm;
   }
 
   &__card-header-left {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: $spacing-sm;
     flex: 1;
     min-width: 0;
   }
 
   &__card-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: $border-radius-md;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-sm;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 18px;
     flex-shrink: 0;
-    background: var(--auto-bg, $color-gray-50);
-    transition: all $transition-base;
+    background: $color-gray-50;
+    border: 1px solid $color-gray-100;
   }
 
   &__card-title-group {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
     min-width: 0;
   }
 
   &__card-name {
-    font-size: $font-size-base;
-    font-weight: $font-weight-bold;
-    color: $color-gray-800;
-    line-height: $line-height-snug;
-    margin: 0;
+    font-size: $font-size-sm;
+    font-weight: 800;
+    color: $color-gray-900;
+    letter-spacing: -0.02em;
   }
 
   &__card-trigger {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    font-weight: $font-weight-medium;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    svg { flex-shrink: 0; opacity: 0.5; }
   }
 
   // Toggle switch
@@ -452,19 +455,6 @@
     width: 0;
     height: 0;
     position: absolute;
-
-    &:checked + .automations__toggle-slider {
-      background: linear-gradient(135deg, $color-primary, $color-primary-light);
-      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.25);
-      &::before {
-        transform: translateX(20px);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-      }
-    }
-
-    &:focus-visible + .automations__toggle-slider {
-      box-shadow: 0 0 0 3px $color-primary-ghost;
-    }
   }
 
   &__toggle-slider {
@@ -473,65 +463,66 @@
     background: $color-gray-200;
     border-radius: $border-radius-full;
     cursor: pointer;
-    transition: all 300ms $ease-spring;
+    transition: background 250ms cubic-bezier(0.16, 1, 0.3, 1);
 
     &::before {
       content: '';
       position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 18px;
       height: 18px;
-      border-radius: 50%;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
       background: $color-white;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-      transition: transform 300ms $ease-spring;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      transition: transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .automations__toggle-input:checked + & {
+      background: $color-success;
+
+      &::before {
+        transform: translateX(20px);
+      }
     }
   }
 
-  // Badges row (channel + status)
+  // Card badges
   &__card-badges {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 $spacing-md 0 20px;
-    margin-bottom: $spacing-xs;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
   }
 
   &__card-channel {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10px;
-    font-weight: $font-weight-bold;
-    padding: 2px 8px;
+    font-size: $font-size-2xs;
+    font-weight: 700;
+    padding: 3px 10px;
     border-radius: $border-radius-full;
-    background: rgba(0, 0, 0, 0.04);
-    color: var(--channel-color, $color-gray-500);
-    letter-spacing: $letter-spacing-wide;
-    text-transform: uppercase;
+    background: $color-gray-50;
+    color: $color-gray-500;
+    border: 1px solid $color-gray-200;
   }
 
   &__card-status {
+    font-size: $font-size-2xs;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    padding: 2px 8px;
-    border-radius: $border-radius-full;
-    letter-spacing: $letter-spacing-wide;
+    gap: 4px;
 
     &--active {
       background: $color-success-bg;
       color: $color-success-dark;
-      box-shadow: inset 0 0 0 1px $color-success-border;
+      border: 1px solid $color-success-border;
     }
 
     &--inactive {
       background: $color-gray-50;
       color: $color-gray-400;
-      box-shadow: inset 0 0 0 1px $border-color;
+      border: 1px solid $color-gray-200;
     }
   }
 
@@ -540,691 +531,254 @@
     height: 6px;
     border-radius: 50%;
     background: currentColor;
-
-    .automations__card-status--active & {
-      box-shadow: 0 0 6px currentColor;
-      animation: statusPulse 2.5s ease-in-out infinite;
-    }
   }
 
-  // Description & Impact
   &__card-desc {
     font-size: $font-size-xs;
     color: $color-gray-500;
-    line-height: $line-height-relaxed;
-    padding: 0 $spacing-md 0 20px;
-    margin: 0 0 $spacing-xs;
+    line-height: 1.5;
+    margin: 0;
   }
 
   &__card-impact {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    margin: 0 $spacing-md $spacing-sm 20px;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-md;
+    background: $color-gray-50;
     border-radius: $border-radius-md;
-    background: rgba(0, 0, 0, 0.02);
-    border-left: 3px solid var(--impact-color, $color-primary);
+    border: 1px solid $color-gray-100;
   }
 
   &__card-impact-icon {
-    font-size: 16px;
     flex-shrink: 0;
+    color: $color-gray-400;
   }
 
   &__card-impact-text {
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    color: var(--impact-color, $color-primary);
-    letter-spacing: $letter-spacing-tight;
+    font-size: $font-size-xs;
+    color: $color-gray-600;
+    line-height: 1.4;
   }
 
-  // Config section (days, hour, template)
+  // Card config
   &__card-config {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 0 $spacing-md $spacing-sm 20px;
+    flex-direction: column;
+    gap: $spacing-sm;
   }
 
   &__card-config-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: $spacing-sm;
 
     &--full {
-      width: 100%;
       flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
+      align-items: stretch;
     }
   }
 
   &__card-config-label {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
+    font-weight: 700;
     color: $color-gray-500;
     white-space: nowrap;
+    min-width: 80px;
   }
 
-  &__card-config-select {
-    padding: 5px 26px 5px 10px;
-    border: $border-width solid $border-color-medium;
-    border-radius: $border-radius-md;
-    font-size: $font-size-2xs;
-    font-family: $font-primary;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-700;
-    background: $color-white;
-    cursor: pointer;
-    transition: all $transition-fast;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238E8E85' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-
-    &:focus {
-      outline: none;
-      border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost;
-    }
-  }
-
+  &__card-config-select,
   &__card-config-input {
-    width: 100%;
-    padding: 6px 12px;
-    border: $border-width solid $border-color-medium;
+    flex: 1;
+    padding: 7px 12px;
+    border: 1.5px solid $color-gray-200;
     border-radius: $border-radius-md;
-    font-size: $font-size-2xs;
+    font-size: $font-size-xs;
     font-family: $font-primary;
     color: $color-gray-700;
     background: $color-white;
-    transition: all $transition-fast;
-
-    &::placeholder {
-      color: $color-gray-300;
-    }
+    transition: border-color $transition-fast;
 
     &:focus {
       outline: none;
       border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost;
+      box-shadow: 0 0 0 2px rgba($color-primary, 0.08);
     }
   }
 
   &__card-config-select--wide {
     width: 100%;
-    padding-right: 32px;
   }
 
   &__card-config-hint {
-    font-size: 10px;
-    color: $color-warning-dark;
-    font-weight: $font-weight-medium;
-    line-height: 1.3;
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
 
     &--ok {
       color: $color-success-dark;
     }
   }
 
+  // Template ready
   &__card-template-ready {
     display: flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: $font-weight-medium;
-    color: rgba(0, 0, 0, 0.5);
+    gap: $spacing-xs;
+    font-size: $font-size-2xs;
+    font-weight: 600;
   }
 
   &__card-template-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    flex-shrink: 0;
 
     &--ok { background: $color-success; }
     &--warn { background: $color-warning; }
   }
 
+  // Variables
   &__card-variables {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: $spacing-xs;
   }
 
   &__card-variable {
-    font-size: 10px;
-    font-weight: $font-weight-bold;
-    font-family: monospace;
-    padding: 2px 6px;
+    font-size: $font-size-2xs;
+    font-weight: 600;
+    padding: 2px 8px;
     border-radius: $border-radius-sm;
-    background: $color-primary-ghost;
-    color: $color-primary;
+    background: $color-gray-100;
+    color: $color-gray-600;
+    font-family: 'SF Mono', 'Fira Code', monospace;
   }
 
-  // Days selector (legacy — kept for compat)
+  // Days
   &__card-days {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 $spacing-md 0 20px;
-    margin-bottom: $spacing-sm;
+    gap: $spacing-sm;
   }
 
   &__card-days-label {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
+    font-weight: 700;
     color: $color-gray-500;
-    white-space: nowrap;
   }
 
   &__card-days-select {
-    padding: 6px 28px 6px 12px;
-    border: $border-width solid $border-color-medium;
+    padding: 6px 10px;
+    border: 1.5px solid $color-gray-200;
     border-radius: $border-radius-md;
     font-size: $font-size-xs;
     font-family: $font-primary;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-700;
     background: $color-white;
-    cursor: pointer;
-    transition: all $transition-fast;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238E8E85' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-
-    &:focus {
-      outline: none;
-      border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost;
-    }
+    color: $color-gray-700;
   }
 
-  // Message preview area
+  // Message
   &__card-message {
-    padding: $spacing-sm 20px;
-    margin: 0 $spacing-md $spacing-sm 20px;
-    background: $wa-chat-bg;
-    border-radius: $border-radius-md;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      opacity: 0.025;
-      @include dot-grid(rgba(0, 0, 0, 0.3), 1px, 14px);
-    }
-  }
-
-  &__card-message-label {
-    @include label-text;
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    position: relative;
-    z-index: 1;
-  }
-
-  &__card-bubble {
-    background: $wa-sent-bubble;
-    padding: 10px 14px;
-    border-radius: 10px 10px 0 10px;
-    font-size: $font-size-xs;
-    color: $color-gray-700;
-    line-height: 1.55;
-    position: relative;
-    z-index: 1;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    white-space: pre-line;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      right: -7px;
-      width: 0;
-      height: 0;
-      border-left: 7px solid $wa-sent-bubble;
-      border-bottom: 7px solid transparent;
-    }
-  }
-
-  &__card-message-edit {
-    width: 100%;
-    padding: 10px 14px;
-    border: 2px solid $color-primary;
-    border-radius: $border-radius-md;
-    font-size: $font-size-xs;
-    font-family: $font-primary;
-    color: $color-gray-700;
-    line-height: 1.55;
-    background: $color-white;
-    resize: vertical;
-    position: relative;
-    z-index: 1;
-    min-height: 80px;
-    transition: all $transition-fast;
-    box-shadow: 0 0 0 3px $color-primary-ghost;
-
-    &:focus {
-      outline: none;
-      border-color: $color-primary-light;
-    }
-  }
-
-  // Card footer
-  &__card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: $spacing-sm $spacing-md $spacing-sm 20px;
-    border-top: $border-width solid $border-color-light;
-    margin-top: auto;
-    gap: $spacing-sm;
-  }
-
-  &__card-stats {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    flex-wrap: wrap;
-  }
-
-  &__card-stat {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    font-weight: $font-weight-medium;
-    font-variant-numeric: tabular-nums;
-    strong { color: $color-gray-600; font-weight: $font-weight-bold; }
-  }
-
-  &__card-last {
-    font-size: $font-size-2xs;
-    color: $color-gray-300;
-    font-weight: $font-weight-medium;
-    white-space: nowrap;
-  }
-
-  &__card-actions {
-    display: flex;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-
-  &__card-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 12px;
-    border: $border-width solid $border-color;
-    border-radius: $border-radius-md;
-    background: $color-white;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    font-family: $font-primary;
-    color: $color-gray-500;
-    cursor: pointer;
-    transition: all $transition-fast;
-
-    &:hover {
-      border-color: $color-primary;
-      color: $color-primary;
-      background: $color-primary-ghost;
-    }
-
-    &--save {
-      background: linear-gradient(135deg, $color-primary, $color-primary-light);
-      color: $color-white;
-      border-color: transparent;
-      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
-
-      &:hover {
-        box-shadow: 0 4px 16px rgba(45, 90, 61, 0.3);
-        color: $color-white;
-        transform: translateY(-1px);
-      }
-    }
-
-    &--cancel {
-      &:hover {
-        border-color: $color-error;
-        color: $color-error-dark;
-        background: $color-error-bg;
-      }
-    }
-  }
-
-  // ════════════════════════════════════════════════
-  // SECTION DIVIDER
-  // ════════════════════════════════════════════════
-  &__section-divider {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    margin: $spacing-md 0;
-  }
-
-  &__section-divider-line {
-    flex: 1;
-    height: 1px;
-    background: $border-color;
-  }
-
-  &__section-divider-text {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-bold;
-    color: $color-gray-400;
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: $letter-spacing-wide;
-  }
-
-  // ════════════════════════════════════════════════
-  // AVAILABLE (DISABLED) WORKFLOWS — Compact list
-  // ════════════════════════════════════════════════
-  &__available {
     display: flex;
     flex-direction: column;
     gap: $spacing-xs;
   }
 
-  &__avail-card {
-    @include glass-card;
-    padding: $spacing-md 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $spacing-md;
-    opacity: 0.8;
-    transition: all $transition-base;
-    border-left: 3px solid var(--auto-color, $color-gray-300);
-
-    &:hover {
-      opacity: 1;
-      transform: translateX(2px);
-      box-shadow: $shadow-card-hover;
-    }
-  }
-
-  &__avail-left {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  &__avail-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-md;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-
-  &__avail-info {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-  }
-
-  &__avail-name {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
-    color: $color-gray-700;
-    margin: 0;
-    line-height: 1.2;
-  }
-
-  &__avail-desc {
+  &__card-message-label {
     font-size: $font-size-2xs;
-    color: $color-gray-400;
-    margin: 0;
-    line-height: $line-height-relaxed;
-    @include line-clamp(2);
-  }
-
-  &__avail-impact {
-    font-size: 10px;
-    font-weight: $font-weight-bold;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-top: 2px;
-  }
-
-  &__avail-right {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    flex-shrink: 0;
-  }
-
-  &__avail-channel {
-    font-size: 10px;
-    font-weight: $font-weight-bold;
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: $letter-spacing-wide;
-  }
-
-  // ════════════════════════════════════════════════
-  // EXECUTION HISTORY
-  // ════════════════════════════════════════════════
-  &__history {
-    @include glass-card;
-    padding: 0;
-    overflow: hidden;
-  }
-
-  &__history-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: $spacing-3xl;
-    text-align: center;
+    font-weight: 700;
     color: $color-gray-500;
   }
 
-  &__history-empty-icon {
-    font-size: 48px;
-    margin-bottom: $spacing-sm;
-    opacity: 0.4;
-  }
-
-  &__history-empty-sub {
-    font-size: $font-size-xs;
-    color: $color-gray-400;
-    margin-top: 4px;
-  }
-
-  &__history-list {
-    width: 100%;
-  }
-
-  &__history-header {
-    display: grid;
-    grid-template-columns: 200px 140px 1fr 100px 100px;
-    gap: $spacing-sm;
+  &__card-bubble {
     padding: $spacing-sm $spacing-md;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    color: $color-gray-400;
-    text-transform: uppercase;
-    letter-spacing: $letter-spacing-wide;
-    border-bottom: $border-width solid $border-color;
     background: $color-gray-50;
-  }
-
-  &__history-row {
-    display: grid;
-    grid-template-columns: 200px 140px 1fr 100px 100px;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
-    border-bottom: $border-width solid $border-color-light;
-    transition: background $transition-fast;
-
-    &:hover {
-      background: $color-gray-50;
-    }
-
-    &:last-child {
-      border-bottom: none;
-    }
-  }
-
-  &__history-cell {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    border: 1px solid $color-gray-100;
+    border-radius: $border-radius-md;
     font-size: $font-size-xs;
     color: $color-gray-600;
-    min-width: 0;
+    line-height: 1.5;
+    position: relative;
+    max-height: 80px;
+    overflow-y: auto;
+    font-style: italic;
+  }
 
-    &--preview {
-      color: $color-gray-400;
-      @include truncate;
+  &__card-message-edit {
+    width: 100%;
+    padding: $spacing-sm;
+    border: 1.5px solid $color-gray-200;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    font-family: $font-primary;
+    color: $color-gray-700;
+    resize: vertical;
+    min-height: 60px;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
     }
+  }
 
-    &--date {
-      color: $color-gray-400;
+  // Footer
+  &__card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-sm;
+    padding-top: $spacing-sm;
+    border-top: 1px solid $color-gray-100;
+  }
+
+  &__card-stats {
+    display: flex;
+    gap: $spacing-md;
+  }
+
+  &__card-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
+    span:first-child {
       font-size: $font-size-2xs;
+      color: $color-gray-400;
+    }
+
+    span:last-child {
+      font-size: $font-size-sm;
+      font-weight: 800;
+      color: $color-gray-800;
+      font-variant-numeric: tabular-nums;
     }
   }
 
-  &__history-icon {
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-
-  &__history-status {
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    padding: 2px 8px;
-    border-radius: $border-radius-full;
-
-    &--sent {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--failed {
-      background: $color-error-bg;
-      color: $color-error-dark;
-    }
-
-    &--responded {
-      background: rgba(99, 102, 241, 0.08);
-      color: #6366F1;
-    }
-  }
-}
-
-// ════════════════════════════════════════════════
-// RESPONSIVE
-// ════════════════════════════════════════════════
-@media (max-width: $breakpoint-lg) {
-  .automations {
-    &__stats { grid-template-columns: repeat(2, 1fr); }
-    &__grid { grid-template-columns: 1fr; }
-    &__history-header,
-    &__history-row {
-      grid-template-columns: 160px 1fr 90px 90px;
-      // Hide client name column
-      span:nth-child(2) { display: none; }
-    }
-  }
-}
-
-@media (max-width: $breakpoint-md) {
-  .automations {
+  // ════════════════════════════════════════════════
+  // RESPONSIVE
+  // ════════════════════════════════════════════════
+  @media (max-width: 768px) {
     &__header {
       flex-direction: column;
-      align-items: flex-start;
+      align-items: stretch;
     }
 
     &__stats {
-      grid-template-columns: 1fr 1fr;
-      gap: $spacing-xs;
+      grid-template-columns: repeat(2, 1fr);
     }
 
-    &__stat {
-      padding: $spacing-sm;
-      gap: 10px;
-    }
-
-    &__stat-icon {
-      width: 38px;
-      height: 38px;
-      font-size: 20px;
-    }
-
-    &__stat-value { font-size: $font-size-md; }
-    &__grid { grid-template-columns: 1fr; }
-
-    &__tabs {
-      align-self: stretch;
-    }
-
-    &__tab {
-      flex: 1;
-      justify-content: center;
-      padding: 10px 12px;
-    }
-
-    &__card-header { flex-wrap: wrap; }
-    &__card-footer {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: $spacing-xs;
-    }
-
-    &__card-actions {
-      width: 100%;
-      justify-content: flex-end;
-    }
-
-    &__history-header,
-    &__history-row {
-      grid-template-columns: 1fr 90px;
-      span:nth-child(2),
-      span:nth-child(3),
-      span:nth-child(5) { display: none; }
+    &__grid {
+      grid-template-columns: 1fr;
     }
   }
 }
 
-@media (max-width: $breakpoint-sm) {
-  .automations {
-    &__stats { grid-template-columns: 1fr; }
-    &__filters { gap: 4px; }
-    &__filter { padding: 4px 10px; font-size: 10px; }
-    &__card-stats {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
-    }
-  }
+@keyframes auto-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba($color-success, 0.4); }
+  50% { opacity: 0.5; box-shadow: 0 0 16px rgba($color-success, 0.6); }
 }
 
-@keyframes spin {
+@keyframes auto-spin {
   to { transform: rotate(360deg); }
-}
-
-@keyframes statusPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
 }
