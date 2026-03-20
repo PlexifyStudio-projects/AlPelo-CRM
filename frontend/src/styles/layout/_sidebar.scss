@@ -2,9 +2,9 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// SIDEBAR — Light Premium SaaS Navigation
-// Inspired by Linear, Notion, Stripe (light mode)
-// Clean, professional, trust-building design
+// SIDEBAR — Dark Navy SaaS Navigation
+// Linear / Vercel / Stripe inspired
+// Glassmorphism on dark, smooth collapse
 // ============================================
 
 .sidebar {
@@ -14,17 +14,30 @@
   width: $sidebar-width;
   height: 100vh;
   height: 100dvh;
-  background: $color-white;
-  color: $color-gray-800;
+  background: $bg-sidebar;
+  color: $color-gray-300;
   @include flex-column;
-  transition: width 400ms $ease-out-expo;
+  transition: width 300ms $ease-out-expo;
   z-index: $z-fixed;
   overflow: hidden;
-  border-right: 1px solid #E5E7EB;
   will-change: width;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
 
-  // All children above any overlays
+  // Glassmorphism subtle overlay
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      transparent 40%,
+      rgba(255, 255, 255, 0.01) 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  // All children above overlay
   > * {
     position: relative;
     z-index: 1;
@@ -47,7 +60,7 @@
 
     .sidebar__item {
       justify-content: center;
-      padding: $spacing-sm $spacing-xs;
+      padding: $spacing-sm;
       margin: 2px auto;
       width: calc(100% - #{$spacing-md});
     }
@@ -84,7 +97,7 @@
       margin-right: $spacing-sm;
     }
 
-    // Tooltip on collapsed items (keep dark for contrast)
+    // Tooltip on collapsed items
     .sidebar__item {
       position: relative;
 
@@ -94,7 +107,7 @@
         left: calc(100% + 14px);
         top: 50%;
         transform: translateY(-50%) translateX(6px);
-        padding: 7px 14px;
+        padding: 6px 12px;
         background: $color-gray-800;
         color: $color-white;
         font-size: $font-size-xs;
@@ -105,10 +118,9 @@
         pointer-events: none;
         z-index: $z-tooltip;
         box-shadow: $shadow-lg;
-        letter-spacing: $letter-spacing-wide;
         transition:
-          opacity 200ms $ease-out-quart,
-          transform 200ms $ease-out-quart;
+          opacity 150ms $ease-out-quart,
+          transform 150ms $ease-out-quart;
       }
 
       &:hover::after {
@@ -117,12 +129,11 @@
       }
     }
 
-    // Smoother collapse transition for all child elements
     .sidebar__brand,
     .sidebar__nav,
     .sidebar__footer,
     .sidebar__user {
-      transition: all 400ms $ease-out-expo;
+      transition: all 300ms $ease-out-expo;
     }
   }
 
@@ -139,7 +150,7 @@
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    transition: transform 300ms $ease-out-quart;
+    transition: transform 250ms $ease-out-quart;
 
     &:hover {
       transform: translateX(2px);
@@ -157,15 +168,15 @@
     width: 36px;
     height: 36px;
     border-radius: $border-radius-md;
-    background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.08);
-    color: var(--color-primary, $color-primary);
+    background: rgba($color-primary-light, 0.15);
+    color: $color-primary-light;
     flex-shrink: 0;
-    border: 1px solid rgba(var(--color-primary-rgb, 45, 90, 61), 0.12);
+    border: 1px solid rgba($color-primary-light, 0.2);
     position: relative;
     transition:
-      background 300ms $ease-out-quart,
-      transform 300ms $ease-out-quart,
-      box-shadow 300ms $ease-out-quart;
+      background 250ms $ease-out-quart,
+      transform 250ms $ease-out-quart,
+      box-shadow 250ms $ease-out-quart;
 
     svg {
       filter: none;
@@ -173,7 +184,7 @@
 
     .sidebar__brand-inner:hover & {
       transform: scale(1.06) rotate(-2deg);
-      box-shadow: 0 2px 12px rgba(var(--color-primary-rgb, 45, 90, 61), 0.1);
+      box-shadow: 0 2px 12px rgba($color-primary-light, 0.2);
     }
   }
 
@@ -181,8 +192,8 @@
     font-family: $font-heading;
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
-    color: $color-gray-800;
-    letter-spacing: $letter-spacing-wide;
+    color: $color-white;
+    letter-spacing: $letter-spacing-tight;
     line-height: 1.15;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -190,7 +201,6 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     word-break: break-word;
-    // Reset any gradient text
     -webkit-text-fill-color: unset;
     background: none;
     -webkit-background-clip: unset;
@@ -201,14 +211,14 @@
     font-family: $font-primary;
     font-size: $font-size-2xs;
     font-weight: $font-weight-medium;
-    color: $color-gray-400;
+    color: $color-gray-500;
     letter-spacing: $letter-spacing-caps;
     text-transform: uppercase;
     line-height: 1;
     margin-top: 3px;
   }
 
-  // Clean divider under brand
+  // Divider under brand
   &__brand-divider {
     height: 1px;
     margin: 0 $spacing-lg;
@@ -216,8 +226,8 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      #E5E7EB 15%,
-      #E5E7EB 85%,
+      rgba(255, 255, 255, 0.08) 15%,
+      rgba(255, 255, 255, 0.08) 85%,
       transparent 100%
     );
   }
@@ -227,15 +237,15 @@
     width: 28px;
     height: 28px;
     border-radius: $border-radius-sm;
-    color: $color-gray-400;
+    color: $color-gray-500;
     transition:
-      background 220ms $ease-out-quart,
-      color 220ms $ease-out-quart,
-      transform 300ms $ease-out-quart;
+      background 200ms $ease-out-quart,
+      color 200ms $ease-out-quart,
+      transform 250ms $ease-out-quart;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.05);
-      color: $color-gray-700;
+      background: rgba(255, 255, 255, 0.08);
+      color: $color-gray-300;
     }
 
     &:active {
@@ -245,7 +255,7 @@
 
     &:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb, 45, 90, 61), 0.25);
+      box-shadow: 0 0 0 2px rgba($color-primary-light, 0.4);
     }
 
     svg {
@@ -254,18 +264,17 @@
       transition: transform 300ms $ease-out-expo;
     }
 
-    // Collapsed state toggle in footer
     &--collapsed {
       width: 36px;
       height: 36px;
       margin: $spacing-xs auto 0;
       border-radius: $border-radius-md;
-      background: rgba(0, 0, 0, 0.02);
-      color: $color-gray-400;
+      background: rgba(255, 255, 255, 0.04);
+      color: $color-gray-500;
 
       &:hover {
-        background: rgba(0, 0, 0, 0.05);
-        color: var(--color-primary, $color-primary);
+        background: rgba(255, 255, 255, 0.08);
+        color: $color-primary-light;
       }
     }
   }
@@ -278,16 +287,14 @@
     padding: $spacing-sm 0 $spacing-md;
     overflow-y: auto;
     overflow-x: hidden;
-    @include custom-scrollbar;
+    @include custom-scrollbar-dark;
     scrollbar-color: transparent transparent;
     scrollbar-width: thin;
 
-    // Scrollbar only visible on hover
     &:hover {
-      scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
+      scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
     }
 
-    // Premium scroll fade edges
     mask-image: linear-gradient(
       to bottom,
       transparent 0px,
@@ -303,7 +310,6 @@
       transparent 100%
     );
 
-    // Invisible scrollbar by default, thin on hover
     &::-webkit-scrollbar {
       width: 4px;
     }
@@ -315,18 +321,17 @@
     }
 
     &:hover::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.08);
+      background: rgba(255, 255, 255, 0.1);
     }
 
     &::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 0, 0, 0.15);
+      background: rgba(255, 255, 255, 0.2);
     }
   }
 
   &__section {
     margin-bottom: $spacing-xs;
 
-    // Section separator line
     & + & {
       &::before {
         content: '';
@@ -336,19 +341,18 @@
         background: linear-gradient(
           90deg,
           transparent,
-          rgba(0, 0, 0, 0.06),
+          rgba(255, 255, 255, 0.06),
           transparent
         );
       }
     }
   }
 
-  // Tiny dot separator for collapsed sections
   &__section-dot {
     width: 4px;
     height: 4px;
     border-radius: $border-radius-full;
-    background: rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.1);
     margin: $spacing-md auto $spacing-sm;
   }
 
@@ -362,33 +366,35 @@
     font-family: $font-primary;
 
     &:hover .sidebar__section-title {
-      color: $color-gray-500;
+      color: $color-gray-400;
     }
 
     &:focus-visible {
       outline: none;
-      box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.06);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.08);
       border-radius: $border-radius-sm;
     }
   }
 
   &__section-title {
-    @include label-text;
-    color: $color-gray-400;
-    font-size: 0.56rem;
+    font-family: $font-primary;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
     letter-spacing: $letter-spacing-caps;
+    text-transform: uppercase;
+    color: $color-gray-500;
     transition:
-      opacity 280ms $ease-out-quart,
-      height 280ms $ease-out-quart,
-      padding 280ms $ease-out-quart,
-      color 280ms $ease-out-quart;
+      opacity 250ms $ease-out-quart,
+      height 250ms $ease-out-quart,
+      padding 250ms $ease-out-quart,
+      color 250ms $ease-out-quart;
   }
 
   &__section-chevron {
-    color: $color-gray-300;
+    color: $color-gray-600;
     transition:
-      transform 280ms $ease-out-quart,
-      color 280ms $ease-out-quart;
+      transform 250ms $ease-out-quart,
+      color 250ms $ease-out-quart;
     flex-shrink: 0;
 
     &--closed {
@@ -396,14 +402,14 @@
     }
 
     .sidebar__section-header:hover & {
-      color: $color-gray-500;
+      color: $color-gray-400;
     }
   }
 
   &__menu {
     @include flex-column;
-    gap: 1px;
-    padding: 0 $spacing-xs;
+    gap: 4px;
+    padding: 0 $spacing-sm;
   }
 
   // -----------------------------------------------
@@ -412,20 +418,20 @@
   &__item {
     display: flex;
     align-items: center;
-    gap: $spacing-md;
-    padding: 10px $spacing-md;
-    margin: 1px $spacing-xs;
-    border-radius: $border-radius-md;
+    gap: $spacing-sm;
+    padding: 8px $spacing-md;
+    margin: 2px $spacing-xs;
+    border-radius: $border-radius-sm;
     cursor: pointer;
     white-space: nowrap;
     position: relative;
+    height: 42px;
     transition:
-      background 250ms $ease-out-quart,
-      box-shadow 250ms $ease-out-quart,
-      transform 250ms $ease-out-quart;
+      background 200ms $ease-out-quart,
+      box-shadow 200ms $ease-out-quart,
+      border-color 200ms $ease-out-quart;
 
-    // Staggered entrance animation
-    animation: fadeInLeft 350ms $ease-out-expo both;
+    animation: fadeInLeft 300ms $ease-out-expo both;
     animation-delay: calc(0.04s * var(--item-index, 0));
 
     @include reduced-motion {
@@ -433,66 +439,54 @@
     }
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
+      background: rgba(255, 255, 255, 0.06);
 
       .sidebar__icon {
-        opacity: 0.8;
-        transform: scale(1.06);
+        opacity: 0.9;
+        transform: scale(1.05);
       }
 
       .sidebar__label {
-        color: $color-gray-800;
+        color: $color-white;
       }
     }
 
     &:active {
-      background: rgba(0, 0, 0, 0.06);
+      background: rgba(255, 255, 255, 0.08);
       transform: scale(0.98);
       transition-duration: 80ms;
     }
 
     &:focus-visible {
       outline: none;
-      box-shadow: inset 0 0 0 2px rgba(var(--color-primary-rgb, 45, 90, 61), 0.2);
+      box-shadow: inset 0 0 0 2px rgba($color-primary-light, 0.3);
     }
 
     // -----------------------------------------------
-    // ACTIVE STATE — Subtle brand-tinted highlight
+    // ACTIVE STATE — Subtle glow, left accent bar
     // -----------------------------------------------
     &--active {
-      background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.08);
-
-      // Brand accent bar on the left
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 3px;
-        height: 50%;
-        background: var(--color-primary, $color-primary);
-        border-radius: 0 $border-radius-full $border-radius-full 0;
-        animation: slideIndicator 350ms $ease-spring both;
-      }
+      background: rgba($color-primary-light, 0.1);
+      border-left: 3px solid $color-primary-light;
+      padding-left: calc(#{$spacing-md} - 3px);
 
       &:hover {
-        background: rgba(var(--color-primary-rgb, 45, 90, 61), 0.12);
+        background: rgba($color-primary-light, 0.14);
       }
 
       .sidebar__icon {
         opacity: 1;
-        color: var(--color-primary, $color-primary);
+        color: $color-primary-lighter;
         filter: none;
       }
 
       .sidebar__label {
-        color: var(--color-primary, $color-primary);
+        color: $color-white;
         font-weight: $font-weight-semibold;
       }
 
       .sidebar__description {
-        color: $color-gray-400;
+        color: rgba(255, 255, 255, 0.5);
       }
     }
   }
@@ -505,13 +499,13 @@
     @include flex-center;
     width: 20px;
     height: 20px;
-    opacity: 0.45;
-    color: $color-gray-500;
+    opacity: 0.55;
+    color: $color-gray-400;
     transition:
-      opacity 250ms $ease-out-quart,
-      color 250ms $ease-out-quart,
-      filter 250ms $ease-out-quart,
-      transform 250ms $ease-out-quart;
+      opacity 200ms $ease-out-quart,
+      color 200ms $ease-out-quart,
+      filter 200ms $ease-out-quart,
+      transform 200ms $ease-out-quart;
 
     svg {
       width: 100%;
@@ -531,21 +525,21 @@
 
   &__label {
     font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    letter-spacing: $letter-spacing-wide;
-    color: $color-gray-600;
+    font-weight: $font-weight-regular;
+    letter-spacing: $letter-spacing-normal;
+    color: $color-gray-300;
     transition:
-      opacity 220ms $ease-out-quart,
-      color 220ms $ease-out-quart;
+      opacity 200ms $ease-out-quart,
+      color 200ms $ease-out-quart;
   }
 
   &__description {
     font-size: $font-size-2xs;
-    color: $color-gray-400;
+    color: $color-gray-600;
     letter-spacing: $letter-spacing-wider;
     text-transform: uppercase;
     @include truncate;
-    transition: color 220ms $ease-out-quart;
+    transition: color 200ms $ease-out-quart;
   }
 
   // -----------------------------------------------
@@ -556,7 +550,7 @@
     min-width: 20px;
     height: 20px;
     padding: 0 6px;
-    background: var(--color-primary, $color-primary);
+    background: $color-primary-light;
     color: $color-white;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
@@ -565,14 +559,13 @@
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
     animation: bounceIn 400ms $ease-spring both;
-    box-shadow: 0 2px 8px rgba(var(--color-primary-rgb, 45, 90, 61), 0.2);
-    transition: transform 220ms $ease-spring;
+    box-shadow: 0 2px 8px rgba($color-primary-light, 0.3);
+    transition: transform 200ms $ease-spring;
 
     &:hover {
       transform: scale(1.1);
     }
 
-    // Dot variant for collapsed state
     &--dot {
       position: absolute;
       top: 6px;
@@ -581,29 +574,28 @@
       height: 8px;
       min-width: 8px;
       padding: 0;
-      background: var(--color-primary, $color-primary);
-      border: 2px solid $color-white;
+      background: $color-primary-light;
+      border: 2px solid $bg-sidebar;
       animation: pulseRingAccent 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 
-    // "Pronto" badge for maintenance items
     &--soon {
-      background: rgba(0, 0, 0, 0.04);
-      color: $color-gray-400;
+      background: rgba(255, 255, 255, 0.06);
+      color: $color-gray-500;
       box-shadow: none;
       font-size: 9px;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       animation: none;
-      border: 1px solid rgba(0, 0, 0, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
   }
 
   // -----------------------------------------------
-  // DISABLED ITEMS (maintenance / coming soon)
+  // DISABLED ITEMS
   // -----------------------------------------------
   &__item--disabled {
-    opacity: 0.4;
+    opacity: 0.3;
     cursor: default;
     pointer-events: none;
 
@@ -620,7 +612,6 @@
     flex-shrink: 0;
     position: relative;
 
-    // Subtle top gradient fade
     &::before {
       content: '';
       position: absolute;
@@ -628,7 +619,7 @@
       left: 0;
       right: 0;
       height: 16px;
-      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.8));
+      background: linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.8));
       pointer-events: none;
     }
   }
@@ -639,14 +630,14 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      #E5E7EB 30%,
-      #E5E7EB 70%,
+      rgba(255, 255, 255, 0.08) 30%,
+      rgba(255, 255, 255, 0.08) 70%,
       transparent 100%
     );
   }
 
   // -----------------------------------------------
-  // USER PROFILE CARD — Premium bottom section
+  // USER PROFILE CARD
   // -----------------------------------------------
   &__user {
     display: flex;
@@ -655,12 +646,12 @@
     padding: $spacing-sm;
     border-radius: $border-radius-md;
     transition:
-      background 250ms $ease-out-quart,
-      box-shadow 250ms $ease-out-quart;
+      background 200ms $ease-out-quart,
+      box-shadow 200ms $ease-out-quart;
     cursor: default;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.03);
+      background: rgba(255, 255, 255, 0.05);
     }
   }
 
@@ -669,18 +660,18 @@
     width: 34px;
     height: 34px;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    background: linear-gradient(135deg, $color-primary-light, $color-accent);
     color: $color-white;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     letter-spacing: $letter-spacing-wide;
     flex-shrink: 0;
     position: relative;
-    border: 2px solid rgba(var(--color-primary-rgb, 45, 90, 61), 0.15);
-    transition: border-color 350ms $ease-out-quart;
+    border: 2px solid rgba($color-primary-light, 0.3);
+    transition: border-color 300ms $ease-out-quart;
 
     .sidebar__user:hover & {
-      border-color: rgba(var(--color-primary-rgb, 45, 90, 61), 0.3);
+      border-color: rgba($color-primary-light, 0.6);
     }
 
     // Online status indicator
@@ -692,7 +683,7 @@
       width: 10px;
       height: 10px;
       background: $color-success;
-      border: 2px solid $color-white;
+      border: 2px solid $bg-sidebar;
       border-radius: $border-radius-full;
       animation: sidebarOnlinePulse 3s ease-in-out infinite;
     }
@@ -708,14 +699,14 @@
   &__user-name {
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
-    color: $color-gray-800;
+    color: $color-gray-200;
     @include truncate;
     line-height: 1.3;
   }
 
   &__user-role {
     font-size: $font-size-2xs;
-    color: $color-gray-400;
+    color: $color-gray-500;
     font-weight: $font-weight-regular;
     letter-spacing: $letter-spacing-wider;
   }
@@ -737,20 +728,20 @@
     font-family: $font-primary;
     font-size: $font-size-xs;
     font-weight: $font-weight-medium;
-    color: $color-gray-400;
+    color: $color-gray-500;
     letter-spacing: $letter-spacing-wide;
     transition:
-      background 220ms $ease-out-quart,
-      color 220ms $ease-out-quart;
+      background 200ms $ease-out-quart,
+      color 200ms $ease-out-quart;
 
     &:hover {
-      background: rgba(248, 113, 113, 0.06);
+      background: rgba($color-error, 0.1);
       color: $color-error;
     }
 
     &:focus-visible {
       outline: none;
-      box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.25);
+      box-shadow: 0 0 0 2px rgba($color-error, 0.3);
       border-radius: $border-radius-sm;
     }
 
@@ -760,8 +751,8 @@
       flex-shrink: 0;
       opacity: 0.7;
       transition:
-        opacity 220ms $ease-out-quart,
-        transform 220ms $ease-out-quart;
+        opacity 200ms $ease-out-quart,
+        transform 200ms $ease-out-quart;
     }
 
     &:hover svg {
@@ -778,15 +769,15 @@
     width: 32px;
     height: 32px;
     border-radius: $border-radius-sm;
-    color: $color-gray-400;
+    color: $color-gray-500;
     transition:
       background 200ms $ease-out-quart,
       color 200ms $ease-out-quart,
       transform 200ms $ease-out-quart;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.05);
-      color: $color-gray-700;
+      background: rgba(255, 255, 255, 0.08);
+      color: $color-gray-300;
     }
 
     &:active {
@@ -795,11 +786,11 @@
   }
 
   // -----------------------------------------------
-  // MOBILE OVERLAY MODE — slide-in with backdrop
+  // MOBILE — Slide-in with dark backdrop blur
   // -----------------------------------------------
   @media (max-width: $breakpoint-md) {
     transform: translateX(-100%);
-    transition: transform 380ms $ease-out-expo;
+    transition: transform 300ms $ease-out-expo;
     box-shadow: none;
     width: $sidebar-width;
 
@@ -807,7 +798,7 @@
       transform: translateX(0);
       box-shadow:
         $shadow-2xl,
-        24px 0 60px rgba(0, 0, 0, 0.15);
+        24px 0 60px rgba(0, 0, 0, 0.3);
     }
 
     &--collapsed {
@@ -863,6 +854,6 @@
 // SIDEBAR KEYFRAMES
 // ============================================
 @keyframes sidebarOnlinePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.25); }
-  50% { box-shadow: 0 0 0 3px rgba(52, 211, 153, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.25); }
+  50% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0); }
 }

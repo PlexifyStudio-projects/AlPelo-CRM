@@ -2,24 +2,18 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Clients Page (Salesforce Premium)
-// World-class CRM: Stripe × Salesforce quality
+// Clients Page — Ultra-Modern CRM
 // ============================================
 
 .clients {
   @include page-enter;
-  max-width: $max-content-width;
+  // max-width removed — full-width content
 
-  // -----------------------------------------------
   // HEADER
-  // -----------------------------------------------
   &__header {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-xl;
-    margin-bottom: $spacing-xl;
-    animation: fadeInLeft 400ms $ease-out-expo both;
-    animation-delay: 0.05s;
+    margin-bottom: $spacing-2xl;
   }
 
   &__header-top {
@@ -40,69 +34,49 @@
     top: 100%;
     right: 0;
     margin-top: 4px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    z-index: 50;
+    background: $color-white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-lg;
+    z-index: $z-dropdown;
     min-width: 180px;
-    padding: 6px;
-    animation: fadeIn 0.15s ease;
+    padding: $spacing-xs;
   }
 
   &__export-option {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: $spacing-sm;
     width: 100%;
-    padding: 10px 14px;
+    padding: $spacing-sm $spacing-md;
     border: none;
     background: none;
-    font-size: 0.875rem;
-    color: #374151;
+    font-size: $font-size-sm;
+    color: $color-gray-600;
     cursor: pointer;
-    border-radius: 8px;
-    transition: background 0.15s;
+    border-radius: $border-radius-sm;
+    transition: background $transition-fast;
     text-align: left;
 
     &:hover {
-      background: #f3f4f6;
+      background: $color-gray-50;
+      color: $color-secondary;
     }
   }
 
   &__title {
-    @include heading($font-size-2xl);
+    @include heading($font-size-3xl);
     margin-bottom: 0;
-    position: relative;
-    letter-spacing: $letter-spacing-tighter;
-
-    &::after {
-      content: '';
-      display: block;
-      width: 48px;
-      height: 3px;
-      background: linear-gradient(90deg, $color-primary, $color-primary-light, rgba($color-primary-light, 0));
-      border-radius: $border-radius-full;
-      margin-top: $spacing-sm;
-    }
+    font-weight: $font-weight-extrabold;
   }
 
-  // -----------------------------------------------
-  // KPI BAR — Premium stat cards
-  // -----------------------------------------------
+  // KPI BAR
   &__kpi-bar {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: $spacing-sm;
-    animation: fadeInUp 0.4s $ease-out-expo both;
-    animation-delay: 0.1s;
-    @include stagger-fade-in($stagger-fast, 6);
 
     @media (max-width: $breakpoint-lg) {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    @media (max-width: $breakpoint-md) {
       grid-template-columns: repeat(3, 1fr);
     }
 
@@ -112,108 +86,49 @@
   }
 
   &__kpi-card {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: 4px;
     padding: $spacing-md $spacing-lg;
-    background: $glass-bg-heavy;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: $border-width solid $glass-border;
+    background: $color-white;
+    border: $border-width solid $border-color;
     border-radius: $border-radius-lg;
-    min-width: 0;
-    position: relative;
-    overflow: hidden;
-    transition: all $transition-base;
-    box-shadow: $shadow-xs, $glass-inner-glow-subtle;
-    @include press-effect;
-
-    // Bottom accent line
-    &::before {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, $color-primary, $color-primary-light);
-      opacity: 0;
-      transition: opacity $transition-fast;
-    }
-
-    // Subtle radial glow on hover
-    &::after {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 120%;
-      height: 120%;
-      background: radial-gradient(ellipse, rgba($color-primary, 0.04) 0%, transparent 60%);
-      opacity: 0;
-      transition: opacity $transition-base;
-      pointer-events: none;
-    }
+    transition: all $transition-fast;
+    box-shadow: $shadow-xs;
 
     &:hover {
-      box-shadow: $shadow-md, $glass-inner-glow;
-      transform: translateY(-3px) scale(1.01);
-      border-color: $glass-border-bright;
-
-      &::before {
-        opacity: 1;
-      }
-
-      &::after {
-        opacity: 1;
-      }
+      box-shadow: $shadow-md;
+      border-color: $border-color-medium;
     }
 
     &--urgent {
-      border-color: rgba(248, 113, 113, 0.25);
-      background: linear-gradient(135deg, rgba(248, 113, 113, 0.06), $glass-bg-heavy);
-      animation: kpiPulse 2.5s ease-in-out infinite;
-
-      &::before {
-        background: linear-gradient(90deg, $color-error, rgba($color-error, 0.4));
-        opacity: 1;
-      }
-
-      &:hover {
-        box-shadow: $shadow-md, $shadow-glow-error;
-      }
+      border-color: $color-error-border;
+      background: $color-error-bg;
     }
   }
 
   &__kpi-value {
-    font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-extrabold;
     color: $color-secondary;
     font-variant-numeric: tabular-nums;
     line-height: 1;
-    font-family: $font-heading;
-    letter-spacing: $letter-spacing-tight;
-    @include counter-roll-in(0.15s);
 
-    &--success { color: #1B7A4A; }
-    &--warning { color: #A85D1A; }
-    &--danger  { color: #C23B3B; }
+    &--success { color: $color-success-dark; }
+    &--warning { color: $color-warning-dark; }
+    &--danger  { color: $color-error-dark; }
     &--accent  { color: $color-accent-dark; }
   }
 
   &__kpi-label {
-    font-size: $font-size-2xs;
+    font-size: $font-size-xs;
     color: $color-gray-400;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-medium;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-caps;
     white-space: nowrap;
   }
 
-  // -----------------------------------------------
-  // LOADING STATE
-  // -----------------------------------------------
+  // LOADING
   &__loading {
     @include flex-column-center;
     padding: $spacing-5xl $spacing-xl;
@@ -224,18 +139,15 @@
   }
 
   &__spinner {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border: 3px solid $border-color;
     border-top-color: $color-primary;
     border-radius: $border-radius-full;
     animation: clientsSpin 0.7s linear infinite;
-    box-shadow: 0 0 16px rgba($color-primary, 0.1);
   }
 
-  // -----------------------------------------------
-  // EMPTY STATE — Premium illustration feel
-  // -----------------------------------------------
+  // EMPTY STATE
   &__empty {
     @include glass-card;
     @include flex-center;
@@ -243,91 +155,34 @@
     padding: $spacing-4xl $spacing-2xl;
     margin-top: $spacing-xl;
     text-align: center;
-    @include dot-grid(rgba(0, 0, 0, 0.04), 1px, 28px);
-    animation: fadeInUp 400ms $ease-out-expo both;
-    animation-delay: 0.15s;
-    position: relative;
-    overflow: hidden;
     border-radius: $border-radius-xl;
-
-    // Radial ambient glow
-    &::after {
-      content: '';
-      position: absolute;
-      top: -30%;
-      left: 20%;
-      width: 60%;
-      height: 100%;
-      background: radial-gradient(ellipse, rgba($color-primary, 0.05) 0%, transparent 70%);
-      pointer-events: none;
-    }
   }
 
   &__empty-icon {
     @include flex-center;
-    width: 88px;
-    height: 88px;
+    width: 72px;
+    height: 72px;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary-ghost, rgba($color-primary, 0.08));
-    color: $color-primary;
+    background: $color-gray-100;
+    color: $color-gray-400;
     margin-bottom: $spacing-xl;
-    box-shadow:
-      0 0 0 8px rgba($color-primary, 0.04),
-      0 0 0 20px rgba($color-primary, 0.02),
-      0 0 0 36px rgba($color-primary, 0.01);
-    animation: emptyPulse 3s ease-in-out infinite;
-    position: relative;
-    z-index: 1;
-    transition: transform 400ms $ease-spring;
-
-    &:hover {
-      transform: scale(1.08);
-    }
   }
 
   &__empty-text {
-    font-size: $font-size-md;
+    font-size: $font-size-lg;
     font-weight: $font-weight-semibold;
-    color: $color-gray-500;
+    color: $color-gray-600;
     margin-bottom: $spacing-xs;
-    position: relative;
-    z-index: 1;
-    font-family: $font-heading;
   }
 
   &__empty-hint {
     font-size: $font-size-sm;
-    color: $color-gray-300;
-    position: relative;
-    z-index: 1;
+    color: $color-gray-400;
     max-width: 360px;
     line-height: $line-height-base;
   }
 }
 
-// -----------------------------------------------
-// KEYFRAMES
-// -----------------------------------------------
-@keyframes kpiPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.15); }
-  50%      { box-shadow: 0 0 0 6px rgba(248, 113, 113, 0); }
-}
-
 @keyframes clientsSpin {
   to { transform: rotate(360deg); }
-}
-
-@keyframes emptyPulse {
-  0%, 100% {
-    box-shadow:
-      0 0 0 8px rgba(45, 90, 61, 0.04),
-      0 0 0 20px rgba(45, 90, 61, 0.02),
-      0 0 0 36px rgba(45, 90, 61, 0.01);
-  }
-  50% {
-    box-shadow:
-      0 0 0 12px rgba(45, 90, 61, 0.06),
-      0 0 0 28px rgba(45, 90, 61, 0.03),
-      0 0 0 44px rgba(45, 90, 61, 0.01);
-  }
 }

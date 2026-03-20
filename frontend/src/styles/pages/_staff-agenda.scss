@@ -1,215 +1,346 @@
 @use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// Staff Agenda — Redesigned
+// Mobile-first appointment list for staff
+// Clean cards, large touch targets, clear status
+// ============================================
+
+$_blue: #1E40AF;
+$_blue-light: #3B82F6;
+$_blue-sky: #0EA5E9;
+$_blue-ghost: rgba(30, 64, 175, 0.06);
+
+$_green: #10B981;
+$_green-ghost: rgba(16, 185, 129, 0.08);
+$_gold: #F59E0B;
+$_gold-ghost: rgba(245, 158, 11, 0.08);
+$_red: #EF4444;
+$_red-ghost: rgba(239, 68, 68, 0.08);
+
+$_slate-50: #F8FAFC;
+$_slate-100: #F1F5F9;
+$_slate-200: #E2E8F0;
+$_slate-300: #CBD5E1;
+$_slate-400: #94A3B8;
+$_slate-500: #64748B;
+$_slate-600: #475569;
+$_slate-700: #334155;
+$_slate-800: #1E293B;
+$_slate-900: #0F172A;
+
+$_radius-sm: 8px;
+$_radius-md: 12px;
+$_radius-lg: 16px;
 
 .staff-agenda {
-  padding: 1.5rem;
+  padding: $spacing-md;
   width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
 
+  @include respond-to(md) {
+    padding: $spacing-lg $spacing-xl;
+  }
+
+  // ---- Loading ----
   &__loading {
-    color: $color-gray-400;
-    padding: 2rem;
+    color: $_slate-400;
+    padding: $spacing-2xl;
     text-align: center;
+    font-size: $font-size-base;
   }
 
   // ---- Header ----
   &__header {
-    margin-bottom: 1rem;
+    margin-bottom: $spacing-md;
 
     h2 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: $color-gray-800;
-      margin: 0 0 0.15rem;
+      font-family: $font-primary;
+      font-size: 1.5rem;
+      font-weight: $font-weight-bold;
+      color: $_slate-900;
+      margin: 0 0 $spacing-2xs;
+      letter-spacing: $letter-spacing-tight;
+
+      @include respond-to(md) {
+        font-size: 1.75rem;
+      }
     }
 
     p {
-      font-size: 0.8rem;
-      color: $color-gray-400;
+      font-size: $font-size-sm;
+      color: $_slate-400;
       margin: 0;
+      font-weight: $font-weight-medium;
     }
   }
 
-  // ---- Date nav ----
+  // ---- Date Navigation ----
   &__date-nav {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    padding: 0.5rem 0;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+    padding: $spacing-sm 0;
   }
 
   &__nav-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    border: 1px solid $color-gray-200;
+    width: 40px;
+    height: 40px;
+    border-radius: $_radius-sm;
+    border: 1px solid $_slate-200;
     background: $color-white;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: $color-gray-500;
+    color: $_slate-500;
+    transition: all $transition-base;
+    flex-shrink: 0;
 
-    &:hover { border-color: $color-primary; color: $color-primary; }
+    &:hover {
+      border-color: $_blue-light;
+      color: $_blue-light;
+      background: $_blue-ghost;
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
   }
 
   &__date-label {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: $spacing-sm;
   }
 
   &__date-text {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: $color-gray-700;
+    font-size: 1.05rem;
+    font-weight: $font-weight-semibold;
+    color: $_slate-800;
     text-transform: capitalize;
   }
 
   &__date-today {
-    background: $color-primary;
+    background: $_blue;
     color: $color-white;
     font-size: 0.6rem;
-    font-weight: 700;
-    padding: 0.15rem 0.4rem;
-    border-radius: 6px;
+    font-weight: $font-weight-bold;
+    padding: 3px 8px;
+    border-radius: $_radius-sm;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   &__today-btn {
     margin-left: auto;
-    background: $color-primary-ghost;
-    color: $color-primary;
+    background: $_blue-ghost;
+    color: $_blue;
     border: none;
-    padding: 0.35rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $_radius-sm;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
     cursor: pointer;
+    transition: all $transition-base;
+    min-height: 40px;
 
-    &:hover { background: $color-primary; color: $color-white; }
+    &:hover {
+      background: $_blue;
+      color: $color-white;
+    }
+
+    &:active {
+      transform: scale(0.96);
+    }
   }
 
-  // ---- Stats ----
+  // ---- Day Stats ----
   &__stats {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
     flex-wrap: wrap;
+    padding: $spacing-sm $spacing-md;
+    background: $_slate-50;
+    border-radius: $_radius-sm;
+    border: 1px solid $_slate-100;
   }
 
   &__stat {
-    font-size: 0.8rem;
-    color: $color-gray-500;
+    font-size: $font-size-sm;
+    color: $_slate-500;
+    font-weight: $font-weight-medium;
 
     span {
-      font-weight: 700;
-      color: $color-gray-700;
+      font-weight: $font-weight-bold;
+      color: $_slate-800;
     }
 
-    &--green span { color: #22B07E; }
-    &--blue span { color: #3B82F6; }
-    &--gold span { color: $color-accent; }
+    &--green span { color: $_green; }
+    &--blue span { color: $_blue-light; }
+    &--gold span { color: $_gold; }
   }
 
-  // ---- Appointment cards ----
+  // ---- Appointment List ----
   &__list {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: $spacing-sm;
   }
 
+  // ---- Appointment Card ----
   &__card {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 0.85rem 1rem;
+    gap: $spacing-md;
+    padding: $spacing-md;
     background: $color-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 10px;
-    border-left: 3px solid $color-primary;
-    transition: border-color 0.15s;
+    border: 1px solid $_slate-200;
+    border-radius: $_radius-md;
+    border-left: 4px solid $_blue-light;
+    transition: all $transition-base;
+    min-height: 72px;
 
-    &--completed { border-left-color: #22B07E; opacity: 0.85; }
-    &--cancelled { border-left-color: $color-gray-300; opacity: 0.6; }
-    &--noshow { border-left-color: #EF4444; opacity: 0.7; }
+    @include respond-to(md) {
+      padding: $spacing-md $spacing-lg;
+    }
+
+    &:hover {
+      border-left-color: $_blue;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    &--completed {
+      border-left-color: $_green;
+      opacity: 0.85;
+
+      &:hover { border-left-color: $_green; }
+    }
+
+    &--cancelled {
+      border-left-color: $_slate-300;
+      opacity: 0.55;
+
+      &:hover { border-left-color: $_slate-400; }
+    }
+
+    &--noshow {
+      border-left-color: $_red;
+      opacity: 0.65;
+
+      &:hover { border-left-color: $_red; }
+    }
   }
 
   &__card-time {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.15rem;
-    min-width: 55px;
-    color: $color-primary;
+    gap: 2px;
+    min-width: 56px;
+    flex-shrink: 0;
 
     span:first-of-type {
-      font-size: 0.95rem;
-      font-weight: 700;
+      font-size: 1.1rem;
+      font-weight: $font-weight-bold;
+      color: $_blue;
+      line-height: 1;
     }
   }
 
   &__card-duration {
     font-size: 0.65rem;
-    color: $color-gray-400;
+    color: $_slate-400;
+    font-weight: $font-weight-medium;
   }
 
   &__card-body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 4px;
+    min-width: 0;
   }
 
   &__card-client {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: $color-gray-700;
+    gap: $spacing-xs;
+    font-size: 1rem;
+    font-weight: $font-weight-semibold;
+    color: $_slate-800;
+    @include truncate;
   }
 
   &__card-service {
-    font-size: 0.75rem;
-    color: $color-gray-400;
+    font-size: $font-size-sm;
+    color: $_slate-400;
+    @include truncate;
   }
 
   &__card-notes {
-    font-size: 0.7rem;
-    color: $color-gray-400;
+    font-size: 0.75rem;
+    color: $_slate-400;
     font-style: italic;
+    @include truncate;
   }
 
   &__card-right {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 0.25rem;
+    gap: $spacing-xs;
+    flex-shrink: 0;
   }
 
   &__card-price {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: $color-gray-700;
+    font-size: 1rem;
+    font-weight: $font-weight-bold;
+    color: $_slate-800;
   }
 
   &__card-status {
-    font-size: 0.6rem;
-    font-weight: 600;
-    padding: 0.15rem 0.5rem;
-    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: $font-weight-bold;
+    padding: 4px 10px;
+    border-radius: $_radius-sm;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
 
-    &--confirmed { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
-    &--completed { background: rgba(34, 176, 126, 0.1); color: #22B07E; }
-    &--cancelled { background: rgba(142, 142, 133, 0.1); color: $color-gray-400; }
-    &--noshow { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+    &--confirmed {
+      background: $_blue-ghost;
+      color: $_blue-light;
+    }
+
+    &--completed {
+      background: $_green-ghost;
+      color: $_green;
+    }
+
+    &--cancelled {
+      background: $_slate-100;
+      color: $_slate-400;
+    }
+
+    &--noshow {
+      background: $_red-ghost;
+      color: $_red;
+    }
   }
 
+  // ---- Empty State ----
   &__empty {
     text-align: center;
-    padding: 3rem 1rem;
-    color: $color-gray-400;
-    font-size: 0.9rem;
+    padding: $spacing-3xl $spacing-md;
+    color: $_slate-400;
+    font-size: $font-size-base;
+    background: $_slate-50;
+    border-radius: $_radius-md;
+    border: 1px dashed $_slate-200;
   }
 }

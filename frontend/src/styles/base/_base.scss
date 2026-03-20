@@ -2,27 +2,25 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// Plexify Studio - Base Styles
-// Global defaults, selection, focus, scroll
-// Dynamic theming via CSS custom properties
+// Plexify Studio - Base Styles v3.0
+// Clean, modern, minimal foundation
 // ============================================
 
 // -----------------------------------------------
-// CSS CUSTOM PROPERTIES — Dynamic Theme Bridge
-// Defaults from SCSS variables, overridden by JS per tenant
+// CSS CUSTOM PROPERTIES
 // -----------------------------------------------
 :root {
   // Primary palette (overridden per tenant via TenantContext)
   --color-primary: #{$color-primary};
   --color-primary-light: #{$color-primary-light};
   --color-primary-dark: #{$color-primary-dark};
-  --color-primary-rgb: 45, 90, 61;
+  --color-primary-rgb: 30, 64, 175;
 
   // Accent
   --color-accent: #{$color-accent};
   --color-accent-light: #{$color-accent-light};
 
-  // Semantic (fixed across all tenants)
+  // Semantic
   --color-success: #{$color-success};
   --color-warning: #{$color-warning};
   --color-error: #{$color-error};
@@ -31,37 +29,34 @@
   // Backgrounds
   --bg-main: #{$bg-main};
   --bg-card: #{$bg-card};
-  --bg-sidebar: #1B2532;
+  --bg-sidebar: #0F172A;
 
   // Text
-  --text-primary: #1A1F36;
-  --text-secondary: #6B7280;
-  --text-muted: #9CA3AF;
+  --text-primary: #{$color-secondary};
+  --text-secondary: #{$color-gray-500};
+  --text-muted: #{$color-gray-400};
+
+  // Surfaces
+  --surface-elevated: #{$color-white};
+  --surface-overlay: rgba(255, 255, 255, 0.7);
 }
 
+// -----------------------------------------------
+// BODY
+// -----------------------------------------------
 body {
   background: var(--bg-main, #{$bg-main});
-  position: relative;
-
-  // Subtle animated gradient mesh background (uses CSS vars for tenant color)
-  background-image:
-    radial-gradient(ellipse at 20% 50%, rgba(var(--color-primary-rgb, 45, 90, 61), 0.025) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(var(--color-primary-rgb, 45, 90, 61), 0.015) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 80%, rgba(var(--color-primary-rgb, 45, 90, 61), 0.01) 0%, transparent 50%);
-  background-attachment: fixed;
-
-  // Noise texture overlay
-  &::after {
-    content: '';
-    position: fixed;
-    inset: 0;
-    opacity: 0.025;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    background-size: 256px 256px;
-    z-index: 9999;
-  }
+  color: var(--text-primary, #{$color-secondary});
+  font-family: $font-primary;
+  font-size: $font-size-base;
+  font-weight: $font-weight-regular;
+  line-height: $line-height-base;
+  letter-spacing: $letter-spacing-normal;
+  font-feature-settings: 'cv01', 'cv02';
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 // -----------------------------------------------
@@ -73,29 +68,29 @@ body {
 }
 
 // -----------------------------------------------
-// SELECTION — Brand green highlight
+// SELECTION
 // -----------------------------------------------
 ::selection {
-  background-color: rgba(45, 90, 61, 0.18);
+  background-color: rgba(30, 64, 175, 0.15);
   color: $color-primary-dark;
 }
 
 ::-moz-selection {
-  background-color: rgba(45, 90, 61, 0.18);
+  background-color: rgba(30, 64, 175, 0.15);
   color: $color-primary-dark;
 }
 
 // -----------------------------------------------
-// FOCUS — Accessible green ring
+// FOCUS — Clean blue ring
 // -----------------------------------------------
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.2), 0 0 0 4px rgba(45, 90, 61, 0.08);
+  box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.2), 0 0 0 4px rgba(30, 64, 175, 0.08);
   border-radius: $border-radius-sm;
 }
 
 // -----------------------------------------------
-// GLOBAL INTERACTIVE RESETS
+// INTERACTIVE RESETS
 // -----------------------------------------------
 button,
 [role="button"] {
@@ -113,7 +108,7 @@ select {
 }
 
 // -----------------------------------------------
-// IMAGE POLISH
+// IMAGE
 // -----------------------------------------------
 img {
   max-width: 100%;
@@ -122,7 +117,7 @@ img {
 }
 
 // -----------------------------------------------
-// TABULAR NUMBERS on money and data
+// TABULAR NUMBERS
 // -----------------------------------------------
 [data-numeric],
 .tabular-nums {
@@ -130,7 +125,7 @@ img {
 }
 
 // -----------------------------------------------
-// SMOOTH SCROLL WITH REDUCED MOTION RESPECT
+// SMOOTH SCROLL
 // -----------------------------------------------
 @media (prefers-reduced-motion: no-preference) {
   html {
@@ -139,71 +134,68 @@ img {
 }
 
 // -----------------------------------------------
-// GLOBAL SCROLLBAR (both axes, Firefox + Webkit)
+// SCROLLBAR
 // -----------------------------------------------
 html {
   @include custom-scrollbar;
-  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+  scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
   scrollbar-width: thin;
 }
 
-// Horizontal scrollbars: thinner (4px)
 *::-webkit-scrollbar:horizontal {
   height: 4px;
 }
 
 *::-webkit-scrollbar-thumb:horizontal {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.08);
   border-radius: $border-radius-full;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.18);
+    background: rgba(0, 0, 0, 0.15);
   }
 }
 
 // -----------------------------------------------
-// SMOOTH VIEW TRANSITIONS (browser-native)
+// VIEW TRANSITIONS
 // -----------------------------------------------
 @supports (view-transition-name: root) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation-duration: 300ms;
-    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-duration: 250ms;
+    animation-timing-function: $ease-out-expo;
   }
 }
 
 // -----------------------------------------------
-// PREMIUM CONTENT CONTAINMENT (perf)
+// CONTENT CONTAINMENT
 // -----------------------------------------------
 main {
   contain: layout style;
 }
 
 // -----------------------------------------------
-// GLOBAL HR / DIVIDER REFINEMENT
+// HR / DIVIDER
 // -----------------------------------------------
 hr {
   border: none;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, $border-color 20%, $border-color 80%, transparent 100%);
+  background: $border-color;
   margin: $spacing-lg 0;
 }
 
 // -----------------------------------------------
-// DISABLED ELEMENTS GLOBAL
+// DISABLED ELEMENTS
 // -----------------------------------------------
 [disabled],
 .is-disabled {
-  opacity: 0.45;
+  opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
   user-select: none;
 }
 
-// Note: reduced-motion preferences handled in _animations.scss
-
 // -----------------------------------------------
-// INTERACTIVE ELEMENT DEFAULTS
+// TAP HIGHLIGHT
 // -----------------------------------------------
 button,
 [role="button"],
@@ -213,7 +205,7 @@ a {
 }
 
 // -----------------------------------------------
-// SAFE AREA PADDING (mobile notch support)
+// SAFE AREA
 // -----------------------------------------------
 @supports (padding: env(safe-area-inset-bottom)) {
   body {

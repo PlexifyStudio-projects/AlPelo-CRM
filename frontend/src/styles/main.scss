@@ -1,15 +1,17 @@
 // ============================================
-// AlPelo CRM - Premium Design System v2.0
-// World-class SaaS Quality
+// Plexify Studio — Design System v3.0
+// Ultra-modern SaaS · Clean · Precision
 // Methodology: BEM (Block Element Modifier)
 // ============================================
 
 // --- Abstracts (no CSS output) ---
+// Must load first: variables, mixins, functions
 @use 'abstracts/variables';
 @use 'abstracts/mixins';
 @use 'abstracts/functions';
 
 // --- Base ---
+// Reset, typography, global styles, animations, utilities
 @use 'base/reset';
 @use 'base/typography';
 @use 'base/animations';
@@ -17,54 +19,57 @@
 @use 'base/utilities';
 
 // --- Layout ---
+// Structural containers: sidebar, header, main wrapper
 @use 'layout/sidebar';
 @use 'layout/header';
 @use 'layout/main-layout';
 
 // --- Components ---
+// Reusable UI blocks (alphabetical)
+@use 'components/add-client-modal';
+@use 'components/add-visit-modal';
+@use 'components/ai-pause-banner';
+@use 'components/barber-rating';
 @use 'components/button';
-@use 'components/input';
 @use 'components/card';
-@use 'components/modal';
-@use 'components/notification';
-@use 'components/client-table';
 @use 'components/client-detail';
 @use 'components/client-filters';
-@use 'components/add-client-modal';
-@use 'components/barber-rating';
-@use 'components/add-visit-modal';
-@use 'components/usage-meter';
-@use 'components/ai-pause-banner';
-@use 'components/dev-layout';
+@use 'components/client-table';
 @use 'components/dev-dashboard';
-@use 'components/dev-tenants';
+@use 'components/dev-layout';
+@use 'components/dev-new-pages';
 @use 'components/dev-pages';
 @use 'components/dev-profile';
-@use 'components/dev-new-pages';
-@use 'components/import-modal';
+@use 'components/dev-tenants';
 @use 'components/empty-state';
+@use 'components/import-modal';
+@use 'components/input';
+@use 'components/modal';
+@use 'components/notification';
 @use 'components/reviews';
+@use 'components/usage-meter';
 
 // --- Pages ---
-@use 'pages/login';
-@use 'pages/dashboard';
-@use 'pages/clients';
-@use 'pages/inbox';
-@use 'pages/messaging';
+// Page-specific styles (alphabetical)
+@use 'pages/admin-profile';
+@use 'pages/agenda';
+@use 'pages/automations';
+@use 'pages/campaigns';
+@use 'pages/change-password';
 @use 'pages/chat-ai';
+@use 'pages/clients';
+@use 'pages/content-studio';
+@use 'pages/dashboard';
+@use 'pages/finances';
+@use 'pages/inbox';
+@use 'pages/lina-activity';
+@use 'pages/login';
+@use 'pages/messaging';
 @use 'pages/not-found';
 @use 'pages/profile';
-@use 'pages/settings';
-@use 'pages/change-password';
-@use 'pages/team';
 @use 'pages/services';
-@use 'pages/agenda';
-@use 'pages/finances';
-@use 'pages/lina-activity';
-@use 'pages/campaigns';
-@use 'pages/admin-profile';
-@use 'pages/content-studio';
-@use 'pages/automations';
-@use 'pages/staff-dashboard';
+@use 'pages/settings';
 @use 'pages/staff-agenda';
+@use 'pages/staff-dashboard';
 @use 'pages/staff-finances';
+@use 'pages/team';

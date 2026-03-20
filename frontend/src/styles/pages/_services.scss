@@ -1,37 +1,32 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ════════════════════════════════════════════════════════════
-// SERVICES — World-Class Service Catalog
-// Fortune 500 quality · Premium card design
-// ════════════════════════════════════════════════════════════
+// ============================================
+// Services — Ultra-Modern Catalog
+// ============================================
 
 .services {
   @include page-enter;
   padding: $spacing-xl $spacing-xl $spacing-3xl;
-  max-width: $max-content-width;
+  // max-width removed — full-width content
 
-  // ===== HEADER =====
+  // HEADER
   &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: $spacing-xl;
+    @include flex-between;
+    margin-bottom: $spacing-2xl;
     gap: $spacing-md;
   }
 
-  &__header-left {
-    flex: 1;
-  }
+  &__header-left { flex: 1; }
 
   &__title {
-    @include heading($font-size-2xl);
+    @include heading($font-size-3xl);
     margin: 0 0 $spacing-xs;
+    font-weight: $font-weight-extrabold;
   }
 
   &__subtitle {
     @include label-text;
-    color: $color-gray-400;
     margin: 0;
   }
 
@@ -39,106 +34,54 @@
     display: inline-flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: 11px 26px;
-    background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+    padding: $spacing-sm $spacing-xl;
+    background: $color-primary;
     color: $color-white;
     border: none;
-    border-radius: $border-radius-full;
+    border-radius: $border-radius-md;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     font-family: $font-primary;
     cursor: pointer;
-    transition: all $transition-base;
+    transition: all $transition-fast;
     white-space: nowrap;
-    line-height: 1.4;
-    box-shadow:
-      0 2px 12px rgba($color-primary, 0.3),
-      0 0 0 1px rgba($color-primary, 0.1) inset;
 
-    svg {
-      flex-shrink: 0;
-    }
-
-    &:hover {
-      box-shadow:
-        0 8px 28px rgba($color-primary, 0.35),
-        0 0 0 1px rgba($color-primary, 0.1) inset;
-      transform: translateY(-2px) scale(1.02);
-    }
-
-    &:active {
-      transform: translateY(0) scale(0.98);
-      box-shadow: $shadow-sm;
-    }
+    &:hover { background: $color-primary-dark; box-shadow: $shadow-colored-primary; }
+    &:active { transform: scale(0.98); }
   }
 
-  // ===== STATS KPI BAR =====
+  // STATS
   &__stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: $spacing-md;
-    margin-bottom: $spacing-xl;
+    margin-bottom: $spacing-2xl;
   }
 
   &__stat {
     @include glass-card;
-    padding: $spacing-lg $spacing-lg;
-    display: flex;
-    flex-direction: column;
+    padding: $spacing-lg;
+    @include flex-column;
     gap: $spacing-xs;
-    transition: all $transition-base;
-    position: relative;
-    overflow: hidden;
+    transition: all $transition-fast;
 
-    // Subtle accent top border (reveals on hover)
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, $color-primary, $color-accent);
-      opacity: 0;
-      transition: opacity $transition-base;
-    }
-
-    &:hover {
-      box-shadow: $shadow-glass-hover, $glass-inner-glow;
-      transform: translateY(-3px);
-
-      &::before {
-        opacity: 1;
-      }
-    }
-
-    // Stagger entrance
-    @for $i from 1 through 4 {
-      &:nth-child(#{$i}) {
-        animation: svc-fadeInUp 0.4s $ease-out-expo #{$i * 0.06}s both;
-      }
-    }
+    &:hover { box-shadow: $shadow-card-hover; }
   }
 
   &__stat-value {
-    font-family: $font-heading;
-    font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-extrabold;
     color: $color-secondary;
     letter-spacing: $letter-spacing-tight;
-    line-height: $line-height-tight;
   }
 
   &__stat-label {
     @include label-text;
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
   }
 
-  // ===== FILTERS =====
+  // FILTERS
   &__filters {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-md;
     margin-bottom: $spacing-2xl;
   }
@@ -148,21 +91,17 @@
     align-items: center;
     gap: $spacing-sm;
     background: $color-white;
-    border: $border-width solid $border-color-medium;
-    border-radius: $border-radius-full;
-    padding: 11px $spacing-lg;
-    transition: all $transition-fast;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
+    padding: $spacing-sm $spacing-md;
     max-width: 480px;
-    box-shadow: $shadow-xs;
+    transition: border-color $transition-fast;
 
-    svg {
-      color: $color-gray-400;
-      flex-shrink: 0;
-    }
+    svg { color: $color-gray-400; flex-shrink: 0; }
 
     &:focus-within {
       border-color: $color-primary;
-      box-shadow: 0 0 0 4px $color-primary-ghost, $shadow-sm;
+      box-shadow: 0 0 0 3px $color-primary-ghost;
     }
   }
 
@@ -174,11 +113,8 @@
     color: $color-secondary;
     outline: none;
     font-family: $font-primary;
-    line-height: 1.4;
 
-    &::placeholder {
-      color: $color-gray-400;
-    }
+    &::placeholder { color: $color-gray-400; }
   }
 
   &__tabs {
@@ -197,30 +133,20 @@
     font-family: $font-primary;
     color: $color-gray-500;
     cursor: pointer;
-    transition: all $transition-base;
+    transition: all $transition-fast;
     display: inline-flex;
     align-items: center;
     gap: $spacing-xs;
-    line-height: 1.4;
 
     &:hover:not(&--active) {
       border-color: $color-gray-300;
       color: $color-secondary;
-      background: $color-gray-50;
-      transform: translateY(-1px);
     }
 
     &--active {
-      background: var(--tab-color, $color-primary);
+      background: var(--tab-color, $color-gray-800);
       color: $color-white;
-      border-color: var(--tab-color, $color-primary);
-      box-shadow: 0 3px 12px color-mix(in srgb, var(--tab-color, $color-primary) 30%, transparent);
-
-      &:hover {
-        background: var(--tab-color, $color-primary);
-        color: $color-white;
-        border-color: var(--tab-color, $color-primary);
-      }
+      border-color: var(--tab-color, $color-gray-800);
 
       .services__tab-count {
         background: rgba(255, 255, 255, 0.25);
@@ -235,15 +161,12 @@
     color: $color-gray-500;
     padding: 2px 8px;
     border-radius: $border-radius-full;
-    font-weight: $font-weight-bold;
-    line-height: 1.3;
-    transition: all $transition-fast;
+    font-weight: $font-weight-semibold;
   }
 
-  // ===== CONTENT =====
+  // CONTENT
   &__content {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-3xl;
   }
 
@@ -251,28 +174,14 @@
     @include flex-column-center;
     gap: $spacing-md;
     padding: $spacing-4xl 0;
-    color: $color-gray-300;
+    color: $color-gray-400;
 
-    svg {
-      opacity: 0.3;
-    }
-
-    p {
-      font-size: $font-size-base;
-      margin: 0;
-      color: $color-gray-400;
-    }
+    p { font-size: $font-size-base; margin: 0; }
   }
 
-  // ===== CATEGORY GROUPS =====
+  // CATEGORY
   &__category {
-    animation: svc-fadeInUp 0.4s $ease-out-expo both;
-
-    @for $i from 1 through 6 {
-      &:nth-child(#{$i}) {
-        animation-delay: #{$i * 0.06}s;
-      }
-    }
+    // stagger handled by JSX
   }
 
   &__category-header {
@@ -281,63 +190,36 @@
     gap: $spacing-md;
     margin-bottom: $spacing-lg;
     padding-bottom: $spacing-md;
-    border-bottom: $border-width solid $border-color;
-    position: relative;
-
-    // Gradient accent under the category header
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -1px;
-      left: 0;
-      width: 60px;
-      height: 2px;
-      border-radius: 2px;
-      background: currentColor;
-      opacity: 0.3;
-    }
+    border-bottom: $border-width solid $border-color-light;
   }
 
   &__category-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: $border-radius-lg;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: $border-radius-md;
+    @include flex-center;
     color: $color-white;
     flex-shrink: 0;
-    box-shadow: $shadow-md;
-    transition: transform $transition-base;
-
-    .services__category:hover & {
-      transform: scale(1.05);
-    }
   }
 
   &__category-info {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
+    @include flex-column;
+    gap: 2px;
   }
 
   &__category-name {
-    font-family: $font-heading;
-    font-size: $font-size-md;
+    font-size: $font-size-lg;
     font-weight: $font-weight-bold;
     color: $color-secondary;
     margin: 0;
-    letter-spacing: $letter-spacing-tight;
   }
 
   &__category-count {
     font-size: $font-size-xs;
     color: $color-gray-400;
-    font-weight: $font-weight-medium;
-    letter-spacing: $letter-spacing-wide;
   }
 
-  // ===== SERVICE CARDS — Premium Grid =====
+  // CARDS
   &__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -347,45 +229,27 @@
   &__card {
     @include glass-card;
     padding: 0;
-    transition: all $transition-base;
+    @include flex-column;
+    transition: all $transition-fast;
     position: relative;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
 
-    // Left accent bar — always visible with category color
     &::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       bottom: 0;
-      width: 4px;
+      width: 3px;
       background: var(--card-accent);
-      border-radius: 4px 0 0 4px;
-      opacity: 0.7;
-      transition: opacity $transition-base;
+      border-radius: 3px 0 0 3px;
     }
 
     &:hover {
-      box-shadow: $shadow-card-hover, $glass-inner-glow;
-      transform: translateY(-4px) scale(1.005);
-      border-color: rgba(255, 255, 255, 0.35);
-
-      &::before {
-        opacity: 1;
-      }
+      box-shadow: $shadow-card-hover;
 
       .services__card-actions {
         opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    // Stagger children within each grid
-    @for $i from 1 through 12 {
-      &:nth-child(#{$i}) {
-        animation: svc-fadeInUp 0.35s $ease-out-expo #{$i * 0.04}s both;
       }
     }
   }
@@ -402,9 +266,7 @@
     font-size: $font-size-base;
     font-weight: $font-weight-bold;
     color: $color-secondary;
-    line-height: $line-height-snug;
     flex: 1;
-    letter-spacing: $letter-spacing-tight;
   }
 
   &__card-actions {
@@ -412,65 +274,53 @@
     gap: $spacing-2xs;
     flex-shrink: 0;
     opacity: 0;
-    transform: translateX(4px);
-    transition: all $transition-fast;
+    transition: opacity $transition-fast;
   }
 
   &__card-edit,
   &__card-delete {
-    width: 32px;
-    height: 32px;
-    border-radius: $border-radius-md;
-    border: $border-width solid transparent;
+    width: 30px;
+    height: 30px;
+    border-radius: $border-radius-sm;
+    border: none;
     background: transparent;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
     cursor: pointer;
     transition: all $transition-fast;
     color: $color-gray-400;
     padding: 0;
 
     &:hover {
-      border-color: $color-primary;
       color: $color-primary;
       background: $color-primary-ghost;
-      transform: scale(1.1);
     }
   }
 
   &__card-delete:hover {
-    border-color: $color-error-border;
     color: $color-error;
     background: $color-error-bg;
   }
 
   &__card-desc {
-    font-size: $font-size-xs;
+    font-size: $font-size-sm;
     color: $color-gray-500;
     margin: 0;
     padding: 0 $spacing-lg $spacing-sm;
-    line-height: $line-height-base;
     @include line-clamp(2);
   }
 
   &__card-details {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    @include flex-between;
     margin-top: auto;
     padding: $spacing-md $spacing-lg;
-    background: linear-gradient(135deg, $color-gray-50 0%, rgba($color-gray-50, 0.5) 100%);
+    background: $color-gray-50;
     border-top: $border-width solid $border-color-light;
   }
 
   &__card-price-value {
-    font-family: $font-heading;
-    font-size: $font-size-md;
-    font-weight: $font-weight-bold;
-    color: $color-primary;
-    letter-spacing: $letter-spacing-tight;
-    line-height: $line-height-tight;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-extrabold;
+    color: $color-success-dark;
   }
 
   &__card-duration {
@@ -479,27 +329,22 @@
     gap: $spacing-2xs;
     font-size: $font-size-xs;
     color: $color-gray-500;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-medium;
     padding: 4px 12px;
     background: $color-white;
     border: $border-width solid $border-color;
     border-radius: $border-radius-full;
-
-    svg {
-      color: $color-gray-400;
-    }
   }
 
   &__card-staff {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-xs;
     padding: 0 $spacing-lg $spacing-lg;
   }
 
   &__card-staff-label {
     @include label-text;
-    font-size: 9px;
+    font-size: $font-size-2xs;
   }
 
   &__card-staff-list {
@@ -511,33 +356,21 @@
   &__card-staff-tag {
     font-size: $font-size-2xs;
     padding: 4px 12px;
-    background: rgba($color-primary, 0.06);
-    color: $color-primary;
+    background: $color-gray-100;
+    color: $color-gray-600;
     border-radius: $border-radius-full;
-    font-weight: $font-weight-semibold;
-    white-space: nowrap;
-    border: $border-width solid rgba($color-primary, 0.08);
-    transition: all $transition-fast;
-
-    &:hover {
-      background: rgba($color-primary, 0.1);
-      border-color: rgba($color-primary, 0.15);
-    }
+    font-weight: $font-weight-medium;
   }
 
-  // ===== MODAL — Premium Form =====
+  // MODAL
   &__modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(10, 10, 10, 0.5);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    @include flex-center;
     z-index: $z-modal;
     padding: $spacing-lg;
-    animation: svc-fadeIn 0.2s ease;
   }
 
   &__modal {
@@ -547,31 +380,22 @@
     max-width: 640px;
     max-height: 85vh;
     overflow-y: auto;
-    box-shadow:
-      $shadow-2xl,
-      0 0 0 1px rgba(0, 0, 0, 0.04),
-      0 0 100px rgba(0, 0, 0, 0.1);
-    animation: svc-slideUp 0.3s $ease-out-expo;
+    box-shadow: $shadow-2xl;
     @include custom-scrollbar;
   }
 
   &__modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: $spacing-lg $spacing-xl;
+    @include flex-between;
+    padding: $spacing-md $spacing-lg;
     border-bottom: $border-width solid $border-color;
     position: sticky;
     top: 0;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: $color-white;
     z-index: 2;
     border-radius: $border-radius-xl $border-radius-xl 0 0;
 
     h2 {
-      font-family: $font-heading;
-      font-size: $font-size-lg;
+      font-size: $font-size-xl;
       font-weight: $font-weight-bold;
       color: $color-secondary;
       margin: 0;
@@ -579,81 +403,54 @@
   }
 
   &__modal-close {
-    width: 38px;
-    height: 38px;
-    border-radius: $border-radius-md;
-    border: $border-width solid $border-color;
+    width: 34px;
+    height: 34px;
+    border-radius: $border-radius-sm;
+    border: 1px solid $border-color;
     background: $color-white;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
     color: $color-gray-400;
-    transition: all $transition-base;
+    transition: all $transition-fast;
     padding: 0;
 
-    &:hover {
-      background: $color-gray-50;
-      color: $color-secondary;
-      border-color: $border-color-medium;
-      transform: rotate(90deg);
-    }
+    &:hover { background: $color-gray-50; color: $color-secondary; }
   }
 
   &__modal-form {
-    padding: $spacing-xl;
-    display: flex;
-    flex-direction: column;
+    padding: $spacing-lg;
+    @include flex-column;
     gap: $spacing-lg;
   }
 
   &__form-group {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-xs;
 
     label {
       @include label-text;
-      color: $color-gray-500;
     }
 
-    input,
-    select,
-    textarea {
+    input, select, textarea {
       width: 100%;
-      padding: 12px 16px;
-      border: $border-width solid $border-color-medium;
+      padding: $spacing-sm $spacing-md;
+      border: $border-width solid $border-color;
       border-radius: $border-radius-md;
       font-size: $font-size-sm;
       font-family: $font-primary;
       color: $color-secondary;
       background: $color-white;
-      transition: all $transition-fast;
+      transition: border-color $transition-fast;
       outline: none;
-      line-height: 1.4;
-      box-sizing: border-box;
 
-      &:hover {
-        border-color: $color-gray-300;
-      }
-
-      &:focus {
-        border-color: $color-primary;
-        box-shadow: 0 0 0 4px $color-primary-ghost;
-      }
-
-      &::placeholder {
-        color: $color-gray-400;
-      }
+      &:focus { border-color: $color-primary; box-shadow: 0 0 0 3px $color-primary-ghost; }
+      &::placeholder { color: $color-gray-400; }
     }
 
     select {
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B6B63' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 14px center;
-      padding-right: 36px;
       cursor: pointer;
+      padding-right: 36px;
     }
 
     textarea {
@@ -675,59 +472,45 @@
     max-height: 200px;
     overflow-y: auto;
     padding: $spacing-sm;
-    border: $border-width solid $border-color-medium;
-    border-radius: $border-radius-lg;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
     background: $color-gray-50;
     @include custom-scrollbar;
   }
 
   &__staff-chip {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     align-items: flex-start;
-    padding: 10px 14px;
-    border: $border-width solid $border-color-medium;
-    border-radius: $border-radius-lg;
+    padding: $spacing-sm 14px;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
     background: $color-white;
     cursor: pointer;
-    transition: all $transition-base;
-    gap: 3px;
+    transition: all $transition-fast;
+    gap: 2px;
     font-family: $font-primary;
 
     &:hover:not(&--selected) {
       border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost;
-      transform: translateY(-1px);
     }
 
     &--selected {
-      background: linear-gradient(135deg, $color-primary, $color-primary-light);
+      background: $color-primary;
       border-color: $color-primary;
       color: $color-white;
-      box-shadow: 0 4px 14px rgba($color-primary, 0.3);
-      transform: translateY(-1px);
 
-      &:hover {
-        background: linear-gradient(135deg, $color-primary-light, $color-primary);
-        border-color: $color-primary-light;
-      }
-
-      .services__staff-chip-role {
-        color: rgba(255, 255, 255, 0.7);
-      }
+      .services__staff-chip-role { color: rgba(255, 255, 255, 0.7); }
     }
   }
 
   &__staff-chip-name {
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
-    line-height: 1.3;
   }
 
   &__staff-chip-role {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    line-height: 1.3;
   }
 
   &__modal-actions {
@@ -739,57 +522,36 @@
   }
 
   &__btn-cancel {
-    padding: 11px 24px;
-    border: $border-width solid $border-color-medium;
-    border-radius: $border-radius-full;
+    padding: $spacing-sm $spacing-xl;
+    border: $border-width solid $border-color;
+    border-radius: $border-radius-md;
     background: $color-white;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     color: $color-gray-600;
     cursor: pointer;
-    transition: all $transition-fast;
     font-family: $font-primary;
-    line-height: 1.4;
+    transition: all $transition-fast;
 
-    &:hover {
-      background: $color-gray-50;
-      border-color: $color-gray-300;
-      color: $color-secondary;
-      transform: translateY(-1px);
-    }
-
-    &:active {
-      background: $color-gray-100;
-      transform: translateY(0);
-    }
+    &:hover { background: $color-gray-50; }
   }
 
   &__btn-save {
-    padding: 11px 30px;
+    padding: $spacing-sm $spacing-xl;
     border: none;
-    border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    border-radius: $border-radius-md;
+    background: $color-primary;
     color: $color-white;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     cursor: pointer;
-    transition: all $transition-base;
     font-family: $font-primary;
-    line-height: 1.4;
-    box-shadow: 0 3px 12px rgba($color-primary, 0.25);
+    transition: all $transition-fast;
 
-    &:hover {
-      box-shadow: $shadow-colored-primary;
-      transform: translateY(-2px);
-    }
-
-    &:active {
-      transform: translateY(0) scale(0.98);
-      box-shadow: $shadow-sm;
-    }
+    &:hover { background: $color-primary-dark; box-shadow: $shadow-colored-primary; }
   }
 
-  // ===== LOADING =====
+  // LOADING
   &__loading {
     @include flex-column-center;
     gap: $spacing-md;
@@ -799,151 +561,32 @@
   }
 
   &__spinner {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border: 3px solid $border-color;
     border-top-color: $color-primary;
     border-radius: 50%;
     animation: svc-spin 0.8s linear infinite;
   }
 
-  // ===== RESPONSIVE =====
+  // RESPONSIVE
   @media (max-width: $breakpoint-lg) {
-    &__stats {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    &__grid {
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    }
-
-    &__form-row {
-      grid-template-columns: 1fr;
-    }
-
-    // Show actions on touch devices since no hover
-    &__card-actions {
-      opacity: 1;
-      transform: none;
-    }
+    &__stats { grid-template-columns: repeat(2, 1fr); }
+    &__form-row { grid-template-columns: 1fr; }
+    &__card-actions { opacity: 1; }
   }
 
   @media (max-width: $breakpoint-md) {
     padding: $spacing-md;
 
-    &__header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    &__add-btn {
-      width: 100%;
-      justify-content: center;
-    }
-
-    &__stats {
-      grid-template-columns: 1fr 1fr;
-      gap: $spacing-sm;
-    }
-
-    &__search {
-      max-width: 100%;
-    }
-
-    &__tabs {
-      overflow-x: auto;
-      flex-wrap: nowrap;
-      padding-bottom: $spacing-xs;
-      -webkit-overflow-scrolling: touch;
-      scroll-snap-type: x mandatory;
-
-      &::-webkit-scrollbar {
-        display: none;
-      }
-    }
-
-    &__tab {
-      flex-shrink: 0;
-      scroll-snap-align: start;
-    }
-
-    &__grid {
-      grid-template-columns: 1fr;
-    }
-
-    // Always show card actions on mobile
-    &__card-actions {
-      opacity: 1;
-      transform: none;
-    }
-
-    &__card:hover {
-      transform: none;
-    }
-
-    &__modal {
-      max-height: 90vh;
-      margin: $spacing-sm;
-      border-radius: $border-radius-lg;
-    }
-
-    &__modal-header {
-      border-radius: $border-radius-lg $border-radius-lg 0 0;
-    }
-
-    &__modal-form {
-      padding: $spacing-lg;
-    }
-
-    &__modal-actions {
-      flex-direction: column-reverse;
-    }
-
-    &__btn-cancel,
-    &__btn-save {
-      width: 100%;
-      text-align: center;
-      justify-content: center;
-    }
+    &__header { flex-direction: column; align-items: flex-start; }
+    &__add-btn { width: 100%; justify-content: center; }
+    &__grid { grid-template-columns: 1fr; }
+    &__card:hover { transform: none; }
   }
 
   @media (max-width: $breakpoint-sm) {
-    &__stats {
-      grid-template-columns: 1fr;
-    }
-
-    &__category-icon {
-      width: 42px;
-      height: 42px;
-    }
-  }
-}
-
-// ===== KEYFRAMES =====
-@keyframes svc-fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes svc-fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes svc-slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(24px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
+    &__stats { grid-template-columns: 1fr; }
   }
 }
 

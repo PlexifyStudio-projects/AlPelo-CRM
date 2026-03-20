@@ -1,6 +1,6 @@
 // ============================================
-// AlPelo - Master Animation Library
-// All keyframes in one place
+// Plexify Studio - Animation Library v3.0
+// Smooth, subtle, modern motion
 // ============================================
 
 // -----------------------------------------------
@@ -14,7 +14,7 @@
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -25,7 +25,7 @@
 @keyframes fadeInDown {
   from {
     opacity: 0;
-    transform: translateY(-12px);
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
@@ -36,7 +36,7 @@
 @keyframes fadeInLeft {
   from {
     opacity: 0;
-    transform: translateX(-16px);
+    transform: translateX(-12px);
   }
   to {
     opacity: 1;
@@ -47,7 +47,7 @@
 @keyframes fadeInRight {
   from {
     opacity: 0;
-    transform: translateX(16px);
+    transform: translateX(12px);
   }
   to {
     opacity: 1;
@@ -58,7 +58,7 @@
 @keyframes fadeInScale {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
   to {
     opacity: 1;
@@ -78,7 +78,7 @@
   }
   to {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
 }
 
@@ -88,7 +88,7 @@
 @keyframes slideInRight {
   from {
     opacity: 0;
-    transform: translateX(24px);
+    transform: translateX(20px);
   }
   to {
     opacity: 1;
@@ -99,7 +99,7 @@
 @keyframes slideInLeft {
   from {
     opacity: 0;
-    transform: translateX(-24px);
+    transform: translateX(-20px);
   }
   to {
     opacity: 1;
@@ -110,7 +110,7 @@
 @keyframes slideInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -121,7 +121,7 @@
 @keyframes slideInDown {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-16px);
   }
   to {
     opacity: 1;
@@ -141,19 +141,16 @@
 }
 
 // -----------------------------------------------
-// SPRING / BOUNCE
+// SCALE / SPRING (gentle, no aggressive bounce)
 // -----------------------------------------------
 @keyframes bounceIn {
   0% {
     opacity: 0;
-    transform: scale(0.3);
+    transform: scale(0.9);
   }
-  50% {
+  60% {
     opacity: 1;
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.95);
+    transform: scale(1.02);
   }
   100% {
     transform: scale(1);
@@ -163,11 +160,11 @@
 @keyframes bounceInUp {
   0% {
     opacity: 0;
-    transform: translateY(24px) scale(0.96);
+    transform: translateY(16px) scale(0.98);
   }
   60% {
     opacity: 1;
-    transform: translateY(-4px) scale(1.01);
+    transform: translateY(-2px) scale(1.005);
   }
   100% {
     transform: translateY(0) scale(1);
@@ -177,7 +174,7 @@
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.92);
+    transform: scale(0.95);
   }
   to {
     opacity: 1;
@@ -188,11 +185,11 @@
 @keyframes scaleInOvershoot {
   0% {
     opacity: 0;
-    transform: scale(0.85);
+    transform: scale(0.9);
   }
   70% {
     opacity: 1;
-    transform: scale(1.03);
+    transform: scale(1.02);
   }
   100% {
     transform: scale(1);
@@ -213,37 +210,37 @@
 
 @keyframes pulseRing {
   0% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35);
   }
   70% {
-    box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
   }
 }
 
 @keyframes pulseRingPrimary {
   0% {
-    box-shadow: 0 0 0 0 rgba(45, 90, 61, 0.3);
+    box-shadow: 0 0 0 0 rgba(30, 64, 175, 0.25);
   }
   70% {
-    box-shadow: 0 0 0 6px rgba(45, 90, 61, 0);
+    box-shadow: 0 0 0 6px rgba(30, 64, 175, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(45, 90, 61, 0);
+    box-shadow: 0 0 0 0 rgba(30, 64, 175, 0);
   }
 }
 
 @keyframes pulseRingAccent {
   0% {
-    box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.3);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.25);
   }
   70% {
-    box-shadow: 0 0 0 6px rgba(201, 168, 76, 0);
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(201, 168, 76, 0);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
   }
 }
 
@@ -261,19 +258,16 @@
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translateY(-6px);
   }
 }
 
 @keyframes floatSlow {
   0%, 100% {
-    transform: translateY(0) rotate(0deg);
+    transform: translateY(0);
   }
-  33% {
-    transform: translateY(-5px) rotate(0.5deg);
-  }
-  66% {
-    transform: translateY(-3px) rotate(-0.3deg);
+  50% {
+    transform: translateY(-4px);
   }
 }
 
@@ -291,12 +285,11 @@
 
 @keyframes bellShake {
   0% { transform: rotate(0); }
-  15% { transform: rotate(14deg); }
-  30% { transform: rotate(-12deg); }
-  45% { transform: rotate(10deg); }
-  60% { transform: rotate(-8deg); }
-  75% { transform: rotate(4deg); }
-  85% { transform: rotate(-2deg); }
+  15% { transform: rotate(10deg); }
+  30% { transform: rotate(-8deg); }
+  45% { transform: rotate(6deg); }
+  60% { transform: rotate(-4deg); }
+  75% { transform: rotate(2deg); }
   100% { transform: rotate(0); }
 }
 
@@ -315,7 +308,7 @@
 @keyframes ripple {
   0% {
     transform: scale(0);
-    opacity: 0.4;
+    opacity: 0.3;
   }
   100% {
     transform: scale(4);
@@ -327,7 +320,7 @@
   0% {
     opacity: 0;
     transform: translateY(100%);
-    filter: blur(4px);
+    filter: blur(3px);
   }
   60% {
     filter: blur(0);
@@ -350,10 +343,10 @@
 
 @keyframes borderGlow {
   0%, 100% {
-    border-color: rgba(45, 90, 61, 0.2);
+    border-color: rgba(30, 64, 175, 0.15);
   }
   50% {
-    border-color: rgba(45, 90, 61, 0.5);
+    border-color: rgba(30, 64, 175, 0.4);
   }
 }
 
@@ -371,16 +364,16 @@
 
 @keyframes gradientMesh {
   0%, 100% {
-    opacity: 0.15;
+    opacity: 0.12;
     transform: translate(0, 0) scale(1);
   }
   33% {
-    opacity: 0.2;
-    transform: translate(30px, -20px) scale(1.05);
+    opacity: 0.18;
+    transform: translate(20px, -15px) scale(1.03);
   }
   66% {
-    opacity: 0.12;
-    transform: translate(-20px, 10px) scale(0.98);
+    opacity: 0.1;
+    transform: translate(-15px, 8px) scale(0.98);
   }
 }
 
@@ -407,7 +400,7 @@
     transform: scale(1);
   }
   50% {
-    transform: scale(1.15);
+    transform: scale(1.1);
   }
 }
 
@@ -425,7 +418,7 @@
 @keyframes tooltipIn {
   from {
     opacity: 0;
-    transform: translateX(4px) scale(0.96);
+    transform: translateX(4px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -458,7 +451,7 @@
 @keyframes searchExpand {
   from {
     width: 200px;
-    background: rgba(0, 0, 0, 0.03);
+    background: rgba(0, 0, 0, 0.02);
   }
   to {
     width: 100%;
@@ -467,49 +460,44 @@
 }
 
 // -----------------------------------------------
-// PREMIUM MICROINTERACTION KEYFRAMES
+// SUBTLE ENTRANCE ANIMATIONS
 // -----------------------------------------------
-
-// Subtle breathe effect for ambient elements
 @keyframes breathe {
   0%, 100% {
     transform: scale(1);
     opacity: 0.7;
   }
   50% {
-    transform: scale(1.03);
+    transform: scale(1.02);
     opacity: 1;
   }
 }
 
-// Smooth slide-up with spring overshoot
 @keyframes springUp {
   0% {
     opacity: 0;
-    transform: translateY(16px) scale(0.98);
+    transform: translateY(12px);
   }
   70% {
     opacity: 1;
-    transform: translateY(-2px) scale(1.005);
+    transform: translateY(-1px);
   }
   100% {
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
-// Card reveal with subtle rotation
 @keyframes cardReveal {
   0% {
     opacity: 0;
-    transform: translateY(12px) rotateX(4deg);
+    transform: translateY(8px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) rotateX(0);
+    transform: translateY(0);
   }
 }
 
-// Shine sweep for premium elements
 @keyframes shineSweep {
   0% {
     left: -100%;
@@ -519,47 +507,40 @@
   }
 }
 
-// Elastic pop for icons / badges
 @keyframes elasticPop {
   0% {
     transform: scale(0);
     opacity: 0;
   }
-  55% {
-    transform: scale(1.12);
+  60% {
+    transform: scale(1.05);
     opacity: 1;
   }
-  70% {
-    transform: scale(0.95);
-  }
-  85% {
-    transform: scale(1.02);
+  80% {
+    transform: scale(0.97);
   }
   100% {
     transform: scale(1);
   }
 }
 
-// Gentle wiggle for attention-seeking elements
 @keyframes wiggle {
   0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(1.5deg); }
-  75% { transform: rotate(-1.5deg); }
+  25% { transform: rotate(1deg); }
+  75% { transform: rotate(-1deg); }
 }
 
-// Smooth color pulse for active/live indicators
 @keyframes livePulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.4);
-    background: rgba(52, 211, 153, 0.9);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35);
+    background: rgba(16, 185, 129, 0.9);
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(52, 211, 153, 0);
-    background: rgba(52, 211, 153, 1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    background: rgba(16, 185, 129, 1);
   }
 }
 
-// Row highlight slide (for table/list hover)
 @keyframes rowHighlight {
   from {
     background-position: -100% 0;
@@ -586,7 +567,7 @@
 @keyframes messageAppear {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(6px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -595,7 +576,7 @@
 }
 
 // -----------------------------------------------
-// REDUCED MOTION - disable all animations
+// REDUCED MOTION
 // -----------------------------------------------
 @media (prefers-reduced-motion: reduce) {
   *,

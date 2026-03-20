@@ -2,80 +2,58 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Profile Page
-// Two-column layout: sidebar card + tabbed main
+// Profile Page — Ultra-Modern
 // ============================================
 
 .profile {
   @include page-enter;
   max-width: 960px;
 
-  // -----------------------------------------------
-  // HEADER
-  // -----------------------------------------------
   &__header {
-    margin-bottom: $spacing-xl;
-    animation: fadeInLeft 400ms $ease-out-expo both;
-    animation-delay: 0.05s;
+    margin-bottom: $spacing-2xl;
   }
 
   &__title {
-    @include heading($font-size-2xl);
+    @include heading($font-size-3xl);
     margin-bottom: 0;
+    font-weight: $font-weight-extrabold;
   }
 
   &__subtitle {
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
     color: $color-gray-400;
     margin-top: $spacing-xs;
   }
 
-  // -----------------------------------------------
-  // LAYOUT (sidebar + main)
-  // -----------------------------------------------
   &__layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 260px 1fr;
     gap: $spacing-xl;
     align-items: start;
-    animation: fadeInUp 400ms $ease-out-expo both;
-    animation-delay: 0.12s;
 
-    @media (max-width: $breakpoint-md) {
-      grid-template-columns: 1fr;
-    }
+    @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
   }
 
-  // -----------------------------------------------
-  // SIDEBAR AVATAR CARD
-  // -----------------------------------------------
   &__sidebar {
     position: sticky;
     top: $spacing-lg;
   }
 
   &__avatar-card {
-    background: $glass-bg-heavy;
-    backdrop-filter: blur($glass-blur);
-    border: 1px solid $glass-border;
+    background: $color-white;
+    border: $border-width solid $border-color;
     border-radius: $border-radius-xl;
-    padding: $spacing-2xl $spacing-xl;
-    box-shadow: $shadow-md;
-    display: flex;
-    flex-direction: column;
+    padding: $spacing-xl;
+    box-shadow: $shadow-sm;
+    @include flex-column;
     align-items: center;
     text-align: center;
-    transition: box-shadow $transition-base;
-
-    &:hover {
-      box-shadow: $shadow-glass-hover;
-    }
   }
 
   &__avatar {
     position: relative;
-    width: 88px;
-    height: 88px;
+    width: 80px;
+    height: 80px;
     margin-bottom: $spacing-lg;
   }
 
@@ -84,27 +62,23 @@
     inset: -4px;
     border-radius: $border-radius-full;
     background: linear-gradient(135deg, $color-primary, $color-accent);
-    opacity: 0.2;
-    animation: pulse-ring 3s ease-in-out infinite;
+    opacity: 0.15;
   }
 
   &__avatar-initials {
     @include flex-center;
-    width: 88px;
-    height: 88px;
+    width: 80px;
+    height: 80px;
     border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+    background: $color-primary;
     color: $color-white;
     font-size: $font-size-2xl;
     font-weight: $font-weight-bold;
-    letter-spacing: $letter-spacing-wide;
     position: relative;
     z-index: 1;
-    box-shadow: $shadow-lg, $shadow-glow-primary;
   }
 
   &__user-name {
-    font-family: $font-primary;
     font-size: $font-size-lg;
     font-weight: $font-weight-semibold;
     color: $color-secondary;
@@ -119,15 +93,13 @@
     background: $color-primary-ghost;
     padding: $spacing-2xs $spacing-sm;
     border-radius: $border-radius-full;
-    letter-spacing: $letter-spacing-wide;
     text-transform: uppercase;
-    margin-bottom: $spacing-xl;
+    margin-bottom: $spacing-lg;
   }
 
   &__user-meta {
     width: 100%;
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-sm;
     padding-top: $spacing-lg;
     border-top: 1px solid $border-color;
@@ -140,100 +112,62 @@
     font-size: $font-size-sm;
     color: $color-gray-500;
 
-    svg {
-      flex-shrink: 0;
-      color: $color-gray-300;
-    }
-
-    span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    svg { flex-shrink: 0; color: $color-gray-300; }
+    span { @include truncate; }
   }
 
-  // -----------------------------------------------
   // TABS
-  // -----------------------------------------------
   &__tabs {
     display: flex;
     gap: $spacing-xs;
     padding: $spacing-xs;
     background: $color-gray-50;
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-md;
     margin-bottom: $spacing-xl;
   }
 
   &__tab {
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-md;
     border: none;
     background: transparent;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     font-family: $font-primary;
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     color: $color-gray-400;
     cursor: pointer;
-    transition: all $transition-base;
+    transition: all $transition-fast;
 
-    svg {
-      flex-shrink: 0;
-    }
-
-    &:hover {
-      color: $color-gray-600;
-      background: rgba(255, 255, 255, 0.5);
-    }
+    &:hover { color: $color-gray-600; background: $color-white; }
 
     &--active {
       background: $color-white;
       color: $color-primary;
       box-shadow: $shadow-sm;
-
-      &:hover {
-        background: $color-white;
-        color: $color-primary;
-      }
     }
   }
 
-  // -----------------------------------------------
   // PANEL
-  // -----------------------------------------------
   &__panel {
-    background: $glass-bg-heavy;
-    backdrop-filter: blur($glass-blur);
-    border: 1px solid $glass-border;
+    background: $color-white;
+    border: $border-width solid $border-color;
     border-radius: $border-radius-xl;
-    padding: $spacing-2xl;
-    box-shadow: $shadow-md;
-    animation: fadeInUp 300ms $ease-out-expo both;
+    padding: $spacing-xl;
+    box-shadow: $shadow-sm;
   }
 
   &__panel-header {
     margin-bottom: $spacing-xl;
     padding-bottom: $spacing-lg;
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      @include gradient-divider;
-    }
+    border-bottom: 1px solid $border-color-light;
   }
 
   &__panel-title {
-    font-family: $font-primary;
-    font-size: $font-size-md;
-    font-weight: $font-weight-semibold;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
     color: $color-secondary;
     margin-bottom: $spacing-xs;
   }
@@ -241,15 +175,11 @@
   &__panel-desc {
     font-size: $font-size-sm;
     color: $color-gray-400;
-    line-height: $line-height-base;
   }
 
-  // -----------------------------------------------
   // FORM
-  // -----------------------------------------------
   &__form {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-lg;
   }
 
@@ -258,14 +188,11 @@
     grid-template-columns: 1fr 1fr;
     gap: $spacing-lg;
 
-    @media (max-width: $breakpoint-md) {
-      grid-template-columns: 1fr;
-    }
+    @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
   }
 
   &__field {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-xs;
   }
 
@@ -273,7 +200,6 @@
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     color: $color-gray-600;
-    letter-spacing: $letter-spacing-normal;
   }
 
   &__input {
@@ -282,25 +208,14 @@
     font-family: $font-primary;
     font-size: $font-size-base;
     color: $color-secondary;
-    background: $bg-input;
+    background: $color-white;
     border: 1px solid $border-color;
     border-radius: $border-radius-md;
     outline: none;
-    transition: all $transition-base;
+    transition: all $transition-fast;
 
-    &::placeholder {
-      color: $color-gray-300;
-    }
-
-    &:hover {
-      border-color: $border-color-medium;
-    }
-
-    &:focus {
-      border-color: $color-primary;
-      background: $color-white;
-      box-shadow: 0 0 0 3px $color-primary-ghost, $shadow-sm;
-    }
+    &::placeholder { color: $color-gray-300; }
+    &:focus { border-color: $color-primary; box-shadow: 0 0 0 3px $color-primary-ghost; }
 
     &--prefixed {
       padding-left: 0;
@@ -319,7 +234,6 @@
     @include flex-center;
     padding: 0 $spacing-sm 0 $spacing-md;
     font-size: $font-size-base;
-    font-weight: $font-weight-medium;
     color: $color-gray-400;
     background: $color-gray-50;
     border: 1px solid $border-color;
@@ -331,9 +245,7 @@
     position: relative;
     display: flex;
 
-    .profile__input {
-      padding-right: 44px;
-    }
+    .profile__input { padding-right: 44px; }
   }
 
   &__pw-toggle {
@@ -342,29 +254,21 @@
     top: 0;
     bottom: 0;
     width: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
     background: transparent;
     border: none;
     color: $color-gray-400;
     cursor: pointer;
     transition: color $transition-fast;
 
-    &:hover {
-      color: $color-gray-600;
-    }
+    &:hover { color: $color-gray-600; }
   }
 
   &__field-error {
     font-size: $font-size-xs;
     color: $color-error-dark;
-    margin-top: $spacing-2xs;
   }
 
-  // -----------------------------------------------
-  // FORM ACTIONS
-  // -----------------------------------------------
   &__form-actions {
     display: flex;
     justify-content: flex-end;
@@ -372,9 +276,6 @@
     border-top: 1px solid $border-color-light;
   }
 
-  // -----------------------------------------------
-  // BUTTONS
-  // -----------------------------------------------
   &__btn {
     display: inline-flex;
     align-items: center;
@@ -386,52 +287,27 @@
     border: none;
     border-radius: $border-radius-md;
     cursor: pointer;
-    transition: all $transition-base;
+    transition: all $transition-fast;
 
     &--primary {
-      background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+      background: $color-primary;
       color: $color-white;
-      box-shadow: $shadow-sm, $shadow-glow-primary;
 
-      &:hover:not(:disabled) {
-        background: linear-gradient(135deg, $color-primary-light, $color-primary);
-        box-shadow: $shadow-md, $shadow-glow-primary;
-        transform: translateY(-1px);
-      }
-
-      &:active:not(:disabled) {
-        transform: translateY(0);
-        box-shadow: $shadow-xs;
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
+      &:hover:not(:disabled) { background: $color-primary-dark; box-shadow: $shadow-colored-primary; }
+      &:disabled { opacity: 0.6; cursor: not-allowed; }
     }
   }
 
-  // -----------------------------------------------
-  // SPINNER
-  // -----------------------------------------------
   &__spinner {
     width: 16px;
     height: 16px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-top-color: $color-white;
     border-radius: 50%;
-    animation: spin 0.6s linear infinite;
+    animation: profile-spin 0.6s linear infinite;
   }
 }
 
-// -----------------------------------------------
-// KEYFRAMES
-// -----------------------------------------------
-@keyframes pulse-ring {
-  0%, 100% { opacity: 0.15; transform: scale(1); }
-  50% { opacity: 0.25; transform: scale(1.04); }
-}
-
-@keyframes spin {
+@keyframes profile-spin {
   to { transform: rotate(360deg); }
 }

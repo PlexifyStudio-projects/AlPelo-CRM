@@ -2,25 +2,22 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - 404 Not Found Page
+// 404 Not Found — Ultra-Modern
 // ============================================
 
 .not-found {
   @include flex-column-center;
   min-height: 60vh;
-  gap: $spacing-md;
+  gap: $spacing-lg;
   text-align: center;
   @include page-enter;
 
   &__code {
-    font-family: $font-heading;
     font-size: $font-size-display;
-    font-weight: $font-weight-bold;
+    font-weight: $font-weight-extrabold;
     line-height: $line-height-none;
     letter-spacing: $letter-spacing-tighter;
     @include gradient-text(linear-gradient(135deg, $color-primary 0%, $color-accent 100%));
-    animation: counterRoll 800ms $ease-out-expo both;
-    animation-delay: 0.2s;
 
     @include respond-to(md) {
       font-size: 8rem;
@@ -28,10 +25,8 @@
   }
 
   &__title {
-    @include heading($font-size-xl);
+    @include heading($font-size-2xl);
     margin-bottom: 0;
-    animation: fadeInUp 400ms $ease-out-expo both;
-    animation-delay: 0.35s;
   }
 
   &__message {
@@ -39,17 +34,5 @@
     color: $color-gray-400;
     margin-bottom: $spacing-lg;
     max-width: 400px;
-    animation: fadeInUp 400ms $ease-out-expo both;
-    animation-delay: 0.45s;
-  }
-
-  // Background dot grid for empty state feel
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    @include dot-grid(rgba(0, 0, 0, 0.03), 1px, 32px);
-    pointer-events: none;
-    z-index: -1;
   }
 }

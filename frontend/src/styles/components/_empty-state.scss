@@ -1,43 +1,50 @@
 @use '../abstracts/variables' as *;
 
+// ============================================
+// EMPTY STATE — Centered, generous padding
+// Large icon in subtle circle, clean typography
+// ============================================
+
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: $spacing-3xl $spacing-xl;
+  padding: $spacing-4xl $spacing-xl;
   text-align: center;
-  animation: emptyStateFadeIn 400ms $ease-out-quart both;
+  animation: emptyStateFadeIn 350ms $ease-out-quart both;
 
   &__icon {
-    width: 64px;
-    height: 64px;
+    width: 80px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: $color-gray-300;
+    border-radius: $border-radius-full;
+    background: $color-gray-100;
+    color: $color-gray-400;
     margin-bottom: $spacing-lg;
 
     svg {
-      width: 48px;
-      height: 48px;
+      width: 36px;
+      height: 36px;
     }
   }
 
   &__title {
     font-family: $font-primary;
-    font-size: $font-size-lg;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-500;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-gray-700;
     margin: 0 0 $spacing-sm;
     letter-spacing: $letter-spacing-tight;
   }
 
   &__description {
     font-size: $font-size-base;
-    color: $color-gray-400;
+    color: $color-gray-500;
     margin: 0 0 $spacing-xl;
-    max-width: 360px;
+    max-width: 380px;
     line-height: $line-height-base;
   }
 
@@ -45,23 +52,26 @@
     display: inline-flex;
     align-items: center;
     gap: $spacing-xs;
-    padding: $spacing-sm $spacing-lg;
+    height: 44px;
+    padding: 0 $spacing-lg;
     background: $color-primary;
     color: $color-white;
     border: none;
     border-radius: $border-radius-md;
     font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-semibold;
     cursor: pointer;
-    transition: background $transition-fast, box-shadow $transition-fast;
+    transition: background $transition-fast, box-shadow $transition-fast, transform $transition-fast;
 
     &:hover {
-      background: $color-primary-light;
+      background: $color-primary-dark;
       box-shadow: $shadow-sm;
+      transform: translateY(-1px);
     }
 
     &:active {
       background: $color-primary-dark;
+      transform: scale(0.97);
     }
   }
 }

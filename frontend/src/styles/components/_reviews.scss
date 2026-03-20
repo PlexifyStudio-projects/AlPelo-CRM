@@ -1,10 +1,9 @@
 @use '../abstracts/variables' as *;
-@use '../abstracts/mixins' as *;
 
-// ════════════════════════════════════════════════════════════════════
-// REVIEWS PIPELINE — Google Reviews Survey System
-// Post-visit satisfaction surveys & review redirection
-// ════════════════════════════════════════════════════════════════════
+// ============================================
+// Reviews Pipeline — Plexify Studio v3
+// Google Reviews survey system
+// ============================================
 
 $star-gold: #F59E0B;
 $star-gold-light: rgba(245, 158, 11, 0.1);
@@ -23,15 +22,17 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     padding: $spacing-3xl 0;
     color: $color-gray-400;
     font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    letter-spacing: $letter-spacing-wide;
+    font-weight: 500;
   }
 
   // ════════════════════════════════════════════════
   // HEADER
   // ════════════════════════════════════════════════
   &__header {
-    @include glass-card;
+    background: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
     padding: $spacing-lg $spacing-xl;
     display: flex;
     align-items: center;
@@ -40,7 +41,6 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     position: relative;
     overflow: hidden;
 
-    // Subtle Google-colored gradient accent
     &::before {
       content: '';
       position: absolute;
@@ -49,7 +49,6 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
       right: 0;
       height: 3px;
       background: linear-gradient(90deg, #4285F4, #34A853, #FBBC05, #EA4335);
-      border-radius: $border-radius-lg $border-radius-lg 0 0;
     }
   }
 
@@ -69,10 +68,7 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     border-radius: $border-radius-md;
     flex-shrink: 0;
 
-    svg {
-      width: 20px;
-      height: 20px;
-    }
+    svg { width: 20px; height: 20px; }
   }
 
   &__header-text {
@@ -84,19 +80,18 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
   &__title {
     font-family: $font-heading;
     font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
+    font-weight: 800;
     color: $color-gray-900;
     margin: 0;
-    letter-spacing: $letter-spacing-tight;
-    line-height: $line-height-tight;
+    letter-spacing: -0.02em;
   }
 
   &__subtitle {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    letter-spacing: $letter-spacing-wider;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    font-weight: $font-weight-medium;
+    font-weight: 500;
   }
 
   &__header-tabs {
@@ -109,33 +104,31 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     align-items: center;
     gap: 7px;
     padding: 9px 18px;
-    border: $border-width solid $border-color;
+    border: 1.5px solid $color-gray-200;
     border-radius: $border-radius-full;
     background: $color-white;
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
+    font-weight: 600;
     font-family: $font-primary;
     color: $color-gray-500;
     cursor: pointer;
     transition: all $transition-fast;
-    letter-spacing: $letter-spacing-wide;
 
     &:hover {
-      border-color: $color-primary;
-      color: $color-primary;
-      background: $color-primary-ghost;
+      border-color: $color-gray-300;
+      color: $color-gray-700;
+      background: $color-gray-50;
     }
 
     &--active {
-      background: $color-primary;
+      background: $color-gray-900;
       color: $color-white;
-      border-color: $color-primary;
-      box-shadow: $shadow-colored-primary;
+      border-color: $color-gray-900;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 
       &:hover {
-        background: $color-primary-light;
+        background: $color-gray-800;
         color: $color-white;
-        border-color: $color-primary-light;
       }
     }
   }
@@ -147,22 +140,24 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: $spacing-sm;
-    @include stagger-fade-in($stagger-base, 5);
   }
 
   &__kpi {
-    @include glass-card;
+    background: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
     padding: $spacing-md;
     display: flex;
     align-items: center;
     gap: 14px;
     position: relative;
     overflow: hidden;
-    transition: all $transition-base;
+    transition: all $transition-fast;
 
     &:hover {
-      transform: translateY(-3px) scale(1.01);
-      box-shadow: $shadow-card-hover, $glass-inner-glow;
+      transform: translateY(-2px);
+      box-shadow: $shadow-md;
     }
   }
 
@@ -175,35 +170,13 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     justify-content: center;
     flex-shrink: 0;
 
-    svg {
-      width: 18px;
-      height: 18px;
-    }
+    svg { width: 18px; height: 18px; }
 
-    &--sent {
-      background: $color-info-bg;
-      color: $color-info-dark;
-    }
-
-    &--rate {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--avg {
-      background: $star-gold-light;
-      color: $star-gold;
-    }
-
-    &--positive {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--escalated {
-      background: $color-error-bg;
-      color: $color-error-dark;
-    }
+    &--sent { background: $color-info-bg; color: $color-info-dark; }
+    &--rate { background: $color-success-bg; color: $color-success-dark; }
+    &--avg { background: $star-gold-light; color: $star-gold; }
+    &--positive { background: $color-success-bg; color: $color-success-dark; }
+    &--escalated { background: $color-error-bg; color: $color-error-dark; }
   }
 
   &__kpi-info {
@@ -215,22 +188,22 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
 
   &__kpi-value {
     font-size: $font-size-xl;
-    font-weight: $font-weight-bold;
+    font-weight: 800;
     color: $color-gray-900;
     font-variant-numeric: tabular-nums;
     line-height: 1;
-    letter-spacing: $letter-spacing-tight;
+    letter-spacing: -0.02em;
   }
 
   &__kpi-label {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
+    font-weight: 600;
     color: $color-gray-500;
-    line-height: $line-height-snug;
+    line-height: 1.3;
   }
 
   // ════════════════════════════════════════════════
-  // BODY — Distribution + Feed
+  // BODY
   // ════════════════════════════════════════════════
   &__body {
     display: grid;
@@ -242,17 +215,20 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
   &__section-title {
     font-family: $font-heading;
     font-size: $font-size-base;
-    font-weight: $font-weight-bold;
+    font-weight: 800;
     color: $color-gray-800;
     margin: 0 0 $spacing-md;
-    letter-spacing: $letter-spacing-tight;
+    letter-spacing: -0.02em;
   }
 
   // ════════════════════════════════════════════════
   // DISTRIBUTION CHART
   // ════════════════════════════════════════════════
   &__distribution {
-    @include glass-card;
+    background: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
     padding: $spacing-lg;
   }
 
@@ -270,7 +246,7 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
 
   &__dist-label {
     font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
+    font-weight: 800;
     color: $color-gray-600;
     width: 16px;
     text-align: center;
@@ -289,32 +265,26 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
   &__dist-fill {
     height: 100%;
     border-radius: $border-radius-sm;
-    transition: width 800ms $ease-out-expo;
+    transition: width 800ms cubic-bezier(0.16, 1, 0.3, 1);
     min-width: 3px;
 
-    &--positive {
-      background: linear-gradient(90deg, #34D399, #22B07E);
-    }
-
-    &--negative {
-      background: linear-gradient(90deg, #F87171, #EF4444);
-    }
+    &--positive { background: linear-gradient(90deg, #34D399, #10B981); }
+    &--negative { background: linear-gradient(90deg, #F87171, #EF4444); }
   }
 
   &__dist-count {
     font-size: $font-size-xs;
-    font-weight: $font-weight-bold;
+    font-weight: 700;
     color: $color-gray-500;
     width: 32px;
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
 
-  // Pipeline summary
   &__pipeline-summary {
     margin-top: $spacing-lg;
     padding-top: $spacing-md;
-    border-top: $border-width solid $border-color-light;
+    border-top: 1px solid $color-gray-100;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -325,30 +295,24 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     align-items: center;
     gap: 8px;
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
+    font-weight: 600;
     padding: 8px 12px;
     border-radius: $border-radius-md;
 
-    svg {
-      flex-shrink: 0;
-    }
+    svg { flex-shrink: 0; }
 
-    &--positive {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--negative {
-      background: $color-error-bg;
-      color: $color-error-dark;
-    }
+    &--positive { background: $color-success-bg; color: $color-success-dark; }
+    &--negative { background: $color-error-bg; color: $color-error-dark; }
   }
 
   // ════════════════════════════════════════════════
-  // RECENT REVIEWS FEED
+  // FEED
   // ════════════════════════════════════════════════
   &__feed {
-    @include glass-card;
+    background: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
     padding: $spacing-lg;
     display: flex;
     flex-direction: column;
@@ -359,7 +323,9 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     flex-direction: column;
     max-height: 520px;
     overflow-y: auto;
-    @include custom-scrollbar;
+
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb { background: $color-gray-200; border-radius: 4px; }
   }
 
   &__feed-item {
@@ -367,17 +333,11 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     flex-direction: column;
     gap: 6px;
     padding: $spacing-sm $spacing-md;
-    border-bottom: $border-width solid $border-color-light;
+    border-bottom: 1px solid $color-gray-100;
     transition: background $transition-fast;
 
-    &:last-child {
-      border-bottom: none;
-    }
-
-    &:hover {
-      background: $color-gray-50;
-      border-radius: $border-radius-md;
-    }
+    &:last-child { border-bottom: none; }
+    &:hover { background: $color-gray-50; border-radius: $border-radius-md; }
   }
 
   &__feed-top {
@@ -396,15 +356,17 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
 
   &__feed-name {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    font-weight: 600;
     color: $color-gray-700;
-    @include truncate;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__feed-date {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    font-weight: $font-weight-medium;
+    font-weight: 500;
   }
 
   &__feed-status {
@@ -412,20 +374,16 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     align-items: center;
     gap: 5px;
     font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
+    font-weight: 700;
     color: var(--status-color);
     padding: 3px 10px;
     border-radius: $border-radius-full;
-    background: rgba(0, 0, 0, 0.02);
+    background: $color-gray-50;
     flex-shrink: 0;
     white-space: nowrap;
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border: 1px solid $color-gray-200;
 
-    svg {
-      flex-shrink: 0;
-      width: 12px;
-      height: 12px;
-    }
+    svg { flex-shrink: 0; width: 12px; height: 12px; }
   }
 
   &__feed-rating {
@@ -436,19 +394,21 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
 
   &__feed-rating-text {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
+    font-weight: 700;
     color: $star-gold;
   }
 
   &__feed-feedback {
     font-size: $font-size-sm;
     color: $color-gray-500;
-    line-height: $line-height-base;
+    line-height: 1.5;
     margin: 0;
-    @include line-clamp(2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  // Stars
   &__stars {
     display: inline-flex;
     align-items: center;
@@ -456,7 +416,7 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
   }
 
   // ════════════════════════════════════════════════
-  // CONFIGURATION PANEL
+  // CONFIGURATION
   // ════════════════════════════════════════════════
   &__config {
     display: flex;
@@ -465,7 +425,10 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
   }
 
   &__config-section {
-    @include glass-card;
+    background: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
     padding: $spacing-lg $spacing-xl;
   }
 
@@ -473,7 +436,7 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     font-size: $font-size-sm;
     color: $color-gray-400;
     margin: -$spacing-sm 0 $spacing-md;
-    line-height: $line-height-base;
+    line-height: 1.5;
   }
 
   &__config-field {
@@ -483,7 +446,11 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
   }
 
   &__config-label {
-    @include label-text;
+    font-size: $font-size-2xs;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-gray-500;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -494,20 +461,17 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     align-items: center;
     gap: 10px;
     padding: 12px 16px;
-    border: $border-width solid $border-color-medium;
+    border: 1.5px solid $color-gray-200;
     border-radius: $border-radius-md;
     background: $color-white;
     transition: all $transition-fast;
 
     &:focus-within {
       border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost, $shadow-sm;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
     }
 
-    svg {
-      flex-shrink: 0;
-      opacity: 0.6;
-    }
+    svg { flex-shrink: 0; opacity: 0.6; }
   }
 
   &__config-input {
@@ -519,9 +483,7 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     font-family: $font-primary;
     color: $color-gray-700;
 
-    &::placeholder {
-      color: $color-gray-300;
-    }
+    &::placeholder { color: $color-gray-300; }
   }
 
   &__config-link {
@@ -536,10 +498,7 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     transition: all $transition-fast;
     flex-shrink: 0;
 
-    &:hover {
-      background: $color-primary-ghost;
-      color: $color-primary;
-    }
+    &:hover { background: $color-gray-100; color: $color-gray-600; }
   }
 
   &__config-row {
@@ -550,7 +509,7 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
 
   &__config-select {
     padding: 10px 14px;
-    border: $border-width solid $border-color-medium;
+    border: 1.5px solid $color-gray-200;
     border-radius: $border-radius-md;
     font-size: $font-size-sm;
     font-family: $font-primary;
@@ -559,7 +518,7 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     cursor: pointer;
     transition: all $transition-fast;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238E8E85' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
     padding-right: 36px;
@@ -567,13 +526,13 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     &:focus {
       outline: none;
       border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
     }
   }
 
   &__config-textarea {
     padding: 12px 16px;
-    border: $border-width solid $border-color-medium;
+    border: 1.5px solid $color-gray-200;
     border-radius: $border-radius-md;
     font-size: $font-size-sm;
     font-family: $font-primary;
@@ -586,38 +545,36 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     &:focus {
       outline: none;
       border-color: $color-primary;
-      box-shadow: 0 0 0 3px $color-primary-ghost, $shadow-sm;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
     }
 
-    &::placeholder {
-      color: $color-gray-300;
-    }
+    &::placeholder { color: $color-gray-300; }
   }
 
   &__config-hint {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    font-weight: $font-weight-medium;
+    font-weight: 500;
     font-style: italic;
   }
 
-  // Toggle switch
+  // Toggle
   &__toggle {
     display: inline-flex;
     align-items: center;
     gap: 10px;
     padding: 6px;
-    border: 2px solid $border-color;
+    border: 2px solid $color-gray-200;
     border-radius: $border-radius-full;
     background: $color-gray-100;
     cursor: pointer;
-    transition: all $transition-base;
+    transition: all $transition-fast;
     width: 160px;
     position: relative;
     font-family: $font-primary;
 
     &--on {
-      background: linear-gradient(135deg, $color-primary, $color-primary-light);
+      background: $color-primary;
       border-color: $color-primary;
 
       .reviews__toggle-knob {
@@ -639,13 +596,13 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     border-radius: 50%;
     background: $color-white;
     box-shadow: $shadow-sm;
-    transition: all $transition-base;
+    transition: all $transition-fast;
     flex-shrink: 0;
   }
 
   &__toggle-text {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
+    font-weight: 700;
     color: $color-gray-500;
     transition: all $transition-fast;
   }
@@ -665,27 +622,13 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     border-radius: $border-radius-md;
     border-left: 4px solid transparent;
 
-    &--positive {
-      background: $color-success-bg;
-      border-left-color: $color-success;
-    }
+    &--positive { background: $color-success-bg; border-left-color: $color-success; }
+    &--negative { background: $color-error-bg; border-left-color: $color-error; }
+    &--owner { background: $color-warning-bg; border-left-color: $color-warning; }
 
-    &--negative {
-      background: $color-error-bg;
-      border-left-color: $color-error;
-    }
-
-    &--owner {
-      background: $color-warning-bg;
-      border-left-color: $color-warning;
-    }
-
-    .reviews__config-textarea {
-      background: rgba(255, 255, 255, 0.7);
-    }
+    .reviews__config-textarea { background: rgba(255, 255, 255, 0.7); }
   }
 
-  // Config actions
   &__config-actions {
     display: flex;
     align-items: center;
@@ -695,40 +638,27 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
   }
 
   // ════════════════════════════════════════════════
-  // SHARED BUTTONS
+  // BUTTONS
   // ════════════════════════════════════════════════
   &__btn--primary {
     display: inline-flex;
     align-items: center;
     gap: 7px;
     padding: 12px 24px;
-    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    background: $color-primary;
     color: $color-white;
     border: none;
     border-radius: $border-radius-md;
     font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
+    font-weight: 700;
     font-family: $font-primary;
     cursor: pointer;
     transition: all $transition-fast;
-    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.15);
+    box-shadow: 0 2px 8px rgba($color-primary, 0.2);
 
-    &:hover {
-      box-shadow: 0 6px 20px rgba(45, 90, 61, 0.25);
-      transform: translateY(-1px);
-    }
-
-    &:active {
-      transform: translateY(0);
-      transition-duration: $duration-instant;
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
+    &:hover { background: $color-primary-dark; transform: translateY(-1px); box-shadow: 0 4px 16px rgba($color-primary, 0.25); }
+    &:active { transform: translateY(0); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   }
 
   &__btn--ghost {
@@ -738,42 +668,30 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
     padding: 12px 24px;
     background: transparent;
     color: $color-gray-500;
-    border: $border-width solid $border-color;
+    border: 1.5px solid $color-gray-200;
     border-radius: $border-radius-md;
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    font-weight: 600;
     font-family: $font-primary;
     cursor: pointer;
     transition: all $transition-fast;
 
-    &:hover {
-      border-color: $color-gray-300;
-      color: $color-gray-700;
-      background: $color-gray-50;
-    }
+    &:hover { border-color: $color-gray-300; color: $color-gray-700; background: $color-gray-50; }
   }
 }
 
 // ════════════════════════════════════════════════
 // RESPONSIVE
 // ════════════════════════════════════════════════
-@media (max-width: $breakpoint-lg) {
+@media (max-width: 1024px) {
   .reviews {
-    &__kpis {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    &__body {
-      grid-template-columns: 1fr;
-    }
-
-    &__config-row {
-      grid-template-columns: 1fr;
-    }
+    &__kpis { grid-template-columns: repeat(3, 1fr); }
+    &__body { grid-template-columns: 1fr; }
+    &__config-row { grid-template-columns: 1fr; }
   }
 }
 
-@media (max-width: $breakpoint-md) {
+@media (max-width: 768px) {
   .reviews {
     &__header {
       flex-direction: column;
@@ -784,63 +702,27 @@ $star-gold-border: rgba(245, 158, 11, 0.25);
 
     &__header-tabs {
       justify-content: stretch;
-
-      .reviews__tab {
-        flex: 1;
-        justify-content: center;
-      }
+      .reviews__tab { flex: 1; justify-content: center; }
     }
 
-    &__kpis {
-      grid-template-columns: repeat(2, 1fr);
-      gap: $spacing-xs;
-    }
-
-    &__kpi {
-      padding: $spacing-sm;
-      gap: 10px;
-    }
-
-    &__kpi-icon {
-      width: 38px;
-      height: 38px;
-    }
-
-    &__kpi-value {
-      font-size: $font-size-md;
-    }
-
-    &__body {
-      grid-template-columns: 1fr;
-    }
-
-    &__config-section {
-      padding: $spacing-md;
-    }
-
-    &__config-row {
-      grid-template-columns: 1fr;
-    }
+    &__kpis { grid-template-columns: repeat(2, 1fr); gap: $spacing-xs; }
+    &__kpi { padding: $spacing-sm; gap: 10px; }
+    &__kpi-icon { width: 38px; height: 38px; }
+    &__kpi-value { font-size: $font-size-md; }
+    &__body { grid-template-columns: 1fr; }
+    &__config-section { padding: $spacing-md; }
+    &__config-row { grid-template-columns: 1fr; }
 
     &__config-actions {
       flex-direction: column-reverse;
-
-      button {
-        width: 100%;
-        justify-content: center;
-      }
+      button { width: 100%; justify-content: center; }
     }
   }
 }
 
-@media (max-width: $breakpoint-sm) {
+@media (max-width: 480px) {
   .reviews {
-    &__kpis {
-      grid-template-columns: 1fr;
-    }
-
-    &__toggle {
-      width: 100%;
-    }
+    &__kpis { grid-template-columns: 1fr; }
+    &__toggle { width: 100%; }
   }
 }

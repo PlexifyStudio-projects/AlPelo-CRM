@@ -159,18 +159,34 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
               <polyline points={collapsed ? '9 18 15 12 9 6' : '15 18 9 12 15 6'} />
             </svg>
           </button>
-          {!collapsed && user && (
-            <div className={`${b}__user`}>
+
+          {/* User profile section */}
+          {user && (
+            <div className={`${b}__user-section`}>
               <button
-                className={`${b}__user-name`}
+                className={`${b}__user-avatar`}
                 onClick={() => handleNav('dev-profile')}
-                title="Mi perfil"
+                title={collapsed ? 'Mi Perfil' : undefined}
               >
-                {user.name || 'Dev'}
+                {(user.name || 'D').charAt(0).toUpperCase()}
               </button>
-              <button className={`${b}__logout`} onClick={onLogout} title="Cerrar sesion">
-                {Icons.logout}
-              </button>
+              {!collapsed && (
+                <>
+                  <div className={`${b}__user-info`}>
+                    <button
+                      className={`${b}__user-name`}
+                      onClick={() => handleNav('dev-profile')}
+                      title="Mi Perfil"
+                    >
+                      {user.name || 'Developer'}
+                    </button>
+                    <span className={`${b}__user-role`}>Desarrollador</span>
+                  </div>
+                  <button className={`${b}__logout`} onClick={onLogout} title="Cerrar sesion">
+                    {Icons.logout}
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

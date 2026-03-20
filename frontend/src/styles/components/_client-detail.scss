@@ -2,8 +2,8 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Client Detail Drawer (Premium CRM)
-// Portal-based slide-in panel - Stripe quality
+// Plexify Studio - Client Detail Drawer
+// White panel, $shadow-2xl, neutral labels, blue only for primary CTA
 // ============================================
 
 // --- Wrapper (portal root) ---
@@ -15,15 +15,13 @@
   justify-content: flex-end;
 }
 
-// --- Overlay with backdrop blur ---
+// --- Overlay ---
 .client-detail__overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba($color-gray-900, 0.3);
   cursor: pointer;
-  animation: cdFadeIn 350ms $ease-out-expo both;
+  animation: cdFadeIn 350ms $ease-out-quart both;
 }
 
 // --- Drawer panel ---
@@ -36,11 +34,12 @@
   height: 100vh;
   height: 100dvh;
   background: $color-white;
-  border-left: 1px solid $border-color-light;
+  border-left: 1px solid $color-gray-200;
   z-index: $z-modal + 1;
   display: flex;
   flex-direction: column;
   animation: cdSlideInRight 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow: $shadow-2xl;
 
   @media (max-width: $breakpoint-sm) {
     width: 100vw;
@@ -53,13 +52,13 @@
     height: 3px;
     flex-shrink: 0;
 
-    &--activo  { background: linear-gradient(90deg, $color-primary, $color-primary-light, $color-primary); }
-    &--vip     { background: linear-gradient(90deg, $color-accent-dark, $color-accent, $color-accent-light); }
+    &--activo   { background: linear-gradient(90deg, $color-success-dark, $color-success, $color-success-dark); }
+    &--vip      { background: linear-gradient(90deg, $color-accent-dark, $color-accent, $color-accent-light); }
     &--inactivo { background: linear-gradient(90deg, $color-gray-300, $color-gray-400, $color-gray-300); }
     &--en_riesgo { background: linear-gradient(90deg, #A85D1A, #F59E42, #A85D1A); }
-    &--nuevo   { background: linear-gradient(90deg, #1D5DAB, #60A5FA, #1D5DAB); }
+    &--nuevo    { background: linear-gradient(90deg, #1D5DAB, #60A5FA, #1D5DAB); }
 
-    &--active  { @extend .client-detail__accent-bar--activo; }
+    &--active   { @extend .client-detail__accent-bar--activo; }
     &--inactive { @extend .client-detail__accent-bar--inactivo; }
   }
 
@@ -67,9 +66,8 @@
   &__header {
     @include flex-between;
     padding: $spacing-md $spacing-xl;
-    border-bottom: $border-width solid $border-color;
+    border-bottom: $border-width solid $color-gray-200;
     flex-shrink: 0;
-    animation: cdFadeIn 0.3s $ease-out-expo 0.15s both;
   }
 
   &__header-left {
@@ -89,35 +87,35 @@
     letter-spacing: $letter-spacing-wide;
     color: $color-white;
     flex-shrink: 0;
-    transition: transform 300ms $ease-spring, box-shadow 300ms $ease-spring;
+    transition: transform $transition-fast;
 
     &:hover {
       transform: scale(1.05);
     }
 
     &--activo {
-      background: linear-gradient(135deg, $color-primary, $color-primary-light);
-      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px rgba(45, 90, 61, 0.2), 0 0 16px rgba(45, 90, 61, 0.1);
+      background: linear-gradient(135deg, $color-success-dark, $color-success);
+      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px $color-gray-200;
     }
 
     &--vip {
       background: linear-gradient(135deg, $color-accent-dark, $color-accent);
-      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px rgba(201, 168, 76, 0.25), 0 0 16px rgba(201, 168, 76, 0.1);
+      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px $color-gray-200;
     }
 
     &--inactivo {
       background: linear-gradient(135deg, $color-gray-400, $color-gray-300);
-      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px rgba(142, 142, 133, 0.15);
+      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px $color-gray-200;
     }
 
     &--en_riesgo {
       background: linear-gradient(135deg, #B5651D, #D4851A);
-      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px rgba(212, 133, 26, 0.2), 0 0 16px rgba(212, 133, 26, 0.1);
+      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px $color-gray-200;
     }
 
     &--nuevo {
       background: linear-gradient(135deg, #2B6CB0, #3B7CD4);
-      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px rgba(59, 124, 212, 0.2), 0 0 16px rgba(59, 124, 212, 0.1);
+      box-shadow: 0 0 0 3px $color-white, 0 0 0 5px $color-gray-200;
     }
 
     &--active  { @extend .client-detail__avatar--activo; }
@@ -134,7 +132,7 @@
     font-family: $font-heading;
     font-size: $font-size-md;
     font-weight: $font-weight-bold;
-    color: $color-secondary;
+    color: $color-gray-900;
     line-height: $line-height-tight;
     @include truncate;
     margin: 0;
@@ -142,11 +140,11 @@
 
   &__client-id {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    color: $color-primary;
+    font-weight: 700;
+    color: $color-gray-500;
     font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
     letter-spacing: $letter-spacing-wide;
-    background: $color-primary-ghost;
+    background: $color-gray-100;
     padding: 1px $spacing-xs;
     border-radius: $border-radius-sm;
   }
@@ -170,31 +168,31 @@
 
     &--activo {
       color: #1B7A4A;
-      background: linear-gradient(135deg, rgba(52, 211, 153, 0.1), rgba(52, 211, 153, 0.05));
+      background: $color-success-bg;
       border: $border-width solid $color-success-border;
     }
 
     &--vip {
-      color: #8A6D14;
-      background: linear-gradient(135deg, rgba(201, 168, 76, 0.12), rgba(201, 168, 76, 0.04));
-      border: $border-width solid rgba(201, 168, 76, 0.3);
+      color: $color-accent-dark;
+      background: rgba(14, 165, 233, 0.1);
+      border: $border-width solid rgba(14, 165, 233, 0.25);
     }
 
     &--inactivo {
       color: $color-gray-500;
-      background: rgba(107, 107, 99, 0.08);
-      border: $border-width solid rgba(107, 107, 99, 0.15);
+      background: $color-gray-50;
+      border: $border-width solid $color-gray-200;
     }
 
     &--en_riesgo {
       color: #A85D1A;
-      background: linear-gradient(135deg, rgba(245, 158, 66, 0.12), rgba(245, 158, 66, 0.04));
+      background: rgba(245, 158, 66, 0.1);
       border: $border-width solid rgba(245, 158, 66, 0.2);
     }
 
     &--nuevo {
       color: #1D5DAB;
-      background: linear-gradient(135deg, rgba(96, 165, 250, 0.12), rgba(96, 165, 250, 0.04));
+      background: rgba(96, 165, 250, 0.1);
       border: $border-width solid $color-info-border;
     }
 
@@ -209,11 +207,11 @@
   &__status-menu {
     min-width: 160px;
     background: $color-white;
-    border: $border-width solid $border-color-medium;
+    border: $border-width solid $color-gray-200;
     border-radius: $border-radius-md;
-    box-shadow: $shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.12);
+    box-shadow: $shadow-lg;
     padding: $spacing-xs 0;
-    animation: cdFadeIn 150ms $ease-out-expo both;
+    animation: cdFadeIn 150ms $ease-out-quart both;
   }
 
   &__status-menu-item {
@@ -237,9 +235,9 @@
     }
 
     &--active {
-      color: $color-primary;
-      font-weight: $font-weight-semibold;
-      background: $color-primary-ghost;
+      color: $color-gray-900;
+      font-weight: 700;
+      background: $color-gray-50;
     }
   }
 
@@ -249,7 +247,7 @@
     border-radius: $border-radius-full;
     flex-shrink: 0;
 
-    &--activo { background: $color-primary; }
+    &--activo { background: $color-success; }
     &--vip { background: $color-accent; }
     &--en_riesgo { background: #F59E42; }
     &--inactivo { background: $color-gray-400; }
@@ -260,21 +258,26 @@
   &__close {
     width: 36px;
     height: 36px;
-    border: $border-width solid $border-color;
+    border: $border-width solid $color-gray-200;
     background: transparent;
     border-radius: $border-radius-full;
     color: $color-gray-400;
     cursor: pointer;
     @include flex-center;
     flex-shrink: 0;
-    transition: all $transition-base;
+    transition: all $transition-fast;
 
     &:hover {
       background: $color-gray-50;
-      border-color: $border-color-medium;
-      color: $color-gray-700;
+      border-color: $color-gray-300;
+      color: $color-gray-600;
       transform: rotate(90deg);
       box-shadow: $shadow-sm;
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px $color-gray-300;
     }
   }
 
@@ -282,7 +285,7 @@
   &__tabs {
     display: flex;
     padding: 0 $spacing-xl;
-    border-bottom: $border-width solid $border-color;
+    border-bottom: $border-width solid $color-gray-200;
     flex-shrink: 0;
     position: relative;
   }
@@ -301,7 +304,7 @@
     color: $color-gray-400;
     cursor: pointer;
     position: relative;
-    transition: color 250ms $ease-out-quart, background 250ms $ease-out-quart;
+    transition: color $transition-fast, background $transition-fast;
 
     &::after {
       content: '';
@@ -310,24 +313,29 @@
       left: $spacing-md;
       right: $spacing-md;
       height: 2px;
-      background: $color-primary;
+      background: $color-gray-900;
       border-radius: $border-radius-full $border-radius-full 0 0;
       transform: scaleX(0);
-      transition: transform 300ms $ease-spring;
+      transition: transform 300ms $ease-out-quart;
     }
 
     &:hover {
       color: $color-gray-700;
-      background: rgba(0, 0, 0, 0.015);
+      background: $color-gray-50;
     }
 
     &--active {
-      color: $color-primary;
-      font-weight: $font-weight-semibold;
+      color: $color-gray-900;
+      font-weight: 700;
 
       &::after {
         transform: scaleX(1);
       }
+    }
+
+    &:focus-visible {
+      outline: none;
+      background: $color-gray-50;
     }
   }
 
@@ -337,6 +345,19 @@
     overflow-y: auto;
     padding: $spacing-xl;
     @include custom-scrollbar;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: sticky;
+      top: 0;
+      display: block;
+      height: 8px;
+      margin-top: -8px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent);
+      z-index: 2;
+      pointer-events: none;
+    }
   }
 
   // --- Stats grid ---
@@ -350,7 +371,7 @@
   &__stat {
     position: relative;
     background: $color-gray-50;
-    border: $border-width solid $border-color;
+    border: $border-width solid $color-gray-200;
     border-radius: $border-radius-md;
     padding: $spacing-md;
     @include flex-column;
@@ -365,11 +386,12 @@
       left: 0;
       right: 0;
       height: 2px;
-      border-radius: $border-radius-md $border-radius-md 0 0;
+      border-radius: $border-radius-md 10px 0 0;
     }
 
     &:hover {
-      transform: translateY(-3px) scale(1.005);
+      transform: translateY(-2px);
+      box-shadow: $shadow-sm;
     }
 
     &--primary::before { background: $color-primary; }
@@ -379,20 +401,19 @@
     &--danger::before  { background: $color-error; }
     &--info::before    { background: #3B7CD4; }
 
-    &--primary .client-detail__stat-icon { color: $color-primary; background: $color-primary-ghost; }
-    &--accent .client-detail__stat-icon  { color: $color-accent-dark; background: $color-accent-ghost; }
+    &--primary .client-detail__stat-icon { color: $color-primary; background: $color-gray-100; }
+    &--accent .client-detail__stat-icon  { color: $color-accent-dark; background: $color-gray-100; }
     &--success .client-detail__stat-icon { color: #1B7A4A; background: $color-success-bg; }
     &--warning .client-detail__stat-icon { color: #8A6D14; background: $color-warning-bg; }
     &--danger .client-detail__stat-icon  { color: #C23B3B; background: $color-error-bg; }
     &--info .client-detail__stat-icon    { color: #3B7CD4; background: $color-info-bg; }
 
-    // Colored hover shadows per stat type
-    &--primary:hover { box-shadow: $shadow-primary-colored; }
-    &--accent:hover  { box-shadow: $shadow-accent-colored; }
-    &--success:hover { box-shadow: $shadow-success-colored; }
-    &--warning:hover { box-shadow: 0 8px 30px rgba(251, 191, 36, 0.15); }
-    &--danger:hover  { box-shadow: 0 8px 30px rgba(248, 113, 113, 0.15); }
-    &--info:hover    { box-shadow: $shadow-info-colored; }
+    &--primary:hover,
+    &--accent:hover,
+    &--success:hover,
+    &--warning:hover,
+    &--danger:hover,
+    &--info:hover { box-shadow: $shadow-sm; }
   }
 
   &__stat-icon {
@@ -401,6 +422,11 @@
     border-radius: $border-radius-sm;
     @include flex-center;
     margin-bottom: $spacing-2xs;
+    transition: transform $transition-fast;
+  }
+
+  &__stat:hover &__stat-icon {
+    transform: scale(1.1);
   }
 
   &__stat-label {
@@ -412,7 +438,7 @@
   &__stat-value {
     font-size: $font-size-md;
     font-weight: $font-weight-bold;
-    color: $color-secondary;
+    color: $color-gray-800;
     line-height: $line-height-tight;
     font-variant-numeric: tabular-nums;
   }
@@ -427,14 +453,14 @@
     align-items: center;
     gap: $spacing-sm;
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
+    font-weight: 700;
+    color: $color-gray-900;
     margin: 0 0 $spacing-md 0;
     padding-bottom: $spacing-sm;
-    border-bottom: $border-width solid $border-color;
+    border-bottom: $border-width solid $color-gray-200;
 
     svg {
-      color: $color-primary;
+      color: $color-gray-400;
       flex-shrink: 0;
     }
   }
@@ -454,10 +480,28 @@
     transition: background $transition-fast, transform $transition-fast;
     min-width: 0;
     overflow: hidden;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: $color-gray-300;
+      border-radius: $border-radius-full;
+      transform: scaleY(0);
+      transition: transform 250ms $ease-out-quart;
+    }
 
     &:hover {
       background: $color-gray-50;
       transform: translateX(2px);
+
+      &::before {
+        transform: scaleY(1);
+      }
     }
   }
 
@@ -465,8 +509,8 @@
     width: 28px;
     height: 28px;
     border-radius: $border-radius-sm;
-    background: $color-primary-ghost;
-    color: $color-primary;
+    background: $color-gray-100;
+    color: $color-gray-500;
     @include flex-center;
     flex-shrink: 0;
     margin-top: 1px;
@@ -481,14 +525,14 @@
   &__info-label {
     font-size: $font-size-2xs;
     font-weight: $font-weight-medium;
-    color: $color-gray-400;
+    color: $color-gray-500;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wider;
   }
 
   &__info-value {
     font-size: $font-size-sm;
-    color: $color-gray-700;
+    color: $color-gray-800;
     font-weight: $font-weight-medium;
     @include truncate;
   }
@@ -507,16 +551,19 @@
     padding: $spacing-sm;
     background: $color-gray-50;
     border-radius: $border-radius-sm;
-    transition: background $transition-fast;
+    transition: background $transition-fast, transform $transition-fast;
 
-    &:hover { background: $color-gray-100; }
+    &:hover {
+      background: $color-gray-100;
+      transform: translateY(-1px);
+    }
 
     &--full { grid-column: 1 / -1; }
   }
 
   &__pref-label {
     font-size: $font-size-2xs;
-    color: $color-gray-400;
+    color: $color-gray-500;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-caps;
     font-weight: $font-weight-medium;
@@ -524,7 +571,7 @@
 
   &__pref-value {
     font-size: $font-size-sm;
-    color: $color-gray-700;
+    color: $color-gray-800;
     font-weight: $font-weight-medium;
   }
 
@@ -538,23 +585,26 @@
   &__tag {
     display: inline-block;
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
+    font-weight: 700;
     border-radius: $border-radius-full;
     padding: $spacing-2xs $spacing-sm;
     transition: transform $transition-fast;
 
-    &:hover { transform: scale(1.05); }
+    &:hover {
+      transform: scale(1.05);
+      box-shadow: $shadow-xs;
+    }
 
     &--primary {
-      color: $color-primary;
-      background: $color-primary-ghost;
-      border: $border-width solid rgba(45, 90, 61, 0.15);
+      color: $color-gray-600;
+      background: $color-gray-100;
+      border: $border-width solid $color-gray-200;
     }
 
     &--accent {
       color: $color-accent-dark;
       background: $color-accent-ghost;
-      border: $border-width solid rgba(201, 168, 76, 0.15);
+      border: $border-width solid rgba(14, 165, 233, 0.15);
     }
 
     &--info {
@@ -578,23 +628,18 @@
 
   // --- Analytics tab ---
   &__loyalty-card {
-    background: linear-gradient(135deg, $color-primary-ghost, rgba(45, 90, 61, 0.03));
-    border: $border-width solid rgba(45, 90, 61, 0.12);
+    background: $color-gray-50;
+    border: $border-width solid $color-gray-200;
     border-radius: $border-radius-md;
     padding: $spacing-lg;
     margin-bottom: $spacing-lg;
     position: relative;
     overflow: hidden;
+    transition: transform $transition-fast, box-shadow $transition-fast;
 
-    &::before {
-      content: '';
-      position: absolute;
-      top: -20px;
-      right: -20px;
-      width: 80px;
-      height: 80px;
-      background: radial-gradient(circle, rgba(45, 90, 61, 0.06) 0%, transparent 70%);
-      pointer-events: none;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-sm;
     }
   }
 
@@ -613,7 +658,7 @@
     strong {
       font-size: $font-size-md;
       font-weight: $font-weight-bold;
-      color: $color-primary;
+      color: $color-success-dark;
       font-variant-numeric: tabular-nums;
     }
   }
@@ -621,42 +666,16 @@
   &__loyalty-bar {
     width: 100%;
     height: 6px;
-    background: rgba(0, 0, 0, 0.08);
+    background: $color-gray-100;
     border-radius: $border-radius-full;
     overflow: hidden;
   }
 
   &__loyalty-fill {
     height: 100%;
-    background: linear-gradient(90deg, $color-primary, $color-primary-light);
+    background: linear-gradient(90deg, $color-success-dark, $color-success);
     border-radius: $border-radius-full;
-    transition: width 0.8s $ease-out-expo;
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.35) 50%,
-        transparent 100%
-      );
-      animation: cdLoyaltyShimmer 2.5s ease-in-out infinite;
-    }
-
-    &::after {
-      content: '';
-      position: absolute;
-      right: 0;
-      top: 0;
-      width: 8px;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.4);
-      border-radius: $border-radius-full;
-    }
+    transition: width 0.8s $ease-out-quart;
   }
 
   &__loyalty-hint {
@@ -675,7 +694,7 @@
 
   &__analytics-item {
     background: $color-gray-50;
-    border: $border-width solid $border-color;
+    border: $border-width solid $color-gray-200;
     border-radius: $border-radius-sm;
     padding: $spacing-md;
     display: flex;
@@ -690,7 +709,7 @@
 
     span {
       font-size: $font-size-2xs;
-      color: $color-gray-400;
+      color: $color-gray-500;
       text-transform: uppercase;
       letter-spacing: $letter-spacing-caps;
     }
@@ -698,7 +717,7 @@
     strong {
       font-size: $font-size-md;
       font-weight: $font-weight-bold;
-      color: $color-secondary;
+      color: $color-gray-800;
       font-variant-numeric: tabular-nums;
     }
   }
@@ -712,7 +731,7 @@
 
     strong {
       font-size: $font-size-sm;
-      font-weight: $font-weight-semibold;
+      font-weight: 700;
       display: block;
       margin-bottom: $spacing-xs;
     }
@@ -744,7 +763,7 @@
 
     &--vip {
       background: $color-accent-ghost;
-      border: $border-width solid rgba(201, 168, 76, 0.3);
+      border: $border-width solid rgba(14, 165, 233, 0.25);
       strong { color: $color-accent-dark; }
     }
 
@@ -763,12 +782,12 @@
     gap: $spacing-sm;
     padding: $spacing-md;
     background: $color-gray-50;
-    border: $border-width solid $border-color;
+    border: $border-width solid $color-gray-200;
     border-radius: $border-radius-md;
     align-items: flex-start;
 
     svg {
-      color: $color-primary;
+      color: $color-gray-400;
       flex-shrink: 0;
       margin-top: 2px;
     }
@@ -795,7 +814,7 @@
       top: $spacing-sm;
       bottom: $spacing-sm;
       width: 2px;
-      background: linear-gradient(180deg, $color-primary 0%, $color-primary-light 30%, $color-gray-200 70%, transparent 100%);
+      background: linear-gradient(180deg, $color-gray-300 0%, $color-gray-200 70%, transparent 100%);
       border-radius: $border-radius-full;
     }
   }
@@ -805,13 +824,8 @@
     align-items: flex-start;
     gap: $spacing-md;
     padding: $spacing-md 0;
-    border-bottom: $border-width solid $border-color;
+    border-bottom: $border-width solid $color-gray-100;
     position: relative;
-    animation: cdHistoryItem 0.3s $ease-out-expo both;
-
-    &:first-child .client-detail__history-dot {
-      animation: cdDotPulse 2s ease-in-out infinite;
-    }
 
     &:last-child { border-bottom: none; }
   }
@@ -826,14 +840,14 @@
     border: 2px solid $color-white;
     box-shadow: $shadow-xs;
     flex-shrink: 0;
-    transition: transform 200ms $ease-spring;
+    transition: transform $transition-fast;
 
     .client-detail__history-item:hover & {
       transform: scale(1.3);
     }
 
-    &--completed { background: $color-primary; }
-    &--no_show   { background: $color-error; }
+    &--completed { background: $color-success; box-shadow: $shadow-xs; }
+    &--no_show   { background: $color-error; box-shadow: $shadow-xs; }
     &--cancelled { background: $color-warning; }
   }
 
@@ -858,8 +872,8 @@
 
   &__history-service {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
+    font-weight: 700;
+    color: $color-gray-900;
   }
 
   &__history-visit-status {
@@ -884,7 +898,7 @@
   &__history-amount {
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
-    color: $color-primary-dark;
+    color: $color-gray-800;
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
   }
@@ -918,14 +932,7 @@
   }
 
   &__star--filled {
-    color: $color-accent;
-    animation: cdStarFill 400ms $ease-spring both;
-
-    @for $i from 1 through 5 {
-      &:nth-child(#{$i}) {
-        animation-delay: #{$i * 80}ms;
-      }
-    }
+    color: #F59E0B;
   }
 
   &__star--empty { color: $color-gray-200; }
@@ -945,12 +952,15 @@
 
   &__notes-card {
     background: $color-gray-50;
-    border: $border-width solid $border-color;
+    border: $border-width solid $color-gray-200;
     border-radius: $border-radius-md;
     padding: $spacing-md $spacing-lg;
-    transition: box-shadow $transition-fast;
+    transition: box-shadow $transition-fast, transform $transition-fast;
 
-    &:hover { box-shadow: $shadow-xs; }
+    &:hover {
+      box-shadow: $shadow-xs;
+      transform: translateY(-1px);
+    }
   }
 
   &__notes-card-header {
@@ -959,13 +969,13 @@
     gap: $spacing-sm;
     margin-bottom: $spacing-sm;
     padding-bottom: $spacing-sm;
-    border-bottom: $border-width solid $border-color;
+    border-bottom: $border-width solid $color-gray-200;
   }
 
   &__notes-author {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    color: $color-primary;
+    font-weight: 700;
+    color: $color-gray-700;
   }
 
   &__notes-date {
@@ -1005,20 +1015,19 @@
       width: 100%;
       min-height: 100px;
       padding: $spacing-md;
-      background: $color-gray-50;
-      border: $border-width solid $border-color;
+      background: $color-white;
+      border: 1.5px solid $color-gray-200;
       border-radius: $border-radius-md;
       font-family: $font-primary;
       font-size: $font-size-sm;
       color: $color-gray-700;
       resize: vertical;
       outline: none;
-      transition: border-color $transition-fast, box-shadow $transition-fast, background $transition-fast;
+      transition: border-color $transition-fast, box-shadow $transition-fast;
 
       &:focus {
-        border-color: rgba(45, 90, 61, 0.35);
-        box-shadow: 0 0 0 3px rgba(45, 90, 61, 0.08);
-        background: $color-white;
+        border-color: $color-primary-light;
+        box-shadow: 0 0 0 3px rgba($color-primary, 0.06);
       }
     }
   }
@@ -1052,165 +1061,10 @@
     justify-content: flex-end;
     align-items: center;
     padding: $spacing-md $spacing-xl;
-    border-top: $border-width solid $border-color;
+    border-top: $border-width solid $color-gray-200;
     flex-shrink: 0;
     gap: $spacing-md;
     background: $color-white;
-  }
-
-  // -----------------------------------------------
-  // PREMIUM ENHANCEMENTS
-  // -----------------------------------------------
-
-  // Layered depth shadow on drawer
-  box-shadow:
-    -4px 0 16px rgba(0, 0, 0, 0.04),
-    -8px 0 40px rgba(0, 0, 0, 0.08),
-    -20px 0 80px rgba(0, 0, 0, 0.06);
-
-  // Accent bar animated shimmer
-  &__accent-bar {
-    position: relative;
-    overflow: hidden;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 60%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-      animation: cdAccentShimmer 3s ease-in-out infinite;
-    }
-  }
-
-  // Stats grid: staggered entrance
-  &__stat {
-    animation: fadeInUp 350ms $ease-out-expo both;
-
-    &:nth-child(1) { animation-delay: 0.1s; }
-    &:nth-child(2) { animation-delay: 0.15s; }
-    &:nth-child(3) { animation-delay: 0.2s; }
-    &:nth-child(4) { animation-delay: 0.25s; }
-  }
-
-  // Stat icon micro-bounce on card hover
-  &__stat:hover &__stat-icon {
-    transform: scale(1.1);
-    transition: transform 300ms $ease-spring;
-  }
-
-  // Stat value counter animation
-  &__stat-value {
-    animation: counterRoll 600ms $ease-out-expo 0.3s both;
-  }
-
-  // Info item subtle slide on hover
-  &__info-item {
-    position: relative;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: $color-primary;
-      border-radius: $border-radius-full;
-      transform: scaleY(0);
-      transition: transform 250ms $ease-spring;
-    }
-
-    &:hover::before {
-      transform: scaleY(1);
-    }
-  }
-
-  // Tag hover enhancement with glow
-  &__tag:hover {
-    box-shadow: $shadow-xs;
-  }
-
-  // History timeline dot glow
-  &__history-dot--completed {
-    box-shadow: $shadow-xs, 0 0 8px rgba(45, 90, 61, 0.2);
-  }
-
-  &__history-dot--no_show {
-    box-shadow: $shadow-xs, 0 0 8px rgba(248, 113, 113, 0.2);
-  }
-
-  // Loyalty bar enhanced shimmer
-  &__loyalty-card {
-    transition: transform $transition-fast, box-shadow $transition-fast;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: $shadow-primary-colored;
-    }
-  }
-
-  // Analytics item stagger
-  &__analytics-item {
-    animation: fadeInUp 300ms $ease-out-expo both;
-
-    &:nth-child(1) { animation-delay: 0.15s; }
-    &:nth-child(2) { animation-delay: 0.2s; }
-    &:nth-child(3) { animation-delay: 0.25s; }
-  }
-
-  // Pref item hover glow
-  &__pref-item {
-    transition: background $transition-fast, transform $transition-fast, box-shadow $transition-fast;
-
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: $shadow-xs;
-    }
-  }
-
-  // Notes card writing effect
-  &__notes-card {
-    transition: box-shadow $transition-fast, transform $transition-fast;
-
-    &:hover {
-      transform: translateY(-1px);
-    }
-  }
-
-  // Scroll shadow on content
-  &__content {
-    position: relative;
-
-    &::before {
-      content: '';
-      position: sticky;
-      top: 0;
-      display: block;
-      height: 8px;
-      margin-top: -8px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent);
-      z-index: 2;
-      pointer-events: none;
-    }
-  }
-
-  // Close button keyboard focus
-  &__close:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.25);
-  }
-
-  // Tab keyboard focus
-  &__tab:focus-visible {
-    outline: none;
-    background: rgba(45, 90, 61, 0.04);
-  }
-
-  // Footer glass effect
-  &__footer {
     position: relative;
 
     &::before {
@@ -1223,15 +1077,6 @@
       background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.8));
       pointer-events: none;
     }
-  }
-
-  // Empty state enhancement
-  &__empty svg {
-    transition: transform 200ms $ease-spring;
-  }
-
-  &__empty:hover svg {
-    transform: scale(1.1);
   }
 
   // -----------------------------------------------
@@ -1281,41 +1126,4 @@
 @keyframes cdFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
-}
-
-@keyframes cdTabIndicator {
-  from { transform: scaleX(0); }
-  to   { transform: scaleX(1); }
-}
-
-@keyframes cdHistoryItem {
-  from {
-    opacity: 0;
-    transform: translateX(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes cdAccentShimmer {
-  0%, 100% { left: -100%; }
-  50% { left: 200%; }
-}
-
-@keyframes cdDotPulse {
-  0%, 100% { box-shadow: $shadow-xs, 0 0 0 0 rgba(45, 90, 61, 0.3); }
-  50% { box-shadow: $shadow-xs, 0 0 0 6px rgba(45, 90, 61, 0); }
-}
-
-@keyframes cdStarFill {
-  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
-  60% { transform: scale(1.2) rotate(5deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
-}
-
-@keyframes cdLoyaltyShimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(200%); }
 }

@@ -2,93 +2,81 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Notification (inline variant)
-// Floating toasts removed — notifications now
-// live in the Header bell dropdown.
+// NOTIFICATION — Floating toast / inline alert
+// Rounded, soft shadow, left colored bar
 // ============================================
 
 .notification {
   display: flex;
   align-items: center;
   gap: $spacing-sm;
-  padding: $spacing-sm $spacing-md;
-  border-radius: $border-radius-md;
+  padding: $spacing-md $spacing-lg $spacing-md $spacing-lg;
+  border-radius: $border-radius-lg;
   font-size: $font-size-sm;
-
-  &--info {
-    background: $color-info-bg;
-    color: $color-info-dark;
-    border: 1px solid $color-info-border;
-  }
-
-  &--success {
-    background: $color-success-bg;
-    color: $color-success-dark;
-    border: 1px solid $color-success-border;
-  }
-
-  &--warning {
-    background: $color-warning-bg;
-    color: $color-warning-dark;
-    border: 1px solid $color-warning-border;
-  }
-
-  &--error {
-    background: $color-error-bg;
-    color: $color-error-dark;
-    border: 1px solid $color-error-border;
-  }
-
-  &__message {
-    font-weight: $font-weight-medium;
-    line-height: $line-height-snug;
-  }
-
-  // -----------------------------------------------
-  // PREMIUM ENHANCEMENTS
-  // -----------------------------------------------
-
-  // Entrance animation
-  animation: notifSlideIn 350ms $ease-out-expo both;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  box-shadow: $shadow-sm;
+  animation: notifSlideIn 300ms $ease-out-expo both;
   transition:
     transform $transition-fast,
-    box-shadow $transition-fast,
-    border-color $transition-fast;
+    box-shadow $transition-fast;
 
-  // Subtle left accent bar
+  // Left colored bar (4px)
   &::before {
     content: '';
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
-    width: 3px;
-    border-radius: $border-radius-md 0 0 $border-radius-md;
+    width: 4px;
+    border-radius: $border-radius-lg 0 0 $border-radius-lg;
   }
 
-  &--info::before { background: linear-gradient(180deg, $color-info, rgba(96, 165, 250, 0.4)); }
-  &--success::before { background: linear-gradient(180deg, $color-success, rgba(52, 211, 153, 0.4)); }
-  &--warning::before { background: linear-gradient(180deg, $color-warning, rgba(251, 191, 36, 0.4)); }
-  &--error::before { background: linear-gradient(180deg, $color-error, rgba(248, 113, 113, 0.4)); }
+  // -----------------------------------------------
+  // TYPE VARIANTS
+  // -----------------------------------------------
+  &--info {
+    background: $color-info-bg;
+    color: $color-info-dark;
+    border: 1px solid $color-info-border;
 
-  // Hover lift
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: $shadow-sm;
+    &::before { background: $color-info; }
   }
 
-  // Icon container enhancement
+  &--success {
+    background: $color-success-bg;
+    color: $color-success-dark;
+    border: 1px solid $color-success-border;
+
+    &::before { background: $color-success; }
+  }
+
+  &--warning {
+    background: $color-warning-bg;
+    color: $color-warning-dark;
+    border: 1px solid $color-warning-border;
+
+    &::before { background: $color-warning; }
+  }
+
+  &--error {
+    background: $color-error-bg;
+    color: $color-error-dark;
+    border: 1px solid $color-error-border;
+
+    &::before { background: $color-error; }
+  }
+
+  // -----------------------------------------------
+  // ELEMENTS
+  // -----------------------------------------------
   &__icon {
     @include flex-center;
     width: 28px;
     height: 28px;
-    border-radius: $border-radius-full;
+    border-radius: $border-radius-md;
     flex-shrink: 0;
-    transition: transform 200ms $ease-spring;
+    transition: transform 150ms $ease-spring;
   }
 
   &:hover &__icon {
@@ -100,16 +88,21 @@
   &--warning &__icon { background: $color-warning-bg; color: $color-warning; }
   &--error &__icon { background: $color-error-bg; color: $color-error; }
 
-  // Dismiss button
+  &__message {
+    font-weight: $font-weight-medium;
+    line-height: $line-height-snug;
+    flex: 1;
+  }
+
   &__dismiss {
     @include flex-center;
     width: 24px;
     height: 24px;
-    border-radius: $border-radius-full;
+    border-radius: $border-radius-md;
     flex-shrink: 0;
     color: inherit;
     opacity: 0.4;
-    transition: opacity $transition-fast, background $transition-fast, transform 200ms $ease-spring;
+    transition: opacity $transition-fast, background $transition-fast, transform 150ms $ease-spring;
     margin-left: auto;
 
     &:hover {
@@ -132,12 +125,40 @@
     animation: notifPulse 2s ease-in-out infinite;
     flex-shrink: 0;
   }
+
+  // -----------------------------------------------
+  // HOVER
+  // -----------------------------------------------
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: $shadow-md;
+  }
+
+  // -----------------------------------------------
+  // PROGRESS BAR (auto-dismiss)
+  // -----------------------------------------------
+  &__progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    border-radius: 0 0 $border-radius-lg $border-radius-lg;
+    transition: width linear;
+  }
+
+  &--info &__progress { background: $color-info; }
+  &--success &__progress { background: $color-success; }
+  &--warning &__progress { background: $color-warning; }
+  &--error &__progress { background: $color-error; }
 }
 
+// -----------------------------------------------
+// KEYFRAMES
+// -----------------------------------------------
 @keyframes notifSlideIn {
   from {
     opacity: 0;
-    transform: translateX(-12px);
+    transform: translateX(20px);
   }
   to {
     opacity: 1;
@@ -146,6 +167,6 @@
 }
 
 @keyframes notifPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(248, 113, 113, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
 }

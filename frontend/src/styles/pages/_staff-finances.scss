@@ -1,210 +1,346 @@
 @use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// Staff Finances — Redesigned
+// Mobile-first earnings view for staff
+// Clean cards, big numbers, blue accent system
+// ============================================
+
+$_blue: #1E40AF;
+$_blue-light: #3B82F6;
+$_blue-sky: #0EA5E9;
+$_blue-ghost: rgba(30, 64, 175, 0.06);
+
+$_slate-50: #F8FAFC;
+$_slate-100: #F1F5F9;
+$_slate-200: #E2E8F0;
+$_slate-300: #CBD5E1;
+$_slate-400: #94A3B8;
+$_slate-500: #64748B;
+$_slate-600: #475569;
+$_slate-700: #334155;
+$_slate-800: #1E293B;
+$_slate-900: #0F172A;
+
+$_radius-sm: 8px;
+$_radius-md: 12px;
+$_radius-lg: 16px;
 
 .staff-finances {
-  padding: 1.5rem;
+  padding: $spacing-md;
   width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
 
+  @include respond-to(md) {
+    padding: $spacing-lg $spacing-xl;
+  }
+
+  // ---- Loading ----
   &__loading {
-    color: $color-gray-400;
-    padding: 2rem;
+    color: $_slate-400;
+    padding: $spacing-2xl;
     text-align: center;
+    font-size: $font-size-base;
   }
 
   // ---- Header ----
   &__header {
-    margin-bottom: 1rem;
+    margin-bottom: $spacing-md;
 
     h2 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: $color-gray-800;
-      margin: 0 0 0.15rem;
+      font-family: $font-primary;
+      font-size: 1.5rem;
+      font-weight: $font-weight-bold;
+      color: $_slate-900;
+      margin: 0 0 $spacing-2xs;
+      letter-spacing: $letter-spacing-tight;
+
+      @include respond-to(md) {
+        font-size: 1.75rem;
+      }
     }
 
     p {
-      font-size: 0.8rem;
-      color: $color-gray-400;
+      font-size: $font-size-sm;
+      color: $_slate-400;
       margin: 0;
+      font-weight: $font-weight-medium;
     }
   }
 
-  // ---- Period tabs ----
+  // ---- Period Tabs ----
   &__tabs {
     display: flex;
-    gap: 0.25rem;
-    margin-bottom: 1.25rem;
-    padding: 0.2rem;
-    background: $color-gray-50;
-    border-radius: 10px;
+    gap: 4px;
+    margin-bottom: $spacing-lg;
+    padding: 4px;
+    background: $_slate-100;
+    border-radius: $_radius-sm;
     width: fit-content;
   }
 
   &__tab {
-    padding: 0.4rem 1rem;
+    padding: $spacing-sm $spacing-lg;
     border: none;
     background: none;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: $color-gray-500;
+    border-radius: 6px;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $_slate-500;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all $transition-base;
+    min-height: 40px;
+
+    &:hover {
+      color: $_slate-700;
+    }
 
     &--active {
       background: $color-white;
-      color: $color-primary;
-      font-weight: 600;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      color: $_blue;
+      font-weight: $font-weight-semibold;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
     }
   }
 
-  // ---- Summary cards ----
+  // ---- Summary Cards ----
   &__summary {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-sm;
+    margin-bottom: $spacing-lg;
+
+    @include respond-to(md) {
+      grid-template-columns: repeat(4, 1fr);
+      gap: $spacing-md;
+    }
   }
 
   &__card {
-    padding: 1rem;
+    padding: $spacing-md;
     background: $color-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 12px;
+    border: 1px solid $_slate-200;
+    border-radius: $_radius-md;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: $spacing-sm;
+    transition: all $transition-base;
+    min-height: 80px;
+
+    &:hover {
+      border-color: $_slate-300;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
 
     &--highlight {
-      background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+      background: linear-gradient(135deg, $_blue 0%, $_blue-light 60%, $_blue-sky 100%);
       border-color: transparent;
       color: $color-white;
+      grid-column: 1 / -1;
+      min-height: 96px;
 
-      .staff-finances__card-value { color: $color-white; }
-      .staff-finances__card-label { color: rgba(255, 255, 255, 0.8); }
+      @include respond-to(md) {
+        grid-column: auto;
+        min-height: 80px;
+      }
+
+      .staff-finances__card-value {
+        color: $color-white;
+        font-size: 1.75rem;
+
+        @include respond-to(md) {
+          font-size: 1.5rem;
+        }
+      }
+
+      .staff-finances__card-label {
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      &:hover {
+        box-shadow: 0 8px 24px rgba(30, 64, 175, 0.2);
+      }
     }
   }
 
   &__card-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.2);
+    width: 44px;
+    height: 44px;
+    border-radius: $_radius-sm;
+    background: rgba(255, 255, 255, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   &__card-info {
     display: flex;
     flex-direction: column;
+    gap: 2px;
+    min-width: 0;
   }
 
   &__card-value {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: $color-gray-800;
-    line-height: 1.2;
+    font-size: 1.25rem;
+    font-weight: $font-weight-bold;
+    color: $_slate-900;
+    line-height: 1.1;
+    letter-spacing: $letter-spacing-tight;
   }
 
   &__card-label {
     font-size: 0.65rem;
-    color: $color-gray-400;
+    color: $_slate-400;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.06em;
+    font-weight: $font-weight-semibold;
+    @include truncate;
   }
 
-  // ---- Commission bar ----
+  // ---- Commission Bar ----
   &__bar-container {
-    margin-bottom: 1.5rem;
+    margin-bottom: $spacing-lg;
+    padding: $spacing-md;
+    background: $color-white;
+    border: 1px solid $_slate-200;
+    border-radius: $_radius-md;
   }
 
   &__bar {
-    height: 8px;
-    background: $color-gray-100;
-    border-radius: 4px;
+    height: 10px;
+    background: $_slate-100;
+    border-radius: 5px;
     overflow: hidden;
-    margin-bottom: 0.35rem;
+    margin-bottom: $spacing-sm;
   }
 
   &__bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, $color-primary, $color-primary-light);
-    border-radius: 4px;
-    transition: width 0.5s ease;
+    background: linear-gradient(90deg, $_blue, $_blue-light, $_blue-sky);
+    border-radius: 5px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   &__bar-labels {
     display: flex;
     justify-content: space-between;
-    font-size: 0.7rem;
-    color: $color-gray-400;
+    font-size: $font-size-sm;
+    color: $_slate-500;
+    font-weight: $font-weight-medium;
   }
 
-  // ---- Detail table ----
+  // ---- Detail Table ----
   &__detail {
     background: $color-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 12px;
+    border: 1px solid $_slate-200;
+    border-radius: $_radius-md;
     overflow: hidden;
   }
 
   &__detail-title {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: $color-gray-600;
-    border-bottom: 1px solid $color-gray-100;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    font-family: $font-primary;
+    font-size: 1rem;
+    font-weight: $font-weight-semibold;
+    color: $_slate-700;
+    border-bottom: 1px solid $_slate-100;
     margin: 0;
+
+    svg {
+      color: $_blue-light;
+    }
   }
 
   &__table {
     width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   &__table-head {
     display: grid;
     grid-template-columns: 70px 1fr 1fr 90px 50px 90px;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
     font-size: 0.65rem;
-    font-weight: 600;
-    color: $color-gray-400;
+    font-weight: $font-weight-bold;
+    color: $_slate-400;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    border-bottom: 1px solid $color-gray-50;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid $_slate-100;
+    min-width: 520px;
+
+    @media (max-width: $breakpoint-md) {
+      display: none;
+    }
   }
 
   &__table-row {
     display: grid;
     grid-template-columns: 70px 1fr 1fr 90px 50px 90px;
-    gap: 0.5rem;
-    padding: 0.6rem 1rem;
-    font-size: 0.8rem;
-    color: $color-gray-600;
-    border-bottom: 1px solid $color-gray-50;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
+    font-size: $font-size-sm;
+    color: $_slate-600;
+    border-bottom: 1px solid $_slate-50;
     align-items: center;
+    transition: background $transition-fast;
+    min-width: 520px;
 
-    &:last-child { border-bottom: none; }
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:nth-child(even) {
+      background: $_slate-50;
+    }
+
+    &:hover {
+      background: $_blue-ghost;
+    }
+
+    // Mobile: stack layout
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr 1fr;
+      min-width: 0;
+      padding: $spacing-md;
+      gap: $spacing-xs;
+      border-bottom: 1px solid $_slate-100;
+
+      span:nth-child(3) {
+        grid-column: 1 / -1;
+        color: $_slate-400;
+        font-size: 0.75rem;
+      }
+    }
   }
 
   &__table-date {
-    font-size: 0.75rem;
-    color: $color-gray-400;
+    font-size: 0.8rem;
+    color: $_slate-400;
+    font-weight: $font-weight-medium;
   }
 
   &__table-commission {
-    font-weight: 700;
-    color: $color-primary;
+    font-weight: $font-weight-bold;
+    color: $_blue;
   }
 
+  // ---- Empty State ----
   &__empty {
     text-align: center;
-    padding: 3rem 1rem;
-    color: $color-gray-400;
-    font-size: 0.9rem;
+    padding: $spacing-3xl $spacing-md;
+    color: $_slate-400;
+    font-size: $font-size-base;
+    background: $_slate-50;
+    border-radius: $_radius-md;
+    border: 1px dashed $_slate-200;
   }
 }

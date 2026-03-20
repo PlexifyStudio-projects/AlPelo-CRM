@@ -2,8 +2,8 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Modal Component
-// Portal-based, solid white, scale-in animation
+// MODAL — Modern overlay modal
+// 24px radius, generous padding, backdrop blur
 // ============================================
 
 .modal {
@@ -14,10 +14,16 @@
   display: flex;
   flex-direction: column;
   background: $color-white;
-  border-radius: $border-radius-xl;
-  box-shadow: $shadow-2xl;
+  border-radius: $border-radius-2xl;
   z-index: $z-modal;
-  animation: scaleInOvershoot 400ms $ease-spring both;
+  animation: modalScaleIn 300ms $ease-out-expo both;
+
+  // Layered shadow for depth
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.03),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 16px 48px rgba(0, 0, 0, 0.1),
+    0 32px 80px rgba(0, 0, 0, 0.06);
 
   // -----------------------------------------------
   // OVERLAY / BACKDROP
@@ -31,7 +37,9 @@
     justify-content: center;
     padding: 24px;
     background: rgba(0, 0, 0, 0.5);
-    animation: fadeIn 250ms $ease-out-quart both;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    animation: fadeIn 200ms $ease-out-quart both;
     cursor: pointer;
 
     > * {
@@ -44,13 +52,17 @@
   // -----------------------------------------------
   &__header {
     @include flex-between;
-    padding: $spacing-xl $spacing-2xl;
-    border-bottom: $border-width solid $border-color-light;
+    padding: $spacing-lg 28px;
+    border-bottom: $border-width solid $color-gray-100;
     flex-shrink: 0;
   }
 
   &__title {
-    @include heading($font-size-xl);
+    font-family: $font-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    line-height: $line-height-tight;
+    color: $color-secondary;
     margin-bottom: 0;
   }
 
@@ -58,25 +70,30 @@
     @include flex-center;
     width: 36px;
     height: 36px;
-    border-radius: $border-radius-full;
+    border-radius: $border-radius-md;
     color: $color-gray-400;
-    background: transparent;
+    background: $color-gray-100;
     border: none;
     padding: 0;
     flex-shrink: 0;
     transition:
-      background 200ms $ease-out-quart,
-      color 200ms $ease-out-quart,
-      transform 300ms $ease-spring;
+      background 150ms $ease-out-quart,
+      color 150ms $ease-out-quart,
+      transform 200ms $ease-spring;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.05);
+      background: $color-gray-200;
       color: $color-gray-700;
       transform: rotate(90deg);
     }
 
     &:active {
       transform: rotate(90deg) scale(0.92);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba($color-primary, 0.2);
     }
   }
 
@@ -87,7 +104,7 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: $spacing-xl $spacing-2xl $spacing-2xl;
+    padding: 28px;
     color: $color-gray-600;
     line-height: $line-height-base;
     @include custom-scrollbar;
@@ -107,64 +124,6 @@
   &--full {
     max-width: 90vw;
     max-height: 90vh;
-  }
-
-  // -----------------------------------------------
-  // PREMIUM POLISH
-  // -----------------------------------------------
-
-  // Layered shadow for true depth
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.03),
-    0 4px 12px rgba(0, 0, 0, 0.06),
-    0 16px 48px rgba(0, 0, 0, 0.1),
-    0 32px 80px rgba(0, 0, 0, 0.06);
-
-  // Subtle inner highlight at top
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-    border-radius: $border-radius-xl $border-radius-xl 0 0;
-    z-index: 1;
-    pointer-events: none;
-  }
-
-  // Scroll shadow on body
-  &__body {
-    position: relative;
-
-    &::before {
-      content: '';
-      position: sticky;
-      top: 0;
-      display: block;
-      height: 1px;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.04), transparent);
-      margin-bottom: -1px;
-      z-index: 1;
-      pointer-events: none;
-    }
-  }
-
-  // Close button focus ring
-  &__close {
-    @include focus-ring;
-
-    &:focus-visible {
-      box-shadow: 0 0 0 2px rgba(45, 90, 61, 0.2);
-    }
-  }
-
-  // Overlay backdrop enhanced
-  &__overlay {
-    backdrop-filter: blur(8px) saturate(0.85);
-    -webkit-backdrop-filter: blur(8px) saturate(0.85);
-    background: rgba(0, 0, 0, 0.45);
   }
 
   // -----------------------------------------------
@@ -225,6 +184,17 @@
   }
 }
 
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @keyframes modalScaleOut {
   from {
     opacity: 1;
@@ -232,7 +202,7 @@
   }
   to {
     opacity: 0;
-    transform: scale(0.96);
+    transform: scale(0.95);
   }
 }
 

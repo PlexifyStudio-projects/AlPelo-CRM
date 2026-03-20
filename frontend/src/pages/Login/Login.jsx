@@ -1,5 +1,203 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
+// ─── Interactive Smoke/Cloud Canvas ───
+const SmokeCanvas = () => {
+  const canvasRef = useRef(null);
+  const mouseRef = useRef({ x: -1000, y: -1000 });
+  const particlesRef = useRef([]);
+  const animRef = useRef(null);
+
+  const COLORS = [
+    { r: 59, g: 130, b: 246 },   // blue #3B82F6
+    { r: 236, g: 72, b: 153 },   // pink #EC4899
+    { r: 6, g: 182, b: 212 },    // cyan #06B6D4
+    { r: 139, g: 92, b: 246 },   // purple #8B5CF6
+    { r: 16, g: 185, b: 129 },   // green #10B981
+  ];
+
+  const createParticle = useCallback((x, y, isAmbient = false) => {
+    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    const size = isAmbient
+      ? 80 + Math.random() * 180
+      : 40 + Math.random() * 120;
+
+    return {
+      x: x + (Math.random() - 0.5) * (isAmbient ? 400 : 60),
+      y: y + (Math.random() - 0.5) * (isAmbient ? 400 : 60),
+      vx: (Math.random() - 0.5) * (isAmbient ? 0.3 : 1.5),
+      vy: (Math.random() - 0.5) * (isAmbient ? 0.3 : 1.5),
+      size,
+      maxSize: size,
+      color,
+      alpha: isAmbient ? 0.04 + Math.random() * 0.06 : 0.08 + Math.random() * 0.12,
+      maxAlpha: isAmbient ? 0.04 + Math.random() * 0.06 : 0.08 + Math.random() * 0.12,
+      life: isAmbient ? 9999 : 200 + Math.random() * 300,
+      maxLife: isAmbient ? 9999 : 200 + Math.random() * 300,
+      isAmbient,
+      driftX: (Math.random() - 0.5) * 0.15,
+      driftY: (Math.random() - 0.5) * 0.15,
+      pulseSpeed: 0.005 + Math.random() * 0.01,
+      pulseOffset: Math.random() * Math.PI * 2,
+    };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    const resize = () => {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      canvas.width = width * window.devicePixelRatio;
+      canvas.height = height * window.devicePixelRatio;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    };
+
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Seed ambient particles
+    const ambient = [];
+    for (let i = 0; i < 12; i++) {
+      ambient.push(createParticle(
+        Math.random() * (width || 600),
+        Math.random() * (height || 800),
+        true
+      ));
+    }
+    particlesRef.current = ambient;
+
+    let frameCount = 0;
+
+    const animate = () => {
+      ctx.clearRect(0, 0, width, height);
+      frameCount++;
+
+      const mx = mouseRef.current.x;
+      const my = mouseRef.current.y;
+      const particles = particlesRef.current;
+
+      // Spawn new particles near mouse every few frames
+      if (mx > 0 && my > 0 && frameCount % 3 === 0) {
+        particles.push(createParticle(mx, my, false));
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+
+        if (!p.isAmbient) {
+          p.life--;
+          if (p.life <= 0) {
+            particles.splice(i, 1);
+            continue;
+          }
+          const lifeRatio = p.life / p.maxLife;
+          p.alpha = p.maxAlpha * lifeRatio;
+          p.size = p.maxSize * (0.5 + lifeRatio * 0.5);
+        } else {
+          // Ambient pulse
+          const pulse = Math.sin(frameCount * p.pulseSpeed + p.pulseOffset);
+          p.alpha = p.maxAlpha * (0.7 + pulse * 0.3);
+          p.size = p.maxSize * (0.95 + pulse * 0.05);
+        }
+
+        // Mouse repulsion
+        if (mx > 0 && my > 0) {
+          const dx = p.x - mx;
+          const dy = p.y - my;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const repelRadius = p.isAmbient ? 250 : 180;
+          if (dist < repelRadius && dist > 0) {
+            const force = (1 - dist / repelRadius) * (p.isAmbient ? 0.8 : 2);
+            p.vx += (dx / dist) * force;
+            p.vy += (dy / dist) * force;
+          }
+        }
+
+        // Drift
+        p.vx += p.driftX;
+        p.vy += p.driftY;
+
+        // Damping
+        p.vx *= 0.96;
+        p.vy *= 0.96;
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Wrap ambient particles
+        if (p.isAmbient) {
+          if (p.x < -p.size) p.x = width + p.size;
+          if (p.x > width + p.size) p.x = -p.size;
+          if (p.y < -p.size) p.y = height + p.size;
+          if (p.y > height + p.size) p.y = -p.size;
+        }
+
+        // Draw
+        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+        gradient.addColorStop(0, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${p.alpha})`);
+        gradient.addColorStop(0.4, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${p.alpha * 0.5})`);
+        gradient.addColorStop(1, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, 0)`);
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Cap particle count
+      if (particles.length > 80) {
+        const removeCount = particles.length - 80;
+        let removed = 0;
+        for (let i = particles.length - 1; i >= 0 && removed < removeCount; i--) {
+          if (!particles[i].isAmbient) {
+            particles.splice(i, 1);
+            removed++;
+          }
+        }
+      }
+
+      animRef.current = requestAnimationFrame(animate);
+    };
+
+    animRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener('resize', resize);
+    };
+  }, [createParticle]);
+
+  const handleMouseMove = useCallback((e) => {
+    const rect = canvasRef.current?.parentElement?.getBoundingClientRect();
+    if (!rect) return;
+    mouseRef.current = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    mouseRef.current = { x: -1000, y: -1000 };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="login__canvas"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+    />
+  );
+};
+
+// ─── Login Component ───
 const Login = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
@@ -62,32 +260,14 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className={`${b} ${mounted ? `${b}--mounted` : ''}`}>
-      <div className={`${b}__bg-gradient`} />
-
-      <div className={`${b}__ambient`}>
-        <div className={`${b}__ambient-orb ${b}__ambient-orb--1`} />
-        <div className={`${b}__ambient-orb ${b}__ambient-orb--2`} />
-        <div className={`${b}__ambient-orb ${b}__ambient-orb--3`} />
-        <div className={`${b}__ambient-orb ${b}__ambient-orb--4`} />
-      </div>
-
-      <div className={`${b}__pattern`} />
-
-      <div className={`${b}__particles`}>
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className={`${b}__particle ${b}__particle--${i + 1}`} />
-        ))}
-      </div>
-
       <div className={`${b}__wrapper`}>
-        {/* Left panel: Brand */}
+        {/* Left panel: Dark canvas with interactive smoke */}
         <div className={`${b}__showcase`}>
-          <div className={`${b}__showcase-border-glow`} />
+          <SmokeCanvas />
 
           <div className={`${b}__showcase-content`}>
             <div className={`${b}__showcase-icon`}>
-              <div className={`${b}__showcase-icon-ring`} />
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="6" cy="6" r="3" />
                 <circle cx="6" cy="18" r="3" />
                 <line x1="20" y1="4" x2="8.12" y2="15.88" />
@@ -100,38 +280,41 @@ const Login = ({ onLogin }) => {
               Plexify<span className={`${b}__showcase-title-accent`}>Studio</span>
             </h1>
 
-            <div className={`${b}__showcase-divider`}>
-              <div className={`${b}__showcase-divider-glow`} />
-            </div>
+            <div className={`${b}__showcase-divider`} />
 
             <p className={`${b}__showcase-tagline`}>
-              Tu negocio,<br />bajo control<br />total
+              Tu negocio,<br />bajo control total
             </p>
 
             <p className={`${b}__showcase-description`}>
               CRM inteligente con IA para tu negocio
             </p>
 
-            <div className={`${b}__showcase-stats`}>
-              <div className={`${b}__showcase-stat`}>
-                <span className={`${b}__showcase-stat-number`}>IA</span>
-                <span className={`${b}__showcase-stat-label`}>WhatsApp</span>
+            <div className={`${b}__showcase-badges`}>
+              <div className={`${b}__showcase-badge`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
+                </svg>
+                <span>IA WhatsApp</span>
               </div>
-              <div className={`${b}__showcase-stat-divider`} />
-              <div className={`${b}__showcase-stat`}>
-                <span className={`${b}__showcase-stat-number`}>CRM</span>
-                <span className={`${b}__showcase-stat-label`}>Completo</span>
+              <div className={`${b}__showcase-badge`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                <span>CRM Completo</span>
               </div>
-              <div className={`${b}__showcase-stat-divider`} />
-              <div className={`${b}__showcase-stat`}>
-                <span className={`${b}__showcase-stat-number`}>24/7</span>
-                <span className={`${b}__showcase-stat-label`}>Activo</span>
+              <div className={`${b}__showcase-badge`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                <span>24/7 Activo</span>
               </div>
             </div>
           </div>
-
-          <div className={`${b}__showcase-corner ${b}__showcase-corner--tl`} />
-          <div className={`${b}__showcase-corner ${b}__showcase-corner--br`} />
         </div>
 
         {/* Right panel: Login form */}

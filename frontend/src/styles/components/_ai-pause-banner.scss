@@ -1,13 +1,20 @@
 @use '../abstracts/variables' as *;
 
+// ============================================
+// AI Pause Banner — Plexify Studio v3
+// Subtle warning strip, glass-feel, modern
+// ============================================
+
 .ai-pause-banner {
   display: flex;
   align-items: center;
   gap: $spacing-md;
   padding: $spacing-sm $spacing-lg;
-  background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
-  border-bottom: 2px solid $color-error-border;
-  animation: ai-pause-banner-enter 400ms $ease-out-quart;
+  background: $color-warning-bg;
+  border: 1px solid $color-warning-border;
+  border-radius: $border-radius-md;
+  backdrop-filter: blur(8px);
+  animation: ai-pause-banner-enter 350ms cubic-bezier(0.16, 1, 0.3, 1);
 
   &__icon {
     display: flex;
@@ -16,10 +23,11 @@
     width: 36px;
     height: 36px;
     border-radius: $border-radius-full;
-    background: $color-error-bg;
-    border: 1px solid $color-error-border;
-    color: $color-error-dark;
+    background: $color-white;
+    border: 1px solid $color-warning-border;
+    color: $color-warning-dark;
     flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba($color-warning, 0.12);
   }
 
   &__text {
@@ -30,15 +38,15 @@
 
     strong {
       font-size: $font-size-sm;
-      font-weight: $font-weight-bold;
-      color: $color-error-dark;
-      letter-spacing: $letter-spacing-wide;
+      font-weight: 700;
+      color: $color-warning-dark;
+      letter-spacing: -0.01em;
     }
 
     span {
       font-size: $font-size-xs;
       color: $color-gray-600;
-      line-height: $line-height-snug;
+      line-height: 1.4;
     }
   }
 }

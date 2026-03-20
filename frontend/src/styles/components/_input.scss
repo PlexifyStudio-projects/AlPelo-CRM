@@ -2,8 +2,8 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Input Component
-// Floating labels, animated focus, search
+// INPUT — Modern clean inputs
+// 12px radius, 48px height, subtle bg, clean focus
 // ============================================
 
 .input {
@@ -11,17 +11,15 @@
   position: relative;
 
   // -----------------------------------------------
-  // LABEL (supports floating animation)
+  // LABEL
   // -----------------------------------------------
   &__label {
     font-family: $font-primary;
     font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    color: $color-gray-500;
-    letter-spacing: $letter-spacing-wide;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-600;
     margin-bottom: 6px;
     transition: all 200ms $ease-out-quart;
-    font-feature-settings: 'cv01', 'cv02';
   }
 
   // -----------------------------------------------
@@ -29,38 +27,34 @@
   // -----------------------------------------------
   &__field {
     width: 100%;
-    padding: 12px $spacing-md;
+    height: 48px;
+    padding: 0 $spacing-md;
     background: $bg-input;
-    backdrop-filter: blur(8px);
-    border: $border-width solid $border-color;
+    border: $border-width solid $color-gray-200;
     border-radius: $border-radius-md;
     font-size: $font-size-base;
     font-family: $font-primary;
     color: $color-gray-700;
     transition:
-      border-color 280ms $ease-out-quart,
-      background 280ms $ease-out-quart,
-      box-shadow 280ms $ease-out-quart;
-    @include focus-ring;
+      border-color 200ms $ease-out-quart,
+      background 200ms $ease-out-quart,
+      box-shadow 200ms $ease-out-quart;
 
     &::placeholder {
-      color: $color-gray-300;
-      font-weight: $font-weight-light;
+      color: $color-gray-400;
+      font-weight: $font-weight-regular;
       transition: opacity 200ms $ease-out-quart;
     }
 
     &:hover {
-      border-color: $border-color-medium;
+      border-color: $color-gray-300;
     }
 
     &:focus {
       outline: none;
       background: $color-white;
-      border-color: $color-primary;
-      box-shadow:
-        0 0 0 3px rgba(45, 90, 61, 0.08),
-        $shadow-sm,
-        $glass-inner-glow;
+      border-color: $color-primary-light;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
 
       &::placeholder {
         opacity: 0.5;
@@ -119,9 +113,11 @@
   // -----------------------------------------------
   &--error &__field {
     border-color: $color-error;
+    background: rgba($color-error, 0.02);
+    animation: inputShake 400ms $ease-out-quart;
 
     &:focus {
-      box-shadow: 0 0 0 3px $color-error-bg, $shadow-sm;
+      box-shadow: 0 0 0 3px $color-error-bg;
       border-color: $color-error;
     }
   }
@@ -158,8 +154,26 @@
     border-color: $color-success;
 
     &:focus {
-      box-shadow: 0 0 0 3px $color-success-bg, $shadow-sm;
+      box-shadow: 0 0 0 3px $color-success-bg;
       border-color: $color-success;
+    }
+  }
+
+  &--success {
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: $spacing-md;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      border-radius: $border-radius-full;
+      background: $color-success-bg;
+      border: 1.5px solid $color-success;
+      animation: scaleIn 250ms $ease-spring both;
     }
   }
 
@@ -185,24 +199,25 @@
   }
 
   // -----------------------------------------------
-  // SEARCH INPUT
+  // SEARCH INPUT — pill shape, left icon
   // -----------------------------------------------
   &--search {
     position: relative;
 
     .input__field {
+      height: 44px;
       padding-left: 40px;
       border-radius: $border-radius-full;
-      background: rgba(0, 0, 0, 0.03);
+      background: $color-gray-100;
       border-color: transparent;
 
       &:hover {
-        background: rgba(0, 0, 0, 0.05);
+        background: $color-gray-200;
       }
 
       &:focus {
         background: $color-white;
-        border-color: rgba(45, 90, 61, 0.2);
+        border-color: $color-primary-light;
         padding-left: 44px;
       }
     }
@@ -216,14 +231,14 @@
       height: 16px;
       color: $color-gray-400;
       transition:
-        color 280ms $ease-out-quart,
-        transform 280ms $ease-out-quart;
+        color 200ms $ease-out-quart,
+        transform 200ms $ease-out-quart;
       pointer-events: none;
     }
 
     .input__field:focus ~ .input__search-icon {
       color: $color-primary;
-      transform: translateY(-50%) scale(1.08);
+      transform: translateY(-50%) scale(1.05);
     }
   }
 
@@ -231,7 +246,9 @@
   // TEXTAREA VARIANT
   // -----------------------------------------------
   &--textarea &__field {
+    height: auto;
     min-height: 120px;
+    padding: $spacing-md;
     resize: vertical;
     line-height: $line-height-base;
   }
@@ -262,63 +279,11 @@
   }
 
   // -----------------------------------------------
-  // PREMIUM ENHANCEMENTS
+  // FOCUS-VISIBLE
   // -----------------------------------------------
-
-  // Field: subtle inner shadow for recessed feel
-  &__field {
-    box-shadow: $shadow-inner, $shadow-xs;
-
-    &:focus {
-      box-shadow:
-        0 0 0 3px rgba(45, 90, 61, 0.08),
-        $shadow-sm,
-        $glass-inner-glow,
-        inset 0 0 0 1px rgba(45, 90, 61, 0.05);
-    }
-  }
-
-  // Error state: shake animation
-  &--error &__field {
-    animation: inputShake 400ms $ease-out-quart;
-  }
-
-  // Error message entrance
-  &__error-message::before {
-    animation: bounceIn 300ms $ease-spring both;
-  }
-
-  // Success state indicator
-  &--success {
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      right: $spacing-md;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 16px;
-      height: 16px;
-      border-radius: $border-radius-full;
-      background: $color-success-bg;
-      border: 1.5px solid $color-success;
-      animation: scaleIn 300ms $ease-spring both;
-    }
-  }
-
-  // Character count entrance
-  &__char-count {
-    animation: fadeIn 200ms $ease-out-quart both;
-  }
-
-  // Keyboard focus-visible ring
   &__field:focus-visible {
     outline: none;
-    box-shadow:
-      0 0 0 2px $color-white,
-      0 0 0 4px rgba(45, 90, 61, 0.2),
-      $shadow-sm;
+    box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
   }
 
   // -----------------------------------------------
@@ -326,36 +291,33 @@
   // -----------------------------------------------
   &__select {
     width: 100%;
-    height: 42px;
+    height: 48px;
     padding: 0 $spacing-xl 0 $spacing-md;
     background: $bg-input;
-    backdrop-filter: blur(8px);
-    border: $border-width solid $border-color;
+    border: $border-width solid $color-gray-200;
     border-radius: $border-radius-md;
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
     font-family: $font-primary;
     color: $color-gray-700;
     cursor: pointer;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238E8E85' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2394A3B8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right $spacing-md center;
     transition:
-      border-color 280ms $ease-out-quart,
-      background 280ms $ease-out-quart,
-      box-shadow 280ms $ease-out-quart;
+      border-color 200ms $ease-out-quart,
+      background 200ms $ease-out-quart,
+      box-shadow 200ms $ease-out-quart;
 
     &:hover {
-      border-color: $border-color-medium;
+      border-color: $color-gray-300;
     }
 
     &:focus {
       outline: none;
       background-color: $color-white;
-      border-color: $color-primary;
-      box-shadow:
-        0 0 0 3px rgba(45, 90, 61, 0.08),
-        $shadow-sm;
+      border-color: $color-primary-light;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
     }
   }
 }

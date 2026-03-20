@@ -49,9 +49,10 @@
 }
 
 @mixin glass-card {
-  @include glass;
+  background: $bg-card;
+  border: $border-width solid rgba(0, 0, 0, 0.06);
   border-radius: $border-radius-lg;
-  box-shadow: $shadow-glass, $glass-inner-glow;
+  box-shadow: $shadow-md;
 }
 
 @mixin glass-dark($bg: $glass-bg-dark) {
@@ -59,6 +60,13 @@
   backdrop-filter: blur($glass-blur-heavy);
   -webkit-backdrop-filter: blur($glass-blur-heavy);
   border: $border-width solid $glass-border-light;
+}
+
+@mixin glass-frost {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: $border-width solid rgba(255, 255, 255, 0.25);
 }
 
 // -----------------------------------------------
@@ -76,7 +84,7 @@
 
 @mixin heading-display {
   font-family: $font-heading;
-  font-weight: $font-weight-bold;
+  font-weight: $font-weight-extrabold;
   line-height: $line-height-none;
   letter-spacing: $letter-spacing-tighter;
   color: $color-secondary;
@@ -108,6 +116,14 @@
   font-weight: $font-weight-medium;
   letter-spacing: $letter-spacing-wide;
   color: $color-gray-400;
+}
+
+@mixin section-title {
+  font-family: $font-heading;
+  font-size: $font-size-lg;
+  font-weight: $font-weight-bold;
+  letter-spacing: $letter-spacing-tight;
+  color: $color-secondary;
 }
 
 // -----------------------------------------------
@@ -146,7 +162,7 @@
 }
 
 // -----------------------------------------------
-// CARD STYLES
+// CARD STYLES — Modern floating cards
 // -----------------------------------------------
 @mixin card-style {
   @include glass-card;
@@ -156,20 +172,32 @@
   @include transition;
 
   &:hover {
-    transform: scale(1.01);
-    box-shadow: $shadow-glass-hover, $glass-inner-glow;
-    border-color: rgba(255, 255, 255, 0.35);
+    transform: translateY(-2px);
+    box-shadow: $shadow-card-hover;
+    border-color: rgba(0, 0, 0, 0.08);
   }
 }
 
 // -----------------------------------------------
-// HOVER EFFECTS
+// SECTION SPACING
 // -----------------------------------------------
-@mixin hover-lift($distance: -3px) {
+@mixin section-spacing {
+  padding: $spacing-2xl;
+  gap: $spacing-xl;
+}
+
+@mixin section-gap {
+  gap: $spacing-2xl;
+}
+
+// -----------------------------------------------
+// HOVER EFFECTS — Subtle lifts
+// -----------------------------------------------
+@mixin hover-lift($distance: -2px) {
   @include transition;
 
   &:hover {
-    transform: translateY($distance) scale(1.005);
+    transform: translateY($distance);
     box-shadow: $shadow-lg;
   }
 }
@@ -188,10 +216,10 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0.04) 50%,
       transparent 100%
     );
-    transition: left 600ms $ease-out-expo;
+    transition: left 500ms $ease-out-expo;
     pointer-events: none;
   }
 
@@ -203,17 +231,17 @@
 // -----------------------------------------------
 // FOCUS
 // -----------------------------------------------
-@mixin focus-ring($color: rgba(45, 90, 61, 0.25)) {
+@mixin focus-ring($color: rgba(30, 64, 175, 0.2)) {
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px $color, 0 0 0 4px rgba(45, 90, 61, 0.1);
+    box-shadow: 0 0 0 2px $color, 0 0 0 4px rgba(30, 64, 175, 0.08);
   }
 }
 
 @mixin focus-ring-accent {
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.3), 0 0 0 4px rgba(201, 168, 76, 0.1);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25), 0 0 0 4px rgba(99, 102, 241, 0.08);
   }
 }
 
@@ -222,7 +250,7 @@
 // -----------------------------------------------
 @mixin custom-scrollbar {
   &::-webkit-scrollbar {
-    width: 5px;
+    width: 6px;
   }
 
   &::-webkit-scrollbar-track {
@@ -230,18 +258,18 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.12);
+    background: rgba(0, 0, 0, 0.1);
     border-radius: $border-radius-full;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.2);
+      background: rgba(0, 0, 0, 0.18);
     }
   }
 }
 
 @mixin custom-scrollbar-dark {
   &::-webkit-scrollbar {
-    width: 5px;
+    width: 6px;
   }
 
   &::-webkit-scrollbar-track {
@@ -249,11 +277,11 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
     border-radius: $border-radius-full;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.15);
     }
   }
 }
@@ -261,7 +289,7 @@
 // -----------------------------------------------
 // NOISE TEXTURE OVERLAY
 // -----------------------------------------------
-@mixin noise-overlay($opacity: 0.03) {
+@mixin noise-overlay($opacity: 0.02) {
   &::before {
     content: '';
     position: absolute;
@@ -300,7 +328,7 @@
 // -----------------------------------------------
 // DOT PATTERN (empty states)
 // -----------------------------------------------
-@mixin dot-grid($color: rgba(0, 0, 0, 0.06), $size: 1px, $gap: 24px) {
+@mixin dot-grid($color: rgba(0, 0, 0, 0.05), $size: 1px, $gap: 24px) {
   background-image: radial-gradient(circle, $color $size, transparent $size);
   background-size: $gap $gap;
 }
@@ -337,14 +365,14 @@
 @mixin gradient-divider-accent {
   height: 1px;
   border: none;
-  background: linear-gradient(90deg, transparent 0%, rgba(201, 168, 76, 0.2) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.15) 50%, transparent 100%);
 }
 
 // -----------------------------------------------
 // PAGE ENTER ANIMATION
 // -----------------------------------------------
 @mixin page-enter {
-  animation: fadeInUp 400ms $ease-out-expo both;
+  animation: fadeInUp 350ms $ease-out-expo both;
 
   @include reduced-motion {
     animation: none;
@@ -353,7 +381,7 @@
 }
 
 // -----------------------------------------------
-// PRESS / CLICK EFFECT (Stripe-style tactile feel)
+// PRESS / CLICK EFFECT
 // -----------------------------------------------
 @mixin press-effect {
   transition:
@@ -361,16 +389,16 @@
     box-shadow $duration-fast $ease-out-quart;
 
   &:active:not(:disabled) {
-    transform: scale(0.97) translateY(1px);
+    transform: scale(0.98);
     box-shadow: $shadow-card-active;
     transition-duration: $duration-instant;
   }
 }
 
 // -----------------------------------------------
-// GLOW RING (focus/active accent ring)
+// GLOW RING
 // -----------------------------------------------
-@mixin glow-ring($color: $color-primary, $intensity: 0.15) {
+@mixin glow-ring($color: $color-primary, $intensity: 0.12) {
   position: relative;
 
   &::after {
@@ -379,7 +407,7 @@
     inset: -3px;
     border-radius: inherit;
     border: 2px solid rgba($color, $intensity * 2);
-    box-shadow: 0 0 16px rgba($color, $intensity), 0 0 32px rgba($color, $intensity * 0.5);
+    box-shadow: 0 0 12px rgba($color, $intensity), 0 0 24px rgba($color, $intensity * 0.5);
     opacity: 0;
     transition: opacity $transition-base;
     pointer-events: none;
@@ -415,7 +443,7 @@
 }
 
 // -----------------------------------------------
-// SMOOTH REVEAL (for content appearing on scroll or state change)
+// SMOOTH REVEAL
 // -----------------------------------------------
 @mixin smooth-reveal($delay: 0s) {
   opacity: 0;
@@ -431,7 +459,7 @@
 }
 
 // -----------------------------------------------
-// INTERACTIVE CARD (Linear/Stripe quality)
+// INTERACTIVE CARD
 // -----------------------------------------------
 @mixin interactive-card {
   @include glass-card;
@@ -440,13 +468,13 @@
   overflow: hidden;
 
   &:hover {
-    transform: translateY(-3px) scale(1.003);
-    box-shadow: $shadow-card-hover, $glass-inner-glow;
-    border-color: $glass-border-bright;
+    transform: translateY(-2px);
+    box-shadow: $shadow-card-hover;
+    border-color: rgba(0, 0, 0, 0.08);
   }
 
   &:active {
-    transform: translateY(-1px) scale(0.998);
+    transform: translateY(0);
     transition-duration: $duration-instant;
   }
 
@@ -461,7 +489,7 @@
 }
 
 // -----------------------------------------------
-// GRADIENT BORDER ANIMATION
+// ANIMATED BORDER
 // -----------------------------------------------
 @mixin animated-border($speed: 4s) {
   position: relative;
@@ -472,7 +500,7 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, rgba($color-accent, 0.3), rgba($color-primary, 0.2), rgba($color-accent, 0.3));
+    background: linear-gradient(135deg, rgba($color-accent, 0.2), rgba($color-primary, 0.15), rgba($color-accent, 0.2));
     background-size: 200% 200%;
     animation: gradientShift $speed $ease-smooth infinite;
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -490,7 +518,7 @@
 }
 
 // -----------------------------------------------
-// STAGGER FADE IN (for child elements)
+// STAGGER FADE IN
 // -----------------------------------------------
 @mixin stagger-fade-in($base-delay: $stagger-base, $count: 12) {
   > * {
@@ -511,10 +539,10 @@
 }
 
 // -----------------------------------------------
-// NUMBER COUNTER ANIMATION
+// COUNTER ROLL IN
 // -----------------------------------------------
 @mixin counter-roll-in($delay: 0s) {
-  animation: counterRoll 600ms $ease-out-expo both;
+  animation: counterRoll 500ms $ease-out-expo both;
   animation-delay: $delay;
 
   @include reduced-motion {

@@ -1,44 +1,30 @@
 @use '../abstracts/variables' as *;
-@use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Client Table (Salesforce Premium)
-// Stripe/Linear/Salesforce quality data table
+// Client Table — Plexify Studio v3
+// Modern rounded table, sticky header, hover accents
 // ============================================
 
 .client-table {
   margin-top: $spacing-md;
-  animation: fadeInUp 0.4s $ease-out-expo both;
-  animation-delay: 0.1s;
 
   // -----------------------------------------------
-  // TABLE WRAPPER — Glass card with scroll shadow
+  // TABLE WRAPPER
   // -----------------------------------------------
   &__wrapper {
-    @include glass-card;
+    background: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
     overflow: hidden;
     overflow-x: auto;
-    @include custom-scrollbar;
     position: relative;
-    border-radius: $border-radius-xl;
-    box-shadow: $shadow-sm, $glass-inner-glow;
 
-    // Right scroll shadow
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 48px;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7));
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity $transition-fast;
-    }
+    &::-webkit-scrollbar { height: 6px; }
+    &::-webkit-scrollbar-thumb { background: $color-gray-200; border-radius: 6px; }
 
-    &:hover::after {
-      opacity: 1;
+    @media (max-width: 768px) {
+      display: none;
     }
   }
 
@@ -49,48 +35,42 @@
   }
 
   // -----------------------------------------------
-  // TABLE HEAD — Sticky glass header
+  // TABLE HEAD
   // -----------------------------------------------
   &__head {
     position: sticky;
     top: 0;
-    z-index: $z-base + 1;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(24px) saturate(1.3);
-    -webkit-backdrop-filter: blur(24px) saturate(1.3);
-    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
-    transition: box-shadow $transition-fast;
-
-    .client-table__wrapper:hover & {
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-    }
+    z-index: 2;
+    background: $color-gray-50;
+    border-bottom: 2px solid $color-gray-100;
   }
 
   &__th {
-    padding: $spacing-sm $spacing-lg;
+    padding: 14px $spacing-lg;
     text-align: left;
-    @include label-text;
-    font-size: 0.6rem;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: $color-gray-500;
     cursor: pointer;
     user-select: none;
     white-space: nowrap;
     transition: color $transition-fast, background $transition-fast;
-    letter-spacing: $letter-spacing-caps;
-    color: $color-gray-400;
 
     &:hover {
-      color: $color-primary;
-      background: rgba($color-primary, 0.02);
+      color: $color-gray-800;
+      background: rgba($color-gray-100, 0.6);
     }
 
     &--right { text-align: right; }
 
     &--hide-sm {
-      @media (max-width: $breakpoint-md) { display: none; }
+      @media (max-width: 768px) { display: none; }
     }
 
     &--hide-md {
-      @media (max-width: $breakpoint-lg) { display: none; }
+      @media (max-width: 1024px) { display: none; }
     }
   }
 
@@ -100,7 +80,6 @@
     gap: $spacing-xs;
     position: relative;
 
-    // Underline on hover
     &::after {
       content: '';
       position: absolute;
@@ -108,9 +87,9 @@
       left: 0;
       width: 0;
       height: 2px;
-      background: $color-primary;
+      background: $color-gray-500;
       border-radius: $border-radius-full;
-      transition: width 250ms $ease-out-expo;
+      transition: width 250ms cubic-bezier(0.16, 1, 0.3, 1);
     }
   }
 
@@ -124,10 +103,10 @@
   &__sort-icon {
     color: $color-gray-300;
     flex-shrink: 0;
-    transition: color $transition-fast, transform 350ms $ease-spring;
+    transition: color $transition-fast, transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
 
     &--active {
-      color: $color-primary;
+      color: $color-gray-700;
       transform: scale(1.15);
     }
 
@@ -142,7 +121,7 @@
   &__body {
     .client-table__row {
       &:nth-child(even) {
-        background: rgba(0, 0, 0, 0.012);
+        background: rgba($color-gray-50, 0.4);
       }
 
       &:nth-child(odd) {
@@ -152,117 +131,61 @@
   }
 
   // -----------------------------------------------
-  // TABLE ROW — 56px height, hover with left accent
+  // TABLE ROW
   // -----------------------------------------------
   &__row {
-    border-bottom: $border-width solid $border-color-light;
+    border-bottom: 1px solid $color-gray-100;
     cursor: pointer;
-    transition: all 200ms $ease-out-quart;
-    animation: tableRowFadeIn 0.35s $ease-out-expo both;
-    position: relative;
-    @include stagger-children(0.025s, 30);
+    transition: background $transition-fast, box-shadow $transition-fast;
 
     &:hover {
-      background: rgba($color-primary, 0.025) !important;
-      box-shadow:
-        inset 3px 0 0 $color-primary,
-        0 2px 12px rgba(0, 0, 0, 0.03);
+      background: $color-gray-50 !important;
+      box-shadow: inset 3px 0 0 $color-gray-300;
 
-      .client-table__avatar {
-        transform: scale(1.1);
-      }
-
-      .client-table__avatar--activo {
-        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba($color-primary, 0.35), 0 0 14px rgba($color-primary, 0.15);
-      }
-
-      .client-table__avatar--vip {
-        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba($color-accent, 0.4), 0 0 16px rgba($color-accent, 0.15);
-      }
-
-      .client-table__avatar--en_riesgo {
-        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(212, 133, 26, 0.35), 0 0 14px rgba(212, 133, 26, 0.15);
-      }
-
-      .client-table__avatar--nuevo {
-        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(59, 124, 212, 0.35), 0 0 14px rgba(59, 124, 212, 0.15);
-      }
-
-      .client-table__avatar--inactivo {
-        box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(142, 142, 133, 0.25);
-      }
-
-      .client-table__client-name {
-        color: $color-primary-dark;
-      }
-
-      .client-table__spent {
-        color: $color-primary;
-      }
-
-      .client-table__visits-count {
-        transform: scale(1.06);
-        color: $color-primary-dark;
-      }
-
-      .client-table__source-tag {
-        transform: translateY(-1px);
-        box-shadow: $shadow-xs;
-      }
+      .client-table__avatar { transform: scale(1.08); }
+      .client-table__client-name { color: $color-gray-900; }
+      .client-table__spent { color: $color-gray-900; }
+      .client-table__visits-count { color: $color-gray-900; }
     }
 
     &:active {
-      background: rgba($color-primary, 0.04) !important;
+      background: $color-gray-100 !important;
     }
 
     &:last-child { border-bottom: none; }
 
-    // Keyboard navigation
     &:focus-visible {
       outline: none;
-      background: rgba($color-primary, 0.04) !important;
-      box-shadow: inset 3px 0 0 $color-primary, 0 0 0 1px rgba($color-primary, 0.1);
+      background: $color-gray-50 !important;
+      box-shadow: inset 3px 0 0 $color-gray-400, 0 0 0 1px $color-gray-200;
     }
   }
 
-  // VIP row shimmer
   &__row--vip {
     position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 50%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba($color-accent, 0.025), transparent);
-      pointer-events: none;
-      animation: tableVipShimmer 5s ease-in-out infinite;
-    }
   }
 
   // -----------------------------------------------
   // TABLE CELL
   // -----------------------------------------------
   &__td {
-    padding: $spacing-sm $spacing-lg;
+    padding: 14px $spacing-lg;
     vertical-align: middle;
     height: 56px;
 
     &--right { text-align: right; }
 
     &--hide-sm {
-      @media (max-width: $breakpoint-md) { display: none; }
+      @media (max-width: 768px) { display: none; }
     }
 
     &--hide-md {
-      @media (max-width: $breakpoint-lg) { display: none; }
+      @media (max-width: 1024px) { display: none; }
     }
   }
 
   // -----------------------------------------------
-  // CLIENT CELL — Avatar + info
+  // CLIENT CELL
   // -----------------------------------------------
   &__client-cell {
     display: flex;
@@ -271,40 +194,42 @@
   }
 
   &__avatar {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: $border-radius-full;
-    @include flex-center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: $font-size-xs;
-    font-weight: $font-weight-bold;
-    letter-spacing: $letter-spacing-wide;
+    font-weight: 800;
+    letter-spacing: 0.03em;
     color: $color-white;
     flex-shrink: 0;
-    transition: transform 300ms $ease-spring, box-shadow 300ms $ease-spring;
+    transition: transform $transition-base;
 
     &--activo {
-      background: linear-gradient(135deg, $color-primary, $color-primary-light);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba($color-primary, 0.2);
+      background: linear-gradient(135deg, $color-success-dark, $color-success);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
     }
 
     &--vip {
       background: linear-gradient(135deg, $color-accent-dark, $color-accent);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba($color-accent, 0.25);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
     }
 
     &--inactivo {
       background: linear-gradient(135deg, $color-gray-400, $color-gray-300);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(142, 142, 133, 0.15);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
     }
 
     &--en_riesgo {
       background: linear-gradient(135deg, #B5651D, #D4851A);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(212, 133, 26, 0.2);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
     }
 
     &--nuevo {
       background: linear-gradient(135deg, #2B6CB0, #3B7CD4);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba(59, 124, 212, 0.2);
+      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
     }
 
     &--active { @extend .client-table__avatar--activo; }
@@ -320,27 +245,30 @@
 
   &__client-name {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
-    @include truncate;
+    font-weight: 700;
+    color: $color-gray-900;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: color $transition-fast;
-    line-height: $line-height-tight;
+    line-height: 1.3;
   }
 
   &__client-phone {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    @include truncate;
-    letter-spacing: $letter-spacing-wide;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-variant-numeric: tabular-nums;
   }
 
   &__client-id {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    color: $color-primary;
+    font-weight: 700;
+    color: $color-gray-500;
     font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    letter-spacing: $letter-spacing-wide;
+    letter-spacing: 0.03em;
   }
 
   &__th--id,
@@ -348,13 +276,11 @@
     width: 80px;
     min-width: 80px;
 
-    @media (max-width: $breakpoint-md) {
-      display: none;
-    }
+    @media (max-width: 768px) { display: none; }
   }
 
   // -----------------------------------------------
-  // VISIT CELL — Date + relative badge
+  // VISIT CELL
   // -----------------------------------------------
   &__visit-cell {
     display: flex;
@@ -369,38 +295,36 @@
 
   &__days {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
+    font-weight: 800;
     border-radius: $border-radius-full;
     padding: 2px $spacing-sm;
     display: inline-flex;
     align-items: center;
     width: fit-content;
-    letter-spacing: $letter-spacing-wide;
     font-variant-numeric: tabular-nums;
 
     &--ok {
       color: #1B7A4A;
       background: $color-success-bg;
-      border: $border-width solid $color-success-border;
+      border: 1px solid $color-success-border;
     }
 
     &--caution {
       color: #8A6D14;
       background: $color-warning-bg;
-      border: $border-width solid $color-warning-border;
+      border: 1px solid $color-warning-border;
     }
 
     &--warning {
       color: #A85D1A;
       background: rgba(245, 158, 66, 0.1);
-      border: $border-width solid rgba(245, 158, 66, 0.2);
+      border: 1px solid rgba(245, 158, 66, 0.2);
     }
 
     &--danger {
       color: #C23B3B;
       background: $color-error-bg;
-      border: $border-width solid $color-error-border;
-      animation: daysDangerPulse 2.5s ease-in-out infinite;
+      border: 1px solid $color-error-border;
     }
   }
 
@@ -414,30 +338,30 @@
   // VISITS COUNT
   // -----------------------------------------------
   &__visits-count {
-    font-family: $font-heading;
+    font-family: $font-primary;
     font-size: $font-size-base;
-    font-weight: $font-weight-bold;
-    color: $color-secondary;
+    font-weight: 800;
+    color: $color-gray-800;
     font-variant-numeric: tabular-nums;
     text-align: right;
     display: block;
-    line-height: $line-height-tight;
-    transition: color $transition-fast, transform $transition-fast;
+    line-height: 1.3;
+    transition: color $transition-fast;
   }
 
   // -----------------------------------------------
-  // SPENT — Right-aligned COP
+  // SPENT
   // -----------------------------------------------
   &__spent {
-    font-family: $font-heading;
+    font-family: $font-primary;
     font-size: $font-size-base;
-    font-weight: $font-weight-bold;
-    color: $color-primary-dark;
+    font-weight: 800;
+    color: $color-gray-800;
     font-variant-numeric: tabular-nums;
     text-align: right;
     display: block;
     white-space: nowrap;
-    line-height: $line-height-tight;
+    line-height: 1.3;
     transition: color $transition-fast;
   }
 
@@ -458,11 +382,11 @@
     align-items: center;
     gap: 3px;
     font-size: $font-size-2xs;
-    font-weight: $font-weight-medium;
-    padding: 3px $spacing-sm;
+    font-weight: 600;
+    padding: 4px $spacing-sm;
     border-radius: $border-radius-full;
     white-space: nowrap;
-    transition: transform $transition-fast, box-shadow $transition-fast;
+    transition: transform $transition-fast;
 
     &--instagram {
       color: #C026D3;
@@ -484,102 +408,66 @@
 
     &--paso {
       color: $color-gray-500;
-      background: rgba(107, 107, 99, 0.06);
-      border: 1px solid rgba(107, 107, 99, 0.15);
+      background: $color-gray-50;
+      border: 1px solid $color-gray-200;
     }
 
     &--tiktok {
-      color: #0A0A0A;
-      background: rgba(0, 0, 0, 0.04);
-      border: 1px solid rgba(0, 0, 0, 0.1);
+      color: $color-gray-800;
+      background: $color-gray-50;
+      border: 1px solid $color-gray-200;
     }
 
     &--other {
       color: $color-gray-500;
-      background: rgba(107, 107, 99, 0.06);
-      border: 1px solid rgba(107, 107, 99, 0.15);
-    }
-
-    &:hover {
-      filter: brightness(0.96);
-      transform: translateY(-1px);
-      box-shadow: $shadow-xs;
+      background: $color-gray-50;
+      border: 1px solid $color-gray-200;
     }
   }
 
   // -----------------------------------------------
-  // STATUS BADGE — Colored pill
+  // STATUS BADGE
   // -----------------------------------------------
   &__status {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    letter-spacing: $letter-spacing-wider;
+    font-weight: 800;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
     border-radius: $border-radius-full;
-    padding: 3px $spacing-sm;
+    padding: 4px $spacing-md;
     white-space: nowrap;
-    transition: transform $transition-fast, box-shadow $transition-fast;
-
-    &:hover {
-      transform: scale(1.03);
-    }
 
     &--activo {
       color: #1B7A4A;
-      background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(52, 211, 153, 0.05));
-      border: $border-width solid $color-success-border;
-      box-shadow: 0 1px 3px rgba(52, 211, 153, 0.08);
+      background: $color-success-bg;
+      border: 1px solid $color-success-border;
     }
 
     &--vip {
-      color: #8A6D14;
-      background: linear-gradient(135deg, rgba($color-accent, 0.14), rgba($color-accent, 0.05));
-      border: $border-width solid rgba($color-accent, 0.3);
-      box-shadow: 0 1px 3px rgba($color-accent, 0.1);
-      position: relative;
-
-      // Subtle glow animation for VIP
-      &::after {
-        content: '';
-        position: absolute;
-        inset: -2px;
-        border-radius: inherit;
-        border: 1px solid rgba($color-accent, 0.15);
-        animation: statusGlow 3s ease-in-out infinite;
-      }
+      color: $color-accent-dark;
+      background: rgba($color-accent, 0.08);
+      border: 1px solid rgba($color-accent, 0.2);
     }
 
     &--inactivo {
       color: $color-gray-500;
-      background: rgba(107, 107, 99, 0.08);
-      border: $border-width solid rgba(107, 107, 99, 0.15);
+      background: $color-gray-50;
+      border: 1px solid $color-gray-200;
     }
 
     &--en_riesgo {
       color: #A85D1A;
-      background: linear-gradient(135deg, rgba(245, 158, 66, 0.14), rgba(245, 158, 66, 0.05));
-      border: $border-width solid rgba(245, 158, 66, 0.25);
-      box-shadow: 0 1px 3px rgba(245, 158, 66, 0.08);
-      position: relative;
-
-      &::after {
-        content: '';
-        position: absolute;
-        inset: -2px;
-        border-radius: inherit;
-        border: 1px solid rgba(245, 158, 66, 0.15);
-        animation: statusGlowWarn 3s ease-in-out infinite;
-      }
+      background: rgba(245, 158, 66, 0.1);
+      border: 1px solid rgba(245, 158, 66, 0.25);
     }
 
     &--nuevo {
       color: #1D5DAB;
-      background: linear-gradient(135deg, rgba(96, 165, 250, 0.14), rgba(96, 165, 250, 0.05));
-      border: $border-width solid $color-info-border;
-      box-shadow: 0 1px 3px rgba(96, 165, 250, 0.08);
+      background: rgba(96, 165, 250, 0.1);
+      border: 1px solid $color-info-border;
     }
 
     &--active { @extend .client-table__status--activo; }
@@ -596,26 +484,21 @@
   &__cards {
     display: none;
 
-    @media (max-width: $breakpoint-md) {
+    @media (max-width: 768px) {
       display: flex;
       flex-direction: column;
       gap: $spacing-sm;
     }
   }
 
-  &__wrapper {
-    @media (max-width: $breakpoint-md) {
-      display: none;
-    }
-  }
-
   &__card {
-    @include glass-card;
-    padding: $spacing-md;
+    background: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
+    padding: $spacing-lg;
     cursor: pointer;
-    transition: all 250ms $ease-out-quart;
-    animation: fadeInUp 300ms $ease-out-expo both;
-    border-radius: $border-radius-lg;
+    transition: all $transition-base;
 
     &:hover {
       transform: translateY(-2px);
@@ -633,7 +516,7 @@
     gap: $spacing-sm;
     margin-bottom: $spacing-sm;
     padding-bottom: $spacing-sm;
-    border-bottom: $border-width solid $border-color-light;
+    border-bottom: 1px solid $color-gray-100;
   }
 
   &__card-info {
@@ -654,35 +537,39 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: $spacing-2xs;
-    padding: $spacing-xs;
+    gap: 2px;
+    padding: $spacing-sm;
     background: $color-gray-50;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
   }
 
   &__card-stat-label {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    font-weight: $font-weight-medium;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: $letter-spacing-wider;
+    letter-spacing: 0.05em;
   }
 
   // -----------------------------------------------
   // EMPTY STATE
   // -----------------------------------------------
   &__empty {
-    @include flex-column-center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     padding: $spacing-3xl $spacing-xl;
     gap: $spacing-md;
-    animation: fadeInUp 400ms $ease-out-expo both;
 
     &-icon {
       width: 64px;
       height: 64px;
-      border-radius: $border-radius-full;
+      border-radius: $border-radius-lg;
       background: $color-gray-50;
-      @include flex-center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: $color-gray-300;
       margin-bottom: $spacing-sm;
     }
@@ -692,43 +579,5 @@
       color: $color-gray-400;
       text-align: center;
     }
-  }
-}
-
-// -----------------------------------------------
-// KEYFRAMES
-// -----------------------------------------------
-@keyframes tableVipShimmer {
-  0%, 100% { left: -100%; }
-  50% { left: 200%; }
-}
-
-@keyframes statusGlow {
-  0%, 100% { border-color: rgba(201, 168, 76, 0.1); }
-  50% { border-color: rgba(201, 168, 76, 0.3); }
-}
-
-@keyframes statusGlowWarn {
-  0%, 100% { border-color: rgba(245, 158, 66, 0.08); }
-  50% { border-color: rgba(245, 158, 66, 0.25); }
-}
-
-@keyframes tableRowFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes daysDangerPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.2);
-  }
-  50% {
-    box-shadow: 0 0 0 4px rgba(248, 113, 113, 0);
   }
 }

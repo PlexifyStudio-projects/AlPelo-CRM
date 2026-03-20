@@ -2,149 +2,101 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// AlPelo - Admin Profile Page
-// Two-column layout: sidebar card + tabbed main
-// Premium glass card design
+// Admin Profile — Ultra-Modern
 // ============================================
 
 .admin-profile {
   @include page-enter;
   max-width: 960px;
 
-  // -----------------------------------------------
-  // SKELETON LOADER
-  // -----------------------------------------------
   &__skeleton {
     height: 16px;
-    border-radius: $border-radius-md;
-    background: linear-gradient(90deg, $color-gray-100 25%, $color-gray-50 50%, $color-gray-100 75%);
-    background-size: 200% 100%;
-    animation: skeleton-shimmer 1.8s ease-in-out infinite;
+    border-radius: $border-radius-sm;
+    @include shimmer-bg;
     margin-bottom: $spacing-sm;
 
     &--circle {
-      width: 96px;
-      height: 96px;
+      width: 88px;
+      height: 88px;
       border-radius: $border-radius-full;
       margin: 0 auto $spacing-lg;
     }
   }
 
-  // -----------------------------------------------
-  // HEADER
-  // -----------------------------------------------
   &__header {
-    margin-bottom: $spacing-xl;
-    animation: fadeInLeft 400ms $ease-out-expo both;
-    animation-delay: 0.05s;
+    margin-bottom: $spacing-2xl;
   }
 
   &__title {
-    @include heading($font-size-2xl);
+    @include heading($font-size-3xl);
     margin-bottom: 0;
-    background: linear-gradient(135deg, $color-secondary 30%, $color-primary-dark);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-weight: $font-weight-extrabold;
   }
 
   &__subtitle {
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
     color: $color-gray-400;
     margin-top: $spacing-sm;
-    line-height: $line-height-base;
   }
 
-  // -----------------------------------------------
-  // LAYOUT (sidebar + main)
-  // -----------------------------------------------
   &__layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 260px 1fr;
     gap: $spacing-xl;
     align-items: start;
-    animation: fadeInUp 400ms $ease-out-expo both;
-    animation-delay: 0.12s;
 
-    @media (max-width: $breakpoint-md) {
-      grid-template-columns: 1fr;
-    }
+    @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
   }
 
-  // -----------------------------------------------
-  // SIDEBAR AVATAR CARD
-  // -----------------------------------------------
   &__sidebar {
     position: sticky;
     top: $spacing-lg;
   }
 
   &__avatar-card {
-    background: $glass-bg-heavy;
-    backdrop-filter: blur($glass-blur);
-    border: 1px solid $glass-border;
+    background: $color-white;
+    border: $border-width solid $border-color;
     border-radius: $border-radius-xl;
-    padding: $spacing-2xl $spacing-xl;
-    box-shadow: $shadow-md;
-    display: flex;
-    flex-direction: column;
+    padding: $spacing-xl;
+    box-shadow: $shadow-sm;
+    @include flex-column;
     align-items: center;
     text-align: center;
-    transition: all $transition-base;
-    position: relative;
-    overflow: hidden;
+    transition: box-shadow $transition-fast;
 
-    // Gradient background glow at top
-    &::before {
-      content: '';
-      position: absolute;
-      top: -60px;
-      left: -30px;
-      right: -30px;
-      height: 160px;
-      background: radial-gradient(ellipse at center, rgba(45, 90, 61, 0.06) 0%, transparent 70%);
-      pointer-events: none;
-    }
-
-    &:hover {
-      box-shadow: $shadow-glass-hover;
-      transform: translateY(-2px);
-    }
+    &:hover { box-shadow: $shadow-md; }
   }
 
   &__avatar {
     position: relative;
-    width: 96px;
-    height: 96px;
+    width: 88px;
+    height: 88px;
     margin-bottom: $spacing-lg;
   }
 
   &__avatar-ring {
     position: absolute;
-    inset: -5px;
+    inset: -4px;
     border-radius: $border-radius-full;
-    background: conic-gradient(from 0deg, $color-primary, $color-accent, $color-primary-light, $color-primary);
-    opacity: 0.18;
-    animation: admin-profile-pulse-ring 4s ease-in-out infinite;
+    background: linear-gradient(135deg, $color-primary, $color-accent);
+    opacity: 0.15;
   }
 
   &__avatar-initials {
     @include flex-center;
-    width: 96px;
-    height: 96px;
+    width: 88px;
+    height: 88px;
     border-radius: $border-radius-full;
-    background: linear-gradient(145deg, $color-primary, $color-primary-dark);
+    background: $color-primary;
     color: $color-white;
     font-size: $font-size-2xl;
     font-weight: $font-weight-bold;
-    letter-spacing: $letter-spacing-wide;
     position: relative;
     z-index: 1;
-    box-shadow: $shadow-xl, $shadow-glow-primary, inset 0 1px 2px rgba(255, 255, 255, 0.15);
+    box-shadow: $shadow-lg;
   }
 
   &__user-name {
-    font-family: $font-primary;
     font-size: $font-size-lg;
     font-weight: $font-weight-semibold;
     color: $color-secondary;
@@ -159,7 +111,6 @@
     background: $color-primary-ghost;
     padding: $spacing-2xs $spacing-sm;
     border-radius: $border-radius-full;
-    letter-spacing: $letter-spacing-wide;
     text-transform: uppercase;
     margin-bottom: $spacing-md;
   }
@@ -172,28 +123,23 @@
     color: $color-gray-400;
     margin-bottom: $spacing-lg;
 
-    svg {
-      flex-shrink: 0;
-      color: $color-accent;
-    }
+    svg { flex-shrink: 0; color: $color-accent; }
   }
 
   &__member-duration {
     margin-top: $spacing-lg;
-    padding: $spacing-sm $spacing-lg;
-    background: linear-gradient(135deg, rgba(201, 168, 76, 0.06), rgba(201, 168, 76, 0.03));
-    border: 1px solid rgba(201, 168, 76, 0.12);
+    padding: $spacing-sm $spacing-md;
+    background: $color-accent-ghost;
+    border: 1px solid rgba($color-accent, 0.12);
     border-radius: $border-radius-full;
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
     color: $color-accent-dark;
-    letter-spacing: $letter-spacing-normal;
   }
 
   &__user-meta {
     width: 100%;
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-sm;
     padding-top: $spacing-lg;
     border-top: 1px solid $border-color;
@@ -206,21 +152,11 @@
     font-size: $font-size-sm;
     color: $color-gray-500;
 
-    svg {
-      flex-shrink: 0;
-      color: $color-gray-300;
-    }
-
-    span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    svg { flex-shrink: 0; color: $color-gray-300; }
+    span { @include truncate; }
   }
 
-  // -----------------------------------------------
   // TABS
-  // -----------------------------------------------
   &__tabs {
     display: flex;
     gap: 0;
@@ -230,11 +166,9 @@
 
   &__tab {
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
     gap: $spacing-sm;
-    padding: $spacing-md $spacing-md;
+    padding: $spacing-md;
     border: none;
     background: transparent;
     border-bottom: 2px solid transparent;
@@ -243,94 +177,55 @@
     font-weight: $font-weight-medium;
     color: $color-gray-400;
     cursor: pointer;
-    transition: all 250ms $ease-out-quart;
+    transition: all $transition-fast;
     margin-bottom: -1px;
 
-    svg {
-      flex-shrink: 0;
-      transition: color 250ms;
-    }
-
-    &:hover {
-      color: $color-gray-600;
-      border-bottom-color: $color-gray-200;
-    }
+    &:hover { color: $color-gray-600; border-bottom-color: $color-gray-200; }
 
     &--active {
       color: $color-primary;
       border-bottom-color: $color-primary;
       font-weight: $font-weight-semibold;
-
-      svg { color: $color-primary; }
-
-      &:hover {
-        color: $color-primary;
-        border-bottom-color: $color-primary;
-      }
     }
 
     @media (max-width: $breakpoint-sm) {
-      span {
-        display: none;
-      }
-
+      span { display: none; }
       padding: $spacing-sm;
     }
   }
 
-  // -----------------------------------------------
   // PANEL
-  // -----------------------------------------------
   &__panel {
-    background: $glass-bg-heavy;
-    backdrop-filter: blur($glass-blur);
-    border: 1px solid $glass-border;
+    background: $color-white;
+    border: $border-width solid $border-color;
     border-radius: $border-radius-xl;
-    padding: $spacing-2xl;
-    box-shadow: $shadow-md;
-    animation: fadeInUp 300ms $ease-out-expo both;
+    padding: $spacing-xl;
+    box-shadow: $shadow-sm;
 
-    @media (max-width: $breakpoint-sm) {
-      padding: $spacing-lg;
-    }
+    @media (max-width: $breakpoint-sm) { padding: $spacing-lg; }
   }
 
   &__panel-header {
     margin-bottom: $spacing-xl;
     padding-bottom: $spacing-lg;
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      @include gradient-divider;
-    }
+    border-bottom: 1px solid $border-color-light;
   }
 
   &__panel-title {
-    font-family: $font-primary;
-    font-size: $font-size-md;
+    font-size: $font-size-lg;
     font-weight: $font-weight-bold;
     color: $color-secondary;
     margin-bottom: $spacing-xs;
-    letter-spacing: $letter-spacing-tight;
   }
 
   &__panel-desc {
     font-size: $font-size-sm;
     color: $color-gray-400;
-    line-height: $line-height-relaxed;
   }
 
-  // -----------------------------------------------
   // FORM
-  // -----------------------------------------------
   &__form {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-lg;
   }
 
@@ -339,14 +234,11 @@
     grid-template-columns: 1fr 1fr;
     gap: $spacing-lg;
 
-    @media (max-width: $breakpoint-md) {
-      grid-template-columns: 1fr;
-    }
+    @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
   }
 
   &__field {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-xs;
   }
 
@@ -354,13 +246,13 @@
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
     color: $color-gray-500;
-    letter-spacing: $letter-spacing-wide;
     text-transform: uppercase;
+    letter-spacing: $letter-spacing-wide;
   }
 
   &__input {
     width: 100%;
-    height: 48px;
+    height: 44px;
     padding: 0 $spacing-md;
     font-family: $font-primary;
     font-size: $font-size-base;
@@ -369,22 +261,11 @@
     border: 1px solid $border-color;
     border-radius: $border-radius-md;
     outline: none;
-    transition: all 250ms $ease-out-quart;
+    transition: all $transition-fast;
 
-    &::placeholder {
-      color: $color-gray-300;
-    }
-
-    &:hover {
-      border-color: $border-color-medium;
-      background: rgba(255, 255, 255, 0.8);
-    }
-
-    &:focus {
-      border-color: $color-primary;
-      background: $color-white;
-      box-shadow: 0 0 0 4px $color-primary-ghost, $shadow-sm;
-    }
+    &::placeholder { color: $color-gray-300; }
+    &:hover { border-color: $border-color-medium; background: $color-white; }
+    &:focus { border-color: $color-primary; background: $color-white; box-shadow: 0 0 0 3px $color-primary-ghost; }
 
     &--prefixed {
       padding-left: 0;
@@ -403,22 +284,20 @@
     @include flex-center;
     padding: 0 $spacing-sm 0 $spacing-md;
     font-size: $font-size-base;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-medium;
     color: $color-gray-400;
     background: $color-gray-100;
     border: 1px solid $border-color;
     border-right: none;
     border-radius: $border-radius-md 0 0 $border-radius-md;
-    height: 48px;
+    height: 44px;
   }
 
   &__input-password {
     position: relative;
     display: flex;
 
-    .admin-profile__input {
-      padding-right: 48px;
-    }
+    .admin-profile__input { padding-right: 48px; }
   }
 
   &__pw-toggle {
@@ -426,28 +305,22 @@
     right: 4px;
     top: 50%;
     transform: translateY(-50%);
-    width: 38px;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 36px;
+    height: 36px;
+    @include flex-center;
     background: transparent;
     border: none;
     color: $color-gray-300;
     cursor: pointer;
-    transition: all 200ms;
     border-radius: $border-radius-sm;
+    transition: all $transition-fast;
 
-    &:hover {
-      color: $color-gray-600;
-      background: $color-gray-50;
-    }
+    &:hover { color: $color-gray-600; background: $color-gray-50; }
   }
 
   &__field-error {
     font-size: $font-size-xs;
     color: $color-error-dark;
-    margin-top: $spacing-xs;
     display: flex;
     align-items: center;
     gap: $spacing-2xs;
@@ -462,9 +335,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // FORM ACTIONS
-  // -----------------------------------------------
   &__form-actions {
     display: flex;
     justify-content: flex-end;
@@ -472,104 +342,71 @@
     border-top: 1px solid $border-color-light;
   }
 
-  // -----------------------------------------------
-  // BUTTONS
-  // -----------------------------------------------
   &__btn {
     display: inline-flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: 12px $spacing-2xl;
+    padding: $spacing-sm $spacing-xl;
     font-family: $font-primary;
     font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
+    font-weight: $font-weight-semibold;
     border: none;
     border-radius: $border-radius-md;
     cursor: pointer;
-    transition: all 250ms $ease-out-quart;
-    letter-spacing: $letter-spacing-normal;
-    min-height: 48px;
+    transition: all $transition-fast;
+    min-height: 44px;
 
     &--primary {
-      background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+      background: $color-primary;
       color: $color-white;
-      box-shadow: $shadow-sm, 0 4px 14px rgba(45, 90, 61, 0.2);
 
-      &:hover:not(:disabled) {
-        background: linear-gradient(135deg, $color-primary-light, $color-primary);
-        box-shadow: $shadow-md, 0 6px 20px rgba(45, 90, 61, 0.25);
-        transform: translateY(-2px);
-      }
-
-      &:active:not(:disabled) {
-        transform: translateY(0);
-        box-shadow: $shadow-xs;
-        transition-duration: 80ms;
-      }
-
-      &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
+      &:hover:not(:disabled) { background: $color-primary-dark; box-shadow: $shadow-colored-primary; }
+      &:disabled { opacity: 0.6; cursor: not-allowed; }
     }
   }
 
-  // -----------------------------------------------
-  // SESSION INFO GRID
-  // -----------------------------------------------
+  // SESSION
   &__session-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: $spacing-md;
 
-    @media (max-width: $breakpoint-sm) {
-      grid-template-columns: 1fr;
-    }
+    @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
   }
 
   &__session-item {
     display: flex;
     align-items: flex-start;
     gap: $spacing-md;
-    padding: $spacing-lg;
+    padding: $spacing-md;
     background: $color-gray-50;
     border: 1px solid $border-color-light;
-    border-radius: $border-radius-lg;
-    transition: all 250ms $ease-out-quart;
+    border-radius: $border-radius-md;
+    transition: all $transition-fast;
 
-    &:hover {
-      background: $color-white;
-      border-color: $border-color;
-      box-shadow: $shadow-sm;
-      transform: translateY(-1px);
-    }
+    &:hover { background: $color-white; box-shadow: $shadow-sm; }
   }
 
   &__session-icon {
     @include flex-center;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-md;
     background: $color-primary-ghost;
     color: $color-primary;
 
-    &--status {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
+    &--status { background: $color-success-bg; color: $color-success-dark; }
   }
 
   &__session-content {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-2xs;
     min-width: 0;
   }
 
   &__session-label {
     font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
     color: $color-gray-400;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wide;
@@ -583,24 +420,17 @@
     &--badge {
       display: inline-block;
       font-size: $font-size-xs;
-      font-weight: $font-weight-semibold;
       color: $color-primary;
       background: $color-primary-ghost;
       padding: $spacing-2xs $spacing-sm;
       border-radius: $border-radius-full;
       text-transform: uppercase;
-      letter-spacing: $letter-spacing-wide;
       width: fit-content;
     }
 
-    &--active {
-      color: $color-success-dark;
-    }
+    &--active { color: $color-success-dark; }
   }
 
-  // -----------------------------------------------
-  // SPINNER
-  // -----------------------------------------------
   &__spinner {
     width: 18px;
     height: 18px;
@@ -609,14 +439,6 @@
     border-radius: 50%;
     animation: admin-profile-spin 0.7s linear infinite;
   }
-}
-
-// -----------------------------------------------
-// KEYFRAMES
-// -----------------------------------------------
-@keyframes admin-profile-pulse-ring {
-  0%, 100% { opacity: 0.15; transform: scale(1); }
-  50% { opacity: 0.25; transform: scale(1.04); }
 }
 
 @keyframes admin-profile-spin {
