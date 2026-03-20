@@ -148,12 +148,42 @@ def _render_message(template, **kwargs):
     return msg
 
 
+def _prepend_intro_if_first_contact(db, msg, client, phone, tenant_name):
+    """If this is the first ever message to this client, prepend 'Soy Lina de {negocio}'.
+    Checks if there are any prior WhatsApp messages in their conversation."""
+    if not phone:
+        return msg
+    conv = _find_conv_by_phone(db, phone)
+    if conv:
+        prev_count = db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id == conv.id).count()
+        if prev_count > 0:
+            return msg  # Not first contact
+    # First contact — add introduction
+    client_first = (client.name or "").split()[0] if client else ""
+    intro = f"Hola {client_first}! Soy Lina de {tenant_name} 👋\n\n"
+    return intro + msg
+
+
 def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
     """Send WhatsApp message and log the execution.
-    Uses template if configured, otherwise text (only within 24h window)."""
+    Uses template if configured, otherwise text (only within 24h window).
+    Auto-prepends intro if first contact with client."""
     from scheduler import _send_whatsapp_sync, _store_outbound_message, _create_conversation_for_client
 
     conv = _find_conv_by_phone(db, phone)
+
+    # Auto-introduce on first contact
+    tenant = db.query(Tenant).filter(Tenant.id == workflow.tenant_id).first()
+    tenant_name = tenant.name if tenant else ""
+    if conv:
+        prev_count = db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id == conv.id).count()
+        if prev_count == 0 and client:
+            client_first = (client.name or "").split()[0]
+            message = f"Hola {client_first}! Soy Lina de {tenant_name} 👋\n\n" + message
+    elif client:
+        # No conversation yet — will create below, but message needs intro
+        client_first = (client.name or "").split()[0]
+        message = f"Hola {client_first}! Soy Lina de {tenant_name} 👋\n\n" + message
 
     # If no conversation exists but client has phone, create one
     if not conv and client and client.phone:
