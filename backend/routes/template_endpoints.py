@@ -218,9 +218,14 @@ async def reset_templates():
         db.close()
 
 
+_last_sync_time = None
+
 @router.get("")
 async def list_templates(tenant_id: int = None, status: str = None):
-    """List all message templates. Auto-seeds if none exist."""
+    """List all message templates. Auto-syncs with Meta every 60 seconds."""
+    global _last_sync_time
+    import time as _time
+
     db = SessionLocal()
     try:
         tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first() if tenant_id else db.query(Tenant).filter(Tenant.is_active == True).first()
@@ -232,6 +237,37 @@ async def list_templates(tenant_id: int = None, status: str = None):
             seed_templates_for_tenant(tenant.id)
             db.close()
             db = SessionLocal()
+
+        # Auto-sync with Meta every 60 seconds (non-blocking)
+        now = _time.time()
+        if _last_sync_time is None or (now - _last_sync_time) > 60:
+            _last_sync_time = now
+            try:
+                wa_business_id = tenant.wa_business_account_id or os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+                wa_token = tenant.wa_access_token or os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+                if wa_business_id and wa_token:
+                    import httpx as _httpx
+                    with _httpx.Client(timeout=10) as _client:
+                        resp = _client.get(
+                            f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
+                            headers={"Authorization": f"Bearer {wa_token}"},
+                            params={"limit": 250},
+                        )
+                        meta_data = resp.json().get("data", [])
+                        meta_by_name = {mt.get("name", ""): mt.get("status", "").upper() for mt in meta_data}
+                        _status_map = {"APPROVED": "approved", "PENDING": "pending", "REJECTED": "rejected", "PAUSED": "inactive", "DISABLED": "inactive"}
+                        all_db = db.query(MessageTemplate).filter(MessageTemplate.tenant_id == tenant.id).all()
+                        for tpl in all_db:
+                            ms = meta_by_name.get(tpl.slug)
+                            if ms:
+                                ns = _status_map.get(ms, tpl.status)
+                                if ns != tpl.status:
+                                    print(f"[TEMPLATE SYNC] {tpl.slug}: {tpl.status} → {ns}")
+                                    tpl.status = ns
+                                    tpl.updated_at = datetime.utcnow()
+                        db.commit()
+            except Exception as sync_err:
+                print(f"[TEMPLATE SYNC] Error: {sync_err}")
 
         q = db.query(MessageTemplate).filter(
             MessageTemplate.tenant_id == tenant.id,
@@ -603,6 +639,65 @@ async def check_meta_status(template_id: int):
         except httpx.HTTPError as e:
             raise HTTPException(status_code=500, detail=f"Error conectando con Meta: {str(e)[:100]}")
 
+    finally:
+        db.close()
+
+
+@router.post("/sync-all")
+async def sync_all_templates():
+    """Sync ALL template statuses with Meta in one call. Updates DB to match Meta."""
+    db = SessionLocal()
+    try:
+        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="No tenant")
+
+        wa_business_id = tenant.wa_business_account_id or os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+        wa_token = tenant.wa_access_token or os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+
+        if not wa_business_id or not wa_token:
+            raise HTTPException(status_code=400, detail="Credenciales WhatsApp no configuradas")
+
+        # Fetch ALL templates from Meta (up to 250)
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(
+                f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates",
+                headers={"Authorization": f"Bearer {wa_token}"},
+                params={"limit": 250},
+            )
+            data = resp.json()
+
+        meta_templates = data.get("data", [])
+        print(f"[SYNC] Found {len(meta_templates)} templates in Meta")
+
+        # Build lookup by name
+        meta_by_name = {}
+        for mt in meta_templates:
+            meta_by_name[mt.get("name", "")] = mt.get("status", "").upper()
+
+        # Update all DB templates
+        status_map = {"APPROVED": "approved", "PENDING": "pending", "REJECTED": "rejected", "PAUSED": "inactive", "DISABLED": "inactive"}
+        db_templates = db.query(MessageTemplate).filter(MessageTemplate.tenant_id == tenant.id).all()
+
+        updated = 0
+        for tpl in db_templates:
+            meta_status = meta_by_name.get(tpl.slug)
+            if meta_status:
+                new_status = status_map.get(meta_status, tpl.status)
+                if new_status != tpl.status:
+                    tpl.status = new_status
+                    tpl.updated_at = datetime.utcnow()
+                    updated += 1
+                    print(f"[SYNC] {tpl.slug}: {tpl.status} → {new_status}")
+
+        db.commit()
+
+        return {
+            "meta_count": len(meta_templates),
+            "db_count": len(db_templates),
+            "updated": updated,
+            "meta_templates": [{"name": mt.get("name"), "status": mt.get("status")} for mt in meta_templates],
+        }
     finally:
         db.close()
 
