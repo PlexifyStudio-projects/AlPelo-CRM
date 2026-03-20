@@ -245,6 +245,7 @@ async def list_templates(tenant_id: int = None, status: str = None):
             try:
                 wa_business_id = tenant.wa_business_account_id or os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
                 wa_token = tenant.wa_access_token or os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+                print(f"[TEMPLATE SYNC] WABA={wa_business_id[:10] if wa_business_id else 'EMPTY'}... Token={'YES' if wa_token else 'EMPTY'}")
                 if wa_business_id and wa_token:
                     import httpx as _httpx
                     with _httpx.Client(timeout=10) as _client:
@@ -254,6 +255,9 @@ async def list_templates(tenant_id: int = None, status: str = None):
                             params={"limit": 250},
                         )
                         meta_data = resp.json().get("data", [])
+                        print(f"[TEMPLATE SYNC] Meta returned {len(meta_data)} templates. HTTP {resp.status_code}")
+                        if resp.status_code != 200:
+                            print(f"[TEMPLATE SYNC] Error response: {resp.json()}")
                         meta_by_name = {mt.get("name", ""): mt.get("status", "").upper() for mt in meta_data}
                         _status_map = {"APPROVED": "approved", "PENDING": "pending", "REJECTED": "rejected", "PAUSED": "inactive", "DISABLED": "inactive"}
                         all_db = db.query(MessageTemplate).filter(MessageTemplate.tenant_id == tenant.id).all()
