@@ -426,8 +426,8 @@ const Automations = () => {
                     </div>
                   )}
 
-                  {/* Expanded config — only when editing */}
-                  {editingId === auto.id && (
+                  {/* Config: only show days/hour selectors inline (no message editing) */}
+                  {(auto.days_options || auto.send_hour_options) && (
                     <div className={`${B}__card-config`}>
                       {auto.days_options && (
                         <div className={`${B}__card-config-item`}>
@@ -445,10 +445,6 @@ const Automations = () => {
                           </select>
                         </div>
                       )}
-                      <div className={`${B}__card-message`}>
-                        <span className={`${B}__card-message-label`}><WhatsAppSmall /> Mensaje</span>
-                        <textarea className={`${B}__card-message-edit`} value={editMessage} onChange={e => setEditMessage(e.target.value)} rows={3} autoFocus />
-                      </div>
                     </div>
                   )}
 
@@ -458,16 +454,7 @@ const Automations = () => {
                       <span className={`${B}__card-stat`}><strong>{auto.stats?.sent || 0}</strong> env.</span>
                       <span className={`${B}__card-stat`}><strong>{auto.stats?.responded || 0}</strong> resp.</span>
                     </div>
-                    <div className={`${B}__card-actions`}>
-                      {editingId === auto.id ? (
-                        <>
-                          <button className={`${B}__card-btn ${B}__card-btn--cancel`} onClick={cancelEdit}>Cancelar</button>
-                          <button className={`${B}__card-btn ${B}__card-btn--save`} onClick={() => saveEdit(auto.id)}><SaveIcon /> Guardar</button>
-                        </>
-                      ) : (
-                        <button className={`${B}__card-btn`} onClick={() => startEdit(auto)}><EditIcon /></button>
-                      )}
-                    </div>
+                    {/* No edit button — templates are Meta-approved and cannot be modified */}
                   </div>
                 </div>
               );
