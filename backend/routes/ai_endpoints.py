@@ -1809,6 +1809,282 @@ def _execute_action(action: dict, db: Session) -> str:
             f"Puedes ver el progreso en /api/lina/tasks/{lina_task.id}"
         )
 
+    # ---- TEMPLATES ----
+    if action_type == "list_templates":
+        from database.models import MessageTemplate
+        q = db.query(MessageTemplate)
+        if _tid:
+            q = q.filter(MessageTemplate.tenant_id == _tid)
+        status_filter = action.get("status")  # "approved", "pending", "draft"
+        if status_filter:
+            q = q.filter(MessageTemplate.status == status_filter)
+        templates = q.order_by(MessageTemplate.category, MessageTemplate.name).all()
+        if not templates:
+            return "No hay plantillas registradas."
+        lines = []
+        for t in templates:
+            vars_str = ", ".join(t.variables or []) if t.variables else ""
+            lines.append(f"- **{t.name}** [{t.category}] — Estado: {t.status}" + (f" | Variables: {vars_str}" if vars_str else ""))
+        return f"{len(templates)} plantillas encontradas:\n" + "\n".join(lines)
+
+    if action_type == "create_template":
+        from database.models import MessageTemplate
+        import re as _re
+        name = action.get("name", "").strip()
+        body = action.get("body", "").strip()
+        category = action.get("category", "post-servicio").strip()
+        if not name or not body:
+            return "ERROR: Necesito al menos name y body para crear una plantilla."
+        # Auto-extract variables like {{nombre}}, {{servicio}}
+        variables = list(set(_re.findall(r'\{\{(\w+)\}\}', body)))
+        slug = name.lower().replace(" ", "_").replace("-", "_")
+        tmpl = MessageTemplate(
+            tenant_id=_tid,
+            name=name,
+            slug=slug,
+            body=body,
+            category=category,
+            language="es",
+            variables=variables,
+            status="draft",
+        )
+        db.add(tmpl)
+        db.commit()
+        db.refresh(tmpl)
+        return f"Plantilla '{name}' creada (ID: {tmpl.id}, estado: draft). Variables detectadas: {variables or 'ninguna'}. Usa submit_template_to_meta para enviarla a aprobacion."
+
+    if action_type == "submit_template_to_meta":
+        from database.models import MessageTemplate
+        template_id = action.get("template_id")
+        template_name = action.get("template_name", "").strip()
+        if template_name and not template_id:
+            t = db.query(MessageTemplate).filter(MessageTemplate.name.ilike(f"%{template_name}%")).first()
+            if t:
+                template_id = t.id
+        if not template_id:
+            return "ERROR: Necesito template_id o template_name para enviar a Meta."
+        tmpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
+        if not tmpl:
+            return f"ERROR: No encontre la plantilla #{template_id}."
+        # Call Meta API to submit template
+        from routes._helpers import get_wa_token
+        from database.models import Tenant
+        tenant = db.query(Tenant).filter(Tenant.id == (_tid or 1)).first()
+        wa_token = get_wa_token(db, _tid)
+        waba_id = tenant.wa_business_account_id if tenant else os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+        if not wa_token or not waba_id:
+            return "ERROR: No hay credenciales de WhatsApp configuradas para enviar a Meta."
+        api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+        # Build Meta template payload
+        components = [{"type": "BODY", "text": tmpl.body}]
+        meta_category = "MARKETING" if tmpl.category in ("promocion", "reactivacion", "fidelizacion") else "UTILITY"
+        payload = {
+            "name": tmpl.slug or tmpl.name.lower().replace(" ", "_"),
+            "language": tmpl.language or "es",
+            "category": meta_category,
+            "components": components,
+        }
+        try:
+            resp = httpx.post(
+                f"https://graph.facebook.com/{api_version}/{waba_id}/message_templates",
+                headers={"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"},
+                json=payload, timeout=15,
+            )
+            data = resp.json()
+            if resp.status_code == 200 and "id" in data:
+                tmpl.meta_template_id = data["id"]
+                tmpl.status = "pending"
+                db.commit()
+                return f"Plantilla '{tmpl.name}' enviada a Meta para aprobacion (ID Meta: {data['id']}). Estado: pending. Meta tarda entre minutos y 24h en aprobar."
+            else:
+                error_msg = data.get("error", {}).get("message", str(data)[:200])
+                return f"ERROR al enviar a Meta: {error_msg}"
+        except Exception as e:
+            return f"ERROR al conectar con Meta: {str(e)[:150]}"
+
+    if action_type == "check_template_status":
+        from database.models import MessageTemplate
+        template_id = action.get("template_id")
+        template_name = action.get("template_name", "").strip()
+        if template_name and not template_id:
+            t = db.query(MessageTemplate).filter(MessageTemplate.name.ilike(f"%{template_name}%")).first()
+            if t:
+                template_id = t.id
+        if not template_id:
+            return "ERROR: Necesito template_id o template_name."
+        tmpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
+        if not tmpl:
+            return f"ERROR: No encontre la plantilla #{template_id}."
+        return f"Plantilla '{tmpl.name}': estado={tmpl.status}, categoria={tmpl.category}, variables={tmpl.variables or []}"
+
+    # ---- WORKFLOWS / AUTOMATIONS ----
+    if action_type == "list_workflows":
+        from database.models import WorkflowTemplate
+        q = db.query(WorkflowTemplate)
+        if _tid:
+            q = q.filter(WorkflowTemplate.tenant_id == _tid)
+        workflows = q.all()
+        if not workflows:
+            return "No hay automatizaciones configuradas."
+        lines = []
+        for w in workflows:
+            status = "✅ Activo" if w.is_enabled else "⏸ Desactivado"
+            tmpl_name = w.config.get("template_name", "sin plantilla") if w.config else "sin plantilla"
+            lines.append(f"- **{w.name}** ({w.trigger_type}) — {status} | Plantilla: {tmpl_name}")
+        return f"{len(workflows)} automatizaciones:\n" + "\n".join(lines)
+
+    if action_type == "toggle_workflow":
+        from database.models import WorkflowTemplate
+        workflow_id = action.get("workflow_id")
+        workflow_name = action.get("workflow_name", "").strip()
+        enabled = action.get("enabled")  # True/False
+        if workflow_name and not workflow_id:
+            w = db.query(WorkflowTemplate).filter(WorkflowTemplate.name.ilike(f"%{workflow_name}%")).first()
+            if w:
+                workflow_id = w.id
+        if not workflow_id:
+            return "ERROR: Necesito workflow_id o workflow_name."
+        workflow = db.query(WorkflowTemplate).filter(WorkflowTemplate.id == workflow_id).first()
+        if not workflow:
+            return f"ERROR: No encontre la automatizacion #{workflow_id}."
+        if enabled is not None:
+            workflow.is_enabled = bool(enabled)
+        else:
+            workflow.is_enabled = not workflow.is_enabled
+        db.commit()
+        status = "activada" if workflow.is_enabled else "desactivada"
+        return f"Automatizacion '{workflow.name}' {status}."
+
+    if action_type == "update_workflow":
+        from database.models import WorkflowTemplate
+        workflow_id = action.get("workflow_id")
+        workflow_name = action.get("workflow_name", "").strip()
+        if workflow_name and not workflow_id:
+            w = db.query(WorkflowTemplate).filter(WorkflowTemplate.name.ilike(f"%{workflow_name}%")).first()
+            if w:
+                workflow_id = w.id
+        if not workflow_id:
+            return "ERROR: Necesito workflow_id o workflow_name."
+        workflow = db.query(WorkflowTemplate).filter(WorkflowTemplate.id == workflow_id).first()
+        if not workflow:
+            return f"ERROR: No encontre la automatizacion #{workflow_id}."
+        if action.get("message"):
+            workflow.message = action["message"]
+        if action.get("config"):
+            workflow.config = {**(workflow.config or {}), **action["config"]}
+        if action.get("is_enabled") is not None:
+            workflow.is_enabled = bool(action["is_enabled"])
+        db.commit()
+        return f"Automatizacion '{workflow.name}' actualizada."
+
+    # ---- CAMPAIGNS ----
+    if action_type == "create_campaign":
+        from database.models import Campaign
+        name = action.get("name", "").strip()
+        campaign_type = action.get("type", "reactivation").strip()
+        if not name:
+            return "ERROR: Necesito al menos el nombre de la campana."
+        campaign = Campaign(
+            tenant_id=_tid,
+            name=name,
+            type=campaign_type,
+            status="draft",
+            filters=action.get("filters", {}),
+            message=action.get("message", ""),
+            template_name=action.get("template_name", ""),
+        )
+        db.add(campaign)
+        db.commit()
+        db.refresh(campaign)
+        return f"Campana '{name}' creada (ID: {campaign.id}, tipo: {campaign_type}, estado: draft). Usa send_campaign para ejecutarla."
+
+    if action_type == "list_campaigns":
+        from database.models import Campaign
+        q = db.query(Campaign)
+        if _tid:
+            q = q.filter(Campaign.tenant_id == _tid)
+        campaigns = q.order_by(Campaign.created_at.desc()).limit(20).all()
+        if not campaigns:
+            return "No hay campanas registradas."
+        lines = []
+        for c in campaigns:
+            lines.append(f"- **{c.name}** (ID: {c.id}) — Tipo: {c.type}, Estado: {c.status}, Enviados: {c.sent_count or 0}")
+        return f"{len(campaigns)} campanas:\n" + "\n".join(lines)
+
+    if action_type == "send_campaign":
+        campaign_id = action.get("campaign_id")
+        if not campaign_id:
+            return "ERROR: Necesito campaign_id para enviar la campana."
+        from database.models import Campaign
+        campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+        if not campaign:
+            return f"ERROR: No encontre la campana #{campaign_id}."
+        if campaign.status == "sent":
+            return f"La campana '{campaign.name}' ya fue enviada ({campaign.sent_count} mensajes)."
+        # Delegate to campaign send endpoint logic
+        return f"Para enviar la campana '{campaign.name}' (ID: {campaign.id}), el admin debe ir a Campanas > '{campaign.name}' > Enviar. Por seguridad, el envio masivo requiere confirmacion manual del admin."
+
+    # ---- FINANCES ----
+    if action_type == "get_financial_summary":
+        from database.models import VisitHistory, Expense
+        from sqlalchemy import func
+        today = datetime.now().date()
+        month_start = today.replace(day=1)
+        # Revenue this month (from visits)
+        q_rev = db.query(func.sum(VisitHistory.amount)).filter(VisitHistory.visited_at >= month_start)
+        if _tid:
+            q_rev = q_rev.filter(VisitHistory.tenant_id == _tid)
+        revenue = q_rev.scalar() or 0
+        # Expenses this month
+        q_exp = db.query(func.sum(Expense.amount)).filter(Expense.date >= month_start)
+        if _tid:
+            q_exp = q_exp.filter(Expense.tenant_id == _tid)
+        expenses = q_exp.scalar() or 0
+        # Visit count
+        q_visits = db.query(func.count(VisitHistory.id)).filter(VisitHistory.visited_at >= month_start)
+        if _tid:
+            q_visits = q_visits.filter(VisitHistory.tenant_id == _tid)
+        visit_count = q_visits.scalar() or 0
+        profit = revenue - expenses
+        return (
+            f"Resumen financiero del mes ({today.strftime('%B %Y')}):\n"
+            f"- Ingresos: ${revenue:,.0f} COP ({visit_count} visitas)\n"
+            f"- Gastos: ${expenses:,.0f} COP\n"
+            f"- Ganancia neta: ${profit:,.0f} COP"
+        )
+
+    if action_type == "create_expense":
+        from database.models import Expense
+        description = action.get("description", "").strip()
+        amount = action.get("amount", 0)
+        category = action.get("category", "general").strip()
+        if not description or not amount:
+            return "ERROR: Necesito descripcion y monto para crear un gasto."
+        expense = Expense(
+            tenant_id=_tid,
+            description=description,
+            amount=float(amount),
+            category=category,
+            date=datetime.now().date(),
+        )
+        db.add(expense)
+        db.commit()
+        return f"Gasto registrado: '{description}' por ${float(amount):,.0f} COP (categoria: {category})."
+
+    if action_type == "list_expenses":
+        from database.models import Expense
+        q = db.query(Expense)
+        if _tid:
+            q = q.filter(Expense.tenant_id == _tid)
+        expenses = q.order_by(Expense.date.desc()).limit(20).all()
+        if not expenses:
+            return "No hay gastos registrados este periodo."
+        lines = []
+        for e in expenses:
+            lines.append(f"- {e.date}: {e.description} — ${e.amount:,.0f} COP ({e.category})")
+        total = sum(e.amount for e in expenses)
+        return f"{len(expenses)} gastos recientes (total: ${total:,.0f} COP):\n" + "\n".join(lines)
+
     return f"ERROR: Accion desconocida '{action_type}'"
 
 
@@ -2663,6 +2939,10 @@ CAPACIDADES (tienes control total del CRM):
 - ANTI-ALUCINACION: NUNCA inventes datos que no ves en los resultados reales. Si buscas un cliente y no aparece, di "no lo encontre". Si lees un chat y no ves una mencion, di "no encontre esa mencion". NUNCA cambies tu respuesta de "no existe" a "si existe" o viceversa a menos que hayas hecho una busqueda DIFERENTE con datos NUEVOS. Si te equivocas, admitelo UNA vez y corrige — no cambies de version multiples veces.
 - CONSISTENCIA: Antes de responder, verifica que tu respuesta no contradiga algo que dijiste hace 1-2 mensajes. Si cambias de opinion, explica POR QUE con datos concretos.
 - LECTURA COMPLETA: Cuando uses get_chat_messages, lee TODO el resultado de arriba a abajo ANTES de responder. No respondas con el primer dato que veas — analiza el chat COMPLETO primero. Busca nombres, servicios, fechas, pedidos especificos. Si el admin dice "esta en el chat", LEELO COMPLETO otra vez — probablemente se te paso algo.
+- Plantillas WhatsApp: listar, crear nuevas, enviar a Meta para aprobacion, verificar estado
+- Automatizaciones: listar workflows, activar/desactivar, configurar (recordatorios, reactivacion, bienvenida, etc.)
+- Campañas: crear campañas, listar, ver stats. El ENVIO masivo requiere confirmacion del admin por seguridad.
+- Finanzas: resumen mensual (ingresos/gastos/ganancia), registrar gastos, listar gastos
 - Config: cambiar personalidad, modelo, temperatura, tokens
 
 WHATSAPP — REGLA DE 24H:
@@ -2714,6 +2994,27 @@ WhatsApp:
   toggle_conversation_ai: search_name|phone, enable (bool)
   tag_conversation: search_name|phone, tags (list)
   delete_conversation: search_name|phone
+
+Plantillas WhatsApp:
+  list_templates: status? (approved/pending/draft) — Lista todas las plantillas
+  create_template: name, body, category? (recordatorio/post-servicio/reactivacion/fidelizacion/promocion/bienvenida/interno) — Crea plantilla nueva (estado: draft). Usa {{variable}} para variables.
+  submit_template_to_meta: template_id|template_name — Envia plantilla a Meta para aprobacion
+  check_template_status: template_id|template_name — Consulta estado actual de una plantilla
+
+Automatizaciones:
+  list_workflows — Lista todas las automatizaciones con estado y plantilla asignada
+  toggle_workflow: workflow_id|workflow_name, enabled? (bool) — Activa/desactiva una automatizacion
+  update_workflow: workflow_id|workflow_name, message?, config?, is_enabled? — Actualiza configuracion
+
+Campañas:
+  list_campaigns — Lista todas las campanas
+  create_campaign: name, type? (reactivation/promotion/retention), message?, template_name?, filters? ({status, days_inactive, service_name, min_visits}) — Crea campana nueva
+  send_campaign: campaign_id — Solicita envio (requiere confirmacion del admin por seguridad)
+
+Finanzas:
+  get_financial_summary — Resumen del mes: ingresos, gastos, ganancia neta, numero de visitas
+  create_expense: description, amount, category? (nomina/servicios/productos/arriendo/marketing/general) — Registra un gasto
+  list_expenses — Lista ultimos 20 gastos
 
 Config:
   update_personality: system_prompt
