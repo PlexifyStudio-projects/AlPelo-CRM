@@ -57,6 +57,8 @@ def _run_migrations(engine):
         # Staff login credentials
         ("staff", "username", "VARCHAR"),
         ("staff", "password", "VARCHAR"),
+        # Meta OAuth token expiry
+        ("tenant", "wa_token_expires_at", "TIMESTAMP"),
     ]
 
     for table, column, col_type in migrations:

@@ -234,6 +234,7 @@ class Tenant(Base):
     wa_access_token = Column(Text, nullable=True)
     wa_webhook_token = Column(String(100), nullable=True)
     wa_phone_display = Column(String(20), nullable=True)
+    wa_token_expires_at = Column(DateTime, nullable=True)  # When long-lived token expires
 
     # AI config
     ai_name = Column(String(50), nullable=False, default="Lina")

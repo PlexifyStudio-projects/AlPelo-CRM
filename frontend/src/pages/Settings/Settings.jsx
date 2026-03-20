@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Card from '../../components/common/Card/Card';
 import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
@@ -118,22 +118,126 @@ const Settings = () => {
   const [metaToken, setMetaToken] = useState('');
   const [metaPhoneId, setMetaPhoneId] = useState('');
   const [metaBizId, setMetaBizId] = useState('');
-  const [metaStatus, setMetaStatus] = useState(null); // { connected, phone_display, message }
+  const [metaStatus, setMetaStatus] = useState(null);
   const [metaSaving, setMetaSaving] = useState(false);
   const [metaChecking, setMetaChecking] = useState(false);
   const [showToken, setShowToken] = useState(false);
-  const [metaTemplates, setMetaTemplates] = useState(null); // { templates, approved, pending, rejected }
+  const [metaTemplates, setMetaTemplates] = useState(null);
+  const [showManualConfig, setShowManualConfig] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const popupRef = useRef(null);
+  const pollRef = useRef(null);
 
   useEffect(() => {
-    // Pre-fill from tenant config
     if (tenant?.wa_access_token) setMetaToken(tenant.wa_access_token);
     if (tenant?.wa_phone_number_id) setMetaPhoneId(tenant.wa_phone_number_id);
     if (tenant?.wa_business_account_id) setMetaBizId(tenant.wa_business_account_id);
   }, [tenant]);
 
   useEffect(() => {
-    // Check token status on load
     settingsService.getMetaTokenStatus().then(setMetaStatus).catch(() => {});
+  }, []);
+
+  // OAuth popup flow
+  const handleFacebookLogin = async () => {
+    setOauthLoading(true);
+    try {
+      const { url, redirect_uri } = await settingsService.getMetaAuthUrl();
+
+      // Open popup
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      const popup = window.open(
+        url,
+        'fb_oauth',
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+      );
+      popupRef.current = popup;
+
+      // Poll for the redirect with ?code=
+      pollRef.current = setInterval(() => {
+        try {
+          if (!popup || popup.closed) {
+            clearInterval(pollRef.current);
+            setOauthLoading(false);
+            return;
+          }
+          const popupUrl = popup.location.href;
+          if (popupUrl && popupUrl.includes('code=')) {
+            clearInterval(pollRef.current);
+            const urlParams = new URL(popupUrl).searchParams;
+            const code = urlParams.get('code');
+            popup.close();
+
+            if (code) {
+              handleExchangeToken(code);
+            } else {
+              setOauthLoading(false);
+              addNotification('No se recibio codigo de autorizacion', 'error');
+            }
+          }
+        } catch {
+          // Cross-origin — popup hasn't redirected yet, keep polling
+        }
+      }, 500);
+    } catch (err) {
+      setOauthLoading(false);
+      addNotification(err.message, 'error');
+    }
+  };
+
+  const handleExchangeToken = async (code) => {
+    try {
+      const result = await settingsService.exchangeMetaToken(code);
+      if (result.success) {
+        setMetaStatus({
+          connected: true,
+          phone_display: result.phone_display,
+          phone_number_id: result.phone_number_id,
+          business_account_id: result.business_account_id,
+          expires_at: result.expires_at,
+          days_until_expiry: result.expires_in ? Math.floor(result.expires_in / 86400) : null,
+        });
+        if (result.phone_number_id) setMetaPhoneId(result.phone_number_id);
+        if (result.business_account_id) setMetaBizId(result.business_account_id);
+        addNotification('Conectado con Facebook exitosamente', 'success');
+        loadMetaTemplates();
+      }
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setOauthLoading(false);
+    }
+  };
+
+  const handleRefreshToken = async () => {
+    setRefreshing(true);
+    try {
+      const result = await settingsService.refreshMetaToken();
+      if (result.success) {
+        setMetaStatus(prev => ({
+          ...prev,
+          expires_at: result.expires_at,
+          days_until_expiry: result.expires_in ? Math.floor(result.expires_in / 86400) : null,
+        }));
+        addNotification('Token renovado exitosamente', 'success');
+      }
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  // Cleanup popup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (popupRef.current && !popupRef.current.closed) popupRef.current.close();
+    };
   }, []);
 
   const handleSaveToken = async () => {
@@ -147,7 +251,6 @@ const Settings = () => {
       });
       setMetaStatus({ connected: result.verified, phone_display: result.phone_display });
       addNotification(result.message, result.verified ? 'success' : 'warning');
-      // Reload templates after token update
       loadMetaTemplates();
     } catch (err) {
       addNotification(err.message, 'error');
@@ -179,6 +282,17 @@ const Settings = () => {
   useEffect(() => { loadMetaTemplates(); }, []);
 
   const maskToken = (t) => t ? `${t.slice(0, 12)}...${t.slice(-8)}` : '';
+
+  const formatExpiryDate = (isoString) => {
+    if (!isoString) return null;
+    try {
+      return new Date(isoString).toLocaleDateString('es-CO', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      });
+    } catch { return null; }
+  };
+
+  const isTokenExpiringSoon = metaStatus?.days_until_expiry != null && metaStatus.days_until_expiry <= 7;
 
   const b = 'settings';
 
@@ -272,6 +386,21 @@ const Settings = () => {
 
         {/* ========== META / WHATSAPP ========== */}
         <Card title="Meta / WhatsApp Business" className={`${b}__card ${b}__card--meta`}>
+          {/* Token expiry warning banner */}
+          {metaStatus?.connected && isTokenExpiringSoon && (
+            <div className={`${b}__meta-expiry-warning`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <span>Tu token expira en {metaStatus.days_until_expiry} dia{metaStatus.days_until_expiry !== 1 ? 's' : ''}. Renovalo para mantener la conexion activa.</span>
+              <button className={`${b}__meta-expiry-renew`} onClick={handleRefreshToken} disabled={refreshing}>
+                {refreshing ? 'Renovando...' : 'Renovar ahora'}
+              </button>
+            </div>
+          )}
+
           {/* Status indicator */}
           <div className={`${b}__meta-status`}>
             <div className={`${b}__meta-status-dot ${metaStatus?.connected ? `${b}__meta-status-dot--on` : `${b}__meta-status-dot--off`}`} />
@@ -282,64 +411,131 @@ const Settings = () => {
               <span className={`${b}__meta-status-detail`}>
                 {metaStatus?.connected
                   ? `WhatsApp: ${metaStatus.phone_display || 'Activo'}`
-                  : metaStatus?.message || 'Configura tu token de acceso'
+                  : metaStatus?.message || 'Configura tu conexion con Facebook'
                 }
               </span>
             </div>
+            {metaStatus?.connected && (
+              <span className={`${b}__meta-connected-pill`}>Conectado</span>
+            )}
             <button className={`${b}__meta-check`} onClick={handleCheckStatus} disabled={metaChecking}>
               {metaChecking ? 'Verificando...' : 'Verificar conexion'}
             </button>
           </div>
 
-          {/* Token input */}
-          <div className={`${b}__meta-field`}>
-            <label>Token de acceso (Meta Business)</label>
-            <span className={`${b}__meta-hint`}>
-              Generalo en developers.facebook.com → Tu app → Configuracion de la API → Generar token de acceso
-            </span>
-            <div className={`${b}__meta-token-input`}>
-              <input
-                type={showToken ? 'text' : 'password'}
-                value={metaToken}
-                onChange={e => setMetaToken(e.target.value)}
-                placeholder="EAAxxxxxxxxxxxxxxx..."
-              />
-              <button type="button" className={`${b}__meta-eye`} onClick={() => setShowToken(!showToken)}>
-                {showToken ? 'Ocultar' : 'Ver'}
+          {/* Token expiration info */}
+          {metaStatus?.connected && metaStatus.expires_at && (
+            <div className={`${b}__meta-token-info`}>
+              <div className={`${b}__meta-token-info-row`}>
+                <span className={`${b}__meta-token-info-label`}>Token valido hasta</span>
+                <span className={`${b}__meta-token-info-date`}>
+                  {formatExpiryDate(metaStatus.expires_at)}
+                  {metaStatus.days_until_expiry != null && (
+                    <span className={`${b}__meta-token-info-days ${isTokenExpiringSoon ? `${b}__meta-token-info-days--warning` : ''}`}>
+                      ({metaStatus.days_until_expiry} dias restantes)
+                    </span>
+                  )}
+                </span>
+              </div>
+              <button
+                className={`${b}__meta-token-refresh`}
+                onClick={handleRefreshToken}
+                disabled={refreshing}
+              >
+                {refreshing ? 'Renovando...' : 'Renovar token'}
               </button>
             </div>
-          </div>
+          )}
 
-          {/* Phone Number ID + Business Account ID */}
-          <div className={`${b}__meta-row`}>
-            <div className={`${b}__meta-field`}>
-              <label>Phone Number ID</label>
-              <input
-                type="text"
-                value={metaPhoneId}
-                onChange={e => setMetaPhoneId(e.target.value)}
-                placeholder="Ej: 123456789012345"
-              />
+          {/* Facebook OAuth button */}
+          {!metaStatus?.connected && (
+            <div className={`${b}__meta-oauth`}>
+              <button
+                className={`${b}__meta-fb-btn`}
+                onClick={handleFacebookLogin}
+                disabled={oauthLoading}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                {oauthLoading ? 'Conectando...' : 'Conectar con Facebook'}
+              </button>
+              <p className={`${b}__meta-oauth-hint`}>
+                Conecta tu cuenta de Facebook para configurar WhatsApp Business automaticamente
+              </p>
             </div>
-            <div className={`${b}__meta-field`}>
-              <label>WhatsApp Business Account ID</label>
-              <input
-                type="text"
-                value={metaBizId}
-                onChange={e => setMetaBizId(e.target.value)}
-                placeholder="Ej: 123456789012345"
-              />
-            </div>
-          </div>
+          )}
 
-          <div className={`${b}__meta-actions`}>
+          {/* Manual config accordion */}
+          <div className={`${b}__meta-manual`}>
             <button
-              className={`${b}__ai-save`}
-              onClick={handleSaveToken}
-              disabled={metaSaving || !metaToken.trim()}
+              className={`${b}__meta-manual-toggle`}
+              onClick={() => setShowManualConfig(!showManualConfig)}
             >
-              {metaSaving ? 'Guardando...' : 'Guardar configuracion Meta'}
+              <svg
+                className={`${b}__meta-manual-chevron ${showManualConfig ? `${b}__meta-manual-chevron--open` : ''}`}
+                width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+              Configuracion manual (avanzado)
             </button>
+
+            {showManualConfig && (
+              <div className={`${b}__meta-manual-content`}>
+                {/* Token input */}
+                <div className={`${b}__meta-field`}>
+                  <label>Token de acceso (Meta Business)</label>
+                  <span className={`${b}__meta-hint`}>
+                    Generalo en developers.facebook.com &rarr; Tu app &rarr; Configuracion de la API &rarr; Generar token de acceso
+                  </span>
+                  <div className={`${b}__meta-token-input`}>
+                    <input
+                      type={showToken ? 'text' : 'password'}
+                      value={metaToken}
+                      onChange={e => setMetaToken(e.target.value)}
+                      placeholder="EAAxxxxxxxxxxxxxxx..."
+                    />
+                    <button type="button" className={`${b}__meta-eye`} onClick={() => setShowToken(!showToken)}>
+                      {showToken ? 'Ocultar' : 'Ver'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Phone Number ID + Business Account ID */}
+                <div className={`${b}__meta-row`}>
+                  <div className={`${b}__meta-field`}>
+                    <label>Phone Number ID</label>
+                    <input
+                      type="text"
+                      value={metaPhoneId}
+                      onChange={e => setMetaPhoneId(e.target.value)}
+                      placeholder="Ej: 123456789012345"
+                    />
+                  </div>
+                  <div className={`${b}__meta-field`}>
+                    <label>WhatsApp Business Account ID</label>
+                    <input
+                      type="text"
+                      value={metaBizId}
+                      onChange={e => setMetaBizId(e.target.value)}
+                      placeholder="Ej: 123456789012345"
+                    />
+                  </div>
+                </div>
+
+                <div className={`${b}__meta-actions`}>
+                  <button
+                    className={`${b}__ai-save`}
+                    onClick={handleSaveToken}
+                    disabled={metaSaving || !metaToken.trim()}
+                  >
+                    {metaSaving ? 'Guardando...' : 'Guardar configuracion Meta'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Approved templates from Meta */}
