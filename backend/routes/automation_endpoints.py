@@ -328,6 +328,38 @@ async def list_workflows(tenant_id: int = None):
             .all()
         )
 
+        # Auto-link approved templates to workflows (by matching workflow_type to slug)
+        _WORKFLOW_TEMPLATE_MAP = {
+            "reminder_24h": "recordatorio_cita_24h",
+            "reminder_1h": "recordatorio_cita_1h",
+            "post_visit": "gracias_visita",
+            "birthday": "feliz_cumpleanos",
+            "reactivation": "te_extranamos",
+            "no_show_followup": "seguimiento_no_show",
+            "welcome": "bienvenida_v2",
+            "auto_vip": "gracias_vip",
+            "review_request": "como_te_fue",
+        }
+        approved_slugs = set(
+            t.slug for t in db.query(MessageTemplate).filter(
+                MessageTemplate.tenant_id == tenant.id,
+                MessageTemplate.status == "approved",
+            ).all()
+        )
+        updated = False
+        for w in workflows:
+            expected_slug = _WORKFLOW_TEMPLATE_MAP.get(w.workflow_type)
+            if expected_slug and expected_slug in approved_slugs:
+                config = w.config or {}
+                if config.get("template_name") != expected_slug:
+                    config["template_name"] = expected_slug
+                    w.config = config
+                    from sqlalchemy.orm.attributes import flag_modified
+                    flag_modified(w, "config")
+                    updated = True
+        if updated:
+            db.commit()
+
         return [_serialize_workflow(w) for w in workflows]
     finally:
         db.close()

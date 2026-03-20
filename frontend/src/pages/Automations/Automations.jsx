@@ -464,56 +464,20 @@ const Automations = () => {
                       </div>
                     )}
 
-                    {/* Template selector — Meta approved + DB approved */}
+                    {/* Template status — simple, clean */}
                     {auto.channel !== 'interno' && (
                       <div className={`${B}__card-config-item ${B}__card-config-item--full`}>
-                        <span className={`${B}__card-config-label`}>Plantilla aprobada:</span>
-                        <select
-                          className={`${B}__card-config-select ${B}__card-config-select--wide`}
-                          value={auto.template_name || ''}
-                          onChange={e => handleConfigChange(auto.id, 'template_name', e.target.value)}
-                        >
-                          <option value="">— Seleccionar plantilla —</option>
-                          {metaTemplates.length > 0 && (
-                            <optgroup label="Aprobadas por Meta">
-                              {metaTemplates.map(tpl => (
-                                <option key={`meta-${tpl.name}`} value={tpl.name}>
-                                  {tpl.name} ({tpl.category})
-                                </option>
-                              ))}
-                            </optgroup>
-                          )}
-                          {approvedTemplates.length > 0 && (
-                            <optgroup label="Plantillas locales">
-                              {approvedTemplates.map(tpl => (
-                                <option key={`db-${tpl.id}`} value={tpl.slug}>
-                                  {tpl.name} ({tpl.category})
-                                </option>
-                              ))}
-                            </optgroup>
-                          )}
-                        </select>
                         {auto.template_name ? (
-                          <span className={`${B}__card-config-hint ${B}__card-config-hint--ok`}>
-                            Plantilla "{auto.template_name}" configurada — funciona siempre
+                          <span className={`${B}__card-template-ready`}>
+                            <span className={`${B}__card-template-dot ${B}__card-template-dot--ok`} />
+                            Plantilla lista para envio
                           </span>
                         ) : (
-                          <span className={`${B}__card-config-hint`}>
-                            Sin plantilla: solo funciona si el cliente escribio en las ultimas 24h
+                          <span className={`${B}__card-template-ready`}>
+                            <span className={`${B}__card-template-dot ${B}__card-template-dot--warn`} />
+                            Solo funciona dentro de las 24h de conversacion
                           </span>
                         )}
-                      </div>
-                    )}
-
-                    {/* Variables info */}
-                    {auto.variables && auto.variables.length > 0 && (
-                      <div className={`${B}__card-config-item ${B}__card-config-item--full`}>
-                        <span className={`${B}__card-config-label`}>Variables:</span>
-                        <div className={`${B}__card-variables`}>
-                          {auto.variables.map(v => (
-                            <span key={v} className={`${B}__card-variable`}>{'{{' + v + '}}'}</span>
-                          ))}
-                        </div>
                       </div>
                     )}
                   </div>

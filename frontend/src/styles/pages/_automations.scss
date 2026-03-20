@@ -668,6 +668,25 @@
     }
   }
 
+  &__card-template-ready {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: $font-weight-medium;
+    color: rgba(0, 0, 0, 0.5);
+  }
+
+  &__card-template-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    &--ok { background: $color-success; }
+    &--warn { background: $color-warning; }
+  }
+
   &__card-variables {
     display: flex;
     flex-wrap: wrap;
