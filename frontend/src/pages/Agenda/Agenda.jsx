@@ -1103,19 +1103,32 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                               e: timeToMin(a.time) + (a.duration_minutes || 30),
                               isCurrent: editingApt && a.id === editingApt.id,
                               clientName: a.client_name,
+                              type: 'staff',
                             }));
 
+                          // Client busy ranges — show when the SELECTED CLIENT has appointments with OTHER staff
+                          const clientBusyRanges = selectedClient ? modalDayApts
+                            .filter(a => a.client_id === selectedClient.id && a.staff_id !== selStaffId && a.status !== 'cancelled')
+                            .map(a => ({
+                              s: timeToMin(a.time),
+                              e: timeToMin(a.time) + (a.duration_minutes || 30),
+                              clientName: `${selectedClient.name} (con ${a.staff_name || 'otro'})`,
+                              type: 'client',
+                            })) : [];
+
+                          const allBusyRanges = [...busyRanges, ...clientBusyRanges];
+
                           // Generate ALL time slots for display (available + busy)
-                          // Visual: mark only slots that fall WITHIN the actual busy range (real occupied time)
-                          // Availability: uses computeSlots which checks if a new service would overlap
                           const allSlots = [];
                           for (let m = HOURS_START * 60; m < HOURS_END * 60; m += 15) {
-                            // Visual check: does this 15-min slot fall inside any busy range?
-                            const visualOverlap = busyRanges.find(r => m >= r.s && m < r.e);
-                            const isAvailable = slots.includes(m);
-                            const isCurrent = visualOverlap?.isCurrent || false;
-                            const isBusy = !!visualOverlap && !isCurrent;
-                            allSlots.push({ m, isAvailable, isBusy, isCurrent, busyClient: visualOverlap?.clientName });
+                            const staffOverlap = busyRanges.find(r => m >= r.s && m < r.e);
+                            const clientOverlap = clientBusyRanges.find(r => m >= r.s && m < r.e);
+                            const visualOverlap = staffOverlap || clientOverlap;
+                            const isAvailable = slots.includes(m) && !clientOverlap;
+                            const isCurrent = staffOverlap?.isCurrent || false;
+                            const isBusy = !!staffOverlap && !isCurrent;
+                            const isClientBusy = !!clientOverlap;
+                            allSlots.push({ m, isAvailable, isBusy, isCurrent, isClientBusy, busyClient: visualOverlap?.clientName });
                           }
                           const availCount = allSlots.filter(s => s.isAvailable || s.isCurrent).length;
                           const busyCount = allSlots.filter(s => s.isBusy).length;
@@ -1128,7 +1141,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                               </span>
                               {allSlots.length > 0 ? (
                                 <div className={`${b}__slots-grid`}>
-                                  {allSlots.map(({ m, isAvailable, isBusy, isCurrent, busyClient }) => {
+                                  {allSlots.map(({ m, isAvailable, isBusy, isCurrent, isClientBusy, busyClient }) => {
                                     const t = minToTime(m);
                                     const isSelected = assignment.time === t;
                                     const canClick = isAvailable || isCurrent;
@@ -1138,12 +1151,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                                           `${b}__slot-btn`,
                                           isSelected ? `${b}__slot-btn--on` : '',
                                           isBusy ? `${b}__slot-btn--busy` : '',
+                                          isClientBusy ? `${b}__slot-btn--client-busy` : '',
                                           isCurrent ? `${b}__slot-btn--current` : '',
-                                          !canClick && !isBusy ? `${b}__slot-btn--blocked` : '',
+                                          !canClick && !isBusy && !isClientBusy ? `${b}__slot-btn--blocked` : '',
                                         ].filter(Boolean).join(' ')}
                                         onClick={() => { if (canClick) updateAssignment(aIdx, { time: t }); }}
                                         disabled={!canClick}
-                                        title={isBusy ? `Ocupado: ${busyClient || ''}` : isCurrent ? 'Horario actual de esta cita' : !canClick ? 'No disponible (conflicto de horario)' : formatTime12(t)}>
+                                        title={isClientBusy ? `Cliente ocupado: ${busyClient || ''}` : isBusy ? `Staff ocupado: ${busyClient || ''}` : isCurrent ? 'Horario actual' : !canClick ? 'No disponible' : formatTime12(t)}>
                                         {formatTime12(t)}
                                       </button>
                                     );
