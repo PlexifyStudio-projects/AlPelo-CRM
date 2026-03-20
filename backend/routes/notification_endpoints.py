@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from database.connection import get_db
 from database.models import Notification
 from routes._helpers import safe_tid
-from routes.auth_middleware import get_current_user, Admin
+from middleware.auth_middleware import get_current_user
+from database.models import Admin
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
