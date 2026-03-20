@@ -151,50 +151,45 @@ def _render_message(template, **kwargs):
 def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
     """Send WhatsApp message and log the execution.
     Uses template if configured, otherwise text (only within 24h window)."""
-    from scheduler import _send_whatsapp_sync, _store_outbound_message
+    from scheduler import _send_whatsapp_sync, _store_outbound_message, _create_conversation_for_client
 
     conv = _find_conv_by_phone(db, phone)
+
+    # If no conversation exists but client has phone, create one
+    if not conv and client and client.phone:
+        conv = _create_conversation_for_client(db, client)
+
     config = workflow.config or {}
     template_name = config.get("template_name")
     template_lang = config.get("template_language", "es")
     template_params = config.get("template_params", [])
 
     # Decide: template or free-text?
+    wa_sent = False
     if template_name:
         # Use approved template (works always, even outside 24h window)
-        # Replace param placeholders with actual values from the rendered message
-        wa_sent = _send_template_sync(phone, template_name, template_lang, template_params)
+        wa_sent = _send_template_sync(phone, template_name, template_lang, template_params, db=db)
     elif conv and _is_within_24h_window(db, conv):
         # Client messaged recently — free text is OK
-        wa_sent = _send_whatsapp_sync(phone, message)
+        wa_sent = _send_whatsapp_sync(phone, message, db=db)
     else:
         # No template configured AND outside 24h window — skip with warning
-        print(f"[WORKFLOW] Skipped {workflow.workflow_type} for {phone[-4:]}: no template and outside 24h window")
+        client_name = (client.name or "").split()[0] if client else "?"
+        print(f"[WORKFLOW] Skipped {workflow.workflow_type} for {client_name}: no template and outside 24h window")
         log_event(
             "sistema",
-            f"Workflow '{workflow.name}' omitido — sin plantilla configurada",
-            detail=f"El cliente no ha escrito en 24h. Configura una plantilla aprobada de Meta para enviar este workflow.",
+            f"Workflow '{workflow.name}' omitido para {client_name}",
+            detail=f"Sin plantilla Meta aprobada y fuera de ventana 24h.",
             status="warning",
         )
         return False
 
-    # Store in conversation thread if conversation exists
+    # Store in conversation thread (once only)
     if conv:
         tag = f"workflow_{workflow.workflow_type}_{workflow.id}"
         if appointment_id:
             tag += f"_appt_{appointment_id}"
         _store_outbound_message(db, conv.id, message, wa_sent, tag=tag)
-    elif not conv and wa_sent:
-        # Template was sent but no conversation existed — it'll be created when client responds
-        pass
-
-    wa_sent = wa_sent if wa_sent is not None else False
-
-    # Store in WhatsApp messages for conversation thread
-    tag = f"workflow_{workflow.workflow_type}_{workflow.id}"
-    if appointment_id:
-        tag += f"_appt_{appointment_id}"
-    _store_outbound_message(db, conv.id, message, wa_sent, tag=tag)
 
     # Log execution
     execution = WorkflowExecution(
@@ -219,7 +214,7 @@ def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
         f"Workflow '{workflow.name}' → {client_name}",
         detail=message[:100],
         contact_name=client_name,
-        conv_id=conv.id,
+        conv_id=conv.id if conv else None,
         status="ok" if wa_sent else "error",
     )
 
@@ -246,7 +241,7 @@ def execute_reminder_24h(db, workflow, tenant):
             continue
 
         client = db.query(Client).filter(Client.id == appt.client_id).first() if appt.client_id else None
-        if client and not client.accepts_whatsapp:
+        if client and client.accepts_whatsapp is False:
             continue
 
         staff = db.query(Staff).filter(Staff.id == appt.staff_id).first()
@@ -294,7 +289,7 @@ def execute_reminder_1h(db, workflow, tenant):
             continue
 
         client = db.query(Client).filter(Client.id == appt.client_id).first() if appt.client_id else None
-        if client and not client.accepts_whatsapp:
+        if client and client.accepts_whatsapp is False:
             continue
 
         staff = db.query(Staff).filter(Staff.id == appt.staff_id).first()
@@ -342,7 +337,7 @@ def execute_post_visit(db, workflow, tenant):
             continue
 
         client = db.query(Client).filter(Client.id == appt.client_id).first() if appt.client_id else None
-        if client and not client.accepts_whatsapp:
+        if client and client.accepts_whatsapp is False:
             continue
 
         service = db.query(Service).filter(Service.id == appt.service_id).first()
@@ -480,7 +475,7 @@ def execute_no_show_followup(db, workflow, tenant):
             continue
 
         client = db.query(Client).filter(Client.id == appt.client_id).first() if appt.client_id else None
-        if client and not client.accepts_whatsapp:
+        if client and client.accepts_whatsapp is False:
             continue
 
         service = db.query(Service).filter(Service.id == appt.service_id).first()
