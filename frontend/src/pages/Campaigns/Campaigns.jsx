@@ -139,6 +139,7 @@ const Campaigns = () => {
   const [formName, setFormName] = useState('');
   const [formType, setFormType] = useState('recovery');
   const [formBody, setFormBody] = useState('');
+  const [formTemplateName, setFormTemplateName] = useState('');
   const [formSegment, setFormSegment] = useState('inactive_30');
   const [formStaffFilter, setFormStaffFilter] = useState('');
   const [formServiceFilter, setFormServiceFilter] = useState('');
@@ -708,16 +709,44 @@ const Campaigns = () => {
                     </div>
                   )}
 
+                  {/* ── Usar plantilla aprobada por Meta ── */}
+                  {(() => {
+                    const approved = templates.filter(t => t.status === 'approved');
+                    return approved.length > 0 ? (
+                      <div className={`${B}__field`}>
+                        <label className={`${B}__label`}>Usar plantilla aprobada por Meta</label>
+                        <div className={`${B}__template-list`}>
+                          {approved.map(t => (
+                            <div
+                              key={t.id}
+                              className={`${B}__template-option ${formBody === t.body ? `${B}__template-option--selected` : ''}`}
+                              onClick={() => { setFormBody(t.body); setFormTemplateName(t.slug); }}
+                            >
+                              <span className={`${B}__template-option-name`}>{t.name}</span>
+                              <span className={`${B}__template-option-body`}>{t.body.length > 80 ? t.body.slice(0, 80) + '...' : t.body}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`${B}__field`}>
+                        <div className={`${B}__no-templates`}>
+                          No hay plantillas aprobadas por Meta. Ve a Plantillas WhatsApp para crear y enviar a Meta.
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   <div className={`${B}__divider`}>
-                    <span>o escribe tu propio mensaje</span>
+                    <span>o escribe tu propio mensaje (solo funciona si el cliente escribio en las ultimas 24h)</span>
                   </div>
 
                   <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Mensaje (usa {"{{nombre}}"} para personalizar)</label>
+                    <label className={`${B}__label`}>Mensaje personalizado</label>
                     <textarea
                       className={`${B}__textarea`}
                       value={formBody}
-                      onChange={e => setFormBody(e.target.value)}
+                      onChange={e => { setFormBody(e.target.value); setFormTemplateName(''); }}
                       placeholder="Hola {{nombre}}, te extrañamos en..."
                       rows={4}
                       maxLength={500}
