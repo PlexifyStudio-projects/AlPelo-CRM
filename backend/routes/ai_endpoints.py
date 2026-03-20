@@ -3008,7 +3008,7 @@ Automatizaciones:
 
 Campañas:
   list_campaigns — Lista todas las campanas
-  create_campaign: name, type? (reactivation/promotion/retention), message?, template_name?, filters? ({status, days_inactive, service_name, min_visits}) — Crea campana nueva
+  create_campaign: name, type? (reactivation/promotion/retention), message?, template_name?, filters? (status, days_inactive, service_name, min_visits) — Crea campana nueva
   send_campaign: campaign_id — Solicita envio (requiere confirmacion del admin por seguridad)
 
 Finanzas:
