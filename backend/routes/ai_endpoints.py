@@ -524,6 +524,45 @@ def _execute_action(action: dict, db: Session) -> str:
         client_name = client_obj.name if client_obj else "?"
         return f"Tarea de {client_name} marcada como completada."
 
+    elif action_type == "list_pending_tasks":
+        # List ALL pending tasks across all clients
+        from sqlalchemy import or_
+        pending = (
+            db.query(ClientNote)
+            .filter(or_(ClientNote.content.ilike("%PENDIENTE:%"), ClientNote.content.ilike("%RECORDATORIO:%")))
+            .filter(~ClientNote.content.ilike("%COMPLETADO:%"))
+            .filter(~ClientNote.content.ilike("%EXPIRADO:%"))
+            .filter(~ClientNote.content.ilike("%FALLIDO:%"))
+            .filter(~ClientNote.content.ilike("%RESUELTO:%"))
+        )
+        if _tid:
+            pending = pending.filter(ClientNote.tenant_id == _tid)
+        pending = pending.order_by(ClientNote.created_at.desc()).limit(20).all()
+
+        if not pending:
+            return "No hay tareas pendientes. Todo al dia!"
+
+        lines = [f"Tienes {len(pending)} tarea(s) pendiente(s):"]
+        for n in pending:
+            client = db.query(Client).filter(Client.id == n.client_id).first()
+            c_name = client.name if client else "?"
+            # Extract task description
+            content = n.content
+            for prefix in ["PENDIENTE:", "RECORDATORIO:"]:
+                content = content.replace(prefix, "").strip()
+            age = ""
+            if n.created_at:
+                from datetime import datetime as _dt
+                mins = int((_dt.utcnow() - n.created_at).total_seconds() / 60)
+                if mins < 60:
+                    age = f" (hace {mins}min)"
+                elif mins < 1440:
+                    age = f" (hace {mins // 60}h)"
+                else:
+                    age = f" (hace {mins // 1440}d)"
+            lines.append(f"  - [{c_name}] {content[:100]}{age}")
+        return "\n".join(lines)
+
     # ---- STAFF ----
     elif action_type == "update_staff":
         staff = None
@@ -2577,7 +2616,7 @@ REGLAS:
 
 ACCIONES (bloques ```action``` al FINAL):
 create_client: name, phone | update_client: search_name, +campos | delete_client: search_name
-add_note: search_name, content | complete_task: search_name, keyword? (marca PENDIENTE/RECORDATORIO como COMPLETADO) | list_clients_by_filter: status?, min_days_since_visit?, limit?
+add_note: search_name, content | complete_task: search_name, keyword? (marca PENDIENTE/RECORDATORIO como COMPLETADO) | list_pending_tasks (lista TODAS tus tareas pendientes) | list_clients_by_filter: status?, min_days_since_visit?, limit?
 create_appointment: client_name, staff_name, service_name, date(YYYY-MM-DD), time(HH:MM) | update_appointment: appointment_id(NUMERO, ej: 42), +campos | delete_appointment: appointment_id(NUMERO) | list_appointments: date?, staff_name?, status?
 Campanas: list_clients_for_campaign: min_days_since_visit?, status? — Lista clientes recuperables para campanas | get_campaign_stats — Resumen de salud de clientes (inactivos, VIP, en riesgo)
 IMPORTANTE: appointment_id SIEMPRE es un NUMERO entero (ej: 42, 157). Mira los IDs en la AGENDA abajo. NUNCA inventes IDs como "appointment_id_6:35pm".
@@ -2600,6 +2639,16 @@ SEGURIDAD: No expongas credenciales/DB. Solo datos reales. Pagos: NUNCA confirme
 === FIN CONTEXTO DEL NEGOCIO ===
 
 REGLA CRITICA: NUNCA ejecutes acciones sin permiso explicito del admin. Primero informa, luego pregunta, solo ejecuta cuando diga "si/hazlo/dale/procede". Si dice "revisa X", SOLO reportas — no envias ni modificas nada.
+
+PIPELINE OBLIGATORIO EN ADMIN CHAT (igual que WhatsApp):
+Antes de responder CUALQUIER pregunta o ejecutar CUALQUIER accion:
+1. LEE el mensaje del admin — que esta pidiendo EXACTAMENTE?
+2. Si pide AGENDAR algo → VERIFICA la agenda primero (list_appointments para el dia)
+3. Si pide info sobre TAREAS → usa list_pending_tasks para ver las reales, NO inventes
+4. Si pide info sobre CLIENTES → busca en la BD, no adivines
+5. EJECUTA la accion con ```action``` y ESPERA el resultado
+6. Si el resultado dice CONFLICTO o ERROR → reporta la VERDAD, no digas "Listo"
+NUNCA confirmes algo sin verificar. NUNCA digas "ya lo hice" si no ejecutaste la accion.
 
 CAPACIDADES (tienes control total del CRM):
 - Dashboard: metricas, KPIs, resumen del dia, tendencias
@@ -2632,6 +2681,7 @@ Clientes:
   delete_client: search_name|client_id
   add_note: search_name|client_id, content
   complete_task: search_name|client_id, keyword? — Marca una tarea PENDIENTE/RECORDATORIO como COMPLETADA (actualiza la nota original, NO crea una nueva)
+  list_pending_tasks — Lista TODAS las tareas pendientes de Lina (PENDIENTE/RECORDATORIO no completadas). Usa esto cuando el admin pregunte por tareas.
   list_clients_by_filter: status?, min_days_since_visit?, max_days_since_visit?, limit?
 
 Equipo:
