@@ -401,143 +401,71 @@ const Automations = () => {
                     </label>
                   </div>
 
-                  {/* Channel + Status badges */}
-                  <div className={`${B}__card-badges`}>
-                    <span
-                      className={`${B}__card-channel`}
-                      style={{ '--channel-color': channelInfo.color }}
-                    >
-                      {channelInfo.icon} {channelInfo.label}
-                    </span>
-                    <span className={`${B}__card-status ${auto.enabled ? `${B}__card-status--active` : `${B}__card-status--inactive`}`}>
-                      <span className={`${B}__card-status-dot`} />
-                      {auto.enabled ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </div>
-
-                  {/* Impact & Description */}
+                  {/* Description — compact */}
                   {(() => {
                     const impact = WORKFLOW_IMPACT[auto.workflow_type];
-                    if (!impact) return null;
-                    return (
-                      <>
-                        <p className={`${B}__card-desc`}>{impact.description}</p>
-                        <div className={`${B}__card-impact`} style={{ '--impact-color': impact.impactColor }}>
-                          <span className={`${B}__card-impact-icon`}>{impact.impactIcon}</span>
-                          <span className={`${B}__card-impact-text`}>{impact.impact}</span>
-                        </div>
-                      </>
-                    );
+                    return impact ? (
+                      <p className={`${B}__card-desc`}>{impact.description}</p>
+                    ) : null;
                   })()}
 
-                  {/* Config row: days, send hour, template */}
-                  <div className={`${B}__card-config`}>
-                    {/* Days selector (reactivation) */}
-                    {auto.days_options && (
-                      <div className={`${B}__card-config-item`}>
-                        <span className={`${B}__card-config-label`}>Inactividad:</span>
-                        <select
-                          className={`${B}__card-config-select`}
-                          value={auto.days || 30}
-                          onChange={e => handleDaysChange(auto.id, e.target.value)}
-                        >
-                          {auto.days_options.map(d => (
-                            <option key={d} value={d}>{d} días</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                  {/* Template status pill */}
+                  {auto.channel !== 'interno' && (
+                    <div className={`${B}__card-template-ready`}>
+                      {auto.template_name ? (
+                        <>
+                          <span className={`${B}__card-template-dot ${B}__card-template-dot--ok`} />
+                          Plantilla lista
+                        </>
+                      ) : (
+                        <>
+                          <span className={`${B}__card-template-dot ${B}__card-template-dot--warn`} />
+                          Sin plantilla Meta
+                        </>
+                      )}
+                    </div>
+                  )}
 
-                    {/* Send hour selector */}
-                    {auto.send_hour_options && (
-                      <div className={`${B}__card-config-item`}>
-                        <span className={`${B}__card-config-label`}>Hora de envío:</span>
-                        <select
-                          className={`${B}__card-config-select`}
-                          value={auto.send_hour || auto.send_hour_options[0]}
-                          onChange={e => handleConfigChange(auto.id, 'send_hour', Number(e.target.value))}
-                        >
-                          {auto.send_hour_options.map(h => (
-                            <option key={h} value={h}>{h}:00 {h < 12 ? 'AM' : 'PM'}</option>
-                          ))}
-                        </select>
+                  {/* Expanded config — only when editing */}
+                  {editingId === auto.id && (
+                    <div className={`${B}__card-config`}>
+                      {auto.days_options && (
+                        <div className={`${B}__card-config-item`}>
+                          <span className={`${B}__card-config-label`}>Inactividad:</span>
+                          <select className={`${B}__card-config-select`} value={auto.days || 30} onChange={e => handleDaysChange(auto.id, e.target.value)}>
+                            {auto.days_options.map(d => (<option key={d} value={d}>{d} días</option>))}
+                          </select>
+                        </div>
+                      )}
+                      {auto.send_hour_options && (
+                        <div className={`${B}__card-config-item`}>
+                          <span className={`${B}__card-config-label`}>Hora de envío:</span>
+                          <select className={`${B}__card-config-select`} value={auto.send_hour || auto.send_hour_options[0]} onChange={e => handleConfigChange(auto.id, 'send_hour', Number(e.target.value))}>
+                            {auto.send_hour_options.map(h => (<option key={h} value={h}>{h}:00 {h < 12 ? 'AM' : 'PM'}</option>))}
+                          </select>
+                        </div>
+                      )}
+                      <div className={`${B}__card-message`}>
+                        <span className={`${B}__card-message-label`}><WhatsAppSmall /> Mensaje</span>
+                        <textarea className={`${B}__card-message-edit`} value={editMessage} onChange={e => setEditMessage(e.target.value)} rows={3} autoFocus />
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Template status — simple, clean */}
-                    {auto.channel !== 'interno' && (
-                      <div className={`${B}__card-config-item ${B}__card-config-item--full`}>
-                        {auto.template_name ? (
-                          <span className={`${B}__card-template-ready`}>
-                            <span className={`${B}__card-template-dot ${B}__card-template-dot--ok`} />
-                            Plantilla lista para envio
-                          </span>
-                        ) : (
-                          <span className={`${B}__card-template-ready`}>
-                            <span className={`${B}__card-template-dot ${B}__card-template-dot--warn`} />
-                            Solo funciona dentro de las 24h de conversacion
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Message preview / edit */}
-                  <div className={`${B}__card-message`}>
-                    <span className={`${B}__card-message-label`}>
-                      <WhatsAppSmall /> Mensaje automático
-                    </span>
-                    {editingId === auto.id ? (
-                      <textarea
-                        className={`${B}__card-message-edit`}
-                        value={editMessage}
-                        onChange={e => setEditMessage(e.target.value)}
-                        rows={4}
-                        autoFocus
-                      />
-                    ) : (
-                      <div className={`${B}__card-bubble`}>
-                        {auto.message}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer */}
+                  {/* Footer — compact stats + actions */}
                   <div className={`${B}__card-footer`}>
                     <div className={`${B}__card-stats`}>
-                      <span className={`${B}__card-stat`}>
-                        📤 <strong>{(auto.stats?.sent || 0).toLocaleString()}</strong> enviados
-                      </span>
-                      <span className={`${B}__card-stat`}>
-                        💬 <strong>{(auto.stats?.responded || 0).toLocaleString()}</strong> respondidos
-                      </span>
-                      <span className={`${B}__card-last`}>
-                        {getTimeAgo(auto.last_triggered)}
-                      </span>
+                      <span className={`${B}__card-stat`}><strong>{auto.stats?.sent || 0}</strong> env.</span>
+                      <span className={`${B}__card-stat`}><strong>{auto.stats?.responded || 0}</strong> resp.</span>
                     </div>
                     <div className={`${B}__card-actions`}>
                       {editingId === auto.id ? (
                         <>
-                          <button
-                            className={`${B}__card-btn ${B}__card-btn--cancel`}
-                            onClick={cancelEdit}
-                          >
-                            Cancelar
-                          </button>
-                          <button
-                            className={`${B}__card-btn ${B}__card-btn--save`}
-                            onClick={() => saveEdit(auto.id)}
-                          >
-                            <SaveIcon /> Guardar
-                          </button>
+                          <button className={`${B}__card-btn ${B}__card-btn--cancel`} onClick={cancelEdit}>Cancelar</button>
+                          <button className={`${B}__card-btn ${B}__card-btn--save`} onClick={() => saveEdit(auto.id)}><SaveIcon /> Guardar</button>
                         </>
                       ) : (
-                        <button
-                          className={`${B}__card-btn`}
-                          onClick={() => startEdit(auto)}
-                        >
-                          <EditIcon /> Editar
-                        </button>
+                        <button className={`${B}__card-btn`} onClick={() => startEdit(auto)}><EditIcon /></button>
                       )}
                     </div>
                   </div>

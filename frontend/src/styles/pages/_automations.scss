@@ -621,11 +621,16 @@
 
   // Template ready
   &__card-template-ready {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: $spacing-xs;
+    gap: 6px;
     font-size: $font-size-2xs;
-    font-weight: 600;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+    padding: 4px 10px;
+    background: $color-gray-50;
+    border-radius: $border-radius-full;
+    border: 1px solid $color-gray-100;
   }
 
   &__card-template-dot {
@@ -730,6 +735,7 @@
     gap: $spacing-sm;
     padding-top: $spacing-sm;
     border-top: 1px solid $color-gray-100;
+    margin-top: auto;
   }
 
   &__card-stats {
@@ -738,21 +744,67 @@
   }
 
   &__card-stat {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-variant-numeric: tabular-nums;
+
+    strong {
+      color: $color-gray-700;
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  &__card-actions {
     display: flex;
-    flex-direction: column;
-    gap: 1px;
+    gap: $spacing-xs;
+  }
 
-    span:first-child {
-      font-size: $font-size-2xs;
-      color: $color-gray-400;
+  &__card-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid $color-gray-200;
+    background: $color-white;
+    color: $color-gray-500;
+    font-size: $font-size-xs;
+    font-family: $font-primary;
+    font-weight: $font-weight-medium;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-gray-50;
+      color: $color-gray-700;
+      border-color: $color-gray-300;
     }
 
-    span:last-child {
-      font-size: $font-size-sm;
-      font-weight: 800;
-      color: $color-gray-800;
-      font-variant-numeric: tabular-nums;
+    &--save {
+      background: $color-primary;
+      color: $color-white;
+      border-color: $color-primary;
+
+      &:hover {
+        background: $color-primary-dark;
+      }
     }
+
+    &--cancel {
+      &:hover {
+        background: $color-gray-100;
+      }
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &__card-last {
+    font-size: $font-size-2xs;
+    color: $color-gray-300;
   }
 
   // ════════════════════════════════════════════════
