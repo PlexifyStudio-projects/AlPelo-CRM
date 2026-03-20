@@ -6,36 +6,14 @@
 // Intercom / Linear / Arc-inspired design
 // ============================================
 
-// --- Local design tokens ---
-$inbox-bg: $color-off-white;
-$inbox-panel-bg: $color-white;
-$inbox-border: rgba(0, 0, 0, 0.05);
-$inbox-hover: rgba(0, 0, 0, 0.025);
-$inbox-active-bg: rgba(45, 90, 61, 0.05);
-$inbox-active-border: rgba(45, 90, 61, 0.12);
-$inbox-sent-bg: rgba(45, 90, 61, 0.045);
-$inbox-sent-bg-hover: rgba(45, 90, 61, 0.08);
-$inbox-received-bg: $color-white;
-$inbox-accent: $color-primary;
-$inbox-accent-light: rgba(45, 90, 61, 0.06);
-$inbox-text: $color-secondary;
-$inbox-text-secondary: $color-gray-500;
-$inbox-text-muted: $color-gray-400;
-$inbox-radius: $border-radius-md;
-$inbox-radius-lg: $border-radius-xl;
-$inbox-radius-msg: 10px;
-$inbox-transition: 200ms $ease-out-quart;
-$inbox-ai-color: $color-accent;
-$inbox-ai-bg: $color-accent-ghost;
-
 .inbox {
   display: flex;
   height: calc(100vh - #{$header-height} - #{$spacing-xl});
-  background: $inbox-bg;
-  border-radius: $inbox-radius-lg;
+  background: $color-gray-50;
+  border-radius: $border-radius-xl;
   overflow: hidden;
   box-shadow: $shadow-xl, 0 0 0 1px rgba(0, 0, 0, 0.02);
-  animation: fadeInUp 400ms $ease-out-expo both;
+  
 
   // ===========================================
   // LIST PANEL (left)
@@ -44,8 +22,8 @@ $inbox-ai-bg: $color-accent-ghost;
     width: 360px;
     min-width: 360px;
     @include flex-column;
-    border-right: 1px solid $inbox-border;
-    background: $inbox-panel-bg;
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
+    background: $color-white;
     position: relative;
 
     @media (max-width: $breakpoint-lg) { width: 320px; min-width: 320px; }
@@ -64,11 +42,11 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__list-title {
-    font-family: $font-primary;
-    font-size: $font-size-md;
-    font-weight: $font-weight-bold;
-    color: $inbox-text;
-    letter-spacing: $letter-spacing-tight;
+    font-family: $font-heading;
+    font-size: $font-size-lg;
+    font-weight: 800;
+    color: $color-gray-900;
+    letter-spacing: -0.03em;
   }
 
   &__list-header-actions {
@@ -87,11 +65,11 @@ $inbox-ai-bg: $color-accent-ghost;
     color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-md;
-    transition: all $inbox-transition;
+    transition: all 200ms $ease-out-quart;
 
     &:hover {
       background: $color-gray-50;
-      color: $inbox-accent;
+      color: $color-primary;
       transform: scale(1.05);
     }
 
@@ -100,8 +78,8 @@ $inbox-ai-bg: $color-accent-ghost;
     }
 
     &--active {
-      background: $inbox-accent-light;
-      color: $inbox-accent;
+      background: $color-primary-light;
+      color: $color-primary;
     }
   }
 
@@ -111,7 +89,7 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 20px;
     padding: 0 6px;
     border-radius: $border-radius-full;
-    background: $inbox-accent;
+    background: $color-primary;
     color: $color-white;
     font-size: 11px;
     font-weight: $font-weight-bold;
@@ -131,20 +109,20 @@ $inbox-ai-bg: $color-accent-ghost;
     left: 28px;
     top: 50%;
     transform: translateY(-50%);
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     pointer-events: none;
     margin-top: -4px;
-    transition: color $inbox-transition;
+    transition: color 200ms $ease-out-quart;
   }
 
   &__search-input {
     width: 100%;
     padding: 10px 12px 10px 38px;
-    border-radius: $border-radius-md;
-    border: 1px solid transparent;
+    border-radius: $border-radius-xl;
+    border: 2px solid transparent;
     background: $color-gray-50;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     transition: all 250ms $ease-out-quart;
     font-family: $font-primary;
     letter-spacing: $letter-spacing-normal;
@@ -153,9 +131,9 @@ $inbox-ai-bg: $color-accent-ghost;
 
     &:focus {
       outline: none;
-      background: $inbox-panel-bg;
-      border-color: rgba($inbox-accent, 0.25);
-      box-shadow: 0 0 0 4px rgba($inbox-accent, 0.05), $shadow-xs;
+      background: $color-white;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 4px rgba($color-primary, 0.08), $shadow-xs;
     }
   }
 
@@ -171,13 +149,13 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__filter {
-    padding: 5px 14px;
+    padding: 6px 16px;
     border-radius: $border-radius-full;
-    border: 1px solid transparent;
+    border: 1.5px solid transparent;
     background: transparent;
     font-size: $font-size-xs;
     font-weight: $font-weight-medium;
-    color: $inbox-text-secondary;
+    color: $color-gray-500;
     cursor: pointer;
     transition: all 250ms $ease-out-quart;
     font-family: $font-primary;
@@ -186,19 +164,19 @@ $inbox-ai-bg: $color-accent-ghost;
     letter-spacing: $letter-spacing-normal;
 
     &:hover {
-      background: $color-gray-50;
-      color: $inbox-text;
+      background: $color-gray-100;
+      color: $color-gray-900;
     }
 
     &--active {
-      background: $inbox-accent;
+      background: $color-gray-900;
       color: $color-white;
       border-color: transparent;
-      font-weight: $font-weight-semibold;
-      box-shadow: $shadow-xs, 0 2px 8px rgba(45, 90, 61, 0.2);
+      font-weight: $font-weight-bold;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 
       &:hover {
-        background: $color-primary-light;
+        background: $color-gray-800;
         color: $color-white;
       }
     }
@@ -215,8 +193,8 @@ $inbox-ai-bg: $color-accent-ghost;
   &__conv-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px $spacing-sm;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
     cursor: pointer;
     transition: all 180ms $ease-out-quart;
     position: relative;
@@ -228,43 +206,42 @@ $inbox-ai-bg: $color-accent-ghost;
     }
 
     &:hover {
-      background: $inbox-hover;
+      background: $color-gray-50;
     }
 
     &--active {
-      background: $inbox-active-bg;
-      box-shadow: inset 0 0 0 1px rgba(45, 90, 61, 0.06);
+      background: rgba(59, 130, 246, 0.04);
 
       &:hover {
-        background: rgba(45, 90, 61, 0.065);
+        background: rgba(59, 130, 246, 0.06);
       }
 
-      // Subtle left accent bar
+      // Subtle left blue accent bar
       &::before {
         content: '';
         position: absolute;
         left: 0;
-        top: 10px;
-        bottom: 10px;
+        top: 8px;
+        bottom: 8px;
         width: 3px;
         border-radius: 0 3px 3px 0;
-        background: linear-gradient(180deg, $inbox-accent, $color-primary-light);
-        opacity: 0.7;
+        background: #3B82F6;
+        opacity: 1;
       }
     }
 
     &--unread {
-      .inbox__conv-name { font-weight: $font-weight-semibold; color: $color-secondary; }
-      .inbox__conv-time { color: $inbox-accent; font-weight: $font-weight-semibold; }
+      .inbox__conv-name { font-weight: 700; color: $color-gray-900; }
+      .inbox__conv-time { color: $color-primary; font-weight: 700; }
       .inbox__conv-preview { color: $color-gray-500; }
     }
   }
 
   &__conv-avatar {
     @include flex-center;
-    width: 46px;
-    height: 46px;
-    border-radius: $border-radius-lg;
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-full;
     background: $color-gray-200;
     color: $color-white;
     font-size: $font-size-xs;
@@ -274,11 +251,11 @@ $inbox-ai-bg: $color-accent-ghost;
     letter-spacing: 0.5px;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 
     &--vip {
       background: linear-gradient(135deg, $color-accent, $color-accent-dark);
-      box-shadow: 0 2px 12px rgba(201, 168, 76, 0.25);
+      box-shadow: 0 2px 12px rgba(14, 165, 233, 0.25);
     }
   }
 
@@ -319,8 +296,8 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__conv-name {
     font-size: $font-size-sm;
-    font-weight: $font-weight-regular;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
     @include truncate;
     line-height: $line-height-snug;
     display: flex;
@@ -343,7 +320,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__conv-time {
     font-size: 10px;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     white-space: nowrap;
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
@@ -357,7 +334,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__conv-preview {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     @include truncate;
     flex: 1;
     line-height: 1.4;
@@ -383,14 +360,14 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__conv-pin-icon {
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     display: flex;
     opacity: 0.5;
     svg { width: 11px; height: 11px; }
   }
 
   &__conv-mute-icon {
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     display: flex;
     opacity: 0.5;
     svg { width: 11px; height: 11px; }
@@ -409,19 +386,19 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 20px;
     padding: 0 6px;
     border-radius: $border-radius-full;
-    background: $inbox-accent;
+    background: $color-primary;
     color: $color-white;
     font-size: 10px;
     font-weight: $font-weight-bold;
     flex-shrink: 0;
     font-family: $font-primary;
     letter-spacing: -0.02em;
-    box-shadow: 0 2px 6px rgba(45, 90, 61, 0.3);
+    box-shadow: $shadow-sm;
     animation: inboxBadgePop 400ms $ease-spring both;
   }
 
   &__conv-typing-text {
-    color: $inbox-accent;
+    color: $color-primary;
     font-weight: $font-weight-medium;
     font-style: italic;
   }
@@ -432,12 +409,11 @@ $inbox-ai-bg: $color-accent-ghost;
     z-index: $z-dropdown;
     @include flex-column;
     min-width: 210px;
-    background: $inbox-panel-bg;
+    background: $color-white;
     border-radius: $border-radius-lg;
-    box-shadow: $shadow-2xl, 0 0 0 1px rgba(0, 0, 0, 0.04);
-    padding: $spacing-xs 0;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    padding: $spacing-2xs;
     animation: inboxMenuIn 150ms $ease-out-expo both;
-    backdrop-filter: blur(16px);
 
     button {
       display: flex;
@@ -448,11 +424,11 @@ $inbox-ai-bg: $color-accent-ghost;
       background: none;
       font-family: $font-primary;
       font-size: $font-size-sm;
-      color: $inbox-text;
+      color: $color-gray-900;
       cursor: pointer;
       text-align: left;
+      white-space: nowrap;
       transition: all $duration-fast ease;
-      margin: 0 $spacing-2xs;
       border-radius: $border-radius-sm;
 
       svg { flex-shrink: 0; color: $color-gray-400; }
@@ -473,9 +449,9 @@ $inbox-ai-bg: $color-accent-ghost;
     transform: translateX(-50%);
     z-index: $z-dropdown;
     width: 240px;
-    background: $inbox-panel-bg;
-    border-radius: $inbox-radius;
-    box-shadow: $shadow-xl, 0 0 0 1px $inbox-border;
+    background: $color-white;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl, 0 0 0 1px rgba(0, 0, 0, 0.05);
     animation: inboxSlideUp 200ms $ease-out-expo both;
     overflow: hidden;
   }
@@ -483,10 +459,10 @@ $inbox-ai-bg: $color-accent-ghost;
   &__label-picker-header {
     @include flex-between;
     padding: $spacing-sm $spacing-md;
-    border-bottom: 1px solid $inbox-border;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
 
     button {
       @include flex-center;
@@ -494,10 +470,10 @@ $inbox-ai-bg: $color-accent-ghost;
       height: 24px;
       border: none;
       background: none;
-      color: $inbox-text-muted;
+      color: $color-gray-400;
       cursor: pointer;
       border-radius: $border-radius-xs;
-      &:hover { background: $inbox-hover; }
+      &:hover { background: $color-gray-50; }
     }
   }
 
@@ -511,16 +487,16 @@ $inbox-ai-bg: $color-accent-ghost;
     background: none;
     font-family: $font-primary;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     cursor: pointer;
     text-align: left;
     transition: background $duration-fast ease;
 
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
 
     &--active {
-      background: $inbox-active-bg;
-      font-weight: $font-weight-semibold;
+      background: $color-gray-100;
+      font-weight: 700;
     }
   }
 
@@ -566,8 +542,8 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-lg;
-    background: $inbox-panel-bg;
-    border-bottom: 1px solid $inbox-border;
+    background: $color-white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     min-height: 60px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
@@ -582,11 +558,11 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 34px;
     border: none;
     background: transparent;
-    color: $inbox-text-secondary;
+    color: $color-gray-900;
     cursor: pointer;
     border-radius: $border-radius-sm;
     transition: background $duration-fast ease;
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
     @media (max-width: $breakpoint-md) { display: flex; }
   }
 
@@ -603,7 +579,7 @@ $inbox-ai-bg: $color-accent-ghost;
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    transition: opacity $inbox-transition;
+    transition: opacity 200ms $ease-out-quart;
 
     &:hover { opacity: 0.85; }
   }
@@ -637,18 +613,18 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__chat-name {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
     line-height: $line-height-snug;
   }
 
   &__chat-status {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     line-height: $line-height-snug;
 
     &--typing {
-      color: $inbox-accent !important;
+      color: $color-primary !important;
       font-weight: $font-weight-medium !important;
     }
   }
@@ -659,11 +635,11 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 34px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-sm;
-    transition: all $inbox-transition;
-    &:hover { background: $inbox-hover; color: $inbox-text; }
+    transition: all 200ms $ease-out-quart;
+    &:hover { background: $color-gray-50; color: $color-gray-900; }
   }
 
   // --- AI/Human Toggle ---
@@ -673,7 +649,7 @@ $inbox-ai-bg: $color-accent-ghost;
     gap: 5px;
     padding: 5px 12px;
     border-radius: $border-radius-full;
-    border: 1px solid;
+    border: 1.5px solid;
     font-size: 11px;
     font-weight: $font-weight-bold;
     cursor: pointer;
@@ -684,14 +660,14 @@ $inbox-ai-bg: $color-accent-ghost;
     text-transform: uppercase;
 
     &--ai {
-      background: linear-gradient(135deg, rgba(201, 168, 76, 0.08), rgba(201, 168, 76, 0.04));
-      border-color: rgba($color-accent, 0.2);
-      color: $color-accent-dark;
-      box-shadow: 0 1px 4px rgba(201, 168, 76, 0.1);
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(124, 58, 237, 0.04));
+      border-color: rgba(124, 58, 237, 0.2);
+      color: #6D28D9;
+      box-shadow: 0 1px 4px rgba(124, 58, 237, 0.1);
 
       &:hover {
-        background: rgba($color-accent, 0.12);
-        box-shadow: 0 2px 8px rgba(201, 168, 76, 0.15);
+        background: rgba(124, 58, 237, 0.12);
+        box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15);
       }
     }
 
@@ -709,12 +685,12 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 34px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-sm;
-    transition: all $inbox-transition;
-    &:hover { background: $inbox-hover; color: $inbox-text; }
-    &--active { background: $inbox-active-bg; color: $inbox-accent; }
+    transition: all 200ms $ease-out-quart;
+    &:hover { background: $color-gray-50; color: $color-gray-900; }
+    &--active { background: $color-gray-100; color: $color-primary; }
   }
 
   // --- Search in Chat ---
@@ -723,8 +699,8 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     gap: $spacing-xs;
     padding: $spacing-xs $spacing-md;
-    background: $inbox-panel-bg;
-    border-bottom: 1px solid $inbox-border;
+    background: $color-white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     animation: inboxSlideDown 200ms $ease-out-expo both;
   }
@@ -737,16 +713,16 @@ $inbox-ai-bg: $color-accent-ghost;
     background: $color-gray-50;
     border-radius: $border-radius-sm;
     padding: 4px 12px;
-    border: 1px solid transparent;
-    transition: border-color $inbox-transition;
+    border: 1.5px solid transparent;
+    transition: border-color 200ms $ease-out-quart;
 
     &:focus-within {
-      border-color: rgba($inbox-accent, 0.2);
+      border-color: rgba($color-primary, 0.2);
     }
   }
 
   &__search-in-chat-icon {
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     display: flex;
     flex-shrink: 0;
   }
@@ -757,14 +733,14 @@ $inbox-ai-bg: $color-accent-ghost;
     background: none;
     font-family: $font-primary;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     outline: none;
-    &::placeholder { color: $inbox-text-muted; }
+    &::placeholder { color: $color-gray-400; }
   }
 
   &__search-in-chat-count {
     font-size: 10px;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     white-space: nowrap;
     flex-shrink: 0;
     font-variant-numeric: tabular-nums;
@@ -776,11 +752,11 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 28px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-xs;
     flex-shrink: 0;
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
   }
 
   // --- Chat Body Wrapper ---
@@ -819,7 +795,7 @@ $inbox-ai-bg: $color-accent-ghost;
     margin: 0 auto $spacing-lg;
     border-radius: $border-radius-full;
     background: rgba($color-accent, 0.04);
-    border: 1px solid rgba($color-accent, 0.08);
+    border: 1.5px solid rgba($color-accent, 0.08);
     font-size: 10px;
     color: $color-gray-400;
     max-width: 480px;
@@ -829,21 +805,18 @@ $inbox-ai-bg: $color-accent-ghost;
     svg { color: rgba($color-accent, 0.6); flex-shrink: 0; }
   }
 
-  // --- Date Separator ---
+  // --- Date Separator — small centered pill ---
   &__date-separator {
     display: flex;
     justify-content: center;
-    padding: $spacing-lg 0 $spacing-md;
+    padding: $spacing-md 0 $spacing-sm;
 
     span {
-      padding: 4px 16px;
+      padding: 4px 14px;
       border-radius: $border-radius-full;
-      background: rgba($inbox-panel-bg, 0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03);
+      background: $color-gray-200;
       font-size: 10px;
-      color: $inbox-text-secondary;
+      color: $color-gray-600;
       font-weight: $font-weight-semibold;
       text-transform: uppercase;
       letter-spacing: $letter-spacing-wider;
@@ -861,8 +834,8 @@ $inbox-ai-bg: $color-accent-ghost;
     &--received { justify-content: flex-start; }
 
     &--highlighted .inbox__message-bubble {
-      box-shadow: 0 0 0 2px rgba($inbox-accent, 0.35) !important;
-      background: rgba($inbox-accent, 0.08) !important;
+      box-shadow: 0 0 0 2px rgba($color-primary, 0.35) !important;
+      background: rgba($color-primary, 0.08) !important;
     }
 
     &:hover .inbox__msg-hover-btn {
@@ -871,33 +844,36 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__message-bubble {
-    max-width: 62%;
+    max-width: 65%;
     padding: 10px 14px 8px;
-    border-radius: $inbox-radius-msg;
     position: relative;
     word-wrap: break-word;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-    transition: box-shadow 200ms ease, transform 200ms ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 200ms ease;
 
+    // Outbound (sent) — light blue bg, WhatsApp-style
     .inbox__message--sent & {
-      background: $inbox-sent-bg;
-      border: 1px solid rgba(45, 90, 61, 0.06);
-      border-radius: $inbox-radius-msg $inbox-radius-msg 4px $inbox-radius-msg;
+      background: #EFF6FF;
+      border: none;
+      border-radius: 16px 16px 4px 16px;
       margin-right: 6px;
+      color: $color-gray-900;
 
       &:hover {
-        box-shadow: 0 2px 8px rgba(45, 90, 61, 0.08), 0 1px 2px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }
     }
 
+    // Inbound (received) — white bg
     .inbox__message--received & {
-      background: $inbox-received-bg;
+      background: $color-white;
       border: 1px solid rgba(0, 0, 0, 0.05);
-      border-radius: $inbox-radius-msg $inbox-radius-msg $inbox-radius-msg 4px;
+      border-radius: 16px 16px 16px 4px;
       margin-left: 6px;
+      color: $color-gray-900;
 
       &:hover {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
       }
     }
 
@@ -913,9 +889,8 @@ $inbox-ai-bg: $color-accent-ghost;
     width: 22px;
     height: 22px;
     border: none;
-    background: rgba($inbox-panel-bg, 0.9);
-    backdrop-filter: blur(4px);
-    color: $inbox-text-muted;
+    background: rgba($color-white, 0.9);
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-xs;
     opacity: 0;
@@ -924,8 +899,8 @@ $inbox-ai-bg: $color-accent-ghost;
     box-shadow: $shadow-xs;
 
     &:hover {
-      background: $inbox-panel-bg;
-      color: $inbox-text-secondary;
+      background: $color-white;
+      color: $color-gray-900;
     }
   }
 
@@ -934,13 +909,13 @@ $inbox-ai-bg: $color-accent-ghost;
     padding: $spacing-xs $spacing-sm;
     margin-bottom: 4px;
     border-radius: $border-radius-xs;
-    border-left: 2px solid $inbox-accent;
+    border-left: 2px solid $color-primary;
     background: rgba(0, 0, 0, 0.03);
   }
 
   &__reply-quote-text {
     font-size: $font-size-xs;
-    color: $inbox-text-secondary;
+    color: $color-gray-900;
     line-height: $line-height-snug;
     @include line-clamp(2);
   }
@@ -952,7 +927,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__message-text {
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     line-height: 1.5;
     margin: 0;
     white-space: pre-wrap;
@@ -973,7 +948,7 @@ $inbox-ai-bg: $color-accent-ghost;
     display: block;
     margin-top: 4px;
     cursor: pointer;
-    transition: opacity $inbox-transition;
+    transition: opacity 200ms $ease-out-quart;
 
     &:hover { opacity: 0.92; }
   }
@@ -1008,7 +983,7 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 32px;
     border-radius: $border-radius-sm;
     border: none;
-    background: $inbox-accent;
+    background: $color-primary;
     color: white;
     cursor: pointer;
     @include flex-center;
@@ -1028,14 +1003,14 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__audio-progress {
     height: 100%;
-    background: $inbox-accent;
+    background: $color-primary;
     border-radius: 2px;
     transition: width 0.1s linear;
   }
 
   &__audio-time {
     font-size: 10px;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     min-width: 32px;
     text-align: right;
     font-variant-numeric: tabular-nums;
@@ -1050,12 +1025,12 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__lina-thinking-bubble {
-    background: linear-gradient(135deg, rgba(201, 168, 76, 0.06), rgba(201, 168, 76, 0.03));
-    border: 1px solid rgba($color-accent, 0.12);
-    border-radius: $inbox-radius-msg;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.06), rgba(124, 58, 237, 0.02));
+    border: 1.5px solid rgba(124, 58, 237, 0.12);
+    border-radius: $border-radius-md;
     padding: 10px 16px 12px;
     max-width: 320px;
-    box-shadow: 0 2px 8px rgba(201, 168, 76, 0.08), $shadow-xs;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.08), $shadow-xs;
   }
 
   &__lina-thinking-header {
@@ -1072,7 +1047,7 @@ $inbox-ai-bg: $color-accent-ghost;
   &__lina-thinking-label {
     font-size: 10px;
     font-weight: $font-weight-bold;
-    color: $color-accent-dark;
+    color: #6D28D9;
     letter-spacing: $letter-spacing-wide;
     text-transform: uppercase;
   }
@@ -1101,7 +1076,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__lina-thinking-done-text {
     font-size: 11px;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     opacity: 0.6;
   }
 
@@ -1121,7 +1096,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__lina-thinking-text {
     font-size: $font-size-xs;
-    color: $inbox-text-secondary;
+    color: $color-gray-900;
     font-weight: $font-weight-medium;
     animation: inboxStepFade 3.5s ease infinite;
   }
@@ -1136,7 +1111,7 @@ $inbox-ai-bg: $color-accent-ghost;
       width: 4px;
       height: 4px;
       border-radius: $border-radius-full;
-      background: $color-accent;
+      background: #7C3AED;
       opacity: 0.4;
       animation: inboxDotPulse 1.4s ease-in-out infinite;
 
@@ -1148,23 +1123,23 @@ $inbox-ai-bg: $color-accent-ghost;
   // Audio transcription below player
   &__message-transcript {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     line-height: 1.4;
     margin: 4px 0 0;
     font-style: italic;
     white-space: pre-wrap;
   }
 
-  // Lina IA label on auto-reply messages
+  // Lina IA label on auto-reply messages — purple pill badge
   &__lina-label {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     font-size: 10px;
-    color: $color-accent-dark;
+    color: #6D28D9;
     margin-bottom: 4px;
     padding: 2px 8px 2px 6px;
-    background: rgba(201, 168, 76, 0.08);
+    background: rgba(124, 58, 237, 0.08);
     border-radius: $border-radius-full;
     font-weight: $font-weight-bold;
     letter-spacing: $letter-spacing-wide;
@@ -1173,7 +1148,7 @@ $inbox-ai-bg: $color-accent-ghost;
     svg {
       width: 12px;
       height: 12px;
-      color: $color-accent;
+      color: #7C3AED;
     }
   }
 
@@ -1190,7 +1165,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__message-time {
     font-size: 10px;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     line-height: 1;
     font-variant-numeric: tabular-nums;
   }
@@ -1207,9 +1182,9 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     line-height: 1;
     svg { width: 16px; height: 11px; }
-    &--sent { color: $inbox-text-muted; }
-    &--delivered { color: $inbox-text-muted; }
-    &--read { color: $inbox-accent; }
+    &--sent { color: $color-gray-300; }
+    &--delivered { color: $color-gray-400; }
+    &--read { color: #53BDEB; }
   }
 
   &__message-failed {
@@ -1230,28 +1205,34 @@ $inbox-ai-bg: $color-accent-ghost;
     z-index: $z-dropdown;
     @include flex-column;
     min-width: 180px;
-    background: $inbox-panel-bg;
-    border-radius: $inbox-radius;
-    box-shadow: $shadow-xl, 0 0 0 1px $inbox-border;
-    padding: $spacing-xs 0;
+    max-width: 220px;
+    background: $color-white;
+    border-radius: $border-radius-lg;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+    padding: $spacing-xs;
     animation: inboxMenuIn 120ms $ease-out-expo both;
+    // Prevent overflow off screen
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
   }
 
   &__msg-context-item {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: 8px $spacing-md;
+    padding: 9px $spacing-md;
     border: none;
     background: none;
     font-family: $font-primary;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     cursor: pointer;
     text-align: left;
+    white-space: nowrap;
+    border-radius: $border-radius-sm;
     transition: background $duration-fast ease;
 
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
 
     &--danger {
       color: $color-error-dark;
@@ -1272,9 +1253,9 @@ $inbox-ai-bg: $color-accent-ghost;
     display: flex;
     gap: 2px;
     padding: 3px 6px;
-    background: $inbox-panel-bg;
+    background: $color-white;
     border-radius: $border-radius-full;
-    box-shadow: $shadow-md, 0 0 0 1px $inbox-border;
+    box-shadow: $shadow-md, 0 0 0 1px rgba(0, 0, 0, 0.05);
     animation: inboxMenuIn 150ms $ease-out-expo both;
   }
 
@@ -1290,7 +1271,7 @@ $inbox-ai-bg: $color-accent-ghost;
     transition: all $duration-fast ease;
 
     &:hover {
-      background: $inbox-hover;
+      background: $color-gray-50;
       transform: scale(1.15);
     }
   }
@@ -1302,12 +1283,12 @@ $inbox-ai-bg: $color-accent-ghost;
     justify-content: center;
     gap: 6px;
     padding: 5px $spacing-md;
-    background: $inbox-ai-bg;
+    background: rgba(124, 58, 237, 0.04);
     font-size: 11px;
-    color: $color-accent-dark;
+    color: #6D28D9;
     font-weight: $font-weight-medium;
     flex-shrink: 0;
-    border-top: 1px solid rgba($color-accent, 0.1);
+    border-top: 1px solid rgba(124, 58, 237, 0.08);
     letter-spacing: $letter-spacing-normal;
   }
 
@@ -1315,7 +1296,7 @@ $inbox-ai-bg: $color-accent-ghost;
     width: 6px;
     height: 6px;
     border-radius: $border-radius-full;
-    background: $color-accent;
+    background: #7C3AED;
     animation: inboxLivePulse 2s ease-in-out infinite;
     flex-shrink: 0;
   }
@@ -1326,8 +1307,8 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-xs $spacing-md;
-    background: $inbox-panel-bg;
-    border-top: 1px solid $inbox-border;
+    background: $color-white;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     animation: inboxSlideUp 150ms $ease-out-expo both;
   }
@@ -1336,7 +1317,7 @@ $inbox-ai-bg: $color-accent-ghost;
     flex: 1;
     min-width: 0;
     padding: $spacing-xs $spacing-sm;
-    border-left: 2px solid $inbox-accent;
+    border-left: 2px solid $color-primary;
     border-radius: 0 $border-radius-xs $border-radius-xs 0;
     background: $color-gray-50;
   }
@@ -1344,8 +1325,8 @@ $inbox-ai-bg: $color-accent-ghost;
   &__reply-bar-label {
     display: block;
     font-size: 10px;
-    font-weight: $font-weight-semibold;
-    color: $inbox-accent;
+    font-weight: 700;
+    color: $color-primary;
     margin-bottom: 1px;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wide;
@@ -1353,7 +1334,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__reply-bar-text {
     font-size: $font-size-xs;
-    color: $inbox-text-secondary;
+    color: $color-gray-900;
     @include truncate;
     display: block;
   }
@@ -1364,11 +1345,11 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 28px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-xs;
     flex-shrink: 0;
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
   }
 
   // --- Templates Panel ---
@@ -1380,9 +1361,9 @@ $inbox-ai-bg: $color-accent-ghost;
     z-index: $z-dropdown;
     width: 340px;
     max-height: 400px;
-    background: $inbox-panel-bg;
-    border-radius: $inbox-radius;
-    box-shadow: $shadow-xl, 0 0 0 1px $inbox-border;
+    background: $color-white;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl, 0 0 0 1px rgba(0, 0, 0, 0.05);
     animation: inboxSlideUp 200ms $ease-out-expo both;
     overflow: hidden;
     @include flex-column;
@@ -1391,10 +1372,10 @@ $inbox-ai-bg: $color-accent-ghost;
   &__templates-header {
     @include flex-between;
     padding: $spacing-sm $spacing-md;
-    border-bottom: 1px solid $inbox-border;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
 
     button {
       @include flex-center;
@@ -1402,10 +1383,10 @@ $inbox-ai-bg: $color-accent-ghost;
       height: 28px;
       border: none;
       background: none;
-      color: $inbox-text-muted;
+      color: $color-gray-400;
       cursor: pointer;
       border-radius: $border-radius-xs;
-      &:hover { background: $inbox-hover; }
+      &:hover { background: $color-gray-50; }
     }
   }
 
@@ -1428,18 +1409,18 @@ $inbox-ai-bg: $color-accent-ghost;
     cursor: pointer;
     transition: background $duration-fast ease;
 
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
   }
 
   &__template-label {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $inbox-accent;
+    font-weight: 700;
+    color: $color-primary;
   }
 
   &__template-preview {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     line-height: 1.4;
     @include truncate;
   }
@@ -1450,8 +1431,8 @@ $inbox-ai-bg: $color-accent-ghost;
   &__client-sidebar {
     width: 320px;
     min-width: 320px;
-    background: $inbox-panel-bg;
-    border-left: 1px solid $inbox-border;
+    background: $color-white;
+    border-left: 1px solid rgba(0, 0, 0, 0.05);
     overflow-y: auto;
     @include custom-scrollbar;
     animation: inboxSlideRight 300ms $ease-out-expo both;
@@ -1466,7 +1447,7 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-md;
-    border-bottom: 1px solid $inbox-border;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
   }
 
@@ -1476,16 +1457,16 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 30px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-xs;
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
   }
 
   &__client-sidebar-title {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
     letter-spacing: $letter-spacing-normal;
   }
 
@@ -1493,8 +1474,8 @@ $inbox-ai-bg: $color-accent-ghost;
     @include flex-column-center;
     gap: $spacing-sm;
     padding: $spacing-2xl $spacing-lg $spacing-xl;
-    border-bottom: 1px solid $inbox-border;
-    background: linear-gradient(180deg, rgba(45, 90, 61, 0.03) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background: linear-gradient(180deg, $color-gray-50 0%, transparent 100%);
   }
 
   &__client-avatar-lg {
@@ -1515,7 +1496,7 @@ $inbox-ai-bg: $color-accent-ghost;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-xl;
     position: absolute;
     inset: 0;
   }
@@ -1524,7 +1505,7 @@ $inbox-ai-bg: $color-accent-ghost;
     @include flex-center;
     width: 100%;
     height: 100%;
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-xl;
     color: $color-white;
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
@@ -1532,15 +1513,15 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__client-name-lg {
     font-size: $font-size-base;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
     text-align: center;
     margin: 0;
   }
 
   &__client-phone-lg {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-variant-numeric: tabular-nums;
   }
 
@@ -1554,9 +1535,9 @@ $inbox-ai-bg: $color-accent-ghost;
     margin-top: 2px;
 
     &--vip {
-      background: linear-gradient(135deg, rgba(201, 168, 76, 0.1), rgba(201, 168, 76, 0.06));
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(14, 165, 233, 0.06));
       color: $color-accent-dark;
-      box-shadow: 0 1px 4px rgba(201, 168, 76, 0.15);
+      box-shadow: 0 1px 4px rgba(14, 165, 233, 0.15);
     }
     &--activo { background: $color-success-bg; color: $color-success-dark; }
     &--nuevo { background: $color-info-bg; color: $color-info-dark; }
@@ -1570,7 +1551,7 @@ $inbox-ai-bg: $color-accent-ghost;
     grid-template-columns: repeat(4, 1fr);
     gap: $spacing-xs;
     padding: $spacing-md $spacing-md;
-    border-bottom: 1px solid $inbox-border;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   &__client-quick-action {
@@ -1580,19 +1561,19 @@ $inbox-ai-bg: $color-accent-ghost;
     border: none;
     background: none;
     cursor: pointer;
-    color: $inbox-accent;
+    color: $color-primary;
     font-family: $font-primary;
     transition: all 200ms $ease-out-quart;
     border-radius: $border-radius-md;
 
     span {
       font-size: 10px;
-      color: $inbox-text-secondary;
+      color: $color-gray-900;
       font-weight: $font-weight-medium;
     }
 
     &:hover {
-      background: $inbox-active-bg;
+      background: $color-gray-100;
       transform: translateY(-1px);
     }
 
@@ -1603,7 +1584,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   // --- Sections ---
   &__client-section {
-    border-bottom: 1px solid $inbox-border;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     padding: $spacing-sm 0;
     &:last-child { border-bottom: none; }
   }
@@ -1626,11 +1607,11 @@ $inbox-ai-bg: $color-accent-ghost;
     background: none;
     font-family: $font-primary;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     cursor: pointer;
     text-align: left;
     transition: background $duration-fast ease;
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
   }
 
   &__client-section-btn-left {
@@ -1644,12 +1625,12 @@ $inbox-ai-bg: $color-accent-ghost;
     display: flex;
     align-items: center;
     gap: $spacing-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
   }
 
   &__client-section-count {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
   }
 
   // --- Client Stats ---
@@ -1665,7 +1646,7 @@ $inbox-ai-bg: $color-accent-ghost;
     padding: $spacing-md $spacing-xs;
     border-radius: $border-radius-md;
     background: $color-gray-50;
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border: 1.5px solid rgba(0, 0, 0, 0.04);
     transition: all 200ms $ease-out-quart;
 
     &:hover {
@@ -1678,7 +1659,7 @@ $inbox-ai-bg: $color-accent-ghost;
   &__client-stat-value {
     font-size: $font-size-base;
     font-weight: $font-weight-bold;
-    color: $inbox-accent;
+    color: $color-primary;
     font-family: $font-primary;
     line-height: 1.2;
     text-align: center;
@@ -1687,7 +1668,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__client-stat-label {
     font-size: $font-size-2xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wide;
     text-align: center;
@@ -1708,15 +1689,15 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__client-label {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text-muted;
+    font-weight: 700;
+    color: $color-gray-400;
     letter-spacing: $letter-spacing-wide;
     text-transform: uppercase;
   }
 
   &__client-value {
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
   }
 
   // --- Media Tabs ---
@@ -1734,18 +1715,18 @@ $inbox-ai-bg: $color-accent-ghost;
     font-family: $font-primary;
     font-size: $font-size-xs;
     font-weight: $font-weight-medium;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: all $duration-fast ease;
     text-align: center;
-    &:hover { color: $inbox-text; }
-    &--active { color: $inbox-accent; border-bottom-color: $inbox-accent; }
+    &:hover { color: $color-gray-900; }
+    &--active { color: $color-primary; border-bottom-color: $color-primary; }
   }
 
   &__client-media-empty {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     padding: $spacing-md;
     text-align: center;
     line-height: 1.5;
@@ -1762,11 +1743,11 @@ $inbox-ai-bg: $color-accent-ghost;
     background: transparent;
     font-family: $font-primary;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     cursor: pointer;
     transition: background $duration-fast ease;
     text-align: left;
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
 
     &--danger {
       color: $color-error-dark;
@@ -1782,8 +1763,8 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: flex-end;
     gap: 6px;
     padding: $spacing-sm $spacing-md;
-    background: $inbox-panel-bg;
-    border-top: 1px solid $inbox-border;
+    background: $color-white;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     position: relative;
   }
@@ -1794,27 +1775,26 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 36px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-sm;
     transition: all $duration-fast ease;
     flex-shrink: 0;
-    &:hover { background: $inbox-hover; color: $inbox-text-secondary; }
-    &--active { color: $inbox-accent; }
+    &:hover { background: $color-gray-50; color: $color-gray-900; }
+    &--active { color: $color-primary; }
   }
 
   &__input-wrapper {
     flex: 1;
-    background: $color-gray-50;
-    border-radius: $border-radius-md;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    background: $color-white;
+    border-radius: $border-radius-xl;
+    border: 1.5px solid $color-gray-200;
     overflow: hidden;
     transition: all 250ms $ease-out-quart;
 
     &:focus-within {
-      border-color: rgba($inbox-accent, 0.25);
-      background: $inbox-panel-bg;
-      box-shadow: 0 0 0 4px rgba($inbox-accent, 0.04), $shadow-xs;
+      border-color: $color-gray-300;
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.03);
     }
   }
 
@@ -1824,7 +1804,7 @@ $inbox-ai-bg: $color-accent-ghost;
     border: none;
     background: none;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     resize: none;
     min-height: 22px;
     max-height: 120px;
@@ -1841,23 +1821,22 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 38px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
-    border-radius: $border-radius-md;
+    color: $color-gray-400;
+    border-radius: $border-radius-full;
     cursor: default;
     transition: all 250ms $ease-out-quart;
     flex-shrink: 0;
 
     &--active {
-      background: linear-gradient(135deg, $inbox-accent, $color-primary-light);
+      background: #25D366;
       color: $color-white;
       cursor: pointer;
-      border-radius: $border-radius-md;
-      box-shadow: 0 2px 8px rgba(45, 90, 61, 0.25);
+      box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
 
       &:hover {
-        background: linear-gradient(135deg, $color-primary-light, $inbox-accent);
-        transform: scale(1.08);
-        box-shadow: 0 4px 12px rgba(45, 90, 61, 0.3);
+        background: #20BD5A;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(37, 211, 102, 0.35);
       }
 
       &:active {
@@ -1873,12 +1852,12 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 36px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     border-radius: $border-radius-sm;
     cursor: pointer;
-    transition: all $inbox-transition;
+    transition: all 200ms $ease-out-quart;
     flex-shrink: 0;
-    &:hover { background: $inbox-hover; color: $inbox-text-secondary; }
+    &:hover { background: $color-gray-50; color: $color-gray-900; }
   }
 
   // ===========================================
@@ -1890,9 +1869,9 @@ $inbox-ai-bg: $color-accent-ghost;
     left: 10px;
     width: 340px;
     max-height: 380px;
-    background: $inbox-panel-bg;
-    border-radius: $inbox-radius;
-    box-shadow: $shadow-xl, 0 0 0 1px $inbox-border;
+    background: $color-white;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl, 0 0 0 1px rgba(0, 0, 0, 0.05);
     animation: inboxSlideUp 200ms $ease-out-expo both;
     overflow: hidden;
     z-index: $z-dropdown;
@@ -1903,7 +1882,7 @@ $inbox-ai-bg: $color-accent-ghost;
     display: flex;
     gap: 0;
     padding: $spacing-xs;
-    border-bottom: 1px solid $inbox-border;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     overflow-x: auto;
     flex-shrink: 0;
 
@@ -1922,8 +1901,8 @@ $inbox-ai-bg: $color-accent-ghost;
     flex-shrink: 0;
     transition: background $duration-fast ease;
 
-    &:hover { background: $inbox-hover; }
-    &--active { background: $inbox-active-bg; }
+    &:hover { background: $color-gray-50; }
+    &--active { background: $color-gray-100; }
   }
 
   &__emoji-grid {
@@ -1948,7 +1927,7 @@ $inbox-ai-bg: $color-accent-ghost;
     transition: all $duration-fast ease;
 
     &:hover {
-      background: $inbox-hover;
+      background: $color-gray-50;
       transform: scale(1.15);
     }
   }
@@ -1963,9 +1942,9 @@ $inbox-ai-bg: $color-accent-ghost;
     @include flex-column;
     gap: 2px;
     padding: $spacing-xs;
-    background: $inbox-panel-bg;
-    border-radius: $inbox-radius;
-    box-shadow: $shadow-xl, 0 0 0 1px $inbox-border;
+    background: $color-white;
+    border-radius: $border-radius-md;
+    box-shadow: $shadow-xl, 0 0 0 1px rgba(0, 0, 0, 0.05);
     animation: inboxSlideUp 200ms $ease-out-expo both;
     z-index: $z-dropdown;
   }
@@ -1983,7 +1962,7 @@ $inbox-ai-bg: $color-accent-ghost;
     font-family: $font-primary;
     animation: inboxFadeIn 200ms $ease-out-expo both;
 
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
   }
 
   &__attach-icon {
@@ -1999,7 +1978,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__attach-label {
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     white-space: nowrap;
   }
 
@@ -2009,7 +1988,7 @@ $inbox-ai-bg: $color-accent-ghost;
   &__empty {
     @include flex-column-center;
     padding: $spacing-xl;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-size: $font-size-sm;
   }
 
@@ -2035,16 +2014,15 @@ $inbox-ai-bg: $color-accent-ghost;
   &__empty-chat-icon {
     color: $color-gray-300;
     margin-bottom: $spacing-md;
-    opacity: 0.2;
+    opacity: 0.3;
     animation: inboxFloat 8s ease-in-out infinite;
-    filter: blur(0.3px);
   }
 
   &__empty-chat-title {
     font-family: $font-heading;
     font-size: $font-size-2xl;
     font-weight: $font-weight-bold;
-    color: $inbox-text;
+    color: $color-gray-900;
     letter-spacing: $letter-spacing-tight;
     line-height: $line-height-tight;
   }
@@ -2065,7 +2043,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
     span {
       font-size: $font-size-xs;
-      color: $inbox-text-muted;
+      color: $color-gray-400;
       display: flex;
       align-items: center;
       gap: 5px;
@@ -2075,7 +2053,7 @@ $inbox-ai-bg: $color-accent-ghost;
         width: 5px;
         height: 5px;
         border-radius: $border-radius-full;
-        background: $inbox-accent;
+        background: $color-primary;
         flex-shrink: 0;
         opacity: 0.5;
       }
@@ -2088,7 +2066,7 @@ $inbox-ai-bg: $color-accent-ghost;
     gap: 5px;
     margin-top: $spacing-lg;
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     svg { color: $color-accent; }
   }
 
@@ -2097,8 +2075,8 @@ $inbox-ai-bg: $color-accent-ghost;
   // ===========================================
   &__blast-panel {
     @include flex-column;
-    background: $inbox-panel-bg;
-    border-bottom: 1px solid $inbox-border;
+    background: $color-white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     animation: inboxSlideDown 250ms $ease-out-expo both;
     max-height: 60vh;
     overflow: hidden;
@@ -2107,8 +2085,8 @@ $inbox-ai-bg: $color-accent-ghost;
   &__blast-header {
     @include flex-between;
     padding: $spacing-sm $spacing-md;
-    background: $inbox-accent-light;
-    border-bottom: 1px solid $inbox-active-border;
+    background: $color-primary-light;
+    border-bottom: 1px solid $color-gray-200;
   }
 
   &__blast-title-row {
@@ -2122,21 +2100,21 @@ $inbox-ai-bg: $color-accent-ghost;
     width: 34px;
     height: 34px;
     border-radius: $border-radius-sm;
-    background: rgba($inbox-accent, 0.1);
-    color: $inbox-accent;
+    background: rgba($color-primary, 0.1);
+    color: $color-primary;
     flex-shrink: 0;
   }
 
   &__blast-title {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
     margin: 0;
   }
 
   &__blast-subtitle {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     margin: 0;
   }
 
@@ -2146,10 +2124,10 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 30px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-xs;
-    &:hover { background: $inbox-hover; color: $inbox-text; }
+    &:hover { background: $color-gray-50; color: $color-gray-900; }
   }
 
   &__blast-pending {
@@ -2164,14 +2142,14 @@ $inbox-ai-bg: $color-accent-ghost;
     width: 44px;
     height: 44px;
     border-radius: $border-radius-md;
-    background: $inbox-accent-light;
-    color: $inbox-accent;
+    background: $color-primary-light;
+    color: $color-primary;
     svg { width: 22px; height: 22px; }
   }
 
   &__blast-pending-text {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     line-height: $line-height-base;
     margin: 0;
     max-width: 320px;
@@ -2182,8 +2160,8 @@ $inbox-ai-bg: $color-accent-ghost;
   // ===========================================
   &__new-chat-panel {
     @include flex-column;
-    background: $inbox-panel-bg;
-    border-bottom: 1px solid $inbox-border;
+    background: $color-white;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     animation: inboxSlideDown 250ms $ease-out-expo both;
     overflow: hidden;
   }
@@ -2191,8 +2169,8 @@ $inbox-ai-bg: $color-accent-ghost;
   &__new-chat-header {
     @include flex-between;
     padding: $spacing-sm $spacing-md;
-    background: $inbox-accent-light;
-    border-bottom: 1px solid $inbox-active-border;
+    background: $color-primary-light;
+    border-bottom: 1px solid $color-gray-200;
   }
 
   &__new-chat-title {
@@ -2209,11 +2187,11 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 28px;
     border: none;
     background: transparent;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-xs;
     transition: background $duration-fast;
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
   }
 
   &__new-chat-form {
@@ -2225,39 +2203,39 @@ $inbox-ai-bg: $color-accent-ghost;
   &__new-chat-input {
     width: 100%;
     padding: 9px 14px;
-    border: 1px solid $inbox-border;
+    border: 1.5px solid rgba(0, 0, 0, 0.05);
     border-radius: $border-radius-sm;
     font-family: $font-primary;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     background: $color-gray-50;
-    transition: all $inbox-transition;
+    transition: all 200ms $ease-out-quart;
 
     &:focus {
       outline: none;
-      background: $inbox-panel-bg;
-      border-color: rgba($inbox-accent, 0.3);
-      box-shadow: 0 0 0 3px rgba($inbox-accent, 0.06);
+      background: $color-white;
+      border-color: rgba($color-primary, 0.3);
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.06);
     }
-    &::placeholder { color: $inbox-text-muted; }
+    &::placeholder { color: $color-gray-400; }
   }
 
   &__new-chat-submit {
     padding: 10px $spacing-lg;
     border: none;
     border-radius: $border-radius-md;
-    background: linear-gradient(135deg, $inbox-accent, $color-primary-dark);
+    background: $color-primary;
     color: $color-white;
     font-family: $font-primary;
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     cursor: pointer;
     transition: all 250ms $ease-out-quart;
-    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
+    box-shadow: $shadow-sm;
 
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, $color-primary-light, $inbox-accent);
-      box-shadow: 0 4px 12px rgba(45, 90, 61, 0.25);
+      background: $color-primary-dark;
+      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.25);
       transform: translateY(-1px);
     }
 
@@ -2276,27 +2254,27 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__new-chat-templates-hint {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     margin-bottom: $spacing-xs;
     line-height: 1.4;
-    strong { color: $inbox-text; font-weight: $font-weight-semibold; }
+    strong { color: $color-gray-900; font-weight: 700; }
   }
 
   &__new-chat-tpl {
     @include flex-column;
     gap: 4px;
     padding: $spacing-sm $spacing-md;
-    border: 1px solid $inbox-border;
+    border: 1.5px solid rgba(0, 0, 0, 0.05);
     border-radius: $border-radius-sm;
-    background: $inbox-panel-bg;
+    background: $color-white;
     cursor: pointer;
     text-align: left;
     font-family: inherit;
-    transition: all $inbox-transition;
+    transition: all 200ms $ease-out-quart;
 
     &:hover {
-      background: $inbox-active-bg;
-      border-color: $inbox-active-border;
+      background: $color-gray-100;
+      border-color: $color-gray-200;
     }
 
     &:active { transform: scale(0.98); }
@@ -2305,13 +2283,13 @@ $inbox-ai-bg: $color-accent-ghost;
   &__new-chat-tpl-label {
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
-    color: $inbox-accent;
+    color: $color-primary;
     letter-spacing: $letter-spacing-normal;
   }
 
   &__new-chat-tpl-preview {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     line-height: 1.4;
   }
 
@@ -2320,12 +2298,12 @@ $inbox-ai-bg: $color-accent-ghost;
     border: none;
     font-family: inherit;
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     padding: $spacing-xs 0;
     text-align: left;
     transition: color $duration-fast;
-    &:hover { color: $inbox-text; }
+    &:hover { color: $color-gray-900; }
   }
 
   &__new-chat-search-wrap {
@@ -2337,12 +2315,12 @@ $inbox-ai-bg: $color-accent-ghost;
     right: 12px;
     top: 14px;
     font-size: 10px;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
   }
 
   &__new-chat-results {
-    background: $inbox-panel-bg;
-    border: 1px solid $inbox-border;
+    background: $color-white;
+    border: 1.5px solid rgba(0, 0, 0, 0.05);
     border-radius: $border-radius-sm;
     margin-top: $spacing-xs;
     max-height: 240px;
@@ -2363,7 +2341,7 @@ $inbox-ai-bg: $color-accent-ghost;
     text-align: left;
     font-family: inherit;
     transition: background $duration-fast;
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
     &:last-child { border-bottom: none; }
   }
 
@@ -2387,13 +2365,13 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__new-chat-result-name {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
   }
 
   &__new-chat-result-phone {
     font-size: $font-size-xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-variant-numeric: tabular-nums;
   }
 
@@ -2414,19 +2392,19 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     gap: $spacing-md;
     font-size: 10px;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     margin: $spacing-sm 0;
     &::before, &::after {
       content: '';
       flex: 1;
       height: 1px;
-      background: $inbox-border;
+      background: rgba(0, 0, 0, 0.05);
     }
   }
 
   &__new-chat-selected {
     font-size: $font-size-xs;
-    color: $inbox-text-secondary;
+    color: $color-gray-900;
     padding: $spacing-xs 0;
   }
 
@@ -2439,13 +2417,13 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__new-chat-sending {
     font-size: $font-size-xs;
-    color: $inbox-accent;
+    color: $color-primary;
     font-weight: $font-weight-medium;
   }
 
   &__new-chat-tpl--custom {
-    border: 1px dashed $inbox-border;
-    background: $inbox-accent-light;
+    border: 1px dashed rgba(0, 0, 0, 0.05);
+    background: $color-primary-light;
   }
 
   &__new-chat-footer {
@@ -2461,7 +2439,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__new-chat-meta-note {
     font-size: 10px;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     padding: 0 $spacing-md $spacing-xs;
     line-height: 1.5;
   }
@@ -2473,13 +2451,13 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__new-chat-tpl-meta {
     font-size: $font-size-2xs;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     margin-top: 2px;
   }
 
   &__new-chat-no-templates {
     font-size: $font-size-sm;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     padding: $spacing-lg $spacing-md;
     text-align: center;
   }
@@ -2487,20 +2465,20 @@ $inbox-ai-bg: $color-accent-ghost;
   &__new-chat-textarea {
     width: 100%;
     padding: $spacing-sm $spacing-md;
-    border: 1px solid $inbox-border;
+    border: 1.5px solid rgba(0, 0, 0, 0.05);
     border-radius: $border-radius-sm;
     font-family: inherit;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     resize: vertical;
     min-height: 80px;
-    transition: border-color $inbox-transition;
+    transition: border-color 200ms $ease-out-quart;
     &:focus {
       outline: none;
-      border-color: rgba($inbox-accent, 0.3);
-      box-shadow: 0 0 0 3px rgba($inbox-accent, 0.06);
+      border-color: rgba($color-primary, 0.3);
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.06);
     }
-    &::placeholder { color: $inbox-text-muted; }
+    &::placeholder { color: $color-gray-400; }
   }
 
   // ===========================================
@@ -2524,7 +2502,7 @@ $inbox-ai-bg: $color-accent-ghost;
     width: 6px;
     height: 6px;
     border-radius: $border-radius-full;
-    background: $inbox-text-muted;
+    background: $color-gray-400;
     animation: inboxTypingBounce 1.4s infinite ease-in-out;
     &:nth-child(1) { animation-delay: 0s; }
     &:nth-child(2) { animation-delay: 0.2s; }
@@ -2538,7 +2516,7 @@ $inbox-ai-bg: $color-accent-ghost;
     @include flex-column-center;
     gap: $spacing-md;
     padding: $spacing-2xl $spacing-lg;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-size: $font-size-sm;
   }
 
@@ -2546,7 +2524,7 @@ $inbox-ai-bg: $color-accent-ghost;
     width: 28px;
     height: 28px;
     border: 2px solid $color-gray-100;
-    border-top-color: $inbox-accent;
+    border-top-color: $color-primary;
     border-radius: $border-radius-full;
     animation: inboxSpin 0.8s linear infinite;
   }
@@ -2569,7 +2547,7 @@ $inbox-ai-bg: $color-accent-ghost;
     font-family: $font-primary;
     font-size: $font-size-md;
     font-weight: $font-weight-bold;
-    color: $inbox-text;
+    color: $color-gray-900;
     margin: 0;
     letter-spacing: $letter-spacing-tight;
   }
@@ -2595,27 +2573,27 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     gap: $spacing-sm;
     font-size: $font-size-xs;
-    color: $inbox-text-secondary;
+    color: $color-gray-900;
     text-align: left;
-    svg { flex-shrink: 0; color: $inbox-accent; }
+    svg { flex-shrink: 0; color: $color-primary; }
   }
 
   &__conv-error-retry {
     margin-top: $spacing-md;
     padding: $spacing-sm $spacing-xl;
-    border: 1px solid transparent;
+    border: 1.5px solid transparent;
     border-radius: $border-radius-md;
-    background: $inbox-accent;
+    background: $color-primary;
     color: $color-white;
     font-family: $font-primary;
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     cursor: pointer;
     transition: all 250ms $ease-out-quart;
-    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.2);
+    box-shadow: $shadow-sm;
     &:hover {
       background: $color-primary-light;
-      border-color: rgba($inbox-accent, 0.3);
+      border-color: rgba($color-primary, 0.3);
     }
   }
 
@@ -2623,7 +2601,7 @@ $inbox-ai-bg: $color-accent-ghost;
     @include flex-column-center;
     gap: $spacing-sm;
     padding: $spacing-2xl;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-size: $font-size-sm;
   }
 
@@ -2631,7 +2609,7 @@ $inbox-ai-bg: $color-accent-ghost;
     @include flex-column-center;
     gap: $spacing-xs;
     padding: $spacing-2xl;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-size: $font-size-sm;
     text-align: center;
     p { margin: 0; }
@@ -2647,7 +2625,7 @@ $inbox-ai-bg: $color-accent-ghost;
     right: 0;
     bottom: 0;
     z-index: 20;
-    background: $inbox-panel-bg;
+    background: $color-white;
     @include flex-column;
     animation: inboxFadeIn 200ms $ease-out-expo both;
   }
@@ -2657,7 +2635,7 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     gap: $spacing-xs;
     padding: $spacing-sm $spacing-md;
-    border-bottom: 1px solid $inbox-border;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
   }
 
@@ -2669,16 +2647,16 @@ $inbox-ai-bg: $color-accent-ghost;
     border-radius: $border-radius-sm;
     padding: 0 $spacing-sm;
     gap: $spacing-xs;
-    border: 1px solid transparent;
-    transition: border-color $inbox-transition;
+    border: 1.5px solid transparent;
+    transition: border-color 200ms $ease-out-quart;
 
     &:focus-within {
-      border-color: rgba($inbox-accent, 0.2);
+      border-color: rgba($color-primary, 0.2);
     }
   }
 
   &__global-search-icon {
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     display: flex;
     flex-shrink: 0;
   }
@@ -2689,25 +2667,25 @@ $inbox-ai-bg: $color-accent-ghost;
     background: transparent;
     padding: $spacing-xs 0;
     font-size: $font-size-sm;
-    color: $inbox-text;
+    color: $color-gray-900;
     outline: none;
     font-family: $font-primary;
     letter-spacing: $letter-spacing-normal;
 
-    &::placeholder { color: $inbox-text-muted; }
+    &::placeholder { color: $color-gray-400; }
   }
 
   &__global-search-close {
     background: none;
     border: none;
     cursor: pointer;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     padding: $spacing-2xs;
     border-radius: $border-radius-xs;
     @include flex-center;
-    transition: color $inbox-transition;
+    transition: color 200ms $ease-out-quart;
 
-    &:hover { color: $inbox-text; }
+    &:hover { color: $color-gray-900; }
   }
 
   &__global-search-results {
@@ -2722,7 +2700,7 @@ $inbox-ai-bg: $color-accent-ghost;
     @include flex-column-center;
     gap: $spacing-xs;
     padding: $spacing-xl;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-size: $font-size-sm;
 
     p { margin: 0; }
@@ -2734,7 +2712,7 @@ $inbox-ai-bg: $color-accent-ghost;
     cursor: pointer;
     transition: background $duration-fast ease;
 
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
   }
 
   &__global-search-item-header {
@@ -2744,19 +2722,19 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__global-search-item-name {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
   }
 
   &__global-search-item-time {
     font-size: 10px;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-variant-numeric: tabular-nums;
   }
 
   &__global-search-item-text {
     font-size: $font-size-xs;
-    color: $inbox-text-secondary;
+    color: $color-gray-900;
     margin: 0;
     line-height: 1.4;
     @include truncate;
@@ -2775,8 +2753,8 @@ $inbox-ai-bg: $color-accent-ghost;
       font-size: $font-size-2xs;
       padding: 1px 6px;
       border-radius: $border-radius-xs;
-      background: $inbox-accent-light;
-      color: $inbox-accent;
+      background: $color-primary-light;
+      color: $color-primary;
       font-weight: $font-weight-medium;
       text-transform: capitalize;
       letter-spacing: normal;
@@ -2797,7 +2775,7 @@ $inbox-ai-bg: $color-accent-ghost;
       color: $color-warning-dark;
     }
     &--agendado {
-      background: $inbox-accent-light;
+      background: $color-primary-light;
       color: $color-primary-dark;
     }
     &--en_riesgo {
@@ -2822,8 +2800,8 @@ $inbox-ai-bg: $color-accent-ghost;
     align-items: center;
     gap: 10px;
     padding: 6px $spacing-lg;
-    background: linear-gradient(90deg, rgba(45, 90, 61, 0.04), rgba(45, 90, 61, 0.02));
-    border-bottom: 1px solid rgba(45, 90, 61, 0.06);
+    background: $color-gray-50;
+    border-bottom: 1px solid $color-gray-200;
     font-size: $font-size-xs;
 
     @media (max-width: $breakpoint-md) { padding: 5px $spacing-md; }
@@ -2831,8 +2809,8 @@ $inbox-ai-bg: $color-accent-ghost;
 
   &__client-bar-id {
     font-family: 'SF Mono', 'Fira Code', monospace;
-    font-weight: $font-weight-semibold;
-    color: $inbox-text;
+    font-weight: 700;
+    color: $color-gray-900;
     font-size: 10px;
   }
 
@@ -2849,8 +2827,8 @@ $inbox-ai-bg: $color-accent-ghost;
       color: $color-accent-dark;
     }
     &--activo {
-      background: $inbox-accent-light;
-      color: $inbox-accent;
+      background: $color-primary-light;
+      color: $color-primary;
     }
     &--nuevo {
       background: $color-info-bg;
@@ -2867,16 +2845,16 @@ $inbox-ai-bg: $color-accent-ghost;
   }
 
   &__client-bar-visits {
-    color: $inbox-text-secondary;
+    color: $color-gray-900;
   }
 
   &__client-bar-days {
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-style: italic;
   }
 
   &__client-bar-new {
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     font-style: italic;
     font-size: 10px;
   }
@@ -3046,9 +3024,9 @@ $inbox-ai-bg: $color-accent-ghost;
   width: 340px;
   max-height: 360px;
   overflow-y: auto;
-  background: $inbox-panel-bg;
-  border-radius: $inbox-radius;
-  box-shadow: $shadow-xl, 0 0 0 1px $inbox-border;
+  background: $color-white;
+  border-radius: $border-radius-md;
+  box-shadow: $shadow-xl, 0 0 0 1px rgba(0, 0, 0, 0.05);
   animation: inboxSlideUp 200ms $ease-out-expo both;
   margin-bottom: $spacing-xs;
   @include custom-scrollbar;
@@ -3057,13 +3035,13 @@ $inbox-ai-bg: $color-accent-ghost;
 .inbox__quick-replies-header {
   @include flex-between;
   padding: $spacing-sm $spacing-md;
-  border-bottom: 1px solid $inbox-border;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
-  color: $inbox-text;
+  font-weight: 700;
+  color: $color-gray-900;
   position: sticky;
   top: 0;
-  background: $inbox-panel-bg;
+  background: $color-white;
   z-index: 1;
 
   button {
@@ -3072,10 +3050,10 @@ $inbox-ai-bg: $color-accent-ghost;
     height: 24px;
     border: none;
     background: none;
-    color: $inbox-text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     border-radius: $border-radius-xs;
-    &:hover { background: $inbox-hover; }
+    &:hover { background: $color-gray-50; }
   }
 }
 
@@ -3088,7 +3066,7 @@ $inbox-ai-bg: $color-accent-ghost;
   color: $color-gray-400;
   cursor: pointer;
   border-radius: $border-radius-md;
-  transition: all $inbox-transition;
+  transition: all 200ms $ease-out-quart;
   flex-shrink: 0;
 
   &:hover {
@@ -3118,20 +3096,20 @@ $inbox-ai-bg: $color-accent-ghost;
   border-bottom: 1px solid rgba(0, 0, 0, 0.03);
 
   &:last-child { border-bottom: none; }
-  &:hover { background: $inbox-hover; }
+  &:hover { background: $color-gray-50; }
 }
 
 .inbox__quick-reply-item-label {
   font-size: $font-size-xs;
   font-weight: $font-weight-bold;
-  color: $inbox-accent;
+  color: $color-primary;
   text-transform: uppercase;
   letter-spacing: $letter-spacing-wider;
 }
 
 .inbox__quick-reply-item-text {
   font-size: $font-size-sm;
-  color: $inbox-text-secondary;
+  color: $color-gray-900;
   line-height: $line-height-base;
 }
 
@@ -3144,7 +3122,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
 .inbox__notes-empty {
   font-size: $font-size-xs;
-  color: $inbox-text-muted;
+  color: $color-gray-400;
   font-style: italic;
   padding: $spacing-xs 0;
 }
@@ -3175,7 +3153,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
 .inbox__note-item-time {
   font-size: 10px;
-  color: $inbox-text-muted;
+  color: $color-gray-400;
   flex: 1;
 }
 
@@ -3185,7 +3163,7 @@ $inbox-ai-bg: $color-accent-ghost;
   height: 18px;
   border: none;
   background: none;
-  color: $inbox-text-muted;
+  color: $color-gray-400;
   cursor: pointer;
   border-radius: $border-radius-xs;
   opacity: 0;
@@ -3200,7 +3178,7 @@ $inbox-ai-bg: $color-accent-ghost;
 
 .inbox__note-item-text {
   font-size: $font-size-xs;
-  color: $inbox-text;
+  color: $color-gray-900;
   line-height: $line-height-base;
   word-break: break-word;
 }
@@ -3215,17 +3193,17 @@ $inbox-ai-bg: $color-accent-ghost;
 .inbox__note-input {
   width: 100%;
   padding: $spacing-xs $spacing-sm;
-  border: 1px solid $inbox-border;
+  border: 1.5px solid rgba(0, 0, 0, 0.05);
   border-radius: $border-radius-sm;
   background: rgba(245, 158, 11, 0.04);
   font-family: $font-primary;
   font-size: $font-size-xs;
-  color: $inbox-text;
+  color: $color-gray-900;
   resize: vertical;
   min-height: 48px;
   transition: border-color $duration-fast ease;
 
-  &::placeholder { color: $inbox-text-muted; }
+  &::placeholder { color: $color-gray-400; }
   &:focus {
     outline: none;
     border-color: rgba(245, 158, 11, 0.4);
@@ -3242,7 +3220,7 @@ $inbox-ai-bg: $color-accent-ghost;
   color: rgba(180, 120, 10, 0.9);
   font-family: $font-primary;
   font-size: $font-size-xs;
-  font-weight: $font-weight-semibold;
+  font-weight: 700;
   cursor: pointer;
   transition: all $duration-fast ease;
 
@@ -3292,11 +3270,11 @@ $inbox-ai-bg: $color-accent-ghost;
 // UNREAD IMPROVEMENTS
 // ===========================================
 .inbox__conv-item--unread {
-  border-left: 3px solid $inbox-accent;
+  border-left: 3px solid $color-primary;
 
   .inbox__conv-name {
     font-weight: $font-weight-bold !important;
-    color: $color-secondary !important;
+    color: $color-gray-900 !important;
   }
 
   .inbox__conv-preview {
@@ -3310,8 +3288,8 @@ $inbox-ai-bg: $color-accent-ghost;
 }
 
 @keyframes badgePulse {
-  0%, 100% { box-shadow: 0 2px 6px rgba(45, 90, 61, 0.3); }
-  50% { box-shadow: 0 2px 12px rgba(45, 90, 61, 0.5), 0 0 0 4px rgba(45, 90, 61, 0.1); }
+  0%, 100% { box-shadow: 0 2px 6px rgba(30, 64, 175, 0.3); }
+  50% { box-shadow: 0 2px 12px rgba(30, 64, 175, 0.5), 0 0 0 4px rgba(30, 64, 175, 0.1); }
 }
 
 @keyframes urgentPulse {

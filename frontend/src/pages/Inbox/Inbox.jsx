@@ -2029,9 +2029,17 @@ const Inbox = () => {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const rect = e.currentTarget.getBoundingClientRect();
+                                const menuW = 200;
+                                const menuH = 220;
+                                let left = isSent ? rect.left - menuW : rect.right - 20;
+                                let top = rect.bottom + 4;
+                                // Keep menu inside viewport
+                                if (left + menuW > window.innerWidth - 16) left = window.innerWidth - menuW - 16;
+                                if (left < 16) left = 16;
+                                if (top + menuH > window.innerHeight - 16) top = rect.top - menuH - 4;
                                 setMsgContextMenu({
                                   msg,
-                                  position: { top: rect.bottom + 4, left: isSent ? rect.left - 140 : rect.right - 20 },
+                                  position: { top, left },
                                 });
                               }}
                             >

@@ -136,6 +136,23 @@ const timeAgo = (dateStr) => {
   return `Hace ${diffDays}d`;
 };
 
+/** Calculate countdown for pending tasks: how many minutes left until execution */
+const taskCountdown = (createdAt, content) => {
+  if (!createdAt) return null;
+  // Parse delay from content (e.g. "en 10 min", "en 5 minutos")
+  const match = (content || '').match(/en\s+(\d+)\s*min/i);
+  const delayMin = match ? parseInt(match[1]) : 5;
+  const created = new Date(createdAt);
+  const executeAt = new Date(created.getTime() + delayMin * 60000);
+  const now = new Date();
+  const remainMs = executeAt - now;
+  if (remainMs <= 0) return { text: 'Ejecutando...', done: true };
+  const remainMin = Math.floor(remainMs / 60000);
+  const remainSec = Math.floor((remainMs % 60000) / 1000);
+  if (remainMin > 0) return { text: `${remainMin}m ${remainSec}s`, done: false };
+  return { text: `${remainSec}s`, done: false };
+};
+
 // ===== CHART COLORS (match status badges) =====
 const CHART_COLORS = {
   confirmed: '#34D399',
@@ -216,6 +233,15 @@ const Dashboard = ({ onNavigate }) => {
   const [paymentAlerts, setPaymentAlerts] = useState([]);
   const [dismissingAlert, setDismissingAlert] = useState(null);
   const [revenueData, setRevenueData] = useState([]);
+  const [, setTick] = useState(0); // Forces re-render every second for countdowns
+
+  // Tick every second when there are pending tasks
+  useEffect(() => {
+    const hasPending = (stats?.pending_tasks || []).some(t => t.status === 'pending');
+    if (!hasPending) return;
+    const timer = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, [stats?.pending_tasks]);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -496,8 +522,8 @@ const Dashboard = ({ onNavigate }) => {
                 <AreaChart data={revenueData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2D5A3D" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#2D5A3D" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#1E40AF" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#1E40AF" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <XAxis
@@ -511,11 +537,11 @@ const Dashboard = ({ onNavigate }) => {
                   <Area
                     type="monotone"
                     dataKey="value"
-                    stroke="#2D5A3D"
+                    stroke="#1E40AF"
                     strokeWidth={2}
                     fill="url(#revenueGradient)"
                     dot={false}
-                    activeDot={{ r: 4, fill: '#2D5A3D', stroke: '#fff', strokeWidth: 2 }}
+                    activeDot={{ r: 4, fill: '#1E40AF', stroke: '#fff', strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -779,17 +805,28 @@ const Dashboard = ({ onNavigate }) => {
           <div className="dashboard__tasks-list">
             {pendingTasks.map((task) => {
               const content = (task.content || '').replace(/^PENDIENTE:\s*/i, '');
+              const countdown = taskCountdown(task.created_at, task.content);
               return (
                 <div key={task.id} className="dashboard__task-item">
-                  <div className="dashboard__task-dot" />
+                  <div className={`dashboard__task-dot${countdown?.done ? ' dashboard__task-dot--executing' : ''}`} />
                   <div className="dashboard__task-content">
                     <span className="dashboard__task-client">{task.client_name}</span>
                     <span className="dashboard__task-text">{content}</span>
                   </div>
                   <div className="dashboard__task-actions">
-                    <span className="dashboard__task-time">
-                      {Icons.clock} {timeAgo(task.created_at)}
-                    </span>
+                    {countdown && !countdown.done ? (
+                      <span className="dashboard__task-countdown">
+                        {Icons.clock} {countdown.text}
+                      </span>
+                    ) : countdown?.done ? (
+                      <span className="dashboard__task-countdown dashboard__task-countdown--active">
+                        ⚡ {countdown.text}
+                      </span>
+                    ) : (
+                      <span className="dashboard__task-time">
+                        {Icons.clock} {timeAgo(task.created_at)}
+                      </span>
+                    )}
                     <button className="dashboard__task-resolve" onClick={() => resolveTask(task.id)} title="Marcar como resuelta">
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                     </button>

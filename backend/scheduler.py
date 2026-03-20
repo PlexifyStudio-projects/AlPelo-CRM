@@ -298,7 +298,16 @@ def _check_30min_reminders(db):
 
             client_first, service_name, staff_first = _get_appt_details(db, appt)
 
-            msg = f"Hola {client_first}! Te recordamos que tienes una cita hoy a las {appt.time}"
+            # Check if this is the first message ever to this client
+            prev_msgs = db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id == conv.id).count()
+            from database.models import Tenant
+            _tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+            _biz = _tenant.name if _tenant else "tu negocio de confianza"
+
+            if prev_msgs == 0:
+                msg = f"Hola {client_first}! Soy Lina de {_biz} 👋\n\nTe escribo para recordarte que tienes una cita hoy a las {appt.time}"
+            else:
+                msg = f"Hola {client_first}! Te recordamos que tienes una cita hoy a las {appt.time}"
             if staff_first:
                 msg += f" con {staff_first}"
             msg += f" para {service_name}."
@@ -477,11 +486,23 @@ def _check_custom_reminders(db):
 
         client_first, service_name, staff_first = _get_appt_details(db, best_appt)
 
+        # Check if first contact
+        prev_msgs = db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id == conv.id).count()
+        from database.models import Tenant
+        _tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        _biz = _tenant.name if _tenant else "tu negocio de confianza"
+
         mins_left = int(diff_min)
-        if mins_left > 1:
-            msg = f"Hola {client_first}! Te recuerdo que tu cita es en {mins_left} minutos"
+        if prev_msgs == 0:
+            if mins_left > 1:
+                msg = f"Hola {client_first}! Soy Lina de {_biz} 👋\n\nTe escribo para recordarte que tu cita es en {mins_left} minutos"
+            else:
+                msg = f"Hola {client_first}! Soy Lina de {_biz} 👋\n\nTu cita es ahorita"
         else:
-            msg = f"Hola {client_first}! Tu cita es ahorita"
+            if mins_left > 1:
+                msg = f"Hola {client_first}! Te recuerdo que tu cita es en {mins_left} minutos"
+            else:
+                msg = f"Hola {client_first}! Tu cita es ahorita"
 
         if staff_first:
             msg += f" con {staff_first}"
@@ -1075,7 +1096,28 @@ def _execute_pending_tasks(db):
             while history and history[-1]["role"] == "user":
                 history.pop()
 
-            context = f"[SISTEMA: Tienes una tarea pendiente que debes ejecutar AHORA. La tarea es: {task_desc}. Escribe el mensaje al cliente de forma natural y calida, como si fuera espontaneo. NO menciones que es una tarea programada.]"
+            # Detect if this is the FIRST interaction with the client (no prior messages)
+            is_first_contact = len(history) == 0
+
+            # Get business name from tenant
+            from database.models import Tenant
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+            business_name = tenant.name if tenant else "el negocio"
+
+            if is_first_contact:
+                context = (
+                    f"[SISTEMA: Tienes una tarea pendiente que debes ejecutar AHORA. La tarea es: {task_desc}. "
+                    f"IMPORTANTE: Esta es la PRIMERA VEZ que le escribes a este cliente por WhatsApp. "
+                    f"DEBES presentarte: 'Hola {client_first}! Soy Lina de {business_name}' y luego ejecutar la tarea de forma natural y calida. "
+                    f"El cliente no te conoce aun, asi que se amable y clara sobre quien eres y de donde vienes. "
+                    f"NO menciones que es una tarea programada.]"
+                )
+            else:
+                context = (
+                    f"[SISTEMA: Tienes una tarea pendiente que debes ejecutar AHORA. La tarea es: {task_desc}. "
+                    f"Escribe el mensaje al cliente de forma natural y calida, como si fuera espontaneo. "
+                    f"NO menciones que es una tarea programada.]"
+                )
 
             ai_response = _call_ai_sync(system_prompt, history, context)
 

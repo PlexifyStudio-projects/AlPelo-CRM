@@ -2,9 +2,19 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// Lina IA v7.0 — World-Class Chat Interface
-// Premium conversational UI · BEM: .chat-ai
+// Lina IA — Premium Chat Interface
+// Purple AI identity, clean typography, smooth UX
 // ============================================
+
+// AI purple palette (local)
+$lina-purple: #7C3AED;
+$lina-purple-light: #8B5CF6;
+$lina-purple-dark: #6D28D9;
+$lina-purple-ghost: rgba(124, 58, 237, 0.06);
+$lina-purple-bg: rgba(124, 58, 237, 0.08);
+$lina-user-blue: #1E40AF;
+$lina-user-blue-dark: #1E3A8A;
+$lina-assistant-bg: #F1F5F9;
 
 .chat-ai {
   @include page-enter;
@@ -12,19 +22,16 @@
   height: calc(100vh - #{$header-height} - #{$spacing-2xl});
   max-height: calc(100vh - #{$header-height} - #{$spacing-2xl});
 
-  // ------------------------------------------
-  // Header — Refined Glass Bar
-  // ------------------------------------------
+  // HEADER — Purple gradient for AI identity
   &__header {
     @include flex-between;
-    padding: $spacing-sm $spacing-xl;
-    border-radius: $border-radius-xl;
-    @include glass($glass-bg-heavy, 20px);
-    border: 1px solid rgba(45, 90, 61, 0.05);
-    box-shadow: $shadow-sm, $glass-inner-glow-subtle;
+    padding: $spacing-sm $spacing-lg;
+    border-radius: $border-radius-lg;
+    background: linear-gradient(135deg, rgba($lina-purple, 0.03) 0%, rgba($lina-purple, 0.01) 100%);
+    border: $border-width solid rgba($lina-purple, 0.1);
+    box-shadow: 0 1px 3px rgba($lina-purple, 0.04);
     flex-shrink: 0;
     margin-bottom: $spacing-md;
-    animation: fadeInLeft 300ms $ease-out-expo both;
   }
 
   &__header-left {
@@ -35,36 +42,19 @@
 
   &__header-icon {
     @include flex-center;
-    width: 42px;
-    height: 42px;
-    border-radius: $border-radius-lg;
-    background: linear-gradient(145deg, $color-primary-dark, $color-primary-light);
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, $lina-purple, $lina-purple-light);
     color: $color-white;
-    box-shadow: $shadow-colored-primary;
-    position: relative;
-
-    // Subtle shine
-    &::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 50%;
-      border-radius: $border-radius-lg $border-radius-lg 0 0;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.15), transparent);
-      pointer-events: none;
-    }
+    box-shadow: 0 2px 8px rgba($lina-purple, 0.25);
   }
 
   &__title {
-    font-family: $font-heading;
     font-size: $font-size-md;
     font-weight: $font-weight-bold;
     color: $color-secondary;
     margin: 0;
-    letter-spacing: $letter-spacing-tight;
-    line-height: $line-height-tight;
   }
 
   &__subtitle {
@@ -82,12 +72,11 @@
     height: 7px;
     border-radius: $border-radius-full;
     background: $color-success;
-    box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+    box-shadow: 0 0 6px rgba($color-success, 0.4);
     animation: livePulse 2s ease-in-out infinite;
 
     &--paused {
       background: $color-error;
-      box-shadow: 0 0 8px rgba(248, 113, 113, 0.3);
       animation: none;
     }
   }
@@ -100,30 +89,27 @@
 
   &__header-btn {
     @include flex-center;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border: none;
     background: transparent;
     color: $color-gray-400;
     cursor: pointer;
-    border-radius: $border-radius-md;
-    transition: all 200ms $ease-out-quart;
+    border-radius: $border-radius-sm;
+    transition: all $transition-fast;
 
     &:hover {
-      background: $color-gray-50;
-      color: $color-secondary;
-      transform: scale(1.05);
+      background: $lina-purple-ghost;
+      color: $lina-purple;
     }
 
     &--active {
-      background: $color-primary-ghost;
-      color: $color-primary;
+      background: $lina-purple-bg;
+      color: $lina-purple;
     }
   }
 
-  // ------------------------------------------
-  // Body layout
-  // ------------------------------------------
+  // BODY
   &__body {
     display: flex;
     flex: 1;
@@ -138,30 +124,21 @@
     position: relative;
   }
 
-  // ------------------------------------------
-  // Messages — Clean Chat Area
-  // ------------------------------------------
+  // MESSAGES — More padding, better spacing
   &__messages {
     flex: 1;
     overflow-y: auto;
     @include custom-scrollbar;
-    padding: $spacing-lg $spacing-xl;
-    border-radius: $border-radius-xl;
-    background: $color-white;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: $shadow-inner;
-
-    // Subtle dot pattern for empty feel
-    &:empty {
-      @include dot-grid(rgba(0, 0, 0, 0.03), 1px, 32px);
-    }
+    padding: $spacing-xl $spacing-xl;
+    border-radius: $border-radius-lg;
+    background: $color-gray-50;
+    border: 1px solid $border-color-light;
   }
 
   &__message {
     display: flex;
     gap: $spacing-sm;
-    margin-bottom: $spacing-md;
-    animation: chatMsgIn 280ms $ease-out-expo both;
+    margin-bottom: $spacing-lg;
 
     &--user {
       justify-content: flex-end;
@@ -174,119 +151,104 @@
     }
   }
 
+  // Lina avatar — small purple circle
   &__avatar {
     @include flex-center;
     width: 32px;
     height: 32px;
-    border-radius: $border-radius-md;
-    background: linear-gradient(145deg, $color-primary, $color-primary-light);
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, $lina-purple, $lina-purple-light);
     color: $color-white;
     flex-shrink: 0;
     margin-top: 2px;
-    box-shadow: 0 2px 8px rgba(45, 90, 61, 0.15);
-    position: relative;
-
-    // AI indicator ring
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: inherit;
-      border: 1.5px solid rgba(45, 90, 61, 0.12);
-      pointer-events: none;
-    }
+    font-size: 14px;
+    box-shadow: 0 2px 6px rgba($lina-purple, 0.2);
   }
 
   &__bubble-wrap {
     @include flex-column;
     gap: 4px;
-    max-width: 68%;
+    max-width: 70%;
     min-width: 60px;
 
     .chat-ai__message--user & {
       align-items: flex-end;
+      max-width: 70%;
     }
   }
 
   &__bubble {
-    padding: 12px $spacing-lg;
-    border-radius: $border-radius-lg;
+    padding: $spacing-sm $spacing-md;
+    border-radius: 18px;
     font-size: $font-size-sm;
     line-height: $line-height-base;
     white-space: pre-wrap;
     word-break: break-word;
-    position: relative;
 
+    // User bubbles — rich blue with white text
     &--user {
-      background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+      background: $lina-user-blue;
       color: $color-white;
       border-bottom-right-radius: $border-radius-xs;
-      box-shadow: 0 2px 12px rgba(45, 90, 61, 0.15);
+      box-shadow: 0 1px 4px rgba($lina-user-blue, 0.2);
     }
 
+    // Assistant bubbles — card with purple left accent
     &--assistant {
-      background: $color-gray-50;
+      background: $color-white;
       color: $color-secondary;
-      border: 1px solid rgba(0, 0, 0, 0.04);
       border-bottom-left-radius: $border-radius-xs;
-      box-shadow: $shadow-xs;
-
-      // Subtle AI indicator — left accent
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 8px;
-        bottom: 8px;
-        width: 2px;
-        background: linear-gradient(180deg, $color-primary-light, rgba($color-primary, 0.15));
-        border-radius: 1px;
-        opacity: 0.5;
-      }
+      max-width: 75%;
+      border: 1px solid rgba($lina-purple, 0.1);
+      border-left: 3px solid $lina-purple;
+      box-shadow: 0 1px 4px rgba($lina-purple, 0.06);
+      padding: $spacing-md $spacing-lg;
     }
 
+    // Typing indicator bubble
     &--typing {
       display: flex;
       align-items: center;
       gap: 5px;
-      padding: 14px 20px;
+      padding: $spacing-sm $spacing-lg;
       min-width: 70px;
+      background: $lina-assistant-bg;
+      border-bottom-left-radius: $border-radius-xs;
     }
   }
 
+  // Typing dots — smooth animated
   &__dot {
     width: 6px;
     height: 6px;
     border-radius: $border-radius-full;
-    background: $color-primary;
+    background: $lina-purple;
     animation: typingPulse 1.4s ease-in-out infinite;
 
     &:nth-child(2) { animation-delay: 0.15s; }
     &:nth-child(3) { animation-delay: 0.3s; }
   }
 
+  // Timestamps — smaller, lighter, more subtle
   &__time {
-    font-size: $font-size-2xs;
+    font-size: 10px;
     color: $color-gray-300;
     padding: 0 $spacing-xs;
-    font-weight: $font-weight-medium;
     font-variant-numeric: tabular-nums;
+    opacity: 0.7;
   }
 
-  // ------------------------------------------
-  // Action results — Refined Result Cards
-  // ------------------------------------------
+  // ACTION RESULTS — clean card with subtle border
   &__text {
     display: block;
   }
 
   &__action-results {
-    display: flex;
-    flex-direction: column;
+    @include flex-column;
     gap: $spacing-xs;
     margin-top: $spacing-sm;
     padding-top: $spacing-sm;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
   }
 
   &__action-result {
@@ -294,12 +256,11 @@
     align-items: flex-start;
     gap: 8px;
     font-size: $font-size-xs;
-    color: $color-primary-dark;
-    background: rgba(45, 90, 61, 0.04);
-    padding: 6px 10px;
+    color: $lina-purple-dark;
+    background: $lina-purple-ghost;
+    padding: 8px $spacing-sm;
     border-radius: $border-radius-sm;
-    line-height: $line-height-snug;
-    border-left: 2px solid $color-primary;
+    border-left: 2px solid $lina-purple;
 
     &--error {
       color: $color-error-dark;
@@ -315,86 +276,68 @@
     margin-top: 1px;
   }
 
-  // ------------------------------------------
-  // Scroll button — Floating Pill
-  // ------------------------------------------
+  // SCROLL BUTTON — floating pill, subtle shadow
   &__scroll-btn {
     position: absolute;
     bottom: 140px;
     left: 50%;
     transform: translateX(-50%);
     @include flex-center;
-    width: 38px;
-    height: 38px;
+    gap: $spacing-2xs;
+    height: 36px;
+    padding: 0 $spacing-md;
     border-radius: $border-radius-full;
-    border: 1px solid $glass-border;
-    background: $glass-bg-heavy;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid $border-color;
+    background: $color-white;
     color: $color-gray-500;
     cursor: pointer;
-    box-shadow: $shadow-md, $glass-inner-glow;
-    transition: all 200ms $ease-out-quart;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    transition: all $transition-fast;
     z-index: 5;
-    animation: chatMsgIn 200ms $ease-out-expo both;
 
     &:hover {
-      background: $color-white;
-      color: $color-primary;
+      color: $lina-purple;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
       transform: translateX(-50%) translateY(-2px);
-      box-shadow: $shadow-lg;
     }
   }
 
-  // ------------------------------------------
-  // Welcome — Inviting Empty State
-  // ------------------------------------------
+  // WELCOME — clean centered layout
   &__welcome {
     @include flex-column-center;
     padding: $spacing-3xl $spacing-xl;
     text-align: center;
-    animation: fadeInUp 500ms $ease-out-expo both;
+    gap: $spacing-sm;
   }
 
   &__welcome-badge {
     @include flex-center;
     width: 72px;
     height: 72px;
-    border-radius: $border-radius-2xl;
-    background: linear-gradient(145deg, $color-primary-dark, $color-primary-light);
+    border-radius: $border-radius-xl;
+    background: linear-gradient(135deg, $lina-purple, $lina-purple-light);
     color: $color-white;
-    margin-bottom: $spacing-xl;
-    box-shadow: $shadow-colored-primary;
-    position: relative;
-
-    // Glow ring
-    &::after {
-      content: '';
-      position: absolute;
-      inset: -6px;
-      border-radius: inherit;
-      border: 2px solid rgba(45, 90, 61, 0.08);
-      pointer-events: none;
-    }
+    margin-bottom: $spacing-lg;
+    box-shadow: 0 4px 20px rgba($lina-purple, 0.3);
+    font-size: 28px;
   }
 
   &__welcome-title {
-    font-family: $font-heading;
-    font-size: $font-size-xl;
-    font-weight: $font-weight-bold;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-extrabold;
     color: $color-secondary;
-    margin: 0 0 $spacing-sm;
-    letter-spacing: $letter-spacing-tight;
+    margin: 0 0 $spacing-xs;
   }
 
   &__welcome-text {
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
     color: $color-gray-400;
     line-height: $line-height-relaxed;
     max-width: 460px;
     margin: 0 0 $spacing-2xl;
   }
 
+  // Prompt chips — pill-shaped, subtle border
   &__prompts {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -417,24 +360,19 @@
     gap: $spacing-sm;
     padding: $spacing-md;
     border-radius: $border-radius-lg;
-    border: 1px solid rgba(0, 0, 0, 0.04);
+    border: 1px solid $border-color;
     background: $color-white;
     cursor: pointer;
     text-align: left;
     font-family: inherit;
-    transition: all 250ms $ease-out-expo;
-    box-shadow: $shadow-xs;
+    transition: all 200ms $ease-out-quart;
+    box-shadow: none;
 
     &:hover {
-      border-color: rgba(45, 90, 61, 0.12);
-      background: rgba(45, 90, 61, 0.02);
-      box-shadow: $shadow-sm;
-      transform: translateY(-2px);
-    }
-
-    &:active {
-      transform: translateY(0) scale(0.98);
-      transition-duration: $duration-instant;
+      border-color: rgba($lina-purple, 0.3);
+      background: $lina-purple-ghost;
+      box-shadow: 0 2px 8px rgba($lina-purple, 0.08);
+      transform: translateY(-1px);
     }
   }
 
@@ -442,11 +380,9 @@
     font-size: 20px;
     line-height: 1;
     flex-shrink: 0;
-    margin-top: 1px;
   }
 
   &__prompt-text {
-    display: block;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     color: $color-secondary;
@@ -454,21 +390,20 @@
   }
 
   &__prompt-desc {
-    display: block;
     font-size: $font-size-xs;
     color: $color-gray-400;
     margin-top: 3px;
     line-height: $line-height-snug;
   }
 
-  // ------------------------------------------
-  // Input area — Large & Clean
-  // ------------------------------------------
+  // INPUT AREA — clean border-top, subtle shadow above
   &__input-area {
     @include flex-column;
     gap: $spacing-xs;
     padding-top: $spacing-md;
     flex-shrink: 0;
+    border-top: 1px solid $border-color-light;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.02);
   }
 
   &__chips {
@@ -484,27 +419,20 @@
     gap: 5px;
     padding: 6px 14px;
     border-radius: $border-radius-full;
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    border: 1px solid $border-color;
     background: $color-white;
     font-size: $font-size-xs;
     font-family: $font-primary;
     font-weight: $font-weight-medium;
     color: $color-gray-500;
     cursor: pointer;
-    transition: all 200ms $ease-out-quart;
+    transition: all $transition-fast;
     white-space: nowrap;
-    box-shadow: $shadow-xs;
 
     &:hover {
-      border-color: rgba(45, 90, 61, 0.15);
-      color: $color-primary;
-      background: $color-primary-ghost;
-      transform: translateY(-1px);
-      box-shadow: $shadow-sm;
-    }
-
-    &:active {
-      transform: translateY(0) scale(0.97);
+      border-color: rgba($lina-purple, 0.3);
+      color: $lina-purple;
+      background: $lina-purple-ghost;
     }
   }
 
@@ -513,15 +441,15 @@
     align-items: flex-end;
     gap: $spacing-xs;
     border-radius: $border-radius-xl;
-    border: 1.5px solid rgba(0, 0, 0, 0.08);
-    background: $color-white;
-    padding: $spacing-xs $spacing-xs $spacing-xs $spacing-lg;
-    transition: all 250ms $ease-out-expo;
-    box-shadow: $shadow-xs;
+    border: 1.5px solid $border-color;
+    background: $color-gray-50;
+    padding: $spacing-xs $spacing-xs $spacing-xs $spacing-md;
+    transition: all $transition-fast;
 
     &:focus-within {
-      border-color: $color-primary;
-      box-shadow: 0 0 0 4px rgba(45, 90, 61, 0.06), $shadow-sm;
+      border-color: $lina-purple;
+      background: $color-white;
+      box-shadow: 0 0 0 3px rgba($lina-purple, 0.08), $shadow-sm;
     }
   }
 
@@ -533,16 +461,13 @@
     font-size: $font-size-sm;
     color: $color-secondary;
     resize: none;
-    min-height: 24px;
+    min-height: 32px;
     max-height: 120px;
     outline: none;
     line-height: $line-height-base;
     padding: $spacing-xs 0;
 
-    &::placeholder {
-      color: $color-gray-300;
-      font-weight: $font-weight-regular;
-    }
+    &::placeholder { color: $color-gray-300; }
     &:disabled { opacity: 0.5; }
   }
 
@@ -550,27 +475,23 @@
     @include flex-center;
     width: 38px;
     height: 38px;
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-md;
     border: none;
     background: $color-gray-100;
     color: $color-gray-300;
     cursor: default;
-    transition: all 250ms $ease-out-expo;
+    transition: all $transition-fast;
     flex-shrink: 0;
 
     &--active {
-      background: linear-gradient(135deg, $color-primary, $color-primary-dark);
+      background: linear-gradient(135deg, $lina-purple, $lina-purple-light);
       color: $color-white;
       cursor: pointer;
-      box-shadow: $shadow-colored-primary;
+      box-shadow: 0 2px 8px rgba($lina-purple, 0.25);
 
       &:hover {
-        background: linear-gradient(135deg, $color-primary-light, $color-primary);
-        transform: scale(1.05);
-      }
-
-      &:active {
-        transform: scale(0.95);
+        background: linear-gradient(135deg, $lina-purple-dark, $lina-purple);
+        box-shadow: 0 4px 12px rgba($lina-purple, 0.3);
       }
     }
 
@@ -579,22 +500,21 @@
 
   &__attach-btn {
     @include flex-center;
-    width: 38px;
-    height: 38px;
-    border-radius: $border-radius-lg;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-md;
     border: none;
     background: none;
     color: $color-gray-400;
     cursor: pointer;
-    transition: all 200ms $ease-out-quart;
+    transition: all $transition-fast;
     flex-shrink: 0;
 
     &:hover {
-      color: $color-primary;
-      background: $color-primary-ghost;
-      transform: scale(1.05);
+      color: $lina-purple;
+      background: $lina-purple-ghost;
     }
-    &:disabled { opacity: 0.4; cursor: default; transform: none; }
+    &:disabled { opacity: 0.4; cursor: default; }
   }
 
   &__image-preview {
@@ -602,19 +522,17 @@
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-md;
-    background: $color-primary-ghost;
-    border: 1px solid rgba(45, 90, 61, 0.1);
+    background: $lina-purple-ghost;
+    border: 1px solid rgba($lina-purple, 0.1);
     border-radius: $border-radius-md;
     margin-bottom: $spacing-xs;
-    animation: chatMsgIn 200ms $ease-out-expo both;
   }
 
   &__image-preview-img {
-    width: 52px;
-    height: 52px;
-    border-radius: $border-radius-md;
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-sm;
     object-fit: cover;
-    box-shadow: $shadow-sm;
   }
 
   &__image-preview-name {
@@ -622,7 +540,6 @@
     color: $color-gray-500;
     flex: 1;
     @include truncate;
-    font-weight: $font-weight-medium;
   }
 
   &__image-preview-remove {
@@ -634,7 +551,7 @@
     background: none;
     color: $color-gray-400;
     cursor: pointer;
-    transition: all 150ms ease;
+    transition: all $transition-fast;
 
     &:hover {
       background: $color-error-bg;
@@ -648,51 +565,40 @@
     border-radius: $border-radius-md;
     margin-bottom: $spacing-xs;
     display: block;
-    box-shadow: $shadow-sm;
   }
 
   &__hint {
     font-size: $font-size-2xs;
     color: $color-gray-300;
     text-align: center;
-    padding: 0;
     margin: $spacing-2xs 0 0;
-    letter-spacing: $letter-spacing-wide;
   }
 
-  // ------------------------------------------
-  // Paused overlay — Red Alert Bar
-  // ------------------------------------------
+  // PAUSED OVERLAY
   &__paused-overlay {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    padding: $spacing-sm $spacing-lg;
+    padding: $spacing-sm $spacing-md;
     background: $color-error-bg;
     border: 1px solid $color-error-border;
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-md;
     color: $color-error-dark;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
     margin: 0 0 $spacing-xs;
 
-    svg {
-      flex-shrink: 0;
-      opacity: 0.7;
-    }
+    svg { flex-shrink: 0; }
   }
 
-  // ------------------------------------------
-  // Sidebar — Premium Side Panel
-  // ------------------------------------------
+  // SIDEBAR — clean card with subtle shadow, better typography
   &__sidebar {
-    width: 256px;
-    min-width: 256px;
+    width: 240px;
+    min-width: 240px;
     @include flex-column;
     gap: $spacing-sm;
     overflow-y: auto;
     @include custom-scrollbar;
-    animation: fadeInRight 300ms $ease-out-expo both;
 
     @media (max-width: $breakpoint-lg) {
       display: none;
@@ -702,23 +608,20 @@
   &__sidebar-section {
     @include flex-column;
     gap: $spacing-sm;
-    padding: $spacing-lg;
-    border-radius: $border-radius-xl;
+    padding: $spacing-md;
+    border-radius: $border-radius-lg;
     background: $color-white;
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    box-shadow: $shadow-xs;
-    transition: box-shadow 200ms $ease-smooth;
-
-    &:hover {
-      box-shadow: $shadow-sm;
-    }
+    border: 1px solid $border-color;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
   &__sidebar-title {
     @include label-text;
     margin: 0;
     padding-bottom: $spacing-xs;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid $border-color-light;
+    color: $lina-purple;
+    letter-spacing: $letter-spacing-wider;
   }
 
   &__sidebar-stats {
@@ -729,31 +632,27 @@
 
   &__sidebar-stat {
     @include flex-column-center;
-    padding: $spacing-md $spacing-sm;
-    border-radius: $border-radius-lg;
+    padding: $spacing-sm;
+    border-radius: $border-radius-md;
     background: $color-gray-50;
-    transition: background 200ms;
+    transition: all 200ms $ease-out-quart;
 
     &:hover {
-      background: $color-primary-ghost;
+      background: $lina-purple-ghost;
     }
   }
 
   &__sidebar-stat-val {
-    font-family: $font-heading;
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
     color: $color-secondary;
-    line-height: $line-height-none;
     font-variant-numeric: tabular-nums;
   }
 
   &__sidebar-stat-lbl {
-    font-size: $font-size-2xs;
+    font-size: $font-size-xs;
     color: $color-gray-400;
-    margin-top: 4px;
-    font-weight: $font-weight-medium;
-    letter-spacing: $letter-spacing-wide;
+    margin-top: 2px;
   }
 
   &__sidebar-caps {
@@ -763,14 +662,10 @@
     span {
       font-size: $font-size-xs;
       color: $color-gray-500;
-      line-height: $line-height-snug;
-      padding: 3px 0;
-      font-weight: $font-weight-medium;
-      transition: color 150ms;
+      padding: 2px 0;
+      transition: color $transition-fast;
 
-      &:hover {
-        color: $color-primary;
-      }
+      &:hover { color: $lina-purple; }
     }
   }
 
@@ -782,7 +677,7 @@
   &__sidebar-history-item {
     display: block;
     width: 100%;
-    padding: 7px $spacing-sm;
+    padding: 6px $spacing-sm;
     border: none;
     background: transparent;
     font-family: $font-primary;
@@ -791,20 +686,17 @@
     text-align: left;
     cursor: pointer;
     border-radius: $border-radius-sm;
-    transition: all 150ms $ease-out-quart;
+    transition: all $transition-fast;
     @include truncate;
 
     &:hover {
-      background: $color-primary-ghost;
-      color: $color-primary;
-      padding-left: $spacing-md;
+      background: $lina-purple-ghost;
+      color: $lina-purple;
     }
   }
 }
 
-// ============================================
-// Responsive
-// ============================================
+// RESPONSIVE
 @media (max-width: $breakpoint-md) {
   .chat-ai {
     height: calc(100vh - #{$header-height} - #{$spacing-md});
@@ -813,25 +705,10 @@
     &__header {
       padding: $spacing-xs $spacing-md;
       margin-bottom: $spacing-xs;
-      border-radius: $border-radius-lg;
-    }
-
-    &__header-icon {
-      width: 36px;
-      height: 36px;
-    }
-
-    &__title {
-      font-size: $font-size-base;
-    }
-
-    &__subtitle {
-      font-size: $font-size-xs;
     }
 
     &__messages {
       padding: $spacing-md;
-      border-radius: $border-radius-lg;
     }
 
     &__bubble-wrap {
@@ -846,51 +723,29 @@
       width: 56px;
       height: 56px;
       margin-bottom: $spacing-lg;
+      font-size: 22px;
     }
 
     &__welcome-title {
-      font-size: $font-size-lg;
-    }
-
-    &__welcome-text {
-      font-size: $font-size-sm;
+      font-size: $font-size-xl;
     }
 
     &__prompts {
       grid-template-columns: repeat(2, 1fr);
-      gap: $spacing-xs;
     }
 
     &__chips {
       overflow-x: auto;
       flex-wrap: nowrap;
-      padding-bottom: $spacing-xs;
-
       &::-webkit-scrollbar { display: none; }
     }
 
-    &__chip {
-      flex-shrink: 0;
-    }
-
-    &__input-row {
-      border-radius: $border-radius-lg;
-      padding: $spacing-2xs $spacing-2xs $spacing-2xs $spacing-md;
-    }
+    &__chip { flex-shrink: 0; }
   }
 }
 
 @media (max-width: $breakpoint-sm) {
   .chat-ai {
-    &__header-actions {
-      gap: 0;
-    }
-
-    &__header-btn {
-      width: 32px;
-      height: 32px;
-    }
-
     &__prompts {
       grid-template-columns: 1fr;
     }
@@ -898,29 +753,16 @@
     &__bubble-wrap {
       max-width: 90%;
     }
-
-    &__msg-image {
-      max-width: 200px;
-      max-height: 150px;
-    }
   }
 }
 
-// ============================================
-// Animations
-// ============================================
+// ANIMATIONS
 @keyframes typingPulse {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
   30% { transform: translateY(-5px); opacity: 1; }
 }
 
 @keyframes chatMsgIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
