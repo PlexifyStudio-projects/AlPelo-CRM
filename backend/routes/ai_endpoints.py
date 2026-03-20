@@ -648,8 +648,8 @@ def _execute_action(action: dict, db: Session) -> str:
             return f"ERROR: No encontre una conversacion de WhatsApp para '{search_name or phone}'. Verifica que exista un chat activo."
 
         # Send via Meta WhatsApp API
-        wa_token = get_wa_token(db, tid)
-        wa_phone_id = get_wa_phone_id(db, tid)
+        wa_token = get_wa_token(db, _tid)
+        wa_phone_id = get_wa_phone_id(db, _tid)
         wa_api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
         wa_base = f"https://graph.facebook.com/{wa_api_version}/{wa_phone_id}"
 
@@ -718,8 +718,8 @@ def _execute_action(action: dict, db: Session) -> str:
             return "ERROR: Necesito el telefono o nombre del cliente."
 
         phone_clean = normalize_phone(target_phone)
-        wa_token = get_wa_token(db, tid)
-        wa_phone_id = get_wa_phone_id(db, tid)
+        wa_token = get_wa_token(db, _tid)
+        wa_phone_id = get_wa_phone_id(db, _tid)
         wa_api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
         wa_base = f"https://graph.facebook.com/{wa_api_version}/{wa_phone_id}"
 
@@ -810,8 +810,8 @@ def _execute_action(action: dict, db: Session) -> str:
         if not filtered:
             return "No encontre clientes que coincidan con esos filtros."
 
-        wa_token = get_wa_token(db, tid)
-        wa_phone_id = get_wa_phone_id(db, tid)
+        wa_token = get_wa_token(db, _tid)
+        wa_phone_id = get_wa_phone_id(db, _tid)
         wa_api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
         wa_base = f"https://graph.facebook.com/{wa_api_version}/{wa_phone_id}"
 
