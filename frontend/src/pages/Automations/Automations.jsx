@@ -409,22 +409,32 @@ const Automations = () => {
                     ) : null;
                   })()}
 
-                  {/* Template status pill */}
-                  {auto.channel !== 'interno' && (
-                    <div className={`${B}__card-template-ready`}>
-                      {auto.template_name ? (
-                        <>
-                          <span className={`${B}__card-template-dot ${B}__card-template-dot--ok`} />
-                          Plantilla lista
-                        </>
-                      ) : (
-                        <>
-                          <span className={`${B}__card-template-dot ${B}__card-template-dot--warn`} />
-                          Sin plantilla Meta
-                        </>
-                      )}
-                    </div>
-                  )}
+                  {/* Template status + preview */}
+                  {auto.channel !== 'interno' && (() => {
+                    const linkedTemplate = approvedTemplates.find(t => t.slug === auto.template_name);
+                    return (
+                      <>
+                        <div className={`${B}__card-template-ready`}>
+                          {linkedTemplate ? (
+                            <>
+                              <span className={`${B}__card-template-dot ${B}__card-template-dot--ok`} />
+                              {linkedTemplate.name}
+                            </>
+                          ) : (
+                            <>
+                              <span className={`${B}__card-template-dot ${B}__card-template-dot--warn`} />
+                              Sin plantilla Meta
+                            </>
+                          )}
+                        </div>
+                        {linkedTemplate && (
+                          <div className={`${B}__card-bubble`}>
+                            {linkedTemplate.body}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Config: only show days/hour selectors inline (no message editing) */}
                   {(auto.days_options || auto.send_hour_options) && (
