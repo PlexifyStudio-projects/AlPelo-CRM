@@ -370,6 +370,42 @@ def meta_token_status(db: Session = Depends(get_db), user=Depends(get_current_us
         expires_at = tenant.wa_token_expires_at.isoformat()
         days_until_expiry = (tenant.wa_token_expires_at - datetime.utcnow()).days
 
+    # If phone_number_id is missing, try auto-detect once more
+    if not tenant.wa_phone_number_id:
+        try:
+            resp = httpx.get(
+                f"https://graph.facebook.com/{META_GRAPH_VERSION}/me/businesses",
+                headers={"Authorization": f"Bearer {tenant.wa_access_token}"},
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                businesses = resp.json().get("data", [])
+                if businesses:
+                    biz_id = businesses[0].get("id")
+                    waba_resp = httpx.get(
+                        f"https://graph.facebook.com/{META_GRAPH_VERSION}/{biz_id}/owned_whatsapp_business_accounts",
+                        headers={"Authorization": f"Bearer {tenant.wa_access_token}"},
+                        timeout=10,
+                    )
+                    if waba_resp.status_code == 200:
+                        wabas = waba_resp.json().get("data", [])
+                        if wabas:
+                            tenant.wa_business_account_id = wabas[0].get("id")
+                            phone_resp = httpx.get(
+                                f"https://graph.facebook.com/{META_GRAPH_VERSION}/{tenant.wa_business_account_id}/phone_numbers",
+                                headers={"Authorization": f"Bearer {tenant.wa_access_token}"},
+                                timeout=10,
+                            )
+                            if phone_resp.status_code == 200:
+                                phones = phone_resp.json().get("data", [])
+                                if phones:
+                                    tenant.wa_phone_number_id = phones[0].get("id")
+                                    tenant.wa_phone_display = phones[0].get("display_phone_number", "")
+                                    db.commit()
+                                    print(f"[META STATUS] Auto-recovered phone_number_id for tenant {tid}: {tenant.wa_phone_number_id}")
+        except Exception as e:
+            print(f"[META STATUS] Auto-detect retry failed for tenant {tid}: {e}")
+
     # Test the token
     try:
         if tenant.wa_phone_number_id:
@@ -395,10 +431,27 @@ def meta_token_status(db: Session = Depends(get_db), user=Depends(get_current_us
                     "expires_at": expires_at,
                     "days_until_expiry": days_until_expiry,
                 }
+        else:
+            # Token exists but no phone — try to validate token at least
+            resp = httpx.get(
+                f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
+                headers={"Authorization": f"Bearer {tenant.wa_access_token}"},
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                return {
+                    "connected": True,
+                    "phone_display": "Token valido (configura WhatsApp Business en Meta)",
+                    "phone_number_id": None,
+                    "business_account_id": tenant.wa_business_account_id,
+                    "expires_at": expires_at,
+                    "days_until_expiry": days_until_expiry,
+                    "needs_phone_setup": True,
+                }
+            else:
+                return {"connected": False, "message": "Token invalido o expirado", "expires_at": expires_at}
     except Exception as e:
         return {"connected": False, "message": str(e)[:100]}
-
-    return {"connected": False, "message": "Sin phone_number_id configurado"}
 
 
 # ============================================================================
