@@ -26,16 +26,17 @@ from activity_log import log_event
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 
 
-def _find_conv_by_phone(db, phone):
-    """Find WhatsApp conversation by phone number."""
+def _find_conv_by_phone(db, phone, tenant_id=None):
+    """Find WhatsApp conversation by phone number, scoped to tenant."""
     if not phone:
         return None
     tail = phone[-10:]
-    return (
-        db.query(WhatsAppConversation)
-        .filter(WhatsAppConversation.wa_contact_phone.contains(tail))
-        .first()
+    q = db.query(WhatsAppConversation).filter(
+        WhatsAppConversation.wa_contact_phone.contains(tail)
     )
+    if tenant_id:
+        q = q.filter(WhatsAppConversation.tenant_id == tenant_id)
+    return q.first()
 
 
 def _is_within_24h_window(db, conv):
@@ -170,7 +171,7 @@ def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
     Auto-prepends intro if first contact with client."""
     from scheduler import _send_whatsapp_sync, _store_outbound_message, _create_conversation_for_client
 
-    conv = _find_conv_by_phone(db, phone)
+    conv = _find_conv_by_phone(db, phone, tenant_id=workflow.tenant_id)
 
     # Auto-introduce on first contact
     tenant = db.query(Tenant).filter(Tenant.id == workflow.tenant_id).first()

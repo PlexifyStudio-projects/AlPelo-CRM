@@ -159,7 +159,7 @@ def _already_sent_for_date(db, conv_id: int, tag: str, target_date: date) -> boo
     return existing is not None
 
 
-def _match_phone_to_conversation(db, phone_str, client_name=""):
+def _match_phone_to_conversation(db, phone_str, client_name="", tenant_id=None):
     """Find WhatsApp conversation by phone, with name validation.
     Returns conversation or None. NEVER returns a wrong-person match."""
     if not phone_str:
@@ -171,11 +171,12 @@ def _match_phone_to_conversation(db, phone_str, client_name=""):
     client_name_lower = (client_name or "").lower().strip()
     client_first = client_name_lower.split()[0] if client_name_lower else ""
 
-    candidates = (
-        db.query(WhatsAppConversation)
-        .filter(WhatsAppConversation.wa_contact_phone.contains(phone_tail))
-        .all()
+    q = db.query(WhatsAppConversation).filter(
+        WhatsAppConversation.wa_contact_phone.contains(phone_tail)
     )
+    if tenant_id:
+        q = q.filter(WhatsAppConversation.tenant_id == tenant_id)
+    candidates = q.all()
 
     if not candidates:
         return None
@@ -222,20 +223,22 @@ def _find_conversation(db, appt):
     """Find WhatsApp conversation for an appointment's client.
     If client has a phone but no conversation, creates one automatically."""
     client_name = (appt.client_name or "").strip()
+    tid = getattr(appt, 'tenant_id', None)
     conv = None
 
     # Try by phone in appointment
     if appt.client_phone:
-        conv = _match_phone_to_conversation(db, appt.client_phone, client_name)
+        conv = _match_phone_to_conversation(db, appt.client_phone, client_name, tenant_id=tid)
 
     # Try by client record phone
     if not conv and appt.client_id:
         client = db.query(Client).filter(Client.id == appt.client_id).first()
         if client and client.phone:
-            conv = _match_phone_to_conversation(db, client.phone, client_name)
+            tid = tid or getattr(client, 'tenant_id', None)
+            conv = _match_phone_to_conversation(db, client.phone, client_name, tenant_id=tid)
             # No conversation found but client has phone → create one
             if not conv:
-                conv = _create_conversation_for_client(db, client)
+                conv = _create_conversation_for_client(db, client, tenant_id=tid)
 
     return conv
 
@@ -1032,7 +1035,7 @@ def _execute_pending_tasks(db):
         # Find WA conversation — with safety validation
         conv = None
         if client.phone:
-            conv = _match_phone_to_conversation(db, client.phone, client_name)
+            conv = _match_phone_to_conversation(db, client.phone, client_name, tenant_id=getattr(client, 'tenant_id', None))
             # No conversation but has phone → create one
             if not conv:
                 conv = _create_conversation_for_client(db, client)
