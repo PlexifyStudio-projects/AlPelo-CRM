@@ -252,6 +252,7 @@ class Tenant(Base):
     # Plan & billing
     plan = Column(String(20), nullable=False, default="trial")
     monthly_price = Column(Integer, nullable=False, default=0)
+    paid_until = Column(Date, nullable=True)  # Service paid until this date
     is_active = Column(Boolean, default=True)
     ai_is_paused = Column(Boolean, default=False)
 

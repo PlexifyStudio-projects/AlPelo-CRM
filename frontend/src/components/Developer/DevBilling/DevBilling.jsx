@@ -19,6 +19,8 @@ const METHODS = [
   { value: 'daviplata', label: 'Daviplata' },
 ];
 
+const MONTHS_OPTIONS = [1, 2, 3, 6, 12];
+
 const DevBilling = () => {
   const [records, setRecords] = useState([]);
   const [tenants, setTenants] = useState([]);
@@ -28,6 +30,7 @@ const DevBilling = () => {
     tenant_id: '',
     period: '',
     amount: '',
+    months: 1,
     status: 'pending',
     payment_method: 'transfer',
     notes: '',
@@ -85,6 +88,7 @@ const DevBilling = () => {
           ...formData,
           tenant_id: parseInt(formData.tenant_id),
           amount: parseInt(formData.amount),
+          months: parseInt(formData.months),
         }),
       });
       if (res.ok) {
@@ -176,6 +180,39 @@ const DevBilling = () => {
           <span className={`${b}__summary-label`}>Total registros</span>
         </div>
       </div>
+
+      {/* Tenant billing status */}
+      {tenants.length > 0 && (
+        <div className={`${b}__section`}>
+          <h2 className={`${b}__section-title`}>Estado de agencias</h2>
+          <div className={`${b}__tenants-grid`}>
+            {tenants.map(t => {
+              const days = t.days_remaining;
+              const isUrgent = days !== null && days <= 5;
+              const isExpired = days !== null && days <= 0;
+              return (
+                <div key={t.id} className={`${b}__tenant-card ${isExpired ? `${b}__tenant-card--expired` : isUrgent ? `${b}__tenant-card--urgent` : ''}`}>
+                  <div className={`${b}__tenant-card-header`}>
+                    <strong>{t.name}</strong>
+                    <span className={`${b}__tenant-card-plan`}>{t.plan}</span>
+                  </div>
+                  <div className={`${b}__tenant-card-price`}>{formatCOP(t.monthly_price)}/mes</div>
+                  {days !== null ? (
+                    <div className={`${b}__tenant-card-days ${isExpired ? `${b}__tenant-card-days--expired` : isUrgent ? `${b}__tenant-card-days--urgent` : ''}`}>
+                      {isExpired ? `Vencido hace ${Math.abs(days)} dias` : `${days} dias restantes`}
+                    </div>
+                  ) : (
+                    <div className={`${b}__tenant-card-days`}>Sin fecha de cobro</div>
+                  )}
+                  {t.paid_until && (
+                    <div className={`${b}__tenant-card-date`}>Pagado hasta: {new Date(t.paid_until + 'T12:00:00').toLocaleDateString('es-CO')}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Records table */}
       <div className={`${b}__section`}>
@@ -303,6 +340,23 @@ const DevBilling = () => {
                     placeholder="250000"
                   />
                 </div>
+              </div>
+
+              <div className={`${b}__form-field`}>
+                <label className={`${b}__form-label`}>Meses pagados</label>
+                <select
+                  className={`${b}__form-select`}
+                  value={formData.months}
+                  onChange={(e) => {
+                    const m = parseInt(e.target.value);
+                    const t = tenants.find(x => x.id === parseInt(formData.tenant_id));
+                    setFormData({ ...formData, months: m, amount: (t?.monthly_price || 0) * m });
+                  }}
+                >
+                  {MONTHS_OPTIONS.map(m => (
+                    <option key={m} value={m}>{m} {m === 1 ? 'mes' : 'meses'}{m === 12 ? ' (anual)' : ''}</option>
+                  ))}
+                </select>
               </div>
 
               <div className={`${b}__form-row`}>

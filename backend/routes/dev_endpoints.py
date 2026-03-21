@@ -6,7 +6,7 @@ Manage tenants, billing, usage, and platform-level operations.
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import sys, platform
 
 from auth.security import hash_password
@@ -97,6 +97,8 @@ def _safe_tenant_dict(t, db=None):
         "total_clients": client_count,
         "total_staff": staff_count,
         "admin_user": admin_user,
+        "paid_until": getattr(t, 'paid_until', None).isoformat() if getattr(t, 'paid_until', None) else None,
+        "days_remaining": (getattr(t, 'paid_until', None) - date.today()).days if getattr(t, 'paid_until', None) else None,
     }
 
 
@@ -195,6 +197,7 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
         monthly_price=int(data.get("monthly_price", 0)),
         messages_limit=int(data.get("messages_limit", 5000)),
         messages_used=0,
+        paid_until=date.today() + timedelta(days=31),
         is_active=True,
         ai_is_paused=False,
         timezone=data.get("timezone", "America/Bogota"),
@@ -524,6 +527,15 @@ def create_billing_record(data: dict, db: Session = Depends(get_db), user: Admin
         paid_at=datetime.utcnow() if data.get("status") == "paid" else None,
     )
     db.add(record)
+
+    # If created as paid, extend paid_until
+    if record.status == "paid":
+        months = int(data.get("months", 1))
+        base = getattr(tenant, 'paid_until', None) or date.today()
+        if base < date.today():
+            base = date.today()
+        tenant.paid_until = base + timedelta(days=31 * months)
+
     db.commit()
     db.refresh(record)
 
@@ -539,6 +551,8 @@ def create_billing_record(data: dict, db: Session = Depends(get_db), user: Admin
         "notes": record.notes,
         "paid_at": record.paid_at.isoformat() if record.paid_at else None,
         "created_at": record.created_at.isoformat() if record.created_at else None,
+        "paid_until": tenant.paid_until.isoformat() if tenant.paid_until else None,
+        "days_remaining": (tenant.paid_until - date.today()).days if tenant.paid_until else None,
     }
 
 
@@ -555,6 +569,14 @@ def update_billing_record(record_id: int, data: dict, db: Session = Depends(get_
         record.status = data["status"]
         if data["status"] == "paid" and not record.paid_at:
             record.paid_at = datetime.utcnow()
+            # Extend tenant's paid_until by the number of months paid
+            tenant = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
+            if tenant:
+                months = int(data.get("months", 1))
+                base = getattr(tenant, 'paid_until', None) or date.today()
+                if base < date.today():
+                    base = date.today()
+                tenant.paid_until = base + timedelta(days=31 * months)
     if "amount" in data:
         record.amount = int(data["amount"])
     if "payment_method" in data:

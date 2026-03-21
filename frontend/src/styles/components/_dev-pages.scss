@@ -147,6 +147,81 @@ $_surface: #F8FAFC;
     border-bottom: 1px solid #F1F5F9;
   }
 
+  // Tenant billing status grid
+  &__tenants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    padding: 16px 20px;
+  }
+
+  &__tenant-card {
+    padding: 16px;
+    border-radius: 10px;
+    border: 1px solid $_card-border;
+    background: $_card-bg;
+    transition: all 200ms;
+
+    &:hover { box-shadow: $_card-hover; }
+
+    &--urgent {
+      border-color: #FDE68A;
+      background: #FFFBEB;
+    }
+
+    &--expired {
+      border-color: #FECACA;
+      background: #FEF2F2;
+    }
+  }
+
+  &__tenant-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    strong {
+      font-size: 14px;
+      color: $_text-primary;
+    }
+  }
+
+  &__tenant-card-plan {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: $_accent-bg;
+    color: $_accent;
+  }
+
+  &__tenant-card-price {
+    font-size: 13px;
+    color: $_text-muted;
+    margin-bottom: 8px;
+    font-family: $_mono;
+  }
+
+  &__tenant-card-days {
+    font-size: 18px;
+    font-weight: 800;
+    color: #16A34A;
+    font-variant-numeric: tabular-nums;
+
+    &--urgent { color: #D97706; }
+    &--expired { color: #DC2626; }
+  }
+
+  &__tenant-card-date {
+    font-size: 11px;
+    color: $_text-muted;
+    margin-top: 4px;
+    font-family: $_mono;
+  }
+
   // Table
   &__table-wrap {
     overflow-x: auto;

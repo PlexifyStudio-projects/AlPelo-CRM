@@ -59,6 +59,8 @@ def _run_migrations(engine):
         ("staff", "password", "VARCHAR"),
         # Meta OAuth token expiry
         ("tenant", "wa_token_expires_at", "TIMESTAMP"),
+        # Billing: service paid until date
+        ("tenant", "paid_until", "DATE"),
     ]
 
     for table, column, col_type in migrations:
