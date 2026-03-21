@@ -1003,6 +1003,121 @@
   }
 
   // ════════════════════════════════════════════════
+  // HISTORY
+  // ════════════════════════════════════════════════
+  &__history {
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
+    overflow: hidden;
+  }
+
+  &__history-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-3xl;
+    text-align: center;
+    color: $color-gray-400;
+    font-size: $font-size-sm;
+  }
+
+  &__history-empty-icon {
+    font-size: 36px;
+    opacity: 0.5;
+  }
+
+  &__history-empty-sub {
+    font-size: $font-size-xs;
+    color: $color-gray-300;
+    margin: 0;
+  }
+
+  &__history-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__history-header {
+    display: grid;
+    grid-template-columns: 180px 120px 1fr 100px 90px;
+    gap: $spacing-sm;
+    padding: 12px $spacing-lg;
+    background: $color-gray-50;
+    border-bottom: 1px solid $color-gray-100;
+    font-size: $font-size-2xs;
+    font-weight: 700;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__history-row {
+    display: grid;
+    grid-template-columns: 180px 120px 1fr 100px 90px;
+    gap: $spacing-sm;
+    padding: 10px $spacing-lg;
+    border-bottom: 1px solid $color-gray-50;
+    align-items: center;
+    transition: background $transition-fast;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: $color-gray-50; }
+  }
+
+  &__history-cell {
+    font-size: $font-size-xs;
+    color: $color-gray-600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &--preview {
+      color: $color-gray-400;
+      font-style: italic;
+    }
+
+    &--date {
+      color: $color-gray-400;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__history-icon {
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+
+  &__history-status {
+    font-size: $font-size-2xs;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: $border-radius-full;
+    white-space: nowrap;
+
+    &--sent {
+      background: $color-success-bg;
+      color: $color-success-dark;
+    }
+
+    &--failed {
+      background: $color-error-bg;
+      color: $color-error-dark;
+    }
+
+    &--pending {
+      background: $color-warning-bg;
+      color: $color-warning-dark;
+    }
+  }
+
+  // ════════════════════════════════════════════════
   // RESPONSIVE
   // ════════════════════════════════════════════════
   @media (max-width: 768px) {

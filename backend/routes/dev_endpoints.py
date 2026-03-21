@@ -1135,3 +1135,25 @@ def update_platform_config(data: dict, db: Session = Depends(get_db), user: Admi
 
     db.commit()
     return {"success": True, "updated": updated}
+
+
+@router.post("/dev/tenants/{tenant_id}/reset-workflows")
+def reset_tenant_workflows(tenant_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Delete and re-seed workflows with latest 40 defaults for a specific tenant."""
+    _require_dev(user)
+
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+
+    from database.models import WorkflowTemplate
+    from routes.automation_endpoints import seed_workflows_for_tenant
+
+    # Delete existing workflows
+    deleted = db.query(WorkflowTemplate).filter(WorkflowTemplate.tenant_id == tenant.id).delete()
+    db.commit()
+
+    # Re-seed with 40 new workflows
+    seed_workflows_for_tenant(tenant.id, tenant.name)
+
+    return {"success": True, "deleted": deleted, "tenant": tenant.name, "message": f"Workflows reseteados para {tenant.name}"}
