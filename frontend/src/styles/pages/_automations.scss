@@ -859,11 +859,13 @@
     padding-top: $spacing-sm;
     border-top: 1px solid $color-gray-100;
     margin-top: auto;
+    flex-wrap: wrap;
   }
 
   &__card-stats {
     display: flex;
     gap: $spacing-md;
+    flex-shrink: 0;
   }
 
   &__card-stat {
@@ -880,6 +882,35 @@
   &__card-actions {
     display: flex;
     gap: $spacing-xs;
+    flex-wrap: wrap;
+    margin-left: auto;
+  }
+
+  &__card-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid $color-gray-200;
+    background: $color-white;
+    color: $color-gray-500;
+    font-size: $font-size-xs;
+    font-family: $font-primary;
+    font-weight: 600;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover {
+      background: $color-gray-50;
+      color: $color-gray-700;
+      border-color: $color-gray-300;
+    }
+
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    svg { width: 13px; height: 13px; }
   }
 
   &__card-btn {
