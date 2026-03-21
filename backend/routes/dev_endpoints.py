@@ -1163,3 +1163,71 @@ def reset_tenant_workflows(tenant_id: int, db: Session = Depends(get_db), user: 
     seed_workflows_for_tenant(tenant.id, tenant.name)
 
     return {"success": True, "deleted": deleted, "tenant": tenant.name, "message": f"Workflows reseteados para {tenant.name}"}
+
+
+@router.post("/dev/cleanup-duplicate-conversations")
+def cleanup_duplicate_conversations(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Remove duplicate WhatsApp conversations. Keeps the one with most messages for each phone+tenant."""
+    _require_dev(user)
+
+    from sqlalchemy import func as sqlfunc
+
+    # Find all conversations grouped by phone + tenant
+    all_convs = (
+        db.query(WhatsAppConversation)
+        .order_by(WhatsAppConversation.tenant_id, WhatsAppConversation.wa_contact_phone, WhatsAppConversation.id)
+        .all()
+    )
+
+    # Group by (tenant_id, phone_tail)
+    groups = {}
+    for conv in all_convs:
+        phone = (conv.wa_contact_phone or "")[-10:]
+        key = (conv.tenant_id, phone)
+        if key not in groups:
+            groups[key] = []
+        groups[key].append(conv)
+
+    deleted_count = 0
+    merged_count = 0
+
+    for key, convs in groups.items():
+        if len(convs) <= 1:
+            continue  # No duplicates
+
+        # Find the conversation with the most messages (the "real" one)
+        best = None
+        best_msg_count = -1
+        for conv in convs:
+            msg_count = db.query(sqlfunc.count(WhatsAppMessage.id)).filter(
+                WhatsAppMessage.conversation_id == conv.id
+            ).scalar() or 0
+            if msg_count > best_msg_count:
+                best = conv
+                best_msg_count = msg_count
+
+        # Move messages from duplicates to the best conversation, then delete duplicates
+        for conv in convs:
+            if conv.id == best.id:
+                continue
+
+            # Move any messages from duplicate to the best
+            moved = (
+                db.query(WhatsAppMessage)
+                .filter(WhatsAppMessage.conversation_id == conv.id)
+                .update({WhatsAppMessage.conversation_id: best.id}, synchronize_session=False)
+            )
+            if moved:
+                merged_count += moved
+
+            db.delete(conv)
+            deleted_count += 1
+
+    db.commit()
+
+    return {
+        "success": True,
+        "duplicates_deleted": deleted_count,
+        "messages_merged": merged_count,
+        "groups_processed": len([g for g in groups.values() if len(g) > 1]),
+    }
