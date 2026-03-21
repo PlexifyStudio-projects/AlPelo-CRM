@@ -1458,8 +1458,25 @@ async def submit_workflow_to_meta(workflow_id: int, user=Depends(get_current_use
                     error_code = data.get("error", {}).get("code", 0)
                     error_user_msg = data.get("error", {}).get("error_user_msg", "")
 
-                    # If template already exists, mark as pending and store name
-                    if error_code == 2388023 or "already exists" in error_msg.lower():
+                    # If template already exists, retry with _v2 suffix
+                    is_duplicate = (
+                        error_code == 2388023 or
+                        "already exists" in error_msg.lower() or
+                        "ya existe" in error_user_msg.lower() or
+                        "ya existe" in error_msg.lower()
+                    )
+                    if is_duplicate:
+                        # Try with _v2 suffix
+                        v2_slug = clean_slug + "_v2"
+                        retry_payload = dict(payload)
+                        retry_payload["name"] = v2_slug
+                        print(f"[META WORKFLOW SUBMIT] Retrying with {v2_slug}")
+                        retry_resp = _client.post(submit_url, headers=submit_headers, json=retry_payload)
+                        retry_data = retry_resp.json()
+
+                        if retry_resp.status_code == 200:
+                            clean_slug = v2_slug
+
                         config["meta_template_name"] = clean_slug
                         config["meta_template_status"] = "pending"
                         wf.config = config
@@ -1470,9 +1487,9 @@ async def submit_workflow_to_meta(workflow_id: int, user=Depends(get_current_use
                         _db.refresh(wf)
                         return {
                             "success": True,
-                            "meta_status": "ALREADY_EXISTS",
+                            "meta_status": "PENDING",
                             "meta_template_name": clean_slug,
-                            "message": "La plantilla ya existe en Meta. Verificando estado...",
+                            "message": f"Plantilla enviada como '{clean_slug}'",
                             "workflow": _serialize_workflow(wf),
                         }
 
