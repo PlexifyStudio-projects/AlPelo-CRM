@@ -57,7 +57,7 @@ def get_meta_auth_url(db: Session = Depends(get_db), user=Depends(get_current_us
     if not redirect_uri:
         raise HTTPException(status_code=500, detail="META_REDIRECT_URI no configurado. Configuralo desde el Dev Panel > Sistema.")
 
-    scopes = "whatsapp_business_management,whatsapp_business_messaging,business_management"
+    scopes = "whatsapp_business_management,whatsapp_business_messaging"
 
     url = (
         f"https://www.facebook.com/{META_GRAPH_VERSION}/dialog/oauth?"
