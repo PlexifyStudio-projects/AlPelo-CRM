@@ -3,14 +3,17 @@
 # Multi-tenant, multi-business-type automated workflow management
 # ============================================================================
 
-from fastapi import APIRouter, HTTPException
-from database.connection import SessionLocal
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from database.connection import SessionLocal, get_db
 from database.models import (
     WorkflowTemplate, WorkflowExecution, Tenant, Client,
     Appointment, VisitHistory, WhatsAppMessage, MessageTemplate,
 )
 from datetime import datetime, timedelta
 from sqlalchemy import func
+from routes._helpers import safe_tid
+from middleware.auth_middleware import get_current_user
 
 router = APIRouter(prefix="/automations", tags=["Automations"])
 
@@ -366,7 +369,7 @@ async def list_workflows(tenant_id: int = None):
 
 
 @router.put("/{workflow_id}")
-async def update_workflow(workflow_id: int, data: dict):
+async def update_workflow(workflow_id: int, data: dict, user=Depends(get_current_user), _db: Session = Depends(get_db)):
     """Update a workflow template (toggle, message, config)."""
     db = SessionLocal()
     try:
@@ -375,6 +378,10 @@ async def update_workflow(workflow_id: int, data: dict):
         ).first()
         if not wf:
             raise HTTPException(status_code=404, detail="Workflow not found")
+
+        tid = safe_tid(user, db)
+        if tid and wf.tenant_id != tid:
+            raise HTTPException(status_code=403, detail="No tienes acceso a este workflow")
 
         if "enabled" in data or "is_enabled" in data:
             wf.is_enabled = data.get("enabled", data.get("is_enabled", wf.is_enabled))
@@ -490,14 +497,20 @@ async def get_executions(tenant_id: int = None, limit: int = 50):
 
 
 @router.post("/reset")
-async def reset_workflows(tenant_id: int = None):
+async def reset_workflows(tenant_id: int = None, user=Depends(get_current_user), _db: Session = Depends(get_db)):
     """Delete and re-seed workflows with latest defaults. Use after config changes."""
     db = SessionLocal()
     try:
+        tid = safe_tid(user, db)
         if tenant_id:
+            if tid and tenant_id != tid:
+                raise HTTPException(status_code=403, detail="No tienes acceso a este tenant")
             tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
         else:
-            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+            if tid:
+                tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+            else:
+                tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
         if not tenant:
             raise HTTPException(status_code=404, detail="No tenant found")
 

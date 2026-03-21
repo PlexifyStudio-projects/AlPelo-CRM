@@ -15,7 +15,7 @@ from schemas import (
     AIConfigCreate, AIConfigUpdate, AIConfigResponse,
     AIChatRequest, AIChatResponse,
 )
-from routes._helpers import compute_client_list_item, compute_client_fields, find_client, find_conversation, normalize_phone, get_wa_token, get_wa_phone_id
+from routes._helpers import compute_client_list_item, compute_client_fields, find_client, find_conversation, normalize_phone, get_wa_token, get_wa_phone_id, safe_tid
 
 # Timezone offsets for supported regions (UTC offset in hours)
 _TIMEZONE_OFFSETS = {
@@ -76,17 +76,25 @@ router = APIRouter()
 # ============================================================================
 
 @router.get("/ai/config", response_model=AIConfigResponse)
-def get_active_ai_config(db: Session = Depends(get_db)):
-    config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
+def get_active_ai_config(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    q = db.query(AIConfig).filter(AIConfig.is_active == True)
+    if tid:
+        q = q.filter(AIConfig.tenant_id == tid)
+    config = q.first()
     if not config:
         raise HTTPException(status_code=404, detail="No hay configuracion de IA activa")
     return AIConfigResponse.model_validate(config)
 
 
 @router.post("/ai/config", response_model=AIConfigResponse)
-def create_ai_config(data: AIConfigCreate, db: Session = Depends(get_db)):
-    db.query(AIConfig).filter(AIConfig.is_active == True).update({"is_active": False})
-    config = AIConfig(**data.model_dump())
+def create_ai_config(data: AIConfigCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    q_deactivate = db.query(AIConfig).filter(AIConfig.is_active == True)
+    if tid:
+        q_deactivate = q_deactivate.filter(AIConfig.tenant_id == tid)
+    q_deactivate.update({"is_active": False})
+    config = AIConfig(**data.model_dump(), tenant_id=tid)
     db.add(config)
     db.commit()
     db.refresh(config)
@@ -94,10 +102,13 @@ def create_ai_config(data: AIConfigCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/ai/config/{config_id}", response_model=AIConfigResponse)
-def update_ai_config(config_id: int, data: AIConfigUpdate, db: Session = Depends(get_db)):
+def update_ai_config(config_id: int, data: AIConfigUpdate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
     config = db.query(AIConfig).filter(AIConfig.id == config_id).first()
     if not config:
         raise HTTPException(status_code=404, detail="Configuracion no encontrada")
+    if tid and config.tenant_id != tid:
+        raise HTTPException(status_code=403, detail="No autorizado")
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(config, key, value)

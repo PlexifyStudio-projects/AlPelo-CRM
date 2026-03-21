@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func as sa_func
 from database.connection import get_db, SessionLocal
 from database.models import WhatsAppConversation, WhatsAppMessage, Client, Tenant
-from routes._helpers import normalize_phone, now_colombia as _now_col
+from middleware.auth_middleware import get_current_user
+from routes._helpers import normalize_phone, now_colombia as _now_col, safe_tid
 from schemas import ToggleAllAIRequest as _ToggleAllAIRequest
 from activity_log import log_event
 from routes._usage_tracker import track_message_sent, track_message_received, track_ai_usage
@@ -313,13 +314,15 @@ async def _fetch_profile_photo(conv_id: int, wa_phone: str):
 # CONVERSATIONS — List & Get
 # ============================================================================
 @router.get("/conversations")
-def list_conversations(db: Session = Depends(get_db)):
+def list_conversations(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """List all conversations with last message preview."""
+    tid = safe_tid(user, db)
     try:
+        q = db.query(WhatsAppConversation).options(joinedload(WhatsAppConversation.client))
+        if tid is not None:
+            q = q.filter(WhatsAppConversation.tenant_id == tid)
         convs = (
-            db.query(WhatsAppConversation)
-            .options(joinedload(WhatsAppConversation.client))
-            .order_by(WhatsAppConversation.last_message_at.desc().nullslast())
+            q.order_by(WhatsAppConversation.last_message_at.desc().nullslast())
             .all()
         )
     except Exception as e:
@@ -399,13 +402,16 @@ def list_conversations(db: Session = Depends(get_db)):
 
 
 @router.get("/conversations/{conv_id}")
-def get_conversation(conv_id: int, db: Session = Depends(get_db)):
-    conv = (
+def get_conversation(conv_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    q = (
         db.query(WhatsAppConversation)
         .options(joinedload(WhatsAppConversation.client))
         .filter(WhatsAppConversation.id == conv_id)
-        .first()
     )
+    if tid is not None:
+        q = q.filter(WhatsAppConversation.tenant_id == tid)
+    conv = q.first()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversacion no encontrada")
     return conv
@@ -509,10 +515,14 @@ def mark_conversation_read(conv_id: int, db: Session = Depends(get_db)):
 # TOTAL UNREAD — Sum of all unread counts across conversations
 # ============================================================================
 @router.get("/unread-count")
-def get_total_unread(db: Session = Depends(get_db)):
+def get_total_unread(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Get total unread message count across all conversations."""
     from sqlalchemy import func
-    total = db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0)).scalar()
+    tid = safe_tid(user, db)
+    q = db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0))
+    if tid is not None:
+        q = q.filter(WhatsAppConversation.tenant_id == tid)
+    total = q.scalar()
     return {"total_unread": total}
 
 
@@ -520,9 +530,13 @@ def get_total_unread(db: Session = Depends(get_db)):
 # MESSAGES — List & Send
 # ============================================================================
 @router.get("/conversations/{conv_id}/messages")
-def list_messages(conv_id: int, db: Session = Depends(get_db)):
+def list_messages(conv_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """List all messages in a conversation."""
-    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    tid = safe_tid(user, db)
+    q = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id)
+    if tid is not None:
+        q = q.filter(WhatsAppConversation.tenant_id == tid)
+    conv = q.first()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversacion no encontrada")
 
@@ -561,9 +575,13 @@ def list_messages(conv_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/conversations/{conv_id}/messages")
-async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db)):
+async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Send a WhatsApp message via Meta API and store locally."""
-    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    tid = safe_tid(user, db)
+    q = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id)
+    if tid is not None:
+        q = q.filter(WhatsAppConversation.tenant_id == tid)
+    conv = q.first()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversacion no encontrada")
 
@@ -1840,13 +1858,23 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 # STATS
 # ============================================================================
 @router.get("/stats")
-def get_stats(db: Session = Depends(get_db)):
+def get_stats(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """WhatsApp stats for dashboard."""
-    total_convs = db.query(WhatsAppConversation).count()
-    total_messages = db.query(WhatsAppMessage).count()
-    total_inbound = db.query(WhatsAppMessage).filter(WhatsAppMessage.direction == "inbound").count()
-    total_outbound = db.query(WhatsAppMessage).filter(WhatsAppMessage.direction == "outbound").count()
-    unread = db.query(WhatsAppConversation).filter(WhatsAppConversation.unread_count > 0).count()
+    tid = safe_tid(user, db)
+
+    conv_q = db.query(WhatsAppConversation)
+    if tid is not None:
+        conv_q = conv_q.filter(WhatsAppConversation.tenant_id == tid)
+
+    msg_q = db.query(WhatsAppMessage)
+    if tid is not None:
+        msg_q = msg_q.join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id).filter(WhatsAppConversation.tenant_id == tid)
+
+    total_convs = conv_q.count()
+    total_messages = msg_q.count()
+    total_inbound = msg_q.filter(WhatsAppMessage.direction == "inbound").count()
+    total_outbound = msg_q.filter(WhatsAppMessage.direction == "outbound").count()
+    unread = conv_q.filter(WhatsAppConversation.unread_count > 0).count()
 
     return {
         "total_conversations": total_convs,
@@ -1869,9 +1897,13 @@ def delete_failed_messages(db: Session = Depends(get_db)):
 
 
 @router.delete("/messages/{msg_id}")
-def delete_message(msg_id: int, db: Session = Depends(get_db)):
+def delete_message(msg_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Delete a specific message by ID."""
-    msg = db.query(WhatsAppMessage).filter(WhatsAppMessage.id == msg_id).first()
+    tid = safe_tid(user, db)
+    q = db.query(WhatsAppMessage).filter(WhatsAppMessage.id == msg_id)
+    if tid is not None:
+        q = q.join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id).filter(WhatsAppConversation.tenant_id == tid)
+    msg = q.first()
     if not msg:
         raise HTTPException(status_code=404, detail="Mensaje no encontrado")
     db.delete(msg)
@@ -1880,9 +1912,13 @@ def delete_message(msg_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/conversations/{conv_id}")
-def delete_conversation(conv_id: int, db: Session = Depends(get_db)):
+def delete_conversation(conv_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Delete a conversation and all its messages."""
-    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    tid = safe_tid(user, db)
+    q = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id)
+    if tid is not None:
+        q = q.filter(WhatsAppConversation.tenant_id == tid)
+    conv = q.first()
     if not conv:
         raise HTTPException(status_code=404, detail="Conversacion no encontrada")
     db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id == conv_id).delete()
@@ -1892,10 +1928,20 @@ def delete_conversation(conv_id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/conversations")
-def delete_all_conversations(db: Session = Depends(get_db)):
-    """Delete ALL conversations and messages. Used for clean testing."""
-    msg_count = db.query(WhatsAppMessage).delete()
-    conv_count = db.query(WhatsAppConversation).delete()
+def delete_all_conversations(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Delete ALL conversations and messages for this tenant."""
+    tid = safe_tid(user, db)
+    if tid is not None:
+        conv_ids = [c.id for c in db.query(WhatsAppConversation.id).filter(WhatsAppConversation.tenant_id == tid).all()]
+        if conv_ids:
+            msg_count = db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id.in_(conv_ids)).delete(synchronize_session=False)
+            conv_count = db.query(WhatsAppConversation).filter(WhatsAppConversation.id.in_(conv_ids)).delete(synchronize_session=False)
+        else:
+            msg_count = 0
+            conv_count = 0
+    else:
+        msg_count = db.query(WhatsAppMessage).delete()
+        conv_count = db.query(WhatsAppConversation).delete()
     db.commit()
     return {"deleted_conversations": conv_count, "deleted_messages": msg_count}
 
@@ -2091,11 +2137,14 @@ async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundT
 
 
 @router.get("/messages/search")
-def search_messages(q: str = Query(..., min_length=2), db: Session = Depends(get_db)):
+def search_messages(q: str = Query(..., min_length=2), db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Search messages across all conversations."""
+    tid = safe_tid(user, db)
+    msg_q = db.query(WhatsAppMessage).filter(WhatsAppMessage.content.ilike(f"%{q}%"))
+    if tid is not None:
+        msg_q = msg_q.join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id).filter(WhatsAppConversation.tenant_id == tid)
     messages = (
-        db.query(WhatsAppMessage)
-        .filter(WhatsAppMessage.content.ilike(f"%{q}%"))
+        msg_q
         .order_by(WhatsAppMessage.created_at.desc())
         .limit(50)
         .all()

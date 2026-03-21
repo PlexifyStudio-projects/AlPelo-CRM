@@ -117,7 +117,7 @@ def log_event(event_type: str, description: str, detail: str = "",
     ).start()
 
 
-def get_recent_events(limit: int = 100, offset: int = 0):
+def get_recent_events(limit: int = 100, offset: int = 0, tenant_id: int = None):
     """Return recent events — from DB for persistence, fallback to in-memory."""
     # Try DB first (persistent, survives restarts)
     try:
@@ -125,9 +125,11 @@ def get_recent_events(limit: int = 100, offset: int = 0):
         from database.models import LinaActivityEvent
         db = SessionLocal()
         try:
+            q = db.query(LinaActivityEvent)
+            if tenant_id:
+                q = q.filter(LinaActivityEvent.tenant_id == tenant_id)
             events = (
-                db.query(LinaActivityEvent)
-                .order_by(LinaActivityEvent.created_at.desc())
+                q.order_by(LinaActivityEvent.created_at.desc())
                 .offset(offset)
                 .limit(limit)
                 .all()
@@ -160,7 +162,7 @@ def get_recent_events(limit: int = 100, offset: int = 0):
         return events[offset:offset + limit]
 
 
-def get_stats():
+def get_stats(tenant_id: int = None):
     """Return today's stats — from DB for accuracy, fallback to in-memory."""
     # Try DB stats
     try:
@@ -176,6 +178,8 @@ def get_stats():
                 q = db.query(func.count(LinaActivityEvent.id)).filter(
                     LinaActivityEvent.created_at >= today_start,
                 )
+                if tenant_id:
+                    q = q.filter(LinaActivityEvent.tenant_id == tenant_id)
                 if event_type:
                     q = q.filter(LinaActivityEvent.event_type == event_type)
                 if status:

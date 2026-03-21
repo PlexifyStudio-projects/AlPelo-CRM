@@ -1,10 +1,13 @@
 import os
 import re
 import httpx
-from fastapi import APIRouter, HTTPException
-from database.connection import SessionLocal
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from database.connection import SessionLocal, get_db
 from database.models import MessageTemplate, Tenant
 from datetime import datetime
+from routes._helpers import safe_tid
+from middleware.auth_middleware import get_current_user
 
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 
@@ -327,13 +330,17 @@ async def create_template(data: dict):
 
 
 @router.put("/{template_id}")
-async def update_template(template_id: int, data: dict):
+async def update_template(template_id: int, data: dict, user=Depends(get_current_user), _db: Session = Depends(get_db)):
     """Update a template — name, body, category, or status."""
     db = SessionLocal()
     try:
         tpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
         if not tpl:
             raise HTTPException(status_code=404, detail="Template not found")
+
+        tid = safe_tid(user, db)
+        if tid and tpl.tenant_id != tid:
+            raise HTTPException(status_code=403, detail="No tienes acceso a esta plantilla")
 
         if "name" in data:
             tpl.name = data["name"]
@@ -358,13 +365,17 @@ async def update_template(template_id: int, data: dict):
 
 
 @router.put("/{template_id}/approve")
-async def approve_template(template_id: int):
+async def approve_template(template_id: int, user=Depends(get_current_user), _db: Session = Depends(get_db)):
     """Mark a template as approved (after Meta approves it)."""
     db = SessionLocal()
     try:
         tpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
         if not tpl:
             raise HTTPException(status_code=404, detail="Template not found")
+
+        tid = safe_tid(user, db)
+        if tid and tpl.tenant_id != tid:
+            raise HTTPException(status_code=403, detail="No tienes acceso a esta plantilla")
         tpl.status = "approved"
         tpl.updated_at = datetime.utcnow()
         db.commit()
@@ -409,13 +420,17 @@ def _convert_variables_to_meta(body):
 
 
 @router.post("/{template_id}/submit-to-meta")
-async def submit_to_meta(template_id: int):
+async def submit_to_meta(template_id: int, user=Depends(get_current_user), _db: Session = Depends(get_db)):
     """Submit a template to Meta for approval. Changes status to 'pending'."""
     db = SessionLocal()
     try:
         tpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
         if not tpl:
             raise HTTPException(status_code=404, detail="Template not found")
+
+        tid = safe_tid(user, db)
+        if tid and tpl.tenant_id != tid:
+            raise HTTPException(status_code=403, detail="No tienes acceso a esta plantilla")
 
         # Get tenant's WA credentials
         tenant = db.query(Tenant).filter(Tenant.id == tpl.tenant_id).first()
@@ -584,13 +599,17 @@ async def submit_to_meta(template_id: int):
 
 
 @router.post("/{template_id}/check-status")
-async def check_meta_status(template_id: int):
+async def check_meta_status(template_id: int, user=Depends(get_current_user), _db: Session = Depends(get_db)):
     """Check the current approval status of a template in Meta."""
     db = SessionLocal()
     try:
         tpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
         if not tpl:
             raise HTTPException(status_code=404, detail="Template not found")
+
+        tid = safe_tid(user, db)
+        if tid and tpl.tenant_id != tid:
+            raise HTTPException(status_code=403, detail="No tienes acceso a esta plantilla")
 
         tenant = db.query(Tenant).filter(Tenant.id == tpl.tenant_id).first()
         wa_business_id = (tenant.wa_business_account_id if tenant else None) or os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
@@ -707,13 +726,17 @@ async def sync_all_templates():
 
 
 @router.delete("/{template_id}")
-async def delete_template(template_id: int):
+async def delete_template(template_id: int, user=Depends(get_current_user), _db: Session = Depends(get_db)):
     """Soft-delete a template."""
     db = SessionLocal()
     try:
         tpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
         if not tpl:
             raise HTTPException(status_code=404, detail="Template not found")
+
+        tid = safe_tid(user, db)
+        if tid and tpl.tenant_id != tid:
+            raise HTTPException(status_code=403, detail="No tienes acceso a esta plantilla")
         tpl.is_active = False
         db.commit()
         return {"ok": True}

@@ -14,6 +14,8 @@ from database.models import (
     ClientNote, Client, LinaLearning, ClientMemory, Tenant, LinaTask,
 )
 from activity_log import get_recent_events, get_stats as get_activity_stats
+from middleware.auth_middleware import get_current_user
+from routes._helpers import safe_tid
 
 router = APIRouter(prefix="/lina", tags=["Lina IA"])
 
@@ -23,10 +25,11 @@ router = APIRouter(prefix="/lina", tags=["Lina IA"])
 # ============================================================================
 
 @router.get("/activity")
-async def lina_activity(limit: int = 100, offset: int = 0):
+async def lina_activity(limit: int = 100, offset: int = 0, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Real-time Lina activity events for the monitoring dashboard."""
-    events = get_recent_events(limit=limit, offset=offset)
-    stats = get_activity_stats()
+    tid = safe_tid(user, db)
+    events = get_recent_events(limit=limit, offset=offset, tenant_id=tid)
+    stats = get_activity_stats(tenant_id=tid)
     return {"events": events, "stats": stats}
 
 
@@ -35,15 +38,14 @@ async def lina_activity(limit: int = 100, offset: int = 0):
 # ============================================================================
 
 @router.get("/memory")
-async def lina_memory(db: Session = Depends(get_db)):
+async def lina_memory(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Get ALL of Lina's knowledge: global learnings + per-client patterns + long-term memories."""
+    tid = safe_tid(user, db)
     # Global learnings (admin-taught rules)
-    learnings = (
-        db.query(LinaLearning)
-        .filter(LinaLearning.is_active == True)
-        .order_by(LinaLearning.created_at.desc())
-        .all()
-    )
+    q_learn = db.query(LinaLearning).filter(LinaLearning.is_active == True)
+    if tid:
+        q_learn = q_learn.filter(LinaLearning.tenant_id == tid)
+    learnings = q_learn.order_by(LinaLearning.created_at.desc()).all()
     global_items = [{
         "id": f"L{l.id}",
         "type": "regla",
@@ -54,16 +56,13 @@ async def lina_memory(db: Session = Depends(get_db)):
     } for l in learnings]
 
     # Per-client learnings + feedback (from notes)
-    notes = (
-        db.query(ClientNote)
-        .filter(or_(
-            ClientNote.content.ilike("%APRENDIZAJE:%"),
-            ClientNote.content.ilike("%FEEDBACK:%"),
-        ))
-        .order_by(ClientNote.created_at.desc())
-        .limit(50)
-        .all()
-    )
+    q_notes = db.query(ClientNote).filter(or_(
+        ClientNote.content.ilike("%APRENDIZAJE:%"),
+        ClientNote.content.ilike("%FEEDBACK:%"),
+    ))
+    if tid:
+        q_notes = q_notes.filter(ClientNote.tenant_id == tid)
+    notes = q_notes.order_by(ClientNote.created_at.desc()).limit(50).all()
     client_items = []
     for n in notes:
         client = db.query(Client).filter(Client.id == n.client_id).first()
@@ -85,13 +84,10 @@ async def lina_memory(db: Session = Depends(get_db)):
     # Long-term memories (pgvector client_memory table)
     long_term = []
     try:
-        lt_memories = (
-            db.query(ClientMemory)
-            .filter(ClientMemory.is_active == True)
-            .order_by(ClientMemory.updated_at.desc())
-            .limit(50)
-            .all()
-        )
+        q_mem = db.query(ClientMemory).filter(ClientMemory.is_active == True)
+        if tid:
+            q_mem = q_mem.filter(ClientMemory.tenant_id == tid)
+        lt_memories = q_mem.order_by(ClientMemory.updated_at.desc()).limit(50).all()
         for m in lt_memories:
             client = db.query(Client).filter(Client.id == m.client_id).first()
             long_term.append({
@@ -122,14 +118,13 @@ async def lina_memory(db: Session = Depends(get_db)):
 # ============================================================================
 
 @router.get("/learnings")
-async def list_learnings(db: Session = Depends(get_db)):
+async def list_learnings(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """List all active global learnings."""
-    items = (
-        db.query(LinaLearning)
-        .filter(LinaLearning.is_active == True)
-        .order_by(LinaLearning.created_at.desc())
-        .all()
-    )
+    tid = safe_tid(user, db)
+    q = db.query(LinaLearning).filter(LinaLearning.is_active == True)
+    if tid:
+        q = q.filter(LinaLearning.tenant_id == tid)
+    items = q.order_by(LinaLearning.created_at.desc()).all()
     return [{
         "id": l.id,
         "category": l.category,
@@ -141,8 +136,9 @@ async def list_learnings(db: Session = Depends(get_db)):
 
 
 @router.post("/learnings")
-async def create_learning(request: dict, db: Session = Depends(get_db)):
+async def create_learning(request: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Admin teaches Lina something new. AI processes and stores it."""
+    tid = safe_tid(user, db)
     raw_input = (request.get("content") or "").strip()
     category = (request.get("category") or "general").strip().lower()
 
@@ -152,6 +148,7 @@ async def create_learning(request: dict, db: Session = Depends(get_db)):
     processed = await _process_learning(raw_input, category)
 
     learning = LinaLearning(
+        tenant_id=tid,
         category=category,
         original_input=raw_input,
         content=processed,
@@ -170,11 +167,14 @@ async def create_learning(request: dict, db: Session = Depends(get_db)):
 
 
 @router.delete("/learnings/{learning_id}")
-async def delete_learning(learning_id: int, db: Session = Depends(get_db)):
+async def delete_learning(learning_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Soft-delete a global learning."""
+    tid = safe_tid(user, db)
     item = db.query(LinaLearning).filter(LinaLearning.id == learning_id).first()
     if not item:
         raise HTTPException(status_code=404, detail="No encontrado")
+    if tid and item.tenant_id != tid:
+        raise HTTPException(status_code=403, detail="No autorizado")
     item.is_active = False
     db.commit()
     return {"ok": True}
