@@ -149,59 +149,72 @@ def exchange_meta_token(data: dict, db: Session = Depends(get_db), user=Depends(
 
     auto_detect_log = []
     try:
-        # Get user ID first
-        user_resp = httpx.get(
-            f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
-            headers={"Authorization": f"Bearer {long_token}"},
-            params={"fields": "id,name"},
-            timeout=15,
-        )
-        auto_detect_log.append(f"me: HTTP {user_resp.status_code}")
+        headers = {"Authorization": f"Bearer {long_token}"}
 
-        if user_resp.status_code == 200:
-            user_id = user_resp.json().get("id")
-            auto_detect_log.append(f"user_id={user_id}")
+        # DEBUG: Try every possible route to find WABA and phone
 
-            # Get WABAs via WhatsApp-specific endpoint (no business_management scope needed)
-            if user_id:
-                waba_resp = httpx.get(
-                    f"https://graph.facebook.com/{META_GRAPH_VERSION}/{user_id}/whatsapp_business_accounts",
-                    headers={"Authorization": f"Bearer {long_token}"},
-                    timeout=15,
-                )
-                auto_detect_log.append(f"wabas: HTTP {waba_resp.status_code}")
+        # Route 1: /me with all fields
+        r1 = httpx.get(f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
+                       headers=headers, params={"fields": "id,name"}, timeout=10)
+        auto_detect_log.append(f"R1 /me: {r1.status_code} → {r1.text[:200]}")
+        user_id = r1.json().get("id") if r1.status_code == 200 else None
 
-                if waba_resp.status_code == 200:
-                    wabas = waba_resp.json().get("data", [])
-                    auto_detect_log.append(f"found {len(wabas)} WABAs")
-                    if wabas:
-                        business_account_id = wabas[0].get("id")
-                        tenant.wa_business_account_id = business_account_id
+        # Route 2: /me/accounts (pages)
+        r2 = httpx.get(f"https://graph.facebook.com/{META_GRAPH_VERSION}/me/accounts",
+                       headers=headers, timeout=10)
+        auto_detect_log.append(f"R2 /me/accounts: {r2.status_code} → {r2.text[:200]}")
 
-                        # Get phone numbers from WABA
-                        phone_resp = httpx.get(
-                            f"https://graph.facebook.com/{META_GRAPH_VERSION}/{business_account_id}/phone_numbers",
-                            headers={"Authorization": f"Bearer {long_token}"},
-                            timeout=15,
-                        )
-                        auto_detect_log.append(f"phones: HTTP {phone_resp.status_code}")
-                        if phone_resp.status_code == 200:
-                            phones = phone_resp.json().get("data", [])
-                            auto_detect_log.append(f"found {len(phones)} phones")
-                            if phones:
-                                phone_number_id = phones[0].get("id")
-                                phone_display = phones[0].get("display_phone_number")
-                                tenant.wa_phone_number_id = phone_number_id
-                                if phone_display:
-                                    tenant.wa_phone_display = phone_display
-                else:
-                    auto_detect_log.append(f"wabas error: {waba_resp.text[:200]}")
+        # Route 3: /me/businesses
+        r3 = httpx.get(f"https://graph.facebook.com/{META_GRAPH_VERSION}/me/businesses",
+                       headers=headers, timeout=10)
+        auto_detect_log.append(f"R3 /me/businesses: {r3.status_code} → {r3.text[:200]}")
+
+        # Route 4: debug_token to see scopes
+        creds = get_meta_credentials(db)
+        if creds.get("META_APP_ID") and creds.get("META_APP_SECRET"):
+            r4 = httpx.get(f"https://graph.facebook.com/{META_GRAPH_VERSION}/debug_token",
+                           params={"input_token": long_token, "access_token": f"{creds['META_APP_ID']}|{creds['META_APP_SECRET']}"},
+                           timeout=10)
+            auto_detect_log.append(f"R4 debug_token: {r4.status_code} → {r4.text[:300]}")
+
+        # Route 5: Try direct WABA endpoint with known WABA ID from app
+        # The PlexifyStudioTest app has WABA configured — try the app's WABA
+        r5 = httpx.get(f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
+                       headers=headers,
+                       params={"fields": "id,name,whatsapp_business_accounts"},
+                       timeout=10)
+        auto_detect_log.append(f"R5 /me+waba_field: {r5.status_code} → {r5.text[:200]}")
+
+        # Route 6: If user_id exists, try getting WABAs through the user
+        if user_id:
+            for edge in ["whatsapp_business_accounts", "businesses", "accounts"]:
+                r6 = httpx.get(f"https://graph.facebook.com/{META_GRAPH_VERSION}/{user_id}/{edge}",
+                               headers=headers, timeout=10)
+                auto_detect_log.append(f"R6 /{user_id}/{edge}: {r6.status_code} → {r6.text[:150]}")
+
+        # Route 7: Try the known WABA ID directly (1488407832803597 for AlPelo)
+        for known_waba in ["1488407832803597"]:
+            r7 = httpx.get(f"https://graph.facebook.com/{META_GRAPH_VERSION}/{known_waba}/phone_numbers",
+                           headers=headers, timeout=10)
+            auto_detect_log.append(f"R7 /{known_waba}/phone_numbers: {r7.status_code} → {r7.text[:200]}")
+            if r7.status_code == 200:
+                phones = r7.json().get("data", [])
+                if phones:
+                    business_account_id = known_waba
+                    phone_number_id = phones[0].get("id")
+                    phone_display = phones[0].get("display_phone_number")
+                    tenant.wa_business_account_id = business_account_id
+                    tenant.wa_phone_number_id = phone_number_id
+                    if phone_display:
+                        tenant.wa_phone_display = phone_display
+                    auto_detect_log.append(f"SUCCESS via known WABA! phone={phone_number_id}")
 
         db.commit()
     except Exception as e:
-        auto_detect_log.append(f"exception: {str(e)[:200]}")
+        auto_detect_log.append(f"EXCEPTION: {str(e)[:200]}")
 
-    print(f"[META OAUTH] Auto-detect for tenant {tid}: {' | '.join(auto_detect_log)}")
+    for line in auto_detect_log:
+        print(f"[META OAUTH DEBUG] {line}")
 
     token_preview = f"{long_token[:12]}...{long_token[-8:]}" if long_token and len(long_token) > 20 else "***"
 
