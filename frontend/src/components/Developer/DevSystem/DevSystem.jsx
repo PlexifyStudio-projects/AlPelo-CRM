@@ -85,7 +85,7 @@ const DevSystem = () => {
   const d = data || {};
   const envVars = d.environment_vars || {};
 
-  const allMetaConfigured = META_CONFIG_KEYS.every(({ key }) => metaConfig[key] && !metaConfig[key].startsWith('***') ? true : metaConfig[key]);
+  const allMetaConfigured = META_CONFIG_KEYS.every(({ key }) => !!metaConfig[key]);
 
   return (
     <div className={b}>

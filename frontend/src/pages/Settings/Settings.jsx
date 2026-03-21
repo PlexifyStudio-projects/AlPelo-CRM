@@ -40,7 +40,6 @@ const Settings = () => {
   const [aiConfig, setAiConfig] = useState(null);
   const [businessContext, setBusinessContext] = useState('');
   const [aiSaving, setAiSaving] = useState(false);
-  const [aiLoading, setAiLoading] = useState(true);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
 
@@ -55,8 +54,6 @@ const Settings = () => {
       setBusinessContext(config.system_prompt || '');
     } catch {
       // No config yet
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -81,7 +78,7 @@ const Settings = () => {
       const data = {
         name: 'Lina IA',
         system_prompt: businessContext,
-        model: 'claude-sonnet-4-5-20250929',
+        model: 'claude-sonnet-4-20250514',
         provider: 'anthropic',
         temperature: 0.4,
         max_tokens: 2048,

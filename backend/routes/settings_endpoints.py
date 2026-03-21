@@ -1,6 +1,5 @@
 """Admin settings endpoints — Meta token management, OAuth, and template syncing."""
 
-import os
 from datetime import datetime, timedelta
 
 import httpx
@@ -18,21 +17,15 @@ META_GRAPH_VERSION = "v22.0"
 
 
 def get_meta_credentials(db: Session) -> dict:
-    """Read Meta App credentials from PlatformConfig (DB), fallback to env vars."""
+    """Read Meta App credentials from PlatformConfig (DB)."""
     creds = {"META_APP_ID": "", "META_APP_SECRET": "", "META_REDIRECT_URI": ""}
 
-    # Try DB first
     configs = db.query(PlatformConfig).filter(
         PlatformConfig.key.in_(list(creds.keys()))
     ).all()
     for c in configs:
         if c.value:
             creds[c.key] = c.value
-
-    # Fallback to env vars for any missing
-    for key in creds:
-        if not creds[key]:
-            creds[key] = os.getenv(key, "")
 
     return creds
 

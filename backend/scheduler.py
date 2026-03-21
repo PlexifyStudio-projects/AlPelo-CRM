@@ -1527,8 +1527,8 @@ def _auto_refresh_meta_tokens(db):
             creds[c.key] = c.value
 
     # Fallback to env vars
-    app_id = creds.get("META_APP_ID") or os.getenv("META_APP_ID", "")
-    app_secret = creds.get("META_APP_SECRET") or os.getenv("META_APP_SECRET", "")
+    app_id = creds.get("META_APP_ID", "")
+    app_secret = creds.get("META_APP_SECRET", "")
 
     if not app_id or not app_secret:
         return  # Can't refresh without credentials
