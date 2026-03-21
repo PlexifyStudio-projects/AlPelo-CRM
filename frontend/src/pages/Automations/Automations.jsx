@@ -127,6 +127,40 @@ const Automations = () => {
     }
   };
 
+  // Submit ALL draft templates to Meta
+  const [submittingAll, setSubmittingAll] = useState(false);
+  const handleSubmitAllToMeta = async () => {
+    const drafts = automations.filter(a => {
+      const status = a.meta_template_status || 'draft';
+      return status === 'draft' || status === 'rejected';
+    });
+    if (drafts.length === 0) {
+      addNotification('No hay borradores para enviar', 'info');
+      return;
+    }
+
+    setSubmittingAll(true);
+    let sent = 0;
+    let failed = 0;
+
+    for (const auto of drafts) {
+      try {
+        const result = await automationService.submitToMeta(auto.id);
+        setAutomations(prev => prev.map(a =>
+          a.id === auto.id ? { ...a, meta_template_status: result.meta_template_status || 'pending' } : a
+        ));
+        sent++;
+      } catch {
+        failed++;
+      }
+      // Small delay to avoid rate limits
+      await new Promise(r => setTimeout(r, 1500));
+    }
+
+    setSubmittingAll(false);
+    addNotification(`Enviadas: ${sent} exitosas, ${failed} fallidas de ${drafts.length} total`, sent > 0 ? 'success' : 'error');
+  };
+
   // Submit template to Meta
   const handleSubmitToMeta = async (id) => {
     const auto = automations.find(a => a.id === id);
@@ -267,6 +301,15 @@ const Automations = () => {
           </div>
         </div>
         <div className={`${B}__header-right`}>
+          {automations.filter(a => (a.meta_template_status || 'draft') === 'draft').length > 0 && (
+            <button
+              className={`${B}__submit-all-btn`}
+              onClick={handleSubmitAllToMeta}
+              disabled={submittingAll}
+            >
+              {submittingAll ? 'Enviando...' : 'Enviar todas a Meta'}
+            </button>
+          )}
           <div className={`${B}__header-badge`}>
             <span className={`${B}__header-badge-dot`} />
             {activeCount} de {automations.length} activos
