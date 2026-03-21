@@ -297,11 +297,15 @@ async def list_templates(tenant_id: int = None, status: str = None, user=Depends
 
 
 @router.post("")
-async def create_template(data: dict):
+async def create_template(data: dict, user=Depends(get_current_user)):
     """Create a new template (starts as draft)."""
     db = SessionLocal()
     try:
-        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        tid = safe_tid(user, db)
+        if tid:
+            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+        else:
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
         if not tenant:
             raise HTTPException(status_code=404, detail="No tenant")
 
