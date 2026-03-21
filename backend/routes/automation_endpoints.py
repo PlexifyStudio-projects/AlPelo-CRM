@@ -962,6 +962,22 @@ async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
         all_defaults = _get_default_workflows(tenant.name)
         missing = [w for w in all_defaults if w["workflow_type"] not in existing_types]
         if missing:
+            # Disable all existing workflows without Meta approval
+            active_without_meta = (
+                db.query(WorkflowTemplate)
+                .filter(
+                    WorkflowTemplate.tenant_id == tenant.id,
+                    WorkflowTemplate.is_enabled == True,
+                )
+                .all()
+            )
+            disabled_count = 0
+            for wf in active_without_meta:
+                cfg = wf.config or {}
+                if cfg.get("meta_template_status") != "approved":
+                    wf.is_enabled = False
+                    disabled_count += 1
+
             for wdef in missing:
                 wf = WorkflowTemplate(
                     tenant_id=tenant.id,
@@ -976,6 +992,8 @@ async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
                 )
                 db.add(wf)
             db.commit()
+            if disabled_count:
+                print(f"[AUTOMATIONS] Disabled {disabled_count} workflows without Meta approval for tenant {tenant.id}")
             print(f"[AUTOMATIONS] Added {len(missing)} new workflows for tenant {tenant.id}")
             db.close()
             db = SessionLocal()
