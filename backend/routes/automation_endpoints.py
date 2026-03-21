@@ -954,13 +954,18 @@ async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
-        # Auto-seed if no workflows exist
+        # Auto-seed if no workflows or fewer than 40 (upgrade from old 10-workflow set)
         count = db.query(WorkflowTemplate).filter(
             WorkflowTemplate.tenant_id == tenant.id
         ).count()
-        if count == 0:
+        if count < 40:
+            if count > 0:
+                # Delete old workflows before re-seeding
+                db.query(WorkflowTemplate).filter(
+                    WorkflowTemplate.tenant_id == tenant.id
+                ).delete()
+                db.commit()
             seed_workflows_for_tenant(tenant.id, tenant.name)
-            # Re-query with fresh session
             db.close()
             db = SessionLocal()
 
