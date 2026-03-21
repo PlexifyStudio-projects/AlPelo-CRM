@@ -35,6 +35,32 @@ const automationService = {
     } catch (e) { /* API not deployed yet */ }
     return [];
   },
+
+  submitToMeta: async (workflowId) => {
+    const res = await fetch(`${API}/automations/${workflowId}/submit-to-meta`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al enviar a Meta');
+    }
+    return await res.json();
+  },
+
+  checkMetaStatus: async (workflowId) => {
+    const res = await fetch(`${API}/automations/${workflowId}/check-meta-status`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al verificar estado');
+    }
+    return await res.json();
+  },
 };
 
 export default automationService;

@@ -619,6 +619,129 @@
     }
   }
 
+  // Meta template status indicator
+  &__card-meta-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: $border-radius-md;
+    font-size: $font-size-2xs;
+    font-weight: 600;
+    border: 1px solid;
+
+    &--draft {
+      background: #FEF9C3;
+      color: #854D0E;
+      border-color: #FDE68A;
+    }
+
+    &--pending {
+      background: #FFF7ED;
+      color: #C2410C;
+      border-color: #FED7AA;
+    }
+
+    &--approved {
+      background: $color-success-bg;
+      color: $color-success-dark;
+      border-color: $color-success-border;
+    }
+
+    &--rejected {
+      background: $color-error-bg;
+      color: $color-error-dark;
+      border-color: $color-error-border;
+    }
+  }
+
+  &__card-meta-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+
+    .automations__card-meta-status--draft & { background: #EAB308; }
+    .automations__card-meta-status--pending & { background: #EA580C; }
+    .automations__card-meta-status--approved & { background: $color-success; }
+    .automations__card-meta-status--rejected & { background: $color-error; }
+  }
+
+  // Edit template inline
+  &__card-edit {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__card-edit-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: $spacing-sm $spacing-md;
+    border: 1.5px solid $color-primary;
+    border-radius: $border-radius-md;
+    font-size: $font-size-xs;
+    font-family: $font-primary;
+    color: $color-gray-700;
+    line-height: 1.5;
+    resize: vertical;
+    background: $color-white;
+    box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
+
+    &:focus { outline: none; }
+  }
+
+  &__card-edit-actions {
+    display: flex;
+    gap: $spacing-xs;
+  }
+
+  &__card-edit-warning {
+    font-size: $font-size-2xs;
+    color: #D97706;
+    font-weight: 600;
+    margin: 0;
+    padding: 6px 10px;
+    background: #FEF9C3;
+    border-radius: $border-radius-sm;
+    border: 1px solid #FDE68A;
+  }
+
+  // Submit to Meta button
+  &__card-submit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    background: #1877F2;
+    color: $color-white;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    font-family: $font-primary;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      background: #166FE5;
+      box-shadow: 0 2px 8px rgba(24, 119, 242, 0.3);
+    }
+
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+  }
+
+  // Toggle disabled state
+  &__toggle--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+
+    .automations__toggle-slider {
+      cursor: not-allowed;
+    }
+  }
+
   // Template ready
   &__card-template-ready {
     display: inline-flex;
