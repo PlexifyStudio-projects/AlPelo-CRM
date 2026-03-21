@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Card from '../../components/common/Card/Card';
 import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
@@ -584,8 +585,8 @@ const Settings = () => {
         </Card>
       </div>
 
-      {/* Disconnect confirmation modal */}
-      {showDisconnectModal && (
+      {/* Disconnect confirmation modal — rendered via portal to avoid stacking context issues */}
+      {showDisconnectModal && createPortal(
         <div className={`${b}__modal-overlay`} onClick={() => setShowDisconnectModal(false)}>
           <div className={`${b}__modal`} onClick={e => e.stopPropagation()}>
             <div className={`${b}__modal-icon`}>
@@ -617,7 +618,8 @@ const Settings = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
