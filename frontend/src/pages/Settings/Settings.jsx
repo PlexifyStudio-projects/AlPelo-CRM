@@ -8,85 +8,38 @@ import settingsService from '../../services/settingsService';
 
 // Model is managed by Plexify (dev), not by the agency admin
 
-const DEFAULT_FIELDS = {
-  nombre: '',
-  ubicacion: '',
-  tipo: '',
-  horario_lv: '9:00am - 7:00pm',
-  horario_sab: '9:00am - 5:00pm',
-  horario_dom: 'CERRADO',
-  fuera_horario: 'Lina responde preguntas y agenda citas, pero informa el horario si preguntan.',
-  tono: 'Calido y cercano',
-  trato: 'Tutea',
-  largo_mensajes: 'Maximo 2-3 lineas por mensaje',
-  emojis: '1 emoji si aporta',
-  expresiones: '',
-  pagos: '',
-  cancelaciones: '',
-  reservas: '',
-  notas: '',
-};
-
-function parsePromptToFields(prompt) {
-  if (!prompt) return { ...DEFAULT_FIELDS };
-  const f = { ...DEFAULT_FIELDS };
-  const get = (label) => {
-    const re = new RegExp(`${label}:\\s*(.+)`, 'i');
-    const m = prompt.match(re);
-    return m ? m[1].trim() : '';
-  };
-  f.nombre = get('Nombre');
-  f.ubicacion = get('Ubicacion');
-  f.tipo = get('Tipo');
-  f.horario_lv = get('Lunes a Viernes') || f.horario_lv;
-  f.horario_sab = get('Sabado') || f.horario_sab;
-  f.horario_dom = get('Domingo') || f.horario_dom;
-  f.fuera_horario = get('Fuera de horario') || f.fuera_horario;
-  f.tono = get('Tono') || f.tono;
-  f.trato = get('Tutea o trata de usted') || get('Trato') || f.trato;
-  f.largo_mensajes = get('Largo de mensajes') || f.largo_mensajes;
-  f.emojis = get('Emojis') || f.emojis;
-  f.expresiones = get('Expresiones tipicas') || '';
-  f.pagos = get('Pagos') || '';
-  f.cancelaciones = get('Cancelaciones') || '';
-  f.reservas = get('Reservas') || '';
-  const notasMatch = prompt.match(/=== NOTAS ADICIONALES ===\s*([\s\S]*?)$/i);
-  f.notas = notasMatch ? notasMatch[1].trim() : '';
-  return f;
-}
-
-function fieldsToPrompt(f) {
-  let prompt = `=== DATOS DEL NEGOCIO ===
-Nombre: ${f.nombre}
-Ubicacion: ${f.ubicacion}
-Tipo: ${f.tipo}
+const DEFAULT_PROMPT = `=== DATOS DEL NEGOCIO ===
+Nombre:
+Ubicacion:
+Tipo:
 
 === HORARIO ===
-Lunes a Viernes: ${f.horario_lv}
-Sabado: ${f.horario_sab}
-Domingo: ${f.horario_dom}
-Fuera de horario: ${f.fuera_horario}
+Lunes a Viernes: 9:00am - 7:00pm
+Sabado: 9:00am - 5:00pm
+Domingo: CERRADO
+Fuera de horario: Lina responde preguntas y agenda citas, pero informa el horario si preguntan.
 
 === ESTILO DE COMUNICACION ===
-Tono: ${f.tono}
-Tutea o trata de usted: ${f.trato}
-Largo de mensajes: ${f.largo_mensajes}
-Emojis: ${f.emojis}`;
-  if (f.expresiones) prompt += `\nExpresiones tipicas: ${f.expresiones}`;
-  prompt += `\n\n=== POLITICAS ===
-Pagos: ${f.pagos}
-Cancelaciones: ${f.cancelaciones}
-Reservas: ${f.reservas}`;
-  if (f.notas) prompt += `\n\n=== NOTAS ADICIONALES ===\n${f.notas}`;
-  return prompt;
-}
+Tono: Calido y cercano
+Tutea o trata de usted: Tutea
+Largo de mensajes: Maximo 2-3 lineas por mensaje.
+Emojis: 1 emoji si aporta
+Expresiones tipicas:
+
+=== POLITICAS ===
+Pagos:
+Cancelaciones:
+Reservas:
+
+=== NOTAS ADICIONALES ===
+`;
 
 const Settings = () => {
   const { addNotification } = useNotification();
   const { tenant } = useTenant();
 
   const [aiConfig, setAiConfig] = useState(null);
-  const [fields, setFields] = useState({ ...DEFAULT_FIELDS });
+  const [businessContext, setBusinessContext] = useState(DEFAULT_PROMPT);
   const [aiSaving, setAiSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
@@ -99,14 +52,10 @@ const Settings = () => {
     try {
       const config = await aiService.getConfig();
       setAiConfig(config);
-      setFields(parsePromptToFields(config.system_prompt));
+      setBusinessContext(config.system_prompt || DEFAULT_PROMPT);
     } catch {
       // No config yet
     }
-  };
-
-  const updateField = (key, value) => {
-    setFields(prev => ({ ...prev, [key]: value }));
   };
 
   const handleTestAI = async () => {
@@ -129,7 +78,7 @@ const Settings = () => {
     try {
       const data = {
         name: 'Lina IA',
-        system_prompt: fieldsToPrompt(fields),
+        system_prompt: businessContext,
         model: 'claude-sonnet-4-20250514',
         provider: 'anthropic',
         temperature: 0.4,
@@ -149,7 +98,7 @@ const Settings = () => {
     } finally {
       setAiSaving(false);
     }
-  }, [fields, aiConfig, addNotification]);
+  }, [businessContext, aiConfig, addNotification]);
 
   const [notifPrefs, setNotifPrefs] = useState(() => {
     try { return JSON.parse(localStorage.getItem('plexify_notif_prefs') || '{}'); } catch { return {}; }
@@ -368,125 +317,29 @@ const Settings = () => {
       <div className={`${b}__content`}>
         {/* ========== LINA IA CONFIG ========== */}
         <Card title="Lina IA — Contexto del negocio" className={`${b}__card ${b}__card--ai`}>
-          <p className={`${b}__card-desc`}>
-            Llena cada campo para que Lina conozca tu negocio a fondo. Ella ya sabe agendar citas, responder precios y manejar quejas — tu solo defines el contexto.
-          </p>
-
-          {/* DATOS DEL NEGOCIO */}
-          <div className={`${b}__form-section`}>
-            <h4 className={`${b}__form-section-title`}>Datos del negocio</h4>
-            <div className={`${b}__form-grid`}>
-              <div className={`${b}__form-field`}>
-                <label>Nombre del negocio</label>
-                <input type="text" value={fields.nombre} onChange={e => updateField('nombre', e.target.value)} placeholder="Ej: AlPelo Peluqueria" />
-              </div>
-              <div className={`${b}__form-field`}>
-                <label>Ubicacion</label>
-                <input type="text" value={fields.ubicacion} onChange={e => updateField('ubicacion', e.target.value)} placeholder="Ej: Cabecera, Bucaramanga, Colombia" />
-              </div>
-              <div className={`${b}__form-field`}>
-                <label>Tipo de negocio</label>
-                <input type="text" value={fields.tipo} onChange={e => updateField('tipo', e.target.value)} placeholder="Ej: Barberia, Salon de belleza, Spa, Clinica..." />
-              </div>
-            </div>
-          </div>
-
-          {/* HORARIO */}
-          <div className={`${b}__form-section`}>
-            <h4 className={`${b}__form-section-title`}>Horario de atencion</h4>
-            <div className={`${b}__form-grid ${b}__form-grid--3col`}>
-              <div className={`${b}__form-field`}>
-                <label>Lunes a Viernes</label>
-                <input type="text" value={fields.horario_lv} onChange={e => updateField('horario_lv', e.target.value)} placeholder="9:00am - 7:00pm" />
-              </div>
-              <div className={`${b}__form-field`}>
-                <label>Sabado</label>
-                <input type="text" value={fields.horario_sab} onChange={e => updateField('horario_sab', e.target.value)} placeholder="9:00am - 5:00pm" />
-              </div>
-              <div className={`${b}__form-field`}>
-                <label>Domingo</label>
-                <input type="text" value={fields.horario_dom} onChange={e => updateField('horario_dom', e.target.value)} placeholder="CERRADO" />
-              </div>
-            </div>
-            <div className={`${b}__form-field`}>
-              <label>Fuera de horario</label>
-              <input type="text" value={fields.fuera_horario} onChange={e => updateField('fuera_horario', e.target.value)} placeholder="Que hace Lina fuera de horario" />
-            </div>
-          </div>
-
-          {/* ESTILO */}
-          <div className={`${b}__form-section`}>
-            <h4 className={`${b}__form-section-title`}>Estilo de comunicacion</h4>
-            <div className={`${b}__form-grid`}>
-              <div className={`${b}__form-field`}>
-                <label>Tono</label>
-                <select value={fields.tono} onChange={e => updateField('tono', e.target.value)}>
-                  <option value="Calido y cercano">Calido y cercano</option>
-                  <option value="Formal y profesional">Formal y profesional</option>
-                  <option value="Regional y directo">Regional y directo</option>
-                  <option value="Divertido y relajado">Divertido y relajado</option>
-                  <option value="Elegante y sofisticado">Elegante y sofisticado</option>
-                </select>
-              </div>
-              <div className={`${b}__form-field`}>
-                <label>Trato</label>
-                <select value={fields.trato} onChange={e => updateField('trato', e.target.value)}>
-                  <option value="Tutea">Tutea (tu)</option>
-                  <option value="Usted">Usted</option>
-                  <option value="Depende del cliente">Depende del cliente</option>
-                </select>
-              </div>
-              <div className={`${b}__form-field`}>
-                <label>Emojis</label>
-                <select value={fields.emojis} onChange={e => updateField('emojis', e.target.value)}>
-                  <option value="1 emoji si aporta">1 emoji si aporta</option>
-                  <option value="Sin emojis">Sin emojis</option>
-                  <option value="Libre">Libre</option>
-                </select>
-              </div>
-            </div>
-            <div className={`${b}__form-field`}>
-              <label>Expresiones tipicas (opcional)</label>
-              <input type="text" value={fields.expresiones} onChange={e => updateField('expresiones', e.target.value)} placeholder="Ej: parcero, que mas, a la orden..." />
-            </div>
-          </div>
-
-          {/* POLITICAS */}
-          <div className={`${b}__form-section`}>
-            <h4 className={`${b}__form-section-title`}>Politicas del negocio</h4>
-            <div className={`${b}__form-field`}>
-              <label>Metodos de pago</label>
-              <input type="text" value={fields.pagos} onChange={e => updateField('pagos', e.target.value)} placeholder="Ej: Efectivo, Nequi, Daviplata, tarjeta" />
-            </div>
-            <div className={`${b}__form-field`}>
-              <label>Politica de cancelaciones</label>
-              <input type="text" value={fields.cancelaciones} onChange={e => updateField('cancelaciones', e.target.value)} placeholder="Ej: Cancelar con minimo 2 horas de anticipacion" />
-            </div>
-            <div className={`${b}__form-field`}>
-              <label>Reservas</label>
-              <input type="text" value={fields.reservas} onChange={e => updateField('reservas', e.target.value)} placeholder="Ej: Link de reservas o instrucciones" />
-            </div>
-          </div>
-
-          {/* NOTAS ADICIONALES */}
-          <div className={`${b}__form-section`}>
-            <h4 className={`${b}__form-section-title`}>Notas adicionales (opcional)</h4>
-            <div className={`${b}__form-field`}>
-              <textarea
-                className={`${b}__ai-textarea`}
-                value={fields.notas}
-                onChange={e => updateField('notas', e.target.value)}
-                placeholder="Servicios estrella, profesionales destacados, promociones activas, reglas especiales..."
-                rows={4}
-              />
-            </div>
+          <div className={`${b}__ai-field`}>
+            <label className={`${b}__ai-label`}>
+              Instrucciones del negocio
+              <span className={`${b}__ai-label-hint`}>
+                Completa cada linea con la informacion de tu negocio. Lina ya sabe operar (agendar, responder, cobrar) — tu solo defines el contexto.
+              </span>
+            </label>
+            <textarea
+              className={`${b}__ai-textarea`}
+              value={businessContext}
+              onChange={(e) => setBusinessContext(e.target.value)}
+              rows={22}
+            />
+            <span className={`${b}__ai-char-count`}>
+              {businessContext.length} caracteres
+            </span>
           </div>
 
           <div className={`${b}__ai-actions`}>
             <button
               className={`${b}__ai-save`}
               onClick={handleSaveAiConfig}
-              disabled={aiSaving || !fields.nombre.trim()}
+              disabled={aiSaving || !businessContext.trim()}
             >
               {aiSaving ? 'Guardando...' : aiConfig?.id ? 'Actualizar configuracion' : 'Guardar configuracion'}
             </button>
