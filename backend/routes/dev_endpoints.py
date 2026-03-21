@@ -13,7 +13,7 @@ from auth.security import hash_password
 
 from database.connection import get_db
 from database.models import (
-    Admin, Tenant, UsageMetrics,
+    Admin, Tenant, UsageMetrics, PlatformConfig,
     Client, Staff, WhatsAppMessage, WhatsAppConversation,
     Appointment, Service, VisitHistory, ClientNote
 )
@@ -1077,3 +1077,61 @@ def dev_system(db: Session = Depends(get_db), user: Admin = Depends(get_current_
         "total_conversations": convo_count,
         "environment_vars": env_vars,
     }
+
+
+# ============================================================================
+# PLATFORM CONFIG — Global settings (Meta App credentials, etc.)
+# ============================================================================
+
+@router.get("/dev/platform-config")
+def get_platform_config(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Get all platform config entries. Secrets are masked."""
+    _require_dev(user)
+
+    configs = db.query(PlatformConfig).order_by(PlatformConfig.key).all()
+    result = {}
+    for c in configs:
+        if c.is_secret and c.value:
+            result[c.key] = f"***{c.value[-4:]}" if len(c.value) > 4 else "***"
+        else:
+            result[c.key] = c.value or ""
+    return {"config": result}
+
+
+@router.put("/dev/platform-config")
+def update_platform_config(data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Upsert platform config entries. Expects {key: value, ...}."""
+    _require_dev(user)
+
+    items = data.get("items", {})
+    if not items:
+        raise HTTPException(status_code=400, detail="No se enviaron configuraciones")
+
+    # Which keys are secrets
+    SECRET_KEYS = {"META_APP_SECRET"}
+
+    updated = []
+    for key, value in items.items():
+        key = key.strip().upper()
+        if not key:
+            continue
+
+        # Don't overwrite secret with masked value
+        if value and value.startswith("***"):
+            continue
+
+        existing = db.query(PlatformConfig).filter(PlatformConfig.key == key).first()
+        if existing:
+            existing.value = value.strip() if value else ""
+            existing.is_secret = key in SECRET_KEYS
+            existing.updated_at = datetime.utcnow()
+        else:
+            db.add(PlatformConfig(
+                key=key,
+                value=value.strip() if value else "",
+                is_secret=key in SECRET_KEYS,
+            ))
+        updated.append(key)
+
+    db.commit()
+    return {"success": True, "updated": updated}

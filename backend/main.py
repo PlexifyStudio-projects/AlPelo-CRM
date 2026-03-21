@@ -76,6 +76,28 @@ def _run_migrations(engine):
         except Exception as e:
             print(f"[MIGRATION] Error on {table}.{column}: {e}")
 
+    # --- platform_config table (global key-value settings) ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='platform_config'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.platform_config (
+                        id SERIAL PRIMARY KEY,
+                        key VARCHAR(100) UNIQUE NOT NULL,
+                        value TEXT,
+                        is_secret BOOLEAN DEFAULT FALSE,
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE UNIQUE INDEX idx_platform_config_key ON public.platform_config(key)"))
+                print("[MIGRATION] Created platform_config table")
+    except Exception as e:
+        print(f"[MIGRATION] platform_config table: {e}")
+
     # --- client_memory table (long-term AI memory with embeddings) ---
     try:
         with engine.begin() as conn:

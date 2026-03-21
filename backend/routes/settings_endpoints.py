@@ -8,13 +8,33 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Tenant
+from database.models import Tenant, PlatformConfig
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
 
 router = APIRouter()
 
 META_GRAPH_VERSION = "v22.0"
+
+
+def get_meta_credentials(db: Session) -> dict:
+    """Read Meta App credentials from PlatformConfig (DB), fallback to env vars."""
+    creds = {"META_APP_ID": "", "META_APP_SECRET": "", "META_REDIRECT_URI": ""}
+
+    # Try DB first
+    configs = db.query(PlatformConfig).filter(
+        PlatformConfig.key.in_(list(creds.keys()))
+    ).all()
+    for c in configs:
+        if c.value:
+            creds[c.key] = c.value
+
+    # Fallback to env vars for any missing
+    for key in creds:
+        if not creds[key]:
+            creds[key] = os.getenv(key, "")
+
+    return creds
 
 
 # ============================================================================
@@ -28,13 +48,14 @@ def get_meta_auth_url(db: Session = Depends(get_db), user=Depends(get_current_us
     if not tid:
         raise HTTPException(status_code=400, detail="No tenant asociado")
 
-    app_id = os.getenv("META_APP_ID", "")
-    redirect_uri = os.getenv("META_REDIRECT_URI", "")
+    creds = get_meta_credentials(db)
+    app_id = creds["META_APP_ID"]
+    redirect_uri = creds["META_REDIRECT_URI"]
 
     if not app_id:
-        raise HTTPException(status_code=500, detail="META_APP_ID no configurado en el servidor")
+        raise HTTPException(status_code=500, detail="META_APP_ID no configurado. Configuralo desde el Dev Panel > Sistema.")
     if not redirect_uri:
-        raise HTTPException(status_code=500, detail="META_REDIRECT_URI no configurado en el servidor")
+        raise HTTPException(status_code=500, detail="META_REDIRECT_URI no configurado. Configuralo desde el Dev Panel > Sistema.")
 
     scopes = "whatsapp_business_management,whatsapp_business_messaging,business_management"
 
@@ -65,12 +86,13 @@ def exchange_meta_token(data: dict, db: Session = Depends(get_db), user=Depends(
     if not code:
         raise HTTPException(status_code=400, detail="El codigo OAuth es obligatorio")
 
-    app_id = os.getenv("META_APP_ID", "")
-    app_secret = os.getenv("META_APP_SECRET", "")
-    redirect_uri = os.getenv("META_REDIRECT_URI", "")
+    creds = get_meta_credentials(db)
+    app_id = creds["META_APP_ID"]
+    app_secret = creds["META_APP_SECRET"]
+    redirect_uri = creds["META_REDIRECT_URI"]
 
     if not app_id or not app_secret:
-        raise HTTPException(status_code=500, detail="META_APP_ID o META_APP_SECRET no configurados")
+        raise HTTPException(status_code=500, detail="META_APP_ID o META_APP_SECRET no configurados. Configuralo desde el Dev Panel > Sistema.")
 
     # Step 1: Exchange code for short-lived token
     try:
@@ -198,11 +220,12 @@ def refresh_meta_token(db: Session = Depends(get_db), user=Depends(get_current_u
     if not tenant or not tenant.wa_access_token:
         raise HTTPException(status_code=400, detail="No hay token para renovar")
 
-    app_id = os.getenv("META_APP_ID", "")
-    app_secret = os.getenv("META_APP_SECRET", "")
+    creds = get_meta_credentials(db)
+    app_id = creds["META_APP_ID"]
+    app_secret = creds["META_APP_SECRET"]
 
     if not app_id or not app_secret:
-        raise HTTPException(status_code=500, detail="META_APP_ID o META_APP_SECRET no configurados")
+        raise HTTPException(status_code=500, detail="META_APP_ID o META_APP_SECRET no configurados. Configuralo desde el Dev Panel > Sistema.")
 
     try:
         resp = httpx.get(

@@ -944,6 +944,147 @@ $_surface: #F8FAFC;
 
     &--missing { color: #EF4444; font-weight: $font-weight-bold; }
   }
+
+  &__section-header {
+    @include flex-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #F1F5F9;
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border-bottom: none;
+
+    svg { color: #1877F2; }
+  }
+
+  &__section-desc {
+    font-size: 12px;
+    color: $_text-muted;
+    padding: 0 20px 16px;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  &__edit-btn {
+    padding: 6px 16px;
+    background: white;
+    border: 1px solid $_card-border;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: $font-weight-semibold;
+    color: $_primary-light;
+    cursor: pointer;
+    transition: all 200ms;
+
+    &:hover {
+      background: $_accent-bg;
+      border-color: $_primary-light;
+    }
+  }
+
+  &__meta-display {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 20px 20px;
+  }
+
+  &__meta-form {
+    padding: 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  &__meta-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__meta-label {
+    font-size: 13px;
+    font-weight: $font-weight-semibold;
+    color: $_text-primary;
+  }
+
+  &__meta-input {
+    padding: 10px 14px;
+    border: 1px solid $_card-border;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: $_mono;
+    color: $_text-primary;
+    background: $_surface;
+    transition: border-color 200ms;
+
+    &:focus {
+      outline: none;
+      border-color: $_primary-light;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    &::placeholder { color: $_text-muted; font-family: inherit; }
+  }
+
+  &__meta-key {
+    font-size: 10px;
+    color: $_text-muted;
+    font-family: $_mono;
+    letter-spacing: 0.03em;
+  }
+
+  &__meta-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  &__meta-save {
+    padding: 10px 24px;
+    background: $_primary;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 200ms;
+
+    &:hover { background: darken(#1E40AF, 5%); }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+  }
+
+  &__meta-cancel {
+    padding: 10px 24px;
+    background: white;
+    color: $_text-secondary;
+    border: 1px solid $_card-border;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 200ms;
+
+    &:hover { background: $_surface; }
+  }
+
+  &__meta-msg {
+    font-size: 12px;
+    color: #22C55E;
+    font-weight: $font-weight-semibold;
+    padding: 0 20px 16px;
+    margin: 0;
+  }
+
+  &__info-value--missing {
+    color: #EF4444 !important;
+    font-style: italic;
+  }
 }
 
 // ============================================

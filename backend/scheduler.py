@@ -1495,6 +1495,116 @@ def _proactive_reconnect(db):
 
 
 # ============================================================================
+# 8. META TOKEN AUTO-REFRESH — Renew tokens before they expire
+# ============================================================================
+_last_token_refresh_date = None
+
+def _auto_refresh_meta_tokens(db):
+    """Once daily, check all tenant tokens and refresh any expiring within 7 days.
+    Reads Meta App credentials from PlatformConfig (DB), not env vars."""
+    global _last_token_refresh_date
+
+    now = _now_colombia()
+    today = now.date()
+
+    # Only run once per day, at ~6 AM
+    if _last_token_refresh_date == today:
+        return
+    if now.hour != 6:
+        return
+
+    _last_token_refresh_date = today
+
+    from database.models import Tenant, PlatformConfig
+
+    # Get Meta App credentials from PlatformConfig
+    creds = {}
+    configs = db.query(PlatformConfig).filter(
+        PlatformConfig.key.in_(["META_APP_ID", "META_APP_SECRET"])
+    ).all()
+    for c in configs:
+        if c.value:
+            creds[c.key] = c.value
+
+    # Fallback to env vars
+    app_id = creds.get("META_APP_ID") or os.getenv("META_APP_ID", "")
+    app_secret = creds.get("META_APP_SECRET") or os.getenv("META_APP_SECRET", "")
+
+    if not app_id or not app_secret:
+        return  # Can't refresh without credentials
+
+    # Find tenants with tokens expiring within 7 days
+    threshold = datetime.utcnow() + timedelta(days=7)
+    expiring_tenants = (
+        db.query(Tenant)
+        .filter(
+            Tenant.is_active == True,
+            Tenant.wa_access_token.isnot(None),
+            Tenant.wa_token_expires_at.isnot(None),
+            Tenant.wa_token_expires_at <= threshold,
+        )
+        .all()
+    )
+
+    if not expiring_tenants:
+        return
+
+    for tenant in expiring_tenants:
+        days_left = (tenant.wa_token_expires_at - datetime.utcnow()).days if tenant.wa_token_expires_at else 0
+        print(f"[SCHEDULER] Token refresh: {tenant.name} (expires in {days_left} days)")
+
+        try:
+            resp = httpx.get(
+                f"https://graph.facebook.com/v22.0/oauth/access_token",
+                params={
+                    "grant_type": "fb_exchange_token",
+                    "client_id": app_id,
+                    "client_secret": app_secret,
+                    "fb_exchange_token": tenant.wa_access_token,
+                },
+                timeout=15,
+            )
+
+            if resp.status_code == 200:
+                token_data = resp.json()
+                new_token = token_data.get("access_token")
+                expires_in = token_data.get("expires_in", 5184000)
+
+                if new_token:
+                    tenant.wa_access_token = new_token
+                    tenant.wa_token_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+                    db.commit()
+
+                    new_days = expires_in // 86400
+                    print(f"[SCHEDULER] Token refreshed for {tenant.name} — valid for {new_days} more days")
+                    log_event(
+                        "sistema",
+                        f"Token Meta renovado automaticamente para {tenant.name}",
+                        detail=f"Token valido por {new_days} dias mas. Expira: {tenant.wa_token_expires_at.strftime('%Y-%m-%d')}",
+                        status="ok", tenant_id=tenant.id,
+                    )
+            else:
+                error_msg = ""
+                try:
+                    error_msg = resp.json().get("error", {}).get("message", f"HTTP {resp.status_code}")
+                except Exception:
+                    error_msg = f"HTTP {resp.status_code}"
+
+                print(f"[SCHEDULER] Token refresh FAILED for {tenant.name}: {error_msg}")
+                log_event(
+                    "error",
+                    f"Fallo renovacion de token para {tenant.name}",
+                    detail=f"Error: {error_msg}. Token expira en {days_left} dias. El admin debe reconectar Facebook.",
+                    status="error", tenant_id=tenant.id,
+                )
+
+        except Exception as e:
+            print(f"[SCHEDULER] Token refresh error for {tenant.name}: {e}")
+
+    print(f"[SCHEDULER] Token refresh check complete — {len(expiring_tenants)} tenant(s) checked")
+
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 def _scheduler_loop():
@@ -1544,6 +1654,12 @@ def _scheduler_loop():
                     _proactive_reconnect(db)
                 except Exception as e:
                     print(f"[SCHEDULER] Reconnect error: {e}")
+
+                # Meta Token Auto-Refresh — renew tokens expiring within 7 days (once daily at 6 AM)
+                try:
+                    _auto_refresh_meta_tokens(db)
+                except Exception as e:
+                    print(f"[SCHEDULER] Token refresh error: {e}")
             finally:
                 db.close()
         except Exception as e:

@@ -264,6 +264,18 @@ class Tenant(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class PlatformConfig(Base):
+    """Global platform-wide key-value configuration (Meta credentials, etc.).
+    NOT per-tenant — these are Plexify Studio's own settings."""
+    __tablename__ = "platform_config"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(100), unique=True, nullable=False, index=True)
+    value = Column(Text, nullable=True)
+    is_secret = Column(Boolean, default=False)  # Mask in API responses
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class UsageMetrics(Base):
     """Monthly usage tracking per tenant — for billing and monitoring."""
     __tablename__ = "usage_metrics"
