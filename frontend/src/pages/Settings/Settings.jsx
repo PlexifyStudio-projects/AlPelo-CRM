@@ -221,8 +221,11 @@ const Settings = () => {
     }
   };
 
+  const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+
   const handleDisconnect = async () => {
-    if (!window.confirm('¿Seguro que quieres desconectar tu cuenta de Meta? Se eliminara el token y la conexion con WhatsApp.')) return;
+    setDisconnecting(true);
     try {
       await settingsService.disconnectMeta();
       setMetaStatus({ connected: false });
@@ -230,9 +233,12 @@ const Settings = () => {
       setMetaPhoneId('');
       setMetaBizId('');
       setMetaTemplates(null);
+      setShowDisconnectModal(false);
       addNotification('Cuenta de Meta desconectada', 'info');
     } catch (err) {
       addNotification(err.message, 'error');
+    } finally {
+      setDisconnecting(false);
     }
   };
 
@@ -426,7 +432,7 @@ const Settings = () => {
               {metaChecking ? 'Verificando...' : 'Verificar conexion'}
             </button>
             {metaStatus?.connected && (
-              <button className={`${b}__meta-disconnect`} onClick={handleDisconnect}>
+              <button className={`${b}__meta-disconnect`} onClick={() => setShowDisconnectModal(true)}>
                 Desconectar
               </button>
             )}
@@ -577,6 +583,42 @@ const Settings = () => {
           )}
         </Card>
       </div>
+
+      {/* Disconnect confirmation modal */}
+      {showDisconnectModal && (
+        <div className={`${b}__modal-overlay`} onClick={() => setShowDisconnectModal(false)}>
+          <div className={`${b}__modal`} onClick={e => e.stopPropagation()}>
+            <div className={`${b}__modal-icon`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </div>
+            <h3 className={`${b}__modal-title`}>Desconectar cuenta de Meta</h3>
+            <p className={`${b}__modal-desc`}>
+              Se eliminara el token de acceso y la conexion con WhatsApp Business.
+              Las automatizaciones dejaran de funcionar hasta que vuelvas a conectar.
+            </p>
+            <div className={`${b}__modal-actions`}>
+              <button
+                className={`${b}__modal-cancel`}
+                onClick={() => setShowDisconnectModal(false)}
+                disabled={disconnecting}
+              >
+                Cancelar
+              </button>
+              <button
+                className={`${b}__modal-confirm`}
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+              >
+                {disconnecting ? 'Desconectando...' : 'Si, desconectar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
