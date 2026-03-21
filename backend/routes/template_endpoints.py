@@ -246,11 +246,6 @@ async def list_templates(tenant_id: int = None, status: str = None, user=Depends
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
-        count = db.query(MessageTemplate).filter(MessageTemplate.tenant_id == tenant.id).count()
-        if count == 0:
-            seed_templates_for_tenant(tenant.id)
-            db.close()
-            db = SessionLocal()
 
         # Auto-sync with Meta every 60 seconds (non-blocking)
         now = _time.time()
