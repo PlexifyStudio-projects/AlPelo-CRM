@@ -301,12 +301,15 @@ def seed_workflows_for_tenant(tenant_id: int, tenant_name: str = "tu negocio"):
 # ═══════════════════════════════════════════════
 
 @router.get("")
-async def list_workflows(tenant_id: int = None):
+async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
     """List all workflow templates for a tenant. Auto-seeds defaults if none exist."""
     db = SessionLocal()
     try:
-        # For now, get the first tenant (or specified)
-        if tenant_id:
+        # Use authenticated user's tenant_id (ignore query param for security)
+        tid = safe_tid(user, db)
+        if tid:
+            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+        elif tenant_id:
             tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
         else:
             tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
@@ -408,11 +411,14 @@ async def update_workflow(workflow_id: int, data: dict, user=Depends(get_current
 
 
 @router.get("/stats")
-async def get_stats(tenant_id: int = None):
+async def get_stats(tenant_id: int = None, user=Depends(get_current_user)):
     """Get aggregate automation stats for a tenant."""
     db = SessionLocal()
     try:
-        if tenant_id:
+        tid = safe_tid(user, db)
+        if tid:
+            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+        elif tenant_id:
             tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
         else:
             tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
@@ -450,11 +456,14 @@ async def get_stats(tenant_id: int = None):
 
 
 @router.get("/executions")
-async def get_executions(tenant_id: int = None, limit: int = 50):
+async def get_executions(tenant_id: int = None, limit: int = 50, user=Depends(get_current_user)):
     """Get recent workflow execution log."""
     db = SessionLocal()
     try:
-        if tenant_id:
+        tid = safe_tid(user, db)
+        if tid:
+            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+        elif tenant_id:
             tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
         else:
             tenant = db.query(Tenant).filter(Tenant.is_active == True).first()

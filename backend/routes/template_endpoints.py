@@ -224,14 +224,21 @@ async def reset_templates():
 _last_sync_time = None
 
 @router.get("")
-async def list_templates(tenant_id: int = None, status: str = None):
+async def list_templates(tenant_id: int = None, status: str = None, user=Depends(get_current_user)):
     """List all message templates. Auto-syncs with Meta every 60 seconds."""
     global _last_sync_time
     import time as _time
 
     db = SessionLocal()
     try:
-        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first() if tenant_id else db.query(Tenant).filter(Tenant.is_active == True).first()
+        # Use authenticated user's tenant_id (ignore query param for security)
+        tid = safe_tid(user, db)
+        if tid:
+            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+        elif tenant_id:
+            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        else:
+            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
         if not tenant:
             raise HTTPException(status_code=404, detail="No tenant")
 
