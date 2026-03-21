@@ -631,13 +631,19 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
             "timezone": "America/Bogota",
         }
 
-    # Count REAL Lina IA messages (not manual sends by admin)
+    # Count REAL Lina IA messages for THIS tenant only
     real_used = 0
     try:
-        real_used = db.query(func.count(WhatsAppMessage.id)).filter(
-            WhatsAppMessage.direction == "outbound",
-            WhatsAppMessage.sent_by == "lina_ia",
-        ).scalar() or 0
+        real_used = (
+            db.query(func.count(WhatsAppMessage.id))
+            .join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id)
+            .filter(
+                WhatsAppMessage.direction == "outbound",
+                WhatsAppMessage.sent_by == "lina_ia",
+                WhatsAppConversation.tenant_id == tenant.id,
+            )
+            .scalar() or 0
+        )
     except Exception:
         real_used = getattr(tenant, 'messages_used', 0)
 
