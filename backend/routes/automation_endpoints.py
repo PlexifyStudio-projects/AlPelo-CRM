@@ -954,18 +954,29 @@ async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
-        # Auto-seed if no workflows or fewer than 40 (upgrade from old 10-workflow set)
-        count = db.query(WorkflowTemplate).filter(
-            WorkflowTemplate.tenant_id == tenant.id
-        ).count()
-        if count < 40:
-            if count > 0:
-                # Delete old workflows before re-seeding
-                db.query(WorkflowTemplate).filter(
-                    WorkflowTemplate.tenant_id == tenant.id
-                ).delete()
-                db.commit()
-            seed_workflows_for_tenant(tenant.id, tenant.name)
+        # Auto-seed: add missing workflow types (preserves existing edits)
+        existing_types = {
+            w.workflow_type for w in
+            db.query(WorkflowTemplate.workflow_type).filter(WorkflowTemplate.tenant_id == tenant.id).all()
+        }
+        all_defaults = _get_default_workflows(tenant.name)
+        missing = [w for w in all_defaults if w["workflow_type"] not in existing_types]
+        if missing:
+            for wdef in missing:
+                wf = WorkflowTemplate(
+                    tenant_id=tenant.id,
+                    workflow_type=wdef["workflow_type"],
+                    name=wdef["name"],
+                    icon=wdef.get("icon", "⚡"),
+                    color=wdef.get("color", "#6366F1"),
+                    trigger_description=wdef.get("trigger_description", ""),
+                    message_template=wdef.get("message_template", ""),
+                    is_enabled=False,
+                    config=wdef.get("config", {}),
+                )
+                db.add(wf)
+            db.commit()
+            print(f"[AUTOMATIONS] Added {len(missing)} new workflows for tenant {tenant.id}")
             db.close()
             db = SessionLocal()
 
