@@ -307,15 +307,13 @@ async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
     try:
         # Use authenticated user's tenant_id (ignore query param for security)
         tid = safe_tid(user, db)
-        if tid:
-            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-        elif tenant_id:
-            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-        else:
-            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
-
+        if not tid:
+            if getattr(user, "role", None) == "dev":
+                return []
+            raise HTTPException(status_code=403, detail="No tenant asociado")
+        tenant = db.query(Tenant).filter(Tenant.id == tid).first()
         if not tenant:
-            raise HTTPException(status_code=404, detail="No tenant found")
+            raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
         # Auto-seed if no workflows exist
         count = db.query(WorkflowTemplate).filter(
@@ -416,16 +414,13 @@ async def get_stats(tenant_id: int = None, user=Depends(get_current_user)):
     db = SessionLocal()
     try:
         tid = safe_tid(user, db)
-        if tid:
-            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-        elif tenant_id:
-            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-        else:
-            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
-
+        if not tid:
+            return {"active_count": 0, "total_count": 0, "sent_this_month": 0,
+                    "sent_total": 0, "response_rate": 0, "confirmed_appointments": 0}
+        tenant = db.query(Tenant).filter(Tenant.id == tid).first()
         if not tenant:
             return {"active_count": 0, "total_count": 0, "sent_this_month": 0,
-                    "response_rate": 0, "confirmed_appointments": 0}
+                    "sent_total": 0, "response_rate": 0, "confirmed_appointments": 0}
 
         workflows = db.query(WorkflowTemplate).filter(
             WorkflowTemplate.tenant_id == tenant.id
@@ -461,13 +456,9 @@ async def get_executions(tenant_id: int = None, limit: int = 50, user=Depends(ge
     db = SessionLocal()
     try:
         tid = safe_tid(user, db)
-        if tid:
-            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-        elif tenant_id:
-            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-        else:
-            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
-
+        if not tid:
+            return []
+        tenant = db.query(Tenant).filter(Tenant.id == tid).first()
         if not tenant:
             return []
 
@@ -511,17 +502,15 @@ async def reset_workflows(tenant_id: int = None, user=Depends(get_current_user),
     db = SessionLocal()
     try:
         tid = safe_tid(user, db)
-        if tenant_id:
-            if tid and tenant_id != tid:
-                raise HTTPException(status_code=403, detail="No tienes acceso a este tenant")
-            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-        else:
-            if tid:
-                tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-            else:
-                tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        if not tid:
+            if getattr(user, "role", None) == "dev":
+                return []
+            raise HTTPException(status_code=403, detail="No tenant asociado")
+        if tenant_id and tid and tenant_id != tid:
+            raise HTTPException(status_code=403, detail="No tienes acceso a este tenant")
+        tenant = db.query(Tenant).filter(Tenant.id == tid).first()
         if not tenant:
-            raise HTTPException(status_code=404, detail="No tenant found")
+            raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
         db.query(WorkflowTemplate).filter(
             WorkflowTemplate.tenant_id == tenant.id

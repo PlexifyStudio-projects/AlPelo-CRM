@@ -2031,12 +2031,13 @@ def set_profile_photo(conv_id: int, body: dict, db: Session = Depends(get_db)):
 # MESSAGE SEARCH — Search messages across all conversations
 # ============================================================================
 @router.post("/toggle-all-ai")
-async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Enable or disable Lina IA on ALL conversations at once.
     When enabling, immediately catch-up on all conversations with unread inbound messages."""
     # Block reactivation if message limit reached
+    tid = safe_tid(user, db)
     if body.enable:
-        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
         if tenant and tenant.messages_limit and tenant.messages_limit > 0:
             lina_count = db.query(sa_func.count(WhatsAppMessage.id)).filter(
                 WhatsAppMessage.direction == "outbound",

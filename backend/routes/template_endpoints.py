@@ -201,13 +201,18 @@ def seed_templates_for_tenant(tenant_id: int):
 
 
 @router.post("/reset")
-async def reset_templates():
+async def reset_templates(user=Depends(get_current_user)):
     """Delete all templates and re-seed with defaults (all as draft)."""
     db = SessionLocal()
     try:
-        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        tid = safe_tid(user, db)
+        if not tid:
+            if getattr(user, "role", None) == "dev":
+                return []
+            raise HTTPException(status_code=403, detail="No tenant asociado")
+        tenant = db.query(Tenant).filter(Tenant.id == tid).first()
         if not tenant:
-            raise HTTPException(status_code=404, detail="No tenant")
+            raise HTTPException(status_code=404, detail="Tenant no encontrado")
         db.query(MessageTemplate).filter(MessageTemplate.tenant_id == tenant.id).delete()
         db.commit()
         seed_templates_for_tenant(tenant.id)
@@ -233,14 +238,13 @@ async def list_templates(tenant_id: int = None, status: str = None, user=Depends
     try:
         # Use authenticated user's tenant_id (ignore query param for security)
         tid = safe_tid(user, db)
-        if tid:
-            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-        elif tenant_id:
-            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
-        else:
-            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        if not tid:
+            if getattr(user, "role", None) == "dev":
+                return []
+            raise HTTPException(status_code=403, detail="No tenant asociado")
+        tenant = db.query(Tenant).filter(Tenant.id == tid).first()
         if not tenant:
-            raise HTTPException(status_code=404, detail="No tenant")
+            raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
         count = db.query(MessageTemplate).filter(MessageTemplate.tenant_id == tenant.id).count()
         if count == 0:
@@ -302,12 +306,13 @@ async def create_template(data: dict, user=Depends(get_current_user)):
     db = SessionLocal()
     try:
         tid = safe_tid(user, db)
-        if tid:
-            tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-        else:
-            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        if not tid:
+            if getattr(user, "role", None) == "dev":
+                return {"error": "Dev user — no tenant asociado"}
+            raise HTTPException(status_code=403, detail="No tenant asociado")
+        tenant = db.query(Tenant).filter(Tenant.id == tid).first()
         if not tenant:
-            raise HTTPException(status_code=404, detail="No tenant")
+            raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
         name = data.get("name", "").strip()
         body = data.get("body", "").strip()
@@ -678,13 +683,18 @@ async def check_meta_status(template_id: int, user=Depends(get_current_user), _d
 
 
 @router.post("/sync-all")
-async def sync_all_templates():
+async def sync_all_templates(user=Depends(get_current_user)):
     """Sync ALL template statuses with Meta in one call. Updates DB to match Meta."""
     db = SessionLocal()
     try:
-        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+        tid = safe_tid(user, db)
+        if not tid:
+            if getattr(user, "role", None) == "dev":
+                return {"meta_count": 0, "db_count": 0, "updated": 0, "meta_templates": []}
+            raise HTTPException(status_code=403, detail="No tenant asociado")
+        tenant = db.query(Tenant).filter(Tenant.id == tid).first()
         if not tenant:
-            raise HTTPException(status_code=404, detail="No tenant")
+            raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
         wa_business_id = tenant.wa_business_account_id or os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
         wa_token = tenant.wa_access_token or os.getenv("WHATSAPP_ACCESS_TOKEN", "")

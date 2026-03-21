@@ -225,7 +225,7 @@ async def delete_client_memory(memory_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/client-memories")
-async def create_client_memory_manual(request: dict, db: Session = Depends(get_db)):
+async def create_client_memory_manual(request: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Admin manually adds a memory for a client."""
     client_id = request.get("client_id")
     content = (request.get("content") or "").strip()
@@ -238,13 +238,18 @@ async def create_client_memory_manual(request: dict, db: Session = Depends(get_d
     if not client:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
 
-    # Get tenant from the client's data (if client has tenant_id)
+    # Get tenant from authenticated user, fallback to client's tenant_id
+    tid = safe_tid(user, db)
     client_tenant_id = getattr(client, 'tenant_id', None)
-    if client_tenant_id:
+    if tid:
+        tenant_id = tid
+        # Verify client belongs to this tenant
+        if client_tenant_id and client_tenant_id != tid:
+            raise HTTPException(status_code=403, detail="Cliente no pertenece a tu negocio")
+    elif client_tenant_id:
         tenant_id = client_tenant_id
     else:
-        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
-        tenant_id = tenant.id if tenant else 1
+        raise HTTPException(status_code=403, detail="No tenant asociado")
 
     # Generate embedding
     embedding_json = None
