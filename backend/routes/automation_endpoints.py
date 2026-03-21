@@ -965,22 +965,27 @@ async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
             .all()
         )
 
-        # Remove duplicates (keep first of each type) and invalid types
+        # Remove duplicates and invalid types, disable unapproved
         seen_types = set()
+        to_delete = []
         for wf in existing:
             if wf.workflow_type in seen_types or wf.workflow_type not in valid_types:
-                db.delete(wf)
+                to_delete.append(wf.id)
             else:
                 seen_types.add(wf.workflow_type)
-                # Disable any active workflow without Meta approval
                 if wf.is_enabled:
                     cfg = wf.config or {}
                     if cfg.get("meta_template_status") != "approved":
                         wf.is_enabled = False
 
+        if to_delete:
+            db.query(WorkflowTemplate).filter(WorkflowTemplate.id.in_(to_delete)).delete(synchronize_session=False)
+            db.commit()
+
         # Add missing workflow types
-        for wdef in all_defaults:
-            if wdef["workflow_type"] not in seen_types:
+        missing_types = [w for w in all_defaults if w["workflow_type"] not in seen_types]
+        if missing_types:
+            for wdef in missing_types:
                 wf = WorkflowTemplate(
                     tenant_id=tenant.id,
                     workflow_type=wdef["workflow_type"],
@@ -993,8 +998,9 @@ async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
                     config=wdef.get("config", {}),
                 )
                 db.add(wf)
+            db.commit()
+            print(f"[AUTOMATIONS] Cleaned {len(to_delete)} + added {len(missing_types)} workflows for tenant {tenant.id}")
 
-        db.commit()
         db.close()
         db = SessionLocal()
 
