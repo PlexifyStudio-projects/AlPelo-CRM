@@ -6,10 +6,14 @@ const b = 'dev-whatsapp';
 const DevWhatsApp = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTenant, setSelectedTenant] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/dev/whatsapp-health`, {
+      const url = selectedTenant
+        ? `${API_URL}/dev/whatsapp-health?tenant_id=${selectedTenant}`
+        : `${API_URL}/dev/whatsapp-health`;
+      const res = await fetch(url, {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -19,13 +23,17 @@ const DevWhatsApp = () => {
       setData({});
     }
     setLoading(false);
-  }, []);
+  }, [selectedTenant]);
 
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  const handleTenantChange = (e) => {
+    setSelectedTenant(e.target.value);
+  };
 
   if (loading) {
     return (
@@ -37,6 +45,7 @@ const DevWhatsApp = () => {
   }
 
   const d = data || {};
+  const tenants = d.tenants || [];
   const dailyMsgs = d.daily_messages || [];
   const maxDaily = Math.max(...dailyMsgs.map(x => x.count), 1);
 
@@ -47,15 +56,28 @@ const DevWhatsApp = () => {
           <h1 className={`${b}__title`}>WhatsApp Business</h1>
           <p className={`${b}__subtitle`}>Estado de la conexion y metricas de mensajeria</p>
         </div>
-        <div className={`${b}__status-pill ${d.has_wa_token ? `${b}__status-pill--ok` : `${b}__status-pill--error`}`}>
-          <span className={`${b}__status-dot`} />
-          {d.has_wa_token ? 'Token activo' : 'Token no configurado'}
+        <div className={`${b}__header-actions`}>
+          <select
+            className={`${b}__tenant-select`}
+            value={selectedTenant}
+            onChange={handleTenantChange}
+          >
+            <option value="">Todas las agencias</option>
+            {tenants.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          <div className={`${b}__status-pill ${d.has_wa_token ? `${b}__status-pill--ok` : `${b}__status-pill--error`}`}>
+            <span className={`${b}__status-dot`} />
+            {d.has_wa_token ? 'Token activo' : 'Sin token'}
+          </div>
         </div>
       </div>
 
       {d.wa_phone_display && (
         <div className={`${b}__phone-display`}>
           Numero: <strong>{d.wa_phone_display}</strong>
+          {d.selected_tenant && <span> — {d.selected_tenant.name}</span>}
         </div>
       )}
 
@@ -141,11 +163,11 @@ const DevWhatsApp = () => {
         <div className={`${b}__chart-section`}>
           <h3 className={`${b}__chart-title`}>Mensajes ultimos 7 dias</h3>
           <div className={`${b}__chart`}>
-            {dailyMsgs.slice().reverse().map(d => (
-              <div key={d.date} className={`${b}__chart-col`}>
-                <span className={`${b}__chart-count`}>{d.count}</span>
-                <div className={`${b}__chart-bar`} style={{ height: `${Math.max((d.count / maxDaily) * 100, 4)}%` }} />
-                <span className={`${b}__chart-label`}>{d.date.split('-').slice(1).join('/')}</span>
+            {dailyMsgs.slice().reverse().map(dm => (
+              <div key={dm.date} className={`${b}__chart-col`}>
+                <span className={`${b}__chart-count`}>{dm.count}</span>
+                <div className={`${b}__chart-bar`} style={{ height: `${Math.max((dm.count / maxDaily) * 100, 4)}%` }} />
+                <span className={`${b}__chart-label`}>{dm.date.split('-').slice(1).join('/')}</span>
               </div>
             ))}
           </div>

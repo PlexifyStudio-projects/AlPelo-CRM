@@ -481,6 +481,40 @@ $_surface: #F8FAFC;
     }
   }
 
+  &__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  &__tenant-select {
+    padding: 8px 32px 8px 14px;
+    background: white;
+    border: 1px solid $_card-border;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: $font-weight-semibold;
+    color: $_text-primary;
+    font-family: $_mono;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    transition: all 200ms;
+
+    &:focus {
+      outline: none;
+      border-color: $_primary-light;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    &:hover {
+      border-color: $_primary-light;
+    }
+  }
+
   &__phone-display {
     padding: 9px 16px;
     background: $_surface;

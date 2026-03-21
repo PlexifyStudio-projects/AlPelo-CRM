@@ -825,71 +825,68 @@ def dev_activity(db: Session = Depends(get_db), user: Admin = Depends(get_curren
 # ============================================================================
 
 @router.get("/dev/whatsapp-health")
-def dev_whatsapp_health(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+def dev_whatsapp_health(tenant_id: int = None, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
 
     now = datetime.utcnow()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = now - timedelta(days=7)
 
-    total_conversations = db.query(func.count(WhatsAppConversation.id)).scalar()
-    active_conversations = db.query(func.count(WhatsAppConversation.id)).filter(
-        WhatsAppConversation.last_message_at >= week_ago
-    ).scalar()
-    ai_active_convos = db.query(func.count(WhatsAppConversation.id)).filter(
-        WhatsAppConversation.is_ai_active == True
-    ).scalar()
-    total_unread = db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0)).scalar()
+    # Get all tenants for the selector
+    all_tenants = db.query(Tenant).filter(Tenant.is_active == True).order_by(Tenant.name).all()
+    tenants_list = [{"id": t.id, "name": t.name, "slug": t.slug} for t in all_tenants]
 
-    # Message stats
-    total_messages = db.query(func.count(WhatsAppMessage.id)).scalar()
-    msgs_today = db.query(func.count(WhatsAppMessage.id)).filter(
-        WhatsAppMessage.created_at >= today_start
-    ).scalar()
-    inbound_today = db.query(func.count(WhatsAppMessage.id)).filter(
-        WhatsAppMessage.created_at >= today_start,
-        WhatsAppMessage.direction == 'inbound'
-    ).scalar()
-    outbound_today = db.query(func.count(WhatsAppMessage.id)).filter(
-        WhatsAppMessage.created_at >= today_start,
-        WhatsAppMessage.direction == 'outbound'
-    ).scalar()
-    lina_msgs_today = db.query(func.count(WhatsAppMessage.id)).filter(
-        WhatsAppMessage.created_at >= today_start,
-        WhatsAppMessage.sent_by == 'lina_ia'
-    ).scalar()
-    failed_msgs = db.query(func.count(WhatsAppMessage.id)).filter(
-        WhatsAppMessage.status == 'failed'
-    ).scalar()
+    # Determine which tenant to show (None = all)
+    tenant = None
+    if tenant_id:
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
 
-    # Message types breakdown
-    template_count = db.query(func.count(WhatsAppMessage.id)).filter(
-        WhatsAppMessage.message_type == 'template'
-    ).scalar()
-    media_count = db.query(func.count(WhatsAppMessage.id)).filter(
-        WhatsAppMessage.message_type.in_(['image', 'audio', 'video', 'sticker'])
-    ).scalar()
+    # Build base queries scoped to tenant
+    def conv_q():
+        q = db.query(func.count(WhatsAppConversation.id))
+        if tenant:
+            q = q.filter(WhatsAppConversation.tenant_id == tenant.id)
+        return q
+
+    def msg_q():
+        q = db.query(func.count(WhatsAppMessage.id))
+        if tenant:
+            q = q.join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id).filter(WhatsAppConversation.tenant_id == tenant.id)
+        return q
+
+    total_conversations = conv_q().scalar()
+    active_conversations = conv_q().filter(WhatsAppConversation.last_message_at >= week_ago).scalar()
+    ai_active_convos = conv_q().filter(WhatsAppConversation.is_ai_active == True).scalar()
+
+    unread_q = db.query(func.coalesce(func.sum(WhatsAppConversation.unread_count), 0))
+    if tenant:
+        unread_q = unread_q.filter(WhatsAppConversation.tenant_id == tenant.id)
+    total_unread = unread_q.scalar()
+
+    total_messages = msg_q().scalar()
+    msgs_today = msg_q().filter(WhatsAppMessage.created_at >= today_start).scalar()
+    inbound_today = msg_q().filter(WhatsAppMessage.created_at >= today_start, WhatsAppMessage.direction == 'inbound').scalar()
+    outbound_today = msg_q().filter(WhatsAppMessage.created_at >= today_start, WhatsAppMessage.direction == 'outbound').scalar()
+    lina_msgs_today = msg_q().filter(WhatsAppMessage.created_at >= today_start, WhatsAppMessage.sent_by == 'lina_ia').scalar()
+    failed_msgs = msg_q().filter(WhatsAppMessage.status == 'failed').scalar()
+    template_count = msg_q().filter(WhatsAppMessage.message_type == 'template').scalar()
+    media_count = msg_q().filter(WhatsAppMessage.message_type.in_(['image', 'audio', 'video', 'sticker'])).scalar()
 
     # Daily breakdown (last 7 days)
     daily_msgs = []
     for i in range(7):
         day = today_start - timedelta(days=i)
         day_end = day + timedelta(days=1)
-        count = db.query(func.count(WhatsAppMessage.id)).filter(
-            WhatsAppMessage.created_at >= day,
-            WhatsAppMessage.created_at < day_end
-        ).scalar()
+        count = msg_q().filter(WhatsAppMessage.created_at >= day, WhatsAppMessage.created_at < day_end).scalar()
         daily_msgs.append({"date": day.strftime("%Y-%m-%d"), "count": count})
 
-    # Check WA token status from tenant
-    # Dev endpoint — use first active tenant for WA health check (dev users don't have tenant_id)
-    if user.tenant_id:
-        tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
-    else:
-        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
-    has_token = bool(tenant and getattr(tenant, 'wa_access_token', None))
+    # Token status
+    display_tenant = tenant or (all_tenants[0] if all_tenants else None)
+    has_token = bool(display_tenant and getattr(display_tenant, 'wa_access_token', None))
 
     return {
+        "tenants": tenants_list,
+        "selected_tenant": {"id": tenant.id, "name": tenant.name} if tenant else None,
         "total_conversations": total_conversations,
         "active_conversations_7d": active_conversations,
         "ai_active_conversations": ai_active_convos,
@@ -904,7 +901,7 @@ def dev_whatsapp_health(db: Session = Depends(get_db), user: Admin = Depends(get
         "media_messages": media_count,
         "daily_messages": daily_msgs,
         "has_wa_token": has_token,
-        "wa_phone_display": getattr(tenant, 'wa_phone_display', None) if tenant else None,
+        "wa_phone_display": getattr(display_tenant, 'wa_phone_display', None) if display_tenant else None,
     }
 
 
