@@ -1465,16 +1465,23 @@ async def submit_workflow_to_meta(workflow_id: int, user=Depends(get_current_use
                         "ya existe" in error_user_msg.lower() or
                         "ya existe" in error_msg.lower()
                     )
-                    if is_duplicate:
+                    # Also handle category mismatch
+                    error_subcode = data.get("error", {}).get("error_subcode", 0)
+                    is_category_mismatch = error_subcode == 2388026 or "categoría" in error_user_msg.lower() or "category" in error_msg.lower()
+
+                    if is_duplicate or is_category_mismatch:
                         # Try with _v2 suffix
                         v2_slug = clean_slug + "_v2"
                         retry_payload = dict(payload)
                         retry_payload["name"] = v2_slug
                         print(f"[META WORKFLOW SUBMIT] Retrying with {v2_slug}")
-                        retry_resp = _client.post(submit_url, headers=submit_headers, json=retry_payload)
+                        submit_url = f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates"
+                        submit_headers = {"Authorization": f"Bearer {wa_token}", "Content-Type": "application/json"}
+                        retry_resp = await client.post(submit_url, headers=submit_headers, json=retry_payload)
                         retry_data = retry_resp.json()
+                        print(f"[META WORKFLOW SUBMIT] Retry response {retry_resp.status_code}: {retry_data}")
 
-                        if retry_resp.status_code == 200:
+                        if retry_resp.status_code in (200, 201):
                             clean_slug = v2_slug
 
                         config["meta_template_name"] = clean_slug
