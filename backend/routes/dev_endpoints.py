@@ -39,21 +39,25 @@ def _safe_tenant_dict(t, db=None):
     admin_user = None
 
     if db:
-        # TODO: When multi-tenant data isolation is implemented (client.tenant_id, etc.),
-        # these queries should filter by tenant_id. For now, counts are global.
         try:
-            client_count = db.query(func.count(Client.id)).scalar() or 0
+            client_count = db.query(func.count(Client.id)).filter(Client.tenant_id == t.id).scalar() or 0
         except Exception:
             pass
         try:
-            staff_count = db.query(func.count(Staff.id)).scalar() or 0
+            staff_count = db.query(func.count(Staff.id)).filter(Staff.tenant_id == t.id).scalar() or 0
         except Exception:
             pass
         try:
-            real_messages_used = db.query(func.count(WhatsAppMessage.id)).filter(
-                WhatsAppMessage.direction == 'outbound',
-                WhatsAppMessage.sent_by == 'lina_ia',
-            ).scalar() or 0
+            real_messages_used = (
+                db.query(func.count(WhatsAppMessage.id))
+                .join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id)
+                .filter(
+                    WhatsAppMessage.direction == 'outbound',
+                    WhatsAppMessage.sent_by == 'lina_ia',
+                    WhatsAppConversation.tenant_id == t.id,
+                )
+                .scalar() or 0
+            )
         except Exception:
             pass
 
