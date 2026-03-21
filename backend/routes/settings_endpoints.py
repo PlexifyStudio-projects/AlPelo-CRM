@@ -147,6 +147,7 @@ def exchange_meta_token(data: dict, db: Session = Depends(get_db), user=Depends(
     business_account_id = None
     phone_display = None
 
+    auto_detect_log = []
     try:
         # Get WABA (WhatsApp Business Account) info
         resp = httpx.get(
@@ -154,40 +155,50 @@ def exchange_meta_token(data: dict, db: Session = Depends(get_db), user=Depends(
             headers={"Authorization": f"Bearer {long_token}"},
             timeout=15,
         )
+        auto_detect_log.append(f"businesses: HTTP {resp.status_code}")
         if resp.status_code == 200:
             businesses = resp.json().get("data", [])
+            auto_detect_log.append(f"found {len(businesses)} businesses")
             if businesses:
                 biz_id = businesses[0].get("id")
-                # Get WhatsApp Business Account from the business
                 waba_resp = httpx.get(
                     f"https://graph.facebook.com/{META_GRAPH_VERSION}/{biz_id}/owned_whatsapp_business_accounts",
                     headers={"Authorization": f"Bearer {long_token}"},
                     timeout=15,
                 )
+                auto_detect_log.append(f"waba: HTTP {waba_resp.status_code}")
                 if waba_resp.status_code == 200:
                     wabas = waba_resp.json().get("data", [])
+                    auto_detect_log.append(f"found {len(wabas)} WABAs")
                     if wabas:
                         business_account_id = wabas[0].get("id")
                         tenant.wa_business_account_id = business_account_id
 
-                        # Get phone numbers from WABA
                         phone_resp = httpx.get(
                             f"https://graph.facebook.com/{META_GRAPH_VERSION}/{business_account_id}/phone_numbers",
                             headers={"Authorization": f"Bearer {long_token}"},
                             timeout=15,
                         )
+                        auto_detect_log.append(f"phones: HTTP {phone_resp.status_code}")
                         if phone_resp.status_code == 200:
                             phones = phone_resp.json().get("data", [])
+                            auto_detect_log.append(f"found {len(phones)} phones")
                             if phones:
                                 phone_number_id = phones[0].get("id")
                                 phone_display = phones[0].get("display_phone_number")
                                 tenant.wa_phone_number_id = phone_number_id
                                 if phone_display:
                                     tenant.wa_phone_display = phone_display
+                else:
+                    auto_detect_log.append(f"waba error: {waba_resp.text[:200]}")
+        else:
+            auto_detect_log.append(f"businesses error: {resp.text[:200]}")
 
-                        db.commit()
-    except Exception:
-        pass  # Auto-detect is best-effort; token is already saved
+        db.commit()
+    except Exception as e:
+        auto_detect_log.append(f"exception: {str(e)[:200]}")
+
+    print(f"[META OAUTH] Auto-detect for tenant {tid}: {' | '.join(auto_detect_log)}")
 
     token_preview = f"{long_token[:12]}...{long_token[-8:]}" if long_token and len(long_token) > 20 else "***"
 
