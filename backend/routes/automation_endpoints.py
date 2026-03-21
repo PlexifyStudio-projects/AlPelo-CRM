@@ -954,31 +954,33 @@ async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
         if not tenant:
             raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
-        # Auto-seed: add missing workflow types (preserves existing edits)
-        existing_types = {
-            w.workflow_type for w in
-            db.query(WorkflowTemplate.workflow_type).filter(WorkflowTemplate.tenant_id == tenant.id).all()
-        }
+        # Clean duplicates + add missing + disable unapproved
         all_defaults = _get_default_workflows(tenant.name)
-        missing = [w for w in all_defaults if w["workflow_type"] not in existing_types]
-        if missing:
-            # Disable all existing workflows without Meta approval
-            active_without_meta = (
-                db.query(WorkflowTemplate)
-                .filter(
-                    WorkflowTemplate.tenant_id == tenant.id,
-                    WorkflowTemplate.is_enabled == True,
-                )
-                .all()
-            )
-            disabled_count = 0
-            for wf in active_without_meta:
-                cfg = wf.config or {}
-                if cfg.get("meta_template_status") != "approved":
-                    wf.is_enabled = False
-                    disabled_count += 1
+        valid_types = {w["workflow_type"] for w in all_defaults}
 
-            for wdef in missing:
+        existing = (
+            db.query(WorkflowTemplate)
+            .filter(WorkflowTemplate.tenant_id == tenant.id)
+            .order_by(WorkflowTemplate.id)
+            .all()
+        )
+
+        # Remove duplicates (keep first of each type) and invalid types
+        seen_types = set()
+        for wf in existing:
+            if wf.workflow_type in seen_types or wf.workflow_type not in valid_types:
+                db.delete(wf)
+            else:
+                seen_types.add(wf.workflow_type)
+                # Disable any active workflow without Meta approval
+                if wf.is_enabled:
+                    cfg = wf.config or {}
+                    if cfg.get("meta_template_status") != "approved":
+                        wf.is_enabled = False
+
+        # Add missing workflow types
+        for wdef in all_defaults:
+            if wdef["workflow_type"] not in seen_types:
                 wf = WorkflowTemplate(
                     tenant_id=tenant.id,
                     workflow_type=wdef["workflow_type"],
@@ -991,12 +993,10 @@ async def list_workflows(tenant_id: int = None, user=Depends(get_current_user)):
                     config=wdef.get("config", {}),
                 )
                 db.add(wf)
-            db.commit()
-            if disabled_count:
-                print(f"[AUTOMATIONS] Disabled {disabled_count} workflows without Meta approval for tenant {tenant.id}")
-            print(f"[AUTOMATIONS] Added {len(missing)} new workflows for tenant {tenant.id}")
-            db.close()
-            db = SessionLocal()
+
+        db.commit()
+        db.close()
+        db = SessionLocal()
 
         workflows = (
             db.query(WorkflowTemplate)
