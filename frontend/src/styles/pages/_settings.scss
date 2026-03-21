@@ -151,6 +151,82 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     background: linear-gradient(135deg, $color-white 0%, $ai-purple-ghost 100%);
   }
 
+  // FORM SECTIONS (structured Lina config)
+  &__form-section {
+    margin-bottom: $spacing-lg;
+    padding-bottom: $spacing-lg;
+    border-bottom: 1px solid $border-color-light;
+
+    &:last-of-type { border-bottom: none; margin-bottom: $spacing-md; }
+  }
+
+  &__form-section-title {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-gray-700;
+    margin: 0 0 $spacing-md;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-md;
+    margin-bottom: $spacing-md;
+
+    &--3col {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+      &--3col { grid-template-columns: 1fr; }
+    }
+  }
+
+  &__form-field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2xs;
+
+    label {
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+      color: $color-gray-600;
+    }
+
+    input, select {
+      height: 42px;
+      padding: 0 $spacing-md;
+      border: 1.5px solid $border-color;
+      border-radius: $border-radius-md;
+      font-size: $font-size-sm;
+      font-family: $font-primary;
+      color: $color-secondary;
+      background: $color-white;
+      transition: all $transition-fast;
+
+      &:focus {
+        outline: none;
+        border-color: $ai-purple;
+        box-shadow: 0 0 0 3px $ai-purple-ghost;
+      }
+
+      &::placeholder { color: $color-gray-300; }
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+      cursor: pointer;
+    }
+  }
+
   // PRESETS
   &__presets {
     display: grid;
