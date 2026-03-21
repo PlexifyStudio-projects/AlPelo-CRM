@@ -149,24 +149,28 @@ def exchange_meta_token(data: dict, db: Session = Depends(get_db), user=Depends(
 
     auto_detect_log = []
     try:
-        # Get WABA (WhatsApp Business Account) info
-        resp = httpx.get(
-            f"https://graph.facebook.com/{META_GRAPH_VERSION}/me/businesses",
+        # Get user ID first
+        user_resp = httpx.get(
+            f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
             headers={"Authorization": f"Bearer {long_token}"},
+            params={"fields": "id,name"},
             timeout=15,
         )
-        auto_detect_log.append(f"businesses: HTTP {resp.status_code}")
-        if resp.status_code == 200:
-            businesses = resp.json().get("data", [])
-            auto_detect_log.append(f"found {len(businesses)} businesses")
-            if businesses:
-                biz_id = businesses[0].get("id")
+        auto_detect_log.append(f"me: HTTP {user_resp.status_code}")
+
+        if user_resp.status_code == 200:
+            user_id = user_resp.json().get("id")
+            auto_detect_log.append(f"user_id={user_id}")
+
+            # Get WABAs via WhatsApp-specific endpoint (no business_management scope needed)
+            if user_id:
                 waba_resp = httpx.get(
-                    f"https://graph.facebook.com/{META_GRAPH_VERSION}/{biz_id}/owned_whatsapp_business_accounts",
+                    f"https://graph.facebook.com/{META_GRAPH_VERSION}/{user_id}/whatsapp_business_accounts",
                     headers={"Authorization": f"Bearer {long_token}"},
                     timeout=15,
                 )
-                auto_detect_log.append(f"waba: HTTP {waba_resp.status_code}")
+                auto_detect_log.append(f"wabas: HTTP {waba_resp.status_code}")
+
                 if waba_resp.status_code == 200:
                     wabas = waba_resp.json().get("data", [])
                     auto_detect_log.append(f"found {len(wabas)} WABAs")
@@ -174,6 +178,7 @@ def exchange_meta_token(data: dict, db: Session = Depends(get_db), user=Depends(
                         business_account_id = wabas[0].get("id")
                         tenant.wa_business_account_id = business_account_id
 
+                        # Get phone numbers from WABA
                         phone_resp = httpx.get(
                             f"https://graph.facebook.com/{META_GRAPH_VERSION}/{business_account_id}/phone_numbers",
                             headers={"Authorization": f"Bearer {long_token}"},
@@ -190,9 +195,7 @@ def exchange_meta_token(data: dict, db: Session = Depends(get_db), user=Depends(
                                 if phone_display:
                                     tenant.wa_phone_display = phone_display
                 else:
-                    auto_detect_log.append(f"waba error: {waba_resp.text[:200]}")
-        else:
-            auto_detect_log.append(f"businesses error: {resp.text[:200]}")
+                    auto_detect_log.append(f"wabas error: {waba_resp.text[:200]}")
 
         db.commit()
     except Exception as e:
@@ -370,27 +373,30 @@ def meta_token_status(db: Session = Depends(get_db), user=Depends(get_current_us
         expires_at = tenant.wa_token_expires_at.isoformat()
         days_until_expiry = (tenant.wa_token_expires_at - datetime.utcnow()).days
 
-    # If phone_number_id is missing, try auto-detect once more
-    if not tenant.wa_phone_number_id:
+    # If WABA or phone missing, try to recover from available data
+    if not tenant.wa_phone_number_id or not tenant.wa_business_account_id:
         try:
-            resp = httpx.get(
-                f"https://graph.facebook.com/{META_GRAPH_VERSION}/me/businesses",
+            # Use WhatsApp-specific endpoints (don't need business_management scope)
+            user_resp = httpx.get(
+                f"https://graph.facebook.com/{META_GRAPH_VERSION}/me",
                 headers={"Authorization": f"Bearer {tenant.wa_access_token}"},
+                params={"fields": "id"},
                 timeout=10,
             )
-            if resp.status_code == 200:
-                businesses = resp.json().get("data", [])
-                if businesses:
-                    biz_id = businesses[0].get("id")
+            if user_resp.status_code == 200:
+                user_id = user_resp.json().get("id")
+                if user_id:
                     waba_resp = httpx.get(
-                        f"https://graph.facebook.com/{META_GRAPH_VERSION}/{biz_id}/owned_whatsapp_business_accounts",
+                        f"https://graph.facebook.com/{META_GRAPH_VERSION}/{user_id}/whatsapp_business_accounts",
                         headers={"Authorization": f"Bearer {tenant.wa_access_token}"},
                         timeout=10,
                     )
                     if waba_resp.status_code == 200:
                         wabas = waba_resp.json().get("data", [])
-                        if wabas:
+                        if wabas and not tenant.wa_business_account_id:
                             tenant.wa_business_account_id = wabas[0].get("id")
+
+                        if tenant.wa_business_account_id and not tenant.wa_phone_number_id:
                             phone_resp = httpx.get(
                                 f"https://graph.facebook.com/{META_GRAPH_VERSION}/{tenant.wa_business_account_id}/phone_numbers",
                                 headers={"Authorization": f"Bearer {tenant.wa_access_token}"},
@@ -401,8 +407,10 @@ def meta_token_status(db: Session = Depends(get_db), user=Depends(get_current_us
                                 if phones:
                                     tenant.wa_phone_number_id = phones[0].get("id")
                                     tenant.wa_phone_display = phones[0].get("display_phone_number", "")
-                                    db.commit()
-                                    print(f"[META STATUS] Auto-recovered phone_number_id for tenant {tid}: {tenant.wa_phone_number_id}")
+
+                        if tenant.wa_business_account_id or tenant.wa_phone_number_id:
+                            db.commit()
+                            print(f"[META STATUS] Auto-recovered: WABA={tenant.wa_business_account_id}, phone={tenant.wa_phone_number_id}")
         except Exception as e:
             print(f"[META STATUS] Auto-detect retry failed for tenant {tid}: {e}")
 

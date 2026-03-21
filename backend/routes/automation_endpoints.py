@@ -1307,30 +1307,49 @@ async def submit_workflow_to_meta(workflow_id: int, user=Depends(get_current_use
         if not wa_token:
             raise HTTPException(status_code=400, detail="Token de Meta no configurado. Ve a Ajustes y conecta con Facebook.")
 
-        # Auto-detect business_account_id if missing
+        # Auto-detect business_account_id if missing — use phone_number_id to get WABA
         if not wa_business_id and wa_token:
             try:
-                resp = httpx.get(
-                    f"https://graph.facebook.com/{WA_API_VERSION}/me/businesses",
-                    headers={"Authorization": f"Bearer {wa_token}"},
-                    timeout=10,
-                )
-                if resp.status_code == 200:
-                    businesses = resp.json().get("data", [])
-                    if businesses:
-                        biz_id = businesses[0].get("id")
-                        waba_resp = httpx.get(
-                            f"https://graph.facebook.com/{WA_API_VERSION}/{biz_id}/owned_whatsapp_business_accounts",
-                            headers={"Authorization": f"Bearer {wa_token}"},
-                            timeout=10,
-                        )
-                        if waba_resp.status_code == 200:
-                            wabas = waba_resp.json().get("data", [])
-                            if wabas:
-                                wa_business_id = wabas[0].get("id")
-                                tenant.wa_business_account_id = wa_business_id
-                                _db.commit()
-                                print(f"[AUTOMATIONS] Auto-detected WABA {wa_business_id} for tenant {tenant.id}")
+                # Method 1: If we have phone_number_id, get WABA from it
+                if tenant.wa_phone_number_id:
+                    resp = httpx.get(
+                        f"https://graph.facebook.com/{WA_API_VERSION}/{tenant.wa_phone_number_id}",
+                        headers={"Authorization": f"Bearer {wa_token}"},
+                        params={"fields": "id,display_phone_number,name_status,whatsapp_business_account"},
+                        timeout=10,
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        waba = data.get("whatsapp_business_account")
+                        if waba:
+                            wa_business_id = waba.get("id") if isinstance(waba, dict) else str(waba)
+                            tenant.wa_business_account_id = wa_business_id
+                            _db.commit()
+                            print(f"[AUTOMATIONS] Auto-detected WABA {wa_business_id} from phone_number_id")
+
+                # Method 2: Try shared WABAs endpoint
+                if not wa_business_id:
+                    resp = httpx.get(
+                        f"https://graph.facebook.com/{WA_API_VERSION}/me",
+                        headers={"Authorization": f"Bearer {wa_token}"},
+                        params={"fields": "id,name"},
+                        timeout=10,
+                    )
+                    if resp.status_code == 200:
+                        user_id = resp.json().get("id")
+                        if user_id:
+                            waba_resp = httpx.get(
+                                f"https://graph.facebook.com/{WA_API_VERSION}/{user_id}/whatsapp_business_accounts",
+                                headers={"Authorization": f"Bearer {wa_token}"},
+                                timeout=10,
+                            )
+                            if waba_resp.status_code == 200:
+                                wabas = waba_resp.json().get("data", [])
+                                if wabas:
+                                    wa_business_id = wabas[0].get("id")
+                                    tenant.wa_business_account_id = wa_business_id
+                                    _db.commit()
+                                    print(f"[AUTOMATIONS] Auto-detected WABA {wa_business_id} from user WABAs")
             except Exception as e:
                 print(f"[AUTOMATIONS] Auto-detect WABA failed: {e}")
 
