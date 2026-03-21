@@ -33,6 +33,9 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
   // -----------------------------------------------
   &__sidebar {
     width: $_sidebar-width;
+    height: 100vh;
+    position: sticky;
+    top: 0;
     display: flex;
     flex-direction: column;
     background: $_sidebar-glass;
@@ -42,7 +45,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     transition: width 250ms $ease-out-quart;
     flex-shrink: 0;
     border-right: 1px solid $_sidebar-border;
-    position: relative;
     z-index: 10;
     overflow: hidden;
 
@@ -209,11 +211,13 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
   // SIDEBAR FOOTER
   // -----------------------------------------------
   &__sidebar-footer {
+    margin-top: auto;
     padding: 12px 10px 14px;
     border-top: 1px solid $_sidebar-border;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    flex-shrink: 0;
   }
 
   &__collapse-btn {
