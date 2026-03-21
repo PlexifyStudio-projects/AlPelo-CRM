@@ -59,6 +59,19 @@ const settingsService = {
     return res.json();
   },
 
+  disconnectMeta: async () => {
+    const res = await fetch(`${_API}/settings/meta/disconnect`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al desconectar');
+    }
+    return res.json();
+  },
+
   getMetaTemplates: async () => {
     const res = await fetch(`${_API}/settings/meta-templates`, { credentials: 'include' });
     if (!res.ok) return { templates: [], error: 'Error de conexion' };

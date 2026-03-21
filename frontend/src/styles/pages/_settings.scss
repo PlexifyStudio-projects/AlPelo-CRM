@@ -605,6 +605,25 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
+  &__meta-disconnect {
+    padding: 8px $spacing-md;
+    border: 1px solid $color-error-border;
+    border-radius: $border-radius-sm;
+    background: $color-white;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    font-family: $font-primary;
+    color: $color-error;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-error-bg;
+      border-color: $color-error;
+    }
+  }
+
   // Token info card (expiry + refresh)
   &__meta-token-info {
     display: flex;

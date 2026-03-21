@@ -221,6 +221,21 @@ const Settings = () => {
     }
   };
 
+  const handleDisconnect = async () => {
+    if (!window.confirm('¿Seguro que quieres desconectar tu cuenta de Meta? Se eliminara el token y la conexion con WhatsApp.')) return;
+    try {
+      await settingsService.disconnectMeta();
+      setMetaStatus({ connected: false });
+      setMetaToken('');
+      setMetaPhoneId('');
+      setMetaBizId('');
+      setMetaTemplates(null);
+      addNotification('Cuenta de Meta desconectada', 'info');
+    } catch (err) {
+      addNotification(err.message, 'error');
+    }
+  };
+
   // Cleanup popup polling on unmount
   useEffect(() => {
     return () => {
@@ -410,6 +425,11 @@ const Settings = () => {
             <button className={`${b}__meta-check`} onClick={handleCheckStatus} disabled={metaChecking}>
               {metaChecking ? 'Verificando...' : 'Verificar conexion'}
             </button>
+            {metaStatus?.connected && (
+              <button className={`${b}__meta-disconnect`} onClick={handleDisconnect}>
+                Desconectar
+              </button>
+            )}
           </div>
 
           {/* Token expiration info */}

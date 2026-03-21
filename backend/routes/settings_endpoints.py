@@ -272,6 +272,27 @@ def refresh_meta_token(db: Session = Depends(get_db), user=Depends(get_current_u
         raise HTTPException(status_code=500, detail=f"Error al renovar: {str(e)[:200]}")
 
 
+@router.post("/settings/meta/disconnect")
+def disconnect_meta(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Disconnect Meta/WhatsApp — clears token and all WA config for this tenant."""
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="No tenant asociado")
+
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+
+    tenant.wa_access_token = None
+    tenant.wa_token_expires_at = None
+    tenant.wa_phone_number_id = None
+    tenant.wa_business_account_id = None
+    tenant.wa_phone_display = None
+    db.commit()
+
+    return {"success": True, "message": "Cuenta de Meta desconectada exitosamente"}
+
+
 # ============================================================================
 # META TOKEN MANAGEMENT (manual)
 # ============================================================================
