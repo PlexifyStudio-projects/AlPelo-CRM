@@ -696,6 +696,36 @@
     gap: $spacing-xs;
   }
 
+  &__card-edit-save {
+    padding: 7px 16px;
+    background: $color-primary;
+    color: $color-white;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    font-family: $font-primary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover { background: $color-primary-dark; }
+  }
+
+  &__card-edit-cancel {
+    padding: 7px 16px;
+    background: $color-white;
+    color: $color-gray-500;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    font-family: $font-primary;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover { background: $color-gray-50; color: $color-gray-700; }
+  }
+
   &__card-edit-warning {
     font-size: $font-size-2xs;
     color: #D97706;
@@ -705,6 +735,17 @@
     background: #FEF9C3;
     border-radius: $border-radius-sm;
     border: 1px solid #FDE68A;
+  }
+
+  &__card-tip {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    margin: 0;
+    line-height: 1.4;
+    padding: 6px 10px;
+    background: $color-gray-50;
+    border-radius: $border-radius-sm;
+    border: 1px solid $color-gray-100;
   }
 
   // Submit to Meta button
