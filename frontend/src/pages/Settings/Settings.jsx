@@ -139,11 +139,11 @@ const Settings = () => {
     settingsService.getMetaTokenStatus().then(setMetaStatus).catch(() => {});
   }, []);
 
-  // OAuth popup flow
+  // OAuth popup flow — uses postMessage from callback page (works cross-origin)
   const handleFacebookLogin = async () => {
     setOauthLoading(true);
     try {
-      const { url, redirect_uri } = await settingsService.getMetaAuthUrl();
+      const { url } = await settingsService.getMetaAuthUrl();
 
       // Open popup
       const width = 600;
@@ -157,32 +157,24 @@ const Settings = () => {
       );
       popupRef.current = popup;
 
-      // Poll for the redirect with ?code=
-      pollRef.current = setInterval(() => {
-        try {
-          if (!popup || popup.closed) {
-            clearInterval(pollRef.current);
-            setOauthLoading(false);
-            return;
-          }
-          const popupUrl = popup.location.href;
-          if (popupUrl && popupUrl.includes('code=')) {
-            clearInterval(pollRef.current);
-            const urlParams = new URL(popupUrl).searchParams;
-            const code = urlParams.get('code');
-            popup.close();
-
-            if (code) {
-              handleExchangeToken(code);
-            } else {
-              setOauthLoading(false);
-              addNotification('No se recibio codigo de autorizacion', 'error');
-            }
-          }
-        } catch {
-          // Cross-origin — popup hasn't redirected yet, keep polling
+      // Listen for postMessage from the callback page
+      const messageHandler = (event) => {
+        if (event.data && event.data.type === 'META_OAUTH_CODE' && event.data.code) {
+          window.removeEventListener('message', messageHandler);
+          clearInterval(pollRef.current);
+          handleExchangeToken(event.data.code);
         }
-      }, 500);
+      };
+      window.addEventListener('message', messageHandler);
+
+      // Fallback: detect if popup was closed without completing
+      pollRef.current = setInterval(() => {
+        if (!popup || popup.closed) {
+          clearInterval(pollRef.current);
+          window.removeEventListener('message', messageHandler);
+          setOauthLoading(false);
+        }
+      }, 1000);
     } catch (err) {
       setOauthLoading(false);
       addNotification(err.message, 'error');

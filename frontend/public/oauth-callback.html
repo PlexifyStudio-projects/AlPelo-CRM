@@ -39,5 +39,24 @@
     <h2>Conectando con Facebook</h2>
     <p>Esta ventana se cerrara automaticamente...</p>
   </div>
+  <script>
+    // Extract the OAuth code from URL and send it back to the parent window
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var code = params.get('code');
+      var error = params.get('error');
+
+      if (code && window.opener) {
+        // Send code to parent window (works cross-origin)
+        window.opener.postMessage({ type: 'META_OAUTH_CODE', code: code }, '*');
+        setTimeout(function() { window.close(); }, 1500);
+      } else if (error) {
+        document.querySelector('h2').textContent = 'Error de conexion';
+        document.querySelector('p').textContent = params.get('error_description') || error;
+        document.querySelector('.spinner').style.display = 'none';
+        setTimeout(function() { window.close(); }, 3000);
+      }
+    })();
+  </script>
 </body>
 </html>
