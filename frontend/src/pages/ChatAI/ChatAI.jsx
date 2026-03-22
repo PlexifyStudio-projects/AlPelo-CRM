@@ -100,6 +100,7 @@ const ChatAI = () => {
   const [tokenCount, setTokenCount] = useState(() => parseInt(localStorage.getItem(getTokensKey(tid)) || '0', 10));
   const [pendingImage, setPendingImage] = useState(null); // { base64, mime, preview }
   const [strategyLoading, setStrategyLoading] = useState(null); // id of loading button
+  const [authorizingCampaign, setAuthorizingCampaign] = useState(false);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [staffList, setStaffList] = useState([]);
   const [selectedStaffId, setSelectedStaffId] = useState('');
@@ -298,6 +299,7 @@ const ChatAI = () => {
   }, [strategyLoading, formatStrategyResponse]);
 
   const handleAuthorizeCampaign = useCallback(async (campaignText) => {
+    setAuthorizingCampaign(true);
     try {
       // Create campaign in DB
       const res = await fetch(`${API_URL}/campaigns`, {
@@ -330,6 +332,8 @@ const ChatAI = () => {
     } catch (err) {
       const errorMsg = { id: generateId(), role: 'assistant', isError: true, timestamp: new Date().toISOString(), content: `Error: ${err.message}` };
       setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setAuthorizingCampaign(false);
     }
   }, []);
 
@@ -483,13 +487,15 @@ const ChatAI = () => {
                             <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
                               <button
                                 onClick={() => handleAuthorizeCampaign(msg.campaignText)}
+                                disabled={authorizingCampaign}
                                 style={{
-                                  background: '#059669', color: '#fff', border: 'none', borderRadius: '8px',
-                                  padding: '10px 20px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                                  background: authorizingCampaign ? '#6B7280' : '#059669', color: '#fff', border: 'none', borderRadius: '8px',
+                                  padding: '10px 20px', fontSize: '13px', fontWeight: 600, cursor: authorizingCampaign ? 'wait' : 'pointer',
                                   display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'center',
+                                  opacity: authorizingCampaign ? 0.7 : 1,
                                 }}
                               >
-                                ✅ Autorizar y enviar a Meta para aprobación
+                                {authorizingCampaign ? '⏳ Enviando a Meta...' : '✅ Autorizar y enviar a Meta para aprobación'}
                               </button>
                             </div>
                           )}
