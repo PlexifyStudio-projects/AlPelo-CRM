@@ -2298,9 +2298,13 @@ No-shows registrados: {no_show_count}"""
             contact_name = conv.wa_contact_name or "desconocido"
             sections.append(f"""=== CONTACTO EN ESTA CONVERSACION ===
 Nombre en WhatsApp: {contact_name}
-Telefono: {phone}
+Telefono real de WhatsApp: {phone}
 Estado: NO registrado en el CRM (cliente nuevo)
-IMPORTANTE: Usa el nombre "{contact_name}" para dirigirte a esta persona. NUNCA digas que no sabes su nombre — lo tienes aqui arriba.""")
+INSTRUCCIONES PARA ESTE CONTACTO:
+- Usa el nombre "{contact_name}" para dirigirte a esta persona. NUNCA digas que no sabes su nombre.
+- NUNCA le pidas su numero de telefono — YA LO TIENES: {phone}. El sistema lo captura automaticamente de WhatsApp.
+- Cuando crees el cliente con create_client, usa phone="{phone}" (el sistema lo hace automaticamente, pero NO inventes otro numero).
+- NUNCA muestres ni menciones numeros de telefono al cliente. Son datos internos.""")
 
     # Staff names + specialty (always include)
     staff_q = db.query(Staff).filter(Staff.is_active == True)
