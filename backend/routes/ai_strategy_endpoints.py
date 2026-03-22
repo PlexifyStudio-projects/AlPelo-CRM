@@ -104,6 +104,30 @@ def _get_tenant_name(db: Session, tid: int) -> str:
     return tenant.name if tenant else "el negocio"
 
 
+def _get_business_context(db: Session, tid: int) -> str:
+    """Get the business context from AIConfig prompt + tenant info."""
+    from database.models import AIConfig
+    biz_name = _get_tenant_name(db, tid)
+    ai_config = db.query(AIConfig).filter(AIConfig.tenant_id == tid, AIConfig.is_active == True).first()
+    prompt = ai_config.system_prompt[:1500] if ai_config and ai_config.system_prompt else ""
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    city = tenant.city if tenant else ""
+    country = tenant.country if tenant else "CO"
+    btype = tenant.business_type if tenant else ""
+    return f"NEGOCIO: {biz_name}\nTIPO: {btype}\nCIUDAD: {city}, {country}\n\nCONTEXTO:\n{prompt}"
+
+
+_STRATEGY_RULES = """
+REGLAS PARA TODAS LAS RESPUESTAS:
+- Español colombiano, tono profesional y cercano
+- NO pongas precios en pesos. Usa porcentajes (15% descuento, 2x1, etc.)
+- Se conciso. Maximo 3-4 oraciones por seccion
+- Si generas un mensaje de campaña, que sea para WhatsApp (max 500 chars, sin hashtags)
+- Siempre termina con una campaña/mensaje recomendado listo para enviar
+- Responde SOLO con JSON valido (sin texto adicional fuera del JSON)
+"""
+
+
 # ============================================================================
 # 1. POST /ai/strategy/generate-campaign
 # ============================================================================
@@ -183,27 +207,30 @@ CLIENTES (total: {len(clients)}):
 - Inactivos 90d+: {segments.get('inactivos_90d', 0)}
 """
 
-    system = f"""Eres un estratega de marketing para negocios de servicios en Colombia.
-IMPORTANTE: Lee el CONTEXTO DEL NEGOCIO para entender que tipo de negocio es, ubicacion, servicios, etc.
+    system = f"""Eres el director creativo de la mejor agencia de marketing digital de Colombia, especializado en negocios de servicios.
+IMPORTANTE: Lee el CONTEXTO DEL NEGOCIO — tipo de negocio, ubicacion, servicios que ofrece, tono de comunicacion.
 
 Tu trabajo:
-1. Investiga que tendencias hay en {current_month} {today.year} para este tipo de negocio en Colombia (Semana Santa, dia de la madre, vacaciones, tendencias de moda, etc.)
-2. Analiza los datos reales del negocio
-3. Genera UNA campaña concreta y lista para enviar
+1. Identifica que fecha importante, tendencia o temporada hay en {current_month} {today.year} en Colombia que el negocio pueda aprovechar (Semana Santa, dia de la madre, Black Friday, tendencias de belleza/moda en redes, etc.)
+2. Analiza cuales son los servicios estrella del negocio y que audiencia tiene
+3. Crea UNA campana de WhatsApp que sea IRRESISTIBLE — como si la hubiera hecho una agencia premium
 
-REGLAS:
-- NO pongas precios en pesos. Usa porcentajes de descuento (ej: "15% de descuento", "2x1")
-- Se conciso. No escribas un ensayo — maximo 3 oraciones de analisis
-- La campaña debe ser un mensaje de WhatsApp corto (maximo 500 caracteres)
-- No uses hashtags
-- Tono colombiano, cercano, profesional
+REGLAS PARA LA CAMPANA:
+- NO pongas precios en pesos. Usa porcentajes de descuento o beneficios (15% off, 2x1, gratis, etc.)
+- El mensaje debe ser EMOCIONAL, no informativo. Que el cliente SIENTA que se pierde algo si no viene
+- Maximo 400 caracteres. Cada palabra cuenta
+- Un solo emoji estrategico al inicio, no mas
+- Sin hashtags
+- Tono colombiano autentico — como le habla un amigo de confianza, no una empresa
+- Incluye una llamada a la accion clara y simple ("Responde SI y te agendo")
+- El mensaje debe funcionar por SI SOLO sin contexto adicional
 
 Responde SOLO con JSON valido:
 {{
-  "tendencia": "Que esta de moda o que fecha importante hay en {current_month} (1-2 oraciones)",
-  "por_que": "Por que esta campana es ideal para este negocio ahora (1-2 oraciones)",
-  "campana": "El mensaje de WhatsApp listo para enviar (sin precios en pesos, usa % descuento)",
-  "audiencia": "A quienes va dirigida (1 oracion)"
+  "tendencia": "Que oportunidad hay en {current_month} para este negocio (1 oracion concreta)",
+  "por_que": "Por que esta campana va a funcionar para ESTE negocio especifico (1 oracion)",
+  "campana": "El mensaje de WhatsApp PERFECTO — emocional, corto, con llamada a la accion",
+  "audiencia": "A quienes enviarla (1 oracion)"
 }}"""
 
     return _call_strategy_ai(system, data_context, tenant_id=tid)
@@ -407,35 +434,34 @@ def rescue_lost_clients(db: Session = Depends(get_db), user=Depends(get_current_
     # Limit to top 30 for the prompt
     top_lost = lost_clients[:30]
 
+    biz_context = _get_business_context(db, tid)
     data_context = f"""
-NEGOCIO: {biz_name}
-TOTAL CLIENTES PERDIDOS (30+ dias sin visita): {len(lost_clients)}
-TOP {len(top_lost)} CLIENTES POR VALOR (ordenados por gasto total):
+{biz_context}
 
-{chr(10).join(f"- {c['name']} | {c['days_inactive']} dias inactivo | {c['total_visits']} visitas | ${c['total_spent']:,} COP | Ultimo: {c['last_service']} con {c['last_staff']} | Servicios: {', '.join(c['services_used'])}" for c in top_lost)}
+TOTAL CLIENTES PERDIDOS (30+ dias sin visita): {len(lost_clients)}
+TOP {len(top_lost)} POR VALOR:
+
+{chr(10).join(f"- {c['name']} | {c['days_inactive']}d inactivo | {c['total_visits']} visitas | ${c['total_spent']:,} | Ultimo: {c['last_service']} con {c['last_staff']}" for c in top_lost)}
 """
 
-    system = f"""Eres un especialista en recuperacion de clientes para negocios de belleza en Colombia.
-Responde SOLO en español colombiano. Responde UNICAMENTE con un JSON valido (sin texto adicional).
+    system = f"""Eres el mejor especialista en retencion de clientes de Colombia.
+Lee el contexto del negocio para entender que tipo de negocio es.
 
-Para cada cliente genera un plan personalizado de recuperacion basado en su historial.
+{_STRATEGY_RULES}
 
-El JSON debe tener esta estructura:
-```json
+Analiza los clientes perdidos y genera:
+1. Un resumen rapido de la situacion
+2. Los 5 clientes MAS valiosos que hay que recuperar PRIMERO (con plan personalizado)
+3. UNA campana de WhatsApp para enviarles a TODOS — emocional, irresistible, sin precios en pesos
+
+JSON:
 {{
-  "total_lost": {len(lost_clients)},
-  "clients": [
-    {{
-      "name": "Nombre del cliente",
-      "days_inactive": 45,
-      "last_service": "Corte clasico",
-      "staff": "Nombre del profesional",
-      "plan": "Plan personalizado de recuperacion (2-3 oraciones)",
-      "template_suggestion": "Texto sugerido para mensaje WhatsApp (max 200 chars)"
-    }}
-  ]
-}}
-```
+  "resumen": "Situacion de clientes perdidos en 1-2 oraciones",
+  "clientes_prioritarios": [
+    {{"nombre": "X", "dias_inactivo": N, "ultimo_servicio": "X", "profesional": "X", "total_gastado": N, "plan": "Que hacer para recuperarlo (1 oracion)"}}
+  ],
+  "campana_recuperacion": "Mensaje de WhatsApp listo para enviar a todos los perdidos (max 400 chars, emocional, con llamada a la accion)"
+}}"""
 Incluye plan para cada uno de los clientes listados."""
 
     return _call_strategy_ai(system, data_context, tenant_id=tid)

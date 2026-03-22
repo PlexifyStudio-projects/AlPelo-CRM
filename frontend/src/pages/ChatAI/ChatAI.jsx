@@ -197,33 +197,63 @@ const ChatAI = () => {
   const formatStrategyResponse = useCallback((data) => {
     if (typeof data === 'string') return data;
     if (data.response) return data.response;
-    // Format structured JSON nicely
+    if (data.raw_response) return data.raw_response;
+
+    // Pretty labels for known keys
+    const labels = {
+      tendencia: '📈 TENDENCIA',
+      por_que: '💡 POR QUÉ ESTA CAMPAÑA',
+      campana: '📱 CAMPAÑA RECOMENDADA',
+      campaign_copy: '📱 CAMPAÑA RECOMENDADA',
+      audiencia: '👥 AUDIENCIA',
+      target_audience: '👥 AUDIENCIA',
+      analysis: '📊 ANÁLISIS',
+      reasoning: '💡 RAZÓN',
+      recommendations: '✅ RECOMENDACIONES',
+      summary: '📋 RESUMEN',
+      total_lost: '⚠️ CLIENTES PERDIDOS',
+      clients: '👥 CLIENTES',
+      services: '🏷️ SERVICIOS',
+      predictions: '📅 PREDICCIONES',
+      goals: '🎯 METAS',
+      action_plan: '📝 PLAN DE ACCIÓN',
+      kpis: '📊 KPIs',
+      current_state: '📍 ESTADO ACTUAL',
+      staff_name: '👤 PROFESIONAL',
+      total_clients: '👥 TOTAL CLIENTES',
+      campaign_suggestion: '📱 CAMPAÑA RECOMENDADA',
+      recovery_plan: '🔄 PLAN DE RECUPERACIÓN',
+    };
+
     const lines = [];
-    const walk = (obj, indent = '') => {
-      if (Array.isArray(obj)) {
-        obj.forEach((item, i) => {
+    const formatValue = (key, val, depth = 0) => {
+      const label = labels[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const prefix = depth > 0 ? '   '.repeat(depth) : '';
+
+      if (Array.isArray(val)) {
+        lines.push(`\n${prefix}${label}:`);
+        val.forEach((item, i) => {
           if (typeof item === 'object' && item !== null) {
-            lines.push(`${indent}${i + 1}.`);
-            walk(item, indent + '   ');
+            lines.push(`${prefix}  ${i + 1}.`);
+            Object.entries(item).forEach(([k, v]) => {
+              if (typeof v !== 'object') {
+                const subLabel = labels[k] || k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                lines.push(`${prefix}     ${subLabel}: ${v}`);
+              }
+            });
           } else {
-            lines.push(`${indent}• ${item}`);
+            lines.push(`${prefix}  • ${item}`);
           }
         });
-      } else if (typeof obj === 'object' && obj !== null) {
-        Object.entries(obj).forEach(([key, val]) => {
-          const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-          if (typeof val === 'object' && val !== null) {
-            lines.push(`${indent}${label}:`);
-            walk(val, indent + '   ');
-          } else {
-            lines.push(`${indent}${label}: ${val}`);
-          }
-        });
+      } else if (typeof val === 'object' && val !== null) {
+        lines.push(`\n${prefix}${label}:`);
+        Object.entries(val).forEach(([k, v]) => formatValue(k, v, depth + 1));
       } else {
-        lines.push(`${indent}${obj}`);
+        lines.push(`${prefix}${label}: ${val}`);
       }
     };
-    walk(data);
+
+    Object.entries(data).forEach(([key, val]) => formatValue(key, val));
     return lines.join('\n');
   }, []);
 
@@ -409,7 +439,7 @@ const ChatAI = () => {
                           ) : (
                             <>
                               {msg.imagePreview && <img src={msg.imagePreview} alt="Adjunto" className="chat-ai__msg-image" />}
-                              {msg.content}
+                              <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
                             </>
                           )}
                         </div>
