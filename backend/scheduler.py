@@ -1624,7 +1624,7 @@ def _check_closed_day_appointments(db):
         return
     _closed_day_last_check = time.time()
 
-    now = _now_colombia(db)
+    now = _now_colombia()
     today = now.date()
 
     day_name = _DAYS_ES[today.weekday()]  # e.g. "domingo"
