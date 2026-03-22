@@ -937,9 +937,6 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                                     # Linked client has WRONG phone — re-link to correct one
                                     needs_relink = True
                                     print(f"[WA] Client {linked_client.name} phone {linked_client.phone} doesn't match WA phone {from_phone} — re-linking")
-                                    # Also update the wrong client's phone to the real one
-                                    linked_client.phone = from_phone
-                                    db.flush()
 
                         if needs_relink:
                             link_q = db.query(Client).filter(Client.is_active == True)
