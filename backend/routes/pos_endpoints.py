@@ -45,7 +45,7 @@ class CheckoutCreate(BaseModel):
     discount_value: int = 0
     tip: int = 0
     payment_method: str = "efectivo"
-    payment_details: Optional[list] = None  # for mixto
+    payment_details: Optional[dict | list] = None  # for mixto or efectivo
     notes: Optional[str] = None
 
 
@@ -116,6 +116,7 @@ def _checkout_to_dict(checkout: Checkout) -> dict:
         "visit_id": checkout.visit_id,
         "created_by": checkout.created_by,
         "created_at": checkout.created_at.isoformat() if checkout.created_at else None,
+        "service_name": ", ".join(i["service_name"] for i in items) if items else None,
         "items": items,
     }
 
@@ -144,7 +145,8 @@ def _recalculate_register_totals(db: Session, register: CashRegister, tid):
     for c in checkouts:
         if c.payment_method == "mixto" and c.payment_details:
             # Mixed payment: iterate sub-payments
-            for detail in c.payment_details:
+            details = c.payment_details if isinstance(c.payment_details, list) else c.payment_details.get("splits", []) if isinstance(c.payment_details, dict) else []
+            for detail in details:
                 amt = detail.get("amount", 0)
                 method = detail.get("method", "")
                 if method == "efectivo":
