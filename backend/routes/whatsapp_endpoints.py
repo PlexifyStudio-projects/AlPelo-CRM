@@ -219,14 +219,20 @@ async def _transcribe_audio(media_id: str, db=None) -> str:
         return "[Audio recibido - error de transcripcion]"
 
 
-async def _download_media_base64(media_id: str) -> tuple[bytes | None, str | None]:
+async def _download_media_base64(media_id: str, db=None) -> tuple[bytes | None, str | None]:
     """Download media from Meta API and return (raw_bytes, mime_type)."""
     try:
+        # Get token from tenant DB (same pattern as _transcribe_audio)
+        token, _ = _get_wa_config_cached(db)
+        if not token:
+            print(f"[Vision] No WA token available for media download")
+            return None, None
+
         # Step 1: Get download URL from Meta
         async with httpx.AsyncClient(timeout=15) as client:
             meta_resp = await client.get(
                 f"https://graph.facebook.com/{WA_API_VERSION}/{media_id}",
-                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+                headers={"Authorization": f"Bearer {token}"},
             )
             if meta_resp.status_code != 200:
                 return None, None
@@ -240,7 +246,7 @@ async def _download_media_base64(media_id: str) -> tuple[bytes | None, str | Non
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.get(
                 download_url,
-                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+                headers={"Authorization": f"Bearer {token}"},
             )
             if resp.status_code != 200:
                 return None, None
@@ -1213,7 +1219,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         # Step 0.5b: Download image for Claude Vision
         if needs_vision and media_id:
             print(f"[Lina IA] Downloading image for vision (conv {conv_id})...")
-            raw_bytes, detected_mime = await _download_media_base64(media_id)
+            raw_bytes, detected_mime = await _download_media_base64(media_id, db=db)
             if raw_bytes:
                 mime_map = {"image/jpeg": "image/jpeg", "image/png": "image/png", "image/gif": "image/gif", "image/webp": "image/webp"}
                 image_media_type = mime_map.get(detected_mime, "image/jpeg")
