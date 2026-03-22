@@ -878,6 +878,9 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
             for change in entry.get("changes", []):
                 value = change.get("value", {})
 
+                # Webhook received = token is alive — resume if paused
+                _trigger_token_resume()
+
                 # Resolve tenant from the phone_number_id in metadata
                 from database.models import Tenant
                 phone_number_id = value.get("metadata", {}).get("phone_number_id")
@@ -1844,6 +1847,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         if resp.status_code == 200 and "messages" in data:
                             wa_message_id = data["messages"][0].get("id")
                             send_status = "sent"
+                            _trigger_token_resume()  # Token works — unpause if paused
                             break  # Success
                         else:
                             send_status = "failed"

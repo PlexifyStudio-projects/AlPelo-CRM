@@ -2056,7 +2056,7 @@ const Inbox = () => {
                             )}
 
                             {/* Lina IA label */}
-                            {msg.sent_by === 'lina_ia' && (
+                            {msg.sent_by?.startsWith('lina_ia') && (
                               <div className={`${b}__lina-label`}>
                                 {Icons.robot}
                                 <span>Lina IA</span>
