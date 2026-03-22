@@ -589,10 +589,10 @@ def _expire_old_notes(db):
         should_expire = False
         expire_reason = ""
 
-        # Expire if older than 48h (give enough time for next-day reminders)
-        if note.created_at and (now - note.created_at).total_seconds() > 172800:
+        # Expire if older than 30 days
+        if note.created_at and (now - note.created_at).total_seconds() > 2592000:
             should_expire = True
-            expire_reason = "tarea tenia mas de 48h"
+            expire_reason = "tarea tenia mas de 30 dias"
 
         # Expire reminder notes if the referenced appointment has passed
         if not should_expire and note.created_at:
