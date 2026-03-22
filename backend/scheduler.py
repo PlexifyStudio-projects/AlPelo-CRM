@@ -1705,10 +1705,10 @@ def _check_closed_day_appointments(db):
             staff_name = apt.staff_name or "tu profesional"
             service_name = apt.service_name or "tu servicio"
             msg = (
-                f"{client_first}, te escribo porque detecte un error con tu cita de hoy. "
-                f"Hoy {day_name} estamos cerrados y no debimos agendarla para hoy. Disculpa la confusion!\n\n"
-                f"Te la puedo mover para {next_day_str} a las {apt.time} con {staff_name} para {service_name}. "
-                f"Te queda bien ese horario?"
+                f"{client_first}, te pido disculpas. Cometí un error al agendar tu cita para hoy — "
+                f"los {day_name}s no estamos en servicio.\n\n"
+                f"¿Te parece bien si te la muevo para {next_day_str} a las {apt.time} con {staff_name} "
+                f"para tu {service_name}? Quedo atenta."
             )
 
             # Send WhatsApp message
