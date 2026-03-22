@@ -220,6 +220,7 @@ const TAB_OPTIONS = [
   { value: 'gastos', label: 'Gastos' },
   { value: 'comisiones', label: 'Comisiones' },
   { value: 'facturas', label: 'Facturas' },
+  { value: 'caja', label: 'Caja' },
 ];
 
 // ===== ANIMATED NUMBER =====
@@ -2101,6 +2102,426 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   );
 };
 
+// ===== TAB: CAJA (CASH REGISTER) =====
+const TabCaja = () => {
+  const { addNotification } = useNotification();
+  const [register, setRegister] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [openingAmount, setOpeningAmount] = useState('');
+  const [transactions, setTransactions] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [subTab, setSubTab] = useState('hoy'); // 'hoy' | 'historial'
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [countedCash, setCountedCash] = useState('');
+  const [closeNotes, setCloseNotes] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const formatCOP = (val) => {
+    const n = Number(val) || 0;
+    return `$${n.toLocaleString('es-CO')}`;
+  };
+
+  const fetchRegister = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/cash-register/today`, { credentials: 'include' });
+      if (res.status === 404) {
+        setRegister(null);
+      } else if (res.ok) {
+        const data = await res.json();
+        setRegister(data);
+      } else {
+        setRegister(null);
+      }
+    } catch {
+      setRegister(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchTransactions = useCallback(async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(`${API_URL}/checkouts?from=${today}&to=${today}`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setTransactions(Array.isArray(data) ? data : data.items || []);
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/cash-register/history`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(Array.isArray(data) ? data : data.items || []);
+      }
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    fetchRegister();
+  }, [fetchRegister]);
+
+  useEffect(() => {
+    if (register && register.status === 'open') {
+      fetchTransactions();
+    }
+  }, [register, fetchTransactions]);
+
+  useEffect(() => {
+    if (subTab === 'historial') {
+      fetchHistory();
+    }
+  }, [subTab, fetchHistory]);
+
+  const handleOpen = async () => {
+    const amount = Number(openingAmount) || 0;
+    if (amount < 0) {
+      addNotification('El monto inicial no puede ser negativo', 'error');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_URL}/cash-register/open`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ opening_amount: amount }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Error abriendo caja');
+      }
+      addNotification('Caja abierta correctamente', 'success');
+      setOpeningAmount('');
+      fetchRegister();
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleClose = async () => {
+    const counted = Number(countedCash) || 0;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_URL}/cash-register/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ counted_cash: counted, notes: closeNotes }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Error cerrando caja');
+      }
+      addNotification('Caja cerrada correctamente', 'success');
+      setShowCloseModal(false);
+      setCountedCash('');
+      setCloseNotes('');
+      fetchRegister();
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="finances__caja-loading">
+        <div className="finances__spinner" />
+        <span>Cargando caja...</span>
+      </div>
+    );
+  }
+
+  const isOpen = register && register.status === 'open';
+
+  // Compute summaries from transactions
+  const totalSales = transactions.reduce((s, t) => s + (Number(t.total || t.amount || 0)), 0);
+  const totalCash = transactions.filter(t => t.payment_method === 'efectivo').reduce((s, t) => s + (Number(t.total || t.amount || 0)), 0);
+  const totalDigital = transactions.filter(t => ['nequi', 'daviplata', 'transferencia', 'tarjeta'].includes(t.payment_method)).reduce((s, t) => s + (Number(t.total || t.amount || 0)), 0);
+  const totalTips = transactions.reduce((s, t) => s + (Number(t.tip || 0)), 0);
+  const expectedCash = (Number(register?.opening_amount) || 0) + totalCash;
+
+  return (
+    <div className="finances__caja">
+      {/* Sub-tab toggle: Hoy / Historial */}
+      <div className="finances__caja-subtabs">
+        <button
+          className={`finances__caja-subtab ${subTab === 'hoy' ? 'finances__caja-subtab--active' : ''}`}
+          onClick={() => setSubTab('hoy')}
+        >
+          Hoy
+        </button>
+        <button
+          className={`finances__caja-subtab ${subTab === 'historial' ? 'finances__caja-subtab--active' : ''}`}
+          onClick={() => setSubTab('historial')}
+        >
+          Historial
+        </button>
+      </div>
+
+      {subTab === 'hoy' && (
+        <>
+          {/* CLOSED STATE */}
+          {!isOpen && (
+            <div className="finances__caja-closed">
+              <div className="finances__caja-closed-banner">
+                <div className="finances__caja-closed-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="6" width="20" height="14" rx="2" />
+                    <path d="M12 12v4" /><circle cx="12" cy="10" r="1" />
+                    <path d="M2 10h20" />
+                  </svg>
+                </div>
+                <div className="finances__caja-closed-text">
+                  <h3>Caja cerrada</h3>
+                  <p>No hay una caja abierta hoy. Ingresa el monto inicial para abrir.</p>
+                </div>
+              </div>
+              <div className="finances__caja-open-form">
+                <label className="finances__caja-label">Monto inicial en efectivo</label>
+                <div className="finances__caja-open-row">
+                  <div className="finances__caja-input-wrap">
+                    <span className="finances__caja-input-prefix">$</span>
+                    <input
+                      type="number"
+                      className="finances__caja-input"
+                      placeholder="0"
+                      value={openingAmount}
+                      onChange={(e) => setOpeningAmount(e.target.value)}
+                      min="0"
+                    />
+                  </div>
+                  <button
+                    className="finances__caja-btn finances__caja-btn--open"
+                    onClick={handleOpen}
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Abriendo...' : 'Abrir caja'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* OPEN STATE */}
+          {isOpen && (
+            <>
+              {/* Status banner */}
+              <div className="finances__caja-status">
+                <div className="finances__caja-status-left">
+                  <span className="finances__caja-status-dot" />
+                  <span className="finances__caja-status-text">
+                    Caja abierta desde {register.opened_at ? new Date(register.opened_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                  </span>
+                  {register.opened_by_name && (
+                    <span className="finances__caja-status-user">por {register.opened_by_name}</span>
+                  )}
+                </div>
+                <button
+                  className="finances__caja-btn finances__caja-btn--close"
+                  onClick={() => setShowCloseModal(true)}
+                >
+                  Cerrar caja
+                </button>
+              </div>
+
+              {/* Summary cards */}
+              <div className="finances__caja-summary">
+                <div className="finances__caja-card">
+                  <span className="finances__caja-card-label">Total ventas hoy</span>
+                  <span className="finances__caja-card-value">{formatCOP(totalSales)}</span>
+                </div>
+                <div className="finances__caja-card">
+                  <span className="finances__caja-card-label">Efectivo</span>
+                  <span className="finances__caja-card-value">{formatCOP(totalCash)}</span>
+                </div>
+                <div className="finances__caja-card">
+                  <span className="finances__caja-card-label">Digital</span>
+                  <span className="finances__caja-card-value">{formatCOP(totalDigital)}</span>
+                </div>
+                <div className="finances__caja-card">
+                  <span className="finances__caja-card-label">Propinas</span>
+                  <span className="finances__caja-card-value">{formatCOP(totalTips)}</span>
+                </div>
+              </div>
+
+              {/* Transactions table */}
+              <div className="finances__caja-table-wrap">
+                <h4 className="finances__caja-table-title">Transacciones de hoy</h4>
+                {transactions.length === 0 ? (
+                  <div className="finances__caja-empty">
+                    <p>No hay transacciones registradas hoy</p>
+                  </div>
+                ) : (
+                  <div className="finances__table-wrap">
+                    <table className="finances__table">
+                      <thead>
+                        <tr>
+                          <th>Hora</th>
+                          <th>Cliente</th>
+                          <th>Servicio</th>
+                          <th>Método</th>
+                          <th style={{ textAlign: 'right' }}>Monto</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transactions.map((tx, i) => (
+                          <tr key={tx.id || i}>
+                            <td>{tx.created_at ? new Date(tx.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '--:--'}</td>
+                            <td>{tx.client_name || '—'}</td>
+                            <td>{tx.service_name || tx.description || '—'}</td>
+                            <td>
+                              <span className="finances__caja-method">
+                                {tx.payment_method || '—'}
+                              </span>
+                            </td>
+                            <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                              {formatCOP(tx.total || tx.amount || 0)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {/* HISTORY SUB-TAB */}
+      {subTab === 'historial' && (
+        <div className="finances__caja-history">
+          <h4 className="finances__caja-table-title">Historial de cajas</h4>
+          {history.length === 0 ? (
+            <div className="finances__caja-empty">
+              <p>No hay registros de caja anteriores</p>
+            </div>
+          ) : (
+            <div className="finances__table-wrap">
+              <table className="finances__table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Abierta por</th>
+                    <th style={{ textAlign: 'right' }}>Monto inicial</th>
+                    <th style={{ textAlign: 'right' }}>Total ventas</th>
+                    <th style={{ textAlign: 'right' }}>Efectivo esperado</th>
+                    <th style={{ textAlign: 'right' }}>Efectivo contado</th>
+                    <th style={{ textAlign: 'right' }}>Diferencia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((h, i) => {
+                    const diff = (Number(h.counted_cash) || 0) - (Number(h.expected_cash) || 0);
+                    return (
+                      <tr key={h.id || i}>
+                        <td>{h.opened_at ? new Date(h.opened_at).toLocaleDateString('es-CO') : '—'}</td>
+                        <td>{h.opened_by_name || '—'}</td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCOP(h.opening_amount)}</td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCOP(h.total_sales)}</td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCOP(h.expected_cash)}</td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCOP(h.counted_cash)}</td>
+                        <td style={{
+                          textAlign: 'right',
+                          fontVariantNumeric: 'tabular-nums',
+                          fontWeight: 700,
+                          color: diff === 0 ? '#059669' : '#EF4444',
+                        }}>
+                          {diff >= 0 ? '+' : ''}{formatCOP(diff)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CLOSE MODAL */}
+      {showCloseModal && (
+        <div className="finances__caja-overlay" onClick={() => setShowCloseModal(false)}>
+          <div className="finances__caja-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="finances__caja-modal-title">Cerrar caja</h3>
+
+            <div className="finances__caja-modal-row">
+              <span className="finances__caja-modal-label">Efectivo esperado</span>
+              <span className="finances__caja-modal-value">{formatCOP(expectedCash)}</span>
+            </div>
+
+            <div className="finances__caja-modal-field">
+              <label className="finances__caja-label">Efectivo contado</label>
+              <div className="finances__caja-input-wrap">
+                <span className="finances__caja-input-prefix">$</span>
+                <input
+                  type="number"
+                  className="finances__caja-input"
+                  placeholder="0"
+                  value={countedCash}
+                  onChange={(e) => setCountedCash(e.target.value)}
+                  min="0"
+                />
+              </div>
+            </div>
+
+            {countedCash !== '' && (
+              <div className={`finances__caja-discrepancy ${
+                Number(countedCash) - expectedCash === 0
+                  ? 'finances__caja-discrepancy--match'
+                  : 'finances__caja-discrepancy--diff'
+              }`}>
+                <span>Diferencia:</span>
+                <strong>
+                  {(Number(countedCash) - expectedCash) >= 0 ? '+' : ''}
+                  {formatCOP(Number(countedCash) - expectedCash)}
+                </strong>
+              </div>
+            )}
+
+            <div className="finances__caja-modal-field">
+              <label className="finances__caja-label">Notas (opcional)</label>
+              <textarea
+                className="finances__caja-textarea"
+                placeholder="Observaciones del cierre..."
+                value={closeNotes}
+                onChange={(e) => setCloseNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="finances__caja-modal-actions">
+              <button
+                className="finances__caja-btn finances__caja-btn--cancel"
+                onClick={() => setShowCloseModal(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                className="finances__caja-btn finances__caja-btn--close-confirm"
+                onClick={handleClose}
+                disabled={submitting}
+              >
+                {submitting ? 'Cerrando...' : 'Cerrar caja'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ===== MAIN COMPONENT =====
 const Finances = () => {
   const { tenant } = useTenant();
@@ -2282,6 +2703,7 @@ const Finances = () => {
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'caja' && <TabCaja />}
     </div>
   );
 };
