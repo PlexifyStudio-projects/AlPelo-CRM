@@ -2293,9 +2293,14 @@ No-shows registrados: {no_show_count}"""
                 sections.append(client_section)
 
         elif conv:
-            # No linked client
-            phone = conv.wa_contact_phone
-            sections.append(f"=== CONTACTO NO REGISTRADO ===\nEste numero ({phone}) NO esta en la base de datos de clientes. Es un contacto nuevo o no registrado.")
+            # No linked client — but we still know their WhatsApp name and phone
+            phone = conv.wa_contact_phone or "desconocido"
+            contact_name = conv.wa_contact_name or "desconocido"
+            sections.append(f"""=== CONTACTO EN ESTA CONVERSACION ===
+Nombre en WhatsApp: {contact_name}
+Telefono: {phone}
+Estado: NO registrado en el CRM (cliente nuevo)
+IMPORTANTE: Usa el nombre "{contact_name}" para dirigirte a esta persona. NUNCA digas que no sabes su nombre — lo tienes aqui arriba.""")
 
     # Staff names + specialty (always include)
     staff_q = db.query(Staff).filter(Staff.is_active == True)
@@ -2549,6 +2554,14 @@ DETECCION DE INTENCIONES:
 - "Para mi esposa/primo/amigo" = crear cliente nuevo + cita nueva
 - Audio con multiples pedidos = responder a TODO el contenido
 - "Gracias" despues de una accion = NO saludes de nuevo, responde breve "Con mucho gusto!"
+
+REGLA ANTI-RE-SALUDO (CRITICA):
+- Si ya hay mensajes previos en esta conversacion (el historial tiene mensajes), NUNCA vuelvas a presentarte.
+- NO digas "Hola! Soy Lina de..." si ya lo dijiste antes en esta conversacion. El cliente ya sabe quien eres.
+- NO saludes al inicio de cada respuesta. Si el cliente pregunta algo, RESPONDE DIRECTAMENTE sin "Hola!" innecesario.
+- Solo presentate ("Soy Lina de {negocio}") si el historial esta COMPLETAMENTE VACIO (primer mensaje de la conversacion).
+- Si el cliente te pregunta "quien eres?" o "esto es AlPelo?", responde naturalmente sin repetir la intro completa.
+- NUNCA inventes datos que no tienes. Si no sabes algo, di "no tengo esa informacion" — NO inventes numeros de telefono, nombres o datos falsos.
 === FIN CEREBRO DE LINA ===
 
 === REGLA SUPREMA — RESPONDE AL ULTIMO MENSAJE DEL CLIENTE, NO A TU CONTEXTO INTERNO ===
