@@ -427,7 +427,7 @@ def get_conversation(conv_id: int, db: Session = Depends(get_db), user=Depends(g
 # TOGGLE AI — Enable/disable Lina IA auto-reply for a conversation
 # ============================================================================
 @router.put("/conversations/{conv_id}/ai")
-async def toggle_ai(conv_id: int, body: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def toggle_ai(conv_id: int, body: dict, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Toggle Lina IA auto-reply on/off for a specific conversation. Catches up on unread when enabling."""
     from sqlalchemy import desc
 
@@ -491,7 +491,7 @@ async def toggle_ai(conv_id: int, body: dict, background_tasks: BackgroundTasks,
 # UPDATE TAGS — Set tags for a conversation
 # ============================================================================
 @router.put("/conversations/{conv_id}/tags")
-def update_tags(conv_id: int, body: dict, db: Session = Depends(get_db)):
+def update_tags(conv_id: int, body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Update tags for a conversation."""
     conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
     if not conv:
@@ -505,7 +505,7 @@ def update_tags(conv_id: int, body: dict, db: Session = Depends(get_db)):
 # MARK AS READ — Reset unread count for a conversation
 # ============================================================================
 @router.put("/conversations/{conv_id}/read")
-def mark_conversation_read(conv_id: int, db: Session = Depends(get_db)):
+def mark_conversation_read(conv_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Mark a conversation as read by setting unread_count to 0."""
     conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
     if not conv:
@@ -676,7 +676,7 @@ async def send_message(conv_id: int, body: dict, db: Session = Depends(get_db), 
 # LIST TEMPLATES — Fetch approved templates from Meta Business Account
 # ============================================================================
 @router.get("/templates")
-async def list_templates(db: Session = Depends(get_db)):
+async def list_templates(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """List all message templates from Meta Business Account."""
     if not WA_BUSINESS_ID:
         raise HTTPException(status_code=500, detail="WHATSAPP_BUSINESS_ACCOUNT_ID no configurado")
@@ -716,7 +716,7 @@ async def list_templates(db: Session = Depends(get_db)):
 # SEND TEMPLATE — Send a template message to start a conversation
 # ============================================================================
 @router.post("/send-template")
-async def send_template(body: dict, db: Session = Depends(get_db)):
+async def send_template(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Send a template message to a phone number. Creates conversation + stores message."""
     phone_raw = body.get("phone", "").strip()
     phone_clean = normalize_phone(phone_raw)
@@ -817,7 +817,7 @@ async def send_template(body: dict, db: Session = Depends(get_db)):
 # CREATE CONVERSATION — Start a new chat
 # ============================================================================
 @router.post("/conversations")
-def create_conversation(body: dict, db: Session = Depends(get_db)):
+def create_conversation(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Create a new conversation (or return existing one for the same phone)."""
     phone = body.get("phone", "").strip()
     name = body.get("name", "").strip()
@@ -2022,7 +2022,7 @@ def get_stats(db: Session = Depends(get_db), user=Depends(get_current_user)):
 # CLEANUP — Delete failed messages
 # ============================================================================
 @router.delete("/messages/failed")
-def delete_failed_messages(db: Session = Depends(get_db)):
+def delete_failed_messages(db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Delete all messages with status 'failed'."""
     count = db.query(WhatsAppMessage).filter(WhatsAppMessage.status == "failed").delete()
     db.commit()
@@ -2122,7 +2122,7 @@ async def proxy_media(media_id: str, db: Session = Depends(get_db)):
 # PROFILE PHOTO — Fetch & update WhatsApp profile photo
 # ============================================================================
 @router.post("/conversations/{conv_id}/refresh-photo")
-async def refresh_profile_photo(conv_id: int, db: Session = Depends(get_db)):
+async def refresh_profile_photo(conv_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Attempt to fetch/refresh the WhatsApp profile photo for a conversation."""
     conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
     if not conv:
@@ -2155,7 +2155,7 @@ async def refresh_profile_photo(conv_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/conversations/{conv_id}/photo")
-def set_profile_photo(conv_id: int, body: dict, db: Session = Depends(get_db)):
+def set_profile_photo(conv_id: int, body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Manually set a profile photo URL for a conversation."""
     conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
     if not conv:
