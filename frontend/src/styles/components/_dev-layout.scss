@@ -144,19 +144,21 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 9px 12px;
+    padding: 10px 14px;
     border: none;
     background: transparent;
     color: $_text-nav;
     font-size: 13px;
     font-weight: $font-weight-medium;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     position: relative;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
     transition:
       background 150ms $ease-smooth,
-      color 150ms $ease-smooth,
-      box-shadow 150ms $ease-smooth;
+      color 150ms $ease-smooth;
 
     &:hover {
       background: $_nav-hover;
@@ -164,26 +166,12 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     }
 
     &--active {
-      background: $_nav-active-bg;
-      color: $_text-nav-active;
-      box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.1);
-
-      // Left accent bar
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 3px;
-        height: 16px;
-        background: $_accent;
-        border-radius: 0 4px 4px 0;
-        box-shadow: 0 0 8px $_accent-glow;
-      }
+      background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
+      color: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
 
       &:hover {
-        background: rgba(30, 64, 175, 0.16);
+        background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
       }
     }
   }
@@ -199,7 +187,7 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
 
   &__nav-item--active &__nav-icon {
     opacity: 1;
-    color: $_accent;
+    color: #FFFFFF;
   }
 
   &__nav-text {
@@ -225,7 +213,7 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
   }
 
   &__nav-item--active &__nav-sub {
-    color: #64748B;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   // -----------------------------------------------
