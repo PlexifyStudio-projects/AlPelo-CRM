@@ -912,15 +912,14 @@
     border: 1.5px solid $color-gray-200;
     border-radius: $border-radius-xl;
     overflow: hidden;
-    overflow-x: auto;
     @include custom-scrollbar;
   }
 
   &__drawer-client-header {
     display: grid;
-    grid-template-columns: 72px minmax(120px, 1.2fr) minmax(110px, 1fr) 120px 56px 96px;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-lg;
+    grid-template-columns: 60px 1.2fr 1fr 100px 50px 70px;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-md;
     background: $color-gray-50;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
@@ -932,9 +931,9 @@
 
   &__drawer-client-row {
     display: grid;
-    grid-template-columns: 72px minmax(120px, 1.2fr) minmax(110px, 1fr) 120px 56px 96px;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-lg;
+    grid-template-columns: 60px 1.2fr 1fr 100px 50px 70px;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-md;
     align-items: center;
     border-bottom: 1px solid $color-gray-100;
     transition: background $transition-fast;
@@ -2092,10 +2091,10 @@
 
   &__sched-header {
     display: grid;
-    grid-template-columns: 160px 1fr 1fr 1fr 1fr;
-    gap: $spacing-sm;
-    padding: $spacing-md $spacing-lg;
-    background: linear-gradient(135deg, $color-gray-50, rgba($color-primary, 0.03));
+    grid-template-columns: 140px repeat(4, 1fr);
+    gap: $spacing-md;
+    padding: 12px $spacing-lg;
+    background: $color-gray-50;
     border-bottom: 2px solid $color-gray-100;
   }
 
@@ -2104,14 +2103,19 @@
     font-weight: 700;
     color: $color-gray-400;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
+    text-align: center;
+
+    &:first-child {
+      text-align: left;
+    }
   }
 
   &__sched-row {
     display: grid;
-    grid-template-columns: 160px 1fr 1fr 1fr 1fr;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-lg;
+    grid-template-columns: 140px repeat(4, 1fr);
+    gap: $spacing-md;
+    padding: 10px $spacing-lg;
     align-items: center;
     border-bottom: 1px solid $color-gray-50;
     transition: background $transition-fast;
@@ -2120,14 +2124,8 @@
     &:hover { background: rgba($color-primary, 0.02); }
 
     &--off {
-      background: repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 8px,
-        rgba($color-gray-200, 0.15) 8px,
-        rgba($color-gray-200, 0.15) 16px
-      );
-      opacity: 0.6;
+      background: $color-gray-50;
+      opacity: 0.5;
     }
   }
 
@@ -2155,15 +2153,16 @@
   }
 
   &__sched-time {
-    font-size: $font-size-sm;
+    font-size: 13px;
     color: $color-gray-700;
     background: $color-white;
     border: 1.5px solid $color-gray-200;
-    border-radius: $border-radius-sm;
-    padding: 8px 10px;
+    border-radius: 6px;
+    padding: 6px 8px;
     width: 100%;
     transition: all $transition-fast;
-    height: 38px;
+    height: 36px;
+    text-align: center;
 
     &:focus {
       outline: none;

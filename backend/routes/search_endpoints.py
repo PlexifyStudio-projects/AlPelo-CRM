@@ -41,7 +41,7 @@ router = APIRouter()
 # STAFF ENDPOINTS
 # ============================================================================
 
-@router.get("/staff/", response_model=List[StaffResponse])
+@router.get("/staff/")
 def list_staff(
     role: Optional[str] = Query(None),
     skill: Optional[str] = Query(None),
