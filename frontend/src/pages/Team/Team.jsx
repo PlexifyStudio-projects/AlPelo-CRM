@@ -255,11 +255,19 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
                   </div>
                   <div className={`${b}__form-field`}>
                     <label>Rol en el equipo</label>
-                    <select name="role" value={form.role} onChange={handleChange}>
+                    <input
+                      name="role"
+                      value={form.role}
+                      onChange={handleChange}
+                      list="role-options"
+                      placeholder="Ej: Barbero, Terapeuta, Doctor..."
+                      autoComplete="off"
+                    />
+                    <datalist id="role-options">
                       {editableRoles.map(r => (
-                        <option key={r} value={r}>{r}</option>
+                        <option key={r} value={r} />
                       ))}
-                    </select>
+                    </datalist>
                   </div>
                 </div>
                 <div className={`${b}__form-row`}>
