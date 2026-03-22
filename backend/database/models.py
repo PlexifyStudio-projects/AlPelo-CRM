@@ -741,3 +741,106 @@ class ReviewRequest(Base):
     sent_at = Column(DateTime, default=datetime.utcnow)
     responded_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# ============================================================================
+# CHECKOUT / POS — Smart checkout when appointment is completed
+# ============================================================================
+
+class Checkout(Base):
+    """A completed transaction — created when staff finishes an appointment."""
+    __tablename__ = "checkout"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    appointment_id = Column(Integer, ForeignKey("public.appointment.id"), nullable=True)
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
+    client_name = Column(String, nullable=False)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=True)
+    staff_name = Column(String, nullable=True)
+
+    # Pricing
+    subtotal = Column(Integer, nullable=False, default=0)  # COP sum of items
+    discount_type = Column(String(10), nullable=True)  # "percent" or "fixed"
+    discount_value = Column(Integer, nullable=False, default=0)  # % or COP amount
+    discount_amount = Column(Integer, nullable=False, default=0)  # calculated COP discount
+    tip = Column(Integer, nullable=False, default=0)  # COP
+    total = Column(Integer, nullable=False, default=0)  # subtotal - discount + tip
+
+    # Payment
+    payment_method = Column(String(30), nullable=False, default="efectivo")
+    # efectivo, nequi, daviplata, transferencia, tarjeta_debito, tarjeta_credito, mixto
+    payment_details = Column(JSON, nullable=True)  # for mixto: [{"method": "efectivo", "amount": 30000}, ...]
+
+    # Status
+    status = Column(String(20), nullable=False, default="completed")  # completed, voided, refunded
+    notes = Column(Text, nullable=True)
+    receipt_sent = Column(Boolean, default=False)  # receipt sent via WhatsApp
+
+    # Links
+    invoice_id = Column(Integer, ForeignKey("public.invoice.id"), nullable=True)
+    visit_id = Column(Integer, nullable=True)
+
+    created_by = Column(String(100), nullable=True)  # admin username or "lina_ia"
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    items = relationship("CheckoutItem", back_populates="checkout", cascade="all, delete-orphan")
+
+
+class CheckoutItem(Base):
+    """Individual item/service in a checkout."""
+    __tablename__ = "checkout_item"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    checkout_id = Column(Integer, ForeignKey("public.checkout.id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("public.service.id"), nullable=True)
+    service_name = Column(String, nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    unit_price = Column(Integer, nullable=False)  # COP
+    total = Column(Integer, nullable=False)  # quantity * unit_price
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=True)
+    staff_name = Column(String, nullable=True)
+
+    checkout = relationship("Checkout", back_populates="items")
+
+
+# ============================================================================
+# CASH REGISTER — Daily cash management (apertura/cierre)
+# ============================================================================
+
+class CashRegister(Base):
+    """Daily cash register session — one per day per tenant."""
+    __tablename__ = "cash_register"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    date = Column(Date, nullable=False)
+    status = Column(String(20), nullable=False, default="open")  # open, closed
+
+    # Opening
+    opening_amount = Column(Integer, nullable=False, default=0)  # initial cash
+    opened_by = Column(String(100), nullable=True)
+    opened_at = Column(DateTime, nullable=True)
+
+    # Closing
+    expected_cash = Column(Integer, nullable=False, default=0)  # calculated: opening + cash sales
+    counted_cash = Column(Integer, nullable=True)  # actual cash counted
+    discrepancy = Column(Integer, nullable=True)  # counted - expected
+    closed_by = Column(String(100), nullable=True)
+    closed_at = Column(DateTime, nullable=True)
+
+    # Totals (auto-calculated from checkouts)
+    total_sales = Column(Integer, nullable=False, default=0)
+    total_cash = Column(Integer, nullable=False, default=0)
+    total_nequi = Column(Integer, nullable=False, default=0)
+    total_daviplata = Column(Integer, nullable=False, default=0)
+    total_transfer = Column(Integer, nullable=False, default=0)
+    total_card = Column(Integer, nullable=False, default=0)
+    total_tips = Column(Integer, nullable=False, default=0)
+    total_discounts = Column(Integer, nullable=False, default=0)
+    transaction_count = Column(Integer, nullable=False, default=0)
+
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
