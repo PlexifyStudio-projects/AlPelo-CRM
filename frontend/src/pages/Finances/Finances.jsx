@@ -2003,10 +2003,11 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
         <div className="finances__inv-list">
           {invoices.map((inv, i) => {
             const isExpanded = expandedId === inv.id;
-            // Commission calculation: 50% split by default
-            const commissionRate = 0.5;
-            const staffEarnings = Math.round(inv.subtotal * commissionRate);
-            const businessEarnings = inv.subtotal - staffEarnings;
+            // Commission from backend (real rate) or fallback 50%
+            const commissionRate = inv.staff_commission_rate || 0.5;
+            const tipAmount = inv.tip || 0;
+            const staffEarnings = Math.round(inv.subtotal * commissionRate) + tipAmount;
+            const businessEarnings = inv.subtotal - Math.round(inv.subtotal * commissionRate);
             // Unique staff names from items
             const staffNames = [...new Set((inv.items || []).filter(it => it.staff_name).map(it => it.staff_name))];
             const primaryStaff = staffNames.length > 0 ? staffNames[0] : null;
@@ -2127,7 +2128,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                               <span className="finances__inv-commission-dot finances__inv-commission-dot--staff" />
                               <div className="finances__inv-commission-info">
                                 <span className="finances__inv-commission-name">Profesional: {primaryStaff}</span>
-                                <span className="finances__inv-commission-value">{(commissionRate * 100).toFixed(0)}% = {formatCOP(staffEarnings)}</span>
+                                <span className="finances__inv-commission-value">{(commissionRate * 100).toFixed(0)}% del servicio{tipAmount > 0 ? ' + propina' : ''} = {formatCOP(staffEarnings)}</span>
                               </div>
                             </div>
                             <div className="finances__inv-commission-item finances__inv-commission-item--business">

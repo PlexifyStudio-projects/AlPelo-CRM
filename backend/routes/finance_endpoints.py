@@ -290,7 +290,7 @@ def get_uninvoiced_visits(
 # INVOICES
 # ============================================================================
 
-@router.get("/invoices/", response_model=list[InvoiceResponse])
+@router.get("/invoices/")
 def list_invoices(
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
@@ -302,7 +302,36 @@ def list_invoices(
     if status:
         q = q.filter(Invoice.status == status)
     invoices = q.order_by(Invoice.issued_date.desc()).all()
-    return invoices
+
+    # Enrich with tip + real commission from linked checkout
+    from database.models import Checkout, StaffCommission
+    result = []
+    for inv in invoices:
+        data = InvoiceResponse.model_validate(inv).model_dump()
+
+        # Get tip from linked checkout
+        checkout = db.query(Checkout).filter(Checkout.invoice_id == inv.id).first()
+        data["tip"] = checkout.tip if checkout else 0
+        data["discount_amount"] = checkout.discount_amount if checkout else 0
+        data["discount_type"] = checkout.discount_type if checkout else None
+
+        # Get real commission rate for staff
+        staff_name = None
+        commission_rate = 0.5  # default
+        if inv.items:
+            staff_name = inv.items[0].staff_name
+            # Find staff by name to get commission
+            staff = db.query(Staff).filter(Staff.name == staff_name).first() if staff_name else None
+            if staff:
+                comm = db.query(StaffCommission).filter(StaffCommission.staff_id == staff.id).first()
+                if comm:
+                    commission_rate = comm.default_rate
+
+        data["staff_commission_rate"] = commission_rate
+        data["staff_name_primary"] = staff_name
+        result.append(data)
+
+    return result
 
 
 @router.get("/invoices/{invoice_id}", response_model=InvoiceResponse)
