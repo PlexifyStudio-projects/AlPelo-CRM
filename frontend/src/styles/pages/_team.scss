@@ -660,8 +660,8 @@
     position: fixed;
     top: 0;
     right: 0;
-    width: 640px;
-    max-width: 92vw;
+    width: 720px;
+    max-width: 95vw;
     height: 100vh;
     background: $color-white;
     box-shadow:
@@ -2091,9 +2091,9 @@
 
   &__sched-header {
     display: grid;
-    grid-template-columns: 140px repeat(4, 1fr);
-    gap: $spacing-md;
-    padding: 12px $spacing-lg;
+    grid-template-columns: 120px repeat(4, 1fr);
+    gap: $spacing-sm;
+    padding: 10px $spacing-md;
     background: $color-gray-50;
     border-bottom: 2px solid $color-gray-100;
   }
@@ -2113,9 +2113,9 @@
 
   &__sched-row {
     display: grid;
-    grid-template-columns: 140px repeat(4, 1fr);
-    gap: $spacing-md;
-    padding: 10px $spacing-lg;
+    grid-template-columns: 120px repeat(4, 1fr);
+    gap: $spacing-sm;
+    padding: 8px $spacing-md;
     align-items: center;
     border-bottom: 1px solid $color-gray-50;
     transition: background $transition-fast;
@@ -2156,12 +2156,12 @@
     font-size: 13px;
     color: $color-gray-700;
     background: $color-white;
-    border: 1.5px solid $color-gray-200;
+    border: 1px solid $color-gray-200;
     border-radius: 6px;
-    padding: 6px 8px;
+    padding: 4px 6px;
     width: 100%;
     transition: all $transition-fast;
-    height: 36px;
+    height: 34px;
     text-align: center;
 
     &:focus {
