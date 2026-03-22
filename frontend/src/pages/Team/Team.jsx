@@ -518,6 +518,229 @@ const CredentialEditor = ({ member, onUpdated }) => {
   );
 };
 
+// ===== SCHEDULE EDITOR =====
+const ClockIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
+const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>;
+
+const DAY_NAMES = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
+const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+const DEFAULT_SCHEDULE = DAY_NAMES.map((_, i) => ({
+  day_of_week: i,
+  start_time: '08:00',
+  end_time: '18:00',
+  break_start: '12:00',
+  break_end: '13:00',
+  is_working: i < 6,
+}));
+
+const ScheduleEditor = ({ staffId }) => {
+  const { addNotification } = useNotification();
+  const [schedule, setSchedule] = useState(DEFAULT_SCHEDULE);
+  const [daysOff, setDaysOff] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [newDayOff, setNewDayOff] = useState({ date: '', reason: '' });
+  const [addingDayOff, setAddingDayOff] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [schedRes, daysRes] = await Promise.all([
+          fetch(`${_API}/staff/${staffId}/schedule`, { credentials: 'include' }),
+          fetch(`${_API}/staff/${staffId}/days-off`, { credentials: 'include' }),
+        ]);
+        if (!cancelled) {
+          if (schedRes.ok) {
+            const data = await schedRes.json();
+            if (data.schedule && data.schedule.length === 7) setSchedule(data.schedule);
+          }
+          if (daysRes.ok) {
+            const data = await daysRes.json();
+            setDaysOff(Array.isArray(data) ? data : []);
+          }
+        }
+      } catch { /* silently use defaults */ }
+      finally { if (!cancelled) setLoading(false); }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [staffId]);
+
+  const updateDay = (idx, field, value) => {
+    setSchedule(prev => prev.map((d, i) => i === idx ? { ...d, [field]: value } : d));
+  };
+
+  const handleSaveSchedule = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${_API}/staff/${staffId}/schedule`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(schedule),
+      });
+      if (!res.ok) throw new Error('Error al guardar horario');
+      addNotification('Horario guardado', 'success');
+    } catch (err) { addNotification(err.message, 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const handleAddDayOff = async () => {
+    if (!newDayOff.date) return;
+    setAddingDayOff(true);
+    try {
+      const res = await fetch(`${_API}/staff/${staffId}/days-off`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDayOff),
+      });
+      if (!res.ok) throw new Error('Error al agregar dia libre');
+      const created = await res.json();
+      setDaysOff(prev => [...prev, created]);
+      setNewDayOff({ date: '', reason: '' });
+      addNotification('Dia libre agregado', 'success');
+    } catch (err) { addNotification(err.message, 'error'); }
+    finally { setAddingDayOff(false); }
+  };
+
+  const handleDeleteDayOff = async (id) => {
+    try {
+      const res = await fetch(`${_API}/staff/${staffId}/days-off/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Error al eliminar dia libre');
+      setDaysOff(prev => prev.filter(d => d.id !== id));
+      addNotification('Dia libre eliminado', 'success');
+    } catch (err) { addNotification(err.message, 'error'); }
+  };
+
+  if (loading) return <p className={`${b}__sched-loading`}>Cargando horario...</p>;
+
+  return (
+    <div className={`${b}__sched`}>
+      {/* Weekly schedule grid */}
+      <div className={`${b}__sched-grid`}>
+        <div className={`${b}__sched-header`}>
+          <span className={`${b}__sched-hcol ${b}__sched-hcol--day`}>Dia</span>
+          <span className={`${b}__sched-hcol`}>Entrada</span>
+          <span className={`${b}__sched-hcol`}>Salida</span>
+          <span className={`${b}__sched-hcol`}>Inicio descanso</span>
+          <span className={`${b}__sched-hcol`}>Fin descanso</span>
+        </div>
+        {schedule.map((day, idx) => (
+          <div key={idx} className={`${b}__sched-row ${!day.is_working ? `${b}__sched-row--off` : ''}`}>
+            <div className={`${b}__sched-day`}>
+              <button
+                type="button"
+                className={`${b}__sched-toggle`}
+                onClick={() => updateDay(idx, 'is_working', !day.is_working)}
+                title={day.is_working ? 'Desactivar dia' : 'Activar dia'}
+              >
+                <ToggleIcon on={day.is_working} />
+              </button>
+              <span className={`${b}__sched-day-name`}>{DAY_NAMES[idx]}</span>
+            </div>
+            <input
+              type="time"
+              className={`${b}__sched-time`}
+              value={day.start_time || ''}
+              onChange={(e) => updateDay(idx, 'start_time', e.target.value)}
+              disabled={!day.is_working}
+            />
+            <input
+              type="time"
+              className={`${b}__sched-time`}
+              value={day.end_time || ''}
+              onChange={(e) => updateDay(idx, 'end_time', e.target.value)}
+              disabled={!day.is_working}
+            />
+            <input
+              type="time"
+              className={`${b}__sched-time`}
+              value={day.break_start || ''}
+              onChange={(e) => updateDay(idx, 'break_start', e.target.value)}
+              disabled={!day.is_working}
+            />
+            <input
+              type="time"
+              className={`${b}__sched-time`}
+              value={day.break_end || ''}
+              onChange={(e) => updateDay(idx, 'break_end', e.target.value)}
+              disabled={!day.is_working}
+            />
+          </div>
+        ))}
+      </div>
+
+      <button
+        className={`${b}__btn ${b}__btn--success`}
+        onClick={handleSaveSchedule}
+        disabled={saving}
+      >
+        {saving ? 'Guardando...' : 'Guardar Horario'}
+      </button>
+
+      {/* Days off section */}
+      <div className={`${b}__daysoff`}>
+        <h5 className={`${b}__daysoff-title`}>
+          <CalendarIcon /> Dias Libres
+          <span className={`${b}__drawer-section-badge`}>{daysOff.length}</span>
+        </h5>
+
+        {daysOff.length > 0 ? (
+          <div className={`${b}__daysoff-list`}>
+            {daysOff.map((d) => (
+              <div key={d.id} className={`${b}__daysoff-item`}>
+                <div className={`${b}__daysoff-info`}>
+                  <span className={`${b}__daysoff-date`}>{formatDate(d.date)}</span>
+                  {d.reason && <span className={`${b}__daysoff-reason`}>{d.reason}</span>}
+                </div>
+                <button
+                  className={`${b}__daysoff-delete`}
+                  onClick={() => handleDeleteDayOff(d.id)}
+                  title="Eliminar"
+                >
+                  <TrashIcon />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className={`${b}__daysoff-empty`}>Sin dias libres programados</p>
+        )}
+
+        <div className={`${b}__daysoff-add`}>
+          <input
+            type="date"
+            className={`${b}__daysoff-input`}
+            value={newDayOff.date}
+            onChange={(e) => setNewDayOff(prev => ({ ...prev, date: e.target.value }))}
+          />
+          <input
+            type="text"
+            className={`${b}__daysoff-input ${b}__daysoff-input--reason`}
+            placeholder="Motivo (opcional)"
+            value={newDayOff.reason}
+            onChange={(e) => setNewDayOff(prev => ({ ...prev, reason: e.target.value }))}
+          />
+          <button
+            className={`${b}__btn ${b}__btn--primary-sm`}
+            onClick={handleAddDayOff}
+            disabled={!newDayOff.date || addingDayOff}
+          >
+            {addingDayOff ? '...' : 'Agregar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) => {
   // Visit data comes from the API — no mock data
   const visits = [];
@@ -605,6 +828,14 @@ const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) =>
         <div className={`${b}__drawer-section`}>
           <h4 className={`${b}__drawer-section-title`}>Habilidades</h4>
           <SkillEditor staff={member} onUpdated={onUpdated} />
+        </div>
+
+        {/* Schedule section */}
+        <div className={`${b}__drawer-section`}>
+          <h4 className={`${b}__drawer-section-title`}>
+            <ClockIcon /> Horario
+          </h4>
+          <ScheduleEditor staffId={member.id} />
         </div>
 
         {/* Client history section */}
