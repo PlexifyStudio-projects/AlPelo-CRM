@@ -1219,7 +1219,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
         # Step 0.5b: Download image for Claude Vision
         if needs_vision and media_id:
             print(f"[Lina IA] Downloading image for vision (conv {conv_id})...")
-            raw_bytes, detected_mime = await _download_media_base64(media_id, db=db)
+            _vision_db = SessionLocal()
+            try:
+                raw_bytes, detected_mime = await _download_media_base64(media_id, db=_vision_db)
+            finally:
+                _vision_db.close()
             if raw_bytes:
                 mime_map = {"image/jpeg": "image/jpeg", "image/png": "image/png", "image/gif": "image/gif", "image/webp": "image/webp"}
                 image_media_type = mime_map.get(detected_mime, "image/jpeg")
