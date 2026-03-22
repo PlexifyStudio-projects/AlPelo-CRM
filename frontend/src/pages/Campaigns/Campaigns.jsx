@@ -136,6 +136,7 @@ const Campaigns = () => {
   const [loading, setLoading] = useState(true);
 
   // UI
+  const [mainTab, setMainTab] = useState('templates'); // templates | campaigns
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [showDetail, setShowDetail] = useState(null);
@@ -170,6 +171,37 @@ const Campaigns = () => {
 
   // Confirm modal (replaces native confirm())
   const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
+
+  // Quick send modal
+  const [sendTemplate, setSendTemplate] = useState(null);
+  const [sendSegment, setSendSegment] = useState('all');
+  const [sendStaff, setSendStaff] = useState('');
+  const [sendService, setSendService] = useState('');
+  const [sending, setSending] = useState(false);
+
+  const handleQuickSend = async () => {
+    if (!sendTemplate) return;
+    setSending(true);
+    try {
+      const seg = SEGMENT_OPTIONS.find(s => s.id === sendSegment);
+      const created = await campaignService.create({
+        name: sendTemplate.name,
+        campaign_type: 'custom',
+        message_body: sendTemplate.body,
+        meta_template_name: sendTemplate.slug,
+        segment_filters: seg?.filters || {},
+      });
+      const res = await campaignService.send(created.id);
+      setCampaigns(prev => [res.campaign, ...prev]);
+      setSendTemplate(null);
+      addNotification(`Enviados: ${res.sent} | Fallidos: ${res.failed} de ${res.total}`, res.sent > 0 ? 'success' : 'error');
+      loadCampaigns();
+    } catch (e) {
+      addNotification(e.message || 'Error al enviar', 'error');
+    } finally {
+      setSending(false);
+    }
+  };
 
   // ─── Load all data ──────────────────────────
   const loadCampaigns = useCallback(async () => {
@@ -459,20 +491,20 @@ const Campaigns = () => {
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
           <h1 className={`${B}__title`}>Campañas</h1>
-          <span className={`${B}__subtitle`}>Marketing & comunicación masiva</span>
+          <span className={`${B}__subtitle`}>Plantillas WhatsApp & envio masivo</span>
         </div>
         <button className={`${B}__btn-create`} onClick={() => openWizard()}>
-          <PlusIcon /> Nueva campaña
+          <PlusIcon /> Nueva plantilla
         </button>
       </div>
 
       {/* ─── Stats ─── */}
       <div className={`${B}__health`}>
         {[
-          { value: templates.filter(t => t.status === 'approved').length, label: 'Listas', sub: 'plantillas aprobadas', color: '#2D5A3D' },
-          { value: stats.totalClients, label: 'Alcance', sub: 'clientes con WhatsApp', color: '#3B82F6' },
+          { value: templates.length, label: 'Total', sub: 'plantillas creadas', color: '#3B82F6' },
+          { value: templates.filter(t => t.status === 'approved').length, label: 'Aprobadas', sub: 'listas para enviar', color: '#22C55E' },
           { value: stats.totalSent, label: 'Enviados', sub: 'mensajes totales', color: '#059669' },
-          { value: stats.inactive30 + (stats.atRisk || 0), label: 'Por recuperar', sub: 'inactivos + en riesgo', color: '#D97706' },
+          { value: stats.totalClients, label: 'Alcance', sub: 'clientes con WhatsApp', color: '#D97706' },
         ].map((item, i) => (
           <div key={i} className={`${B}__health-card`}>
             <div className={`${B}__health-card-dot`} style={{ background: item.color }} />
@@ -485,38 +517,114 @@ const Campaigns = () => {
         ))}
       </div>
 
-      {/* ─── Approved Templates — Ready to send ─── */}
-      {(() => {
-        const approved = templates.filter(t => t.status === 'approved');
-        if (approved.length === 0) return null;
-        return (
-          <div className={`${B}__ready-section`}>
-            <h3 className={`${B}__ready-title`}>Plantillas listas para enviar</h3>
-            <div className={`${B}__ready-grid`}>
-              {approved.map(t => (
-                <div key={t.id} className={`${B}__ready-card`}>
-                  <div className={`${B}__ready-card-header`}>
-                    <span className={`${B}__ready-card-name`}>{t.name}</span>
-                    <span className={`${B}__ready-card-badge`}>Aprobada</span>
-                  </div>
-                  <p className={`${B}__ready-card-body`}>{t.body.length > 100 ? t.body.slice(0, 100) + '...' : t.body}</p>
-                  <button className={`${B}__ready-card-btn`} onClick={() => { setFormBody(t.body); setFormTemplateName(t.slug); setFormName(t.name); setShowWizard(true); setWizardStep(3); }}>
-                    Enviar
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
+      {/* ─── Tabs ─── */}
+      <div className={`${B}__tabs`}>
+        <button
+          className={`${B}__tab ${mainTab === 'templates' ? `${B}__tab--active` : ''}`}
+          onClick={() => setMainTab('templates')}
+        >
+          Plantillas <span className={`${B}__tab-count`}>{templates.length}</span>
+        </button>
+        <button
+          className={`${B}__tab ${mainTab === 'campaigns' ? `${B}__tab--active` : ''}`}
+          onClick={() => setMainTab('campaigns')}
+        >
+          Enviar campaña <span className={`${B}__tab-count`}>{templates.filter(t => t.status === 'approved').length}</span>
+        </button>
+      </div>
 
-      {/* ─── Suggested Campaigns (when empty or always as inspiration) ─── */}
-      {campaigns.length === 0 && filteredCampaigns.length === 0 && (
-        <EmptyState
-          icon={<MegaphoneIcon />}
-          title="Sin campañas aun"
-          description="Crea tu primera campaña para enviar mensajes masivos a tus clientes por WhatsApp"
-        />
+      {/* ═══ TAB: PLANTILLAS ═══ */}
+      {mainTab === 'templates' && (
+        <>
+          {templates.length === 0 ? (
+            <EmptyState
+              icon={<MegaphoneIcon />}
+              title="Sin plantillas aun"
+              description="Crea tu primera plantilla para enviar mensajes masivos por WhatsApp"
+            />
+          ) : (
+            <div className={`${B}__ready-grid`}>
+              {templates.map(t => {
+                const isDraft = t.status === 'draft';
+                const isPending = t.status === 'pending';
+                const isApproved = t.status === 'approved';
+                const isRejected = t.status === 'rejected';
+                return (
+                  <div key={t.id} className={`${B}__ready-card ${isDraft ? `${B}__ready-card--draft` : ''} ${isRejected ? `${B}__ready-card--rejected` : ''}`}>
+                    <div className={`${B}__ready-card-header`}>
+                      <span className={`${B}__ready-card-name`}>{t.name}</span>
+                      <span className={`${B}__ready-card-badge ${isDraft ? `${B}__ready-card-badge--draft` : ''} ${isPending ? `${B}__ready-card-badge--pending` : ''} ${isRejected ? `${B}__ready-card-badge--rejected` : ''}`}>
+                        {isApproved ? 'Aprobada' : isPending ? 'Pendiente' : isRejected ? 'Rechazada' : 'Borrador'}
+                      </span>
+                    </div>
+                    <p className={`${B}__ready-card-body`}>{(t.body || '').length > 120 ? t.body.slice(0, 120) + '...' : t.body}</p>
+                    <div className={`${B}__ready-card-actions`}>
+                      {isDraft && (
+                        <button className={`${B}__ready-card-btn ${B}__ready-card-btn--meta`} onClick={() => handleSubmitMeta(t.id)} disabled={actionLoading === t.id}>
+                          {actionLoading === t.id ? 'Enviando...' : 'Enviar a Meta'}
+                        </button>
+                      )}
+                      {isPending && (
+                        <button className={`${B}__ready-card-btn ${B}__ready-card-btn--check`} onClick={() => handleCheckStatus(t.id)} disabled={actionLoading === t.id}>
+                          {actionLoading === t.id ? 'Verificando...' : 'Verificar estado'}
+                        </button>
+                      )}
+                      {isApproved && (
+                        <button className={`${B}__ready-card-btn`} onClick={() => { setSendTemplate(t); setSendSegment('all'); }}>
+                          Enviar a clientes
+                        </button>
+                      )}
+                      {isRejected && (
+                        <button className={`${B}__ready-card-btn ${B}__ready-card-btn--meta`} onClick={() => handleSubmitMeta(t.id)} disabled={actionLoading === t.id}>
+                          Reenviar a Meta
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* ═══ TAB: ENVIAR CAMPAÑA ═══ */}
+      {mainTab === 'campaigns' && (
+        <>
+          {(() => {
+            const approved = templates.filter(t => t.status === 'approved');
+            if (approved.length === 0) return (
+              <EmptyState
+                icon={<SendIcon />}
+                title="Sin plantillas aprobadas"
+                description="Primero envia tus plantillas a Meta para aprobacion. Una vez aprobadas, podras enviar campañas masivas."
+              />
+            );
+            return (
+              <div className={`${B}__ready-grid`}>
+                {approved.map(t => (
+                  <div key={t.id} className={`${B}__ready-card`}>
+                    <div className={`${B}__ready-card-header`}>
+                      <span className={`${B}__ready-card-name`}>{t.name}</span>
+                      <span className={`${B}__ready-card-badge`}>Aprobada</span>
+                    </div>
+                    <p className={`${B}__ready-card-body`}>{(t.body || '').length > 120 ? t.body.slice(0, 120) + '...' : t.body}</p>
+                    <button className={`${B}__ready-card-btn`} onClick={() => { setSendTemplate(t); setSendSegment('all'); }}>
+                      Seleccionar audiencia y enviar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* Campaign History */}
+          {filteredCampaigns.length > 0 && (
+            <div className={`${B}__ready-section`}>
+              <h3 className={`${B}__ready-title`}>Historial de envios</h3>
+            </div>
+          )}
+        </>
       )}
 
       {/* ─── Campaign List ─── */}
@@ -1038,6 +1146,57 @@ const Campaigns = () => {
       {/* ═══════════════════════════════════════════════
           CONFIRM MODAL — Replaces native confirm()
           ═══════════════════════════════════════════════ */}
+      {/* Quick Send Modal */}
+      {sendTemplate && createPortal(
+        <div className={`${B}__modal-overlay`} onClick={() => setSendTemplate(null)}>
+          <div className={`${B}__send-modal`} onClick={e => e.stopPropagation()}>
+            <div className={`${B}__send-modal-header`}>
+              <h3>Enviar: {sendTemplate.name}</h3>
+              <button className={`${B}__modal-close`} onClick={() => setSendTemplate(null)}><CloseIcon /></button>
+            </div>
+
+            <div className={`${B}__send-modal-preview`}>
+              <WhatsAppIcon /> {sendTemplate.body?.length > 150 ? sendTemplate.body.slice(0, 150) + '...' : sendTemplate.body}
+            </div>
+
+            <div className={`${B}__send-modal-section`}>
+              <h4>¿A quienes va dirigida?</h4>
+              <div className={`${B}__send-modal-pills`}>
+                {SEGMENT_OPTIONS.filter(s => s.group === 'estado').map(s => (
+                  <button key={s.id} className={`${B}__send-pill ${sendSegment === s.id ? `${B}__send-pill--active` : ''}`} onClick={() => setSendSegment(s.id)}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <h4>Por inactividad</h4>
+              <div className={`${B}__send-modal-pills`}>
+                {SEGMENT_OPTIONS.filter(s => s.group === 'inactividad').map(s => (
+                  <button key={s.id} className={`${B}__send-pill ${sendSegment === s.id ? `${B}__send-pill--active` : ''}`} onClick={() => setSendSegment(s.id)}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+              <h4>Especiales</h4>
+              <div className={`${B}__send-modal-pills`}>
+                {SEGMENT_OPTIONS.filter(s => s.group === 'especial').map(s => (
+                  <button key={s.id} className={`${B}__send-pill ${sendSegment === s.id ? `${B}__send-pill--active` : ''}`} onClick={() => setSendSegment(s.id)}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className={`${B}__send-modal-footer`}>
+              <button className={`${B}__btn-secondary`} onClick={() => setSendTemplate(null)}>Cancelar</button>
+              <button className={`${B}__btn-send`} onClick={handleQuickSend} disabled={sending}>
+                <SendIcon /> {sending ? 'Enviando...' : 'Enviar ahora'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {confirmModal && createPortal(
         <div className={`${B}__modal-overlay`} onClick={() => setConfirmModal(null)}>
           <div className={`${B}__confirm`} onClick={e => e.stopPropagation()}>
