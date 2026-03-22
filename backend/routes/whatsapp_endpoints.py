@@ -1259,6 +1259,60 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             log_event("sistema", "Preparando respuesta", detail=f"Leyendo conversacion y escribiendo ({delay}s)", conv_id=conv_id, contact_name=_log_contact, status="info")
         await asyncio.sleep(delay)
 
+        # Step 1.3: DEBOUNCE — After delay, check if MORE messages arrived during the wait.
+        # If so, the last messages contain the full intent. Re-read from DB.
+        try:
+            _debounce_db = SessionLocal()
+            try:
+                _latest_inbound = (
+                    _debounce_db.query(WhatsAppMessage)
+                    .filter(
+                        WhatsAppMessage.conversation_id == conv_id,
+                        WhatsAppMessage.direction == "inbound",
+                    )
+                    .order_by(WhatsAppMessage.created_at.desc())
+                    .first()
+                )
+                if _latest_inbound and _latest_inbound.content:
+                    _latest_text = _latest_inbound.content.strip()
+                    if _latest_text and _latest_text != (inbound_text or "").strip():
+                        # New messages arrived during delay — combine all pending inbound
+                        _recent_inbound = (
+                            _debounce_db.query(WhatsAppMessage)
+                            .filter(
+                                WhatsAppMessage.conversation_id == conv_id,
+                                WhatsAppMessage.direction == "inbound",
+                            )
+                            .order_by(WhatsAppMessage.created_at.desc())
+                            .limit(6)
+                            .all()
+                        )
+                        _recent_inbound.reverse()
+                        # Find messages that came AFTER the last Lina reply
+                        _last_lina = (
+                            _debounce_db.query(WhatsAppMessage)
+                            .filter(
+                                WhatsAppMessage.conversation_id == conv_id,
+                                WhatsAppMessage.sent_by.like("lina_ia%"),
+                            )
+                            .order_by(WhatsAppMessage.created_at.desc())
+                            .first()
+                        )
+                        _lina_time = _last_lina.created_at if _last_lina else None
+                        _new_msgs = []
+                        for m in _recent_inbound:
+                            if _lina_time and m.created_at and m.created_at <= _lina_time:
+                                continue
+                            if m.content and not m.content.startswith("📎"):
+                                _new_msgs.append(m.content)
+                        if len(_new_msgs) > 1:
+                            inbound_text = "\n".join(_new_msgs)
+                            print(f"[Lina IA] DEBOUNCE: Combined {len(_new_msgs)} messages for conv {conv_id}: {inbound_text[:100]}")
+            finally:
+                _debounce_db.close()
+        except Exception as debounce_err:
+            print(f"[Lina IA] Debounce error (non-critical): {debounce_err}")
+
         # Step 1.5: Check global rate limit — max 10 AI replies per 60 seconds
         now = time.time()
         # Prune old timestamps
