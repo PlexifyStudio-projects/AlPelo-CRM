@@ -1947,6 +1947,21 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             if send_status == "sent":
                 log_event("respuesta", f"Respondi a {conv.wa_contact_name or 'cliente'}", detail=clean_response[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="ok")
 
+                # Increment tenant messages_used counter
+                try:
+                    _msg_tid = getattr(conv, 'tenant_id', None) or _conv_tid
+                    if _msg_tid:
+                        _msg_db = SessionLocal()
+                        try:
+                            _t = _msg_db.query(Tenant).filter(Tenant.id == _msg_tid).first()
+                            if _t:
+                                _t.messages_used = (_t.messages_used or 0) + 1
+                                _msg_db.commit()
+                        finally:
+                            _msg_db.close()
+                except Exception:
+                    pass
+
                 # POST-RESPONSE: Auto-detect follow-up tasks from conversation
                 try:
                     from ai_task_detector import create_auto_tasks

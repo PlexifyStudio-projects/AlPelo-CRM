@@ -93,6 +93,16 @@ def _send_whatsapp_sync(phone: str, text: str, db=None) -> bool:
             )
             data = resp.json()
             if resp.status_code == 200 and "messages" in data:
+                # Increment tenant messages_used
+                try:
+                    if db:
+                        from database.models import Tenant
+                        t = db.query(Tenant).filter(Tenant.is_active == True).first()
+                        if t:
+                            t.messages_used = (t.messages_used or 0) + 1
+                            db.commit()
+                except Exception:
+                    pass
                 return True
             else:
                 error_msg = data.get("error", {}).get("message", str(data)[:100])
