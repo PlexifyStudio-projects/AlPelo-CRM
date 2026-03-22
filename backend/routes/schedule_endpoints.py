@@ -481,6 +481,7 @@ def get_staff_clients_attended(
         raise HTTPException(status_code=404, detail="Staff no encontrado")
 
     try:
+        from database.models import Client, Service
         # Get all completed appointments for this staff
         apt_q = db.query(Appointment).filter(
             Appointment.staff_id == staff_id,
@@ -490,18 +491,22 @@ def get_staff_clients_attended(
             apt_q = apt_q.filter(Appointment.tenant_id == tid)
         all_apts = apt_q.order_by(Appointment.date.desc()).all()
 
-        # Group by client manually (avoids SQLAlchemy aggregation issues)
+        # Group by client manually
         client_map = {}
         total_revenue = 0
         for apt in all_apts:
             cid = apt.client_id or apt.client_name or "unknown"
+            # Get service name from service_id
+            svc = db.query(Service).filter(Service.id == apt.service_id).first() if apt.service_id else None
+            svc_name = svc.name if svc else "?"
+
             if cid not in client_map:
                 client = db.query(Client).filter(Client.id == apt.client_id).first() if apt.client_id else None
                 client_map[cid] = {
                     "id": apt.client_id or 0,
                     "clientId": client.client_id if client else "?",
                     "name": client.name if client else apt.client_name or "?",
-                    "lastService": apt.service_name or "?",
+                    "lastService": svc_name,
                     "lastVisit": str(apt.date) if apt.date else None,
                     "totalVisits": 0,
                     "totalSpent": 0,
