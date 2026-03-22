@@ -187,9 +187,8 @@ const ChatAI = () => {
 
   const clearChat = () => {
     setMessages([]);
-    setTokenCount(0);
+    // Keep token count — never reset accumulated tokens
     localStorage.removeItem(getStorageKey(tid));
-    localStorage.removeItem(getTokensKey(tid));
   };
 
   const hasMessages = messages.length > 0;
@@ -391,7 +390,7 @@ const ChatAI = () => {
         {sidebarOpen && (
           <aside className="chat-ai__sidebar">
             <div className="chat-ai__sidebar-section">
-              <h4 className="chat-ai__sidebar-title">Sesion</h4>
+              <h4 className="chat-ai__sidebar-title">Esta conversacion</h4>
               <div className="chat-ai__sidebar-stats">
                 <div className="chat-ai__sidebar-stat">
                   <span className="chat-ai__sidebar-stat-val">{responseCount}</span>
