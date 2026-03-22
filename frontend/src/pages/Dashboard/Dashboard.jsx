@@ -233,6 +233,7 @@ const Dashboard = ({ onNavigate }) => {
   const [paymentAlerts, setPaymentAlerts] = useState([]);
   const [dismissingAlert, setDismissingAlert] = useState(null);
   const [revenueData, setRevenueData] = useState([]);
+  const [financeRevenue, setFinanceRevenue] = useState(null);
   const [, setTick] = useState(0); // Forces re-render every second for countdowns
 
   // Tick every second when there are pending tasks
@@ -260,6 +261,18 @@ const Dashboard = ({ onNavigate }) => {
       if (data.revenue_by_day && Array.isArray(data.revenue_by_day)) {
         setRevenueData(data.revenue_by_day.map(d => ({ label: d.date, value: d.revenue || 0 })));
       }
+
+      // Fetch finance summary (month) for accurate revenue — same source as Finances page
+      try {
+        const finRes = await fetch(`${API_URL}/finances/summary?period=month`, {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        if (finRes.ok) {
+          const finData = await finRes.json();
+          setFinanceRevenue(finData.total_revenue || 0);
+        }
+      } catch (_) { /* fallback to dashboard stats revenue */ }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -473,7 +486,7 @@ const Dashboard = ({ onNavigate }) => {
           <div className="dashboard__kpi-icon dashboard__kpi-icon--accent">{Icons.dollar}</div>
           <div className="dashboard__kpi-info">
             <span className="dashboard__kpi-value">
-              <AnimatedNumber value={stats.revenue_this_month} prefix="$" />
+              <AnimatedNumber value={financeRevenue !== null ? financeRevenue : stats.revenue_this_month} prefix="$" />
             </span>
             <span className="dashboard__kpi-label">Ingresos del Mes</span>
             <span className="dashboard__kpi-sub">

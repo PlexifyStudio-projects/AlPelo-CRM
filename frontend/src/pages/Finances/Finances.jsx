@@ -220,7 +220,6 @@ const TAB_OPTIONS = [
   { value: 'gastos', label: 'Gastos' },
   { value: 'comisiones', label: 'Comisiones' },
   { value: 'facturas', label: 'Facturas' },
-  { value: 'caja', label: 'Caja' },
 ];
 
 // ===== ANIMATED NUMBER =====
@@ -359,7 +358,7 @@ const StaffBarChart = ({ data }) => {
         <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" horizontal={false} />
           <XAxis type="number" tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} />
-          <YAxis type="category" dataKey="staff_name" tick={{ fontSize: 12, fill: '#333330' }} tickLine={false} axisLine={false} width={100} />
+          <YAxis type="category" dataKey="staff_name" tick={{ fontSize: 12, fill: '#333330' }} tickLine={false} axisLine={false} width={160} />
           <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
           <Bar dataKey="revenue" name="Ingresos" radius={[0, 6, 6, 0]} barSize={24}>
             {chartData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
@@ -2703,7 +2702,6 @@ const Finances = () => {
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-      {activeTab === 'caja' && <TabCaja />}
     </div>
   );
 };
