@@ -202,9 +202,30 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     color: $_accent;
   }
 
+  &__nav-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 1px;
+  }
+
   &__nav-label {
     white-space: nowrap;
     @include truncate;
+  }
+
+  &__nav-sub {
+    font-size: 9px;
+    color: #475569;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: $font-weight-medium;
+  }
+
+  &__nav-item--active &__nav-sub {
+    color: #64748B;
   }
 
   // -----------------------------------------------
@@ -335,7 +356,7 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
   // -----------------------------------------------
   &--collapsed {
     .dev-layout__brand-text,
-    .dev-layout__nav-label {
+    .dev-layout__nav-text {
       display: none;
     }
 

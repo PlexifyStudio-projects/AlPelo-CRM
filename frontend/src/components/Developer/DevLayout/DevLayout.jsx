@@ -1,15 +1,15 @@
 import { useState, useCallback } from 'react';
 
 const DEV_MENU = [
-  { id: 'dev-dashboard', label: 'Dashboard', icon: 'grid', group: 'main' },
-  { id: 'dev-tenants', label: 'Agencias', icon: 'building', group: 'main' },
-  { id: 'dev-activity', label: 'Actividad IA', icon: 'zap', group: 'monitor' },
-  { id: 'dev-whatsapp', label: 'WhatsApp', icon: 'message-circle', group: 'monitor' },
-  { id: 'dev-clients', label: 'Nuestros Clientes', icon: 'users', group: 'analytics' },
-  { id: 'dev-performance', label: 'Rendimiento', icon: 'trending-up', group: 'analytics' },
-  { id: 'dev-usage', label: 'Consumo', icon: 'bar-chart', group: 'billing' },
-  { id: 'dev-billing', label: 'Facturacion', icon: 'dollar', group: 'billing' },
-  { id: 'dev-system', label: 'Sistema', icon: 'settings', group: 'system' },
+  { id: 'dev-dashboard', label: 'Dashboard', sub: 'PANEL EJECUTIVO', icon: 'grid', group: 'main' },
+  { id: 'dev-tenants', label: 'Agencias', sub: 'GESTION DE NEGOCIOS', icon: 'building', group: 'main' },
+  { id: 'dev-activity', label: 'Actividad IA', sub: 'MONITOREO EN TIEMPO REAL', icon: 'zap', group: 'monitor' },
+  { id: 'dev-whatsapp', label: 'WhatsApp', sub: 'METRICAS DE MENSAJERIA', icon: 'message-circle', group: 'monitor' },
+  { id: 'dev-clients', label: 'Nuestros Clientes', sub: 'TODOS LOS NEGOCIOS', icon: 'users', group: 'analytics' },
+  { id: 'dev-performance', label: 'Rendimiento', sub: 'METRICAS GLOBALES', icon: 'trending-up', group: 'analytics' },
+  { id: 'dev-usage', label: 'Consumo', sub: 'USO DE RECURSOS', icon: 'bar-chart', group: 'billing' },
+  { id: 'dev-billing', label: 'Facturacion', sub: 'COBROS Y PAGOS', icon: 'dollar', group: 'billing' },
+  { id: 'dev-system', label: 'Sistema', sub: 'CONFIGURACION', icon: 'settings', group: 'system' },
 ];
 
 const GROUP_LABELS = {
@@ -142,7 +142,12 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
                   title={collapsed ? item.label : undefined}
                 >
                   <span className={`${b}__nav-icon`}>{Icons[item.icon]}</span>
-                  {!collapsed && <span className={`${b}__nav-label`}>{item.label}</span>}
+                  {!collapsed && (
+                    <span className={`${b}__nav-text`}>
+                      <span className={`${b}__nav-label`}>{item.label}</span>
+                      {item.sub && <span className={`${b}__nav-sub`}>{item.sub}</span>}
+                    </span>
+                  )}
                 </button>
               </div>
             );
