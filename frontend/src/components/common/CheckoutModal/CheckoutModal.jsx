@@ -611,16 +611,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         )}
       </div>
 
-      <label className={`${b}__whatsapp-toggle`}>
-        <input
-          type="checkbox"
-          checked={sendWhatsApp}
-          onChange={(e) => setSendWhatsApp(e.target.checked)}
-        />
-        <WhatsAppIcon />
-        <span>Enviar recibo por WhatsApp</span>
-      </label>
-
       <button
         className={`${b}__cta`}
         onClick={handleSubmit}
