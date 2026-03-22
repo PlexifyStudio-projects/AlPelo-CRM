@@ -2083,47 +2083,51 @@
   }
 
   &__sched-grid {
+    background: $color-white;
     border: 1px solid $color-gray-100;
-    border-radius: $border-radius-sm;
+    border-radius: $border-radius-md;
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
   &__sched-header {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-    gap: 0;
-    padding: $spacing-sm $spacing-md;
-    background: $color-gray-50;
-    border-bottom: 1px solid $color-gray-100;
+    grid-template-columns: 160px 1fr 1fr 1fr 1fr;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    background: linear-gradient(135deg, $color-gray-50, rgba($color-primary, 0.03));
+    border-bottom: 2px solid $color-gray-100;
   }
 
   &__sched-hcol {
-    font-size: $font-size-2xs;
+    font-size: 11px;
     font-weight: 700;
     color: $color-gray-400;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-
-    &--day {
-      padding-left: 44px; // space for toggle
-    }
+    letter-spacing: 0.08em;
   }
 
   &__sched-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
-    gap: 0;
-    padding: $spacing-xs $spacing-md;
+    grid-template-columns: 160px 1fr 1fr 1fr 1fr;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-lg;
     align-items: center;
-    border-bottom: 1px solid $color-gray-100;
+    border-bottom: 1px solid $color-gray-50;
     transition: background $transition-fast;
 
     &:last-child { border-bottom: none; }
     &:hover { background: rgba($color-primary, 0.02); }
 
     &--off {
-      background: $color-gray-50;
-      opacity: 0.7;
+      background: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 8px,
+        rgba($color-gray-200, 0.15) 8px,
+        rgba($color-gray-200, 0.15) 16px
+      );
+      opacity: 0.6;
     }
   }
 
@@ -2147,28 +2151,30 @@
     font-size: $font-size-sm;
     font-weight: 600;
     color: $color-gray-700;
+    min-width: 80px;
   }
 
   &__sched-time {
     font-size: $font-size-sm;
     color: $color-gray-700;
     background: $color-white;
-    border: 1px solid $color-gray-200;
-    border-radius: $border-radius-xs;
-    padding: $spacing-xs $spacing-sm;
-    max-width: 100%;
+    border: 1.5px solid $color-gray-200;
+    border-radius: $border-radius-sm;
+    padding: 8px 10px;
+    width: 100%;
     transition: all $transition-fast;
+    height: 38px;
 
     &:focus {
       outline: none;
-      border-color: $color-primary-light;
-      box-shadow: 0 0 0 2px $color-primary-ghost;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px $color-primary-ghost;
     }
 
     &:disabled {
       background: $color-gray-50;
       color: $color-gray-300;
-      border-color: $color-gray-100;
+      border-color: transparent;
       cursor: not-allowed;
     }
   }
@@ -2177,16 +2183,19 @@
   // DAYS OFF
   // -----------------------------------------------
   &__daysoff {
-    margin-top: $spacing-lg;
-    padding-top: $spacing-lg;
-    border-top: 1px solid $color-gray-100;
+    margin-top: $spacing-xl;
+    padding: $spacing-lg;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: $border-radius-md;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
   &__daysoff-title {
     display: flex;
     align-items: center;
     gap: $spacing-sm;
-    font-size: $font-size-sm;
+    font-size: $font-size-base;
     font-weight: 700;
     color: $color-gray-700;
     margin-bottom: $spacing-md;

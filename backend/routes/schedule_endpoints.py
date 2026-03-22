@@ -471,8 +471,7 @@ def get_staff_clients_attended(
 ):
     """Return unique clients this staff has served, with visit stats."""
     tid = safe_tid(user, db)
-    from database.models import Client, VisitHistory
-    from sqlalchemy import func, distinct
+    from database.models import Client
 
     staff = db.query(Staff).filter(Staff.id == staff_id)
     if tid:
@@ -481,53 +480,44 @@ def get_staff_clients_attended(
     if not staff:
         raise HTTPException(status_code=404, detail="Staff no encontrado")
 
-    # Get all completed appointments for this staff, grouped by client
-    apt_q = db.query(
-        Appointment.client_id,
-        Appointment.client_name,
-        func.count(Appointment.id).label("visit_count"),
-        func.sum(Appointment.price).label("total_spent"),
-        func.max(Appointment.date).label("last_visit"),
-    ).filter(
-        Appointment.staff_id == staff_id,
-        Appointment.status.in_(["completed", "paid"]),
-    )
-    if tid:
-        apt_q = apt_q.filter(Appointment.tenant_id == tid)
-
-    client_stats = apt_q.group_by(Appointment.client_id, Appointment.client_name).all()
-
-    clients = []
-    total_revenue = 0
-    for cs in client_stats:
-        client = db.query(Client).filter(Client.id == cs.client_id).first() if cs.client_id else None
-        # Get last service name
-        last_apt = db.query(Appointment).filter(
+    try:
+        # Get all completed appointments for this staff
+        apt_q = db.query(Appointment).filter(
             Appointment.staff_id == staff_id,
-            Appointment.client_id == cs.client_id,
             Appointment.status.in_(["completed", "paid"]),
-        ).order_by(Appointment.date.desc()).first()
+        )
+        if tid:
+            apt_q = apt_q.filter(Appointment.tenant_id == tid)
+        all_apts = apt_q.order_by(Appointment.date.desc()).all()
 
-        spent = int(cs.total_spent or 0)
-        total_revenue += spent
+        # Group by client manually (avoids SQLAlchemy aggregation issues)
+        client_map = {}
+        total_revenue = 0
+        for apt in all_apts:
+            cid = apt.client_id or apt.client_name or "unknown"
+            if cid not in client_map:
+                client = db.query(Client).filter(Client.id == apt.client_id).first() if apt.client_id else None
+                client_map[cid] = {
+                    "id": apt.client_id or 0,
+                    "clientId": client.client_id if client else "?",
+                    "name": client.name if client else apt.client_name or "?",
+                    "lastService": apt.service_name or "?",
+                    "lastVisit": str(apt.date) if apt.date else None,
+                    "totalVisits": 0,
+                    "totalSpent": 0,
+                }
+            client_map[cid]["totalVisits"] += 1
+            client_map[cid]["totalSpent"] += int(apt.price or 0)
+            total_revenue += int(apt.price or 0)
 
-        clients.append({
-            "id": cs.client_id or 0,
-            "clientId": client.client_id if client else "?",
-            "name": client.name if client else cs.client_name or "?",
-            "lastService": last_apt.service_name if last_apt else "?",
-            "lastVisit": str(cs.last_visit) if cs.last_visit else None,
-            "totalVisits": cs.visit_count or 0,
-            "totalSpent": spent,
-        })
+        clients = sorted(client_map.values(), key=lambda c: c["totalVisits"], reverse=True)
 
-    # Sort by total visits descending
-    clients.sort(key=lambda c: c["totalVisits"], reverse=True)
-
-    return {
-        "staff_id": staff_id,
-        "staff_name": staff.name,
-        "clients": clients,
-        "total_revenue": total_revenue,
-        "total_clients": len(clients),
-    }
+        return {
+            "staff_id": staff_id,
+            "staff_name": staff.name,
+            "clients": clients,
+            "total_revenue": total_revenue,
+            "total_clients": len(clients),
+        }
+    except Exception as e:
+        return {"staff_id": staff_id, "staff_name": staff.name if staff else "?", "clients": [], "total_revenue": 0, "total_clients": 0, "error": str(e)}
