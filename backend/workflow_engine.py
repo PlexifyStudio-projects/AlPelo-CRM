@@ -1369,12 +1369,24 @@ def execute_rating_request(db, workflow, tenant):
 
         service = db.query(Service).filter(Service.id == appt.service_id).first()
 
+        # Create ReviewRequest with unique token for rating landing page
+        review_url = ""
+        try:
+            from routes.review_endpoints import create_review_request
+            review_req = create_review_request(db, client_id=client.id if client else None, appointment_id=appt.id, tenant_id=tenant.id)
+            if review_req and review_req.token:
+                base_url = os.getenv("FRONTEND_URL", "https://plexifystudio-projects.github.io/AlPelo-CRM")
+                review_url = f"\n\nCalifica tu experiencia: {base_url}/review.html?token={review_req.token}"
+        except Exception as rev_err:
+            print(f"[WORKFLOW] ReviewRequest error: {rev_err}")
+
         msg = _render_message(
             workflow.message_template,
             nombre=(client.name if client else appt.client_name or "").split()[0],
             servicio=service.name if service else "tu servicio",
             negocio=tenant.name,
         )
+        msg += review_url
 
         phone = client.phone if client else appt.client_phone
         if phone:

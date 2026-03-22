@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
@@ -248,6 +249,46 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), u
             raise
         except Exception:
             pass
+
+    # 3. STAFF SCHEDULE: check if staff works that day and time
+    try:
+        from database.models import StaffSchedule, StaffDayOff
+        apt_date = data.date if isinstance(data.date, date) else date.fromisoformat(str(data.date))
+        day_of_week = apt_date.weekday()  # 0=Monday, 6=Sunday
+
+        # Check day off
+        day_off = db.query(StaffDayOff).filter(
+            StaffDayOff.staff_id == data.staff_id,
+            StaffDayOff.date == apt_date,
+        )
+        if tid:
+            day_off = day_off.filter(StaffDayOff.tenant_id == tid)
+        if day_off.first():
+            raise HTTPException(status_code=409, detail=f"CONFLICTO: {staff.name} tiene el día libre el {apt_date}. No se puede agendar.")
+
+        # Check schedule
+        schedule = db.query(StaffSchedule).filter(
+            StaffSchedule.staff_id == data.staff_id,
+            StaffSchedule.day_of_week == day_of_week,
+        )
+        if tid:
+            schedule = schedule.filter(StaffSchedule.tenant_id == tid)
+        schedule = schedule.first()
+        if schedule:
+            if not schedule.is_working:
+                _DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+                raise HTTPException(status_code=409, detail=f"CONFLICTO: {staff.name} no trabaja los {_DIAS[day_of_week]}.")
+            if schedule.start_time and schedule.end_time:
+                sh, sm = int(schedule.start_time.split(":")[0]), int(schedule.start_time.split(":")[1])
+                eh, em = int(schedule.end_time.split(":")[0]), int(schedule.end_time.split(":")[1])
+                sched_start = sh * 60 + sm
+                sched_end = eh * 60 + em
+                if req_start < sched_start or req_end > sched_end:
+                    raise HTTPException(status_code=409, detail=f"CONFLICTO: {staff.name} trabaja de {schedule.start_time} a {schedule.end_time}. La hora {data.time} está fuera de su horario.")
+    except HTTPException:
+        raise
+    except Exception as sched_err:
+        print(f"[SCHEDULE] Validation error (non-blocking): {sched_err}")
 
     appointment = Appointment(tenant_id=tid, **appt_data)
     db.add(appointment)

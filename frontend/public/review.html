@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Califica tu experiencia</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #F5F5F0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); max-width: 420px; width: 100%; padding: 40px 32px; text-align: center; }
+    .logo { font-size: 28px; font-weight: 700; color: #1E40AF; margin-bottom: 8px; }
+    .subtitle { color: #64748B; font-size: 14px; margin-bottom: 32px; }
+    .greeting { font-size: 18px; color: #1E293B; margin-bottom: 8px; }
+    .service { color: #64748B; font-size: 14px; margin-bottom: 32px; }
+    .stars { display: flex; gap: 8px; justify-content: center; margin-bottom: 32px; }
+    .star { font-size: 48px; cursor: pointer; transition: transform 0.15s; color: #D1D5DB; }
+    .star:hover { transform: scale(1.2); }
+    .star.active { color: #F59E0B; }
+    .star.hover-preview { color: #FCD34D; }
+    .feedback { display: none; margin-bottom: 24px; }
+    .feedback textarea { width: 100%; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 14px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 100px; }
+    .feedback textarea:focus { outline: none; border-color: #1E40AF; }
+    .feedback label { display: block; text-align: left; font-size: 13px; color: #64748B; margin-bottom: 8px; }
+    .btn { display: inline-block; padding: 14px 32px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #1E40AF; color: #fff; }
+    .btn-primary:hover { background: #1E3A8A; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result { display: none; }
+    .result h2 { font-size: 22px; color: #1E293B; margin-bottom: 12px; }
+    .result p { color: #64748B; font-size: 14px; line-height: 1.6; }
+    .result .emoji { font-size: 48px; margin-bottom: 16px; }
+    .error { color: #DC2626; font-size: 13px; margin-top: 12px; display: none; }
+    .loading { display: none; }
+    .loading .spinner { border: 3px solid #E2E8F0; border-top: 3px solid #1E40AF; border-radius: 50%; width: 28px; height: 28px; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- Rating form -->
+    <div id="form">
+      <div class="logo" id="bizName">Cargando...</div>
+      <div class="subtitle">Nos encantaría conocer tu opinión</div>
+      <div class="greeting" id="greeting"></div>
+      <div class="service" id="serviceInfo"></div>
+
+      <div class="stars" id="stars">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
+      </div>
+
+      <div class="feedback" id="feedback">
+        <label>¿Qué podríamos mejorar?</label>
+        <textarea id="feedbackText" placeholder="Tu opinión nos ayuda a mejorar..."></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="submitBtn" disabled onclick="submitRating()">Enviar calificación</button>
+      <div class="error" id="error"></div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p style="color: #64748B;">Enviando tu calificación...</p>
+    </div>
+
+    <!-- Success result -->
+    <div class="result" id="result">
+      <div class="emoji" id="resultEmoji"></div>
+      <h2 id="resultTitle"></h2>
+      <p id="resultText"></p>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.hostname === 'localhost'
+      ? 'http://localhost:8000/api'
+      : 'https://alpelo-crm-production.up.railway.app/api';
+
+    const token = new URLSearchParams(window.location.search).get('token') || window.location.pathname.split('/').pop();
+    let selectedRating = 0;
+    let reviewData = null;
+
+    // Load review data
+    async function loadReview() {
+      try {
+        const res = await fetch(`${API}/reviews/landing/${token}`);
+        if (!res.ok) {
+          document.getElementById('bizName').textContent = 'Enlace inválido';
+          document.getElementById('form').querySelector('.subtitle').textContent = 'Este enlace de calificación ya no es válido o ha expirado.';
+          document.getElementById('stars').style.display = 'none';
+          document.getElementById('submitBtn').style.display = 'none';
+          return;
+        }
+        reviewData = await res.json();
+        document.getElementById('bizName').textContent = reviewData.business_name || 'Tu negocio';
+        if (reviewData.client_first_name) {
+          document.getElementById('greeting').textContent = `¡Hola ${reviewData.client_first_name}!`;
+        }
+        if (reviewData.service_name) {
+          document.getElementById('serviceInfo').textContent = `¿Cómo fue tu experiencia con ${reviewData.service_name}?`;
+        } else {
+          document.getElementById('serviceInfo').textContent = '¿Cómo fue tu experiencia?';
+        }
+      } catch (err) {
+        document.getElementById('bizName').textContent = 'Error de conexión';
+      }
+    }
+
+    // Star rating interaction
+    document.querySelectorAll('.star').forEach(star => {
+      star.addEventListener('mouseenter', () => {
+        const val = parseInt(star.dataset.value);
+        document.querySelectorAll('.star').forEach(s => {
+          s.classList.toggle('hover-preview', parseInt(s.dataset.value) <= val);
+        });
+      });
+      star.addEventListener('mouseleave', () => {
+        document.querySelectorAll('.star').forEach(s => s.classList.remove('hover-preview'));
+      });
+      star.addEventListener('click', () => {
+        selectedRating = parseInt(star.dataset.value);
+        document.querySelectorAll('.star').forEach(s => {
+          s.classList.toggle('active', parseInt(s.dataset.value) <= selectedRating);
+        });
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('feedback').style.display = selectedRating <= 3 ? 'block' : 'none';
+      });
+    });
+
+    // Submit
+    async function submitRating() {
+      if (!selectedRating) return;
+
+      document.getElementById('form').style.display = 'none';
+      document.getElementById('loading').style.display = 'block';
+
+      try {
+        const body = { rating: selectedRating };
+        if (selectedRating <= 3) {
+          body.feedback_text = document.getElementById('feedbackText').value;
+        }
+
+        const res = await fetch(`${API}/reviews/rate/${token}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+
+        const data = await res.json();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('result').style.display = 'block';
+
+        if (selectedRating >= 4 && data.google_review_url) {
+          document.getElementById('resultEmoji').textContent = '🌟';
+          document.getElementById('resultTitle').textContent = '¡Gracias por tu calificación!';
+          document.getElementById('resultText').innerHTML = 'Nos alegra que hayas tenido una buena experiencia. <br><br>¿Podrías dejarnos una reseña en Google? Nos ayudaría mucho.';
+          setTimeout(() => { window.location.href = data.google_review_url; }, 2500);
+        } else if (selectedRating >= 4) {
+          document.getElementById('resultEmoji').textContent = '🌟';
+          document.getElementById('resultTitle').textContent = '¡Gracias por tu calificación!';
+          document.getElementById('resultText').textContent = 'Nos alegra que hayas tenido una buena experiencia. ¡Te esperamos pronto!';
+        } else {
+          document.getElementById('resultEmoji').textContent = '🙏';
+          document.getElementById('resultTitle').textContent = 'Gracias por tu feedback';
+          document.getElementById('resultText').textContent = 'Lamentamos que tu experiencia no haya sido perfecta. Tu opinión nos ayuda a mejorar. Trabajaremos en ello.';
+        }
+      } catch (err) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('form').style.display = 'block';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent = 'Error al enviar. Intenta de nuevo.';
+      }
+    }
+
+    loadReview();
+  </script>
+</body>
+</html>
