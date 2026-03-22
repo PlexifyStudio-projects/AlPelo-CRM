@@ -225,9 +225,12 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         appointment_id: appointment.id,
         client_id: appointment.client_id,
         items: items.map(i => ({
-          service_id: i.service_id,
-          staff_id: i.staff_id,
-          price: i.price,
+          service_id: i.service_id || null,
+          service_name: i.name || i.service_name || 'Servicio',
+          quantity: 1,
+          unit_price: i.price || 0,
+          staff_id: i.staff_id || null,
+          staff_name: i.staff_name || null,
         })),
         subtotal,
         discount_type: discountType === 'none' ? null : discountType,
@@ -259,7 +262,8 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       const result = await res.json();
       onCompleted?.(result);
     } catch (err) {
-      alert(err.message || 'Error al procesar el cobro');
+      const msg = typeof err.message === 'string' ? err.message : JSON.stringify(err.message);
+      alert(msg || 'Error al procesar el cobro');
     }
     setSubmitting(false);
   }, [appointment, items, subtotal, discountType, discountPercent, discountFixed, discountAmount, tip, total, paymentMethod, cashReceived, cashChange, mixedRows, sendWhatsApp, onCompleted]);
