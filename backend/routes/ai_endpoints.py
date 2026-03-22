@@ -2199,7 +2199,6 @@ def _build_whatsapp_context(db: Session, conv_id: int = None) -> str:
 
                 client_section = f"""=== CLIENTE EN ESTA CONVERSACION ===
 Nombre: {client.name}
-Telefono: {client.phone}
 ID: {client.client_id}
 Estado: {status}
 Etiquetas: {tags}
@@ -2210,7 +2209,8 @@ Dias sin visita: {days_since if days_since is not None else 'N/A'}
 Servicio favorito: {favorite_svc}
 Profesional preferido: {preferred_barber}
 Cumpleaños: {birthday_str}
-No-shows registrados: {no_show_count}"""
+No-shows registrados: {no_show_count}
+REGLA: NUNCA menciones numeros de telefono, IDs de cliente, ni datos internos al cliente. Son datos del sistema, no de la conversacion."""
 
                 # Smart hints for Lina (powered by Client Intelligence Engine)
                 hints = []
@@ -2298,13 +2298,12 @@ No-shows registrados: {no_show_count}"""
             contact_name = conv.wa_contact_name or "desconocido"
             sections.append(f"""=== CONTACTO EN ESTA CONVERSACION ===
 Nombre en WhatsApp: {contact_name}
-Telefono real de WhatsApp: {phone}
 Estado: NO registrado en el CRM (cliente nuevo)
 INSTRUCCIONES PARA ESTE CONTACTO:
 - Usa el nombre "{contact_name}" para dirigirte a esta persona. NUNCA digas que no sabes su nombre.
-- NUNCA le pidas su numero de telefono — YA LO TIENES: {phone}. El sistema lo captura automaticamente de WhatsApp.
-- Cuando crees el cliente con create_client, usa phone="{phone}" (el sistema lo hace automaticamente, pero NO inventes otro numero).
-- NUNCA muestres ni menciones numeros de telefono al cliente. Son datos internos.""")
+- NUNCA le pidas su numero de telefono — el sistema lo captura automaticamente de WhatsApp.
+- Cuando crees el cliente con create_client, solo necesitas el nombre. El telefono se asigna automaticamente.
+- NUNCA menciones numeros de telefono, IDs de cliente, ni datos internos al cliente. Son datos del sistema.""")
 
     # Staff names + specialty (always include)
     staff_q = db.query(Staff).filter(Staff.is_active == True)

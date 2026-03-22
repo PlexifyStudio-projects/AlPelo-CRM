@@ -1697,9 +1697,10 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             clean_response = re.sub(r'\n{3,}', '\n\n', clean_response).strip()
 
             # STEP 6: Strip phone numbers from client-facing responses — NEVER expose internal data
-            # Matches patterns like +57 (111) 111-1111, 573147083182, +57-314-708-3182, etc.
-            clean_response = re.sub(r'\+?\d{1,3}[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}', '[numero registrado]', clean_response)
-            clean_response = re.sub(r'\b\d{10,13}\b', '[numero registrado]', clean_response)
+            # Remove entire lines/sentences containing phone numbers instead of replacing with ugly placeholder
+            # Pattern: any line containing a phone-like pattern (7+ consecutive digits with optional separators)
+            clean_response = re.sub(r'[^\n]*\+?\d[\d\s\(\)\-]{8,}\d[^\n]*', '', clean_response)
+            clean_response = re.sub(r'\n{2,}', '\n\n', clean_response).strip()
 
             if not clean_response:
                 print(f"[Lina IA] Response was only actions, no text for conv {conv_id}.")
