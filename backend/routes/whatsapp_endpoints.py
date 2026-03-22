@@ -922,20 +922,36 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                         conv_q = conv_q.filter(WhatsAppConversation.tenant_id == tenant_id)
                     conv = conv_q.first()
 
-                    # Auto-link existing conversation to CRM client if not linked yet
-                    if conv and not conv.client_id:
+                    # Auto-link or re-link conversation to correct CRM client
+                    if conv:
                         clean_phone = re.sub(r'\D', '', from_phone)
                         clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
-                        link_q = db.query(Client).filter(Client.is_active == True)
-                        if tenant_id:
-                            link_q = link_q.filter(Client.tenant_id == tenant_id)
-                        for c in link_q.all():
-                            c_clean = re.sub(r'\D', '', c.phone or '')
-                            if c_clean[-10:] == clean_last10:
-                                conv.client_id = c.id
-                                db.flush()
-                                print(f"[WA] Auto-linked conv {conv.id} to client {c.client_id} ({c.name})")
-                                break
+
+                        # Check if current linked client's phone matches the real WhatsApp phone
+                        needs_relink = not conv.client_id
+                        if conv.client_id:
+                            linked_client = db.query(Client).filter(Client.id == conv.client_id).first()
+                            if linked_client:
+                                linked_clean = re.sub(r'\D', '', linked_client.phone or '')
+                                if linked_clean[-10:] != clean_last10:
+                                    # Linked client has WRONG phone — re-link to correct one
+                                    needs_relink = True
+                                    print(f"[WA] Client {linked_client.name} phone {linked_client.phone} doesn't match WA phone {from_phone} — re-linking")
+                                    # Also update the wrong client's phone to the real one
+                                    linked_client.phone = from_phone
+                                    db.flush()
+
+                        if needs_relink:
+                            link_q = db.query(Client).filter(Client.is_active == True)
+                            if tenant_id:
+                                link_q = link_q.filter(Client.tenant_id == tenant_id)
+                            for c in link_q.all():
+                                c_clean = re.sub(r'\D', '', c.phone or '')
+                                if c_clean[-10:] == clean_last10:
+                                    conv.client_id = c.id
+                                    db.flush()
+                                    print(f"[WA] Auto-linked conv {conv.id} to client {c.client_id} ({c.name})")
+                                    break
 
                     if not conv:
                         # Try to match with existing ACTIVE client — normalize phone for comparison
@@ -1682,6 +1698,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             # STEP 5: Clean up excessive whitespace
             clean_response = re.sub(r'\n{3,}', '\n\n', clean_response).strip()
+
+            # STEP 6: Strip phone numbers from client-facing responses — NEVER expose internal data
+            # Matches patterns like +57 (111) 111-1111, 573147083182, +57-314-708-3182, etc.
+            clean_response = re.sub(r'\+?\d{1,3}[\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{4}', '[numero registrado]', clean_response)
+            clean_response = re.sub(r'\b\d{10,13}\b', '[numero registrado]', clean_response)
 
             if not clean_response:
                 print(f"[Lina IA] Response was only actions, no text for conv {conv_id}.")
