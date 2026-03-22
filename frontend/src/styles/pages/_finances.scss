@@ -1913,7 +1913,7 @@
   }
 
   // ===========================================
-  // INVOICES — CARD LIST
+  // INVOICES — REDESIGNED CARD LIST
   // ===========================================
   &__inv-list {
     @include flex-column;
@@ -1923,49 +1923,41 @@
 
   &__inv-card {
     background: $color-white;
-    border: 1.5px solid $color-gray-200;
-    border-radius: $border-radius-xl;
+    border-radius: $border-radius-lg;
     box-shadow: $shadow-sm;
     overflow: hidden;
-    
     transition: all 250ms $ease-out-expo;
-    border: 1.5px solid rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 
     &:hover {
       box-shadow: $shadow-md;
-      border-color: rgba(0, 0, 0, 0.06);
-      transform: translateY(-1px);
+      border-color: rgba(0, 0, 0, 0.08);
     }
 
-    @for $i from 1 through 10 {
+    &--expanded {
+      box-shadow: $shadow-lg;
+      border-color: rgba($color-primary, 0.15);
+    }
+
+    @for $i from 1 through 15 {
       &:nth-child(#{$i}) {
         animation-delay: #{$i * 0.04}s;
       }
     }
   }
 
-  &__inv-main {
+  // --- Header row (always visible, clickable) ---
+  &__inv-header {
     display: flex;
     align-items: center;
     gap: $spacing-lg;
     padding: $spacing-md $spacing-xl;
     cursor: pointer;
-    transition: background 200ms $ease-smooth;
+    transition: background 150ms $ease-smooth;
     position: relative;
 
-    &:hover { background: rgba(0, 0, 0, 0.01); }
-
-    // Active indicator
-    &::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 0;
-      background: $color-primary;
-      transition: width 200ms $ease-out-expo;
-      border-radius: 0 2px 2px 0;
+    &:hover {
+      background: rgba(0, 0, 0, 0.015);
     }
 
     @media (max-width: $breakpoint-md) {
@@ -1975,30 +1967,62 @@
     }
   }
 
-  &__inv-left {
+  &__inv-header-left {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
-    min-width: 160px;
+    gap: $spacing-md;
+    min-width: 220px;
+    flex-shrink: 0;
   }
 
-  &__inv-status-dot {
-    width: 8px;
-    height: 8px;
+  &__inv-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
     border-radius: $border-radius-full;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
     flex-shrink: 0;
+
+    svg { width: 10px; height: 10px; }
+
+    &--paid {
+      color: $color-success-dark;
+      background: $color-success-bg;
+      border: 1px solid $color-success-border;
+    }
+    &--draft {
+      color: $color-gray-400;
+      background: rgba($color-gray-300, 0.12);
+      border: 1px solid rgba($color-gray-300, 0.25);
+    }
+    &--sent {
+      color: $color-info-dark;
+      background: $color-info-bg;
+      border: 1px solid $color-info-border;
+    }
+    &--cancelled {
+      color: $color-error-dark;
+      background: $color-error-bg;
+      border: 1px solid $color-error-border;
+    }
   }
 
   &__inv-id-wrap {
     @include flex-column;
-    gap: 1px;
+    gap: 2px;
   }
 
   &__inv-number {
-    font-family: monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     color: $color-gray-900;
+    letter-spacing: 0.02em;
   }
 
   &__inv-date {
@@ -2007,163 +2031,361 @@
     font-weight: $font-weight-medium;
   }
 
-  &__inv-center {
+  &__inv-header-center {
     flex: 1;
     @include flex-column;
-    gap: 1px;
+    gap: 2px;
     min-width: 0;
   }
 
   &__inv-client {
     font-size: $font-size-sm;
-    font-weight: 700;
+    font-weight: $font-weight-semibold;
     color: $color-gray-900;
     @include truncate;
   }
 
-  &__inv-doc {
+  &__inv-phone {
     font-size: $font-size-2xs;
     color: $color-gray-400;
     font-weight: $font-weight-medium;
   }
 
-  &__inv-right {
+  &__inv-header-right {
     display: flex;
     align-items: center;
     gap: $spacing-md;
     flex-shrink: 0;
   }
 
-  &__inv-total {
-    font-size: $font-size-md;
-    font-weight: $font-weight-bold;
-    color: $color-primary;
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__inv-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: $border-radius-full;
-    border: 1.5px solid;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-
-    svg { width: 10px; height: 10px; }
-  }
-
-  // --- Invoice details (expanded) ---
-  &__inv-details {
-    padding: $spacing-lg $spacing-xl;
-    background: linear-gradient(180deg, $color-gray-50, rgba($color-gray-50, 0.5));
-    border-top: 1px solid rgba(0, 0, 0, 0.04);
-    animation: fin-slideDown 250ms $ease-out-expo both;
-  }
-
-  &__inv-items-list {
-    @include flex-column;
-    gap: 0;
-    margin-bottom: $spacing-md;
-  }
-
-  &__inv-item-row {
-    display: flex;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-xs 0;
-    border-bottom: 1px solid $color-gray-100;
-    font-size: $font-size-sm;
-
-    &:last-child { border-bottom: none; }
-  }
-
-  &__inv-item-name {
-    flex: 1;
-    font-weight: $font-weight-medium;
+  &__inv-total-amount {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-extrabold;
     color: $color-gray-900;
-    min-width: 0;
-    @include truncate;
-  }
-
-  &__inv-item-qty {
-    font-size: $font-size-xs;
-    color: $color-gray-400;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-
-  &__inv-item-price {
     font-variant-numeric: tabular-nums;
-    color: $color-gray-500;
-    flex-shrink: 0;
-    min-width: 80px;
-    text-align: right;
+    letter-spacing: $letter-spacing-tight;
   }
 
-  &__inv-item-staff {
-    font-size: $font-size-xs;
-    color: $color-gray-400;
+  &__inv-chevron {
+    color: $color-gray-300;
+    transition: transform 250ms $ease-out-expo;
     flex-shrink: 0;
 
-    &::before {
-      content: '·';
-      margin-right: 4px;
+    &--open {
+      transform: rotate(180deg);
+      color: $color-primary;
     }
   }
 
-  &__inv-item-total {
-    font-weight: $font-weight-bold;
-    color: $color-gray-900;
-    font-variant-numeric: tabular-nums;
-    flex-shrink: 0;
-    min-width: 90px;
-    text-align: right;
+  // --- Expanded details ---
+  &__inv-details {
+    border-top: 1px solid $color-gray-100;
+    background: $color-off-white;
+    animation: fin-slideDown 300ms $ease-out-expo both;
   }
 
-  &__inv-totals-row {
+  // Client info bar
+  &__inv-client-bar {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    padding: $spacing-md $spacing-xl;
+    border-bottom: 1px solid $color-gray-100;
+    background: $color-white;
+  }
+
+  &__inv-client-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+
+    svg {
+      color: $color-gray-300;
+      flex-shrink: 0;
+    }
+  }
+
+  // Items table
+  &__inv-table {
+    padding: $spacing-md $spacing-xl;
+  }
+
+  &__inv-table-head {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-xs 0;
+    border-bottom: 2px solid $color-gray-200;
+    margin-bottom: $spacing-2xs;
+  }
+
+  &__inv-th {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+
+    &--service { flex: 1; min-width: 0; }
+    &--qty { width: 50px; text-align: center; }
+    &--price { width: 100px; text-align: right; }
+    &--staff { width: 140px; }
+    &--total { width: 100px; text-align: right; }
+  }
+
+  &__inv-table-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    transition: background 150ms $ease-smooth;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: rgba(0, 0, 0, 0.015); }
+  }
+
+  &__inv-td {
+    font-size: $font-size-sm;
+
+    &--service {
+      flex: 1;
+      min-width: 0;
+      font-weight: $font-weight-medium;
+      color: $color-gray-900;
+      @include truncate;
+    }
+    &--qty {
+      width: 50px;
+      text-align: center;
+      color: $color-gray-500;
+      font-weight: $font-weight-semibold;
+    }
+    &--price {
+      width: 100px;
+      text-align: right;
+      color: $color-gray-500;
+      font-variant-numeric: tabular-nums;
+    }
+    &--staff {
+      width: 140px;
+      color: $color-gray-400;
+      font-size: $font-size-xs;
+      @include truncate;
+    }
+    &--total {
+      width: 100px;
+      text-align: right;
+      font-weight: $font-weight-bold;
+      color: $color-gray-900;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  // Bottom section: breakdown + commission side by side
+  &__inv-bottom {
+    display: flex;
+    gap: $spacing-xl;
+    padding: $spacing-md $spacing-xl;
+    border-top: 1px solid $color-gray-100;
+
+    @media (max-width: $breakpoint-md) {
+      flex-direction: column;
+      gap: $spacing-md;
+    }
+  }
+
+  // Financial breakdown
+  &__inv-breakdown {
     @include flex-column;
     gap: $spacing-xs;
+    min-width: 240px;
     max-width: 300px;
-    margin-left: auto;
-    margin-bottom: $spacing-md;
   }
 
-  &__inv-total-line {
+  &__inv-breakdown-line {
     @include flex-between;
     font-size: $font-size-sm;
     color: $color-gray-500;
+    padding: 2px 0;
 
-    &--bold {
-      font-weight: $font-weight-bold;
-      font-size: $font-size-md;
+    &--discount {
+      color: $color-success;
+    }
+
+    &--tip {
+      color: $color-accent;
+    }
+
+    &--total {
+      font-weight: $font-weight-extrabold;
+      font-size: $font-size-lg;
       color: $color-gray-900;
-      padding-top: $spacing-xs;
-      border-top: 1px solid $color-gray-200;
+      padding-top: $spacing-sm;
+      margin-top: $spacing-xs;
+      border-top: 2px solid $color-gray-200;
+      letter-spacing: $letter-spacing-tight;
     }
   }
 
-  &__inv-actions {
+  // Commission split
+  &__inv-commission {
+    flex: 1;
+    @include flex-column;
+    gap: $spacing-sm;
+    padding: $spacing-md;
+    background: $color-white;
+    border-radius: $border-radius-md;
+    border: 1px solid $color-gray-100;
+  }
+
+  &__inv-commission-title {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+  }
+
+  &__inv-commission-bar {
     display: flex;
-    gap: $spacing-xs;
+    height: 8px;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+    background: $color-gray-100;
+    gap: 2px;
+  }
+
+  &__inv-commission-seg {
+    height: 100%;
+    border-radius: $border-radius-full;
+    transition: width 400ms $ease-out-expo;
+
+    &--staff {
+      background: $color-success;
+    }
+    &--business {
+      background: $color-primary-light;
+    }
+  }
+
+  &__inv-commission-labels {
+    display: flex;
+    gap: $spacing-lg;
+
+    @media (max-width: $breakpoint-sm) {
+      flex-direction: column;
+      gap: $spacing-sm;
+    }
+  }
+
+  &__inv-commission-item {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    flex: 1;
+  }
+
+  &__inv-commission-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+    margin-top: 3px;
+
+    &--staff { background: $color-success; }
+    &--business { background: $color-primary-light; }
+  }
+
+  &__inv-commission-info {
+    @include flex-column;
+    gap: 1px;
+  }
+
+  &__inv-commission-name {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+  }
+
+  &__inv-commission-value {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-gray-900;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Footer: payment method + actions
+  &__inv-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+    padding: $spacing-md $spacing-xl;
+    border-top: 1px solid $color-gray-100;
+    background: $color-white;
     flex-wrap: wrap;
   }
 
-  &__inv-method {
+  &__inv-footer-left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  &__inv-method-pill {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: $border-radius-full;
     font-size: $font-size-xs;
-    color: $color-gray-400;
-    font-weight: $font-weight-medium;
+    font-weight: $font-weight-bold;
     text-transform: capitalize;
-    margin-left: auto;
+    border: 1px solid;
 
     svg { width: 12px; height: 12px; }
+
+    &--efectivo {
+      color: $color-success-dark;
+      background: $color-success-bg;
+      border-color: $color-success-border;
+    }
+    &--nequi {
+      color: #6B21A8;
+      background: rgba(107, 33, 168, 0.08);
+      border-color: rgba(107, 33, 168, 0.2);
+    }
+    &--daviplata {
+      color: $color-error-dark;
+      background: $color-error-bg;
+      border-color: $color-error-border;
+    }
+    &--transferencia {
+      color: $color-info-dark;
+      background: $color-info-bg;
+      border-color: $color-info-border;
+    }
+    &--tarjeta {
+      color: $color-gray-600;
+      background: rgba($color-gray-300, 0.12);
+      border-color: rgba($color-gray-300, 0.3);
+    }
+  }
+
+  &__inv-notes {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+    font-style: italic;
+  }
+
+  &__inv-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
   }
 
   // ===========================================
