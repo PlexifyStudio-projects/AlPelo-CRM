@@ -5,6 +5,7 @@ import staffService from '../../services/staffService';
 import servicesService from '../../services/servicesService';
 import clientService from '../../services/clientService';
 import { useNotification } from '../../context/NotificationContext';
+import CheckoutModal from '../../components/common/CheckoutModal/CheckoutModal';
 
 const b = 'agenda';
 
@@ -152,6 +153,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   // ── Staff completion modal ──
   const [staffCompleteApt, setStaffCompleteApt] = useState(null);
+  const [checkoutApt, setCheckoutApt] = useState(null);
   const [staffPaymentCode, setStaffPaymentCode] = useState('');
   const [staffCompleting, setStaffCompleting] = useState(false);
 
@@ -1212,7 +1214,14 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 return (
                   <div className={`${b}__modal-foot`}>
                     {editingApt && (
-                      <button type="button" className={`${b}__btn--danger`} onClick={handleDelete}><TrashIcon /> Eliminar</button>
+                      <>
+                        <button type="button" className={`${b}__btn--danger`} onClick={handleDelete}><TrashIcon /> Eliminar</button>
+                        {editingApt.status === 'confirmed' || editingApt.status === 'completed' ? (
+                          <button type="button" className={`${b}__btn--primary`} style={{ background: '#059669' }} onClick={() => { setShowModal(false); setCheckoutApt(editingApt); }}>
+                            Cobrar
+                          </button>
+                        ) : null}
+                      </>
                     )}
                     <div className={`${b}__modal-foot-right`}>
                       {hint && <span className={`${b}__foot-hint`}>{hint}</span>}
@@ -1295,6 +1304,18 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           </div>
         </div>,
         document.body
+      )}
+      {/* ── CHECKOUT MODAL ── */}
+      {checkoutApt && (
+        <CheckoutModal
+          appointment={checkoutApt}
+          onClose={() => setCheckoutApt(null)}
+          onCompleted={() => {
+            setCheckoutApt(null);
+            loadAppointments();
+            addNotification('Cobro realizado exitosamente', 'success');
+          }}
+        />
       )}
     </div>
   );

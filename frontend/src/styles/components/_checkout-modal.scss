@@ -1,0 +1,968 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ============================================
+// CheckoutModal — POS multi-step checkout
+// BEM block: checkout-modal
+// ============================================
+
+.checkout-modal {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: $bg-card;
+  border-radius: $border-radius-xl;
+  box-shadow: $shadow-2xl;
+  overflow: hidden;
+  animation: checkoutSlideUp 300ms $ease-out-expo;
+
+  // ─── Overlay ──────────────────────────────────
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: $z-modal-backdrop;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: $spacing-md;
+    animation: checkoutFadeIn 200ms ease;
+  }
+
+  // ─── Header ───────────────────────────────────
+  &__header {
+    @include flex-between;
+    padding: $spacing-lg $spacing-xl;
+    border-bottom: 1px solid $border-color;
+  }
+
+  &__title {
+    font-family: $font-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-800;
+    letter-spacing: $letter-spacing-tight;
+    margin: 0;
+  }
+
+  &__close {
+    @include flex-center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: $color-gray-400;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-gray-50;
+      color: $color-gray-700;
+    }
+  }
+
+  // ─── Step indicator ───────────────────────────
+  &__steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-xl;
+    padding: $spacing-md $spacing-xl;
+    border-bottom: 1px solid $border-color-light;
+    background: $color-off-white;
+  }
+
+  &__step-dot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-xs;
+    position: relative;
+  }
+
+  &__step-dot-circle {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-full;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-300;
+    background: $color-gray-50;
+    border: 2px solid $color-gray-100;
+    transition: all $transition-base;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &__step-dot-label {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-300;
+    white-space: nowrap;
+    transition: color $transition-base;
+  }
+
+  &__step-dot--active &__step-dot-circle {
+    color: $color-white;
+    background: $color-success;
+    border-color: $color-success;
+    box-shadow: $shadow-colored-success;
+  }
+
+  &__step-dot--active &__step-dot-label {
+    color: $color-success-dark;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__step-dot--done &__step-dot-circle {
+    color: $color-white;
+    background: $color-success;
+    border-color: $color-success;
+  }
+
+  &__step-dot--done &__step-dot-label {
+    color: $color-gray-500;
+  }
+
+  // ─── Body ─────────────────────────────────────
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-lg $spacing-xl;
+  }
+
+  // ─── Step container ───────────────────────────
+  &__step {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+    animation: checkoutFadeIn 200ms ease;
+  }
+
+  // ─── Service items (Step 1) ───────────────────
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-md;
+    background: $color-off-white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    transition: border-color $transition-fast;
+
+    &:hover {
+      border-color: $border-color-medium;
+    }
+  }
+
+  &__item-info {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-2xs;
+  }
+
+  &__item-name {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-800;
+  }
+
+  &__item-staff {
+    font-size: $font-size-xs;
+    color: $color-gray-400;
+  }
+
+  &__item-actions {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__item-price {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-gray-700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__item-remove {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: $color-gray-300;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-error-bg;
+      color: $color-error;
+    }
+  }
+
+  // ─── Add service (Step 1) ─────────────────────
+  &__add-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: transparent;
+    border: 1px dashed $color-gray-200;
+    border-radius: $border-radius-md;
+    color: $color-primary-light;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-primary-light;
+      background: $color-primary-ghost;
+    }
+  }
+
+  &__add-service {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    padding: $spacing-md;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    background: $color-off-white;
+  }
+
+  &__add-service-search {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid $color-gray-100;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    background: $color-white;
+    color: $color-gray-800;
+    outline: none;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      border-color: $color-primary-light;
+    }
+
+    &::placeholder {
+      color: $color-gray-300;
+    }
+  }
+
+  &__add-service-list {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__add-service-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $spacing-sm $spacing-md;
+    border: none;
+    background: transparent;
+    border-radius: $border-radius-xs;
+    cursor: pointer;
+    transition: background $transition-fast;
+    text-align: left;
+
+    &:hover {
+      background: $color-primary-ghost;
+    }
+  }
+
+  &__add-service-option-name {
+    font-size: $font-size-sm;
+    color: $color-gray-700;
+  }
+
+  &__add-service-option-price {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__add-service-loading,
+  &__add-service-empty {
+    padding: $spacing-md;
+    text-align: center;
+    font-size: $font-size-xs;
+    color: $color-gray-300;
+  }
+
+  &__add-service-cancel {
+    align-self: flex-end;
+    padding: $spacing-xs $spacing-md;
+    border: none;
+    background: transparent;
+    color: $color-gray-400;
+    font-size: $font-size-xs;
+    cursor: pointer;
+
+    &:hover {
+      color: $color-gray-600;
+    }
+  }
+
+  // ─── Subtotal ─────────────────────────────────
+  &__subtotal {
+    @include flex-between;
+    padding-top: $spacing-md;
+    border-top: 1px solid $border-color;
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+  }
+
+  &__subtotal-value {
+    font-weight: $font-weight-bold;
+    color: $color-gray-800;
+    font-size: $font-size-md;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // ─── Sections (Step 2) ────────────────────────
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__section-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+  }
+
+  // ─── Discount tabs ───────────────────────────
+  &__discount-tabs {
+    display: flex;
+    gap: $spacing-xs;
+    background: $color-gray-50;
+    border-radius: $border-radius-sm;
+    padding: 3px;
+  }
+
+  &__discount-tab {
+    flex: 1;
+    padding: $spacing-sm;
+    border: none;
+    background: transparent;
+    border-radius: $border-radius-xs;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-400;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &--active {
+      background: $color-white;
+      color: $color-gray-800;
+      box-shadow: $shadow-xs;
+    }
+  }
+
+  // ─── Discount percent ────────────────────────
+  &__discount-percent {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__discount-presets {
+    display: flex;
+    gap: $spacing-xs;
+  }
+
+  &__discount-preset {
+    flex: 1;
+    padding: $spacing-sm;
+    border: 1px solid $color-gray-100;
+    background: $color-white;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-600;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-primary-light;
+    }
+
+    &--active {
+      background: $color-primary;
+      border-color: $color-primary;
+      color: $color-white;
+      box-shadow: $shadow-colored-primary;
+    }
+  }
+
+  &__discount-custom {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  // ─── Discount fixed ──────────────────────────
+  &__discount-fixed {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  // ─── Tip input ────────────────────────────────
+  &__tip-input {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  // ─── Generic input ────────────────────────────
+  &__input {
+    flex: 1;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid $color-gray-100;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    background: $color-white;
+    color: $color-gray-800;
+    outline: none;
+    font-variant-numeric: tabular-nums;
+    transition: border-color $transition-fast;
+
+    &:focus {
+      border-color: $color-primary-light;
+    }
+
+    &::placeholder {
+      color: $color-gray-300;
+    }
+
+    // Hide number spinners
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    -moz-appearance: textfield;
+  }
+
+  &__input-prefix {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    min-width: 16px;
+  }
+
+  &__input-suffix {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+  }
+
+  // ─── Summary lines (Step 2) ───────────────────
+  &__summary-lines {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    padding-top: $spacing-md;
+    border-top: 1px solid $border-color;
+  }
+
+  &__summary-line {
+    @include flex-between;
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    font-variant-numeric: tabular-nums;
+
+    &--discount {
+      color: $color-error;
+    }
+
+    &--tip {
+      color: $color-success;
+    }
+
+    &--total {
+      padding-top: $spacing-sm;
+      border-top: 1px dashed $color-gray-200;
+      font-weight: $font-weight-bold;
+      font-size: $font-size-md;
+      color: $color-gray-800;
+    }
+  }
+
+  // ─── Payment grid (Step 3) ────────────────────
+  &__payment-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-sm;
+  }
+
+  &__payment-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-lg $spacing-sm;
+    background: $color-white;
+    border: 2px solid $color-gray-100;
+    border-radius: $border-radius-md;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $color-gray-200;
+      box-shadow: $shadow-sm;
+    }
+
+    &--selected {
+      border-color: $color-success;
+      background: $color-success-bg;
+      box-shadow: $shadow-colored-success;
+
+      &:hover {
+        border-color: $color-success;
+      }
+    }
+
+    // Per-method accent colors
+    &[data-method="nequi"] {
+      .checkout-modal__payment-card-icon { color: #6B21A8; }
+      .checkout-modal__payment-card-letter { background: rgba(107, 33, 168, 0.1); color: #6B21A8; }
+    }
+    &[data-method="daviplata"] {
+      .checkout-modal__payment-card-icon { color: #DC2626; }
+      .checkout-modal__payment-card-letter { background: rgba(220, 38, 38, 0.1); color: #DC2626; }
+    }
+    &[data-method="efectivo"] {
+      .checkout-modal__payment-card-icon { color: $color-success; }
+    }
+    &[data-method="transferencia"] {
+      .checkout-modal__payment-card-icon { color: $color-info; }
+    }
+    &[data-method="tarjeta"] {
+      .checkout-modal__payment-card-icon { color: $color-gray-500; }
+    }
+    &[data-method="mixto"] {
+      .checkout-modal__payment-card-icon {
+        background: linear-gradient(135deg, $color-primary-light, $color-accent);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+    }
+  }
+
+  &__payment-card-icon {
+    @include flex-center;
+    width: 40px;
+    height: 40px;
+    color: $color-gray-400;
+  }
+
+  &__payment-card-letter {
+    @include flex-center;
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    background: $color-gray-50;
+    color: $color-gray-500;
+  }
+
+  &__payment-card-label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-600;
+  }
+
+  &__payment-card-check {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    @include flex-center;
+    width: 20px;
+    height: 20px;
+    border-radius: $border-radius-full;
+    background: $color-success;
+    color: $color-white;
+
+    svg {
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  // ─── Cash section ─────────────────────────────
+  &__cash-section {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    margin-top: $spacing-md;
+    padding: $spacing-md;
+    background: $color-off-white;
+    border-radius: $border-radius-md;
+    border: 1px solid $border-color;
+  }
+
+  &__cash-input {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__cash-change {
+    @include flex-between;
+    padding: $spacing-sm $spacing-md;
+    background: $color-success-bg;
+    border: 1px solid $color-success-border;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    color: $color-success-dark;
+  }
+
+  &__cash-change-value {
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // ─── Mixed payment section ────────────────────
+  &__mixed-section {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    margin-top: $spacing-md;
+    padding: $spacing-md;
+    background: $color-off-white;
+    border-radius: $border-radius-md;
+    border: 1px solid $border-color;
+  }
+
+  &__mixed-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  &__mixed-select {
+    flex: 1;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid $color-gray-100;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    background: $color-white;
+    color: $color-gray-800;
+    outline: none;
+    cursor: pointer;
+
+    &:focus {
+      border-color: $color-primary-light;
+    }
+  }
+
+  &__mixed-amount {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex: 1;
+  }
+
+  &__mixed-remove {
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: $color-gray-300;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+
+    &:hover {
+      background: $color-error-bg;
+      color: $color-error;
+    }
+  }
+
+  &__mixed-status {
+    @include flex-between;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    font-variant-numeric: tabular-nums;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &--pending {
+      background: $color-warning-bg;
+      border: 1px solid $color-warning-border;
+      color: $color-warning-dark;
+    }
+
+    &--ok {
+      background: $color-success-bg;
+      border: 1px solid $color-success-border;
+      color: $color-success-dark;
+    }
+  }
+
+  // ─── Payment total ────────────────────────────
+  &__payment-total {
+    @include flex-between;
+    padding-top: $spacing-md;
+    border-top: 1px solid $border-color;
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+  }
+
+  &__payment-total-value {
+    font-weight: $font-weight-bold;
+    font-size: $font-size-lg;
+    color: $color-gray-800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // ─── Receipt (Step 4) ─────────────────────────
+  &__receipt {
+    border: 1px dashed $color-gray-200;
+    border-radius: $border-radius-md;
+    padding: $spacing-lg;
+    background: $color-off-white;
+  }
+
+  &__receipt-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-xs;
+    padding-bottom: $spacing-md;
+    margin-bottom: $spacing-md;
+    border-bottom: 1px dashed $color-gray-200;
+  }
+
+  &__receipt-title {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-widest;
+  }
+
+  &__receipt-client {
+    font-size: $font-size-md;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-800;
+  }
+
+  &__receipt-items {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    padding-bottom: $spacing-md;
+    margin-bottom: $spacing-md;
+    border-bottom: 1px dashed $color-gray-200;
+  }
+
+  &__receipt-item {
+    @include flex-between;
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__receipt-totals {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    padding-bottom: $spacing-md;
+    margin-bottom: $spacing-md;
+    border-bottom: 1px dashed $color-gray-200;
+  }
+
+  &__receipt-line {
+    @include flex-between;
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    font-variant-numeric: tabular-nums;
+
+    &--discount {
+      color: $color-error;
+    }
+
+    &--tip {
+      color: $color-success;
+    }
+
+    &--grand {
+      padding-top: $spacing-sm;
+      font-weight: $font-weight-bold;
+      font-size: $font-size-lg;
+      color: $color-gray-800;
+    }
+  }
+
+  &__receipt-payment {
+    @include flex-between;
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+
+    span:last-child {
+      font-weight: $font-weight-medium;
+      color: $color-gray-700;
+    }
+  }
+
+  // ─── WhatsApp toggle ──────────────────────────
+  &__whatsapp-toggle {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md;
+    background: $color-off-white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+    transition: all $transition-fast;
+
+    &:hover {
+      border-color: $border-color-medium;
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: $color-success;
+      cursor: pointer;
+    }
+
+    svg {
+      color: #25D366;
+    }
+  }
+
+  // ─── CTA button (Step 4) ──────────────────────
+  &__cta {
+    width: 100%;
+    padding: $spacing-md $spacing-lg;
+    border: none;
+    border-radius: $border-radius-md;
+    background: $color-success;
+    color: $color-white;
+    font-size: $font-size-md;
+    font-weight: $font-weight-bold;
+    letter-spacing: $letter-spacing-tight;
+    cursor: pointer;
+    transition: all $transition-fast;
+    box-shadow: $shadow-colored-success;
+
+    &:hover:not(:disabled) {
+      background: $color-success-dark;
+      box-shadow: $shadow-glow-success;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  // ─── Footer navigation ────────────────────────
+  &__footer {
+    @include flex-between;
+    padding: $spacing-md $spacing-xl;
+    border-top: 1px solid $border-color;
+    background: $color-off-white;
+  }
+
+  &__nav-btn {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-lg;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &--back {
+      background: transparent;
+      color: $color-gray-500;
+
+      &:hover {
+        background: $color-gray-50;
+        color: $color-gray-700;
+      }
+    }
+
+    &--next {
+      background: $color-primary;
+      color: $color-white;
+      margin-left: auto;
+      box-shadow: $shadow-colored-primary;
+
+      &:hover:not(:disabled) {
+        background: $color-primary-dark;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// ─── Animations ─────────────────────────────────
+@keyframes checkoutFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes checkoutSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
