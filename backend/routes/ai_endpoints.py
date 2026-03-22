@@ -407,8 +407,31 @@ def _execute_action(action: dict, db: Session) -> str:
     if action_type == "create_client":
         name = action.get("name", "").strip()
         phone = action.get("phone", "").strip()
-        if not name or not phone:
-            return "ERROR: Necesito al menos nombre y telefono para crear un cliente."
+        if not name:
+            return "ERROR: Necesito al menos el nombre para crear un cliente."
+
+        # SEARCH FIRST: Check if client already exists by name OR phone
+        q_by_name = db.query(Client).filter(Client.name.ilike(f"%{name}%"), Client.is_active == True)
+        if _tid:
+            q_by_name = q_by_name.filter(Client.tenant_id == _tid)
+        existing_by_name = q_by_name.first()
+        if existing_by_name:
+            return f"Ya existe un cliente con ese nombre: {existing_by_name.name} (ID: {existing_by_name.client_id}, Tel: {existing_by_name.phone}). No lo cree de nuevo — use sus datos existentes."
+
+        if phone:
+            import re as _re
+            clean_phone = _re.sub(r'\D', '', phone)
+            clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
+            q_all = db.query(Client).filter(Client.is_active == True)
+            if _tid:
+                q_all = q_all.filter(Client.tenant_id == _tid)
+            for c in q_all.all():
+                c_clean = _re.sub(r'\D', '', c.phone or '')
+                if c_clean[-10:] == clean_last10 and clean_last10:
+                    return f"Ya existe un cliente con ese telefono: {c.name} (ID: {c.client_id}). No lo cree de nuevo."
+
+        if not phone:
+            phone = "pendiente"
 
         q_last = db.query(Client)
         if _tid:
@@ -416,13 +439,6 @@ def _execute_action(action: dict, db: Session) -> str:
         last = q_last.order_by(Client.id.desc()).first()
         next_num = (last.id + 1) if last else 1
         client_id = f"M{20200 + next_num}"
-
-        q_exist = db.query(Client).filter(Client.phone == phone, Client.is_active == True)
-        if _tid:
-            q_exist = q_exist.filter(Client.tenant_id == _tid)
-        existing = q_exist.first()
-        if existing:
-            return f"Ya existe un cliente con ese telefono: {existing.name} ({existing.client_id})"
 
         client = Client(
             client_id=client_id,
