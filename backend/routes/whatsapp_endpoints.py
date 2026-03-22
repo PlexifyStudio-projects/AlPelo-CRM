@@ -1625,10 +1625,14 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         if hasattr(conv, 'tenant_id') and conv.tenant_id:
                             action_data["tenant_id"] = conv.tenant_id
 
-                        # Client creation: ALWAYS use the real WhatsApp phone from the conversation
-                        # Lina might hallucinate a phone number — the conversation phone is the only reliable source
+                        # Client creation: use conv phone ONLY if creating the conversation's own contact
+                        # If creating a third party (primo, esposa), DON'T override their phone
                         if action_type == "create_client" and conv.wa_contact_phone:
-                            action_data["phone"] = conv.wa_contact_phone
+                            client_name = (action_data.get("name") or "").strip().lower()
+                            contact_name = (conv.wa_contact_name or "").strip().lower()
+                            # Only use conv phone if the name matches the WhatsApp contact
+                            if not action_data.get("phone") or client_name == contact_name or contact_name.startswith(client_name.split()[0] if client_name else "???"):
+                                action_data["phone"] = conv.wa_contact_phone
 
                         # For create_appointment, auto-fill client phone from conversation
                         if action_type == "create_appointment" and not action_data.get("client_phone"):

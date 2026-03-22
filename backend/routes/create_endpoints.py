@@ -113,6 +113,14 @@ def create_visit(data: VisitHistoryCreate, db: Session = Depends(get_db), user: 
     db.commit()
     db.refresh(visit)
 
+    # Award loyalty points for completed visits
+    if data.status == "completed" and tid:
+        try:
+            from routes.loyalty_endpoints import award_visit_points
+            award_visit_points(db, client_id=data.client_id, amount=float(data.amount or 0), tenant_id=tid, visit_id=visit.id)
+        except Exception as lp_err:
+            print(f"[LOYALTY] Error awarding points: {lp_err}")
+
     return VisitHistoryResponse(
         **{c.name: getattr(visit, c.name) for c in visit.__table__.columns},
         staff_name=staff.name,

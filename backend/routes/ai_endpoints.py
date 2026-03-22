@@ -640,6 +640,14 @@ def _execute_action(action: dict, db: Session) -> str:
         )
         db.add(visit)
         db.commit()
+        db.refresh(visit)
+        # Award loyalty points
+        if _tid:
+            try:
+                from routes.loyalty_endpoints import award_visit_points
+                award_visit_points(db, client_id=client.id, amount=float(visit.amount or 0), tenant_id=_tid, visit_id=visit.id)
+            except Exception:
+                pass
         return f"Visita registrada para {client.name}: {visit.service_name} (${visit.amount:,})"
 
     # ---- WHATSAPP ----
@@ -2272,6 +2280,20 @@ REGLA SOBRE DATOS INTERNOS: No menciones IDs de cliente ni datos tecnicos. El te
                 except Exception as mem_err:
                     print(f"[MEMORY] Error loading memories for client {client.id}: {mem_err}")
 
+                # Loyalty program info
+                try:
+                    from database.models import LoyaltyAccount, LoyaltyConfig
+                    loyalty_cfg = db.query(LoyaltyConfig).filter(LoyaltyConfig.tenant_id == tenant_id, LoyaltyConfig.is_active == True).first()
+                    if loyalty_cfg:
+                        loyalty_acc = db.query(LoyaltyAccount).filter(LoyaltyAccount.client_id == client.id, LoyaltyAccount.tenant_id == tenant_id).first()
+                        if loyalty_acc:
+                            tier_display = {"bronze": "Bronce", "silver": "Plata", "gold": "Oro", "vip": "VIP"}.get(loyalty_acc.tier, loyalty_acc.tier)
+                            client_section += f"\nLealtad: {tier_display} | {loyalty_acc.available_points} puntos disponibles ({loyalty_acc.total_points} acumulados)"
+                            if loyalty_acc.tier in ("gold", "vip"):
+                                hints.append(f"CLIENTE {tier_display.upper()}: Tratalo con atencion premium. Tiene {loyalty_acc.available_points} puntos canjeables.")
+                except Exception:
+                    pass
+
                 if hints:
                     client_section += "\n\nINSTRUCCIONES ESPECIALES PARA ESTE CLIENTE:\n" + "\n".join(f"  → {h}" for h in hints)
 
@@ -2306,13 +2328,31 @@ INSTRUCCIONES PARA ESTE CONTACTO:
 - Cuando crees el cliente con create_client, solo necesitas el nombre. El telefono se asigna automaticamente.
 - El telefono y nombre puedes compartirlo si el cliente lo pregunta, pero NO lo menciones si no te lo piden.""")
 
-    # Staff names + specialty (always include)
+    # Staff names + specialty + schedule (always include)
     staff_q = db.query(Staff).filter(Staff.is_active == True)
     if tenant_id:
         staff_q = staff_q.filter(Staff.tenant_id == tenant_id)
     staff_all = staff_q.all()
+    _DIAS = ["lun", "mar", "mie", "jue", "vie", "sab", "dom"]
     if staff_all:
-        staff_lines = [f"  {s.name} ({s.specialty or s.role})" for s in staff_all]
+        staff_lines = []
+        for s in staff_all:
+            line = f"  {s.name} ({s.specialty or s.role})"
+            # Add working hours if available
+            try:
+                from database.models import StaffSchedule
+                schedules = db.query(StaffSchedule).filter(
+                    StaffSchedule.staff_id == s.id,
+                    StaffSchedule.tenant_id == (tenant_id or s.tenant_id),
+                    StaffSchedule.is_working == True,
+                ).all()
+                if schedules:
+                    days_working = [_DIAS[sch.day_of_week] for sch in sorted(schedules, key=lambda x: x.day_of_week)]
+                    hours = schedules[0]
+                    line += f" | Horario: {','.join(days_working)} {hours.start_time}-{hours.end_time}"
+            except Exception:
+                pass
+            staff_lines.append(line)
         sections.append("EQUIPO:\n" + "\n".join(staff_lines))
 
     # Services catalog — COMPACT: top services per category (not all 98)
