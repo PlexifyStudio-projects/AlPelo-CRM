@@ -2015,15 +2015,20 @@ def delete_all_conversations(db: Session = Depends(get_db), user=Depends(get_cur
 # MEDIA PROXY — Proxy media from Meta API (requires auth token)
 # ============================================================================
 @router.get("/media/{media_id}")
-async def proxy_media(media_id: str):
+async def proxy_media(media_id: str, db: Session = Depends(get_db)):
     """Proxy media from Meta API (requires auth token that the frontend doesn't have)."""
     from fastapi.responses import Response
+
+    # Get token from tenant DB (preferred) or env var fallback
+    token, _ = _get_wa_credentials(db)
+    if not token:
+        raise HTTPException(status_code=500, detail="WhatsApp token not configured")
 
     # Step 1: Get the download URL from Meta
     async with httpx.AsyncClient(timeout=15) as client:
         meta_resp = await client.get(
             f"https://graph.facebook.com/{WA_API_VERSION}/{media_id}",
-            headers={"Authorization": f"Bearer {WA_TOKEN}"},
+            headers={"Authorization": f"Bearer {token}"},
         )
         if meta_resp.status_code != 200:
             raise HTTPException(status_code=404, detail="Media not found")
@@ -2037,7 +2042,7 @@ async def proxy_media(media_id: str):
     async with httpx.AsyncClient(timeout=30) as client:
         file_resp = await client.get(
             download_url,
-            headers={"Authorization": f"Bearer {WA_TOKEN}"},
+            headers={"Authorization": f"Bearer {token}"},
         )
         if file_resp.status_code != 200:
             raise HTTPException(status_code=404, detail="Media download failed")
