@@ -167,16 +167,19 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
 
           {/* User profile section */}
           {user && (
-            <div className={`${b}__user-section`}>
-              <button
-                className={`${b}__user-avatar`}
-                onClick={() => handleNav('dev-profile')}
-                title={collapsed ? 'Mi Perfil' : undefined}
-              >
-                {(user.name || 'D').charAt(0).toUpperCase()}
-              </button>
-              {!collapsed && (
-                <>
+            <>
+              <div className={`${b}__user-section`}>
+                <div className={`${b}__user-avatar-wrap`}>
+                  <button
+                    className={`${b}__user-avatar`}
+                    onClick={() => handleNav('dev-profile')}
+                    title={collapsed ? 'Mi Perfil' : undefined}
+                  >
+                    {(user.name || 'D').charAt(0).toUpperCase()}
+                  </button>
+                  <span className={`${b}__user-status-dot`} />
+                </div>
+                {!collapsed && (
                   <div className={`${b}__user-info`}>
                     <button
                       className={`${b}__user-name`}
@@ -187,12 +190,15 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
                     </button>
                     <span className={`${b}__user-role`}>Desarrollador</span>
                   </div>
-                  <button className={`${b}__logout`} onClick={onLogout} title="Cerrar sesion">
-                    {Icons.logout}
-                  </button>
-                </>
+                )}
+              </div>
+              {!collapsed && (
+                <button className={`${b}__logout-btn`} onClick={onLogout}>
+                  {Icons.logout}
+                  <span>Cerrar sesion</span>
+                </button>
               )}
-            </div>
+            </>
           )}
         </div>
       </aside>
