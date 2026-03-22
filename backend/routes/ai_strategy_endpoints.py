@@ -161,33 +161,50 @@ def generate_campaign(db: Session = Depends(get_db), user=Depends(get_current_us
                    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
     current_month = month_names[today.month]
 
+    # Get business context from AIConfig prompt
+    from database.models import AIConfig
+    ai_config = db.query(AIConfig).filter(AIConfig.tenant_id == tid, AIConfig.is_active == True).first()
+    business_context = ai_config.system_prompt if ai_config and ai_config.system_prompt else "No hay contexto del negocio configurado."
+
     data_context = f"""
+CONTEXTO DEL NEGOCIO (prompt del admin):
+{business_context[:1500]}
+
 NEGOCIO: {biz_name}
 FECHA ACTUAL: {today.isoformat()} ({current_month} {today.year})
+PAIS: Colombia
 
-SERVICIOS ULTIMOS 3 MESES (nombre | veces solicitado | ingresos COP):
-{chr(10).join(f"- {s}: {d['count']} veces, ${d['revenue']:,} COP" for s, d in sorted(service_stats.items(), key=lambda x: -x[1]['count']))}
+SERVICIOS ULTIMOS 3 MESES (nombre | demanda | ingresos):
+{chr(10).join(f"- {s}: {d['count']} veces, ${d['revenue']:,}" for s, d in sorted(service_stats.items(), key=lambda x: -x[1]['count'])[:15])}
 
-SEGMENTOS DE CLIENTES (total: {len(clients)}):
-- Activos (visita <30 dias): {segments.get('activos', 0)}
-- En riesgo (30-90 dias sin visita): {segments.get('en_riesgo_30_90d', 0)}
-- Inactivos (90+ dias): {segments.get('inactivos_90d', 0)}
-- Nuevos sin visita: {segments.get('nuevos_sin_visita', 0)}
+CLIENTES (total: {len(clients)}):
+- Activos: {segments.get('activos', 0)}
+- En riesgo: {segments.get('en_riesgo_30_90d', 0)}
+- Inactivos 90d+: {segments.get('inactivos_90d', 0)}
 """
 
-    system = """Eres un estratega de marketing experto en negocios de servicios de belleza en Colombia.
-Responde SOLO en español colombiano. Responde UNICAMENTE con un JSON valido (sin texto adicional).
+    system = f"""Eres un estratega de marketing para negocios de servicios en Colombia.
+IMPORTANTE: Lee el CONTEXTO DEL NEGOCIO para entender que tipo de negocio es, ubicacion, servicios, etc.
 
-El JSON debe tener esta estructura:
-```json
-{
-  "analysis": "Analisis de tendencias y oportunidades (2-3 parrafos)",
-  "campaign_copy": "Texto del mensaje de WhatsApp listo para enviar (maximo 1024 caracteres)",
-  "target_audience": "Descripcion del publico objetivo ideal",
-  "reasoning": "Por que esta campana funcionaria",
-  "modifications": ["Sugerencia de modificacion 1", "Sugerencia 2", "Sugerencia 3"]
-}
-```"""
+Tu trabajo:
+1. Investiga que tendencias hay en {current_month} {today.year} para este tipo de negocio en Colombia (Semana Santa, dia de la madre, vacaciones, tendencias de moda, etc.)
+2. Analiza los datos reales del negocio
+3. Genera UNA campaña concreta y lista para enviar
+
+REGLAS:
+- NO pongas precios en pesos. Usa porcentajes de descuento (ej: "15% de descuento", "2x1")
+- Se conciso. No escribas un ensayo — maximo 3 oraciones de analisis
+- La campaña debe ser un mensaje de WhatsApp corto (maximo 500 caracteres)
+- No uses hashtags
+- Tono colombiano, cercano, profesional
+
+Responde SOLO con JSON valido:
+{{
+  "tendencia": "Que esta de moda o que fecha importante hay en {current_month} (1-2 oraciones)",
+  "por_que": "Por que esta campana es ideal para este negocio ahora (1-2 oraciones)",
+  "campana": "El mensaje de WhatsApp listo para enviar (sin precios en pesos, usa % descuento)",
+  "audiencia": "A quienes va dirigida (1 oracion)"
+}}"""
 
     return _call_strategy_ai(system, data_context, tenant_id=tid)
 
