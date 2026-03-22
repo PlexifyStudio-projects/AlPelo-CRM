@@ -255,19 +255,28 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
                   </div>
                   <div className={`${b}__form-field`}>
                     <label>Rol en el equipo</label>
-                    <input
-                      name="role"
-                      value={form.role}
-                      onChange={handleChange}
-                      list="role-options"
-                      placeholder="Ej: Barbero, Terapeuta, Doctor..."
-                      autoComplete="off"
-                    />
-                    <datalist id="role-options">
+                    <select name="role" value={editableRoles.includes(form.role) ? form.role : '__custom__'} onChange={e => {
+                      if (e.target.value === '__custom__') {
+                        setForm({ ...form, role: '' });
+                      } else {
+                        setForm({ ...form, role: e.target.value });
+                      }
+                    }}>
                       {editableRoles.map(r => (
-                        <option key={r} value={r} />
+                        <option key={r} value={r}>{r}</option>
                       ))}
-                    </datalist>
+                      <option value="__custom__">+ Crear nueva categoria...</option>
+                    </select>
+                    {(!editableRoles.includes(form.role) || form.role === '') && (
+                      <input
+                        name="role"
+                        value={form.role}
+                        onChange={handleChange}
+                        placeholder="Escribe el nombre de la nueva categoria..."
+                        autoFocus
+                        style={{ marginTop: '8px' }}
+                      />
+                    )}
                   </div>
                 </div>
                 <div className={`${b}__form-row`}>
