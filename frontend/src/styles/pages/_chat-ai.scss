@@ -756,6 +756,267 @@ $lina-assistant-bg: #F1F5F9;
   }
 }
 
+// STRATEGY SECTION — Business Intelligence buttons
+.chat-ai {
+  &__strategy {
+    @include flex-column;
+    gap: $spacing-xs;
+    padding-bottom: $spacing-xs;
+  }
+
+  &__strategy-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    color: $lina-purple;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+    padding: 2px 0;
+
+    svg {
+      color: $lina-purple;
+    }
+  }
+
+  &__strategy-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-xs;
+
+    @media (min-width: $breakpoint-xl) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__strategy-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-radius: $border-radius-md;
+    border: 1px solid rgba($lina-purple, 0.15);
+    background: linear-gradient(135deg, rgba($lina-purple, 0.03) 0%, rgba($lina-purple, 0.07) 100%);
+    cursor: pointer;
+    text-align: left;
+    font-family: $font-primary;
+    transition: all 200ms $ease-out-quart;
+
+    &:hover:not(:disabled) {
+      border-color: rgba($lina-purple, 0.35);
+      background: linear-gradient(135deg, rgba($lina-purple, 0.06) 0%, rgba($lina-purple, 0.12) 100%);
+      box-shadow: 0 4px 12px rgba($lina-purple, 0.1);
+      transform: translateY(-1px);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &--loading {
+      border-color: rgba($lina-purple, 0.3);
+      background: linear-gradient(135deg, rgba($lina-purple, 0.08) 0%, rgba($lina-purple, 0.14) 100%);
+    }
+  }
+
+  &__strategy-icon {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  &__strategy-label {
+    display: block;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+    line-height: $line-height-snug;
+  }
+
+  &__strategy-desc {
+    display: block;
+    font-size: 10px;
+    color: $color-gray-400;
+    line-height: $line-height-snug;
+    margin-top: 2px;
+  }
+
+  &__strategy-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba($lina-purple, 0.2);
+    border-top-color: $lina-purple;
+    border-radius: $border-radius-full;
+    animation: stratSpin 0.7s linear infinite;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  // STAFF RETENTION MODAL
+  &__modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    @include flex-center;
+    backdrop-filter: blur(2px);
+  }
+
+  &__modal {
+    background: $color-white;
+    border-radius: $border-radius-xl;
+    width: 420px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+  }
+
+  &__modal-header {
+    @include flex-between;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid $border-color-light;
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+  }
+
+  &__modal-close {
+    @include flex-center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: transparent;
+    color: $color-gray-400;
+    cursor: pointer;
+    border-radius: $border-radius-sm;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-gray-100;
+      color: $color-secondary;
+    }
+  }
+
+  &__modal-body {
+    @include flex-column;
+    gap: $spacing-sm;
+    padding: $spacing-lg;
+  }
+
+  &__modal-label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+  }
+
+  &__modal-select {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: 1.5px solid $border-color;
+    border-radius: $border-radius-md;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    background: $color-gray-50;
+    outline: none;
+    transition: all $transition-fast;
+
+    &:focus {
+      border-color: $lina-purple;
+      background: $color-white;
+      box-shadow: 0 0 0 3px rgba($lina-purple, 0.08);
+    }
+  }
+
+  &__modal-textarea {
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    border: 1.5px solid $border-color;
+    border-radius: $border-radius-md;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-secondary;
+    background: $color-gray-50;
+    outline: none;
+    resize: vertical;
+    min-height: 70px;
+    transition: all $transition-fast;
+
+    &:focus {
+      border-color: $lina-purple;
+      background: $color-white;
+      box-shadow: 0 0 0 3px rgba($lina-purple, 0.08);
+    }
+
+    &::placeholder {
+      color: $color-gray-300;
+    }
+  }
+
+  &__modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    border-top: 1px solid $border-color-light;
+  }
+
+  &__modal-cancel {
+    padding: $spacing-xs $spacing-lg;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-md;
+    background: $color-white;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: $color-gray-50;
+      color: $color-secondary;
+    }
+  }
+
+  &__modal-submit {
+    padding: $spacing-xs $spacing-lg;
+    border: none;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, $lina-purple, $lina-purple-light);
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-white;
+    cursor: pointer;
+    transition: all $transition-fast;
+    box-shadow: 0 2px 8px rgba($lina-purple, 0.25);
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, $lina-purple-dark, $lina-purple);
+      box-shadow: 0 4px 12px rgba($lina-purple, 0.3);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+@keyframes stratSpin {
+  to { transform: rotate(360deg); }
+}
+
 // ANIMATIONS
 @keyframes typingPulse {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }

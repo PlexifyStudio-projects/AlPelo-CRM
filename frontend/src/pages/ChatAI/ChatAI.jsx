@@ -2,6 +2,18 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import aiService from '../../services/aiService';
 import { useTenant } from '../../context/TenantContext';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+const STRATEGY_BUTTONS = [
+  { id: 'generate-campaign', icon: '🎯', label: 'Generar Campaña', desc: 'Crea una campaña optimizada con IA', endpoint: '/ai/strategy/generate-campaign' },
+  { id: 'business-diagnostics', icon: '📊', label: 'Diagnóstico del Negocio', desc: 'Análisis completo de métricas y salud', endpoint: '/ai/strategy/business-diagnostics' },
+  { id: 'rescue-lost-clients', icon: '🔄', label: 'Rescatar Clientes', desc: 'Estrategias para clientes perdidos', endpoint: '/ai/strategy/rescue-lost-clients' },
+  { id: 'price-optimizer', icon: '💰', label: 'Optimizar Precios', desc: 'Recomendaciones de pricing inteligente', endpoint: '/ai/strategy/price-optimizer' },
+  { id: 'predict-agenda', icon: '👥', label: 'Predecir Agenda', desc: 'Proyección de demanda y agenda', endpoint: '/ai/strategy/predict-agenda' },
+  { id: 'growth-plan', icon: '⭐', label: 'Plan de Crecimiento', desc: 'Roadmap personalizado de crecimiento', endpoint: '/ai/strategy/growth-plan' },
+  { id: 'staff-retention', icon: '🛡️', label: 'Retención por Staff', desc: 'Plan de retención si un profesional se va', endpoint: '/ai/strategy/staff-retention', needsStaff: true },
+];
+
 // ============================================
 // Plexify - Lina IA v6.0
 // Admin assistant — persistent chat
@@ -87,6 +99,11 @@ const ChatAI = () => {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [tokenCount, setTokenCount] = useState(() => parseInt(localStorage.getItem(getTokensKey(tid)) || '0', 10));
   const [pendingImage, setPendingImage] = useState(null); // { base64, mime, preview }
+  const [strategyLoading, setStrategyLoading] = useState(null); // id of loading button
+  const [staffModalOpen, setStaffModalOpen] = useState(false);
+  const [staffList, setStaffList] = useState([]);
+  const [selectedStaffId, setSelectedStaffId] = useState('');
+  const [offerDescription, setOfferDescription] = useState('');
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const textareaRef = useRef(null);
@@ -176,6 +193,105 @@ const ChatAI = () => {
       setIsTyping(false);
     }
   }, [isTyping, messages, pendingImage]);
+
+  const formatStrategyResponse = useCallback((data) => {
+    if (typeof data === 'string') return data;
+    if (data.response) return data.response;
+    // Format structured JSON nicely
+    const lines = [];
+    const walk = (obj, indent = '') => {
+      if (Array.isArray(obj)) {
+        obj.forEach((item, i) => {
+          if (typeof item === 'object' && item !== null) {
+            lines.push(`${indent}${i + 1}.`);
+            walk(item, indent + '   ');
+          } else {
+            lines.push(`${indent}• ${item}`);
+          }
+        });
+      } else if (typeof obj === 'object' && obj !== null) {
+        Object.entries(obj).forEach(([key, val]) => {
+          const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          if (typeof val === 'object' && val !== null) {
+            lines.push(`${indent}${label}:`);
+            walk(val, indent + '   ');
+          } else {
+            lines.push(`${indent}${label}: ${val}`);
+          }
+        });
+      } else {
+        lines.push(`${indent}${obj}`);
+      }
+    };
+    walk(data);
+    return lines.join('\n');
+  }, []);
+
+  const handleStrategyClick = useCallback(async (strategy) => {
+    if (strategyLoading) return;
+    if (strategy.needsStaff) {
+      setStaffModalOpen(true);
+      setSelectedStaffId('');
+      setOfferDescription('');
+      // Fetch staff list
+      try {
+        const res = await fetch(`${API_URL}/staff/`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setStaffList(Array.isArray(data) ? data : (data.staff || data.data || []));
+        }
+      } catch { /* ignore */ }
+      return;
+    }
+    setStrategyLoading(strategy.id);
+    // Add user message
+    const userMsg = { id: generateId(), role: 'user', content: `${strategy.icon} ${strategy.label}`, timestamp: new Date().toISOString() };
+    setMessages((prev) => [...prev, userMsg]);
+    try {
+      const res = await fetch(`${API_URL}${strategy.endpoint}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      const content = formatStrategyResponse(data);
+      const aiMsg = { id: generateId(), role: 'assistant', content, timestamp: new Date().toISOString() };
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      const errorMsg = { id: generateId(), role: 'assistant', isError: true, timestamp: new Date().toISOString(), content: `Error al ejecutar ${strategy.label}: ${err.message}` };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setStrategyLoading(null);
+    }
+  }, [strategyLoading, formatStrategyResponse]);
+
+  const handleStaffRetentionSubmit = useCallback(async () => {
+    if (!selectedStaffId || !offerDescription.trim()) return;
+    setStaffModalOpen(false);
+    const strategy = STRATEGY_BUTTONS.find(s => s.id === 'staff-retention');
+    setStrategyLoading('staff-retention');
+    const staffName = staffList.find(s => String(s.id) === String(selectedStaffId))?.name || 'Staff';
+    const userMsg = { id: generateId(), role: 'user', content: `🛡️ Retención por Staff — ${staffName}\nOferta: ${offerDescription}`, timestamp: new Date().toISOString() };
+    setMessages((prev) => [...prev, userMsg]);
+    try {
+      const res = await fetch(`${API_URL}${strategy.endpoint}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staff_id: Number(selectedStaffId), offer_description: offerDescription }),
+      });
+      const data = await res.json();
+      const content = formatStrategyResponse(data);
+      const aiMsg = { id: generateId(), role: 'assistant', content, timestamp: new Date().toISOString() };
+      setMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      const errorMsg = { id: generateId(), role: 'assistant', isError: true, timestamp: new Date().toISOString(), content: `Error al ejecutar Retención por Staff: ${err.message}` };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setStrategyLoading(null);
+    }
+  }, [selectedStaffId, offerDescription, staffList, formatStrategyResponse]);
 
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(inputValue); };
   const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(inputValue); } };
@@ -346,6 +462,43 @@ const ChatAI = () => {
                 ))}
               </div>
             )}
+            {hasMessages && !isTyping && (
+              <div className="chat-ai__strategy">
+                <div className="chat-ai__strategy-header">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                  <span>Inteligencia de Negocio</span>
+                </div>
+                <div className="chat-ai__strategy-grid">
+                  {STRATEGY_BUTTONS.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`chat-ai__strategy-btn ${strategyLoading === s.id ? 'chat-ai__strategy-btn--loading' : ''}`}
+                      onClick={() => handleStrategyClick(s)}
+                      disabled={!!strategyLoading}
+                    >
+                      {strategyLoading === s.id ? (
+                        <>
+                          <span className="chat-ai__strategy-spinner" />
+                          <div>
+                            <span className="chat-ai__strategy-label">Analizando...</span>
+                            <span className="chat-ai__strategy-desc">{s.desc}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="chat-ai__strategy-icon">{s.icon}</span>
+                          <div>
+                            <span className="chat-ai__strategy-label">{s.label}</span>
+                            <span className="chat-ai__strategy-desc">{s.desc}</span>
+                          </div>
+                        </>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {pendingImage && (
               <div className="chat-ai__image-preview">
                 <img src={pendingImage.preview} alt="Preview" className="chat-ai__image-preview-img" />
@@ -385,6 +538,51 @@ const ChatAI = () => {
             <span className="chat-ai__hint">Enter para enviar · Shift+Enter nueva linea · 📷 Puedes adjuntar imagenes</span>
           </form>
         </div>
+
+        {/* Staff Retention Modal */}
+        {staffModalOpen && (
+          <div className="chat-ai__modal-overlay" onClick={() => setStaffModalOpen(false)}>
+            <div className="chat-ai__modal" onClick={(e) => e.stopPropagation()}>
+              <div className="chat-ai__modal-header">
+                <span>🛡️ Retención por Staff</span>
+                <button className="chat-ai__modal-close" onClick={() => setStaffModalOpen(false)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+              </div>
+              <div className="chat-ai__modal-body">
+                <label className="chat-ai__modal-label">Profesional que se fue</label>
+                <select
+                  className="chat-ai__modal-select"
+                  value={selectedStaffId}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                >
+                  <option value="">Seleccionar profesional...</option>
+                  {staffList.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                <label className="chat-ai__modal-label">Oferta de retención</label>
+                <textarea
+                  className="chat-ai__modal-textarea"
+                  value={offerDescription}
+                  onChange={(e) => setOfferDescription(e.target.value)}
+                  placeholder="Ej: 10% descuento + bebida gratis en la próxima visita..."
+                  rows={3}
+                />
+              </div>
+              <div className="chat-ai__modal-footer">
+                <button className="chat-ai__modal-cancel" onClick={() => setStaffModalOpen(false)}>Cancelar</button>
+                <button
+                  className="chat-ai__modal-submit"
+                  onClick={handleStaffRetentionSubmit}
+                  disabled={!selectedStaffId || !offerDescription.trim()}
+                >
+                  Analizar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Sidebar */}
         {sidebarOpen && (
