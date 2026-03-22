@@ -221,7 +221,7 @@ REGLAS PARA LA CAMPANA:
 - Maximo 400 caracteres. Cada palabra cuenta
 - Un solo emoji estrategico al inicio, no mas
 - Sin hashtags
-- Tono colombiano autentico — como le habla un amigo de confianza, no una empresa
+- Tono FORMAL y profesional. Usa "usted" (le invitamos, lo esperamos, le ofrecemos). NUNCA uses tuteo (tu, quieres) ni voseo argentino (vos, querés). Lenguaje respetuoso y elegante de negocio colombiano
 - Incluye una llamada a la accion clara y simple ("Responde SI y te agendo")
 - El mensaje debe funcionar por SI SOLO sin contexto adicional
 
