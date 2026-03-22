@@ -589,25 +589,34 @@ def _expire_old_notes(db):
         should_expire = False
         expire_reason = ""
 
-        # Expire if older than 24h
-        if note.created_at and (now - note.created_at).total_seconds() > 86400:
+        # Expire if older than 48h (give enough time for next-day reminders)
+        if note.created_at and (now - note.created_at).total_seconds() > 172800:
             should_expire = True
-            expire_reason = "tarea tenia mas de 24h"
+            expire_reason = "tarea tenia mas de 48h"
 
         # Expire reminder notes if the referenced appointment has passed
         if not should_expire and note.created_at:
             note_lower = note.content.lower()
             _is_reminder = any(kw in note_lower for kw in ["recordatorio", "avisar", "aviso", "min antes", "minutos antes"])
             if _is_reminder:
-                # Check if client has any upcoming appointments today
+                # Check if client has any upcoming appointments (today or future)
                 col_now = _now_colombia()
                 client_future_apts = (
                     db.query(Appointment)
-                    .filter(Appointment.client_id == note.client_id, Appointment.date == col_now.date(), Appointment.status.in_(["confirmed", "completed", "paid"]))
+                    .filter(
+                        Appointment.client_id == note.client_id,
+                        Appointment.date >= col_now.date(),
+                        Appointment.status.in_(["confirmed", "completed", "paid"]),
+                    )
                     .all()
                 )
+                # Check if ALL future appointments have already passed
                 all_passed = True
                 for a in client_future_apts:
+                    if a.date > col_now.date():
+                        # Future date — not passed yet
+                        all_passed = False
+                        break
                     try:
                         ah, am = map(int, a.time.split(":"))
                         if ah * 60 + am > col_now.hour * 60 + col_now.minute - 5:
@@ -617,7 +626,7 @@ def _expire_old_notes(db):
                         pass
                 if not client_future_apts or all_passed:
                     should_expire = True
-                    expire_reason = "todas las citas del dia ya pasaron"
+                    expire_reason = "todas las citas ya pasaron"
 
         if should_expire:
             for prefix in ["PENDIENTE:", "RECORDATORIO:"]:
