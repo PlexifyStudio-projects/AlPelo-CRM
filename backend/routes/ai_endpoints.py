@@ -2525,7 +2525,11 @@ FASE 1 — LEER (prioridad al ultimo mensaje):
 
 FASE 2 — VERIFICAR (OBLIGATORIO si hay accion de agenda o cliente):
 Si el mensaje involucra CREAR, AGENDAR, REAGENDAR, o CANCELAR:
-a) CLIENTES: Verifica si el cliente mencionado ya existe. Si habla de un tercero (primo, esposa), verifica si ya lo creaste.
+a) CLIENTES: SIEMPRE usa list_clients_by_filter para buscar si el cliente mencionado YA EXISTE en el sistema.
+   - Si el cliente dice "mi primo Javier Vargas", busca "Javier Vargas" ANTES de pedir telefono.
+   - Si ya existe, usa sus datos. NO pidas telefono ni nombre si ya los tienes.
+   - Si NO existe, ahi si pregunta los datos que falten para crearlo.
+   - Esto aplica para terceros (primo, esposa, amigo) — SIEMPRE busca primero.
 b) AGENDA: Revisa la agenda del dia solicitado COMPLETA. Busca conflictos:
    - El profesional pedido esta libre a esa hora?
    - El cliente tiene otra cita que se cruza?
