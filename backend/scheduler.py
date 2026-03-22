@@ -1608,6 +1608,159 @@ def _auto_refresh_meta_tokens(db):
 
 
 # ============================================================================
+# CLOSED-DAY APPOINTMENT CHECK — Proactive error correction
+# ============================================================================
+_closed_day_check_done = set()  # Track which dates we've already checked
+
+def _check_closed_day_appointments(db):
+    """Check if there are confirmed appointments on days the business is closed.
+    If found, cancel them and proactively notify the client via WhatsApp."""
+    from database.models import AIConfig, Tenant
+
+    now = _now_colombia(db)
+    today = now.date()
+    today_str = str(today)
+
+    # Only check once per day
+    if today_str in _closed_day_check_done:
+        return
+    _closed_day_check_done.add(today_str)
+    # Clean old entries
+    _closed_day_check_done.discard(str(today - timedelta(days=2)))
+
+    day_name = _DAYS_ES[today.weekday()]  # e.g. "domingo"
+
+    # Check each active tenant's business hours
+    tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    for tenant in tenants:
+        config = db.query(AIConfig).filter(
+            AIConfig.tenant_id == tenant.id,
+            AIConfig.is_active == True
+        ).first()
+        if not config or not config.system_prompt:
+            continue
+
+        prompt_lower = config.system_prompt.lower()
+
+        # Detect if today is a closed day by looking for patterns like "domingo: cerrado" or "domingos cerrados"
+        is_closed = False
+        for pattern in [
+            f"{day_name}: cerrado", f"{day_name}s: cerrado",
+            f"{day_name} cerrado", f"{day_name}s cerrado",
+            f"cerrado los {day_name}s", f"cerrados los {day_name}s",
+            f"no abrimos los {day_name}s", f"no abrimos {day_name}s",
+        ]:
+            if pattern in prompt_lower:
+                is_closed = True
+                break
+
+        if not is_closed:
+            continue
+
+        print(f"[SCHEDULER] Today ({day_name}) is CLOSED for tenant {tenant.name} — checking appointments...")
+
+        # Find confirmed appointments for today
+        todays_apts = db.query(Appointment).filter(
+            Appointment.date == today,
+            Appointment.tenant_id == tenant.id,
+            Appointment.status.in_(["confirmed", "pending"]),
+        ).all()
+
+        if not todays_apts:
+            print(f"[SCHEDULER] No appointments to fix for {tenant.name}")
+            continue
+
+        # Find next open day (check next 7 days)
+        next_open_day = None
+        for offset in range(1, 8):
+            check_date = today + timedelta(days=offset)
+            check_day = _DAYS_ES[check_date.weekday()]
+            check_closed = False
+            for pattern in [
+                f"{check_day}: cerrado", f"{check_day}s: cerrado",
+                f"{check_day} cerrado", f"{check_day}s cerrado",
+                f"cerrado los {check_day}s", f"cerrados los {check_day}s",
+            ]:
+                if pattern in prompt_lower:
+                    check_closed = True
+                    break
+            if not check_closed:
+                next_open_day = check_date
+                break
+
+        next_day_str = f"{_DAYS_ES[next_open_day.weekday()]} {next_open_day.strftime('%d/%m')}" if next_open_day else "el proximo dia habil"
+
+        for apt in todays_apts:
+            client = db.query(Client).filter(Client.id == apt.client_id).first() if apt.client_id else None
+            client_name = client.name if client else apt.client_name
+            client_first = client_name.split()[0] if client_name else "cliente"
+
+            # Find conversation to send message
+            phone = apt.client_phone or (client.phone if client else None)
+            if not phone:
+                continue
+
+            clean_phone = normalize_phone(phone)
+
+            # Build correction message
+            staff_name = apt.staff_name or "tu profesional"
+            service_name = apt.service_name or "tu servicio"
+            msg = (
+                f"{client_first}, te escribo porque detecte un error con tu cita de hoy. "
+                f"Hoy {day_name} estamos cerrados y no debimos agendarla para hoy. Disculpa la confusion!\n\n"
+                f"Te la puedo mover para {next_day_str} a las {apt.time} con {staff_name} para {service_name}. "
+                f"Te queda bien ese horario?"
+            )
+
+            # Send WhatsApp message
+            sent = _send_whatsapp_sync(clean_phone, msg, db)
+
+            # Store message in conversation
+            conv = db.query(WhatsAppConversation).filter(
+                WhatsAppConversation.wa_contact_phone == clean_phone,
+                WhatsAppConversation.tenant_id == tenant.id,
+            ).first()
+            if not conv:
+                # Try normalized match
+                from sqlalchemy import func
+                all_convs = db.query(WhatsAppConversation).filter(
+                    WhatsAppConversation.tenant_id == tenant.id
+                ).all()
+                import re
+                clean_digits = re.sub(r'\D', '', clean_phone)[-10:]
+                for c in all_convs:
+                    c_digits = re.sub(r'\D', '', c.wa_contact_phone or '')[-10:]
+                    if c_digits == clean_digits:
+                        conv = c
+                        break
+
+            if conv:
+                wa_msg = WhatsAppMessage(
+                    conversation_id=conv.id,
+                    direction="outbound",
+                    content=msg,
+                    message_type="text",
+                    status="sent" if sent else "failed",
+                    sent_by="lina_ia_correction",
+                )
+                db.add(wa_msg)
+                conv.last_message_at = datetime.utcnow()
+
+            # Cancel the appointment
+            apt.status = "cancelled"
+            apt.notes = f"Auto-cancelada: {day_name} cerrado. Lina notifico al cliente."
+            db.commit()
+
+            status = "enviado" if sent else "fallo envio"
+            print(f"[SCHEDULER] Closed-day correction: {client_name} apt {apt.id} cancelled, msg {status}")
+            log_event("accion", f"Cita cancelada — {day_name} cerrado",
+                      detail=f"{client_name}: {service_name} a las {apt.time}. Notificacion {status}.",
+                      conv_id=conv.id if conv else None,
+                      contact_name=client_name,
+                      status="ok" if sent else "error")
+
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 def _scheduler_loop():
@@ -1625,6 +1778,12 @@ def _scheduler_loop():
 
             db = SessionLocal()
             try:
+                # Check for appointments on closed days (runs once daily, even outside business hours)
+                try:
+                    _check_closed_day_appointments(db)
+                except Exception as e:
+                    print(f"[SCHEDULER] Closed-day check error: {e}")
+
                 # Only run appointment-related tasks during business hours
                 if _is_business_hours():
                     _check_30min_reminders(db)
