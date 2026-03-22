@@ -82,7 +82,32 @@ def list_staff(
     else:
         query = query.order_by(Staff.name)
 
-    return [StaffResponse.model_validate(s) for s in query.all()]
+    staff_list = query.all()
+
+    # Calculate unique client count per staff from appointments
+    from sqlalchemy import func as sqlfunc, distinct
+    client_counts = {}
+    staff_ids = [s.id for s in staff_list]
+    if staff_ids:
+        count_q = (
+            db.query(Appointment.staff_id, sqlfunc.count(distinct(Appointment.client_id)))
+            .filter(
+                Appointment.staff_id.in_(staff_ids),
+                Appointment.status.in_(["completed", "paid"]),
+            )
+        )
+        if tid:
+            count_q = count_q.filter(Appointment.tenant_id == tid)
+        for staff_id, count in count_q.group_by(Appointment.staff_id).all():
+            client_counts[staff_id] = count
+
+    result = []
+    for s in staff_list:
+        data = StaffResponse.model_validate(s).model_dump()
+        data["client_count"] = client_counts.get(s.id, 0)
+        result.append(data)
+
+    return result
 
 
 @router.get("/staff/{staff_id}", response_model=StaffResponse)

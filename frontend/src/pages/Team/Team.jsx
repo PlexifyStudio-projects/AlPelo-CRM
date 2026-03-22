@@ -794,7 +794,7 @@ const Team = () => {
     setSimpleDeactivating(null);
   };
 
-  const getClientCount = () => 0;
+  const getClientCount = (member) => member?.client_count || 0;
 
   if (loading) return <div className={b}><p style={{ padding: '2rem', color: '#8E8E85' }}>Cargando equipo...</p></div>;
 
