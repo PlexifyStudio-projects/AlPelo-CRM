@@ -1709,11 +1709,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             # STEP 5: Clean up excessive whitespace
             clean_response = re.sub(r'\n{3,}', '\n\n', clean_response).strip()
 
-            # STEP 6: Strip phone numbers from client-facing responses — NEVER expose internal data
-            # Remove entire lines/sentences containing phone numbers instead of replacing with ugly placeholder
-            # Pattern: any line containing a phone-like pattern (7+ consecutive digits with optional separators)
-            clean_response = re.sub(r'[^\n]*\+?\d[\d\s\(\)\-]{8,}\d[^\n]*', '', clean_response)
-            clean_response = re.sub(r'\n{2,}', '\n\n', clean_response).strip()
+            # STEP 6: (removed — phone numbers allowed when client asks for them)
 
             if not clean_response:
                 print(f"[Lina IA] Response was only actions, no text for conv {conv_id}.")
