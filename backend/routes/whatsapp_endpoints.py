@@ -2020,7 +2020,7 @@ async def proxy_media(media_id: str, db: Session = Depends(get_db)):
     from fastapi.responses import Response
 
     # Get token from tenant DB (preferred) or env var fallback
-    token, _ = _get_wa_credentials(db)
+    token, _ = _get_wa_config_cached(db)
     if not token:
         raise HTTPException(status_code=500, detail="WhatsApp token not configured")
 
