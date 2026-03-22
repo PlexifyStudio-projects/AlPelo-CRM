@@ -1610,23 +1610,22 @@ def _auto_refresh_meta_tokens(db):
 # ============================================================================
 # CLOSED-DAY APPOINTMENT CHECK — Proactive error correction
 # ============================================================================
-_closed_day_check_done = set()  # Track which dates we've already checked
+_closed_day_last_check = 0  # Timestamp of last check
 
 def _check_closed_day_appointments(db):
     """Check if there are confirmed appointments on days the business is closed.
-    If found, cancel them and proactively notify the client via WhatsApp."""
+    If found, cancel them and proactively notify the client via WhatsApp.
+    Runs every 5 minutes."""
+    global _closed_day_last_check
     from database.models import AIConfig, Tenant
+
+    # Run every 5 minutes
+    if time.time() - _closed_day_last_check < 300:
+        return
+    _closed_day_last_check = time.time()
 
     now = _now_colombia(db)
     today = now.date()
-    today_str = str(today)
-
-    # Only check once per day
-    if today_str in _closed_day_check_done:
-        return
-    _closed_day_check_done.add(today_str)
-    # Clean old entries
-    _closed_day_check_done.discard(str(today - timedelta(days=2)))
 
     day_name = _DAYS_ES[today.weekday()]  # e.g. "domingo"
 
