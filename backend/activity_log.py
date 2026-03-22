@@ -74,8 +74,25 @@ def log_event(event_type: str, description: str, detail: str = "",
     contact_name: Client/contact name if applicable
     conv_id: Conversation ID if applicable
     status: "ok", "info", "warning", "error"
-    tenant_id: Tenant ID for multi-tenant isolation
+    tenant_id: Tenant ID for multi-tenant isolation (auto-resolved from conv_id if not provided)
     """
+    # Auto-resolve tenant_id from conversation if not provided
+    if not tenant_id and conv_id:
+        try:
+            from database.connection import SessionLocal
+            from database.models import WhatsAppConversation
+            _db = SessionLocal()
+            try:
+                _conv = _db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+                if _conv and _conv.tenant_id:
+                    tenant_id = _conv.tenant_id
+            finally:
+                _db.close()
+        except Exception:
+            pass
+    # Default to tenant 1 if still no tenant_id (single-tenant fallback)
+    if not tenant_id:
+        tenant_id = 1
     now = _now_col()
 
     with _lock:
