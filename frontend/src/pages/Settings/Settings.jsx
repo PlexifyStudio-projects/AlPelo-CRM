@@ -671,7 +671,7 @@ const Settings = () => {
           <div className={`${b}__option`}>
             <div className={`${b}__option-info`}>
               <span className={`${b}__option-label`}>Activar programa de lealtad</span>
-              <span className={`${b}__option-desc`}>Los clientes acumulan puntos por cada visita y gasto</span>
+              <span className={`${b}__option-desc`}>Tus clientes acumulan puntos con cada visita y pueden canjearlos por descuentos</span>
             </div>
             <button
               className={`${b}__toggle ${loyaltyConfig.is_active ? `${b}__toggle--active` : ''}`}
@@ -681,108 +681,93 @@ const Settings = () => {
             </button>
           </div>
 
-          <div className={`${b}__meta-row`}>
-            <div className={`${b}__meta-field`}>
-              <label>Puntos por cada $X gastados</label>
-              <div className={`${b}__meta-row`}>
-                <input
-                  type="number"
-                  value={loyaltyConfig.points_per_currency}
-                  onChange={e => handleLoyaltyChange('points_per_currency', Number(e.target.value))}
-                  placeholder="1"
-                />
+          {/* HOW POINTS ARE EARNED */}
+          <div style={{ padding: '16px 0', borderBottom: '1px solid #E2E8F0' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '12px' }}>Como se ganan los puntos</h4>
+            <div className={`${b}__meta-row`}>
+              <div className={`${b}__meta-field`} style={{ flex: 1 }}>
+                <label>Cada $ gastados por el cliente, gana 1 punto</label>
                 <input
                   type="number"
                   value={loyaltyConfig.currency_unit}
                   onChange={e => handleLoyaltyChange('currency_unit', Number(e.target.value))}
                   placeholder="10000"
                 />
+                <span className={`${b}__meta-hint`}>
+                  Ejemplo: Si pones $10,000 y un corte cuesta $40,000 → el cliente gana <strong>{loyaltyConfig.currency_unit > 0 ? Math.floor(40000 / loyaltyConfig.currency_unit * (loyaltyConfig.points_per_currency || 1)) : 0} puntos</strong> por ese corte
+                </span>
               </div>
-              <span className={`${b}__meta-hint`}>Ej: 1 punto por cada $10,000 gastados</span>
             </div>
           </div>
 
-          <div className={`${b}__meta-row`}>
+          {/* HOW POINTS ARE REDEEMED */}
+          <div style={{ padding: '16px 0', borderBottom: '1px solid #E2E8F0' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '12px' }}>Como se canjean los puntos</h4>
             <div className={`${b}__meta-field`}>
-              <label>Umbral Bronce</label>
+              <label>Cuantos puntos equivalen a $1,000 de descuento</label>
               <input
                 type="number"
-                value={loyaltyConfig.tier_bronze_min}
-                onChange={e => handleLoyaltyChange('tier_bronze_min', Number(e.target.value))}
-                placeholder="100"
+                value={loyaltyConfig.redemption_rate > 0 ? Math.round(1 / loyaltyConfig.redemption_rate) : 10}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  handleLoyaltyChange('redemption_rate', val > 0 ? 1 / val : 0.1);
+                }}
+                placeholder="10"
               />
-            </div>
-            <div className={`${b}__meta-field`}>
-              <label>Umbral Plata</label>
-              <input
-                type="number"
-                value={loyaltyConfig.tier_silver_min}
-                onChange={e => handleLoyaltyChange('tier_silver_min', Number(e.target.value))}
-                placeholder="500"
-              />
-            </div>
-          </div>
-
-          <div className={`${b}__meta-row`}>
-            <div className={`${b}__meta-field`}>
-              <label>Umbral Oro</label>
-              <input
-                type="number"
-                value={loyaltyConfig.tier_gold_min}
-                onChange={e => handleLoyaltyChange('tier_gold_min', Number(e.target.value))}
-                placeholder="1000"
-              />
-            </div>
-            <div className={`${b}__meta-field`}>
-              <label>Umbral VIP</label>
-              <input
-                type="number"
-                value={loyaltyConfig.tier_vip_min}
-                onChange={e => handleLoyaltyChange('tier_vip_min', Number(e.target.value))}
-                placeholder="2500"
-              />
+              <span className={`${b}__meta-hint`}>
+                Ejemplo: Si un cliente tiene 50 puntos, puede canjear <strong>${loyaltyConfig.redemption_rate > 0 ? (50 * loyaltyConfig.redemption_rate * 1000).toLocaleString('es-CO') : '?'}</strong> de descuento
+              </span>
             </div>
           </div>
 
-          <div className={`${b}__meta-row`}>
-            <div className={`${b}__meta-field`}>
-              <label>Bonus por referido (referrer)</label>
-              <input
-                type="number"
-                value={loyaltyConfig.referral_bonus_referrer}
-                onChange={e => handleLoyaltyChange('referral_bonus_referrer', Number(e.target.value))}
-                placeholder="50"
-              />
+          {/* TIERS */}
+          <div style={{ padding: '16px 0', borderBottom: '1px solid #E2E8F0' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>Niveles de cliente</h4>
+            <span className={`${b}__meta-hint`} style={{ marginBottom: '12px', display: 'block' }}>Los clientes suben de nivel al acumular puntos. Usa esto para dar trato preferencial a tus mejores clientes.</span>
+            <div className={`${b}__meta-row`}>
+              <div className={`${b}__meta-field`}>
+                <label style={{ color: '#CD7F32' }}>Bronce (desde X puntos)</label>
+                <input type="number" value={loyaltyConfig.tier_bronze_min} onChange={e => handleLoyaltyChange('tier_bronze_min', Number(e.target.value))} placeholder="0" />
+              </div>
+              <div className={`${b}__meta-field`}>
+                <label style={{ color: '#94A3B8' }}>Plata (desde X puntos)</label>
+                <input type="number" value={loyaltyConfig.tier_silver_min} onChange={e => handleLoyaltyChange('tier_silver_min', Number(e.target.value))} placeholder="100" />
+              </div>
             </div>
-            <div className={`${b}__meta-field`}>
-              <label>Bonus por referido (nuevo)</label>
-              <input
-                type="number"
-                value={loyaltyConfig.referral_bonus_referred}
-                onChange={e => handleLoyaltyChange('referral_bonus_referred', Number(e.target.value))}
-                placeholder="50"
-              />
+            <div className={`${b}__meta-row`}>
+              <div className={`${b}__meta-field`}>
+                <label style={{ color: '#F59E0B' }}>Oro (desde X puntos)</label>
+                <input type="number" value={loyaltyConfig.tier_gold_min} onChange={e => handleLoyaltyChange('tier_gold_min', Number(e.target.value))} placeholder="500" />
+              </div>
+              <div className={`${b}__meta-field`}>
+                <label style={{ color: '#8B5CF6' }}>VIP (desde X puntos)</label>
+                <input type="number" value={loyaltyConfig.tier_vip_min} onChange={e => handleLoyaltyChange('tier_vip_min', Number(e.target.value))} placeholder="1500" />
+              </div>
             </div>
           </div>
 
-          <div className={`${b}__meta-row`}>
-            <div className={`${b}__meta-field`}>
-              <label>Bonus cumpleanos</label>
-              <input
-                type="number"
-                value={loyaltyConfig.birthday_bonus}
-                onChange={e => handleLoyaltyChange('birthday_bonus', Number(e.target.value))}
-                placeholder="100"
-              />
+          {/* BONUSES */}
+          <div style={{ padding: '16px 0' }}>
+            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>Bonificaciones</h4>
+            <span className={`${b}__meta-hint`} style={{ marginBottom: '12px', display: 'block' }}>Puntos extra que se otorgan automaticamente en situaciones especiales.</span>
+            <div className={`${b}__meta-row`}>
+              <div className={`${b}__meta-field`}>
+                <label>Quien refiere gana (puntos)</label>
+                <input type="number" value={loyaltyConfig.referral_bonus_referrer} onChange={e => handleLoyaltyChange('referral_bonus_referrer', Number(e.target.value))} placeholder="50" />
+                <span className={`${b}__meta-hint`}>Cuando un cliente trae a alguien nuevo</span>
+              </div>
+              <div className={`${b}__meta-field`}>
+                <label>El nuevo cliente gana (puntos)</label>
+                <input type="number" value={loyaltyConfig.referral_bonus_referred} onChange={e => handleLoyaltyChange('referral_bonus_referred', Number(e.target.value))} placeholder="25" />
+                <span className={`${b}__meta-hint`}>Bono de bienvenida para el referido</span>
+              </div>
             </div>
-            <div className={`${b}__meta-field`}>
-              <label>Tasa de canje (puntos por $1)</label>
-              <input
-                type="number"
-                value={loyaltyConfig.redemption_rate}
-                onChange={e => handleLoyaltyChange('redemption_rate', Number(e.target.value))}
-                placeholder="100"
-              />
+            <div className={`${b}__meta-row`}>
+              <div className={`${b}__meta-field`}>
+                <label>Bono de cumpleanos (puntos)</label>
+                <input type="number" value={loyaltyConfig.birthday_bonus} onChange={e => handleLoyaltyChange('birthday_bonus', Number(e.target.value))} placeholder="100" />
+                <span className={`${b}__meta-hint`}>Se otorga automaticamente en el mes de su cumpleanos</span>
+              </div>
             </div>
           </div>
 
