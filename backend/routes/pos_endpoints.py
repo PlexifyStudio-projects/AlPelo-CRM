@@ -559,8 +559,8 @@ def open_register(
             raise HTTPException(status_code=400, detail="La caja ya está abierta hoy")
         # Reopen closed register
         existing.status = "open"
-        existing.opening_amount = data.get("opening_amount", 0)
-        existing.opened_by = user.username if hasattr(user, 'username') else "admin"
+        existing.opening_amount = data.opening_amount
+        existing.opened_by = current_user.username if hasattr(current_user, 'username') else "admin"
         from datetime import datetime as dt
         existing.opened_at = dt.utcnow()
         existing.closed_at = None
