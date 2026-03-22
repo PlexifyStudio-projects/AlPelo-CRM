@@ -251,29 +251,32 @@ def _run_migrations(engine):
     except Exception as e:
         print(f"[MIGRATION] AI model switch: {e}")
 
-    # --- Seed: DeveloperLuis admin user (role=dev) ---
-    try:
-        with engine.begin() as conn:
-            existing = conn.execute(text(
-                "SELECT id FROM public.admin WHERE username = 'DeveloperLuis'"
-            )).fetchone()
-            if existing is None:
-                from auth.security import hash_password
-                hashed = hash_password("DeveloperLuis")
-                conn.execute(text(
-                    "INSERT INTO public.admin (name, email, phone, username, password, role, is_active) "
-                    "VALUES (:name, :email, :phone, :username, :password, :role, true)"
-                ), {
-                    "name": "Luis Developer",
-                    "email": "dev@plexify.studio",
-                    "phone": "+573000000000",
-                    "username": "DeveloperLuis",
-                    "password": hashed,
-                    "role": "dev",
-                })
-                print("[SEED] Created DeveloperLuis admin user (role=dev)")
-    except Exception as e:
-        print(f"[SEED] DeveloperLuis: {e}")
+    # --- Seed: Dev admin user (only if DEV_USERNAME and DEV_PASSWORD env vars are set) ---
+    dev_username = os.getenv("DEV_USERNAME")
+    dev_password = os.getenv("DEV_PASSWORD")
+    if dev_username and dev_password:
+        try:
+            with engine.begin() as conn:
+                existing = conn.execute(text(
+                    "SELECT id FROM public.admin WHERE username = :username"
+                ), {"username": dev_username}).fetchone()
+                if existing is None:
+                    from auth.security import hash_password
+                    hashed = hash_password(dev_password)
+                    conn.execute(text(
+                        "INSERT INTO public.admin (name, email, phone, username, password, role, is_active) "
+                        "VALUES (:name, :email, :phone, :username, :password, :role, true)"
+                    ), {
+                        "name": "Developer",
+                        "email": "dev@plexify.studio",
+                        "phone": "",
+                        "username": dev_username,
+                        "password": hashed,
+                        "role": "dev",
+                    })
+                    print(f"[SEED] Created dev admin user")
+        except Exception as e:
+            print(f"[SEED] Dev user: {e}")
 
     # NOTE: Tenants are created manually from the Developer panel.
 
@@ -328,7 +331,7 @@ app.include_router(notification_router, prefix="/api", tags=["Notifications"])
 @app.post("/api/dev/factory-reset")
 async def factory_reset(request: dict = {}):
     """
-    Wipe ALL data from the database (except DeveloperLuis).
+    Wipe ALL data from the database (except dev user).
     Requires secret key or dev role. Use with extreme caution.
     """
     from fastapi import HTTPException
@@ -383,14 +386,14 @@ async def factory_reset(request: dict = {}):
                     results[table] = f"ERROR: {str(e)[:80]}"
                     print(f"[FACTORY RESET] Error on {table}: {e}")
 
-            # Delete admin users EXCEPT DeveloperLuis
+            # Delete admin users EXCEPT dev role
             try:
                 result = conn.execute(text(
-                    "DELETE FROM public.admin WHERE username != 'DeveloperLuis'"
+                    "DELETE FROM public.admin WHERE role != 'dev'"
                 ))
                 count = result.rowcount
-                results["admin (except DeveloperLuis)"] = count
-                print(f"[FACTORY RESET] Deleted {count} admin rows (kept DeveloperLuis)")
+                results["admin (except dev)"] = count
+                print(f"[FACTORY RESET] Deleted {count} admin rows (kept dev)")
             except Exception as e:
                 results["admin"] = f"ERROR: {str(e)[:80]}"
                 print(f"[FACTORY RESET] Error on admin: {e}")
@@ -417,15 +420,15 @@ async def factory_reset(request: dict = {}):
 
             print("[FACTORY RESET] All sequences reset to 1")
 
-        # Clear DeveloperLuis tenant_id since tenants were wiped
+        # Clear dev user tenant_id since tenants were wiped
         try:
             with engine.begin() as conn:
                 conn.execute(text(
-                    "UPDATE public.admin SET tenant_id = NULL WHERE username = 'DeveloperLuis'"
+                    "UPDATE public.admin SET tenant_id = NULL WHERE role = 'dev'"
                 ))
-                print("[FACTORY RESET] Cleared DeveloperLuis tenant_id")
+                print("[FACTORY RESET] Cleared dev tenant_id")
         except Exception as e:
-            print(f"[FACTORY RESET] Clear DeveloperLuis tenant_id: {e}")
+            print(f"[FACTORY RESET] Clear dev tenant_id: {e}")
 
         print("[FACTORY RESET] === COMPLETE ===")
         return {
