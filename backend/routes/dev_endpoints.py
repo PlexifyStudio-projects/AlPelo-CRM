@@ -1254,3 +1254,54 @@ def cleanup_duplicate_conversations(db: Session = Depends(get_db), user: Admin =
         "messages_merged": merged_count,
         "groups_processed": len([g for g in groups.values() if len(g) > 1]),
     }
+
+
+@router.post("/dev/fix-conversation-links")
+def fix_conversation_links(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Fix conversations with missing client_id or tenant_id by matching phone numbers."""
+    _require_dev(user)
+    import re as re_mod
+
+    fixed_client = 0
+    fixed_tenant = 0
+    tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+    all_clients = db.query(Client).filter(Client.is_active == True).all()
+    all_convs = db.query(WhatsAppConversation).all()
+
+    for conv in all_convs:
+        conv_phone_clean = re_mod.sub(r'\D', '', conv.wa_contact_phone or '')
+        conv_last10 = conv_phone_clean[-10:] if len(conv_phone_clean) >= 10 else conv_phone_clean
+
+        # Fix missing tenant_id — match via phone_number_id or first active tenant
+        if not conv.tenant_id:
+            for t in tenants:
+                # If we can match by client's tenant, use that
+                if conv.client_id:
+                    linked = db.query(Client).filter(Client.id == conv.client_id).first()
+                    if linked and linked.tenant_id:
+                        conv.tenant_id = linked.tenant_id
+                        fixed_tenant += 1
+                        break
+                else:
+                    # Default to first active tenant
+                    conv.tenant_id = tenants[0].id if tenants else None
+                    fixed_tenant += 1
+                    break
+
+        # Fix missing client_id — match by normalized phone
+        if not conv.client_id and conv_last10:
+            for c in all_clients:
+                c_clean = re_mod.sub(r'\D', '', c.phone or '')
+                c_last10 = c_clean[-10:] if len(c_clean) >= 10 else c_clean
+                if c_last10 == conv_last10 and c_last10:
+                    conv.client_id = c.id
+                    fixed_client += 1
+                    break
+
+    db.commit()
+    return {
+        "success": True,
+        "conversations_fixed_client": fixed_client,
+        "conversations_fixed_tenant": fixed_tenant,
+        "total_conversations": len(all_convs),
+    }
