@@ -2430,9 +2430,20 @@ No-shows registrados: {no_show_count}"""
     return "\n\n".join(sections)
 
 
-def _build_system_prompt(db: Session, is_whatsapp: bool = False, conv_id: int = None) -> str:
+def _build_system_prompt(db: Session, is_whatsapp: bool = False, conv_id: int = None, tenant_id: int = None) -> str:
     """Build the full system prompt with business context + hardcoded Lina brain + dynamic data."""
-    config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
+    # Resolve tenant_id from conversation if not provided
+    if not tenant_id and conv_id:
+        from database.models import WhatsAppConversation
+        conv_obj = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+        if conv_obj:
+            tenant_id = getattr(conv_obj, 'tenant_id', None)
+
+    # Filter AIConfig by tenant — CRITICAL for multi-tenant isolation
+    if tenant_id:
+        config = db.query(AIConfig).filter(AIConfig.tenant_id == tenant_id, AIConfig.is_active == True).first()
+    else:
+        config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
     business_ctx = config.system_prompt if config and config.system_prompt and config.system_prompt.strip() else DEFAULT_BUSINESS_CONTEXT
 
     if is_whatsapp:
@@ -3091,13 +3102,17 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
     if not anthropic_key:
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada en el servidor.")
 
-    config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
+    _tid = user.tenant_id if user.tenant_id else (tenant.id if tenant else None)
+    if _tid:
+        config = db.query(AIConfig).filter(AIConfig.tenant_id == _tid, AIConfig.is_active == True).first()
+    else:
+        config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
     model = (config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-20250514")
     temperature = config.temperature if config else 0.4
     max_tokens = max(config.max_tokens if config else 4096, 4096)  # Minimum 4096 for bulk operations
 
-    # Build system prompt with live business data
-    system_prompt = _build_system_prompt(db)
+    # Build system prompt with live business data — scoped to tenant
+    system_prompt = _build_system_prompt(db, tenant_id=_tid)
 
     # Build messages
     messages = []
