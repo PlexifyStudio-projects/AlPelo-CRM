@@ -572,6 +572,14 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     border-top: 3px solid $fb-blue;
   }
 
+  &__card--loyalty {
+    border-left: 3px solid $color-success;
+  }
+
+  &__card--google {
+    border-left: 3px solid $color-warning;
+  }
+
   // Token expiry warning banner
   &__meta-expiry-warning {
     display: flex;

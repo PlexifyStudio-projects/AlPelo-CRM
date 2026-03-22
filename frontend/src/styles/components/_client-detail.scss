@@ -685,6 +685,161 @@
     margin-top: $spacing-xs;
   }
 
+  // --- Loyalty program section ---
+  &__loyalty-section {
+    background: $color-gray-50;
+    border: $border-width solid $color-gray-200;
+    border-radius: $border-radius-md;
+    padding: $spacing-lg;
+    transition: transform $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-sm;
+    }
+  }
+
+  &__loyalty-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $spacing-md;
+  }
+
+  &__loyalty-points {
+    @include flex-column;
+    gap: 2px;
+  }
+
+  &__loyalty-available {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-extrabold;
+    color: $color-gray-900;
+    line-height: $line-height-tight;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__loyalty-points-label {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+  }
+
+  &__loyalty-total {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__loyalty-tier-area {
+    @include flex-column;
+    align-items: flex-end;
+    gap: $spacing-sm;
+  }
+
+  &__loyalty-tier {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-wider;
+    padding: $spacing-2xs $spacing-sm;
+    border-radius: $border-radius-full;
+    color: var(--tier-color);
+    background: rgba(0, 0, 0, 0.04);
+    border: $border-width solid rgba(0, 0, 0, 0.08);
+
+    svg {
+      color: var(--tier-color);
+    }
+  }
+
+  &__loyalty-redeem {
+    font-family: $font-primary;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    background: rgba($color-primary, 0.08);
+    border: $border-width solid rgba($color-primary, 0.2);
+    border-radius: $border-radius-full;
+    padding: $spacing-2xs $spacing-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    &:hover {
+      background: rgba($color-primary, 0.15);
+      border-color: rgba($color-primary, 0.35);
+    }
+  }
+
+  &__loyalty-txns {
+    margin-top: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: $border-width solid $color-gray-200;
+    @include flex-column;
+    gap: $spacing-xs;
+  }
+
+  &__loyalty-txns-title {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-bold;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-caps;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__loyalty-txn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-sm;
+    border-radius: $border-radius-sm;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: $color-gray-100;
+    }
+  }
+
+  &__loyalty-txn-left {
+    @include flex-column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__loyalty-txn-type {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-gray-700;
+    @include truncate;
+  }
+
+  &__loyalty-txn-date {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+  }
+
+  &__loyalty-txn-points {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+
+    &--positive {
+      color: $color-success-dark;
+    }
+
+    &--negative {
+      color: $color-error;
+    }
+  }
+
   &__analytics-row {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

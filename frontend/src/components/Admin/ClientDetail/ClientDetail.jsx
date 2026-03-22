@@ -5,6 +5,15 @@ import { formatCurrency, formatDate, daysSince } from '../../../utils/formatters
 import { STATUS_META } from '../../../utils/clientStatus';
 import clientService from '../../../services/clientService';
 
+const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+const TIER_CONFIG = {
+  bronze: { label: 'Bronze', color: '#CD7F32' },
+  silver: { label: 'Silver', color: '#C0C0C0' },
+  gold:   { label: 'Gold',   color: '#FFD700' },
+  vip:    { label: 'VIP',    color: '#8B5CF6' },
+};
+
 const STATUS_OPTIONS = [
   { value: null, label: 'Automático' },
   { value: 'activo', label: 'Activo' },
@@ -23,6 +32,8 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const [addingNote, setAddingNote] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [loyalty, setLoyalty] = useState(null);
+  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
   const statusBtnRef = useRef(null);
   const b = 'client-detail';
 
@@ -30,6 +41,22 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   useEffect(() => { setLocalClient(clientProp); }, [clientProp]);
 
   const client = localClient;
+
+  const loadLoyalty = async (clientId) => {
+    setLoyaltyLoading(true);
+    try {
+      const res = await fetch(`${_API}/loyalty/client/${clientId}`, { credentials: 'include' });
+      if (res.ok) {
+        setLoyalty(await res.json());
+      } else {
+        setLoyalty(null);
+      }
+    } catch {
+      setLoyalty(null);
+    } finally {
+      setLoyaltyLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (client) {
@@ -39,6 +66,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       setShowStatusMenu(false);
       loadVisits();
       loadNotes();
+      loadLoyalty(client.id);
     }
   }, [client]);
 
@@ -275,6 +303,70 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                   </div>
                 ))}
               </div>
+
+              {/* Loyalty program */}
+              {loyalty?.account && (
+                <div className={`${b}__info-section`}>
+                  <h4 className={`${b}__section-title`}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                    </svg>
+                    Programa de Lealtad
+                  </h4>
+                  <div className={`${b}__loyalty-section`}>
+                    <div className={`${b}__loyalty-top`}>
+                      <div className={`${b}__loyalty-points`}>
+                        <span className={`${b}__loyalty-available`}>{(loyalty.account.available_points ?? 0).toLocaleString('es-CO')}</span>
+                        <span className={`${b}__loyalty-points-label`}>puntos disponibles</span>
+                        <span className={`${b}__loyalty-total`}>de {(loyalty.account.total_points ?? 0).toLocaleString('es-CO')} acumulados</span>
+                      </div>
+                      <div className={`${b}__loyalty-tier-area`}>
+                        {(() => {
+                          const tierKey = (loyalty.account.tier || 'bronze').toLowerCase();
+                          const tier = TIER_CONFIG[tierKey] || TIER_CONFIG.bronze;
+                          return (
+                            <span
+                              className={`${b}__loyalty-tier`}
+                              style={{ '--tier-color': tier.color }}
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                              </svg>
+                              {tier.label}
+                            </span>
+                          );
+                        })()}
+                        {loyalty.account.available_points > 0 && (
+                          <button className={`${b}__loyalty-redeem`}>
+                            Canjear puntos
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Recent transactions */}
+                    {loyalty.transactions?.length > 0 && (
+                      <div className={`${b}__loyalty-txns`}>
+                        <span className={`${b}__loyalty-txns-title`}>Últimas transacciones</span>
+                        {loyalty.transactions.slice(0, 5).map((tx, idx) => {
+                          const isPositive = tx.points > 0;
+                          return (
+                            <div key={tx.id || idx} className={`${b}__loyalty-txn`}>
+                              <div className={`${b}__loyalty-txn-left`}>
+                                <span className={`${b}__loyalty-txn-type`}>{tx.type || tx.description}</span>
+                                <span className={`${b}__loyalty-txn-date`}>{tx.created_at ? formatDate(tx.created_at.split('T')[0]) : ''}</span>
+                              </div>
+                              <span className={`${b}__loyalty-txn-points ${b}__loyalty-txn-points--${isPositive ? 'positive' : 'negative'}`}>
+                                {isPositive ? '+' : ''}{tx.points}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Contact info */}
               <div className={`${b}__info-section`}>

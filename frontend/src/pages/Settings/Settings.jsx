@@ -6,6 +6,8 @@ import { useTenant } from '../../context/TenantContext';
 import aiService from '../../services/aiService';
 import settingsService from '../../services/settingsService';
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
 // Model is managed by Plexify (dev), not by the agency admin
 
 const DEFAULT_PROMPT = `=== DATOS DEL NEGOCIO ===
@@ -225,6 +227,26 @@ const Settings = () => {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
+  // Loyalty Program state
+  const [loyaltyConfig, setLoyaltyConfig] = useState({
+    is_active: false,
+    points_per_currency: 1,
+    currency_unit: 10000,
+    tier_bronze_min: 100,
+    tier_silver_min: 500,
+    tier_gold_min: 1000,
+    tier_vip_min: 2500,
+    referral_bonus_referrer: 50,
+    referral_bonus_referred: 50,
+    birthday_bonus: 100,
+    redemption_rate: 100,
+  });
+  const [loyaltySaving, setLoyaltySaving] = useState(false);
+
+  // Google Reviews state
+  const [googleReviewUrl, setGoogleReviewUrl] = useState('');
+  const [googleSaving, setGoogleSaving] = useState(false);
+
   const handleDisconnect = async () => {
     setDisconnecting(true);
     try {
@@ -304,6 +326,67 @@ const Settings = () => {
   };
 
   const isTokenExpiringSoon = metaStatus?.days_until_expiry != null && metaStatus.days_until_expiry <= 7;
+
+  // Load loyalty config on mount
+  useEffect(() => {
+    const loadLoyaltyConfig = async () => {
+      try {
+        const res = await fetch(`${API_URL}/loyalty/config`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setLoyaltyConfig(prev => ({ ...prev, ...data }));
+        }
+      } catch { /* no config yet */ }
+    };
+    loadLoyaltyConfig();
+  }, []);
+
+  // Load Google Review URL from tenant data
+  useEffect(() => {
+    if (tenant?.google_review_url) {
+      setGoogleReviewUrl(tenant.google_review_url);
+    }
+  }, [tenant]);
+
+  const handleSaveLoyalty = async () => {
+    setLoyaltySaving(true);
+    try {
+      const res = await fetch(`${API_URL}/loyalty/config`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(loyaltyConfig),
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      addNotification('Programa de lealtad actualizado', 'success');
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setLoyaltySaving(false);
+    }
+  };
+
+  const handleLoyaltyChange = (field, value) => {
+    setLoyaltyConfig(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveGoogleReview = async () => {
+    setGoogleSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/settings/google-review-url`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ url: googleReviewUrl }),
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      addNotification('URL de Google Reviews guardada', 'success');
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setGoogleSaving(false);
+    }
+  };
 
   const b = 'settings';
 
@@ -581,6 +664,162 @@ const Settings = () => {
               Meta API: {metaTemplates.error}
             </div>
           )}
+        </Card>
+
+        {/* ========== LOYALTY PROGRAM ========== */}
+        <Card title="Programa de Lealtad" className={`${b}__card ${b}__card--loyalty`}>
+          <div className={`${b}__option`}>
+            <div className={`${b}__option-info`}>
+              <span className={`${b}__option-label`}>Activar programa de lealtad</span>
+              <span className={`${b}__option-desc`}>Los clientes acumulan puntos por cada visita y gasto</span>
+            </div>
+            <button
+              className={`${b}__toggle ${loyaltyConfig.is_active ? `${b}__toggle--active` : ''}`}
+              onClick={() => handleLoyaltyChange('is_active', !loyaltyConfig.is_active)}
+            >
+              <span className={`${b}__toggle-knob`} />
+            </button>
+          </div>
+
+          <div className={`${b}__meta-row`}>
+            <div className={`${b}__meta-field`}>
+              <label>Puntos por cada $X gastados</label>
+              <div className={`${b}__meta-row`}>
+                <input
+                  type="number"
+                  value={loyaltyConfig.points_per_currency}
+                  onChange={e => handleLoyaltyChange('points_per_currency', Number(e.target.value))}
+                  placeholder="1"
+                />
+                <input
+                  type="number"
+                  value={loyaltyConfig.currency_unit}
+                  onChange={e => handleLoyaltyChange('currency_unit', Number(e.target.value))}
+                  placeholder="10000"
+                />
+              </div>
+              <span className={`${b}__meta-hint`}>Ej: 1 punto por cada $10,000 gastados</span>
+            </div>
+          </div>
+
+          <div className={`${b}__meta-row`}>
+            <div className={`${b}__meta-field`}>
+              <label>Umbral Bronce</label>
+              <input
+                type="number"
+                value={loyaltyConfig.tier_bronze_min}
+                onChange={e => handleLoyaltyChange('tier_bronze_min', Number(e.target.value))}
+                placeholder="100"
+              />
+            </div>
+            <div className={`${b}__meta-field`}>
+              <label>Umbral Plata</label>
+              <input
+                type="number"
+                value={loyaltyConfig.tier_silver_min}
+                onChange={e => handleLoyaltyChange('tier_silver_min', Number(e.target.value))}
+                placeholder="500"
+              />
+            </div>
+          </div>
+
+          <div className={`${b}__meta-row`}>
+            <div className={`${b}__meta-field`}>
+              <label>Umbral Oro</label>
+              <input
+                type="number"
+                value={loyaltyConfig.tier_gold_min}
+                onChange={e => handleLoyaltyChange('tier_gold_min', Number(e.target.value))}
+                placeholder="1000"
+              />
+            </div>
+            <div className={`${b}__meta-field`}>
+              <label>Umbral VIP</label>
+              <input
+                type="number"
+                value={loyaltyConfig.tier_vip_min}
+                onChange={e => handleLoyaltyChange('tier_vip_min', Number(e.target.value))}
+                placeholder="2500"
+              />
+            </div>
+          </div>
+
+          <div className={`${b}__meta-row`}>
+            <div className={`${b}__meta-field`}>
+              <label>Bonus por referido (referrer)</label>
+              <input
+                type="number"
+                value={loyaltyConfig.referral_bonus_referrer}
+                onChange={e => handleLoyaltyChange('referral_bonus_referrer', Number(e.target.value))}
+                placeholder="50"
+              />
+            </div>
+            <div className={`${b}__meta-field`}>
+              <label>Bonus por referido (nuevo)</label>
+              <input
+                type="number"
+                value={loyaltyConfig.referral_bonus_referred}
+                onChange={e => handleLoyaltyChange('referral_bonus_referred', Number(e.target.value))}
+                placeholder="50"
+              />
+            </div>
+          </div>
+
+          <div className={`${b}__meta-row`}>
+            <div className={`${b}__meta-field`}>
+              <label>Bonus cumpleanos</label>
+              <input
+                type="number"
+                value={loyaltyConfig.birthday_bonus}
+                onChange={e => handleLoyaltyChange('birthday_bonus', Number(e.target.value))}
+                placeholder="100"
+              />
+            </div>
+            <div className={`${b}__meta-field`}>
+              <label>Tasa de canje (puntos por $1)</label>
+              <input
+                type="number"
+                value={loyaltyConfig.redemption_rate}
+                onChange={e => handleLoyaltyChange('redemption_rate', Number(e.target.value))}
+                placeholder="100"
+              />
+            </div>
+          </div>
+
+          <div className={`${b}__meta-actions`}>
+            <button
+              className={`${b}__ai-save`}
+              onClick={handleSaveLoyalty}
+              disabled={loyaltySaving}
+            >
+              {loyaltySaving ? 'Guardando...' : 'Guardar programa de lealtad'}
+            </button>
+          </div>
+        </Card>
+
+        {/* ========== GOOGLE REVIEWS ========== */}
+        <Card title="Google Reviews" className={`${b}__card ${b}__card--google`}>
+          <div className={`${b}__meta-field`}>
+            <label>URL de Google Reviews</label>
+            <input
+              type="url"
+              value={googleReviewUrl}
+              onChange={e => setGoogleReviewUrl(e.target.value)}
+              placeholder="https://g.page/r/xxx/review"
+            />
+            <span className={`${b}__meta-hint`}>
+              Cuando un cliente califique 4-5 estrellas, sera redirigido a esta URL para dejar su resena.
+            </span>
+          </div>
+          <div className={`${b}__meta-actions`}>
+            <button
+              className={`${b}__ai-save`}
+              onClick={handleSaveGoogleReview}
+              disabled={googleSaving || !googleReviewUrl.trim()}
+            >
+              {googleSaving ? 'Guardando...' : 'Guardar URL'}
+            </button>
+          </div>
         </Card>
       </div>
 
