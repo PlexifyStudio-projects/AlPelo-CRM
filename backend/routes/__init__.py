@@ -17,6 +17,7 @@ from .schedule_endpoints import router as schedule_router
 from .loyalty_endpoints import router as loyalty_router
 from .review_endpoints import router as review_router
 from .pos_endpoints import router as pos_router
+from .ai_strategy_endpoints import router as ai_strategy_router
 
 __all__ = [
     "create_router",
@@ -38,4 +39,5 @@ __all__ = [
     "loyalty_router",
     "review_router",
     "pos_router",
+    "ai_strategy_router",
 ]
