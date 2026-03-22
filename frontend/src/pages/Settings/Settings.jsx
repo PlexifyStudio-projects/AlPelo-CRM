@@ -671,7 +671,7 @@ const Settings = () => {
           <div className={`${b}__option`}>
             <div className={`${b}__option-info`}>
               <span className={`${b}__option-label`}>Activar programa de lealtad</span>
-              <span className={`${b}__option-desc`}>Tus clientes acumulan puntos con cada visita y pueden canjearlos por descuentos</span>
+              <span className={`${b}__option-desc`}>Tus clientes acumulan credito con cada visita y lo usan como descuento</span>
             </div>
             <button
               className={`${b}__toggle ${loyaltyConfig.is_active ? `${b}__toggle--active` : ''}`}
@@ -681,92 +681,82 @@ const Settings = () => {
             </button>
           </div>
 
-          {/* HOW POINTS ARE EARNED */}
-          <div style={{ padding: '16px 0', borderBottom: '1px solid #E2E8F0' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '12px' }}>Como se ganan los puntos</h4>
+          {/* ACUMULACION */}
+          <div style={{ padding: '20px 0', borderBottom: '1px solid #E2E8F0' }}>
+            <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#1E293B', marginBottom: '16px' }}>Acumulacion de credito</h4>
             <div className={`${b}__meta-row`}>
-              <div className={`${b}__meta-field`} style={{ flex: 1 }}>
-                <label>Cada $ gastados por el cliente, gana 1 punto</label>
-                <input
-                  type="number"
-                  value={loyaltyConfig.currency_unit}
-                  onChange={e => handleLoyaltyChange('currency_unit', Number(e.target.value))}
-                  placeholder="10000"
-                />
-                <span className={`${b}__meta-hint`}>
-                  Ejemplo: Si pones $10,000 y un corte cuesta $40,000 → el cliente gana <strong>{loyaltyConfig.currency_unit > 0 ? Math.floor(40000 / loyaltyConfig.currency_unit * (loyaltyConfig.points_per_currency || 1)) : 0} puntos</strong> por ese corte
-                </span>
+              <div className={`${b}__meta-field`}>
+                <label>Por cada $ que gaste el cliente...</label>
+                <input type="number" value={loyaltyConfig.currency_unit} onChange={e => handleLoyaltyChange('currency_unit', Number(e.target.value))} placeholder="10000" />
+              </div>
+              <div className={`${b}__meta-field`}>
+                <label>...recibe $ en credito de descuento</label>
+                <input type="number" value={Math.round((loyaltyConfig.points_per_currency || 1) * (loyaltyConfig.redemption_rate || 0.1) * 1000)} onChange={e => {
+                  const creditPerPoint = Number(e.target.value);
+                  const rate = creditPerPoint / 1000;
+                  handleLoyaltyChange('redemption_rate', rate);
+                  handleLoyaltyChange('points_per_currency', 1);
+                }} placeholder="500" />
               </div>
             </div>
-          </div>
-
-          {/* HOW POINTS ARE REDEEMED */}
-          <div style={{ padding: '16px 0', borderBottom: '1px solid #E2E8F0' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '12px' }}>Como se canjean los puntos</h4>
-            <div className={`${b}__meta-field`}>
-              <label>Cuantos puntos equivalen a $1,000 de descuento</label>
-              <input
-                type="number"
-                value={loyaltyConfig.redemption_rate > 0 ? Math.round(1 / loyaltyConfig.redemption_rate) : 10}
-                onChange={e => {
-                  const val = Number(e.target.value);
-                  handleLoyaltyChange('redemption_rate', val > 0 ? 1 / val : 0.1);
-                }}
-                placeholder="10"
-              />
-              <span className={`${b}__meta-hint`}>
-                Ejemplo: Si un cliente tiene 50 puntos, puede canjear <strong>${loyaltyConfig.redemption_rate > 0 ? (50 * loyaltyConfig.redemption_rate * 1000).toLocaleString('es-CO') : '?'}</strong> de descuento
+            <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px', padding: '12px 16px', marginTop: '12px' }}>
+              <span style={{ fontSize: '13px', color: '#166534' }}>
+                Ejemplo con un corte de <strong>$40,000</strong>: el cliente acumula <strong>${loyaltyConfig.currency_unit > 0 ? Math.floor(40000 / loyaltyConfig.currency_unit) : 0} creditos</strong> = <strong>${loyaltyConfig.currency_unit > 0 ? (Math.floor(40000 / loyaltyConfig.currency_unit) * Math.round((loyaltyConfig.points_per_currency || 1) * (loyaltyConfig.redemption_rate || 0.1) * 1000)).toLocaleString('es-CO') : '0'}</strong> en descuentos futuros
               </span>
             </div>
           </div>
 
-          {/* TIERS */}
-          <div style={{ padding: '16px 0', borderBottom: '1px solid #E2E8F0' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>Niveles de cliente</h4>
-            <span className={`${b}__meta-hint`} style={{ marginBottom: '12px', display: 'block' }}>Los clientes suben de nivel al acumular puntos. Usa esto para dar trato preferencial a tus mejores clientes.</span>
+          {/* NIVELES */}
+          <div style={{ padding: '20px 0', borderBottom: '1px solid #E2E8F0' }}>
+            <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>Niveles de cliente</h4>
+            <span className={`${b}__meta-hint`} style={{ marginBottom: '16px', display: 'block' }}>Los clientes suben de nivel segun cuanto han gastado en total. Esto te ayuda a identificar y premiar a tus mejores clientes.</span>
             <div className={`${b}__meta-row`}>
               <div className={`${b}__meta-field`}>
-                <label style={{ color: '#CD7F32' }}>Bronce (desde X puntos)</label>
+                <label style={{ color: '#CD7F32', fontWeight: 600 }}>Bronce</label>
                 <input type="number" value={loyaltyConfig.tier_bronze_min} onChange={e => handleLoyaltyChange('tier_bronze_min', Number(e.target.value))} placeholder="0" />
+                <span className={`${b}__meta-hint`}>Desde este credito acumulado</span>
               </div>
               <div className={`${b}__meta-field`}>
-                <label style={{ color: '#94A3B8' }}>Plata (desde X puntos)</label>
+                <label style={{ color: '#64748B', fontWeight: 600 }}>Plata</label>
                 <input type="number" value={loyaltyConfig.tier_silver_min} onChange={e => handleLoyaltyChange('tier_silver_min', Number(e.target.value))} placeholder="100" />
+                <span className={`${b}__meta-hint`}>Cliente frecuente</span>
               </div>
             </div>
             <div className={`${b}__meta-row`}>
               <div className={`${b}__meta-field`}>
-                <label style={{ color: '#F59E0B' }}>Oro (desde X puntos)</label>
+                <label style={{ color: '#F59E0B', fontWeight: 600 }}>Oro</label>
                 <input type="number" value={loyaltyConfig.tier_gold_min} onChange={e => handleLoyaltyChange('tier_gold_min', Number(e.target.value))} placeholder="500" />
+                <span className={`${b}__meta-hint`}>Cliente leal</span>
               </div>
               <div className={`${b}__meta-field`}>
-                <label style={{ color: '#8B5CF6' }}>VIP (desde X puntos)</label>
+                <label style={{ color: '#8B5CF6', fontWeight: 600 }}>VIP</label>
                 <input type="number" value={loyaltyConfig.tier_vip_min} onChange={e => handleLoyaltyChange('tier_vip_min', Number(e.target.value))} placeholder="1500" />
+                <span className={`${b}__meta-hint`}>Tu mejor cliente</span>
               </div>
             </div>
           </div>
 
-          {/* BONUSES */}
-          <div style={{ padding: '16px 0' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>Bonificaciones</h4>
-            <span className={`${b}__meta-hint`} style={{ marginBottom: '12px', display: 'block' }}>Puntos extra que se otorgan automaticamente en situaciones especiales.</span>
+          {/* BONIFICACIONES */}
+          <div style={{ padding: '20px 0' }}>
+            <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>Bonificaciones automaticas</h4>
+            <span className={`${b}__meta-hint`} style={{ marginBottom: '16px', display: 'block' }}>Creditos extra que se dan automaticamente en estas situaciones.</span>
             <div className={`${b}__meta-row`}>
               <div className={`${b}__meta-field`}>
-                <label>Quien refiere gana (puntos)</label>
+                <label>Si un cliente trae a alguien nuevo</label>
                 <input type="number" value={loyaltyConfig.referral_bonus_referrer} onChange={e => handleLoyaltyChange('referral_bonus_referrer', Number(e.target.value))} placeholder="50" />
-                <span className={`${b}__meta-hint`}>Cuando un cliente trae a alguien nuevo</span>
+                <span className={`${b}__meta-hint`}>Creditos para quien refiere</span>
               </div>
               <div className={`${b}__meta-field`}>
-                <label>El nuevo cliente gana (puntos)</label>
+                <label>Bienvenida para el referido</label>
                 <input type="number" value={loyaltyConfig.referral_bonus_referred} onChange={e => handleLoyaltyChange('referral_bonus_referred', Number(e.target.value))} placeholder="25" />
-                <span className={`${b}__meta-hint`}>Bono de bienvenida para el referido</span>
+                <span className={`${b}__meta-hint`}>Creditos para el cliente nuevo</span>
               </div>
             </div>
             <div className={`${b}__meta-row`}>
               <div className={`${b}__meta-field`}>
-                <label>Bono de cumpleanos (puntos)</label>
+                <label>Bono de cumpleanos</label>
                 <input type="number" value={loyaltyConfig.birthday_bonus} onChange={e => handleLoyaltyChange('birthday_bonus', Number(e.target.value))} placeholder="100" />
-                <span className={`${b}__meta-hint`}>Se otorga automaticamente en el mes de su cumpleanos</span>
+                <span className={`${b}__meta-hint`}>Se le da automaticamente en su mes de cumpleanos</span>
               </div>
             </div>
           </div>
