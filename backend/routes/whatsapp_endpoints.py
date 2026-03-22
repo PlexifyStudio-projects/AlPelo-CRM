@@ -915,16 +915,43 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                             profile = contact.get("profile", {})
                             contact_name = profile.get("name")
 
-                    conv = db.query(WhatsAppConversation).filter(
+                    conv_q = db.query(WhatsAppConversation).filter(
                         WhatsAppConversation.wa_contact_phone == from_phone
-                    ).first()
+                    )
+                    if tenant_id:
+                        conv_q = conv_q.filter(WhatsAppConversation.tenant_id == tenant_id)
+                    conv = conv_q.first()
+
+                    # Auto-link existing conversation to CRM client if not linked yet
+                    if conv and not conv.client_id:
+                        clean_phone = re.sub(r'\D', '', from_phone)
+                        clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
+                        link_q = db.query(Client).filter(Client.is_active == True)
+                        if tenant_id:
+                            link_q = link_q.filter(Client.tenant_id == tenant_id)
+                        for c in link_q.all():
+                            c_clean = re.sub(r'\D', '', c.phone or '')
+                            if c_clean[-10:] == clean_last10:
+                                conv.client_id = c.id
+                                db.flush()
+                                print(f"[WA] Auto-linked conv {conv.id} to client {c.client_id} ({c.name})")
+                                break
 
                     if not conv:
-                        # Try to match with existing ACTIVE client only
-                        client = db.query(Client).filter(
-                            Client.phone.contains(from_phone[-10:]),
-                            Client.is_active == True
-                        ).first()
+                        # Try to match with existing ACTIVE client — normalize phone for comparison
+                        # Strip all non-digits for matching (handles formatted phones like "+57 (314) 708-3182")
+                        clean_phone = re.sub(r'\D', '', from_phone)
+                        clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
+                        client_q = db.query(Client).filter(Client.is_active == True)
+                        if tenant_id:
+                            client_q = client_q.filter(Client.tenant_id == tenant_id)
+                        all_clients = client_q.all()
+                        client = None
+                        for c in all_clients:
+                            c_clean = re.sub(r'\D', '', c.phone or '')
+                            if c_clean[-10:] == clean_last10:
+                                client = c
+                                break
                         conv = WhatsAppConversation(
                             wa_contact_phone=from_phone,
                             wa_contact_name=contact_name,
@@ -1589,20 +1616,39 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     print(f"[Lina IA] Action parse error: {action_err}")
                     log_event("error", "Error parseando accion", detail=str(action_err)[:200], conv_id=conv_id, status="error")
 
-            # CONFLICT/ERROR OVERRIDE: If any action failed, replace the response entirely
+            # CONFLICT/ERROR HANDLING: If any action failed, ask AI to generate a client-friendly response
+            # NEVER send raw error messages to the client — they contain internal data
             _all_results = getattr(ai_auto_reply, '_action_results', [])
             _conflicts = [r for r in _all_results if "CONFLICTO" in r]
             _errors = [r for r in _all_results if "ERROR" in r and "CONFLICTO" not in r]
-            if _conflicts:
-                # Build honest response from conflict details
-                conflict_parts = []
-                for c in _conflicts:
-                    clean_c = c.replace("CONFLICTO: ", "").strip()
-                    conflict_parts.append(clean_c)
-                ai_response = "No pude agendar la cita: " + " ".join(conflict_parts)
-                print(f"[Lina IA] CONFLICT OVERRIDE — {len(_conflicts)} conflict(s) detected, response replaced")
-            elif _errors:
-                ai_response = "Hubo un problema: " + " | ".join(e.replace("ERROR: ", "") for e in _errors)
+            if _conflicts or _errors:
+                all_issues = _conflicts + _errors
+                print(f"[Lina IA] ACTION ISSUES — {len(all_issues)} problem(s) detected, asking AI for client-friendly response")
+                log_event("error", f"Accion fallida — regenerando respuesta", detail=str(all_issues)[:300], conv_id=conv_id, status="warning")
+                try:
+                    # Ask AI to generate a friendly client-facing response about the issue
+                    issue_summary = "; ".join(all_issues)
+                    friendly_msg = (
+                        f"[SISTEMA: La accion que intentaste ejecutar FALLO con este resultado interno: {issue_summary}. "
+                        f"GENERA una respuesta AMIGABLE para el cliente explicando el problema SIN mostrar datos tecnicos, "
+                        f"IDs internos, nombres de otros clientes, ni mensajes de error. "
+                        f"Si hay conflicto de horario, sugiere horarios alternativos disponibles. "
+                        f"Responde en maximo 2 oraciones, de forma natural y calida.]\n\n{inbound_text}"
+                    )
+                    friendly_response = await _call_ai(system_prompt, history, friendly_msg, tenant_id=_conv_tid)
+                    if friendly_response and friendly_response.strip():
+                        # Strip any action blocks from the friendly response
+                        friendly_response = re.sub(r'`{1,3}\s*action.*', '', friendly_response, flags=re.DOTALL | re.IGNORECASE)
+                        friendly_response = re.sub(r'\{[^}]*"action"\s*:.*?\}', '', friendly_response, flags=re.DOTALL).strip()
+                        if friendly_response:
+                            ai_response = friendly_response
+                except Exception as friendly_err:
+                    print(f"[Lina IA] Failed to generate friendly error response: {friendly_err}")
+                    # Ultimate fallback — NEVER send raw error, send generic message
+                    if _conflicts:
+                        ai_response = "Ese horario no esta disponible. Quieres que te busque otro horario?"
+                    else:
+                        ai_response = "Hubo un inconveniente, pero ya lo estoy revisando. Dame un momento."
             # Reset for next call
             ai_auto_reply._action_results = []
 
