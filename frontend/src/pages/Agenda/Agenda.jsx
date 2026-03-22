@@ -1312,7 +1312,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           onClose={() => setCheckoutApt(null)}
           onCompleted={() => {
             setCheckoutApt(null);
-            loadAppointments();
+            loadData();
             addNotification('Cobro realizado exitosamente', 'success');
           }}
         />
