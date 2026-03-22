@@ -241,6 +241,9 @@ class Tenant(Base):
     ai_personality = Column(Text, nullable=True)
     ai_model = Column(String(100), nullable=False, default="claude-sonnet-4-20250514", server_default="claude-sonnet-4-20250514")
 
+    # Google Reviews
+    google_review_url = Column(String(500), nullable=True)
+
     # Business info
     timezone = Column(String(50), nullable=False, default="America/Bogota")
     currency = Column(String(10), nullable=False, default="COP")
@@ -259,6 +262,9 @@ class Tenant(Base):
     # Message metering
     messages_used = Column(Integer, nullable=False, default=0)
     messages_limit = Column(Integer, nullable=False, default=5000)
+
+    # Google Reviews
+    google_review_url = Column(String(500), nullable=True)  # e.g. "https://g.page/r/xxx/review"
 
     # Meta
     created_at = Column(DateTime, default=datetime.utcnow)

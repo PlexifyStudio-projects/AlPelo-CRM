@@ -1268,34 +1268,27 @@ def fix_conversation_links(db: Session = Depends(get_db), user: Admin = Depends(
     all_clients = db.query(Client).filter(Client.is_active == True).all()
     all_convs = db.query(WhatsAppConversation).all()
 
+    details = []
     for conv in all_convs:
         conv_phone_clean = re_mod.sub(r'\D', '', conv.wa_contact_phone or '')
         conv_last10 = conv_phone_clean[-10:] if len(conv_phone_clean) >= 10 else conv_phone_clean
 
-        # Fix missing tenant_id — match via phone_number_id or first active tenant
-        if not conv.tenant_id:
-            for t in tenants:
-                # If we can match by client's tenant, use that
-                if conv.client_id:
-                    linked = db.query(Client).filter(Client.id == conv.client_id).first()
-                    if linked and linked.tenant_id:
-                        conv.tenant_id = linked.tenant_id
-                        fixed_tenant += 1
-                        break
-                else:
-                    # Default to first active tenant
-                    conv.tenant_id = tenants[0].id if tenants else None
-                    fixed_tenant += 1
-                    break
+        # Fix missing tenant_id — default to first active tenant
+        if conv.tenant_id is None:
+            if tenants:
+                conv.tenant_id = tenants[0].id
+                fixed_tenant += 1
+                details.append(f"conv {conv.id}: tenant_id -> {tenants[0].id}")
 
         # Fix missing client_id — match by normalized phone
-        if not conv.client_id and conv_last10:
+        if conv.client_id is None and conv_last10:
             for c in all_clients:
                 c_clean = re_mod.sub(r'\D', '', c.phone or '')
                 c_last10 = c_clean[-10:] if len(c_clean) >= 10 else c_clean
                 if c_last10 == conv_last10 and c_last10:
                     conv.client_id = c.id
                     fixed_client += 1
+                    details.append(f"conv {conv.id}: client_id -> {c.id} ({c.name})")
                     break
 
     db.commit()
@@ -1304,4 +1297,5 @@ def fix_conversation_links(db: Session = Depends(get_db), user: Admin = Depends(
         "conversations_fixed_client": fixed_client,
         "conversations_fixed_tenant": fixed_tenant,
         "total_conversations": len(all_convs),
+        "details": details,
     }
