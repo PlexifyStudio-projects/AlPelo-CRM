@@ -457,3 +457,77 @@ def check_staff_availability(
         return results[0]
 
     return results
+
+
+# ============================================================================
+# GET /staff/{staff_id}/clients-attended — Unique clients served by this staff
+# ============================================================================
+
+@router.get("/staff/{staff_id}/clients-attended")
+def get_staff_clients_attended(
+    staff_id: int,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Return unique clients this staff has served, with visit stats."""
+    tid = safe_tid(user, db)
+    from database.models import Client, VisitHistory
+    from sqlalchemy import func, distinct
+
+    staff = db.query(Staff).filter(Staff.id == staff_id)
+    if tid:
+        staff = staff.filter(Staff.tenant_id == tid)
+    staff = staff.first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff no encontrado")
+
+    # Get all completed appointments for this staff, grouped by client
+    apt_q = db.query(
+        Appointment.client_id,
+        Appointment.client_name,
+        func.count(Appointment.id).label("visit_count"),
+        func.sum(Appointment.price).label("total_spent"),
+        func.max(Appointment.date).label("last_visit"),
+    ).filter(
+        Appointment.staff_id == staff_id,
+        Appointment.status.in_(["completed", "paid"]),
+    )
+    if tid:
+        apt_q = apt_q.filter(Appointment.tenant_id == tid)
+
+    client_stats = apt_q.group_by(Appointment.client_id, Appointment.client_name).all()
+
+    clients = []
+    total_revenue = 0
+    for cs in client_stats:
+        client = db.query(Client).filter(Client.id == cs.client_id).first() if cs.client_id else None
+        # Get last service name
+        last_apt = db.query(Appointment).filter(
+            Appointment.staff_id == staff_id,
+            Appointment.client_id == cs.client_id,
+            Appointment.status.in_(["completed", "paid"]),
+        ).order_by(Appointment.date.desc()).first()
+
+        spent = int(cs.total_spent or 0)
+        total_revenue += spent
+
+        clients.append({
+            "id": cs.client_id or 0,
+            "clientId": client.client_id if client else "?",
+            "name": client.name if client else cs.client_name or "?",
+            "lastService": last_apt.service_name if last_apt else "?",
+            "lastVisit": str(cs.last_visit) if cs.last_visit else None,
+            "totalVisits": cs.visit_count or 0,
+            "totalSpent": spent,
+        })
+
+    # Sort by total visits descending
+    clients.sort(key=lambda c: c["totalVisits"], reverse=True)
+
+    return {
+        "staff_id": staff_id,
+        "staff_name": staff.name,
+        "clients": clients,
+        "total_revenue": total_revenue,
+        "total_clients": len(clients),
+    }

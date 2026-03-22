@@ -742,10 +742,23 @@ const ScheduleEditor = ({ staffId }) => {
 };
 
 const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) => {
-  // Visit data comes from the API — no mock data
-  const visits = [];
-  const clientHistory = [];
-  const totalRevenue = 0;
+  const [clientHistory, setClientHistory] = useState([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+
+  useEffect(() => {
+    if (!member?.id) return;
+    const loadClients = async () => {
+      try {
+        const res = await fetch(`${_API}/staff/${member.id}/clients-attended`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setClientHistory(data.clients || []);
+          setTotalRevenue(data.total_revenue || 0);
+        }
+      } catch (err) { console.error('Error loading staff clients:', err); }
+    };
+    loadClients();
+  }, [member?.id]);
 
   return createPortal(
     <div className={`${b}__drawer-overlay`} onClick={onClose}>
@@ -785,7 +798,7 @@ const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) =>
             <span className={`${b}__drawer-stat-label`}>Clientes</span>
           </div>
           <div className={`${b}__drawer-stat`}>
-            <span className={`${b}__drawer-stat-value`}>{visits.length}</span>
+            <span className={`${b}__drawer-stat-value`}>{clientHistory.reduce((sum, c) => sum + (c.totalVisits || 0), 0)}</span>
             <span className={`${b}__drawer-stat-label`}>Atenciones</span>
           </div>
           <div className={`${b}__drawer-stat`}>
