@@ -462,7 +462,6 @@ JSON:
   ],
   "campana_recuperacion": "Mensaje de WhatsApp listo para enviar a todos los perdidos (max 400 chars, emocional, con llamada a la accion)"
 }}"""
-Incluye plan para cada uno de los clientes listados."""
 
     return _call_strategy_ai(system, data_context, tenant_id=tid)
 
@@ -866,27 +865,14 @@ TOP {len(top_clients)} CLIENTES POR VALOR (nombre | visitas con este profesional
 {chr(10).join(f"- {c['name']} | {c['visits_with_staff']} visitas | ${c['total_spent']:,} COP | {c['last_visit']} | {', '.join(c['services'])}" for c in top_clients)}
 """
 
-    system = f"""Eres un especialista en retencion de clientes para negocios de belleza en Colombia.
-Un profesional se fue del negocio. Debes generar un plan para retener a sus clientes usando la oferta proporcionada.
-Responde SOLO en español colombiano. Responde UNICAMENTE con un JSON valido (sin texto adicional).
-
-El JSON debe tener esta estructura:
-```json
-{{
-  "staff_name": "{staff_name}",
-  "total_clients": {len(client_details)},
-  "clients": [
-    {{
-      "name": "Nombre del cliente",
-      "visits": 12,
-      "total_spent": 450000,
-      "last_visit": "2026-03-01",
-      "recovery_plan": "Plan personalizado para este cliente (2-3 oraciones)"
-    }}
-  ],
-  "campaign_suggestion": "Texto sugerido para mensaje masivo de WhatsApp con la oferta (max 1024 chars)"
-}}
-```
-Incluye plan para cada uno de los clientes listados."""
+    system = (
+        f"Eres un especialista en retencion de clientes para negocios de servicios en Colombia. "
+        f"Un profesional ({staff_name}) se fue del negocio. Genera un plan para retener a sus clientes usando la oferta: {body.offer_description}. "
+        f"Responde SOLO en español colombiano. Responde UNICAMENTE con JSON valido. "
+        f"REGLAS: NO precios en pesos (usa porcentajes). Campana max 400 chars, emocional, con llamada a la accion. "
+        f"JSON: {{\"resumen\": \"Situacion en 1 oracion\", \"staff_name\": \"{staff_name}\", \"total_clientes\": {len(client_details)}, "
+        f"\"clientes_prioritarios\": [{{\"nombre\": \"X\", \"visitas\": N, \"gastado\": N, \"plan\": \"1 oracion\"}}], "
+        f"\"campana_retencion\": \"Mensaje WhatsApp listo para enviar (max 400 chars)\"}}"
+    )
 
     return _call_strategy_ai(system, data_context, tenant_id=tid)
