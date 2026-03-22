@@ -169,16 +169,13 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
           {user && (
             <>
               <div className={`${b}__user-section`}>
-                <div className={`${b}__user-avatar-wrap`}>
-                  <button
-                    className={`${b}__user-avatar`}
-                    onClick={() => handleNav('dev-profile')}
-                    title={collapsed ? 'Mi Perfil' : undefined}
-                  >
-                    {(user.name || 'D').charAt(0).toUpperCase()}
-                  </button>
-                  <span className={`${b}__user-status-dot`} />
-                </div>
+                <button
+                  className={`${b}__user-avatar`}
+                  onClick={() => handleNav('dev-profile')}
+                  title={collapsed ? 'Mi Perfil' : undefined}
+                >
+                  {(user.name || 'D').charAt(0).toUpperCase()}
+                </button>
                 {!collapsed && (
                   <div className={`${b}__user-info`}>
                     <button
@@ -188,7 +185,10 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
                     >
                       {user.name || 'Developer'}
                     </button>
-                    <span className={`${b}__user-role`}>Desarrollador</span>
+                    <span className={`${b}__user-role`}>
+                      <span className={`${b}__user-status-dot`} />
+                      Desarrollador
+                    </span>
                   </div>
                 )}
               </div>
