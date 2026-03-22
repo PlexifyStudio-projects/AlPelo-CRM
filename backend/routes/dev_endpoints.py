@@ -1272,16 +1272,17 @@ def fix_conversation_links(db: Session = Depends(get_db), user: Admin = Depends(
     for conv in all_convs:
         conv_phone_clean = re_mod.sub(r'\D', '', conv.wa_contact_phone or '')
         conv_last10 = conv_phone_clean[-10:] if len(conv_phone_clean) >= 10 else conv_phone_clean
+        details.append(f"conv {conv.id}: phone={conv.wa_contact_phone} last10={conv_last10} client_id={conv.client_id} tenant_id={conv.tenant_id}")
 
         # Fix missing tenant_id — default to first active tenant
-        if conv.tenant_id is None:
+        if not conv.tenant_id:
             if tenants:
                 conv.tenant_id = tenants[0].id
                 fixed_tenant += 1
-                details.append(f"conv {conv.id}: tenant_id -> {tenants[0].id}")
+                details.append(f"  -> fixed tenant_id to {tenants[0].id}")
 
         # Fix missing client_id — match by normalized phone
-        if conv.client_id is None and conv_last10:
+        if not conv.client_id and conv_last10:
             for c in all_clients:
                 c_clean = re_mod.sub(r'\D', '', c.phone or '')
                 c_last10 = c_clean[-10:] if len(c_clean) >= 10 else c_clean
