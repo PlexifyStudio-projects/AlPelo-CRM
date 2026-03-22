@@ -286,7 +286,8 @@ const ChatAI = () => {
       });
       const data = await res.json();
       const content = formatStrategyResponse(data);
-      const aiMsg = { id: generateId(), role: 'assistant', content, timestamp: new Date().toISOString() };
+      const campaignText = data.campana || data.campaign_copy || data.campana_recuperacion || data.campana_retencion || data.campaign_suggestion || null;
+      const aiMsg = { id: generateId(), role: 'assistant', content, timestamp: new Date().toISOString(), campaignText };
       setMessages((prev) => [...prev, aiMsg]);
     } catch (err) {
       const errorMsg = { id: generateId(), role: 'assistant', isError: true, timestamp: new Date().toISOString(), content: `Error al ejecutar ${strategy.label}: ${err.message}` };
@@ -295,6 +296,42 @@ const ChatAI = () => {
       setStrategyLoading(null);
     }
   }, [strategyLoading, formatStrategyResponse]);
+
+  const handleAuthorizeCampaign = useCallback(async (campaignText) => {
+    try {
+      // Create campaign in DB
+      const res = await fetch(`${API_URL}/campaigns`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `Campaña IA — ${new Date().toLocaleDateString('es-CO')}`,
+          campaign_type: 'promo',
+          message_body: campaignText,
+          status: 'draft',
+        }),
+      });
+      if (!res.ok) throw new Error('Error al crear campaña');
+      const campaign = await res.json();
+
+      // Submit to Meta for approval
+      const metaRes = await fetch(`${API_URL}/campaigns/${campaign.id}/submit-to-meta`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      const confirmMsg = {
+        id: generateId(), role: 'assistant', timestamp: new Date().toISOString(),
+        content: metaRes.ok
+          ? `✅ Campaña creada y enviada a Meta para aprobación.\n\nPuedes verla en Campañas. Cuando Meta la apruebe, podrás enviarla a tus clientes.`
+          : `✅ Campaña creada en Campañas (borrador).\n\n⚠️ No se pudo enviar a Meta automáticamente. Ve a Campañas para enviarla manualmente.`,
+      };
+      setMessages((prev) => [...prev, confirmMsg]);
+    } catch (err) {
+      const errorMsg = { id: generateId(), role: 'assistant', isError: true, timestamp: new Date().toISOString(), content: `Error: ${err.message}` };
+      setMessages((prev) => [...prev, errorMsg]);
+    }
+  }, []);
 
   const handleStaffRetentionSubmit = useCallback(async () => {
     if (!selectedStaffId || !offerDescription.trim()) return;
@@ -441,6 +478,20 @@ const ChatAI = () => {
                               {msg.imagePreview && <img src={msg.imagePreview} alt="Adjunto" className="chat-ai__msg-image" />}
                               <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
                             </>
+                          )}
+                          {msg.campaignText && (
+                            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                              <button
+                                onClick={() => handleAuthorizeCampaign(msg.campaignText)}
+                                style={{
+                                  background: '#059669', color: '#fff', border: 'none', borderRadius: '8px',
+                                  padding: '10px 20px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'center',
+                                }}
+                              >
+                                ✅ Autorizar y enviar a Meta para aprobación
+                              </button>
+                            </div>
                           )}
                         </div>
                         <span className="chat-ai__time">{formatTime(msg.timestamp)}</span>
@@ -609,15 +660,15 @@ const ChatAI = () => {
         {sidebarOpen && (
           <aside className="chat-ai__sidebar">
             <div className="chat-ai__sidebar-section">
-              <h4 className="chat-ai__sidebar-title">Esta conversacion</h4>
+              <h4 className="chat-ai__sidebar-title">Uso de IA</h4>
               <div className="chat-ai__sidebar-stats">
                 <div className="chat-ai__sidebar-stat">
-                  <span className="chat-ai__sidebar-stat-val">{responseCount}</span>
-                  <span className="chat-ai__sidebar-stat-lbl">Respuestas</span>
+                  <span className="chat-ai__sidebar-stat-val">{tenant.messages_used?.toLocaleString('es-CO') || 0}</span>
+                  <span className="chat-ai__sidebar-stat-lbl">Mensajes total</span>
                 </div>
                 <div className="chat-ai__sidebar-stat">
                   <span className="chat-ai__sidebar-stat-val">{tokenCount.toLocaleString()}</span>
-                  <span className="chat-ai__sidebar-stat-lbl">Tokens</span>
+                  <span className="chat-ai__sidebar-stat-lbl">Tokens sesion</span>
                 </div>
               </div>
             </div>
