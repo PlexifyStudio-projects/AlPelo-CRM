@@ -622,3 +622,116 @@ class Campaign(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+# ============================================================================
+# STAFF SCHEDULE — Working hours per staff member per day of week
+# ============================================================================
+
+class StaffSchedule(Base):
+    """Weekly working hours for each staff member."""
+    __tablename__ = "staff_schedule"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
+    day_of_week = Column(Integer, nullable=False)  # 0=Monday ... 6=Sunday (Python weekday)
+    start_time = Column(String(5), nullable=True)  # "09:00"
+    end_time = Column(String(5), nullable=True)  # "19:00"
+    break_start = Column(String(5), nullable=True)  # "12:00"
+    break_end = Column(String(5), nullable=True)  # "13:00"
+    is_working = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    staff = relationship("Staff", foreign_keys=[staff_id])
+
+
+class StaffDayOff(Base):
+    """Specific days off for staff (vacations, sick days, etc.)."""
+    __tablename__ = "staff_day_off"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
+    date = Column(Date, nullable=False)
+    reason = Column(String(200), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    staff = relationship("Staff", foreign_keys=[staff_id])
+
+
+# ============================================================================
+# LOYALTY PROGRAM — Points, tiers, transactions
+# ============================================================================
+
+class LoyaltyConfig(Base):
+    """Per-tenant loyalty program configuration."""
+    __tablename__ = "loyalty_config"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False, unique=True)
+    points_per_currency = Column(Float, default=1.0)  # points earned per currency_unit spent
+    currency_unit = Column(Integer, default=1000)  # e.g., 1 point per $1,000 COP
+    tier_bronze_min = Column(Integer, default=0)
+    tier_silver_min = Column(Integer, default=100)
+    tier_gold_min = Column(Integer, default=500)
+    tier_vip_min = Column(Integer, default=1500)
+    referral_bonus_referrer = Column(Integer, default=50)
+    referral_bonus_referred = Column(Integer, default=25)
+    birthday_bonus = Column(Integer, default=100)
+    redemption_rate = Column(Float, default=0.1)  # 10 points = 1 currency_unit discount
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class LoyaltyAccount(Base):
+    """Per-client loyalty account with points balance and tier."""
+    __tablename__ = "loyalty_account"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=False)
+    total_points = Column(Integer, default=0)
+    available_points = Column(Integer, default=0)
+    tier = Column(String(20), default="bronze")  # bronze, silver, gold, vip
+    referred_by_client_id = Column(Integer, nullable=True)
+    birthday_bonus_year = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class LoyaltyTransaction(Base):
+    """Audit trail of all points earned/redeemed."""
+    __tablename__ = "loyalty_transaction"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=False)
+    type = Column(String(30), nullable=False)  # earn_visit, earn_referral, earn_birthday, redeem, admin_adjust
+    points = Column(Integer, nullable=False)  # positive=earn, negative=redeem
+    description = Column(String(500))
+    visit_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# ============================================================================
+# REVIEW REQUESTS — Google Reviews pipeline
+# ============================================================================
+
+class ReviewRequest(Base):
+    """Tracks review solicitations sent to clients after visits."""
+    __tablename__ = "review_request"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=False)
+    appointment_id = Column(Integer, nullable=True)
+    status = Column(String(30), default="sent")  # sent, clicked, rated_positive, rated_negative, completed, expired
+    rating = Column(Integer, nullable=True)
+    feedback_text = Column(Text, nullable=True)
+    token = Column(String(100), nullable=True, unique=True)
+    sent_at = Column(DateTime, default=datetime.utcnow)
+    responded_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
