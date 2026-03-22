@@ -91,12 +91,17 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   // ─── Step state ─────────────────────────────────
   const [step, setStep] = useState(0);
 
-  // ─── Step 1: Services ───────────────────────────
+  // ─── Step 1: Services + Client ──────────────────
   const [items, setItems] = useState([]);
   const [allServices, setAllServices] = useState([]);
   const [loadingServices, setLoadingServices] = useState(false);
   const [showAddService, setShowAddService] = useState(false);
   const [serviceSearch, setServiceSearch] = useState('');
+  const [clientName, setClientName] = useState('');
+  const [clientSearch, setClientSearch] = useState('');
+  const [clientResults, setClientResults] = useState([]);
+  const [showClientSearch, setShowClientSearch] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState(null);
 
   // ─── Step 2: Discount & Tip ─────────────────────
   const [discountType, setDiscountType] = useState('none'); // none | percent | fixed
@@ -121,6 +126,8 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
 
   useEffect(() => {
     if (!appointment) return;
+    setClientName(appointment.client_name || 'Cliente');
+    setSelectedClientId(appointment.client_id);
     setItems([{
       id: crypto.randomUUID(),
       service_id: appointment.service_id,
@@ -130,6 +137,22 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       price: appointment.price || 0,
     }]);
   }, [appointment]);
+
+  // Client search
+  useEffect(() => {
+    if (clientSearch.length < 2) { setClientResults([]); return; }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_URL}/clients/?search=${encodeURIComponent(clientSearch)}&limit=6`, { credentials: 'include' });
+        if (res.ok) setClientResults(await res.json());
+      } catch {}
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [clientSearch]);
+
+  // Commission estimate (50% default)
+  const commissionRate = 0.5;
+  const commissionAmount = useMemo(() => Math.round(subtotal * commissionRate), [subtotal]);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -223,7 +246,8 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     try {
       const payload = {
         appointment_id: appointment.id,
-        client_id: appointment.client_id,
+        client_id: selectedClientId || appointment.client_id,
+        client_name: clientName || appointment.client_name,
         items: items.map(i => ({
           service_id: i.service_id || null,
           service_name: i.name || i.service_name || 'Servicio',
@@ -291,6 +315,43 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   // ── Step 1: Services ──────────────────────────
   const renderServices = () => (
     <div className={`${b}__step`}>
+      {/* Client selector */}
+      <div className={`${b}__client-row`}>
+        <span className={`${b}__client-label`}>Cliente:</span>
+        {showClientSearch ? (
+          <div className={`${b}__client-search`}>
+            <input
+              type="text"
+              placeholder="Buscar cliente..."
+              value={clientSearch}
+              onChange={e => setClientSearch(e.target.value)}
+              autoFocus
+              className={`${b}__client-input`}
+            />
+            {clientResults.length > 0 && (
+              <div className={`${b}__client-results`}>
+                {clientResults.map(c => (
+                  <button key={c.id} className={`${b}__client-option`} onClick={() => {
+                    setClientName(c.name);
+                    setSelectedClientId(c.id);
+                    setShowClientSearch(false);
+                    setClientSearch('');
+                    setClientResults([]);
+                  }} type="button">
+                    {c.name} <small style={{ color: '#94A3B8' }}>{c.phone}</small>
+                  </button>
+                ))}
+              </div>
+            )}
+            <button className={`${b}__client-cancel`} onClick={() => { setShowClientSearch(false); setClientSearch(''); }} type="button">Cancelar</button>
+          </div>
+        ) : (
+          <button className={`${b}__client-name`} onClick={() => setShowClientSearch(true)} type="button" title="Cambiar cliente">
+            {clientName} <small style={{ color: '#3B82F6', marginLeft: '8px' }}>cambiar</small>
+          </button>
+        )}
+      </div>
+
       <div className={`${b}__items`}>
         {items.map((item, idx) => (
           <div key={item.id} className={`${b}__item`}>
@@ -564,7 +625,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       <div className={`${b}__receipt`}>
         <div className={`${b}__receipt-header`}>
           <span className={`${b}__receipt-title`}>Resumen de cobro</span>
-          <span className={`${b}__receipt-client`}>{appointment.client_name}</span>
+          <span className={`${b}__receipt-client`}>{clientName}</span>
         </div>
 
         <div className={`${b}__receipt-items`}>
@@ -609,6 +670,18 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
             <span>{fmt(cashChange)}</span>
           </div>
         )}
+
+        {/* Staff + commission */}
+        <div className={`${b}__receipt-staff`} style={{ borderTop: '1px dashed #E2E8F0', marginTop: '12px', paddingTop: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748B' }}>
+            <span>Profesional:</span>
+            <span style={{ fontWeight: 600, color: '#1E293B' }}>{appointment.staff_name}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748B', marginTop: '4px' }}>
+            <span>Comision estimada (50%):</span>
+            <span style={{ fontWeight: 600, color: '#059669' }}>{fmt(commissionAmount)}</span>
+          </div>
+        </div>
       </div>
 
       <button
