@@ -453,15 +453,6 @@ const ChatAI = () => {
             </div>
           )}
           <form className="chat-ai__input-area" onSubmit={handleSubmit} style={tenant.ai_is_paused ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
-            {hasMessages && !isTyping && (
-              <div className="chat-ai__chips">
-                {QUICK_ACTIONS.map((c, i) => (
-                  <button key={i} type="button" className="chat-ai__chip" onClick={() => sendMessage(c.text)}>
-                    <span>{c.icon}</span> {c.text}
-                  </button>
-                ))}
-              </div>
-            )}
             {!isTyping && (
               <div className="chat-ai__strategy">
                 <div className="chat-ai__strategy-header">
