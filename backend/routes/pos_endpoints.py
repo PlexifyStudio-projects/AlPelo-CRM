@@ -557,7 +557,18 @@ def open_register(
     if existing:
         if existing.status == "open":
             raise HTTPException(status_code=400, detail="La caja ya está abierta hoy")
-        raise HTTPException(status_code=400, detail="La caja de hoy ya fue cerrada")
+        # Reopen closed register
+        existing.status = "open"
+        existing.opening_amount = data.get("opening_amount", 0)
+        existing.opened_by = user.username if hasattr(user, 'username') else "admin"
+        from datetime import datetime as dt
+        existing.opened_at = dt.utcnow()
+        existing.closed_at = None
+        existing.counted_cash = None
+        existing.discrepancy = None
+        db.commit()
+        db.refresh(existing)
+        return {"id": existing.id, "status": "open", "date": str(today), "opening_amount": existing.opening_amount, "message": "Caja reabierta"}
 
     register = CashRegister(
         tenant_id=tid,
