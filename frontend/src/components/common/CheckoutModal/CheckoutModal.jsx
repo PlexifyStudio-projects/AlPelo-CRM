@@ -255,8 +255,12 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       });
 
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Error al procesar el cobro');
+        const errData = await res.json().catch(() => ({}));
+        const detail = errData.detail;
+        const msg = typeof detail === 'string' ? detail
+          : Array.isArray(detail) ? detail.map(d => d.msg || JSON.stringify(d)).join(', ')
+          : JSON.stringify(detail);
+        throw new Error(msg || 'Error al procesar el cobro');
       }
 
       const result = await res.json();
@@ -422,7 +426,12 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
             min="0"
             placeholder="0"
             value={tipAmount}
-            onChange={(e) => setTipAmount(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === '' || (parseInt(val, 10) >= 0 && parseInt(val, 10) <= 999999)) {
+                setTipAmount(val);
+              }
+            }}
             className={`${b}__input`}
           />
         </div>
