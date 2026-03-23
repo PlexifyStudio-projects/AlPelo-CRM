@@ -276,8 +276,8 @@ const Campaigns = () => {
     }
     try {
       if (editId) {
-        await templateService.updateTemplate(editId, { name: editName, category: editCategory, body: editBody });
-        addNotification('Plantilla actualizada', 'success');
+        await templateService.updateTemplate(editId, { name: editName, category: editCategory, body: editBody, status: 'draft' });
+        addNotification('Plantilla actualizada — debes enviarla a Meta de nuevo para aprobacion', 'success');
       } else {
         await templateService.createTemplate({ name: editName, category: editCategory, body: editBody, status: 'draft' });
         addNotification('Plantilla creada como borrador', 'success');
@@ -518,7 +518,7 @@ const Campaigns = () => {
   // RENDER
   // ═══════════════════════════════════════════════
   if (loading) {
-    return <div className={B}><div className={`${B}__loading`}><div className={`${B}__loading-spinner`} /><span>Cargando sistema de campanas...</span></div></div>;
+    return <div className={B}><div className={`${B}__loading`}><div className={`${B}__loading-spinner`} /><span>Cargando sistema de campañas...</span></div></div>;
   }
 
   return (
@@ -563,7 +563,7 @@ const Campaigns = () => {
           <span className={`${B}__tab-badge`}>{templates.length}</span>
         </button>
         <button className={`${B}__tab ${mainTab === 'send' ? `${B}__tab--active` : ''}`} onClick={() => { setMainTab('send'); resetSendFlow(); }}>
-          <RocketIcon /> Enviar campana
+          <RocketIcon /> Enviar campaña
           <span className={`${B}__tab-badge`}>{stats.approved}</span>
         </button>
       </div>
@@ -650,7 +650,7 @@ const Campaigns = () => {
                       {t.status === 'approved' && (
                         <>
                           <button className={`${B}__tpl-btn ${B}__tpl-btn--send`} onClick={() => { setMainTab('send'); setSelectedTemplate(t); setSendStep(1); }}>
-                            <RocketIcon /> Usar en campana
+                            <RocketIcon /> Usar en campaña
                           </button>
                           <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
                             <EditIcon />
@@ -1007,7 +1007,7 @@ const Campaigns = () => {
           {sendStep === 3 && (
             <div className={`${B}__sending-screen`}>
               <div className={`${B}__sending-header`}>
-                <h2>{sendingActive ? 'Enviando campana...' : 'Envio finalizado'}</h2>
+                <h2>{sendingActive ? 'Enviando campaña...' : 'Envio finalizado'}</h2>
                 <div className={`${B}__sending-stats`}>
                   <span className={`${B}__sending-stat ${B}__sending-stat--total`}>{sendStats.total} total</span>
                   <span className={`${B}__sending-stat ${B}__sending-stat--sent`}>{sendStats.sent} enviados</span>
@@ -1080,7 +1080,7 @@ const Campaigns = () => {
                   </button>
                 ) : (
                   <button className={`${B}__btn-secondary`} onClick={() => { resetSendFlow(); }}>
-                    Nueva campana
+                    Nueva campaña
                   </button>
                 )}
               </div>
