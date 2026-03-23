@@ -14,7 +14,8 @@ from sqlalchemy import func
 
 from database.connection import get_db, SessionLocal
 from database.models import (
-    Campaign, Client, VisitHistory, Staff, Service, Tenant, MessageTemplate
+    Campaign, Client, VisitHistory, Staff, Service, Tenant, MessageTemplate,
+    WhatsAppConversation, WhatsAppMessage,
 )
 from schemas import CampaignCreate, CampaignUpdate, CampaignResponse
 from routes._helpers import (
@@ -438,6 +439,53 @@ async def send_one_message(
                         camp.sent_count = (camp.sent_count or 0) + 1
                         camp.updated_at = datetime.utcnow()
                         db.commit()
+
+                # ── Record in WhatsApp inbox (reuse existing conversation) ──
+                try:
+                    clean_phone = re.sub(r'\D', '', phone)
+                    clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
+                    conv = db.query(WhatsAppConversation).filter(
+                        WhatsAppConversation.tenant_id == tid,
+                        WhatsAppConversation.wa_contact_phone.contains(clean_last10),
+                    ).first()
+                    if not conv:
+                        # Find by client_id
+                        conv = db.query(WhatsAppConversation).filter(
+                            WhatsAppConversation.tenant_id == tid,
+                            WhatsAppConversation.client_id == int(client_id),
+                        ).first()
+                    if not conv:
+                        conv = WhatsAppConversation(
+                            tenant_id=tid,
+                            wa_contact_phone=phone,
+                            wa_contact_name=client_obj.name,
+                            client_id=int(client_id),
+                            is_ai_active=False,
+                        )
+                        db.add(conv)
+                        db.flush()
+
+                    wa_msg_id = ""
+                    msgs = resp_data.get("messages", [])
+                    if msgs:
+                        wa_msg_id = msgs[0].get("id", "")
+
+                    resolved = message_body.replace("{{nombre}}", first_name)
+                    msg = WhatsAppMessage(
+                        conversation_id=conv.id,
+                        wa_message_id=wa_msg_id or f"campaign_{campaign_id}_{client_id}",
+                        direction="outbound",
+                        content=resolved,
+                        message_type="template",
+                        status="sent",
+                        sent_by="campaign",
+                    )
+                    db.add(msg)
+                    conv.last_message_at = datetime.utcnow()
+                    db.commit()
+                except Exception as e:
+                    print(f"[SEND-ONE] Error recording in inbox: {e}")
+                    db.rollback()
 
                 return {"success": True, "client_id": client_id, "name": client_obj.name, "phone": phone}
             else:

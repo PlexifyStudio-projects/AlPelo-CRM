@@ -1353,6 +1353,11 @@ def _execute_action(action: dict, db: Session) -> str:
 
         apt_date_obj = date.fromisoformat(apt_date) if isinstance(apt_date, str) else apt_date
 
+        # --- SAFETY: Validate date is not in the past (timezone-aware) ---
+        today_col = _today_colombia(db)
+        if apt_date_obj < today_col:
+            return f"ERROR: La fecha {apt_date} ya paso. Hoy es {today_col.isoformat()}. Usa una fecha de hoy o futura."
+
         # --- DUPLICATE CHECK: same client + same staff + same date + same time ---
         q_dup = db.query(Appointment).filter(
             Appointment.client_name.ilike(f"%{client_name}%"),
@@ -2527,7 +2532,8 @@ REGLA #0 ABSOLUTA — SALUDOS:
 
 {CORE_SAFETY_PROMPT}
 
-HOY: {_fecha_colombia_str(db)} | Hora: {_now_colombia(db).strftime('%I:%M %p')} | Mañana: {(_today_colombia(db) + timedelta(days=1)).strftime('%Y-%m-%d')} ({_DIAS_ES[(_today_colombia(db) + timedelta(days=1)).weekday()]})
+HOY: {_fecha_colombia_str(db)} ({_today_colombia(db).strftime('%Y-%m-%d')}) | Hora: {_now_colombia(db).strftime('%I:%M %p')} | Mañana: {(_today_colombia(db) + timedelta(days=1)).strftime('%Y-%m-%d')} ({_DIAS_ES[(_today_colombia(db) + timedelta(days=1)).weekday()]})
+CRITICO: Si el cliente dice "hoy", la fecha es {_today_colombia(db).strftime('%Y-%m-%d')}. Si dice "mañana", es {(_today_colombia(db) + timedelta(days=1)).strftime('%Y-%m-%d')}. JAMAS confundas estas fechas.
 
 === CONTEXTO DEL NEGOCIO (configurado por el admin — RESPETA TODO lo que dice aqui) ===
 {business_ctx}

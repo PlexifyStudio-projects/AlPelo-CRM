@@ -373,10 +373,15 @@ def list_conversations(db: Session = Depends(get_db), user=Depends(get_current_u
                     "tags": cl.tags,
                 }
 
+            # Prefer CRM client name over WhatsApp profile name
+            display_name = c.wa_contact_name
+            if client_data and client_data.get("name"):
+                display_name = client_data["name"]
+
             results.append({
                 "id": c.id,
                 "wa_contact_phone": c.wa_contact_phone,
-                "wa_contact_name": c.wa_contact_name,
+                "wa_contact_name": display_name,
                 "wa_profile_photo_url": getattr(c, 'wa_profile_photo_url', None),
                 "last_message_at": c.last_message_at.isoformat() if c.last_message_at else None,
                 "last_message_preview": last_msg.content[:80] if last_msg else None,
