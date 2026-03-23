@@ -655,6 +655,29 @@ $lina-assistant-bg: #F1F5F9;
     margin-top: 2px;
   }
 
+  &__sidebar-usage-bar {
+    height: 6px;
+    background: $color-gray-100;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  &__sidebar-usage-fill {
+    height: 100%;
+    background: linear-gradient(90deg, $color-primary, $color-accent);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+
+  &__sidebar-usage-label {
+    font-size: 10px;
+    color: $color-gray-400;
+    margin-top: 4px;
+    text-align: center;
+    display: block;
+  }
+
   &__sidebar-caps {
     @include flex-column;
     gap: 6px;

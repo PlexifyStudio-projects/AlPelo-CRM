@@ -670,13 +670,25 @@ const ChatAI = () => {
               <div className="chat-ai__sidebar-stats">
                 <div className="chat-ai__sidebar-stat">
                   <span className="chat-ai__sidebar-stat-val">{tenant.messages_used?.toLocaleString('es-CO') || 0}</span>
-                  <span className="chat-ai__sidebar-stat-lbl">Mensajes total</span>
+                  <span className="chat-ai__sidebar-stat-lbl">Mensajes usados</span>
+                </div>
+                <div className="chat-ai__sidebar-stat">
+                  <span className="chat-ai__sidebar-stat-val">{(tenant.messages_limit - (tenant.messages_used || 0)).toLocaleString('es-CO')}</span>
+                  <span className="chat-ai__sidebar-stat-lbl">Restantes</span>
+                </div>
+                <div className="chat-ai__sidebar-stat">
+                  <span className="chat-ai__sidebar-stat-val">{(tenant.ai_tokens_month || 0).toLocaleString('es-CO')}</span>
+                  <span className="chat-ai__sidebar-stat-lbl">Tokens mes</span>
                 </div>
                 <div className="chat-ai__sidebar-stat">
                   <span className="chat-ai__sidebar-stat-val">{tokenCount.toLocaleString()}</span>
                   <span className="chat-ai__sidebar-stat-lbl">Tokens sesion</span>
                 </div>
               </div>
+              <div className="chat-ai__sidebar-usage-bar">
+                <div className="chat-ai__sidebar-usage-fill" style={{ width: `${Math.min(100, ((tenant.messages_used || 0) / (tenant.messages_limit || 5000)) * 100)}%` }} />
+              </div>
+              <span className="chat-ai__sidebar-usage-label">{tenant.messages_used || 0} / {tenant.messages_limit?.toLocaleString('es-CO') || '5,000'} mensajes</span>
             </div>
 
             <div className="chat-ai__sidebar-section">

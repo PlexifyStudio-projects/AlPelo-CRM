@@ -461,6 +461,41 @@ def dev_usage(period: str = None, db: Session = Depends(get_db), user: Admin = D
     }
 
 
+@router.get("/dev/usage-history")
+def dev_usage_history(tenant_id: int = None, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Get ALL monthly usage history — never deleted, persists forever."""
+    _require_dev(user)
+
+    q = db.query(UsageMetrics).order_by(UsageMetrics.period.desc())
+    if tenant_id:
+        q = q.filter(UsageMetrics.tenant_id == tenant_id)
+    metrics = q.all()
+
+    tenants = db.query(Tenant).all()
+    tenant_map = {t.id: t for t in tenants}
+
+    history = []
+    for m in metrics:
+        t = tenant_map.get(m.tenant_id)
+        tokens = m.ai_tokens_used or 0
+        # Cost calculation: with cache ~$0.011 per AI message, tokens / 5500 = approx messages
+        cost_usd = round((tokens / 1_000_000) * 5.4, 2)
+        history.append({
+            "period": m.period,
+            "tenant_id": m.tenant_id,
+            "tenant_name": t.name if t else "?",
+            "tenant_slug": t.slug if t else "?",
+            "wa_sent": m.wa_messages_sent,
+            "wa_received": m.wa_messages_received,
+            "ai_tokens": tokens,
+            "campaigns_sent": m.campaigns_sent,
+            "cost_usd": cost_usd,
+            "cost_cop": round(cost_usd * 4150),
+        })
+
+    return {"history": history, "total_months": len(set(m.period for m in metrics))}
+
+
 @router.get("/dev/billing")
 def dev_billing(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     _require_dev(user)
@@ -643,21 +678,19 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
             "timezone": "America/Bogota",
         }
 
-    # Count REAL Lina IA messages for THIS tenant only
-    real_used = 0
-    try:
-        real_used = (
-            db.query(func.count(WhatsAppMessage.id))
-            .join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id)
-            .filter(
-                WhatsAppMessage.direction == "outbound",
-                WhatsAppMessage.sent_by == "lina_ia",
-                WhatsAppConversation.tenant_id == tenant.id,
-            )
-            .scalar() or 0
-        )
-    except Exception:
-        real_used = getattr(tenant, 'messages_used', 0)
+    # Use persistent counter — NEVER count from WhatsAppMessage (those get deleted with chats)
+    real_used = getattr(tenant, 'messages_used', 0)
+
+    # Get current month's token usage from usage_metrics
+    now = datetime.utcnow()
+    current_period = f"{now.year}-{now.month:02d}"
+    month_metrics = db.query(UsageMetrics).filter(
+        UsageMetrics.tenant_id == tenant.id,
+        UsageMetrics.period == current_period,
+    ).first()
+    ai_tokens_month = month_metrics.ai_tokens_used if month_metrics else 0
+    wa_sent_month = month_metrics.wa_messages_sent if month_metrics else 0
+    campaigns_month = month_metrics.campaigns_sent if month_metrics else 0
 
     return {
         "id": tenant.id,
@@ -680,6 +713,11 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
         "wa_business_account_id": getattr(tenant, 'wa_business_account_id', None),
         "wa_access_token": getattr(tenant, 'wa_access_token', None),
         "wa_phone_display": getattr(tenant, 'wa_phone_display', None),
+        # Monthly usage stats
+        "ai_tokens_month": ai_tokens_month,
+        "wa_sent_month": wa_sent_month,
+        "campaigns_month": campaigns_month,
+        "ai_cost_month_usd": round((ai_tokens_month / 1_000_000) * 5.4, 3) if ai_tokens_month else 0,
     }
 
 
