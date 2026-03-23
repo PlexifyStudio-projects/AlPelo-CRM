@@ -136,20 +136,52 @@ const timeAgo = (dateStr) => {
   return `Hace ${diffDays}d`;
 };
 
-/** Calculate countdown for pending tasks: how many minutes left until execution */
+/** Calculate countdown for pending tasks: how long until execution */
 const taskCountdown = (createdAt, content) => {
   if (!createdAt) return null;
-  // Parse delay from content (e.g. "en 10 min", "en 5 minutos")
-  const match = (content || '').match(/en\s+(\d+)\s*min/i);
-  const delayMin = match ? parseInt(match[1]) : 5;
-  const created = new Date(createdAt);
-  const executeAt = new Date(created.getTime() + delayMin * 60000);
+  const txt = content || '';
+  let executeAt = null;
+
+  // 1) Appointment reminders: parse "Xmin antes de cita HH:MMam/pm DD/MM"
+  const reminderMatch = txt.match(/(\d+)\s*min(?:utos?)?\s*antes\s+de\s+(?:la\s+)?cita\s+(\d{1,2}):(\d{2})\s*(am|pm)\s+(\d{1,2})\/(\d{2})/i);
+  if (reminderMatch) {
+    const leadMin = parseInt(reminderMatch[1]);
+    let hour = parseInt(reminderMatch[2]);
+    const minute = parseInt(reminderMatch[3]);
+    const ampm = reminderMatch[4].toLowerCase();
+    const day = parseInt(reminderMatch[5]);
+    const month = parseInt(reminderMatch[6]) - 1;
+    if (ampm === 'pm' && hour < 12) hour += 12;
+    if (ampm === 'am' && hour === 12) hour = 0;
+    const now = new Date();
+    const year = now.getFullYear();
+    const apptDate = new Date(year, month, day, hour, minute);
+    // If date already passed this year, try next year
+    if (apptDate < new Date(now.getTime() - 24 * 60 * 60000)) {
+      apptDate.setFullYear(year + 1);
+    }
+    executeAt = new Date(apptDate.getTime() - leadMin * 60000);
+  }
+
+  // 2) Fallback: "en X min" delay from creation time
+  if (!executeAt) {
+    const delayMatch = txt.match(/en\s+(\d+)\s*min/i);
+    const delayMin = delayMatch ? parseInt(delayMatch[1]) : 5;
+    const created = new Date(createdAt);
+    executeAt = new Date(created.getTime() + delayMin * 60000);
+  }
+
   const now = new Date();
   const remainMs = executeAt - now;
   if (remainMs <= 0) return { text: 'Ejecutando...', done: true };
-  const remainMin = Math.floor(remainMs / 60000);
+  const totalMin = Math.floor(remainMs / 60000);
   const remainSec = Math.floor((remainMs % 60000) / 1000);
-  if (remainMin > 0) return { text: `${remainMin}m ${remainSec}s`, done: false };
+  if (totalMin >= 60) {
+    const hours = Math.floor(totalMin / 60);
+    const mins = totalMin % 60;
+    return { text: `${hours}h ${mins}m`, done: false };
+  }
+  if (totalMin > 0) return { text: `${totalMin}m ${remainSec}s`, done: false };
   return { text: `${remainSec}s`, done: false };
 };
 

@@ -554,16 +554,16 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
 
     completed_today = sum(1 for a in today_appointments if a.status in ("completed", "paid"))
 
-    # ---------- Revenue (from PAID appointments — the real money) ----------
+    # ---------- Revenue (from VisitHistory — same source as Finances page) ----------
     def revenue_in_range(start_date, end_date):
         rq = (
-            db.query(func.coalesce(func.sum(Appointment.price), 0))
-            .filter(Appointment.status == "paid")
-            .filter(Appointment.date >= start_date)
-            .filter(Appointment.date <= end_date)
+            db.query(func.coalesce(func.sum(VisitHistory.amount), 0))
+            .filter(VisitHistory.status == "completed")
+            .filter(VisitHistory.visit_date >= start_date)
+            .filter(VisitHistory.visit_date <= end_date)
         )
         if tid:
-            rq = rq.filter(Appointment.tenant_id == tid)
+            rq = rq.filter(VisitHistory.tenant_id == tid)
         result = rq.scalar()
         return result or 0
 
@@ -775,17 +775,16 @@ def get_dashboard_stats(db: Session = Depends(get_db), user: Admin = Depends(get
 
 
 def _revenue_by_day_paid(db, tid, today):
-    """Revenue per day for last 7 days — from PAID appointments only."""
-    from collections import defaultdict
+    """Revenue per day for last 7 days — from VisitHistory (same source as Finances page)."""
     start = today - timedelta(days=6)
-    q = db.query(Appointment.date, func.coalesce(func.sum(Appointment.price), 0)).filter(
-        Appointment.status == "paid",
-        Appointment.date >= start,
-        Appointment.date <= today,
+    q = db.query(VisitHistory.visit_date, func.coalesce(func.sum(VisitHistory.amount), 0)).filter(
+        VisitHistory.status == "completed",
+        VisitHistory.visit_date >= start,
+        VisitHistory.visit_date <= today,
     )
     if tid:
-        q = q.filter(Appointment.tenant_id == tid)
-    rows = q.group_by(Appointment.date).all()
+        q = q.filter(VisitHistory.tenant_id == tid)
+    rows = q.group_by(VisitHistory.visit_date).all()
     day_map = {str(r[0]): int(r[1]) for r in rows}
     result = []
     for i in range(7):
