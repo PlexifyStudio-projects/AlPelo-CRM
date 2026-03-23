@@ -235,15 +235,48 @@ def _match_phone_to_conversation(db, phone_str, client_name="", tenant_id=None):
 
 
 def _create_conversation_for_client(db, client, tenant_id=None):
-    """DISABLED — scheduler must NEVER create conversations.
-    Conversations are created only by: webhook inbound, admin send, or campaign send."""
-    print(f"[SCHEDULER] BLOCKED: Attempted to create conversation for {client.name}. Auto-creation is disabled.")
-    return None
+    """Create conversation with VERIFIED client data — correct phone + correct name."""
+    import re as _re
+    phone = _re.sub(r'\D', '', client.phone or '')
+    if len(phone) < 7:
+        print(f"[SCHEDULER] Cannot create conversation for {client.name}: invalid phone '{client.phone}'")
+        return None
+
+    # Double-check no existing conversation with these digits
+    all_convs = db.query(WhatsAppConversation).filter(
+        WhatsAppConversation.tenant_id == (tenant_id or client.tenant_id)
+    ).all()
+    phone_tail = phone[-10:]
+    for c in all_convs:
+        c_digits = _re.sub(r'\D', '', c.wa_contact_phone or '')
+        if c_digits[-10:] == phone_tail:
+            print(f"[SCHEDULER] Found existing conv #{c.id} for {client.name} by digits. Reusing.")
+            # Update name if needed
+            if client.name and c.wa_contact_name != client.name:
+                c.wa_contact_name = client.name
+            if not c.client_id:
+                c.client_id = client.id
+            db.commit()
+            return c
+
+    conv = WhatsAppConversation(
+        tenant_id=tenant_id or client.tenant_id,
+        client_id=client.id,
+        wa_contact_phone=phone,
+        wa_contact_name=client.name or "",
+        is_ai_active=True,
+        unread_count=0,
+    )
+    db.add(conv)
+    db.commit()
+    db.refresh(conv)
+    print(f"[SCHEDULER] Created conversation #{conv.id} for {client.name} (phone: {phone})")
+    return conv
 
 
 def _find_conversation(db, appt):
-    """Find existing WhatsApp conversation for an appointment's client.
-    NEVER creates new conversations. Returns None if not found."""
+    """Find or create WhatsApp conversation for an appointment's client.
+    Creates ONLY if client has a valid phone and no existing conversation."""
     client_name = (appt.client_name or "").strip()
     tid = getattr(appt, 'tenant_id', None)
 
@@ -261,9 +294,10 @@ def _find_conversation(db, appt):
             conv = _match_phone_to_conversation(db, client.phone, client_name, tenant_id=tid)
             if conv:
                 return conv
+            # No conversation found — create one with correct client data
+            return _create_conversation_for_client(db, client, tenant_id=tid)
 
-    # 3. No conversation found — DO NOT create one
-    print(f"[SCHEDULER] No conversation for '{client_name}'. Skipping.")
+    print(f"[SCHEDULER] No phone for '{client_name}'. Cannot create conversation.")
     return None
 
 
@@ -1068,7 +1102,10 @@ def _execute_pending_tasks(db):
         # Find WA conversation — with safety validation
         conv = None
         if client.phone:
-            conv = _match_phone_to_conversation(db, client.phone, client_name, tenant_id=getattr(client, 'tenant_id', None))
+            tid = getattr(client, 'tenant_id', None)
+            conv = _match_phone_to_conversation(db, client.phone, client_name, tenant_id=tid)
+            if not conv:
+                conv = _create_conversation_for_client(db, client, tenant_id=tid)
 
         if not conv:
             # No conversation found — mark as failed, don't silently skip
