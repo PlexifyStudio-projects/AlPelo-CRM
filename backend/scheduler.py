@@ -255,9 +255,10 @@ def _find_conversation(db, appt):
         if client and client.phone:
             tid = tid or getattr(client, 'tenant_id', None)
             conv = _match_phone_to_conversation(db, client.phone, client_name, tenant_id=tid)
-            # No conversation found but client has phone → create one
+            # NEVER auto-create conversations — only reuse existing ones
+            # Conversations are created when the client writes first or admin sends a message
             if not conv:
-                conv = _create_conversation_for_client(db, client, tenant_id=tid)
+                print(f"[SCHEDULER] No conversation found for {client_name} ({client.phone}). Skipping (will not auto-create).")
 
     return conv
 
