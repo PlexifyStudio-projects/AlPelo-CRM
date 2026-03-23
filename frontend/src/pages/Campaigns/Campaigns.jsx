@@ -918,9 +918,29 @@ const Campaigns = () => {
           {/* ─── Step 2: Contact Review ─── */}
           {sendStep === 2 && (
             <div className={`${B}__send-section`}>
-              <div className={`${B}__send-section-header`}>
-                <h2>Revisa y selecciona contactos</h2>
-                <p>Desselecciona los contactos que no deseas incluir en el envio</p>
+              {/* Action bar at TOP — send button immediately visible */}
+              <div className={`${B}__contacts-action-bar`}>
+                <button className={`${B}__btn-secondary`} onClick={() => setSendStep(1)}>
+                  <ArrowLeft /> Atras
+                </button>
+                <div className={`${B}__contacts-action-bar-center`}>
+                  <span className={`${B}__contacts-selected-count`}>
+                    <UserCheckIcon /> {selectedContacts.size} de {audienceResults?.count || 0} seleccionados
+                  </span>
+                  <button className={`${B}__btn-text`} onClick={() => setSelectedContacts(new Set((audienceResults?.contacts || []).map(c => c.id)))}>
+                    Todos
+                  </button>
+                  <button className={`${B}__btn-text`} onClick={() => setSelectedContacts(new Set())}>
+                    Ninguno
+                  </button>
+                </div>
+                <button
+                  className={`${B}__btn-primary ${B}__btn-primary--send`}
+                  disabled={selectedContacts.size === 0}
+                  onClick={() => startSending()}
+                >
+                  <SendIcon /> Enviar a {selectedContacts.size} contactos
+                </button>
               </div>
 
               <div className={`${B}__contacts-toolbar`}>
@@ -932,17 +952,6 @@ const Campaigns = () => {
                     value={contactSearch}
                     onChange={e => setContactSearch(e.target.value)}
                   />
-                </div>
-                <div className={`${B}__contacts-summary`}>
-                  <span className={`${B}__contacts-selected-count`}>
-                    <UserCheckIcon /> {selectedContacts.size} de {audienceResults?.count || 0} seleccionados
-                  </span>
-                  <button className={`${B}__btn-text`} onClick={() => setSelectedContacts(new Set((audienceResults?.contacts || []).map(c => c.id)))}>
-                    Seleccionar todos
-                  </button>
-                  <button className={`${B}__btn-text`} onClick={() => setSelectedContacts(new Set())}>
-                    Deseleccionar todos
-                  </button>
                 </div>
               </div>
 
@@ -990,24 +999,6 @@ const Campaigns = () => {
                     </div>
                   ))}
                 </div>
-              </div>
-
-              <div className={`${B}__send-actions`}>
-                <button className={`${B}__btn-secondary`} onClick={() => setSendStep(1)}>
-                  <ArrowLeft /> Atras
-                </button>
-                <button
-                  className={`${B}__btn-primary ${B}__btn-primary--send`}
-                  disabled={selectedContacts.size === 0}
-                  onClick={() => {
-                    setConfirmModal({
-                      message: `Enviar "${selectedTemplate?.name}" a ${selectedContacts.size} contactos?`,
-                      onConfirm: () => { setConfirmModal(null); startSending(); },
-                    });
-                  }}
-                >
-                  <SendIcon /> Enviar a {selectedContacts.size} contactos
-                </button>
               </div>
             </div>
           )}

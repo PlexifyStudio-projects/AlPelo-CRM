@@ -1266,6 +1266,27 @@ $_fg-payment: #14B8A6;
   // ============================================
   // CONTACTS REVIEW (Step 2) — Table with checkbox selection
   // ============================================
+  &__contacts-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+    padding: $spacing-md $spacing-lg;
+    background: $color-white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  &__contacts-action-bar-center {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
   &__contacts-toolbar {
     display: flex;
     align-items: center;

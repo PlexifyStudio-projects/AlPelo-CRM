@@ -414,11 +414,16 @@ async def send_one_message(
                 },
                 json=payload,
             )
-            resp_data = resp.json() if resp.status_code < 500 else {}
+            try:
+                resp_data = resp.json()
+            except Exception:
+                resp_data = {}
             has_messages = bool(resp_data.get("messages"))
-            is_success = resp.status_code in (200, 201, 202) or has_messages
+            has_contacts = bool(resp_data.get("contacts"))
+            has_error = bool(resp_data.get("error"))
+            is_success = (resp.status_code < 300 or has_messages or has_contacts) and not has_error
 
-            print(f"[SEND-ONE] {phone} → status={resp.status_code} success={is_success} body={str(resp_data)[:200]}")
+            print(f"[SEND-ONE] {phone} → HTTP {resp.status_code} | success={is_success} | messages={has_messages} | error={has_error} | body={str(resp_data)[:300]}")
 
             if is_success:
                 from routes._usage_tracker import track_wa_sent
