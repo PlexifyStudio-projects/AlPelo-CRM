@@ -203,13 +203,18 @@ def get_stats(tenant_id: int = None):
                     q = q.filter(LinaActivityEvent.status == status)
                 return q.scalar() or 0
 
+            # Count all errors (respuesta errors + error events + failed workflows)
+            failed_count = _count("respuesta", "error") + _count("error")
+            # Count all skips (skip events + sistema warnings like omitted workflows)
+            skip_count = _count("skip") + _count("sistema", "warning")
+
             return {
                 "messages_sent": _count("respuesta", "ok"),
-                "messages_failed": _count("respuesta", "error"),
+                "messages_failed": failed_count,
                 "actions_executed": _count("accion"),
                 "conversations_replied": _count("respuesta", "ok"),
                 "tasks_completed": _count("tarea"),
-                "skips": _count("skip"),
+                "skips": skip_count,
             }
         finally:
             db.close()
