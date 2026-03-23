@@ -375,11 +375,20 @@ async def send_one_message(
             ).order_by(VisitHistory.visit_date.desc()).first()
             days_val = str((date.today() - last_v[0]).days) if last_v else "0"
 
+            # Resolve ALL possible template variables
             var_values = {
                 "nombre": first_name,
-                "negocio": tenant.name if tenant else "",
+                "negocio": tenant.name if tenant else "nuestro negocio",
                 "servicio": client_obj.favorite_service or "tu servicio",
                 "dias": days_val,
+                "hora": "la hora programada",
+                "profesional": "tu profesional",
+                "descuento": "10%",
+                "fecha": date.today().strftime("%d/%m/%Y"),
+                "telefono": tenant.phone if tenant and hasattr(tenant, 'phone') else "",
+                "direccion": "",
+                "precio": "",
+                "link": "",
             }
 
             components_params = []
