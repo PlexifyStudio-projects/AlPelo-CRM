@@ -25,8 +25,8 @@ def _ensure_metrics(conn, tenant_id: int, period: str):
         ), {"tid": tenant_id, "p": period})
 
 
-def track_message_sent(tenant_id: int = 1):
-    """Track an outbound WhatsApp message (sent by admin or Lina)."""
+def track_message_sent(tenant_id: int = 1, count_as_used: bool = True):
+    """Track an outbound WhatsApp message. If count_as_used=True, also increments tenant.messages_used."""
     period = _current_period()
     try:
         db = SessionLocal()
@@ -36,6 +36,11 @@ def track_message_sent(tenant_id: int = 1):
                 "UPDATE public.usage_metrics SET wa_messages_sent = wa_messages_sent + 1 "
                 "WHERE tenant_id = :tid AND period = :p"
             ), {"tid": tenant_id, "p": period})
+            if count_as_used:
+                db.execute(text(
+                    "UPDATE public.tenant SET messages_used = messages_used + 1 "
+                    "WHERE id = :tid"
+                ), {"tid": tenant_id})
     except Exception as e:
         print(f"[USAGE] track_message_sent error: {e}")
     finally:

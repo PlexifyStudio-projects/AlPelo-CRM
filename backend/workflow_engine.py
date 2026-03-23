@@ -116,6 +116,15 @@ def _send_template_sync(phone, template_name, language_code="es", parameters=Non
             )
             data = resp.json()
             if resp.status_code == 200 and "messages" in data:
+                # Increment tenant messages_used (count as system message)
+                try:
+                    if db:
+                        tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+                        if tenant:
+                            tenant.messages_used = (tenant.messages_used or 0) + 1
+                            db.commit()
+                except Exception:
+                    pass
                 return True
             else:
                 error_msg = data.get("error", {}).get("message", str(data)[:100])

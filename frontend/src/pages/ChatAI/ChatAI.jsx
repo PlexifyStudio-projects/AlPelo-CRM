@@ -676,11 +676,7 @@ const ChatAI = () => {
                   <span className="chat-ai__sidebar-stat-val">{(tenant.messages_limit - (tenant.messages_used || 0)).toLocaleString('es-CO')}</span>
                   <span className="chat-ai__sidebar-stat-lbl">Restantes</span>
                 </div>
-                <div className="chat-ai__sidebar-stat">
-                  <span className="chat-ai__sidebar-stat-val">{(tenant.ai_tokens_month || 0).toLocaleString('es-CO')}</span>
-                  <span className="chat-ai__sidebar-stat-lbl">Tokens mes</span>
-                </div>
-                <div className="chat-ai__sidebar-stat">
+                <div className="chat-ai__sidebar-stat chat-ai__sidebar-stat--wide">
                   <span className="chat-ai__sidebar-stat-val">{tokenCount.toLocaleString()}</span>
                   <span className="chat-ai__sidebar-stat-lbl">Tokens sesion</span>
                 </div>
