@@ -240,6 +240,15 @@ def _find_conversation(db, appt):
     if appt.client_phone:
         conv = _match_phone_to_conversation(db, appt.client_phone, client_name, tenant_id=tid)
 
+    # Try by client_id directly (most reliable — no name mismatch issues)
+    if not conv and appt.client_id:
+        q_by_client = db.query(WhatsAppConversation).filter(
+            WhatsAppConversation.client_id == appt.client_id
+        )
+        if tid:
+            q_by_client = q_by_client.filter(WhatsAppConversation.tenant_id == tid)
+        conv = q_by_client.order_by(WhatsAppConversation.last_message_at.desc().nullslast()).first()
+
     # Try by client record phone
     if not conv and appt.client_id:
         client = db.query(Client).filter(Client.id == appt.client_id).first()

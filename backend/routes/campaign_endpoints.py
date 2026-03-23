@@ -427,9 +427,9 @@ async def send_one_message(
             print(f"[SEND-ONE] {phone} → HTTP {resp.status_code} | success={is_success} | messages={has_messages} | error={has_error} | body={str(resp_data)[:300]}")
 
             if is_success:
-                from routes._usage_tracker import track_wa_sent
                 try:
-                    track_wa_sent(tid, 1)
+                    from routes._usage_tracker import track_message_sent
+                    track_message_sent(tid)
                 except Exception:
                     pass
 
