@@ -1347,12 +1347,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 log_event("skip", "IA pausada a nivel de agencia", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
                 return
 
-            # Check message limit — count only Lina's messages
+            # Check message limit — use persistent counter (survives chat deletion)
             if tenant and tenant.messages_limit and tenant.messages_limit > 0:
-                lina_msg_count = db.query(sa_func.count(WhatsAppMessage.id)).filter(
-                    WhatsAppMessage.direction == "outbound",
-                    WhatsAppMessage.sent_by == "lina_ia",
-                ).scalar() or 0
+                lina_msg_count = tenant.messages_used or 0
                 if lina_msg_count >= tenant.messages_limit:
                     # Auto-pause Lina
                     if not tenant.ai_is_paused:
@@ -2197,10 +2194,7 @@ async def toggle_all_ai(body: _ToggleAllAIRequest, background_tasks: BackgroundT
     if body.enable:
         tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
         if tenant and tenant.messages_limit and tenant.messages_limit > 0:
-            lina_count = db.query(sa_func.count(WhatsAppMessage.id)).filter(
-                WhatsAppMessage.direction == "outbound",
-                WhatsAppMessage.sent_by == "lina_ia",
-            ).scalar() or 0
+            lina_count = tenant.messages_used or 0
             if lina_count >= tenant.messages_limit:
                 raise HTTPException(
                     status_code=403,

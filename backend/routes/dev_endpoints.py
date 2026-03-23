@@ -35,7 +35,6 @@ def _safe_tenant_dict(t, db=None):
     """Build a tenant dict safely. All queries scoped to this tenant only."""
     client_count = 0
     staff_count = 0
-    real_messages_used = 0
     admin_user = None
 
     if db:
@@ -45,19 +44,6 @@ def _safe_tenant_dict(t, db=None):
             pass
         try:
             staff_count = db.query(func.count(Staff.id)).filter(Staff.tenant_id == t.id).scalar() or 0
-        except Exception:
-            pass
-        try:
-            real_messages_used = (
-                db.query(func.count(WhatsAppMessage.id))
-                .join(WhatsAppConversation, WhatsAppMessage.conversation_id == WhatsAppConversation.id)
-                .filter(
-                    WhatsAppMessage.direction == 'outbound',
-                    WhatsAppMessage.sent_by == 'lina_ia',
-                    WhatsAppConversation.tenant_id == t.id,
-                )
-                .scalar() or 0
-            )
         except Exception:
             pass
 
@@ -72,8 +58,8 @@ def _safe_tenant_dict(t, db=None):
         except Exception:
             pass
 
-    # Use real count if available, fallback to stored value
-    messages_used = real_messages_used if real_messages_used > 0 else getattr(t, 'messages_used', 0)
+    # ALWAYS use persistent counter — never count from messages (those get deleted with chats)
+    messages_used = getattr(t, 'messages_used', 0)
 
     return {
         "id": t.id,
