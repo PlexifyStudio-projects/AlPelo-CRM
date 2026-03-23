@@ -18,7 +18,7 @@ from database.connection import SessionLocal
 from database.models import (
     WorkflowTemplate, WorkflowExecution, Tenant, Client,
     Appointment, VisitHistory, Staff, Service,
-    WhatsAppConversation, WhatsAppMessage,
+    WhatsAppConversation, WhatsAppMessage, MessageTemplate,
 )
 from routes._helpers import normalize_phone, now_colombia as _now_colombia
 from activity_log import log_event
@@ -198,7 +198,43 @@ def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
     config = workflow.config or {}
     template_name = config.get("template_name")
     template_lang = config.get("template_language", "es")
-    template_params = config.get("template_params", [])
+
+    # Build template parameters from the ALREADY RENDERED message
+    # The 'message' param already has all {{variables}} replaced with real values.
+    # We extract the values by comparing the original template with the rendered version.
+    template_params = []
+    if template_name:
+        import re as _re
+        # Get original template body with {{placeholders}}
+        original_body = workflow.message_template or ""
+        if original_body:
+            # Find variable names in order
+            var_names = _re.findall(r'\{\{(\w+)\}\}', original_body)
+            if var_names:
+                # Build a regex from the template that captures each variable's value
+                # e.g. "Hola {{nombre}}, tu cita es a las {{hora}}" becomes
+                # "Hola (.+?), tu cita es a las (.+?)"
+                regex_pattern = _re.escape(original_body)
+                for vn in var_names:
+                    regex_pattern = regex_pattern.replace(_re.escape("{{" + vn + "}}"), "(.+?)", 1)
+                regex_pattern += "$"
+                # Strip the intro prefix if it was added
+                clean_msg = message
+                if "👋\n\n" in clean_msg:
+                    clean_msg = clean_msg.split("👋\n\n", 1)[-1]
+                match = _re.match(regex_pattern, clean_msg, _re.DOTALL)
+                if match:
+                    template_params = list(match.groups())
+                    print(f"[WORKFLOW] Template {template_name}: extracted params {dict(zip(var_names, template_params))}")
+                else:
+                    # Fallback: use known variable values
+                    client_first = (client.name or "").split()[0] if client else ""
+                    fallback = {
+                        "nombre": client_first, "negocio": tenant_name, "servicio": "tu servicio",
+                        "profesional": "tu profesional", "hora": "", "fecha": "", "dias": "",
+                    }
+                    template_params = [fallback.get(v, v) for v in var_names]
+                    print(f"[WORKFLOW] Template {template_name}: fallback params {dict(zip(var_names, template_params))}")
 
     # FIRST check if we can actually send — BEFORE creating any conversation
     can_send_template = bool(template_name)
@@ -224,6 +260,10 @@ def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
     wa_sent = False
     if can_send_template:
         wa_sent = _send_template_sync(phone, template_name, template_lang, template_params, db=db)
+        if not wa_sent and can_send_freetext:
+            # Template failed — fallback to freetext within 24h window
+            print(f"[WORKFLOW] Template failed, falling back to freetext for {(client.name or '?').split()[0]}")
+            wa_sent = _send_whatsapp_sync(phone, message, db=db)
     elif can_send_freetext:
         wa_sent = _send_whatsapp_sync(phone, message, db=db)
 
