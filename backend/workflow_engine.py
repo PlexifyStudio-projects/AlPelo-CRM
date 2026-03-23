@@ -252,6 +252,23 @@ def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
         )
         return False
 
+    # Final pass: resolve any remaining {{variables}} that weren't replaced
+    import re as _re2
+    remaining_vars = _re2.findall(r'\{\{(\w+)\}\}', message)
+    if remaining_vars:
+        client_first = (client.name or "").split()[0] if client else ""
+        fallback_values = {
+            "nombre": client_first, "negocio": tenant_name or "nuestro negocio",
+            "servicio": "tu servicio", "profesional": "tu profesional",
+            "hora": "", "fecha": "", "dias": "", "descuento": "",
+        }
+        for var in remaining_vars:
+            val = fallback_values.get(var, "")
+            if val:
+                message = message.replace("{{" + var + "}}", val)
+            else:
+                message = message.replace("{{" + var + "}}", "")
+
     # NOW we know we'll send — create conversation if needed
     if not conv and client and client.phone:
         conv = _create_conversation_for_client(db, client)
