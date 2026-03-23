@@ -416,7 +416,13 @@ const Campaigns = () => {
       setActiveCampaignId(campId);
     } catch {}
 
-    const contacts = (audienceResults?.contacts || []).filter(c => selectedContacts.has(c.id));
+    // Deduplicate by client ID
+    const seenIds = new Set();
+    const contacts = (audienceResults?.contacts || []).filter(c => {
+      if (!selectedContacts.has(c.id) || seenIds.has(c.id)) return false;
+      seenIds.add(c.id);
+      return true;
+    });
     const queue = contacts.map(c => ({ id: c.id, name: c.name, phone: c.phone, status: 'pending' }));
     setSendQueue(queue);
     setSendLog([]);
