@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotification } from '../../context/NotificationContext';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
@@ -7,17 +7,6 @@ import clientService from '../../services/clientService';
 import staffService from '../../services/staffService';
 import servicesService from '../../services/servicesService';
 import templateService from '../../services/templateService';
-import aiService from '../../services/aiService';
-
-// Category display metadata
-const templateCategories = [
-  { id: 'post_servicio', name: 'Post-Servicio', color: '#34D399' },
-  { id: 'reactivacion', name: 'Reactivación', color: '#FBBF24' },
-  { id: 'recordatorio', name: 'Recordatorio', color: '#60A5FA' },
-  { id: 'promocion', name: 'Promoción', color: '#8B5CF6' },
-  { id: 'fidelizacion', name: 'Fidelización', color: '#EC4899' },
-  { id: 'bienvenida', name: 'Bienvenida', color: '#22B07E' },
-];
 
 const B = 'campaigns';
 
@@ -26,99 +15,162 @@ const B = 'campaigns';
 // ═══════════════════════════════════════════════
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
-const PlayIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>;
-const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>;
-const CloseIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
-const UsersIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
-const TargetIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>;
 const SendIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
 const CheckIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>;
 const EditIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>;
+const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>;
+const CloseIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
+const UsersIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
 const WhatsAppIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>;
-const ChartIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>;
-const EyeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>;
-const ClockIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
-const ZapIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>;
-const MegaphoneIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
-const SaveIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>;
 const RefreshIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg>;
-const SparkleIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8z" /></svg>;
-// Professional campaign type icons (SVG)
-// Professional SVG icons for campaign types
-const CampaignTypeIcons = {
-  recovery: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>,
-  vip: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z" /></svg>,
-  reactivation: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
-  promo: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" /><line x1="7" y1="7" x2="7.01" y2="7" /></svg>,
-  followup: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>,
-  birthday: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-3-3.87" /><path d="M4 21v-2a4 4 0 0 1 3-3.87" /><circle cx="12" cy="7" r="4" /><path d="M12 3v1" /><path d="M9 14h6" /><rect x="2" y="17" width="20" height="4" rx="2" /></svg>,
-  welcome: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><line x1="12" y1="11" x2="12" y2="17" /><line x1="9" y1="14" x2="15" y2="14" /></svg>,
-  noshow: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" /></svg>,
-  custom: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>,
-};
-const CAMPAIGN_ICONS = CampaignTypeIcons;
+const FilterIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>;
+const ChevronDown = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>;
+const ChevronRight = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>;
+const ArrowLeft = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>;
+const MegaphoneIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+const TemplateIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="9" y1="21" x2="9" y2="9" /></svg>;
+const RocketIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" /><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" /><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" /><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></svg>;
+const UserCheckIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><polyline points="17 11 19 13 23 9" /></svg>;
+const XCircleIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>;
+const CheckCircleIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>;
+const ClockIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
+const AlertIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>;
 
-// ═══════════════════════════════════════════════
-// Constants
-// ═══════════════════════════════════════════════
-const CAMPAIGN_TYPES = [
-  { id: 'recovery', label: 'Recuperación', desc: 'Clientes inactivos', color: '#D97706' },
-  { id: 'vip', label: 'VIP', desc: 'Mejores clientes', color: '#7C3AED' },
-  { id: 'reactivation', label: 'Reactivación', desc: 'En riesgo de irse', color: '#DC2626' },
-  { id: 'promo', label: 'Promoción', desc: 'Ofertas y descuentos', color: '#059669' },
-  { id: 'followup', label: 'Seguimiento', desc: 'Post-servicio', color: '#2563EB' },
-  { id: 'birthday', label: 'Cumpleaños', desc: 'Felicitaciones', color: '#EC4899' },
-  { id: 'welcome', label: 'Bienvenida', desc: 'Nuevos clientes', color: '#14B8A6' },
-  { id: 'noshow', label: 'No-show', desc: 'Citas perdidas', color: '#F97316' },
-  { id: 'custom', label: 'Personalizada', desc: 'Tu propio tipo', color: '#6B7280' },
+// Template categories
+const TEMPLATE_CATEGORIES = [
+  { id: 'all', name: 'Todas' },
+  { id: 'recordatorio', name: 'Recordatorio' },
+  { id: 'post_servicio', name: 'Post-Servicio' },
+  { id: 'reactivacion', name: 'Reactivacion' },
+  { id: 'fidelizacion', name: 'Fidelizacion' },
+  { id: 'promocion', name: 'Promocion' },
+  { id: 'bienvenida', name: 'Bienvenida' },
 ];
 
-const SEGMENT_OPTIONS = [
-  // Estado del cliente
-  { id: 'all', label: 'Todos los clientes', group: 'estado', filters: {} },
-  { id: 'active', label: 'Activos', group: 'estado', filters: { status: 'activo' } },
-  { id: 'vip', label: 'VIP', group: 'estado', filters: { status: 'vip' } },
-  { id: 'new', label: 'Nuevos', group: 'estado', filters: { status: 'nuevo' } },
-  { id: 'at_risk', label: 'En riesgo', group: 'estado', filters: { status: 'en_riesgo' } },
-  { id: 'inactive_all', label: 'Inactivos', group: 'estado', filters: { status: 'inactivo' } },
-  // Por inactividad
-  { id: 'inactive_15', label: '+15 dias sin venir', group: 'inactividad', filters: { days_inactive: 15 } },
-  { id: 'inactive_30', label: '+30 dias sin venir', group: 'inactividad', filters: { days_inactive: 30 } },
-  { id: 'inactive_60', label: '+60 dias sin venir', group: 'inactividad', filters: { days_inactive: 60 } },
-  { id: 'inactive_90', label: '+90 dias sin venir', group: 'inactividad', filters: { days_inactive: 90 } },
-  // Especiales
-  { id: 'birthday_month', label: 'Cumpleañeros del mes', group: 'especial', filters: { birthday_month: true } },
-  { id: 'frequent', label: 'Clientes frecuentes', group: 'especial', filters: { min_visits: 5 } },
-  { id: 'high_value', label: 'Alto valor (top 20%)', group: 'especial', filters: { top_spenders: 20 } },
-  { id: 'first_visit', label: 'Solo 1 visita', group: 'especial', filters: { max_visits: 1 } },
+const STATUS_CONFIG = {
+  draft: { label: 'Borrador', color: '#64748B', bg: 'rgba(100,116,139,0.08)', icon: EditIcon },
+  pending: { label: 'En revision', color: '#F59E0B', bg: 'rgba(245,158,11,0.08)', icon: ClockIcon },
+  approved: { label: 'Aprobada', color: '#10B981', bg: 'rgba(16,185,129,0.08)', icon: CheckCircleIcon },
+  rejected: { label: 'Rechazada', color: '#EF4444', bg: 'rgba(239,68,68,0.08)', icon: XCircleIcon },
+};
+
+// ── Filter group SVG icons ──
+const FilterGroupIcons = {
+  status: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M8 12l2 2 4-4" /></svg>,
+  activity: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
+  service: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>,
+  financial: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
+  personal: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
+  dates: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
+  payment: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>,
+};
+
+// ── Filter definitions for audience builder ──
+const FILTER_GROUPS = [
+  {
+    id: 'status',
+    label: 'Estado del cliente',
+    icon: 'status',
+    filters: [
+      { key: 'status', type: 'select', label: 'Estado', options: [
+        { value: '', label: 'Todos' },
+        { value: 'activo', label: 'Activos' },
+        { value: 'vip', label: 'VIP' },
+        { value: 'nuevo', label: 'Nuevos' },
+        { value: 'en_riesgo', label: 'En riesgo' },
+        { value: 'inactivo', label: 'Inactivos' },
+      ]},
+    ],
+  },
+  {
+    id: 'activity',
+    label: 'Actividad y visitas',
+    icon: 'activity',
+    filters: [
+      { key: 'days_inactive', type: 'number', label: 'Dias sin visitar (minimo)', placeholder: 'Ej: 30' },
+      { key: 'days_inactive_max', type: 'number', label: 'Dias sin visitar (maximo)', placeholder: 'Ej: 90' },
+      { key: 'min_visits', type: 'number', label: 'Minimo de visitas', placeholder: 'Ej: 3' },
+      { key: 'max_visits', type: 'number', label: 'Maximo de visitas', placeholder: 'Ej: 10' },
+      { key: 'no_show_count', type: 'number', label: 'No-shows minimos', placeholder: 'Ej: 2' },
+    ],
+  },
+  {
+    id: 'service',
+    label: 'Servicio y profesional',
+    icon: 'service',
+    filters: [
+      { key: 'service_name', type: 'service_select', label: 'Servicio utilizado' },
+      { key: 'staff_id', type: 'staff_select', label: 'Atendido por profesional' },
+      { key: 'preferred_barber', type: 'staff_select', label: 'Profesional preferido' },
+    ],
+  },
+  {
+    id: 'financial',
+    label: 'Gasto y valor',
+    icon: 'financial',
+    filters: [
+      { key: 'min_spent', type: 'number', label: 'Gasto total minimo (COP)', placeholder: 'Ej: 50000' },
+      { key: 'max_spent', type: 'number', label: 'Gasto total maximo (COP)', placeholder: 'Ej: 500000' },
+      { key: 'min_avg_ticket', type: 'number', label: 'Ticket promedio minimo', placeholder: 'Ej: 25000' },
+      { key: 'max_avg_ticket', type: 'number', label: 'Ticket promedio maximo', placeholder: 'Ej: 100000' },
+      { key: 'top_spenders_pct', type: 'number', label: 'Top gastadores (percentil %)', placeholder: 'Ej: 20 = top 20%' },
+    ],
+  },
+  {
+    id: 'personal',
+    label: 'Datos personales',
+    icon: 'personal',
+    filters: [
+      { key: 'birthday_month', type: 'checkbox', label: 'Cumpleaneros del mes actual' },
+      { key: 'has_email', type: 'checkbox', label: 'Tiene email registrado' },
+      { key: 'has_birthday', type: 'checkbox', label: 'Tiene fecha de cumpleanos' },
+      { key: 'accepts_whatsapp', type: 'checkbox', label: 'Acepta WhatsApp' },
+    ],
+  },
+  {
+    id: 'dates',
+    label: 'Fechas y periodos',
+    icon: 'dates',
+    filters: [
+      { key: 'last_visit_from', type: 'date', label: 'Ultima visita desde' },
+      { key: 'last_visit_to', type: 'date', label: 'Ultima visita hasta' },
+      { key: 'created_from', type: 'date', label: 'Registrado desde' },
+      { key: 'created_to', type: 'date', label: 'Registrado hasta' },
+    ],
+  },
+  {
+    id: 'payment',
+    label: 'Metodo de pago',
+    icon: 'payment',
+    filters: [
+      { key: 'payment_method', type: 'select', label: 'Metodo de pago', options: [
+        { value: '', label: 'Todos' },
+        { value: 'efectivo', label: 'Efectivo' },
+        { value: 'nequi', label: 'Nequi' },
+        { value: 'daviplata', label: 'Daviplata' },
+        { value: 'transferencia', label: 'Transferencia' },
+        { value: 'tarjeta', label: 'Tarjeta' },
+      ]},
+    ],
+  },
 ];
 
-const STATUS_META = {
-  draft: { label: 'Borrador', color: '#8E8E85' },
-  pending_meta: { label: 'Pendiente Meta', color: '#FBBF24' },
-  approved: { label: 'Aprobada', color: '#34D399' },
-  rejected: { label: 'Rechazada', color: '#F87171' },
-  sending: { label: 'Enviando...', color: '#60A5FA' },
-  sent: { label: 'Enviada', color: '#8B5CF6' },
-  paused: { label: 'Pausada', color: '#FBBF24' },
-};
+const QUICK_SEGMENTS = [
+  { label: 'Todos los clientes', filters: {} },
+  { label: 'Clientes VIP', filters: { status: 'vip' } },
+  { label: 'En riesgo', filters: { status: 'en_riesgo' } },
+  { label: 'Inactivos +30 dias', filters: { days_inactive: 30 } },
+  { label: 'Inactivos +60 dias', filters: { days_inactive: 60 } },
+  { label: 'Inactivos +90 dias', filters: { days_inactive: 90 } },
+  { label: 'Nuevos (1 visita)', filters: { max_visits: 1 } },
+  { label: 'Frecuentes (5+)', filters: { min_visits: 5 } },
+  { label: 'Cumpleaneros', filters: { birthday_month: true } },
+  { label: 'Alto valor (top 20%)', filters: { top_spenders_pct: 20 } },
+];
 
-const SUGGESTED_CAMPAIGNS = [];
-
-const SAMPLE_VARS = {
-  nombre: (c) => (c?.name || 'Cliente').split(' ')[0],
-  servicio: (c) => c?.favorite_service || 'tu servicio',
-  dias: (c) => String(c?.days_since_last_visit || ''),
-  negocio: () => 'Tu Negocio',
-  profesional: () => 'Tu profesional',
-};
-
-const resolveTemplate = (body, client) => {
-  if (!body) return '';
-  return body.replace(/\{\{(\w+)\}\}/g, (_, key) => {
-    const resolver = SAMPLE_VARS[key];
-    return resolver ? resolver(client) : `{{${key}}}`;
-  });
+const formatCOP = (n) => {
+  if (!n) return '$0';
+  return '$' + Number(n).toLocaleString('es-CO');
 };
 
 // ═══════════════════════════════════════════════
@@ -127,281 +179,140 @@ const resolveTemplate = (body, client) => {
 const Campaigns = () => {
   const { addNotification } = useNotification();
 
-  // Data
+  // ─── Data ──────────────────────────
+  const [templates, setTemplates] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
-  const [clients, setClients] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [servicesList, setServicesList] = useState([]);
-  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // UI
-  const [mainTab, setMainTab] = useState('templates'); // templates | campaigns
-  const [showWizard, setShowWizard] = useState(false);
-  const [wizardStep, setWizardStep] = useState(1);
-  const [showDetail, setShowDetail] = useState(null);
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
-
-  // Wizard form
-  const [formName, setFormName] = useState('');
-  const [formType, setFormType] = useState('recovery');
-  const [formBody, setFormBody] = useState('');
-  const [formTemplateName, setFormTemplateName] = useState('');
-  const [formSegment, setFormSegment] = useState('inactive_30');
-  const [formStaffFilter, setFormStaffFilter] = useState('');
-  const [formServiceFilter, setFormServiceFilter] = useState('');
-  const [editingId, setEditingId] = useState(null);
-
-  // AI
-  const [aiVariants, setAiVariants] = useState([]);
-  const [generatingAI, setGeneratingAI] = useState(false);
-
-  // Lina chat (Step 2)
-  const [linaPrompt, setLinaPrompt] = useState('');
-  const [linaResponse, setLinaResponse] = useState('');
-  const [linaLoading, setLinaLoading] = useState(false);
-
-  // Audience
-  const [audiencePreview, setAudiencePreview] = useState(null);
-  const [loadingAudience, setLoadingAudience] = useState(false);
-
-  // Actions
+  // ─── UI State ──────────────────────
+  const [mainTab, setMainTab] = useState('templates');
+  const [templateFilter, setTemplateFilter] = useState('all');
+  const [templateSearch, setTemplateSearch] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
 
-  // Confirm modal (replaces native confirm())
-  const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
+  // ─── Template Editor Modal ─────────
+  const [showEditor, setShowEditor] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editCategory, setEditCategory] = useState('promocion');
+  const [editBody, setEditBody] = useState('');
 
-  // Quick send modal
-  const [sendTemplate, setSendTemplate] = useState(null);
-  const [sendSegment, setSendSegment] = useState('all');
-  const [sendStaff, setSendStaff] = useState('');
-  const [sendService, setSendService] = useState('');
-  const [sending, setSending] = useState(false);
+  // ─── Send Campaign Flow ────────────
+  const [sendStep, setSendStep] = useState(0); // 0=select template, 1=filters, 2=contacts, 3=sending
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [filters, setFilters] = useState({});
+  const [expandedGroups, setExpandedGroups] = useState(['status', 'activity', 'service', 'financial', 'personal', 'dates', 'payment']);
+  const [audienceResults, setAudienceResults] = useState(null);
+  const [audienceLoading, setAudienceLoading] = useState(false);
+  const [selectedContacts, setSelectedContacts] = useState(new Set());
+  const [contactSearch, setContactSearch] = useState('');
 
-  const handleQuickSend = async () => {
-    if (!sendTemplate) return;
-    setSending(true);
-    try {
-      const seg = SEGMENT_OPTIONS.find(s => s.id === sendSegment);
-      const created = await campaignService.create({
-        name: sendTemplate.name,
-        campaign_type: 'custom',
-        message_body: sendTemplate.body,
-        meta_template_name: sendTemplate.slug,
-        segment_filters: seg?.filters || {},
-      });
-      const res = await campaignService.send(created.id);
-      setCampaigns(prev => [res.campaign, ...prev]);
-      setSendTemplate(null);
-      addNotification(`Enviados: ${res.sent} | Fallidos: ${res.failed} de ${res.total}`, res.sent > 0 ? 'success' : 'error');
-      loadCampaigns();
-    } catch (e) {
-      addNotification(e.message || 'Error al enviar', 'error');
-    } finally {
-      setSending(false);
-    }
-  };
+  // ─── Sending Animation ─────────────
+  const [sendingActive, setSendingActive] = useState(false);
+  const [sendQueue, setSendQueue] = useState([]); // {id, name, phone, status: 'pending'|'sending'|'sent'|'failed'}
+  const [sendCurrent, setSendCurrent] = useState(null);
+  const [sendLog, setSendLog] = useState([]);
+  const [sendStats, setSendStats] = useState({ sent: 0, failed: 0, total: 0 });
+  const [activeCampaignId, setActiveCampaignId] = useState(null);
+  const sendingRef = useRef(false);
+  const logEndRef = useRef(null);
 
-  // ─── Load all data ──────────────────────────
-  const loadCampaigns = useCallback(async () => {
-    try {
-      const data = await campaignService.list();
-      setCampaigns(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.error('Error loading campaigns:', e);
-      setCampaigns([]);
-    } finally {
-      setLoading(false);
-    }
+  // ─── Confirm modal ─────────────────
+  const [confirmModal, setConfirmModal] = useState(null);
+
+  // ═══ Data Loading ═══
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [tpls, camps, staff, svcs] = await Promise.all([
+          templateService.getTemplates(),
+          campaignService.list(),
+          staffService.list({}).catch(() => []),
+          servicesService.list({}).catch(() => []),
+        ]);
+        setTemplates(Array.isArray(tpls) ? tpls : []);
+        setCampaigns(Array.isArray(camps) ? camps : []);
+        setStaffList(Array.isArray(staff) ? staff : []);
+        setServicesList(Array.isArray(svcs) ? svcs : []);
+      } catch (e) {
+        console.error('Error loading campaign data:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, []);
 
-  useEffect(() => {
-    loadCampaigns();
-    // Load supporting data for filters + context
-    clientService.list({}).then(d => setClients(Array.isArray(d) ? d : [])).catch(() => {});
-    staffService.list({}).then(d => setStaffList(Array.isArray(d) ? d : [])).catch(() => {});
-    servicesService.list({}).then(d => setServicesList(Array.isArray(d) ? d : [])).catch(() => {});
-    templateService.getTemplates().then(d => setTemplates(Array.isArray(d) ? d : [])).catch(() => {});
-  }, [loadCampaigns]);
+  const reloadTemplates = useCallback(async () => {
+    try {
+      const tpls = await templateService.getTemplates();
+      setTemplates(Array.isArray(tpls) ? tpls : []);
+    } catch {}
+  }, []);
 
-  // ─── Filtered list ───────────────────────────
-  const filteredCampaigns = useMemo(() => {
-    let list = [...campaigns];
-    if (filter !== 'all') list = list.filter(c => c.status === filter);
-    if (search) {
-      const s = search.toLowerCase();
-      list = list.filter(c => c.name.toLowerCase().includes(s));
-    }
-    return list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-  }, [campaigns, filter, search]);
-
-  // ─── Stats (real data from clients + campaigns) ────
-  const stats = useMemo(() => {
-    const getDays = c => c.days_since_last_visit ?? null;
-    const withPhone = clients.filter(c => c.phone);
-    return {
-      total: campaigns.length,
-      drafts: campaigns.filter(c => c.status === 'draft').length,
-      pending: campaigns.filter(c => c.status === 'pending_meta').length,
-      approved: campaigns.filter(c => c.status === 'approved').length,
-      sent: campaigns.filter(c => c.status === 'sent').length,
-      totalSent: campaigns.reduce((a, c) => a + (c.sent_count || 0), 0),
-      totalFailed: campaigns.reduce((a, c) => a + (c.failed_count || 0), 0),
-      // Client segments (real data)
-      totalClients: withPhone.length,
-      inactive30: withPhone.filter(c => { const d = getDays(c); return d !== null && d >= 30; }).length,
-      inactive60: withPhone.filter(c => { const d = getDays(c); return d !== null && d >= 60; }).length,
-      vips: withPhone.filter(c => c.status === 'vip').length,
-      atRisk: withPhone.filter(c => c.status === 'en_riesgo' || c.status === 'at_risk').length,
-      approvedTemplates: templates.filter(t => t.status === 'approved').length,
-    };
-  }, [campaigns, clients, templates]);
-
-  // ─── Wizard actions ──────────────────────────
-  const openWizard = (suggestion = null) => {
-    setEditingId(null);
-    setWizardStep(1);
-    setAiVariants([]);
-    setAudiencePreview(null);
-    setFormStaffFilter('');
-    setFormServiceFilter('');
-    setLinaPrompt('');
-    setLinaResponse('');
-    if (suggestion) {
-      setFormName(suggestion.name);
-      setFormType(suggestion.type);
-      setFormSegment(suggestion.segment);
-      setFormBody('');
-    } else {
-      setFormName('');
-      setFormType('recovery');
-      setFormSegment('inactive_30');
-      setFormBody('');
-    }
-    setShowWizard(true);
+  // ═══ Template CRUD ═══
+  const openNewTemplate = () => {
+    setEditId(null);
+    setEditName('');
+    setEditCategory('promocion');
+    setEditBody('');
+    setShowEditor(true);
   };
 
-  const openEdit = (campaign) => {
-    setEditingId(campaign.id);
-    setWizardStep(1);
-    setFormName(campaign.name);
-    setFormType(campaign.campaign_type || 'recovery');
-    setFormBody(campaign.message_body || '');
-    setAiVariants(campaign.ai_variants || []);
-    setAudiencePreview(null);
-    setLinaPrompt('');
-    setLinaResponse('');
-    const seg = SEGMENT_OPTIONS.find(s => {
-      const f = campaign.segment_filters || {};
-      return JSON.stringify(s.filters) === JSON.stringify(f);
-    });
-    setFormSegment(seg?.id || 'inactive_30');
-    setShowWizard(true);
+  const openEditTemplate = (t) => {
+    setEditId(t.id);
+    setEditName(t.name);
+    setEditCategory(t.category || 'promocion');
+    setEditBody(t.body || '');
+    setShowEditor(true);
   };
 
-  const handleSaveStep1 = async () => {
-    if (!formName.trim()) {
-      addNotification('Dale un nombre a la campaña', 'error');
+  const handleSaveTemplate = async () => {
+    if (!editName.trim() || !editBody.trim()) {
+      addNotification('Nombre y mensaje son requeridos', 'error');
       return;
     }
-    const seg = SEGMENT_OPTIONS.find(s => s.id === formSegment);
-    const payload = {
-      name: formName,
-      campaign_type: formType,
-      segment_filters: seg?.filters || {},
-      message_body: formBody || null,
-    };
-
     try {
-      if (editingId) {
-        const updated = await campaignService.update(editingId, payload);
-        setCampaigns(prev => prev.map(c => c.id === editingId ? updated : c));
+      if (editId) {
+        await templateService.updateTemplate(editId, { name: editName, category: editCategory, body: editBody });
+        addNotification('Plantilla actualizada', 'success');
       } else {
-        const created = await campaignService.create(payload);
-        setCampaigns(prev => [created, ...prev]);
-        setEditingId(created.id);
+        await templateService.createTemplate({ name: editName, category: editCategory, body: editBody, status: 'draft' });
+        addNotification('Plantilla creada como borrador', 'success');
       }
-      setWizardStep(2);
+      setShowEditor(false);
+      reloadTemplates();
     } catch (e) {
-      addNotification(e.message, 'error');
+      addNotification(e.message || 'Error guardando plantilla', 'error');
     }
   };
 
-  const handleGenerateAI = async () => {
-    if (!editingId) return;
-    setGeneratingAI(true);
-    try {
-      const res = await campaignService.generateCopy(editingId);
-      setAiVariants(res.variants || []);
-      if (res.variants?.length && !formBody) {
-        setFormBody(res.variants[0].body);
-      }
-      addNotification('Lina IA genero 3 variantes de copy', 'success');
-    } catch (e) {
-      addNotification(`Error generando copy: ${e.message}`, 'error');
-    } finally {
-      setGeneratingAI(false);
-    }
+  const handleDeleteTemplate = (id) => {
+    setConfirmModal({
+      message: 'Eliminar esta plantilla permanentemente?',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          await templateService.deleteTemplate(id);
+          addNotification('Plantilla eliminada', 'success');
+          reloadTemplates();
+        } catch (e) {
+          addNotification(e.message, 'error');
+        }
+      },
+    });
   };
 
-  const handleAskLina = async () => {
-    if (!linaPrompt.trim()) return;
-    setLinaLoading(true);
-    try {
-      const campaignContext = `Estoy creando una campaña de marketing tipo "${CAMPAIGN_TYPES.find(t => t.id === formType)?.label || formType}" llamada "${formName}". `;
-      const fullPrompt = campaignContext + linaPrompt;
-      const res = await aiService.chat(fullPrompt);
-      setLinaResponse(res.response || '');
-    } catch (e) {
-      setLinaResponse('Error consultando a Lina: ' + e.message);
-    } finally {
-      setLinaLoading(false);
-    }
-  };
-
-  const handleSaveStep2 = async () => {
-    if (!formBody.trim()) {
-      addNotification('Escribe o genera un mensaje', 'error');
-      return;
-    }
-    try {
-      const updated = await campaignService.update(editingId, { message_body: formBody });
-      setCampaigns(prev => prev.map(c => c.id === editingId ? updated : c));
-      setWizardStep(3);
-    } catch (e) {
-      addNotification(e.message, 'error');
-    }
-  };
-
-  const handlePreviewAudience = async () => {
-    if (!editingId) return;
-    setLoadingAudience(true);
-    try {
-      const res = await campaignService.previewAudience(editingId);
-      setAudiencePreview(res);
-    } catch (e) {
-      addNotification(`Error: ${e.message}`, 'error');
-    } finally {
-      setLoadingAudience(false);
-    }
-  };
-
-  const handleFinishWizard = () => {
-    setShowWizard(false);
-    loadCampaigns();
-    addNotification('Campaña guardada. Envíala a Meta para aprobación.', 'success');
-  };
-
-  // ─── Campaign actions ────────────────────────
-  const handleSubmitMeta = async (id) => {
+  const handleSubmitToMeta = async (id) => {
     setActionLoading(id);
     try {
-      const res = await campaignService.submitToMeta(id);
-      setCampaigns(prev => prev.map(c => c.id === id ? res.campaign : c));
-      addNotification(`Enviada a Meta (estado: ${res.meta_status})`, 'success');
+      await templateService.submitToMeta(id);
+      addNotification('Plantilla enviada a Meta para revision', 'success');
+      reloadTemplates();
     } catch (e) {
-      addNotification(e.message, 'error');
+      addNotification(e.message || 'Error enviando a Meta', 'error');
     } finally {
       setActionLoading(null);
     }
@@ -410,9 +321,9 @@ const Campaigns = () => {
   const handleCheckStatus = async (id) => {
     setActionLoading(id);
     try {
-      const res = await campaignService.checkMetaStatus(id);
-      setCampaigns(prev => prev.map(c => c.id === id ? res.campaign : c));
-      addNotification(`Estado Meta: ${res.meta_status}`, 'info');
+      const res = await templateService.checkMetaStatus(id);
+      addNotification(`Estado: ${res.status || 'sin cambios'}`, 'info');
+      reloadTemplates();
     } catch (e) {
       addNotification(e.message, 'error');
     } finally {
@@ -420,164 +331,338 @@ const Campaigns = () => {
     }
   };
 
-  const requestConfirm = (message, onConfirm) => {
-    setConfirmModal({ message, onConfirm });
+  // ═══ Filtered Templates ═══
+  const filteredTemplates = useMemo(() => {
+    let list = [...templates];
+    if (templateFilter !== 'all') {
+      list = list.filter(t => t.category === templateFilter);
+    }
+    if (templateSearch) {
+      const s = templateSearch.toLowerCase();
+      list = list.filter(t => (t.name || '').toLowerCase().includes(s) || (t.body || '').toLowerCase().includes(s));
+    }
+    return list;
+  }, [templates, templateFilter, templateSearch]);
+
+  // ═══ Stats ═══
+  const stats = useMemo(() => ({
+    total: templates.length,
+    approved: templates.filter(t => t.status === 'approved').length,
+    pending: templates.filter(t => t.status === 'pending').length,
+    drafts: templates.filter(t => t.status === 'draft').length,
+    totalSent: campaigns.reduce((a, c) => a + (c.sent_count || 0), 0),
+  }), [templates, campaigns]);
+
+  // ═══ Audience Search ═══
+  const handleSearchAudience = async () => {
+    setAudienceLoading(true);
+    try {
+      const cleanFilters = {};
+      Object.entries(filters).forEach(([k, v]) => {
+        if (v !== '' && v !== null && v !== undefined && v !== false) cleanFilters[k] = v;
+      });
+      const res = await campaignService.searchAudience(cleanFilters);
+      setAudienceResults(res);
+      const ids = new Set((res.contacts || []).map(c => c.id));
+      setSelectedContacts(ids);
+    } catch (e) {
+      addNotification(e.message || 'Error buscando audiencia', 'error');
+    } finally {
+      setAudienceLoading(false);
+    }
   };
 
-  const handleSend = (id) => {
-    requestConfirm('Enviar esta campaña a todos los clientes del segmento?', async () => {
-      setConfirmModal(null);
-      setActionLoading(id);
-      try {
-        const res = await campaignService.send(id);
-        setCampaigns(prev => prev.map(c => c.id === id ? res.campaign : c));
-        addNotification(`Enviados: ${res.sent} | Fallidos: ${res.failed} de ${res.total}`, 'success');
-      } catch (e) {
-        addNotification(e.message, 'error');
-      } finally {
-        setActionLoading(null);
+  const handleApplyQuickSegment = (seg) => {
+    setFilters(seg.filters);
+  };
+
+  const toggleGroup = (groupId) => {
+    setExpandedGroups(prev =>
+      prev.includes(groupId) ? prev.filter(g => g !== groupId) : [...prev, groupId]
+    );
+  };
+
+  const updateFilter = (key, value) => {
+    setFilters(prev => {
+      const next = { ...prev };
+      if (value === '' || value === null || value === undefined || value === false) {
+        delete next[key];
+      } else {
+        next[key] = value;
       }
+      return next;
     });
   };
 
-  const handleDelete = (id) => {
-    requestConfirm('Eliminar esta campaña?', async () => {
-      setConfirmModal(null);
+  const activeFilterCount = useMemo(() => {
+    return Object.keys(filters).filter(k => filters[k] !== '' && filters[k] !== null && filters[k] !== undefined).length;
+  }, [filters]);
+
+  // ═══ Sending Logic (1-by-1) ═══
+  const startSending = async () => {
+    if (!selectedTemplate || selectedContacts.size === 0) return;
+
+    // Create campaign record
+    let campId = null;
+    try {
+      const camp = await campaignService.create({
+        name: `${selectedTemplate.name} — ${new Date().toLocaleString('es-CO')}`,
+        campaign_type: 'custom',
+        message_body: selectedTemplate.body,
+        meta_template_name: selectedTemplate.slug,
+        segment_filters: filters,
+      });
+      campId = camp.id;
+      setActiveCampaignId(campId);
+    } catch {}
+
+    const contacts = (audienceResults?.contacts || []).filter(c => selectedContacts.has(c.id));
+    const queue = contacts.map(c => ({ id: c.id, name: c.name, phone: c.phone, status: 'pending' }));
+    setSendQueue(queue);
+    setSendLog([]);
+    setSendStats({ sent: 0, failed: 0, total: queue.length });
+    setSendingActive(true);
+    setSendStep(3);
+    sendingRef.current = true;
+
+    // Send one-by-one
+    for (let i = 0; i < queue.length; i++) {
+      if (!sendingRef.current) break;
+      const contact = queue[i];
+
+      // Update current
+      setSendCurrent(contact);
+      setSendQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'sending' } : q));
+
       try {
-        await campaignService.delete(id);
-        setCampaigns(prev => prev.filter(c => c.id !== id));
-        addNotification('Campaña eliminada', 'success');
+        const res = await campaignService.sendOne({
+          client_id: contact.id,
+          template_slug: selectedTemplate.slug,
+          message_body: selectedTemplate.body,
+          campaign_id: campId,
+        });
+
+        const newStatus = res.success ? 'sent' : 'failed';
+        const logEntry = {
+          ...contact,
+          status: newStatus,
+          time: new Date().toLocaleTimeString('es-CO'),
+          error: res.error || null,
+        };
+
+        setSendQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: newStatus } : q));
+        setSendLog(prev => [...prev, logEntry]);
+        setSendStats(prev => ({
+          ...prev,
+          sent: prev.sent + (res.success ? 1 : 0),
+          failed: prev.failed + (res.success ? 0 : 1),
+        }));
       } catch (e) {
-        addNotification(e.message, 'error');
+        const logEntry = { ...contact, status: 'failed', time: new Date().toLocaleTimeString('es-CO'), error: e.message };
+        setSendQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'failed' } : q));
+        setSendLog(prev => [...prev, logEntry]);
+        setSendStats(prev => ({ ...prev, failed: prev.failed + 1 }));
       }
-    });
+
+      // Small delay between sends
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    setSendCurrent(null);
+    setSendingActive(false);
+    sendingRef.current = false;
   };
 
-  // ─── Render helpers ──────────────────────────
-  const statusBadge = (status) => {
-    const meta = STATUS_META[status] || STATUS_META.draft;
-    return (
-      <span className={`${B}__status-badge`} style={{ background: meta.color + '18', color: meta.color, borderColor: meta.color + '30' }}>
-        {meta.label}
-      </span>
-    );
+  const stopSending = () => {
+    sendingRef.current = false;
+    setSendingActive(false);
   };
 
-  const typeBadge = (type) => {
-    const t = CAMPAIGN_TYPES.find(ct => ct.id === type);
-    if (!t) return null;
-    return (
-      <span className={`${B}__type-badge`} style={{ background: t.color + '18', color: t.color }}>
-        {(() => { const I = CAMPAIGN_ICONS[t.id]; return I ? <I /> : null; })()} {t.label}
-      </span>
-    );
+  // Auto-scroll send log
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [sendLog]);
+
+  // ═══ Reset send flow ═══
+  const resetSendFlow = () => {
+    setSendStep(0);
+    setSelectedTemplate(null);
+    setFilters({});
+    setAudienceResults(null);
+    setSelectedContacts(new Set());
+    setContactSearch('');
+    setSendQueue([]);
+    setSendLog([]);
+    setSendStats({ sent: 0, failed: 0, total: 0 });
+    setSendingActive(false);
+    setActiveCampaignId(null);
   };
 
-  // ─── Loading state ───────────────────────────
-  if (loading) {
-    return (
-      <div className={B}>
-        <div className={`${B}__loading`}>Cargando campañas...</div>
-      </div>
+  // Filtered contacts for review
+  const filteredContacts = useMemo(() => {
+    if (!audienceResults?.contacts) return [];
+    if (!contactSearch) return audienceResults.contacts;
+    const s = contactSearch.toLowerCase();
+    return audienceResults.contacts.filter(c =>
+      (c.name || '').toLowerCase().includes(s) || (c.phone || '').includes(s)
     );
-  }
+  }, [audienceResults, contactSearch]);
 
   // ═══════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════
+  if (loading) {
+    return <div className={B}><div className={`${B}__loading`}><div className={`${B}__loading-spinner`} /><span>Cargando sistema de campanas...</span></div></div>;
+  }
+
   return (
     <div className={B}>
       {/* ─── Header ─── */}
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
-          <h1 className={`${B}__title`}>Campañas</h1>
-          <span className={`${B}__subtitle`}>Plantillas WhatsApp & envio masivo</span>
+          <h1 className={`${B}__title`}>Campanas</h1>
+          <span className={`${B}__subtitle`}>CENTRO DE MARKETING · WHATSAPP BUSINESS</span>
         </div>
-        <button className={`${B}__btn-create`} onClick={() => openWizard()}>
-          <PlusIcon /> Nueva plantilla
-        </button>
+        <div className={`${B}__header-actions`}>
+          {mainTab === 'templates' && (
+            <button className={`${B}__btn-create`} onClick={openNewTemplate}>
+              <PlusIcon /> Nueva plantilla
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ─── Stats ─── */}
-      <div className={`${B}__health`}>
+      {/* ─── KPI Cards ─── */}
+      <div className={`${B}__kpis`}>
         {[
-          { value: templates.length, label: 'Total', sub: 'plantillas creadas', color: '#3B82F6' },
-          { value: templates.filter(t => t.status === 'approved').length, label: 'Aprobadas', sub: 'listas para enviar', color: '#22C55E' },
-          { value: stats.totalSent, label: 'Enviados', sub: 'mensajes totales', color: '#059669' },
-          { value: stats.totalClients, label: 'Alcance', sub: 'clientes con WhatsApp', color: '#D97706' },
-        ].map((item, i) => (
-          <div key={i} className={`${B}__health-card`}>
-            <div className={`${B}__health-card-dot`} style={{ background: item.color }} />
-            <div className={`${B}__health-card-info`}>
-              <div className={`${B}__health-card-value`}>{item.value}</div>
-              <div className={`${B}__health-card-label`}>{item.label}</div>
-              <div className={`${B}__health-card-sub`}>{item.sub}</div>
+          { value: stats.total, label: 'Total plantillas', color: '#1E40AF' },
+          { value: stats.approved, label: 'Aprobadas', color: '#10B981' },
+          { value: stats.pending, label: 'En revision', color: '#F59E0B' },
+          { value: stats.totalSent, label: 'Mensajes enviados', color: '#6366F1' },
+        ].map((kpi, i) => (
+          <div key={i} className={`${B}__kpi`}>
+            <div className={`${B}__kpi-indicator`} style={{ background: kpi.color }} />
+            <div className={`${B}__kpi-content`}>
+              <span className={`${B}__kpi-value`}>{kpi.value}</span>
+              <span className={`${B}__kpi-label`}>{kpi.label}</span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* ─── Tabs ─── */}
+      {/* ─── Main Tabs ─── */}
       <div className={`${B}__tabs`}>
-        <button
-          className={`${B}__tab ${mainTab === 'templates' ? `${B}__tab--active` : ''}`}
-          onClick={() => setMainTab('templates')}
-        >
-          Plantillas <span className={`${B}__tab-count`}>{templates.length}</span>
+        <button className={`${B}__tab ${mainTab === 'templates' ? `${B}__tab--active` : ''}`} onClick={() => { setMainTab('templates'); resetSendFlow(); }}>
+          <TemplateIcon /> Plantillas
+          <span className={`${B}__tab-badge`}>{templates.length}</span>
         </button>
-        <button
-          className={`${B}__tab ${mainTab === 'campaigns' ? `${B}__tab--active` : ''}`}
-          onClick={() => setMainTab('campaigns')}
-        >
-          Enviar campaña <span className={`${B}__tab-count`}>{templates.filter(t => t.status === 'approved').length}</span>
+        <button className={`${B}__tab ${mainTab === 'send' ? `${B}__tab--active` : ''}`} onClick={() => { setMainTab('send'); resetSendFlow(); }}>
+          <RocketIcon /> Enviar campana
+          <span className={`${B}__tab-badge`}>{stats.approved}</span>
         </button>
       </div>
 
-      {/* ═══ TAB: PLANTILLAS ═══ */}
+      {/* ═══════════════════════════════════════════
+          TAB 1: PLANTILLAS
+          ═══════════════════════════════════════════ */}
       {mainTab === 'templates' && (
-        <>
-          {templates.length === 0 ? (
+        <div className={`${B}__templates`}>
+          {/* Toolbar */}
+          <div className={`${B}__toolbar`}>
+            <div className={`${B}__search-box`}>
+              <SearchIcon />
+              <input
+                type="text"
+                placeholder="Buscar plantilla..."
+                value={templateSearch}
+                onChange={e => setTemplateSearch(e.target.value)}
+              />
+            </div>
+            <div className={`${B}__category-pills`}>
+              {TEMPLATE_CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  className={`${B}__pill ${templateFilter === cat.id ? `${B}__pill--active` : ''}`}
+                  onClick={() => setTemplateFilter(cat.id)}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Template Grid */}
+          {filteredTemplates.length === 0 ? (
             <EmptyState
               icon={<MegaphoneIcon />}
-              title="Sin plantillas aun"
+              title="Sin plantillas"
               description="Crea tu primera plantilla para enviar mensajes masivos por WhatsApp"
             />
           ) : (
-            <div className={`${B}__ready-grid`}>
-              {templates.map(t => {
-                const isDraft = t.status === 'draft';
-                const isPending = t.status === 'pending';
-                const isApproved = t.status === 'approved';
-                const isRejected = t.status === 'rejected';
+            <div className={`${B}__tpl-grid`}>
+              {filteredTemplates.map(t => {
+                const st = STATUS_CONFIG[t.status] || STATUS_CONFIG.draft;
+                const StatusIcon = st.icon;
                 return (
-                  <div key={t.id} className={`${B}__ready-card ${isDraft ? `${B}__ready-card--draft` : ''} ${isRejected ? `${B}__ready-card--rejected` : ''}`}>
-                    <div className={`${B}__ready-card-header`}>
-                      <span className={`${B}__ready-card-name`}>{t.name}</span>
-                      <span className={`${B}__ready-card-badge ${isDraft ? `${B}__ready-card-badge--draft` : ''} ${isPending ? `${B}__ready-card-badge--pending` : ''} ${isRejected ? `${B}__ready-card-badge--rejected` : ''}`}>
-                        {isApproved ? 'Aprobada' : isPending ? 'Pendiente' : isRejected ? 'Rechazada' : 'Borrador'}
-                      </span>
+                  <div key={t.id} className={`${B}__tpl-card`}>
+                    <div className={`${B}__tpl-card-top`}>
+                      <div className={`${B}__tpl-card-meta`}>
+                        <span className={`${B}__tpl-card-category`}>{t.category || 'general'}</span>
+                        <span className={`${B}__tpl-card-status`} style={{ color: st.color, background: st.bg }}>
+                          <StatusIcon /> {st.label}
+                        </span>
+                      </div>
+                      <h3 className={`${B}__tpl-card-name`}>{t.name}</h3>
                     </div>
-                    <p className={`${B}__ready-card-body`}>{(t.body || '').length > 120 ? t.body.slice(0, 120) + '...' : t.body}</p>
-                    <div className={`${B}__ready-card-actions`}>
-                      {isDraft && (
-                        <button className={`${B}__ready-card-btn ${B}__ready-card-btn--meta`} onClick={() => handleSubmitMeta(t.id)} disabled={actionLoading === t.id}>
-                          {actionLoading === t.id ? 'Enviando...' : 'Enviar a Meta'}
+
+                    <div className={`${B}__tpl-card-body`}>
+                      <div className={`${B}__tpl-card-preview`}>
+                        <WhatsAppIcon />
+                        <p>{(t.body || '').length > 140 ? t.body.slice(0, 140) + '...' : t.body}</p>
+                      </div>
+                    </div>
+
+                    <div className={`${B}__tpl-card-footer`}>
+                      {t.status === 'draft' && (
+                        <>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--meta`} onClick={() => handleSubmitToMeta(t.id)} disabled={actionLoading === t.id}>
+                            <SendIcon /> {actionLoading === t.id ? 'Enviando...' : 'Enviar a Meta'}
+                          </button>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
+                            <EditIcon />
+                          </button>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--delete`} onClick={() => handleDeleteTemplate(t.id)}>
+                            <TrashIcon />
+                          </button>
+                        </>
+                      )}
+                      {t.status === 'pending' && (
+                        <button className={`${B}__tpl-btn ${B}__tpl-btn--check`} onClick={() => handleCheckStatus(t.id)} disabled={actionLoading === t.id}>
+                          <RefreshIcon /> {actionLoading === t.id ? 'Verificando...' : 'Verificar estado'}
                         </button>
                       )}
-                      {isPending && (
-                        <button className={`${B}__ready-card-btn ${B}__ready-card-btn--check`} onClick={() => handleCheckStatus(t.id)} disabled={actionLoading === t.id}>
-                          {actionLoading === t.id ? 'Verificando...' : 'Verificar estado'}
-                        </button>
+                      {t.status === 'approved' && (
+                        <>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--send`} onClick={() => { setMainTab('send'); setSelectedTemplate(t); setSendStep(1); }}>
+                            <RocketIcon /> Usar en campana
+                          </button>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
+                            <EditIcon />
+                          </button>
+                        </>
                       )}
-                      {isApproved && (
-                        <button className={`${B}__ready-card-btn`} onClick={() => { setSendTemplate(t); setSendSegment('all'); }}>
-                          Enviar a clientes
-                        </button>
-                      )}
-                      {isRejected && (
-                        <button className={`${B}__ready-card-btn ${B}__ready-card-btn--meta`} onClick={() => handleSubmitMeta(t.id)} disabled={actionLoading === t.id}>
-                          Reenviar a Meta
-                        </button>
+                      {t.status === 'rejected' && (
+                        <>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--meta`} onClick={() => handleSubmitToMeta(t.id)} disabled={actionLoading === t.id}>
+                            <RefreshIcon /> Reenviar a Meta
+                          </button>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
+                            <EditIcon />
+                          </button>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--delete`} onClick={() => handleDeleteTemplate(t.id)}>
+                            <TrashIcon />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -585,632 +670,508 @@ const Campaigns = () => {
               })}
             </div>
           )}
-        </>
-      )}
-
-      {/* ═══ TAB: ENVIAR CAMPAÑA ═══ */}
-      {mainTab === 'campaigns' && (
-        <>
-          {(() => {
-            const approved = templates.filter(t => t.status === 'approved');
-            if (approved.length === 0) return (
-              <EmptyState
-                icon={<SendIcon />}
-                title="Sin plantillas aprobadas"
-                description="Primero envia tus plantillas a Meta para aprobacion. Una vez aprobadas, podras enviar campañas masivas."
-              />
-            );
-            return (
-              <div className={`${B}__ready-grid`}>
-                {approved.map(t => (
-                  <div key={t.id} className={`${B}__ready-card`}>
-                    <div className={`${B}__ready-card-header`}>
-                      <span className={`${B}__ready-card-name`}>{t.name}</span>
-                      <span className={`${B}__ready-card-badge`}>Aprobada</span>
-                    </div>
-                    <p className={`${B}__ready-card-body`}>{(t.body || '').length > 120 ? t.body.slice(0, 120) + '...' : t.body}</p>
-                    <button className={`${B}__ready-card-btn`} onClick={() => { setSendTemplate(t); setSendSegment('all'); }}>
-                      Seleccionar audiencia y enviar
-                    </button>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-
-          {/* Campaign History */}
-          {filteredCampaigns.length > 0 && (
-            <div className={`${B}__ready-section`}>
-              <h3 className={`${B}__ready-title`}>Historial de envios</h3>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ─── Campaign List ─── */}
-      {filteredCampaigns.length > 0 && (
-        <div className={`${B}__list`}>
-          {filteredCampaigns.map(c => (
-            <div key={c.id} className={`${B}__card`}>
-              <div className={`${B}__card-header`}>
-                <div className={`${B}__card-title-row`}>
-                  <h3 className={`${B}__card-name`}>{c.name}</h3>
-                  {statusBadge(c.status)}
-                </div>
-                {typeBadge(c.campaign_type)}
-              </div>
-
-              {c.message_body && (
-                <div className={`${B}__card-preview`}>
-                  <WhatsAppIcon />
-                  <span>{c.message_body.length > 100 ? c.message_body.slice(0, 100) + '...' : c.message_body}</span>
-                </div>
-              )}
-
-              <div className={`${B}__card-stats`}>
-                <span><UsersIcon /> {c.audience_count || 0} destinatarios</span>
-                {c.sent_count > 0 && <span><SendIcon /> {c.sent_count} enviados</span>}
-                {c.failed_count > 0 && <span className={`${B}__card-stat--error`}>✗ {c.failed_count} fallidos</span>}
-              </div>
-
-              <div className={`${B}__card-actions`}>
-                {c.status === 'draft' && (
-                  <>
-                    <button className={`${B}__btn-action ${B}__btn-action--edit`} onClick={() => openEdit(c)} title="Editar">
-                      <EditIcon /> Editar
-                    </button>
-                    <button className={`${B}__btn-action ${B}__btn-action--meta`} onClick={() => handleSubmitMeta(c.id)} disabled={actionLoading === c.id || !c.message_body} title="Enviar a Meta">
-                      <SendIcon /> {actionLoading === c.id ? 'Enviando...' : 'Enviar a Meta'}
-                    </button>
-                    <button className={`${B}__btn-action ${B}__btn-action--delete`} onClick={() => handleDelete(c.id)} title="Eliminar">
-                      <TrashIcon />
-                    </button>
-                  </>
-                )}
-                {c.status === 'pending_meta' && (
-                  <button className={`${B}__btn-action ${B}__btn-action--check`} onClick={() => handleCheckStatus(c.id)} disabled={actionLoading === c.id}>
-                    <RefreshIcon /> {actionLoading === c.id ? 'Verificando...' : 'Verificar estado'}
-                  </button>
-                )}
-                {c.status === 'approved' && (
-                  <>
-                    <button className={`${B}__btn-action ${B}__btn-action--send`} onClick={() => handleSend(c.id)} disabled={actionLoading === c.id}>
-                      <PlayIcon /> {actionLoading === c.id ? 'Enviando...' : 'Enviar campaña'}
-                    </button>
-                    <button className={`${B}__btn-action ${B}__btn-action--delete`} onClick={() => handleDelete(c.id)}>
-                      <TrashIcon />
-                    </button>
-                  </>
-                )}
-                {c.status === 'sent' && (
-                  <button className={`${B}__btn-action ${B}__btn-action--stats`} onClick={() => setShowDetail(c)}>
-                    <ChartIcon /> Ver resultados
-                  </button>
-                )}
-                {c.status === 'rejected' && (
-                  <>
-                    <button className={`${B}__btn-action ${B}__btn-action--edit`} onClick={() => openEdit(c)}>
-                      <EditIcon /> Editar y reenviar
-                    </button>
-                    <button className={`${B}__btn-action ${B}__btn-action--delete`} onClick={() => handleDelete(c.id)}>
-                      <TrashIcon />
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
         </div>
       )}
 
-      {filteredCampaigns.length === 0 && campaigns.length > 0 && (
-        <EmptyState
-          icon={<MegaphoneIcon />}
-          title="Sin resultados"
-          description="No hay campañas que coincidan con tu búsqueda"
-        />
-      )}
+      {/* ═══════════════════════════════════════════
+          TAB 2: ENVIAR CAMPANA
+          ═══════════════════════════════════════════ */}
+      {mainTab === 'send' && (
+        <div className={`${B}__send`}>
+          {/* Step indicator */}
+          <div className={`${B}__steps`}>
+            {['Plantilla', 'Audiencia', 'Contactos', 'Envio'].map((label, i) => (
+              <div key={i} className={`${B}__step ${sendStep >= i ? `${B}__step--active` : ''} ${sendStep === i ? `${B}__step--current` : ''}`}>
+                <div className={`${B}__step-dot`}>{sendStep > i ? <CheckIcon /> : i + 1}</div>
+                <span className={`${B}__step-label`}>{label}</span>
+                {i < 3 && <div className={`${B}__step-line`} />}
+              </div>
+            ))}
+          </div>
 
-      {/* ═══════════════════════════════════════════════
-          WIZARD MODAL — 3-step creation flow
-          ═══════════════════════════════════════════════ */}
-      {showWizard && createPortal(
-        <div className={`${B}__modal-overlay`} onClick={() => setShowWizard(false)}>
-          <div className={`${B}__modal`} onClick={e => e.stopPropagation()}>
-            <div className={`${B}__modal-header`}>
-              <h2 className={`${B}__modal-title`}>
-                {editingId ? 'Editar Campaña' : 'Nueva Campaña'}
-              </h2>
-              <button className={`${B}__modal-close`} onClick={() => setShowWizard(false)}>
-                <CloseIcon />
-              </button>
-            </div>
-
-            {/* Stepper */}
-            <div className={`${B}__stepper`}>
-              {[1, 2, 3].map(step => (
-                <div key={step} className={`${B}__stepper-step ${wizardStep >= step ? `${B}__stepper-step--active` : ''} ${wizardStep === step ? `${B}__stepper-step--current` : ''}`}>
-                  <div className={`${B}__stepper-dot`}>{wizardStep > step ? <CheckIcon /> : step}</div>
-                  <span className={`${B}__stepper-label`}>
-                    {step === 1 ? 'Tipo' : step === 2 ? 'Mensaje' : 'Audiencia'}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className={`${B}__modal-body`}>
-              {/* ─── Step 1: Name + Type ─── */}
-              {wizardStep === 1 && (
-                <div className={`${B}__wizard-step`}>
-                  <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Nombre de la campaña</label>
-                    <input
-                      type="text"
-                      className={`${B}__input`}
-                      value={formName}
-                      onChange={e => setFormName(e.target.value)}
-                      placeholder="Ej: Recuperar clientes de marzo"
-                    />
-                  </div>
-
-                  <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Tipo de campaña</label>
-                    <div className={`${B}__type-grid`}>
-                      {CAMPAIGN_TYPES.map(t => (
-                        <div
-                          key={t.id}
-                          className={`${B}__type-option ${formType === t.id ? `${B}__type-option--selected` : ''}`}
-                          style={{ '--type-color': t.color }}
-                          onClick={() => setFormType(t.id)}
-                        >
-                          <span className={`${B}__type-option-icon`}>{(() => { const I = CAMPAIGN_ICONS[t.id]; return I ? <I /> : null; })()}</span>
-                          <span className={`${B}__type-option-label`}>{t.label}</span>
-                          <span className={`${B}__type-option-desc`}>{t.desc}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={`${B}__wizard-actions`}>
-                    <button className={`${B}__btn-secondary`} onClick={() => setShowWizard(false)}>
-                      Cancelar
-                    </button>
-                    <button className={`${B}__btn-primary`} onClick={handleSaveStep1}>
-                      Siguiente
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── Step 2: Message / AI + Lina ─── */}
-              {wizardStep === 2 && (
-                <div className={`${B}__wizard-step`}>
-                  {/* AI Generate section */}
-                  <div className={`${B}__ai-section`}>
-                    <div className={`${B}__ai-section-top`}>
-                      <div className={`${B}__ai-section-info`}>
-                        <SparkleIcon />
-                        <span className={`${B}__ai-section-title`}>Generar con IA</span>
-                      </div>
-                      <button
-                        className={`${B}__btn-ai`}
-                        onClick={handleGenerateAI}
-                        disabled={generatingAI}
+          {/* ─── Step 0: Select Template ─── */}
+          {sendStep === 0 && (
+            <div className={`${B}__send-section`}>
+              <div className={`${B}__send-section-header`}>
+                <h2>Selecciona una plantilla aprobada</h2>
+                <p>Solo las plantillas aprobadas por Meta pueden usarse para envio masivo</p>
+              </div>
+              {(() => {
+                const approved = templates.filter(t => t.status === 'approved');
+                if (approved.length === 0) return (
+                  <EmptyState
+                    icon={<AlertIcon />}
+                    title="Sin plantillas aprobadas"
+                    description="Primero crea y envia plantillas a Meta para aprobacion desde la pestana de Plantillas"
+                  />
+                );
+                return (
+                  <div className={`${B}__tpl-select-grid`}>
+                    {approved.map(t => (
+                      <div
+                        key={t.id}
+                        className={`${B}__tpl-select-card ${selectedTemplate?.id === t.id ? `${B}__tpl-select-card--selected` : ''}`}
+                        onClick={() => setSelectedTemplate(t)}
                       >
-                        {generatingAI ? 'Generando...' : 'Generar'}
-                      </button>
-                    </div>
-                    <span className={`${B}__ai-hint`}>Lina analiza tus datos reales y genera 3 variantes</span>
-                  </div>
-
-                  {aiVariants.length > 0 && (
-                    <div className={`${B}__variants`}>
-                      {aiVariants.map((v, i) => (
-                        <div
-                          key={i}
-                          className={`${B}__variant ${formBody === v.body ? `${B}__variant--selected` : ''}`}
-                          onClick={() => setFormBody(v.body)}
-                        >
-                          <div className={`${B}__variant-header`}>
-                            <span className={`${B}__variant-tag`}>
-                              <SparkleIcon /> Variante {i + 1} {formBody === v.body ? '(seleccionada)' : ''}
-                            </span>
-                            {formBody === v.body && <CheckIcon />}
-                          </div>
-                          <div className={`${B}__variant-body`}>{v.body}</div>
-                          <div className={`${B}__variant-reason`}>{v.reason}</div>
+                        <div className={`${B}__tpl-select-card-check`}>
+                          {selectedTemplate?.id === t.id && <CheckIcon />}
                         </div>
+                        <h4>{t.name}</h4>
+                        <p>{(t.body || '').length > 100 ? t.body.slice(0, 100) + '...' : t.body}</p>
+                        <span className={`${B}__tpl-select-card-cat`}>{t.category}</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              <div className={`${B}__send-actions`}>
+                <div />
+                <button className={`${B}__btn-primary`} disabled={!selectedTemplate} onClick={() => setSendStep(1)}>
+                  Siguiente: Definir audiencia <ChevronRight />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Step 1: Audience Filters ─── */}
+          {sendStep === 1 && (
+            <div className={`${B}__send-section`}>
+              <div className={`${B}__send-section-header`}>
+                <h2>Define tu audiencia</h2>
+                <p>Usa filtros avanzados para seleccionar exactamente a quien quieres enviar</p>
+              </div>
+
+              <div className={`${B}__audience-layout`}>
+                {/* Left: Filters */}
+                <div className={`${B}__filters-panel`}>
+                  {/* Quick Segments */}
+                  <div className={`${B}__quick-segments`}>
+                    <h4>Segmentos rapidos</h4>
+                    <div className={`${B}__quick-segments-grid`}>
+                      {QUICK_SEGMENTS.map((seg, i) => (
+                        <button
+                          key={i}
+                          className={`${B}__quick-seg-btn ${JSON.stringify(filters) === JSON.stringify(seg.filters) ? `${B}__quick-seg-btn--active` : ''}`}
+                          onClick={() => handleApplyQuickSegment(seg)}
+                        >
+                          {seg.label}
+                        </button>
                       ))}
                     </div>
-                  )}
-
-                  {/* ── Usar plantilla aprobada por Meta ── */}
-                  {(() => {
-                    const approved = templates.filter(t => t.status === 'approved');
-                    return approved.length > 0 ? (
-                      <div className={`${B}__field`}>
-                        <label className={`${B}__label`}>Usar plantilla aprobada por Meta</label>
-                        <div className={`${B}__template-list`}>
-                          {approved.map(t => (
-                            <div
-                              key={t.id}
-                              className={`${B}__template-option ${formBody === t.body ? `${B}__template-option--selected` : ''}`}
-                              onClick={() => { setFormBody(t.body); setFormTemplateName(t.slug); }}
-                            >
-                              <span className={`${B}__template-option-name`}>{t.name}</span>
-                              <span className={`${B}__template-option-body`}>{t.body.length > 80 ? t.body.slice(0, 80) + '...' : t.body}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={`${B}__field`}>
-                        <div className={`${B}__no-templates`}>
-                          No hay plantillas aprobadas por Meta. Ve a Plantillas WhatsApp para crear y enviar a Meta.
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  <div className={`${B}__divider`}>
-                    <span>o escribe tu propio mensaje (solo funciona si el cliente escribio en las ultimas 24h)</span>
                   </div>
 
-                  <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Mensaje personalizado</label>
-                    <textarea
-                      className={`${B}__textarea`}
-                      value={formBody}
-                      onChange={e => { setFormBody(e.target.value); setFormTemplateName(''); }}
-                      placeholder="Hola {{nombre}}, te extrañamos en..."
-                      rows={4}
-                      maxLength={500}
-                    />
-                    <div className={`${B}__char-count`}>{formBody.length}/500</div>
-                  </div>
-
-                  {/* ── Consultar a Lina ── */}
-                  <div className={`${B}__lina-section`}>
-                    <div className={`${B}__lina-header`}>
-                      <SparkleIcon /> Consultar a Lina
-                    </div>
-                    <p className={`${B}__lina-hint`}>Pregúntale a Lina sobre tu campaña, audiencia o estrategia</p>
-                    <div className={`${B}__lina-input-row`}>
-                      <input
-                        type="text"
-                        className={`${B}__input`}
-                        value={linaPrompt}
-                        onChange={e => setLinaPrompt(e.target.value)}
-                        placeholder="Ej: que mensaje funciona mejor para clientes VIP?"
-                        onKeyDown={e => e.key === 'Enter' && handleAskLina()}
-                      />
-                      <button className={`${B}__btn-ai`} onClick={handleAskLina} disabled={linaLoading || !linaPrompt.trim()}>
-                        {linaLoading ? '...' : 'Preguntar'}
+                  <div className={`${B}__filters-divider`}>
+                    <span>Filtros avanzados</span>
+                    {activeFilterCount > 0 && (
+                      <button className={`${B}__filters-clear`} onClick={() => setFilters({})}>
+                        Limpiar ({activeFilterCount})
                       </button>
-                    </div>
-                    {linaResponse && (
-                      <div className={`${B}__lina-response`}>
-                        <div className={`${B}__lina-response-label`}>
-                          <SparkleIcon /> Lina dice:
-                        </div>
-                        <div className={`${B}__lina-response-text`}>{linaResponse}</div>
-                        <button
-                          className={`${B}__btn-use-text`}
-                          onClick={() => {
-                            const clean = linaResponse.replace(/\n+/g, ' ').trim();
-                            setFormBody(clean.length > 300 ? clean.slice(0, 300) : clean);
-                            addNotification('Texto de Lina aplicado al mensaje', 'success');
-                          }}
-                        >
-                          Usar este texto
-                        </button>
-                      </div>
                     )}
                   </div>
 
-                  {/* WhatsApp preview */}
-                  {formBody && (
-                    <div className={`${B}__preview-bubble`}>
-                      <div className={`${B}__preview-bubble-label`}>Vista previa WhatsApp</div>
-                      <div className={`${B}__preview-bubble-msg`}>
-                        {resolveTemplate(formBody)}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className={`${B}__wizard-actions`}>
-                    <button className={`${B}__btn-secondary`} onClick={() => setWizardStep(1)}>
-                      Atrás
-                    </button>
-                    <button className={`${B}__btn-primary`} onClick={handleSaveStep2}>
-                      Siguiente
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ─── Step 3: Audience ─── */}
-              {wizardStep === 3 && (
-                <div className={`${B}__wizard-step`}>
-                  <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>¿A quienes va dirigida?</label>
-
-                    <div className={`${B}__segment-section`}>
-                      <span className={`${B}__segment-group-label`}>Por estado</span>
-                      <div className={`${B}__segment-grid`}>
-                        {SEGMENT_OPTIONS.filter(s => s.group === 'estado').map(s => (
-                          <button key={s.id} className={`${B}__segment-btn ${formSegment === s.id ? `${B}__segment-btn--selected` : ''}`}
-                            onClick={() => setFormSegment(s.id)}>{s.label}</button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className={`${B}__segment-section`}>
-                      <span className={`${B}__segment-group-label`}>Por inactividad</span>
-                      <div className={`${B}__segment-grid`}>
-                        {SEGMENT_OPTIONS.filter(s => s.group === 'inactividad').map(s => (
-                          <button key={s.id} className={`${B}__segment-btn ${formSegment === s.id ? `${B}__segment-btn--selected` : ''}`}
-                            onClick={() => setFormSegment(s.id)}>{s.label}</button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className={`${B}__segment-section`}>
-                      <span className={`${B}__segment-group-label`}>Especiales</span>
-                      <div className={`${B}__segment-grid`}>
-                        {SEGMENT_OPTIONS.filter(s => s.group === 'especial').map(s => (
-                          <button key={s.id} className={`${B}__segment-btn ${formSegment === s.id ? `${B}__segment-btn--selected` : ''}`}
-                            onClick={() => setFormSegment(s.id)}>{s.label}</button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Advanced filters: Staff + Service */}
-                  <div className={`${B}__field`}>
-                    <label className={`${B}__label`}>Filtros avanzados (opcional)</label>
-                    <div className={`${B}__advanced-filters`}>
-                      <select
-                        className={`${B}__input`}
-                        value={formStaffFilter}
-                        onChange={async (e) => {
-                          setFormStaffFilter(e.target.value);
-                          const seg = SEGMENT_OPTIONS.find(s => s.id === formSegment);
-                          const filters = { ...(seg?.filters || {}) };
-                          if (e.target.value) filters.staff_id = Number(e.target.value);
-                          if (formServiceFilter) filters.service_name = formServiceFilter;
-                          if (editingId) {
-                            try { await campaignService.update(editingId, { segment_filters: filters }); } catch {}
-                          }
-                        }}
-                      >
-                        <option value="">Todos los profesionales</option>
-                        {staffList.filter(s => s.is_active).map(s => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                      </select>
-
-                      <select
-                        className={`${B}__input`}
-                        value={formServiceFilter}
-                        onChange={async (e) => {
-                          setFormServiceFilter(e.target.value);
-                          const seg = SEGMENT_OPTIONS.find(s => s.id === formSegment);
-                          const filters = { ...(seg?.filters || {}) };
-                          if (formStaffFilter) filters.staff_id = Number(formStaffFilter);
-                          if (e.target.value) filters.service_name = e.target.value;
-                          if (editingId) {
-                            try { await campaignService.update(editingId, { segment_filters: filters }); } catch {}
-                          }
-                        }}
-                      >
-                        <option value="">Todos los servicios</option>
-                        {servicesList.filter(s => s.is_active).map(s => (
-                          <option key={s.id} value={s.name}>{s.name} (${s.price?.toLocaleString('es-CO')})</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <button
-                    className={`${B}__btn-preview-audience`}
-                    onClick={handlePreviewAudience}
-                    disabled={loadingAudience}
-                  >
-                    <TargetIcon />
-                    {loadingAudience ? 'Calculando...' : 'Ver audiencia'}
-                  </button>
-
-                  {audiencePreview && (
-                    <div className={`${B}__audience-result`}>
-                      <div className={`${B}__audience-count`}>
-                        <UsersIcon />
-                        <strong>{audiencePreview.count}</strong> clientes coinciden
-                      </div>
-                      {audiencePreview.sample?.length > 0 && (
-                        <div className={`${B}__audience-sample`}>
-                          {audiencePreview.sample.slice(0, 8).map(cl => (
-                            <div key={cl.id} className={`${B}__audience-client`}>
-                              <span>{cl.name}</span>
-                              <span className={`${B}__audience-phone`}>{cl.phone}</span>
+                  {/* Filter Groups */}
+                  {FILTER_GROUPS.map(group => (
+                    <div key={group.id} className={`${B}__filter-group ${expandedGroups.includes(group.id) ? `${B}__filter-group--open` : ''}`} data-group={group.id}>
+                      <button className={`${B}__filter-group-header`} onClick={() => toggleGroup(group.id)}>
+                        <span className={`${B}__filter-group-icon`}>{(() => { const Icon = FilterGroupIcons[group.icon]; return Icon ? <Icon /> : null; })()}</span>
+                        <span className={`${B}__filter-group-label`}>{group.label}</span>
+                        <span className={`${B}__filter-group-count`}>
+                          {group.filters.filter(f => filters[f.key] !== undefined && filters[f.key] !== '' && filters[f.key] !== false).length || ''}
+                        </span>
+                        <span className={`${B}__filter-group-chevron`}>
+                          {expandedGroups.includes(group.id) ? <ChevronDown /> : <ChevronRight />}
+                        </span>
+                      </button>
+                      {expandedGroups.includes(group.id) && (
+                        <div className={`${B}__filter-group-body`}>
+                          {group.filters.map(f => (
+                            <div key={f.key} className={`${B}__filter-field`}>
+                              <label>{f.label}</label>
+                              {f.type === 'select' && (
+                                <select value={filters[f.key] || ''} onChange={e => updateFilter(f.key, e.target.value)}>
+                                  {f.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                                </select>
+                              )}
+                              {f.type === 'number' && (
+                                <input
+                                  type="number"
+                                  placeholder={f.placeholder}
+                                  value={filters[f.key] || ''}
+                                  onChange={e => updateFilter(f.key, e.target.value ? Number(e.target.value) : '')}
+                                />
+                              )}
+                              {f.type === 'date' && (
+                                <input
+                                  type="date"
+                                  value={filters[f.key] || ''}
+                                  onChange={e => updateFilter(f.key, e.target.value)}
+                                />
+                              )}
+                              {f.type === 'checkbox' && (
+                                <label className={`${B}__filter-checkbox`}>
+                                  <input
+                                    type="checkbox"
+                                    checked={!!filters[f.key]}
+                                    onChange={e => updateFilter(f.key, e.target.checked)}
+                                  />
+                                  <span>Activar</span>
+                                </label>
+                              )}
+                              {f.type === 'staff_select' && (
+                                <select value={filters[f.key] || ''} onChange={e => updateFilter(f.key, e.target.value ? Number(e.target.value) : '')}>
+                                  <option value="">Todos</option>
+                                  {staffList.filter(s => s.is_active).map(s => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                  ))}
+                                </select>
+                              )}
+                              {f.type === 'service_select' && (
+                                <select value={filters[f.key] || ''} onChange={e => updateFilter(f.key, e.target.value)}>
+                                  <option value="">Todos</option>
+                                  {servicesList.filter(s => s.is_active).map(s => (
+                                    <option key={s.id} value={s.name}>{s.name}</option>
+                                  ))}
+                                </select>
+                              )}
                             </div>
                           ))}
-                          {audiencePreview.count > 8 && (
-                            <div className={`${B}__audience-more`}>
-                              +{audiencePreview.count - 8} mas
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right: Preview */}
+                <div className={`${B}__audience-preview`}>
+                  <div className={`${B}__preview-header`}>
+                    <FilterIcon />
+                    <h3>Vista previa</h3>
+                  </div>
+
+                  <div className={`${B}__preview-selected-template`}>
+                    <span className={`${B}__preview-label`}>Plantilla:</span>
+                    <span className={`${B}__preview-value`}>{selectedTemplate?.name}</span>
+                  </div>
+
+                  <div className={`${B}__preview-filters-summary`}>
+                    {activeFilterCount === 0 ? (
+                      <p className={`${B}__preview-hint`}>Aplica filtros para ver cuantos clientes coinciden</p>
+                    ) : (
+                      <p>{activeFilterCount} filtro{activeFilterCount !== 1 ? 's' : ''} activo{activeFilterCount !== 1 ? 's' : ''}</p>
+                    )}
+                  </div>
+
+                  <button className={`${B}__btn-search-audience`} onClick={handleSearchAudience} disabled={audienceLoading}>
+                    {audienceLoading ? (
+                      <><div className={`${B}__mini-spinner`} /> Buscando...</>
+                    ) : (
+                      <><SearchIcon /> Buscar audiencia</>
+                    )}
+                  </button>
+
+                  {audienceResults && (
+                    <div className={`${B}__preview-result`}>
+                      <div className={`${B}__preview-result-count`}>
+                        <UsersIcon />
+                        <span className={`${B}__preview-result-number`}>{audienceResults.count}</span>
+                        <span>contactos encontrados</span>
+                      </div>
+                      {audienceResults.count > 0 && (
+                        <div className={`${B}__preview-result-sample`}>
+                          {(audienceResults.contacts || []).slice(0, 5).map(c => (
+                            <div key={c.id} className={`${B}__preview-contact-mini`}>
+                              <span className={`${B}__preview-contact-name`}>{c.name}</span>
+                              <span className={`${B}__preview-contact-info`}>{c.total_visits} visitas · {formatCOP(c.total_spent)}</span>
                             </div>
+                          ))}
+                          {audienceResults.count > 5 && (
+                            <span className={`${B}__preview-more`}>+{audienceResults.count - 5} mas...</span>
                           )}
                         </div>
                       )}
                     </div>
                   )}
+                </div>
+              </div>
 
-                  <div className={`${B}__wizard-actions`}>
-                    <button className={`${B}__btn-secondary`} onClick={() => setWizardStep(2)}>
-                      Atrás
-                    </button>
-                    <button className={`${B}__btn-primary`} onClick={handleFinishWizard}>
-                      <CheckIcon /> Guardar campaña
-                    </button>
+              <div className={`${B}__send-actions`}>
+                <button className={`${B}__btn-secondary`} onClick={() => setSendStep(0)}>
+                  <ArrowLeft /> Atras
+                </button>
+                <button
+                  className={`${B}__btn-primary`}
+                  disabled={!audienceResults || audienceResults.count === 0}
+                  onClick={() => setSendStep(2)}
+                >
+                  Siguiente: Revisar contactos ({audienceResults?.count || 0}) <ChevronRight />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Step 2: Contact Review ─── */}
+          {sendStep === 2 && (
+            <div className={`${B}__send-section`}>
+              <div className={`${B}__send-section-header`}>
+                <h2>Revisa y selecciona contactos</h2>
+                <p>Desselecciona los contactos que no deseas incluir en el envio</p>
+              </div>
+
+              <div className={`${B}__contacts-toolbar`}>
+                <div className={`${B}__search-box`}>
+                  <SearchIcon />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre o telefono..."
+                    value={contactSearch}
+                    onChange={e => setContactSearch(e.target.value)}
+                  />
+                </div>
+                <div className={`${B}__contacts-summary`}>
+                  <span className={`${B}__contacts-selected-count`}>
+                    <UserCheckIcon /> {selectedContacts.size} de {audienceResults?.count || 0} seleccionados
+                  </span>
+                  <button className={`${B}__btn-text`} onClick={() => setSelectedContacts(new Set((audienceResults?.contacts || []).map(c => c.id)))}>
+                    Seleccionar todos
+                  </button>
+                  <button className={`${B}__btn-text`} onClick={() => setSelectedContacts(new Set())}>
+                    Deseleccionar todos
+                  </button>
+                </div>
+              </div>
+
+              <div className={`${B}__contacts-table`}>
+                <div className={`${B}__contacts-header-row`}>
+                  <div className={`${B}__contacts-col ${B}__contacts-col--check`} />
+                  <div className={`${B}__contacts-col ${B}__contacts-col--name`}>Cliente</div>
+                  <div className={`${B}__contacts-col ${B}__contacts-col--phone`}>Telefono</div>
+                  <div className={`${B}__contacts-col ${B}__contacts-col--status`}>Estado</div>
+                  <div className={`${B}__contacts-col ${B}__contacts-col--visits`}>Visitas</div>
+                  <div className={`${B}__contacts-col ${B}__contacts-col--spent`}>Gasto total</div>
+                  <div className={`${B}__contacts-col ${B}__contacts-col--days`}>Dias sin venir</div>
+                </div>
+                <div className={`${B}__contacts-body`}>
+                  {filteredContacts.map(c => (
+                    <div
+                      key={c.id}
+                      className={`${B}__contacts-row ${selectedContacts.has(c.id) ? '' : `${B}__contacts-row--deselected`}`}
+                      onClick={() => {
+                        setSelectedContacts(prev => {
+                          const next = new Set(prev);
+                          if (next.has(c.id)) next.delete(c.id);
+                          else next.add(c.id);
+                          return next;
+                        });
+                      }}
+                    >
+                      <div className={`${B}__contacts-col ${B}__contacts-col--check`}>
+                        <div className={`${B}__checkbox ${selectedContacts.has(c.id) ? `${B}__checkbox--checked` : ''}`}>
+                          {selectedContacts.has(c.id) && <CheckIcon />}
+                        </div>
+                      </div>
+                      <div className={`${B}__contacts-col ${B}__contacts-col--name`}>
+                        <span className={`${B}__contact-name`}>{c.name}</span>
+                      </div>
+                      <div className={`${B}__contacts-col ${B}__contacts-col--phone`}>{c.phone}</div>
+                      <div className={`${B}__contacts-col ${B}__contacts-col--status`}>
+                        <span className={`${B}__contact-status ${B}__contact-status--${c.status}`}>{c.status}</span>
+                      </div>
+                      <div className={`${B}__contacts-col ${B}__contacts-col--visits`}>{c.total_visits}</div>
+                      <div className={`${B}__contacts-col ${B}__contacts-col--spent`}>{formatCOP(c.total_spent)}</div>
+                      <div className={`${B}__contacts-col ${B}__contacts-col--days`}>
+                        {c.days_since !== null ? `${c.days_since}d` : '—'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className={`${B}__send-actions`}>
+                <button className={`${B}__btn-secondary`} onClick={() => setSendStep(1)}>
+                  <ArrowLeft /> Atras
+                </button>
+                <button
+                  className={`${B}__btn-primary ${B}__btn-primary--send`}
+                  disabled={selectedContacts.size === 0}
+                  onClick={() => {
+                    setConfirmModal({
+                      message: `Enviar "${selectedTemplate?.name}" a ${selectedContacts.size} contactos?`,
+                      onConfirm: () => { setConfirmModal(null); startSending(); },
+                    });
+                  }}
+                >
+                  <SendIcon /> Enviar a {selectedContacts.size} contactos
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Step 3: Sending Screen ─── */}
+          {sendStep === 3 && (
+            <div className={`${B}__sending-screen`}>
+              <div className={`${B}__sending-header`}>
+                <h2>{sendingActive ? 'Enviando campana...' : 'Envio finalizado'}</h2>
+                <div className={`${B}__sending-stats`}>
+                  <span className={`${B}__sending-stat ${B}__sending-stat--total`}>{sendStats.total} total</span>
+                  <span className={`${B}__sending-stat ${B}__sending-stat--sent`}>{sendStats.sent} enviados</span>
+                  <span className={`${B}__sending-stat ${B}__sending-stat--failed`}>{sendStats.failed} fallidos</span>
+                </div>
+                {sendingActive && (
+                  <div className={`${B}__sending-progress`}>
+                    <div className={`${B}__sending-progress-bar`} style={{ width: `${((sendStats.sent + sendStats.failed) / sendStats.total) * 100}%` }} />
+                  </div>
+                )}
+              </div>
+
+              <div className={`${B}__sending-layout`}>
+                {/* Left: Contact Queue */}
+                <div className={`${B}__sending-queue`}>
+                  <h3>Cola de envio</h3>
+                  <div className={`${B}__sending-queue-list`}>
+                    {sendQueue.map((q, i) => (
+                      <div key={q.id} className={`${B}__sending-queue-item ${B}__sending-queue-item--${q.status}`}>
+                        <div className={`${B}__sending-queue-status`}>
+                          {q.status === 'pending' && <span className={`${B}__queue-dot`} />}
+                          {q.status === 'sending' && <div className={`${B}__queue-spinner`} />}
+                          {q.status === 'sent' && <CheckCircleIcon />}
+                          {q.status === 'failed' && <XCircleIcon />}
+                        </div>
+                        <span className={`${B}__sending-queue-name`}>{q.name}</span>
+                        <span className={`${B}__sending-queue-phone`}>{q.phone}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
+
+                {/* Right: Live Log */}
+                <div className={`${B}__sending-log`}>
+                  <h3>Registro en vivo</h3>
+                  <div className={`${B}__sending-log-entries`}>
+                    {sendLog.map((entry, i) => (
+                      <div key={i} className={`${B}__log-entry ${B}__log-entry--${entry.status}`}>
+                        <span className={`${B}__log-time`}>{entry.time}</span>
+                        <span className={`${B}__log-icon`}>
+                          {entry.status === 'sent' ? <CheckCircleIcon /> : <XCircleIcon />}
+                        </span>
+                        <span className={`${B}__log-name`}>{entry.name}</span>
+                        <span className={`${B}__log-phone`}>{entry.phone}</span>
+                        {entry.status === 'sent' ? (
+                          <span className={`${B}__log-result ${B}__log-result--ok`}>Enviado</span>
+                        ) : (
+                          <span className={`${B}__log-result ${B}__log-result--fail`}>Fallido</span>
+                        )}
+                      </div>
+                    ))}
+                    {sendingActive && sendCurrent && (
+                      <div className={`${B}__log-entry ${B}__log-entry--active`}>
+                        <span className={`${B}__log-time`}>{new Date().toLocaleTimeString('es-CO')}</span>
+                        <div className={`${B}__queue-spinner`} />
+                        <span className={`${B}__log-name`}>{sendCurrent.name}</span>
+                        <span className={`${B}__log-phone`}>{sendCurrent.phone}</span>
+                        <span className={`${B}__log-result ${B}__log-result--sending`}>Enviando...</span>
+                      </div>
+                    )}
+                    <div ref={logEndRef} />
+                  </div>
+                </div>
+              </div>
+
+              <div className={`${B}__send-actions`}>
+                {sendingActive ? (
+                  <button className={`${B}__btn-danger`} onClick={stopSending}>
+                    Detener envio
+                  </button>
+                ) : (
+                  <button className={`${B}__btn-secondary`} onClick={() => { resetSendFlow(); }}>
+                    Nueva campana
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
+          )}
+        </div>
       )}
 
-      {/* ═══════════════════════════════════════════════
-          DETAIL MODAL — Campaign stats
-          ═══════════════════════════════════════════════ */}
-      {showDetail && createPortal(
-        <div className={`${B}__modal-overlay`} onClick={() => setShowDetail(null)}>
-          <div className={`${B}__modal`} onClick={e => e.stopPropagation()}>
-            <div className={`${B}__modal-header`}>
-              <h2 className={`${B}__modal-title`}>{showDetail.name}</h2>
-              <button className={`${B}__modal-close`} onClick={() => setShowDetail(null)}>
+      {/* ═══ Template Editor Modal ═══ */}
+      {showEditor && createPortal(
+        <div className={`${B}__overlay`} onClick={() => setShowEditor(false)}>
+          <div className={`${B}__editor`} onClick={e => e.stopPropagation()}>
+            <div className={`${B}__editor-header`}>
+              <h2>{editId ? 'Editar plantilla' : 'Nueva plantilla'}</h2>
+              <button className={`${B}__editor-close`} onClick={() => setShowEditor(false)}>
                 <CloseIcon />
               </button>
             </div>
-            <div className={`${B}__modal-body`}>
-              <div className={`${B}__detail-row`}>
-                {statusBadge(showDetail.status)}
-                {typeBadge(showDetail.campaign_type)}
+
+            <div className={`${B}__editor-body`}>
+              <div className={`${B}__editor-field`}>
+                <label>Nombre de la plantilla</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  placeholder="Ej: Promocion de semana"
+                />
               </div>
 
-              {showDetail.message_body && (
-                <div className={`${B}__preview-bubble`}>
-                  <div className={`${B}__preview-bubble-label`}>Mensaje enviado</div>
-                  <div className={`${B}__preview-bubble-msg`}>{showDetail.message_body}</div>
-                </div>
-              )}
+              <div className={`${B}__editor-field`}>
+                <label>Categoria</label>
+                <select value={editCategory} onChange={e => setEditCategory(e.target.value)}>
+                  <option value="recordatorio">Recordatorio</option>
+                  <option value="post_servicio">Post-Servicio</option>
+                  <option value="reactivacion">Reactivacion</option>
+                  <option value="fidelizacion">Fidelizacion</option>
+                  <option value="promocion">Promocion</option>
+                  <option value="bienvenida">Bienvenida</option>
+                </select>
+              </div>
 
-              <div className={`${B}__detail-stats`}>
-                <div className={`${B}__detail-stat`}>
-                  <div className={`${B}__detail-stat-value`}>{showDetail.audience_count || 0}</div>
-                  <div className={`${B}__detail-stat-label`}>Audiencia</div>
-                </div>
-                <div className={`${B}__detail-stat`}>
-                  <div className={`${B}__detail-stat-value`} style={{ color: '#34D399' }}>{showDetail.sent_count || 0}</div>
-                  <div className={`${B}__detail-stat-label`}>Enviados</div>
-                </div>
-                <div className={`${B}__detail-stat`}>
-                  <div className={`${B}__detail-stat-value`} style={{ color: '#F87171' }}>{showDetail.failed_count || 0}</div>
-                  <div className={`${B}__detail-stat-label`}>Fallidos</div>
-                </div>
-                <div className={`${B}__detail-stat`}>
-                  <div className={`${B}__detail-stat-value`} style={{ color: '#60A5FA' }}>{showDetail.responded_count || 0}</div>
-                  <div className={`${B}__detail-stat-label`}>Respondidos</div>
+              <div className={`${B}__editor-field`}>
+                <label>Mensaje</label>
+                <textarea
+                  value={editBody}
+                  onChange={e => setEditBody(e.target.value)}
+                  placeholder="Hola {{nombre}}, te esperamos en..."
+                  rows={6}
+                />
+                <div className={`${B}__editor-hint`}>
+                  <span>Variables disponibles: {'{{nombre}}'}, {'{{servicio}}'}, {'{{dias}}'}, {'{{negocio}}'}, {'{{profesional}}'}</span>
+                  <span>{editBody.length} caracteres</span>
                 </div>
               </div>
 
-              {showDetail.sent_count > 0 && (
-                <div className={`${B}__detail-progress`}>
-                  <div className={`${B}__detail-progress-bar`}>
-                    <div
-                      className={`${B}__detail-progress-fill ${B}__detail-progress-fill--success`}
-                      style={{ width: `${(showDetail.sent_count / (showDetail.audience_count || 1)) * 100}%` }}
-                    />
-                    <div
-                      className={`${B}__detail-progress-fill ${B}__detail-progress-fill--error`}
-                      style={{ width: `${(showDetail.failed_count / (showDetail.audience_count || 1)) * 100}%` }}
-                    />
+              {editBody && (
+                <div className={`${B}__editor-preview`}>
+                  <span className={`${B}__editor-preview-label`}>Vista previa WhatsApp</span>
+                  <div className={`${B}__editor-preview-bubble`}>
+                    <WhatsAppIcon />
+                    <p>{editBody.replace(/\{\{nombre\}\}/g, 'Juan').replace(/\{\{servicio\}\}/g, 'Corte Clasico').replace(/\{\{dias\}\}/g, '30').replace(/\{\{negocio\}\}/g, 'Tu Negocio').replace(/\{\{profesional\}\}/g, 'Carlos')}</p>
                   </div>
                 </div>
               )}
-
-              <div className={`${B}__detail-meta`}>
-                {showDetail.meta_template_name && (
-                  <div><strong>Template Meta:</strong> {showDetail.meta_template_name}</div>
-                )}
-                {showDetail.meta_status && (
-                  <div><strong>Estado Meta:</strong> {showDetail.meta_status}</div>
-                )}
-                {showDetail.segment_filters && Object.keys(showDetail.segment_filters).length > 0 && (
-                  <div><strong>Filtros:</strong> {Object.entries(showDetail.segment_filters).map(([k, v]) => `${k}: ${v}`).join(', ')}</div>
-                )}
-                {showDetail.created_at && (
-                  <div><strong>Creada:</strong> {new Date(showDetail.created_at).toLocaleDateString('es-CO')}</div>
-                )}
-                {showDetail.updated_at && (
-                  <div><strong>Ultima actualizacion:</strong> {new Date(showDetail.updated_at).toLocaleDateString('es-CO')}</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* ═══════════════════════════════════════════════
-          CONFIRM MODAL — Replaces native confirm()
-          ═══════════════════════════════════════════════ */}
-      {/* Quick Send Modal */}
-      {sendTemplate && createPortal(
-        <div className={`${B}__modal-overlay`} onClick={() => setSendTemplate(null)}>
-          <div className={`${B}__send-modal`} onClick={e => e.stopPropagation()}>
-            <div className={`${B}__send-modal-header`}>
-              <h3>Enviar: {sendTemplate.name}</h3>
-              <button className={`${B}__modal-close`} onClick={() => setSendTemplate(null)}><CloseIcon /></button>
             </div>
 
-            <div className={`${B}__send-modal-preview`}>
-              <WhatsAppIcon /> {sendTemplate.body?.length > 150 ? sendTemplate.body.slice(0, 150) + '...' : sendTemplate.body}
-            </div>
-
-            <div className={`${B}__send-modal-section`}>
-              <h4>¿A quienes va dirigida?</h4>
-              <div className={`${B}__send-modal-pills`}>
-                {SEGMENT_OPTIONS.filter(s => s.group === 'estado').map(s => (
-                  <button key={s.id} className={`${B}__send-pill ${sendSegment === s.id ? `${B}__send-pill--active` : ''}`} onClick={() => setSendSegment(s.id)}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-              <h4>Por inactividad</h4>
-              <div className={`${B}__send-modal-pills`}>
-                {SEGMENT_OPTIONS.filter(s => s.group === 'inactividad').map(s => (
-                  <button key={s.id} className={`${B}__send-pill ${sendSegment === s.id ? `${B}__send-pill--active` : ''}`} onClick={() => setSendSegment(s.id)}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-              <h4>Especiales</h4>
-              <div className={`${B}__send-modal-pills`}>
-                {SEGMENT_OPTIONS.filter(s => s.group === 'especial').map(s => (
-                  <button key={s.id} className={`${B}__send-pill ${sendSegment === s.id ? `${B}__send-pill--active` : ''}`} onClick={() => setSendSegment(s.id)}>
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={`${B}__send-modal-footer`}>
-              <button className={`${B}__btn-secondary`} onClick={() => setSendTemplate(null)}>Cancelar</button>
-              <button className={`${B}__btn-send`} onClick={handleQuickSend} disabled={sending}>
-                <SendIcon /> {sending ? 'Enviando...' : 'Enviar ahora'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {confirmModal && createPortal(
-        <div className={`${B}__modal-overlay`} onClick={() => setConfirmModal(null)}>
-          <div className={`${B}__confirm`} onClick={e => e.stopPropagation()}>
-            <div className={`${B}__confirm-icon`}>
-              <SendIcon />
-            </div>
-            <p className={`${B}__confirm-text`}>{confirmModal.message}</p>
-            <div className={`${B}__confirm-actions`}>
-              <button className={`${B}__btn-secondary`} onClick={() => setConfirmModal(null)}>
+            <div className={`${B}__editor-footer`}>
+              <button className={`${B}__btn-secondary`} onClick={() => setShowEditor(false)}>
                 Cancelar
               </button>
-              <button className={`${B}__btn-primary`} onClick={confirmModal.onConfirm}>
-                Confirmar
+              <button className={`${B}__btn-primary`} onClick={handleSaveTemplate}>
+                {editId ? 'Guardar cambios' : 'Crear plantilla'}
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ═══ Confirm Modal ═══ */}
+      {confirmModal && createPortal(
+        <div className={`${B}__overlay`} onClick={() => setConfirmModal(null)}>
+          <div className={`${B}__confirm`} onClick={e => e.stopPropagation()}>
+            <p>{confirmModal.message}</p>
+            <div className={`${B}__confirm-actions`}>
+              <button className={`${B}__btn-secondary`} onClick={() => setConfirmModal(null)}>Cancelar</button>
+              <button className={`${B}__btn-primary`} onClick={confirmModal.onConfirm}>Confirmar</button>
             </div>
           </div>
         </div>,

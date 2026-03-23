@@ -75,8 +75,8 @@ def _get_campaign(db: Session, campaign_id: int, tenant_id: int) -> Campaign:
 # SEGMENTATION ENGINE — Build audience from filters
 # ============================================================================
 
-def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[Client]:
-    """Apply segment filters and return matching clients with phone numbers."""
+def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
+    """Apply 20+ segment filters and return matching clients with computed stats."""
     q = db.query(Client).filter(
         Client.tenant_id == tenant_id,
         Client.is_active == True,
@@ -84,63 +84,184 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[Client]:
         Client.phone != "",
     )
 
-    # Status filter
+    # ── Extract all filters ──
     status_filter = filters.get("status")
     days_inactive = filters.get("days_inactive")
+    days_inactive_max = filters.get("days_inactive_max")
     staff_id = filters.get("staff_id")
     service_name = filters.get("service_name")
     min_spent = filters.get("min_spent")
+    max_spent = filters.get("max_spent")
     min_visits = filters.get("min_visits")
     max_visits = filters.get("max_visits")
+    min_avg_ticket = filters.get("min_avg_ticket")
+    max_avg_ticket = filters.get("max_avg_ticket")
+    birthday_month = filters.get("birthday_month")
+    has_email = filters.get("has_email")
+    has_birthday = filters.get("has_birthday")
+    gender = filters.get("gender")
+    tags_include = filters.get("tags_include")  # list of tags
+    tags_exclude = filters.get("tags_exclude")  # list of tags
+    last_visit_from = filters.get("last_visit_from")  # ISO date
+    last_visit_to = filters.get("last_visit_to")  # ISO date
+    payment_method = filters.get("payment_method")
+    preferred_barber = filters.get("preferred_barber")
+    top_spenders_pct = filters.get("top_spenders_pct")  # percentile, e.g. 20 = top 20%
+    accepts_whatsapp = filters.get("accepts_whatsapp")
+    created_from = filters.get("created_from")  # client registration date
+    created_to = filters.get("created_to")
+    no_show_count = filters.get("no_show_count")  # min no-shows
 
-    # Get all matching clients first, then filter computed fields in Python
     clients = q.all()
-    result = []
 
+    # ── Pre-compute visit stats for all clients in one pass ──
+    all_client_ids = [c.id for c in clients]
+    all_visits = db.query(VisitHistory).filter(
+        VisitHistory.client_id.in_(all_client_ids) if all_client_ids else False,
+    ).all() if all_client_ids else []
+
+    # Group visits by client_id
+    visits_map = {}
+    for v in all_visits:
+        visits_map.setdefault(v.client_id, []).append(v)
+
+    # Build enriched results
+    enriched = []
     for client in clients:
-        # Compute visit stats for this client
-        completed = db.query(VisitHistory).filter(
-            VisitHistory.client_id == client.id,
-            VisitHistory.status == "completed",
-        ).all()
+        client_visits = visits_map.get(client.id, [])
+        completed = [v for v in client_visits if v.status == "completed"]
+        no_shows = [v for v in client_visits if v.status == "no_show"]
 
         total_visits = len(completed)
-        total_spent = sum(v.amount for v in completed)
-        last_visit = max((v.visit_date for v in completed), default=None)
-        days_since = (date.today() - last_visit).days if last_visit else None
+        total_spent = sum(v.amount or 0 for v in completed)
+        avg_ticket = round(total_spent / total_visits) if total_visits > 0 else 0
+        last_visit_date = max((v.visit_date for v in completed), default=None)
+        days_since = (date.today() - last_visit_date).days if last_visit_date else None
+        computed = compute_status(total_visits, days_since, client.status_override)
 
-        computed_status = compute_status(total_visits, days_since, client.status_override)
+        # Collect staff and services used
+        staff_ids_used = list(set(v.staff_id for v in completed if v.staff_id))
+        services_used = list(set((v.service_name or "").lower() for v in completed if v.service_name))
+        payment_methods_used = list(set((v.payment_method or "").lower() for v in completed if v.payment_method))
 
-        # Apply filters
-        if status_filter and computed_status != status_filter:
+        enriched.append({
+            "client": client,
+            "total_visits": total_visits,
+            "total_spent": total_spent,
+            "avg_ticket": avg_ticket,
+            "last_visit": last_visit_date,
+            "days_since": days_since,
+            "status": computed,
+            "no_show_count": len(no_shows),
+            "staff_ids": staff_ids_used,
+            "services": services_used,
+            "payments": payment_methods_used,
+        })
+
+    # ── For top_spenders_pct, compute threshold ──
+    spend_threshold = 0
+    if top_spenders_pct:
+        all_spends = sorted([e["total_spent"] for e in enriched if e["total_spent"] > 0], reverse=True)
+        if all_spends:
+            idx = max(0, int(len(all_spends) * int(top_spenders_pct) / 100) - 1)
+            spend_threshold = all_spends[idx]
+
+    # ── Apply filters ──
+    result = []
+    for e in enriched:
+        client = e["client"]
+
+        if status_filter and e["status"] != status_filter:
             continue
-
         if days_inactive:
-            if days_since is None or days_since < int(days_inactive):
+            if e["days_since"] is None or e["days_since"] < int(days_inactive):
                 continue
-
-        if min_spent and total_spent < int(min_spent):
+        if days_inactive_max:
+            if e["days_since"] is not None and e["days_since"] > int(days_inactive_max):
+                continue
+        if min_spent and e["total_spent"] < int(min_spent):
             continue
-
-        if min_visits and total_visits < int(min_visits):
+        if max_spent and e["total_spent"] > int(max_spent):
             continue
-
-        if max_visits and total_visits > int(max_visits):
+        if min_visits and e["total_visits"] < int(min_visits):
             continue
-
+        if max_visits and e["total_visits"] > int(max_visits):
+            continue
+        if min_avg_ticket and e["avg_ticket"] < int(min_avg_ticket):
+            continue
+        if max_avg_ticket and e["avg_ticket"] > int(max_avg_ticket):
+            continue
         if staff_id:
-            staff_visits = [v for v in completed if v.staff_id == int(staff_id)]
-            if not staff_visits:
+            if int(staff_id) not in e["staff_ids"]:
                 continue
-
         if service_name:
-            svc_visits = [v for v in completed if service_name.lower() in (v.service_name or "").lower()]
-            if not svc_visits:
+            if not any(service_name.lower() in s for s in e["services"]):
+                continue
+        if birthday_month:
+            if not client.birthday:
+                continue
+            if isinstance(birthday_month, bool) and birthday_month is True:
+                if client.birthday.month != date.today().month:
+                    continue
+            elif isinstance(birthday_month, int) or str(birthday_month).isdigit():
+                if client.birthday.month != int(birthday_month):
+                    continue
+        if has_email:
+            if not client.email or not client.email.strip():
+                continue
+        if has_birthday is not None:
+            if has_birthday and not client.birthday:
+                continue
+            if not has_birthday and client.birthday:
+                continue
+        if tags_include:
+            client_tags = client.tags or []
+            if not any(t in client_tags for t in tags_include):
+                continue
+        if tags_exclude:
+            client_tags = client.tags or []
+            if any(t in client_tags for t in tags_exclude):
+                continue
+        if last_visit_from:
+            d = date.fromisoformat(str(last_visit_from))
+            if not e["last_visit"] or e["last_visit"] < d:
+                continue
+        if last_visit_to:
+            d = date.fromisoformat(str(last_visit_to))
+            if not e["last_visit"] or e["last_visit"] > d:
+                continue
+        if payment_method:
+            if payment_method.lower() not in e["payments"]:
+                continue
+        if preferred_barber:
+            if client.preferred_barber_id != int(preferred_barber):
+                continue
+        if top_spenders_pct:
+            if e["total_spent"] < spend_threshold:
+                continue
+        if accepts_whatsapp is not None:
+            if client.accepts_whatsapp != accepts_whatsapp:
+                continue
+        if created_from:
+            d = date.fromisoformat(str(created_from))
+            if not client.created_at or client.created_at.date() < d:
+                continue
+        if created_to:
+            d = date.fromisoformat(str(created_to))
+            if not client.created_at or client.created_at.date() > d:
+                continue
+        if no_show_count:
+            if e["no_show_count"] < int(no_show_count):
                 continue
 
-        result.append(client)
+        result.append(e)
 
     return result
+
+
+def _audience_to_clients(audience: list[dict]) -> list[Client]:
+    """Extract Client objects from enriched audience list."""
+    return [e["client"] for e in audience]
 
 
 # ============================================================================
@@ -176,6 +297,154 @@ async def list_campaigns(user=Depends(get_current_user), db: Session = Depends(g
     ).order_by(Campaign.created_at.desc()).all()
     return [_serialize(c) for c in campaigns]
 
+
+# ============================================================================
+# AUDIENCE SEARCH — Advanced filters, full client list for selection
+# Must be BEFORE /{campaign_id} routes to avoid FastAPI path conflicts
+# ============================================================================
+
+@router.post("/audience-search")
+async def audience_search(filters: dict = {}, user=Depends(get_current_user), db: Session = Depends(get_db)):
+    """Search audience with advanced filters — returns FULL list with stats for contact selection."""
+    tid = _get_tenant(db, user)
+    audience = _build_audience(db, tid, filters)
+
+    contacts = []
+    for e in audience:
+        cl = e["client"]
+        contacts.append({
+            "id": cl.id,
+            "name": cl.name,
+            "phone": cl.phone,
+            "email": cl.email,
+            "status": e["status"],
+            "total_visits": e["total_visits"],
+            "total_spent": e["total_spent"],
+            "avg_ticket": e["avg_ticket"],
+            "days_since": e["days_since"],
+            "last_visit": e["last_visit"].isoformat() if e["last_visit"] else None,
+            "no_show_count": e["no_show_count"],
+            "tags": cl.tags or [],
+            "favorite_service": cl.favorite_service,
+            "birthday": cl.birthday.isoformat() if cl.birthday else None,
+            "accepts_whatsapp": cl.accepts_whatsapp,
+        })
+
+    return {"count": len(contacts), "contacts": contacts}
+
+
+@router.post("/send-one")
+async def send_one_message(
+    data: dict,
+    user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Send a single template message to one client. Used for 1-by-1 campaign sending."""
+    tid = _get_tenant(db, user)
+    client_id = data.get("client_id")
+    template_slug = data.get("template_slug")
+    message_body = data.get("message_body")
+    campaign_id = data.get("campaign_id")
+
+    if not client_id or not message_body:
+        raise HTTPException(status_code=400, detail="client_id y message_body son requeridos")
+
+    wa_token = get_wa_token(db, tid)
+    wa_phone_id = get_wa_phone_id(db, tid)
+    if not wa_token or not wa_phone_id:
+        raise HTTPException(status_code=400, detail="Credenciales de WhatsApp no configuradas")
+
+    client_obj = db.query(Client).filter(Client.id == int(client_id), Client.tenant_id == tid).first()
+    if not client_obj:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+
+    phone = normalize_phone(client_obj.phone)
+    if len(phone) < 10:
+        return {"success": False, "client_id": client_id, "error": "Teléfono inválido"}
+
+    first_name = (client_obj.name or "").split(" ")[0]
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+
+    try:
+        if template_slug:
+            variables = re.findall(r'\{\{(\w+)\}\}', message_body or "")
+            last_v = db.query(VisitHistory.visit_date).filter(
+                VisitHistory.client_id == client_obj.id,
+                VisitHistory.status == "completed",
+            ).order_by(VisitHistory.visit_date.desc()).first()
+            days_val = str((date.today() - last_v[0]).days) if last_v else "0"
+
+            var_values = {
+                "nombre": first_name,
+                "negocio": tenant.name if tenant else "",
+                "servicio": client_obj.favorite_service or "tu servicio",
+                "dias": days_val,
+            }
+
+            components_params = []
+            if variables:
+                params = [{"type": "text", "text": var_values.get(v, v)} for v in variables]
+                components_params = [{"type": "body", "parameters": params}]
+
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": phone,
+                "type": "template",
+                "template": {
+                    "name": template_slug,
+                    "language": {"code": "es"},
+                    "components": components_params,
+                },
+            }
+        else:
+            resolved_body = message_body.replace("{{nombre}}", first_name)
+            payload = {
+                "messaging_product": "whatsapp",
+                "to": phone,
+                "type": "text",
+                "text": {"body": resolved_body},
+            }
+
+        async with httpx.AsyncClient(timeout=15) as client_http:
+            resp = await client_http.post(
+                f"https://graph.facebook.com/{WA_API_VERSION}/{wa_phone_id}/messages",
+                headers={
+                    "Authorization": f"Bearer {wa_token}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            if resp.status_code in (200, 201):
+                from routes._usage_tracker import track_wa_sent
+                try:
+                    track_wa_sent(tid, 1)
+                except Exception:
+                    pass
+
+                if campaign_id:
+                    camp = db.query(Campaign).filter(Campaign.id == int(campaign_id), Campaign.tenant_id == tid).first()
+                    if camp:
+                        camp.sent_count = (camp.sent_count or 0) + 1
+                        camp.updated_at = datetime.utcnow()
+                        db.commit()
+
+                return {"success": True, "client_id": client_id, "name": client_obj.name, "phone": phone}
+            else:
+                error_text = resp.text[:100]
+                if campaign_id:
+                    camp = db.query(Campaign).filter(Campaign.id == int(campaign_id), Campaign.tenant_id == tid).first()
+                    if camp:
+                        camp.failed_count = (camp.failed_count or 0) + 1
+                        db.commit()
+                return {"success": False, "client_id": client_id, "name": client_obj.name, "error": error_text}
+
+    except Exception as e:
+        return {"success": False, "client_id": client_id, "name": client_obj.name, "error": str(e)[:100]}
+
+
+# ============================================================================
+# CAMPAIGN BY ID ENDPOINTS
+# ============================================================================
 
 @router.get("/{campaign_id}")
 async def get_campaign(campaign_id: int, user=Depends(get_current_user), db: Session = Depends(get_db)):
@@ -367,12 +636,13 @@ async def preview_audience(campaign_id: int, user=Depends(get_current_user), db:
 
     # Return summary + sample
     sample = []
-    for cl in audience[:20]:
+    for e in audience[:20]:
+        cl = e["client"]
         sample.append({
             "id": cl.id,
             "name": cl.name,
             "phone": cl.phone,
-            "status": cl.status_override or "activo",
+            "status": e["status"],
         })
 
     return {
@@ -613,7 +883,8 @@ async def send_campaign(campaign_id: int, user=Depends(get_current_user), db: Se
         raise HTTPException(status_code=400, detail="Credenciales de WhatsApp no configuradas")
 
     # Build audience
-    audience = _build_audience(db, tid, c.segment_filters or {})
+    audience_enriched = _build_audience(db, tid, c.segment_filters or {})
+    audience = _audience_to_clients(audience_enriched)
     if not audience:
         raise HTTPException(status_code=400, detail="No hay clientes que coincidan con los filtros")
 
