@@ -414,7 +414,13 @@ async def send_one_message(
                 },
                 json=payload,
             )
-            if resp.status_code in (200, 201):
+            resp_data = resp.json() if resp.status_code < 500 else {}
+            has_messages = bool(resp_data.get("messages"))
+            is_success = resp.status_code in (200, 201, 202) or has_messages
+
+            print(f"[SEND-ONE] {phone} → status={resp.status_code} success={is_success} body={str(resp_data)[:200]}")
+
+            if is_success:
                 from routes._usage_tracker import track_wa_sent
                 try:
                     track_wa_sent(tid, 1)
@@ -430,16 +436,18 @@ async def send_one_message(
 
                 return {"success": True, "client_id": client_id, "name": client_obj.name, "phone": phone}
             else:
-                error_text = resp.text[:100]
+                error_msg = resp_data.get("error", {}).get("message", resp.text[:150])
+                print(f"[SEND-ONE] FAILED {phone}: {error_msg}")
                 if campaign_id:
                     camp = db.query(Campaign).filter(Campaign.id == int(campaign_id), Campaign.tenant_id == tid).first()
                     if camp:
                         camp.failed_count = (camp.failed_count or 0) + 1
                         db.commit()
-                return {"success": False, "client_id": client_id, "name": client_obj.name, "error": error_text}
+                return {"success": False, "client_id": client_id, "name": client_obj.name, "error": str(error_msg)[:150]}
 
     except Exception as e:
-        return {"success": False, "client_id": client_id, "name": client_obj.name, "error": str(e)[:100]}
+        print(f"[SEND-ONE] EXCEPTION {phone}: {e}")
+        return {"success": False, "client_id": client_id, "name": client_obj.name, "error": str(e)[:150]}
 
 
 # ============================================================================
