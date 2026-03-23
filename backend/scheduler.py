@@ -170,45 +170,46 @@ def _already_sent_for_date(db, conv_id: int, tag: str, target_date: date) -> boo
 
 
 def _match_phone_to_conversation(db, phone_str, client_name="", tenant_id=None):
-    """Find WhatsApp conversation by phone, with name validation.
+    """Find WhatsApp conversation by phone (digits-only comparison).
     Returns conversation or None. NEVER returns a wrong-person match."""
+    import re as _re
     if not phone_str:
         return None
-    phone_clean = normalize_phone(phone_str)
-    if len(phone_clean) < 7:
+    phone_digits = _re.sub(r'\D', '', phone_str or '')
+    if len(phone_digits) < 7:
         return None
-    phone_tail = phone_clean[-10:]
-    client_name_lower = (client_name or "").lower().strip()
-    client_first = client_name_lower.split()[0] if client_name_lower else ""
+    phone_tail = phone_digits[-10:]
 
-    q = db.query(WhatsAppConversation).filter(
-        WhatsAppConversation.wa_contact_phone.contains(phone_tail)
-    )
+    # Load all tenant conversations and compare digits-only (handles any stored format)
+    q = db.query(WhatsAppConversation)
     if tenant_id:
         q = q.filter(WhatsAppConversation.tenant_id == tenant_id)
-    candidates = q.all()
+    all_convs = q.all()
+
+    candidates = []
+    for c in all_convs:
+        conv_digits = _re.sub(r'\D', '', c.wa_contact_phone or '')
+        if conv_digits[-10:] == phone_tail:
+            candidates.append(c)
 
     if not candidates:
         return None
 
+    # Single match — return directly (skip name validation to avoid false negatives)
     if len(candidates) == 1:
-        conv = candidates[0]
-        # Validate name if we have both
-        if client_first:
-            contact_first = ((conv.wa_contact_name or "").split()[0]).lower()
-            if contact_first and client_first != contact_first:
-                print(f"[SCHEDULER] SAFETY: Conv '{conv.wa_contact_name}' != client '{client_name}'. Skipping.")
-                return None
-        return conv
+        return candidates[0]
 
-    # Multiple matches — find by name
+    # Multiple matches — prefer one with matching client_id or name
+    client_first = (client_name or "").lower().strip().split()[0] if client_name else ""
     if client_first:
         for c in candidates:
             contact_first = ((c.wa_contact_name or "").split()[0]).lower()
             if contact_first and client_first == contact_first:
                 return c
-        print(f"[SCHEDULER] WARNING: {len(candidates)} convs match phone ...{phone_tail[-4:]} but none match '{client_name}'. Skipping.")
-    return None
+
+    # Return most recently active conversation
+    candidates.sort(key=lambda c: c.last_message_at or datetime.min, reverse=True)
+    return candidates[0]
 
 
 def _create_conversation_for_client(db, client, tenant_id=None):

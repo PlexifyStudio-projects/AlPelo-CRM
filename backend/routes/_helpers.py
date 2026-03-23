@@ -98,8 +98,10 @@ def get_wa_phone_id(db: Session, tenant_id=None) -> str:
 # ============================================================================
 
 def normalize_phone(phone: str) -> str:
-    """Strip +, spaces, and dashes from phone number."""
-    return phone.replace("+", "").replace(" ", "").replace("-", "")
+    """Strip ALL non-digit characters from phone number.
+    +57 (314) 708-3182 → 573147083182"""
+    import re
+    return re.sub(r'\D', '', phone or '')
 
 
 # ============================================================================

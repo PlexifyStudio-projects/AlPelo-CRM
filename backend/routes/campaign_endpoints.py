@@ -442,18 +442,24 @@ async def send_one_message(
 
                 # ── Record in WhatsApp inbox (reuse existing conversation) ──
                 try:
-                    clean_phone = re.sub(r'\D', '', phone)
-                    clean_last10 = clean_phone[-10:] if len(clean_phone) >= 10 else clean_phone
+                    # First try by client_id (most reliable)
                     conv = db.query(WhatsAppConversation).filter(
                         WhatsAppConversation.tenant_id == tid,
-                        WhatsAppConversation.wa_contact_phone.contains(clean_last10),
-                    ).first()
+                        WhatsAppConversation.client_id == int(client_id),
+                    ).order_by(WhatsAppConversation.last_message_at.desc().nullslast()).first()
+
+                    # Fallback: match by phone digits
                     if not conv:
-                        # Find by client_id
-                        conv = db.query(WhatsAppConversation).filter(
+                        clean_digits = re.sub(r'\D', '', phone)
+                        phone_tail = clean_digits[-10:] if len(clean_digits) >= 10 else clean_digits
+                        tenant_convs = db.query(WhatsAppConversation).filter(
                             WhatsAppConversation.tenant_id == tid,
-                            WhatsAppConversation.client_id == int(client_id),
-                        ).first()
+                        ).all()
+                        for tc in tenant_convs:
+                            tc_digits = re.sub(r'\D', '', tc.wa_contact_phone or '')
+                            if tc_digits[-10:] == phone_tail:
+                                conv = tc
+                                break
                     if not conv:
                         conv = WhatsAppConversation(
                             tenant_id=tid,
