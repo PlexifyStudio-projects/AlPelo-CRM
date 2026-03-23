@@ -176,7 +176,7 @@ def _match_phone_to_conversation(db, phone_str, client_name="", tenant_id=None):
     if not phone_str:
         return None
     phone_digits = _re.sub(r'\D', '', phone_str or '')
-    if len(phone_digits) < 7:
+    if len(phone_digits) < 10:
         return None
     phone_tail = phone_digits[-10:]
     client_name_lower = (client_name or "").lower().strip()
@@ -238,7 +238,7 @@ def _create_conversation_for_client(db, client, tenant_id=None):
     """Create conversation with VERIFIED client data — correct phone + correct name."""
     import re as _re
     phone = _re.sub(r'\D', '', client.phone or '')
-    if len(phone) < 7:
+    if len(phone) < 10:
         print(f"[SCHEDULER] Cannot create conversation for {client.name}: invalid phone '{client.phone}'")
         return None
 
