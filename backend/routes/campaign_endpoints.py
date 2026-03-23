@@ -8,7 +8,7 @@ import re
 import json
 import httpx
 from datetime import datetime, date, timedelta
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
@@ -304,7 +304,7 @@ async def list_campaigns(user=Depends(get_current_user), db: Session = Depends(g
 # ============================================================================
 
 @router.post("/audience-search")
-async def audience_search(filters: dict = {}, user=Depends(get_current_user), db: Session = Depends(get_db)):
+async def audience_search(filters: dict = Body(default={}), user=Depends(get_current_user), db: Session = Depends(get_db)):
     """Search audience with advanced filters — returns FULL list with stats for contact selection."""
     tid = _get_tenant(db, user)
     audience = _build_audience(db, tid, filters)
@@ -335,7 +335,7 @@ async def audience_search(filters: dict = {}, user=Depends(get_current_user), db
 
 @router.post("/send-one")
 async def send_one_message(
-    data: dict,
+    data: dict = Body(...),
     user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
