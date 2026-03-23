@@ -3157,11 +3157,11 @@ HOY: {_fecha_colombia_str(db)} | Hora: {_now_colombia(db).strftime('%I:%M %p')}
 # ============================================================================
 
 async def _call_anthropic(api_key: str, model: str, system_prompt: str, messages: list, temperature: float, max_tokens: int):
-    """Call Claude API. Messages can contain text strings or multi-content blocks (for vision)."""
+    """Call Claude API with prompt caching. System prompt cached for 5 min (90% cheaper on hits)."""
     payload = {
         "model": model,
         "max_tokens": max_tokens,
-        "system": system_prompt,
+        "system": [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
         "messages": messages,
         "temperature": temperature,
     }
@@ -3387,7 +3387,7 @@ def _call_ai_sync(system_prompt: str, history: list, user_message: str) -> str:
     payload = {
         "model": "claude-sonnet-4-20250514",
         "max_tokens": 2048,
-        "system": system_prompt,
+        "system": [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
         "messages": messages,
         "temperature": 0.4,
     }

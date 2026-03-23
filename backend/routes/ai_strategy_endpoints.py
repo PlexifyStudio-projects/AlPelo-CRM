@@ -41,7 +41,7 @@ def _call_strategy_ai(system_prompt: str, user_message: str, tenant_id: int = 1,
     payload = {
         "model": _MODEL,
         "max_tokens": max_tokens,
-        "system": system_prompt,
+        "system": [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
         "messages": [{"role": "user", "content": user_message}],
         "temperature": 0.4,
     }
