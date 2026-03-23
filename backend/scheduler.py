@@ -179,6 +179,8 @@ def _match_phone_to_conversation(db, phone_str, client_name="", tenant_id=None):
     if len(phone_digits) < 7:
         return None
     phone_tail = phone_digits[-10:]
+    client_name_lower = (client_name or "").lower().strip()
+    client_first = client_name_lower.split()[0] if client_name_lower else ""
 
     # Load all tenant conversations and compare digits-only (handles any stored format)
     q = db.query(WhatsAppConversation)
@@ -189,27 +191,47 @@ def _match_phone_to_conversation(db, phone_str, client_name="", tenant_id=None):
     candidates = []
     for c in all_convs:
         conv_digits = _re.sub(r'\D', '', c.wa_contact_phone or '')
-        if conv_digits[-10:] == phone_tail:
+        if len(conv_digits) >= 7 and conv_digits[-10:] == phone_tail:
             candidates.append(c)
 
     if not candidates:
         return None
 
-    # Single match — return directly (skip name validation to avoid false negatives)
+    # Single match — validate name to avoid sending to wrong person
     if len(candidates) == 1:
-        return candidates[0]
+        conv = candidates[0]
+        # If we have a client name, verify it matches (at least first name)
+        if client_name_lower:
+            conv_name_lower = (conv.wa_contact_name or "").lower().strip()
+            conv_first = conv_name_lower.split()[0] if conv_name_lower else ""
+            # Also check linked client name
+            linked_name = ""
+            if conv.client_id:
+                from database.models import Client as _Client
+                linked = db.query(_Client).filter(_Client.id == conv.client_id).first()
+                if linked:
+                    linked_name = (linked.name or "").lower().strip()
+            # Match if first name matches WA name OR linked CRM name
+            name_match = (
+                (conv_first and client_first and client_first == conv_first) or
+                (linked_name and client_first in linked_name) or
+                (not conv_first and not linked_name)  # no name to compare = allow
+            )
+            if not name_match:
+                print(f"[SCHEDULER] SAFETY: Phone matches conv #{conv.id} '{conv.wa_contact_name}' but name '{client_name}' doesn't match. Skipping.")
+                return None
+        return conv
 
-    # Multiple matches — prefer one with matching client_id or name
-    client_first = (client_name or "").lower().strip().split()[0] if client_name else ""
+    # Multiple matches — prefer one with matching name
     if client_first:
         for c in candidates:
             contact_first = ((c.wa_contact_name or "").split()[0]).lower()
             if contact_first and client_first == contact_first:
                 return c
 
-    # Return most recently active conversation
-    candidates.sort(key=lambda c: c.last_message_at or datetime.min, reverse=True)
-    return candidates[0]
+    # No name match found — don't return wrong person
+    print(f"[SCHEDULER] WARNING: {len(candidates)} convs match phone but none match '{client_name}'. Skipping.")
+    return None
 
 
 def _create_conversation_for_client(db, client, tenant_id=None):
