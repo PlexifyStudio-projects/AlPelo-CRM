@@ -294,10 +294,8 @@ def _find_conversation(db, appt):
             conv = _match_phone_to_conversation(db, client.phone, client_name, tenant_id=tid)
             if conv:
                 return conv
-            # No conversation found — create one with correct client data
-            return _create_conversation_for_client(db, client, tenant_id=tid)
 
-    print(f"[SCHEDULER] No phone for '{client_name}'. Cannot create conversation.")
+    # No conversation found — callers that need to send should use _create_conversation_for_client() directly
     return None
 
 
@@ -349,6 +347,10 @@ def _check_30min_reminders(db):
         # Window: 25-35 minutes before (catches the ~30 min mark)
         if 25 <= diff_min <= 35:
             conv = _find_conversation(db, appt)
+            if not conv and appt.client_id:
+                client = db.query(Client).filter(Client.id == appt.client_id).first()
+                if client and client.phone:
+                    conv = _create_conversation_for_client(db, client, tenant_id=getattr(appt, 'tenant_id', None))
             if not conv:
                 print(f"[SCHEDULER] No WA conv for appt #{appt.id} ({appt.client_name}), skip 30min reminder")
                 continue
@@ -529,6 +531,10 @@ def _check_custom_reminders(db):
             continue  # Not time yet
 
         conv = _find_conversation(db, best_appt)
+        if not conv and best_appt.client_id:
+            client = db.query(Client).filter(Client.id == best_appt.client_id).first()
+            if client and client.phone:
+                conv = _create_conversation_for_client(db, client, tenant_id=getattr(best_appt, 'tenant_id', None))
         if not conv:
             # No WA conversation found — mark as failed instead of silently skipping
             client_first = (best_appt.client_name or "").split()[0]

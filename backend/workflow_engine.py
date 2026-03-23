@@ -186,25 +186,17 @@ def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
         client_first = (client.name or "").split()[0]
         message = f"Hola {client_first}! Soy Lina de {tenant_name} 👋\n\n" + message
 
-    # If no conversation exists but client has phone, create one
-    if not conv and client and client.phone:
-        conv = _create_conversation_for_client(db, client)
-
     config = workflow.config or {}
     template_name = config.get("template_name")
     template_lang = config.get("template_language", "es")
     template_params = config.get("template_params", [])
 
-    # Decide: template or free-text?
-    wa_sent = False
-    if template_name:
-        # Use approved template (works always, even outside 24h window)
-        wa_sent = _send_template_sync(phone, template_name, template_lang, template_params, db=db)
-    elif conv and _is_within_24h_window(db, conv):
-        # Client messaged recently — free text is OK
-        wa_sent = _send_whatsapp_sync(phone, message, db=db)
-    else:
-        # No template configured AND outside 24h window — skip with warning
+    # FIRST check if we can actually send — BEFORE creating any conversation
+    can_send_template = bool(template_name)
+    can_send_freetext = conv and _is_within_24h_window(db, conv)
+
+    if not can_send_template and not can_send_freetext:
+        # Nothing to send — DO NOT create conversation
         client_name = (client.name or "").split()[0] if client else "?"
         print(f"[WORKFLOW] Skipped {workflow.workflow_type} for {client_name}: no template and outside 24h window")
         log_event(
@@ -214,6 +206,17 @@ def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
             status="warning",
         )
         return False
+
+    # NOW we know we'll send — create conversation if needed
+    if not conv and client and client.phone:
+        conv = _create_conversation_for_client(db, client)
+
+    # Send
+    wa_sent = False
+    if can_send_template:
+        wa_sent = _send_template_sync(phone, template_name, template_lang, template_params, db=db)
+    elif can_send_freetext:
+        wa_sent = _send_whatsapp_sync(phone, message, db=db)
 
     # Store in conversation thread (once only)
     if conv:
