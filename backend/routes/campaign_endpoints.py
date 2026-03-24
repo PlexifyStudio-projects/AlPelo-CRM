@@ -445,9 +445,19 @@ async def send_one_message(
                 if campaign_id:
                     camp = db.query(Campaign).filter(Campaign.id == int(campaign_id), Campaign.tenant_id == tid).first()
                     if camp:
+                        was_zero = (camp.sent_count or 0) == 0
                         camp.sent_count = (camp.sent_count or 0) + 1
                         camp.updated_at = datetime.utcnow()
+                        if was_zero:
+                            camp.status = "sent"
                         db.commit()
+                        # Track campaign only on first message (was_zero means this is a new campaign send)
+                        if was_zero:
+                            try:
+                                from routes._usage_tracker import track_campaign_sent
+                                track_campaign_sent(count=1, tenant_id=tid)
+                            except Exception:
+                                pass
 
                 # ── Record in WhatsApp inbox (reuse existing conversation) ──
                 try:
