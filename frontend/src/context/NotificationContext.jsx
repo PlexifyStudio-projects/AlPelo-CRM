@@ -4,33 +4,37 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.u
 const NotificationContext = createContext(null);
 
 // Show native browser notification (works when tab is open)
-function showBrowserNotification(title, body, link) {
+function showBrowserNotification(title, body, link, type) {
   if (!('Notification' in window)) return;
   if (Notification.permission !== 'granted') {
-    // Request permission on first notification
     Notification.requestPermission();
     return;
   }
+
+  // Don't show if tab is focused (user is already looking at the app)
+  if (document.hasFocus()) return;
+
   try {
-    const n = new Notification(title, {
+    const n = new Notification(title || 'Plexify Studio', {
       body: body || '',
-      icon: '/AlPelo-CRM/icon-192.png',
-      badge: '/AlPelo-CRM/badge-72.png',
-      tag: 'plexify-' + Date.now(),
+      icon: '/AlPelo-CRM/icon-192.svg',
+      badge: '/AlPelo-CRM/badge-72.svg',
+      tag: 'plexify-' + (type || 'general') + '-' + Date.now(),
       silent: false,
+      requireInteraction: false,
     });
     if (link) {
       n.onclick = () => {
         window.focus();
-        window.location.hash = '';
-        window.location.pathname = '/AlPelo-CRM' + link;
+        if (link.startsWith('/')) {
+          window.location.href = window.location.origin + '/AlPelo-CRM' + link;
+        }
         n.close();
       };
     }
-    // Auto-close after 8 seconds
-    setTimeout(() => n.close(), 8000);
+    setTimeout(() => n.close(), 10000);
   } catch {
-    // Fallback: ignore if Notification constructor fails
+    // Notification constructor can fail in some contexts
   }
 }
 
@@ -55,7 +59,7 @@ export const NotificationProvider = ({ children }) => {
           // Find new unread notifications
           const newOnes = items.filter(n => n.id > lastSeenIdRef.current && !n.is_read);
           for (const n of newOnes) {
-            showBrowserNotification(n.title, n.detail, n.link);
+            showBrowserNotification(n.title, n.detail, n.link, n.type);
           }
         }
         lastSeenIdRef.current = maxId;

@@ -1036,9 +1036,15 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     try:
                         from notifications import notify
                         _push_name = conv.wa_contact_name or from_phone or "Cliente"
-                        _push_body = (content or "")[:120] if msg_type == "text" else f"[{msg_type}]"
+                        _type_labels = {"text": None, "audio": "Audio", "image": "Imagen", "video": "Video", "sticker": "Sticker", "document": "Documento"}
+                        _type_label = _type_labels.get(msg_type)
+                        if _type_label:
+                            _push_body = f"Envio un {_type_label.lower()}" + (f": {content[:80]}" if content and not content.startswith("📎") else "")
+                        else:
+                            _push_body = (content or "")[:120]
                         notify(conv.tenant_id, "whatsapp_message",
-                               f"Mensaje de {_push_name}", _push_body,
+                               f"💬 {_push_name} te escribio por WhatsApp",
+                               _push_body or "Nuevo mensaje",
                                icon="💬", link="/inbox")
                     except Exception as e:
                         print(f"[WA NOTIFY] Error: {e}")

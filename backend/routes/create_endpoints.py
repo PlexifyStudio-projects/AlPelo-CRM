@@ -299,8 +299,8 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), u
     try:
         from notifications import notify
         notify(db, tid, "new_appointment",
-               f"Nueva cita: {data.client_name} con {staff.name}",
-               f"{service.name} — {data.date} a las {data.time}",
+               f"📅 Nueva cita: {data.client_name}",
+               f"{service.name} con {staff.name}\n{data.date} a las {data.time}",
                icon="📅", link="/agenda")
     except Exception:
         pass
