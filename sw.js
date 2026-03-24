@@ -10,8 +10,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body || '',
-    icon: '/AlPelo-CRM/icon-192.png',
-    badge: '/AlPelo-CRM/badge-72.png',
+    icon: '/AlPelo-CRM/icon-192.svg',
+    badge: '/AlPelo-CRM/badge-72.svg',
     data: { url: data.url || '/' },
     tag: 'plexify-' + (data.url || Date.now()),
     renotify: true,
