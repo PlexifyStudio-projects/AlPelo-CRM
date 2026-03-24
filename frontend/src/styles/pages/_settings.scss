@@ -980,6 +980,17 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: border-color $transition-fast;
+
+    &:hover {
+      border-color: $color-primary;
+
+      .settings__wa-profile-photo-overlay {
+        opacity: 1;
+      }
+    }
 
     img {
       width: 100%;
@@ -988,8 +999,44 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     }
   }
 
+  &__wa-profile-photo-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity $transition-fast;
+    color: white;
+  }
+
   &__wa-profile-photo-empty {
     color: $color-gray-400;
+  }
+
+  &__wa-profile-photo-select {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: $spacing-xs $spacing-md;
+    border: 1px dashed $border-color-light;
+    border-radius: $border-radius-sm;
+    background: $color-gray-50;
+    color: $color-gray-600;
+    font-size: $font-size-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 250px;
+
+    &:hover {
+      border-color: $color-primary;
+      color: $color-primary;
+      background: $color-white;
+    }
   }
 
   &__wa-profile-photo-input {

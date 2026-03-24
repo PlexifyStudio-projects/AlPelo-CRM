@@ -99,12 +99,13 @@ const settingsService = {
     return res.json();
   },
 
-  updateWhatsAppProfilePhoto: async (imageUrl) => {
+  updateWhatsAppProfilePhoto: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
     const res = await fetch(`${_API}/settings/whatsapp-profile-photo`, {
-      method: 'PUT',
+      method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image_url: imageUrl }),
+      body: formData,
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

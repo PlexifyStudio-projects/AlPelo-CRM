@@ -250,10 +250,12 @@ const Settings = () => {
   const [waAddress, setWaAddress] = useState('');
   const [waEmail, setWaEmail] = useState('');
   const [waWebsite, setWaWebsite] = useState('');
-  const [waPhotoUrl, setWaPhotoUrl] = useState('');
+  const [waPhotoFile, setWaPhotoFile] = useState(null);
+  const [waPhotoPreview, setWaPhotoPreview] = useState('');
   const [waProfileSaving, setWaProfileSaving] = useState(false);
   const [waPhotoSaving, setWaPhotoSaving] = useState(false);
   const [waProfileLoaded, setWaProfileLoaded] = useState(false);
+  const waPhotoInputRef = useRef(null);
 
   // Google Reviews state
   const [googleReviewUrl, setGoogleReviewUrl] = useState('');
@@ -362,12 +364,29 @@ const Settings = () => {
     }
   };
 
+  const handleWaPhotoSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      addNotification('Solo se permiten imagenes (JPEG, PNG)', 'error');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      addNotification('La imagen no puede superar 5MB', 'error');
+      return;
+    }
+    setWaPhotoFile(file);
+    setWaPhotoPreview(URL.createObjectURL(file));
+  };
+
   const handleSaveWaPhoto = async () => {
-    if (!waPhotoUrl.trim()) return;
+    if (!waPhotoFile) return;
     setWaPhotoSaving(true);
     try {
-      await settingsService.updateWhatsAppProfilePhoto(waPhotoUrl.trim());
-      addNotification('Foto de perfil actualizada en Meta', 'success');
+      await settingsService.updateWhatsAppProfilePhoto(waPhotoFile);
+      addNotification('Foto de perfil actualizada en WhatsApp', 'success');
+      setWaPhotoFile(null);
+      setWaPhotoPreview('');
       loadWaProfile();
     } catch (err) {
       addNotification(err.message, 'error');
@@ -706,33 +725,48 @@ const Settings = () => {
                 Esto es lo que ven tus clientes en WhatsApp: nombre, foto, descripcion y datos del negocio.
               </p>
 
-              {/* Current photo preview */}
+              {/* Current photo preview + upload */}
               <div className={`${b}__wa-profile-photo-section`}>
-                <div className={`${b}__wa-profile-photo-preview`}>
-                  {waProfile?.profile_picture_url ? (
-                    <img src={waProfile.profile_picture_url} alt="Perfil WA" />
+                <div
+                  className={`${b}__wa-profile-photo-preview`}
+                  onClick={() => waPhotoInputRef.current?.click()}
+                  title="Clic para cambiar foto"
+                >
+                  {(waPhotoPreview || waProfile?.profile_picture_url) ? (
+                    <img src={waPhotoPreview || waProfile.profile_picture_url} alt="Perfil WA" />
                   ) : (
                     <div className={`${b}__wa-profile-photo-empty`}>
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                     </div>
                   )}
+                  <div className={`${b}__wa-profile-photo-overlay`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  </div>
                 </div>
+                <input
+                  ref={waPhotoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  style={{ display: 'none' }}
+                  onChange={handleWaPhotoSelect}
+                />
                 <div className={`${b}__wa-profile-photo-input`}>
-                  <label>URL de la foto de perfil</label>
-                  <span className={`${b}__meta-hint`}>Debe ser una URL publica (JPEG o PNG, max 5MB, cuadrada recomendada)</span>
+                  <label>Foto de perfil de WhatsApp</label>
+                  <span className={`${b}__meta-hint`}>JPEG o PNG, max 5MB, cuadrada recomendada. Clic en la foto o en el boton para cambiarla.</span>
                   <div className={`${b}__wa-profile-photo-row`}>
-                    <input
-                      type="text"
-                      value={waPhotoUrl}
-                      onChange={e => setWaPhotoUrl(e.target.value)}
-                      placeholder="https://tusitio.com/logo.jpg"
-                    />
+                    <button
+                      className={`${b}__wa-profile-photo-select`}
+                      onClick={() => waPhotoInputRef.current?.click()}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      {waPhotoFile ? waPhotoFile.name : 'Seleccionar imagen'}
+                    </button>
                     <button
                       className={`${b}__ai-save`}
                       onClick={handleSaveWaPhoto}
-                      disabled={waPhotoSaving || !waPhotoUrl.trim()}
+                      disabled={waPhotoSaving || !waPhotoFile}
                     >
-                      {waPhotoSaving ? 'Subiendo...' : 'Actualizar foto'}
+                      {waPhotoSaving ? 'Subiendo a Meta...' : 'Subir foto'}
                     </button>
                   </div>
                 </div>

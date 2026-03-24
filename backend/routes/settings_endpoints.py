@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
@@ -603,11 +603,15 @@ async def update_whatsapp_profile(data: dict, db: Session = Depends(get_db), use
         raise HTTPException(status_code=500, detail=str(e)[:200])
 
 
-@router.put("/settings/whatsapp-profile-photo")
-async def update_whatsapp_profile_photo(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Update WhatsApp Business Profile photo via Meta API.
-    Accepts { "image_url": "https://..." } — Meta downloads the image from this URL.
-    Image must be JPEG/PNG, max 5MB, square recommended.
+@router.post("/settings/whatsapp-profile-photo")
+async def update_whatsapp_profile_photo(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Upload a profile photo to WhatsApp Business Profile.
+    1. Upload image to Meta via resumable upload → get handle
+    2. Use handle to set profile picture
     """
     tid = safe_tid(user, db)
     if not tid:
@@ -617,31 +621,88 @@ async def update_whatsapp_profile_photo(data: dict, db: Session = Depends(get_db
     if not tenant or not tenant.wa_access_token or not tenant.wa_phone_number_id:
         raise HTTPException(status_code=400, detail="WhatsApp no configurado")
 
-    image_url = (data.get("image_url") or "").strip()
-    if not image_url:
-        raise HTTPException(status_code=400, detail="image_url es requerido")
+    # Validate file
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Solo se permiten imagenes (JPEG, PNG)")
+
+    file_bytes = await file.read()
+    file_size = len(file_bytes)
+    if file_size > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="La imagen no puede superar 5MB")
+
+    token = tenant.wa_access_token
+    app_id = None
+    # Get Meta App ID for resumable upload
+    pc = db.query(PlatformConfig).filter(PlatformConfig.key == "META_APP_ID").first()
+    if pc:
+        app_id = pc.value
+
+    if not app_id:
+        raise HTTPException(status_code=400, detail="META_APP_ID no configurado en plataforma")
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(
+            # Step 1: Create upload session
+            create_resp = await client.post(
+                f"https://graph.facebook.com/{META_GRAPH_VERSION}/{app_id}/uploads",
+                headers={"Authorization": f"Bearer {token}"},
+                params={
+                    "file_length": file_size,
+                    "file_type": file.content_type,
+                    "file_name": file.filename or "profile.jpg",
+                },
+            )
+            print(f"[WA PHOTO UPLOAD SESSION] status={create_resp.status_code} body={create_resp.text[:300]}")
+
+            if create_resp.status_code != 200:
+                error = create_resp.json().get("error", {}).get("message", create_resp.text[:200])
+                raise HTTPException(status_code=400, detail=f"Error creando sesion de upload: {error}")
+
+            upload_session_id = create_resp.json().get("id")
+            if not upload_session_id:
+                raise HTTPException(status_code=400, detail="No se obtuvo session ID de Meta")
+
+            # Step 2: Upload the file bytes
+            upload_resp = await client.post(
+                f"https://graph.facebook.com/{META_GRAPH_VERSION}/{upload_session_id}",
+                headers={
+                    "Authorization": f"OAuth {token}",
+                    "file_offset": "0",
+                    "Content-Type": file.content_type,
+                },
+                content=file_bytes,
+            )
+            print(f"[WA PHOTO UPLOAD] status={upload_resp.status_code} body={upload_resp.text[:300]}")
+
+            if upload_resp.status_code != 200:
+                error = upload_resp.json().get("error", {}).get("message", upload_resp.text[:200])
+                raise HTTPException(status_code=400, detail=f"Error subiendo imagen: {error}")
+
+            file_handle = upload_resp.json().get("h")
+            if not file_handle:
+                raise HTTPException(status_code=400, detail="No se obtuvo file handle de Meta")
+
+            # Step 3: Set profile picture using handle
+            profile_resp = await client.post(
                 f"https://graph.facebook.com/{META_GRAPH_VERSION}/{tenant.wa_phone_number_id}/whatsapp_business_profile",
                 headers={
-                    "Authorization": f"Bearer {tenant.wa_access_token}",
+                    "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",
                 },
                 json={
                     "messaging_product": "whatsapp",
-                    "profile_picture_url": image_url,
+                    "profile_picture_handle": file_handle,
                 },
             )
-            print(f"[WA PROFILE PHOTO] status={resp.status_code} body={resp.text[:300]}")
+            print(f"[WA PHOTO SET] status={profile_resp.status_code} body={profile_resp.text[:300]}")
 
-            if resp.status_code == 200:
-                return {"success": True, "message": "Foto de perfil actualizada"}
+            if profile_resp.status_code == 200:
+                return {"success": True, "message": "Foto de perfil actualizada en WhatsApp"}
             else:
-                error = resp.json().get("error", {}).get("message", resp.text[:200])
-                raise HTTPException(status_code=400, detail=f"Meta API: {error}")
+                error = profile_resp.json().get("error", {}).get("message", profile_resp.text[:200])
+                raise HTTPException(status_code=400, detail=f"Error al establecer foto: {error}")
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[WA PHOTO ERROR] {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
