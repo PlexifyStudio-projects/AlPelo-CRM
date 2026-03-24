@@ -92,19 +92,22 @@ def generate_vapid_keys(db: Session = Depends(get_db), user=Depends(get_current_
         return {"message": "VAPID keys already exist", "public_key": db.query(PlatformConfig).filter(PlatformConfig.key == "VAPID_PUBLIC_KEY").first().value}
 
     try:
-        from py_vapid import Vapid02
+        from cryptography.hazmat.primitives.asymmetric import ec
         from cryptography.hazmat.primitives import serialization
         import base64
 
-        vapid = Vapid02()
-        vapid.generate_keys()
-        pub_bytes = vapid.public_key.public_bytes(
+        priv = ec.generate_private_key(ec.SECP256R1())
+        pub_bytes = priv.public_key().public_bytes(
             serialization.Encoding.X962,
             serialization.PublicFormat.UncompressedPoint
         )
         public_key = base64.urlsafe_b64encode(pub_bytes).decode('utf-8').rstrip('=')
-        pem_bytes = vapid.private_pem()
-        private_key = pem_bytes.decode('utf-8') if isinstance(pem_bytes, bytes) else pem_bytes
+        pem_bytes = priv.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption()
+        )
+        private_key = pem_bytes.decode('utf-8')
 
         # Store in PlatformConfig
         for key, value, secret in [

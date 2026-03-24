@@ -265,29 +265,48 @@ def _ensure_vapid_keys():
 
     db = SessionLocal()
     try:
-        existing = db.query(PlatformConfig).filter(PlatformConfig.key == "VAPID_PRIVATE_KEY").first()
-        if existing and existing.value:
-            print("[VAPID] Keys already configured")
+        existing_pub = db.query(PlatformConfig).filter(PlatformConfig.key == "VAPID_PUBLIC_KEY").first()
+        existing_priv = db.query(PlatformConfig).filter(PlatformConfig.key == "VAPID_PRIVATE_KEY").first()
+
+        # Validate: public key should be ~87 chars base64url, private should be PEM
+        pub_ok = existing_pub and existing_pub.value and len(existing_pub.value) > 80 and len(existing_pub.value) < 100
+        priv_ok = existing_priv and existing_priv.value and existing_priv.value.strip().startswith("-----BEGIN")
+
+        if pub_ok and priv_ok:
+            print(f"[VAPID] Keys OK — public key: {existing_pub.value[:20]}... ({len(existing_pub.value)} chars)")
             return
 
+        # Delete old keys and regenerate
+        print("[VAPID] Keys missing or invalid, regenerating...")
+        db.query(PlatformConfig).filter(
+            PlatformConfig.key.in_(["VAPID_PRIVATE_KEY", "VAPID_PUBLIC_KEY", "VAPID_CONTACT_EMAIL"])
+        ).delete(synchronize_session=False)
+        db.commit()
+
         try:
-            from py_vapid import Vapid02
+            from cryptography.hazmat.primitives.asymmetric import ec
             from cryptography.hazmat.primitives import serialization
             import base64
 
-            vapid = Vapid02()
-            vapid.generate_keys()
+            # Generate P-256 key pair (standard for Web Push)
+            priv = ec.generate_private_key(ec.SECP256R1())
 
-            # Get public key as base64url (no padding) — required by browser Push API
-            pub_bytes = vapid.public_key.public_bytes(
+            # Public key: uncompressed point → base64url no padding (for browser)
+            pub_bytes = priv.public_key().public_bytes(
                 serialization.Encoding.X962,
                 serialization.PublicFormat.UncompressedPoint
             )
             public_key = base64.urlsafe_b64encode(pub_bytes).decode('utf-8').rstrip('=')
 
-            # Get private key as PEM string
-            pem_bytes = vapid.private_pem()
-            private_key = pem_bytes.decode('utf-8') if isinstance(pem_bytes, bytes) else pem_bytes
+            # Private key: PEM PKCS8 (for pywebpush)
+            pem_bytes = priv.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.PKCS8,
+                serialization.NoEncryption()
+            )
+            private_key = pem_bytes.decode('utf-8')
+
+            print(f"[VAPID] Generated — public key length: {len(public_key)}, pub_bytes: {len(pub_bytes)}")
         except Exception as e:
             print(f"[VAPID] Could not generate keys: {e}")
             return
