@@ -61,8 +61,11 @@ def send_push(tenant_id: int, title: str, body: str = "", url: str = None,
                 "url": url,
             })
 
+            print(f"[PUSH] Sending to {len(subs)} subscription(s): {title}")
+
             for sub in subs:
                 try:
+                    print(f"[PUSH] → sub {sub.id} endpoint: {sub.endpoint[:60]}...")
                     webpush(
                         subscription_info={
                             "endpoint": sub.endpoint,
