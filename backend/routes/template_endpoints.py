@@ -754,7 +754,7 @@ async def sync_all_templates(user=Depends(get_current_user)):
 
 @router.delete("/{template_id}")
 async def delete_template(template_id: int, user=Depends(get_current_user), _db: Session = Depends(get_db)):
-    """Soft-delete a template."""
+    """Delete a template locally AND from Meta if it was submitted."""
     db = SessionLocal()
     try:
         tpl = db.query(MessageTemplate).filter(MessageTemplate.id == template_id).first()
@@ -764,9 +764,36 @@ async def delete_template(template_id: int, user=Depends(get_current_user), _db:
         tid = safe_tid(user, db)
         if tid and tpl.tenant_id != tid:
             raise HTTPException(status_code=403, detail="No tienes acceso a esta plantilla")
+
+        meta_deleted = False
+        meta_error = None
+
+        # If template was ever submitted to Meta (has a slug and is not just a local draft),
+        # delete it from Meta too
+        if tpl.slug and tpl.status in ("approved", "pending", "rejected"):
+            tenant = db.query(Tenant).filter(Tenant.id == tpl.tenant_id).first()
+            wa_business_id = (tenant.wa_business_account_id if tenant else None) or os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+            wa_token = (tenant.wa_access_token if tenant else None) or os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+
+            if wa_business_id and wa_token:
+                try:
+                    async with httpx.AsyncClient(timeout=15) as client:
+                        url = f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/message_templates"
+                        resp = await client.delete(url, params={"name": tpl.slug}, headers={"Authorization": f"Bearer {wa_token}"})
+                        print(f"[META DELETE] slug={tpl.slug} status={resp.status_code} body={resp.text[:200]}")
+                        if resp.status_code in (200, 404):
+                            # 200 = deleted, 404 = already gone — both are fine
+                            meta_deleted = True
+                        else:
+                            meta_error = resp.text[:200]
+                except Exception as e:
+                    meta_error = str(e)
+                    print(f"[META DELETE ERROR] {e}")
+
+        # Always delete locally regardless of Meta result
         tpl.is_active = False
         db.commit()
-        return {"ok": True}
+        return {"ok": True, "meta_deleted": meta_deleted, "meta_error": meta_error}
     finally:
         db.close()
 

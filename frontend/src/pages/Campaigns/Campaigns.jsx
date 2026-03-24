@@ -291,12 +291,18 @@ const Campaigns = () => {
 
   const handleDeleteTemplate = (id) => {
     setConfirmModal({
-      message: 'Eliminar esta plantilla permanentemente?',
+      message: 'Eliminar esta plantilla? Se eliminará también de Meta si fue enviada.',
       onConfirm: async () => {
         setConfirmModal(null);
         try {
-          await templateService.deleteTemplate(id);
-          addNotification('Plantilla eliminada', 'success');
+          const res = await templateService.deleteTemplate(id);
+          if (res?.meta_deleted) {
+            addNotification('Plantilla eliminada de Meta y del sistema', 'success');
+          } else if (res?.meta_error) {
+            addNotification(`Eliminada localmente, pero falló en Meta: ${res.meta_error}`, 'warning');
+          } else {
+            addNotification('Plantilla eliminada', 'success');
+          }
           reloadTemplates();
         } catch (e) {
           addNotification(e.message, 'error');
