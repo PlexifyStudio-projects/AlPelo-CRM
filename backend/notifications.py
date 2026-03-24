@@ -57,6 +57,12 @@ def _create_notification(db, tenant_id, ntype, title, detail="", icon=None, link
         )
         db.add(n)
         db.commit()
+        # Also send Web Push notification
+        try:
+            from push_sender import send_push
+            send_push(tenant_id, title[:100] if title else "Notificacion", (detail or "")[:200], link)
+        except Exception:
+            pass  # Push is best-effort
     except Exception as e:
         try:
             db.rollback()

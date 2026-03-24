@@ -1032,6 +1032,15 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     # Send read receipt to Meta (blue ticks)
                     background_tasks.add_task(_send_read_receipt, wa_msg_id)
 
+                    # Push notification for inbound message
+                    try:
+                        from push_sender import send_push
+                        _push_name = conv.wa_contact_name or from_phone or "Cliente"
+                        _push_body = (content or "")[:120] if msg_type == "text" else f"[{msg_type}]"
+                        send_push(conv.tenant_id, f"Mensaje de {_push_name}", _push_body, "/inbox")
+                    except Exception:
+                        pass
+
                     # Queue AI auto-reply if active (only 1 per conversation per webhook batch)
                     # Lina replies to: text, audio (transcribed), image (vision), video (can't see)
                     # Lina IGNORES: stickers, reactions, documents

@@ -559,6 +559,22 @@ class Notification(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class PushSubscription(Base):
+    """Web Push subscription per user per device."""
+    __tablename__ = "push_subscription"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False)
+    user_type = Column(String(10), nullable=False)  # "admin" or "staff"
+    user_id = Column(Integer, nullable=False)
+    endpoint = Column(Text, nullable=False, unique=True)
+    p256dh = Column(Text, nullable=False)
+    auth_key = Column(Text, nullable=False)
+    user_agent = Column(String(500), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class LinaActivityEvent(Base):
     """Persistent activity log for Lina IA — survives restarts."""
     __tablename__ = "lina_activity_event"

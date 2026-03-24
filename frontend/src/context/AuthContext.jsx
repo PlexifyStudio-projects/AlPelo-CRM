@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../services/authService';
+import { registerPush } from '../services/pushService';
 
 const AuthContext = createContext(null);
 
@@ -38,6 +39,8 @@ export const AuthProvider = ({ children }) => {
         setUser(restoredUser);
         setIsAuthenticated(true);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(restoredUser));
+        // Register push notifications silently
+        registerPush().catch(() => {});
       } else {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -71,6 +74,8 @@ export const AuthProvider = ({ children }) => {
     setUser(loggedUser);
     setIsAuthenticated(true);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedUser));
+    // Register push notifications
+    registerPush().catch(() => {});
   };
 
   const logout = async () => {
