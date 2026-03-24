@@ -655,6 +655,9 @@ const Campaigns = () => {
                           <button className={`${B}__tpl-btn ${B}__tpl-btn--edit`} onClick={() => openEditTemplate(t)}>
                             <EditIcon />
                           </button>
+                          <button className={`${B}__tpl-btn ${B}__tpl-btn--delete`} onClick={() => handleDeleteTemplate(t.id)}>
+                            <TrashIcon />
+                          </button>
                         </>
                       )}
                       {t.status === 'rejected' && (
