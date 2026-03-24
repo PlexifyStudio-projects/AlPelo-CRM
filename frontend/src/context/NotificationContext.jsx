@@ -3,10 +3,42 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect, u
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const NotificationContext = createContext(null);
 
+// Show native browser notification (works when tab is open)
+function showBrowserNotification(title, body, link) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') {
+    // Request permission on first notification
+    Notification.requestPermission();
+    return;
+  }
+  try {
+    const n = new Notification(title, {
+      body: body || '',
+      icon: '/AlPelo-CRM/icon-192.png',
+      badge: '/AlPelo-CRM/badge-72.png',
+      tag: 'plexify-' + Date.now(),
+      silent: false,
+    });
+    if (link) {
+      n.onclick = () => {
+        window.focus();
+        window.location.hash = '';
+        window.location.pathname = '/AlPelo-CRM' + link;
+        n.close();
+      };
+    }
+    // Auto-close after 8 seconds
+    setTimeout(() => n.close(), 8000);
+  } catch {
+    // Fallback: ignore if Notification constructor fails
+  }
+}
+
 export const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [dbNotifications, setDbNotifications] = useState([]);
-  const prevCountRef = useRef(0);
+  const lastSeenIdRef = useRef(0);
+  const initialLoadRef = useRef(true);
 
   // Fetch persistent notifications from DB every 10 seconds
   const fetchNotifications = useCallback(async () => {
@@ -14,7 +46,26 @@ export const NotificationProvider = ({ children }) => {
       const res = await fetch(`${API_URL}/notifications?limit=30`, { credentials: 'include' });
       if (!res.ok) return;
       const data = await res.json();
-      setDbNotifications(data.notifications || []);
+      const items = data.notifications || [];
+
+      // Detect NEW notifications and show browser notification
+      if (!initialLoadRef.current && items.length > 0) {
+        const maxId = Math.max(...items.map(n => n.id));
+        if (maxId > lastSeenIdRef.current) {
+          // Find new unread notifications
+          const newOnes = items.filter(n => n.id > lastSeenIdRef.current && !n.is_read);
+          for (const n of newOnes) {
+            showBrowserNotification(n.title, n.detail, n.link);
+          }
+        }
+        lastSeenIdRef.current = maxId;
+      } else if (items.length > 0) {
+        // First load — set the baseline without showing notifications
+        lastSeenIdRef.current = Math.max(...items.map(n => n.id));
+        initialLoadRef.current = false;
+      }
+
+      setDbNotifications(items);
     } catch {
       // Silent fail — not critical
     }
