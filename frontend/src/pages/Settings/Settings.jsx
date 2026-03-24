@@ -1141,19 +1141,19 @@ const Settings = () => {
               <div className={`${b}__usage-card-value`}>
                 {usageStats?.campaigns_month || 0}
               </div>
-              <span className={`${b}__usage-card-sub`}>campanas este mes</span>
+              <span className={`${b}__usage-card-sub`}>campañas este mes</span>
             </div>
 
-            {/* AI tokens */}
+            {/* Messages remaining */}
             <div className={`${b}__usage-card`}>
               <div className={`${b}__usage-card-header`}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                <span>Tokens IA</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+                <span>Restantes</span>
               </div>
               <div className={`${b}__usage-card-value`}>
-                {((usageStats?.ai_tokens_month || 0) / 1000).toFixed(0)}K
+                {Math.max(0, (tenant?.messages_limit || 5000) - (tenant?.messages_used || 0)).toLocaleString('es-CO')}
               </div>
-              <span className={`${b}__usage-card-sub`}>~${(usageStats?.ai_cost_month_usd || 0).toFixed(2)} USD</span>
+              <span className={`${b}__usage-card-sub`}>mensajes disponibles</span>
             </div>
 
             {/* WhatsApp status */}
