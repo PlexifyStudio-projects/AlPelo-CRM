@@ -38,12 +38,12 @@ $_gap-sm: 10px;
   }
 
   // ═══════════════════════════════════
-  // SECTION CARDS GRID — premium look
+  // SECTION CARDS GRID — premium glassmorphism
   // ═══════════════════════════════════
   &__grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: $_gap-sm;
+    gap: 12px;
     margin-bottom: $_gap;
 
     @media (max-width: $breakpoint-lg) {
@@ -65,92 +65,99 @@ $_gap-sm: 10px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
-    padding: 20px;
+    padding: 24px 20px 20px;
     background: $color-white;
-    border: 1.5px solid $border-color;
-    border-radius: $border-radius-lg;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 20px;
     cursor: pointer;
-    transition: all 250ms $ease-out-quart;
+    transition: all 500ms cubic-bezier(0.16, 1, 0.3, 1);
     text-align: left;
     font-family: $font-primary;
+    overflow: hidden;
 
     &:hover {
-      border-color: var(--accent);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-      transform: translateY(-2px);
+      background: rgba($color-white, 1);
+      border-color: rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+      transform: translateY(-3px);
+
+      .settings__section-card-glow { opacity: 1; }
+      .settings__section-icon { transform: scale(1.08); }
     }
 
     &--active {
-      border-color: var(--accent);
-      background: $color-white;
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--accent);
+      border-color: rgba(0, 0, 0, 0.12);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+
+      .settings__section-card-glow { opacity: 1; }
 
       &::after {
         content: '';
         position: absolute;
-        bottom: -$_gap-sm;
+        bottom: -13px;
         left: 50%;
         transform: translateX(-50%);
         width: 0;
         height: 0;
         border-left: 8px solid transparent;
         border-right: 8px solid transparent;
-        border-top: 8px solid var(--accent);
+        border-top: 8px solid rgba(0, 0, 0, 0.12);
+        z-index: 2;
       }
     }
   }
 
+  // Top gradient glow line (like reference)
+  &__section-card-glow {
+    position: absolute;
+    top: 0;
+    left: 20px;
+    right: 20px;
+    height: 1px;
+    opacity: 0;
+    transition: opacity 500ms ease;
+    background: linear-gradient(90deg, transparent, var(--c1), var(--c2), transparent);
+    pointer-events: none;
+  }
+
   &__section-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: $border-radius-md;
-    background: $color-gray-50;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 2px;
-    transition: background 250ms ease;
-
-    .settings__section-card:hover &,
-    .settings__section-card--active & {
-      background: color-mix(in srgb, var(--accent) 8%, white);
-    }
-
-    svg {
-      width: 22px;
-      height: 22px;
-    }
+    margin-bottom: 16px;
+    transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--c1) 8%, white), color-mix(in srgb, var(--c2) 5%, white));
+    border: 1px solid color-mix(in srgb, var(--c1) 15%, transparent);
   }
 
   &__section-title {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
+    font-size: clamp(0.9rem, 1.2vw, 1.05rem);
+    font-weight: 600;
     color: $color-gray-800;
-    margin: 0;
-    transition: color 200ms ease;
-
-    .settings__section-card--active & {
-      color: var(--accent);
-    }
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
   }
 
   &__section-desc {
-    font-size: $font-size-2xs;
+    font-size: $font-size-xs;
     color: $color-gray-400;
-    line-height: 1.4;
+    line-height: 1.55;
     margin: 0;
+    flex: 1;
   }
 
   &__section-badge {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 12px;
+    right: 12px;
     font-size: 9px;
     font-weight: $font-weight-bold;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 2px 6px;
+    padding: 2px 7px;
     border-radius: $border-radius-full;
     background: $color-success-bg;
     color: $color-success-dark;
@@ -158,20 +165,20 @@ $_gap-sm: 10px;
   }
 
   // ═══════════════════════════════════
-  // EXPANDED PANEL — slides down below cards
+  // EXPANDED PANEL
   // ═══════════════════════════════════
   &__panel {
     background: $color-white;
-    border: 1.5px solid $border-color;
-    border-radius: $border-radius-lg;
-    box-shadow: $shadow-sm;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 20px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
     overflow: hidden;
-    animation: settings-panel-open 250ms $ease-out-quart;
+    animation: settings-panel-open 300ms cubic-bezier(0.16, 1, 0.3, 1);
     margin-bottom: $_gap;
   }
 
   &__panel-content {
-    padding: 24px;
+    padding: 28px;
   }
 
   // ═══════════════════════════════════
