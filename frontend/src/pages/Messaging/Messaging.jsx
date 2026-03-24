@@ -437,9 +437,9 @@ const Messaging = () => {
   const [submittingMeta, setSubmittingMeta] = useState(null); // template.id being submitted
 
   const handleEditSave = useCallback(async (id, data) => {
-    const result = await templateService.updateTemplate(id, data);
-    setTemplates(prev => prev.map(t => t.id === id ? (result || { ...t, ...data }) : t));
-    addNotification('Plantilla actualizada', 'success');
+    const result = await templateService.updateTemplate(id, { ...data, status: 'draft' });
+    setTemplates(prev => prev.map(t => t.id === id ? (result || { ...t, ...data, status: 'draft' }) : t));
+    addNotification('Plantilla actualizada — debe re-aprobarse en Meta', 'success');
   }, [addNotification]);
 
   // Load templates from DB

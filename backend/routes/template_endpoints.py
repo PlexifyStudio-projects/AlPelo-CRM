@@ -353,19 +353,30 @@ async def update_template(template_id: int, data: dict, user=Depends(get_current
         if tid and tpl.tenant_id != tid:
             raise HTTPException(status_code=403, detail="No tienes acceso a esta plantilla")
 
-        if "name" in data:
+        # Track whether content changed (body, name, or category)
+        content_changed = False
+
+        if "name" in data and data["name"] != tpl.name:
             tpl.name = data["name"]
-        if "body" in data:
+            content_changed = True
+        if "body" in data and data["body"] != tpl.body:
             tpl.body = data["body"]
             # Re-extract variables
             import re
             tpl.variables = list(set(re.findall(r'\{\{(\w+)\}\}', data["body"])))
-        if "category" in data:
+            content_changed = True
+        if "category" in data and data["category"] != tpl.category:
             tpl.category = data["category"]
-        if "status" in data:
-            tpl.status = data["status"]
+            content_changed = True
         if "slug" in data:
             tpl.slug = data["slug"]
+
+        # If content changed on an approved template, revert to draft
+        # so it must be re-approved by Meta before sending
+        if content_changed and tpl.status == "approved":
+            tpl.status = "draft"
+        elif "status" in data:
+            tpl.status = data["status"]
 
         tpl.updated_at = datetime.utcnow()
         db.commit()

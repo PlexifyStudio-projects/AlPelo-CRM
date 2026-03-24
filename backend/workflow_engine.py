@@ -11,6 +11,7 @@
 
 import os
 import time
+import json
 import httpx
 from datetime import datetime, date, timedelta
 
@@ -93,13 +94,26 @@ def _send_template_sync(phone, template_name, language_code="es", parameters=Non
 
     # Add body parameters if provided
     if parameters and len(parameters) > 0:
-        components = [{
-            "type": "body",
-            "parameters": [{"type": "text", "text": str(p)} for p in parameters],
-        }]
-        template_obj["components"] = components
+        # Filter out empty params — Meta rejects empty strings in some cases
+        clean_params = [p for p in parameters if p and str(p).strip()]
+        if clean_params:
+            components = [{
+                "type": "body",
+                "parameters": [{"type": "text", "text": str(p)} for p in clean_params],
+            }]
+            template_obj["components"] = components
+
+    print(f"[WORKFLOW-DEBUG] Sending template '{template_name}' to {normalize_phone(phone)[-4:]}")
+    print(f"[WORKFLOW-DEBUG] Params: {parameters}")
+    print(f"[WORKFLOW-DEBUG] Template payload: {json.dumps(template_obj, ensure_ascii=False)}")
 
     try:
+        full_payload = {
+            "messaging_product": "whatsapp",
+            "to": normalize_phone(phone),
+            "type": "template",
+            "template": template_obj,
+        }
         with httpx.Client(timeout=15) as client:
             resp = client.post(
                 f"https://graph.facebook.com/{api_version}/{phone_id}/messages",
@@ -107,14 +121,10 @@ def _send_template_sync(phone, template_name, language_code="es", parameters=Non
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "messaging_product": "whatsapp",
-                    "to": normalize_phone(phone),
-                    "type": "template",
-                    "template": template_obj,
-                },
+                json=full_payload,
             )
             data = resp.json()
+            print(f"[WORKFLOW-DEBUG] Meta response: HTTP {resp.status_code} | {json.dumps(data, ensure_ascii=False)[:300]}")
             if resp.status_code == 200 and "messages" in data:
                 # Increment tenant messages_used (count as system message)
                 try:
@@ -275,6 +285,8 @@ def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
 
     # Send
     wa_sent = False
+    print(f"[WORKFLOW-DEBUG] _send_and_log: type={workflow.workflow_type} template={template_name} params={template_params} can_template={can_send_template} can_freetext={can_send_freetext}")
+    print(f"[WORKFLOW-DEBUG] Message preview: {message[:150]}")
     if can_send_template:
         wa_sent = _send_template_sync(phone, template_name, template_lang, template_params, db=db)
         if not wa_sent and can_send_freetext:
