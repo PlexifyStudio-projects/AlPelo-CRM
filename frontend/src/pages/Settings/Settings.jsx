@@ -481,15 +481,26 @@ const Settings = () => {
     { id: 'google', title: 'Google Reviews', desc: 'Redirige clientes satisfechos a dejar resenas', color1: '#FBBC05', color2: '#EA4335' },
   ];
 
+  // Usage stats for bottom panel
+  const [usageStats, setUsageStats] = useState(null);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/tenant/me`, { credentials: 'include' });
+        if (res.ok) setUsageStats(await res.json());
+      } catch {}
+    })();
+  }, []);
+
   const SectionIcon = ({ id, color1, color2 }) => {
     const gid = `grad-${id}`;
     const grad = <defs><linearGradient id={gid} x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor={color1} /><stop offset="100%" stopColor={color2} /></linearGradient></defs>;
     const icons = {
-      lina: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<circle cx="12" cy="8" r="4" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M6 21v-2a6 6 0 0 1 12 0v2" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><path d="M15 8c0 .55-.45 1-1 1h-4c-.55 0-1-.45-1-1" stroke={`url(#${gid})`} strokeWidth="1" opacity=".5"/></svg>,
-      notif: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><path d="M13.73 21a2 2 0 0 1-3.46 0" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/></svg>,
+      lina: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill={`url(#${gid})`} opacity=".3"/><path d="M9.5 7.5C8 9 6 11 6 14c0 2 1 4 3.5 4.5" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><path d="M14.5 7.5C16 9 18 11 18 14c0 2-1 4-3.5 4.5" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="5.5" r="2.5" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M10 19c0 1.1.9 2 2 2s2-.9 2-2" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="13" r="1" fill={`url(#${gid})`} opacity=".6"/></svg>,
+      notif: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill={`url(#${gid})`} opacity=".15"/><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.73 21a2 2 0 0 1-3.46 0" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="18" cy="5" r="3" fill={`url(#${gid})`} opacity=".5"/></svg>,
       meta: <svg width="28" height="28" viewBox="0 0 16 16" fill="none">{grad}<path fillRule="evenodd" d="M8.217 5.243C9.145 3.988 10.171 3 11.483 3 13.96 3 16 6.153 16.001 9.907c0 2.29-.986 3.725-2.757 3.725-1.543 0-2.395-.866-3.924-3.424l-.667-1.123-.118-.197a55 55 0 0 0-.53-.877l-1.178 2.08c-1.673 2.925-2.615 3.541-3.923 3.541C1.086 13.632 0 12.217 0 9.973 0 6.388 1.995 3 4.598 3q.477-.001.924.122c.31.086.611.22.913.407.577.359 1.154.915 1.782 1.714m1.516 2.224q-.378-.615-.727-1.133L9 6.326c.845-1.305 1.543-1.954 2.372-1.954 1.723 0 3.102 2.537 3.102 5.653 0 1.188-.39 1.877-1.195 1.877-.773 0-1.142-.51-2.61-2.87zM4.846 4.756c.725.1 1.385.634 2.34 2.001A212 212 0 0 0 5.551 9.3c-1.357 2.126-1.826 2.603-2.581 2.603-.777 0-1.24-.682-1.24-1.9 0-2.602 1.298-5.264 2.846-5.264q.137 0 .27.018" fill={`url(#${gid})`} /></svg>,
-      loyalty: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinejoin="round"/></svg>,
-      google: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill={`url(#${gid})`} opacity=".9"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill={`url(#${gid})`} opacity=".7"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill={`url(#${gid})`} opacity=".5"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill={`url(#${gid})`} opacity=".8"/></svg>,
+      loyalty: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" fill={`url(#${gid})`} opacity=".15"/><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinejoin="round"/></svg>,
+      google: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
     };
     return icons[id] || null;
   };
@@ -1086,6 +1097,91 @@ const Settings = () => {
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* ═══ USAGE OVERVIEW PANEL ═══ */}
+      {!openSection && (
+        <div className={`${b}__usage`}>
+          <h3 className={`${b}__usage-title`}>Resumen del mes</h3>
+          <div className={`${b}__usage-grid`}>
+            {/* Messages */}
+            <div className={`${b}__usage-card`}>
+              <div className={`${b}__usage-card-header`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span>Mensajes IA</span>
+              </div>
+              <div className={`${b}__usage-card-value`}>
+                {(tenant?.messages_used || usageStats?.messages_used || 0).toLocaleString('es-CO')}
+                <span className={`${b}__usage-card-limit`}>/ {(tenant?.messages_limit || usageStats?.messages_limit || 5000).toLocaleString('es-CO')}</span>
+              </div>
+              <div className={`${b}__usage-bar`}>
+                <div className={`${b}__usage-bar-fill`} style={{ width: `${Math.min(100, ((tenant?.messages_used || 0) / (tenant?.messages_limit || 5000)) * 100)}%`, background: 'linear-gradient(90deg, #3B82F6, #60A5FA)' }} />
+              </div>
+            </div>
+
+            {/* WhatsApp sent */}
+            <div className={`${b}__usage-card`}>
+              <div className={`${b}__usage-card-header`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                <span>WhatsApp enviados</span>
+              </div>
+              <div className={`${b}__usage-card-value`}>
+                {(usageStats?.wa_sent_month || 0).toLocaleString('es-CO')}
+              </div>
+              <span className={`${b}__usage-card-sub`}>mensajes este mes</span>
+            </div>
+
+            {/* Campaigns */}
+            <div className={`${b}__usage-card`}>
+              <div className={`${b}__usage-card-header`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <span>Campanas enviadas</span>
+              </div>
+              <div className={`${b}__usage-card-value`}>
+                {usageStats?.campaigns_month || 0}
+              </div>
+              <span className={`${b}__usage-card-sub`}>campanas este mes</span>
+            </div>
+
+            {/* AI tokens */}
+            <div className={`${b}__usage-card`}>
+              <div className={`${b}__usage-card-header`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>Tokens IA</span>
+              </div>
+              <div className={`${b}__usage-card-value`}>
+                {((usageStats?.ai_tokens_month || 0) / 1000).toFixed(0)}K
+              </div>
+              <span className={`${b}__usage-card-sub`}>~${(usageStats?.ai_cost_month_usd || 0).toFixed(2)} USD</span>
+            </div>
+
+            {/* WhatsApp status */}
+            <div className={`${b}__usage-card`}>
+              <div className={`${b}__usage-card-header`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={metaStatus?.connected ? '#10B981' : '#EF4444'} strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>{metaStatus?.connected && <polyline points="22 4 12 14.01 9 11.01"/>}</svg>
+                <span>Estado WhatsApp</span>
+              </div>
+              <div className={`${b}__usage-card-value ${b}__usage-card-value--sm`}>
+                {metaStatus?.connected ? 'Conectado' : 'Desconectado'}
+              </div>
+              {metaStatus?.connected && metaStatus.days_until_expiry != null && (
+                <span className={`${b}__usage-card-sub`}>Token expira en {metaStatus.days_until_expiry} dias</span>
+              )}
+            </div>
+
+            {/* Plan */}
+            <div className={`${b}__usage-card`}>
+              <div className={`${b}__usage-card-header`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                <span>Plan activo</span>
+              </div>
+              <div className={`${b}__usage-card-value ${b}__usage-card-value--sm`}>
+                {(tenant?.plan || usageStats?.plan || 'Trial').charAt(0).toUpperCase() + (tenant?.plan || usageStats?.plan || 'trial').slice(1)}
+              </div>
+              <span className={`${b}__usage-card-sub`}>{tenant?.name || usageStats?.name || ''}</span>
+            </div>
+          </div>
         </div>
       )}
 
