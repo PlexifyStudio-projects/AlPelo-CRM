@@ -1043,6 +1043,14 @@ async def send_campaign(campaign_id: int, user=Depends(get_current_user), db: Se
     c.updated_at = datetime.utcnow()
     db.commit()
 
+    # Track campaign in usage metrics
+    if sent > 0:
+        try:
+            from routes._usage_tracker import track_campaign_sent
+            track_campaign_sent(count=1, tenant_id=c.tenant_id)
+        except Exception as e:
+            print(f"[CAMPAIGN] track_campaign_sent error: {e}")
+
     return {
         "sent": sent,
         "failed": failed,

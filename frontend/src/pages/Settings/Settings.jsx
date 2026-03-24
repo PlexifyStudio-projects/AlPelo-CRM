@@ -1136,7 +1136,7 @@ const Settings = () => {
             <div className={`${b}__usage-card`}>
               <div className={`${b}__usage-card-header`}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                <span>Campanas enviadas</span>
+                <span>Campañas enviadas</span>
               </div>
               <div className={`${b}__usage-card-value`}>
                 {usageStats?.campaigns_month || 0}
