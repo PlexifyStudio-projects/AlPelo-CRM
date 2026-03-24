@@ -532,7 +532,7 @@ const Campaigns = () => {
       {/* ─── Header ─── */}
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
-          <h1 className={`${B}__title`}>Campanas</h1>
+          <h1 className={`${B}__title`}>Campañas</h1>
           <span className={`${B}__subtitle`}>CENTRO DE MARKETING · WHATSAPP BUSINESS</span>
         </div>
         <div className={`${B}__header-actions`}>
