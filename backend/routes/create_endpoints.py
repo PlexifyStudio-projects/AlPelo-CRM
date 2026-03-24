@@ -295,13 +295,27 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), u
     db.commit()
     db.refresh(appointment)
 
-    # Notify: new appointment
+    # Notify: new appointment (admin gets DB notification + push)
     try:
         from notifications import notify
         notify(db, tid, "new_appointment",
                f"Nueva cita: {data.client_name} con {staff.name}",
                f"{service.name} — {data.date} a las {data.time}",
                icon="📅", link="/agenda")
+    except Exception:
+        pass
+
+    # Push notification to the assigned STAFF member
+    try:
+        from push_sender import send_push
+        send_push(
+            tenant_id=tid,
+            title=f"Nueva cita asignada",
+            body=f"{data.client_name} — {service.name} el {data.date} a las {data.time}",
+            url="/agenda",
+            user_type="staff",
+            user_id=staff.id,
+        )
     except Exception:
         pass
 

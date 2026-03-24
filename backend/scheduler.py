@@ -17,8 +17,9 @@ import httpx
 from datetime import datetime, date, timedelta
 
 from database.connection import SessionLocal
+from sqlalchemy import func
 from database.models import (
-    Appointment, Client, ClientNote, Staff, Service,
+    Appointment, Client, ClientNote, Staff, Service, Tenant,
     WhatsAppConversation, WhatsAppMessage,
 )
 from routes._helpers import normalize_phone, now_colombia as _now_colombia, _COL_OFFSET
@@ -400,6 +401,29 @@ def _check_30min_reminders(db):
             else:
                 print(f"[SCHEDULER] 30-min reminder FAILED for appt #{appt.id} → {client_first}")
                 log_event("error", f"Recordatorio 30min fallido para {client_first}", detail=f"No se pudo enviar recordatorio de cita {appt.time}. Texto y template fallaron.", contact_name=client_first, conv_id=conv.id, status="error")
+
+            # Push notification to the STAFF member assigned to this appointment
+            try:
+                from push_sender import send_push
+                if appt.staff_id:
+                    send_push(
+                        tenant_id=appt.tenant_id,
+                        title=f"Cita en 30 min — {client_first}",
+                        body=f"{service_name} a las {appt.time}",
+                        url="/agenda",
+                        user_type="staff",
+                        user_id=appt.staff_id,
+                    )
+                # Also notify admin
+                send_push(
+                    tenant_id=appt.tenant_id,
+                    title=f"Proxima cita: {client_first}",
+                    body=f"{service_name} a las {appt.time} con {staff_first}",
+                    url="/agenda",
+                    user_type="admin",
+                )
+            except Exception:
+                pass
 
 
 # ============================================================================
@@ -1833,6 +1857,77 @@ def _check_closed_day_appointments(db):
 
 
 # ============================================================================
+# DAILY SUMMARY PUSH — End of day report to admin
+# ============================================================================
+_daily_summary_sent = {}
+
+def _daily_summary_push(db):
+    """Send a push notification to admin with today's summary at ~8 PM."""
+    now = _now_colombia()
+    if now.hour != 20:  # Only at 8 PM
+        return
+
+    today_key = now.strftime("%Y-%m-%d")
+    tenants = db.query(Tenant).filter(Tenant.is_active == True).all()
+
+    for tenant in tenants:
+        cache_key = f"{tenant.id}_{today_key}"
+        if cache_key in _daily_summary_sent:
+            continue
+
+        try:
+            today = now.date()
+            # Count today's appointments
+            appts_today = db.query(Appointment).filter(
+                Appointment.tenant_id == tenant.id,
+                Appointment.date == today,
+            ).all()
+            total_appts = len(appts_today)
+            completed = len([a for a in appts_today if a.status == "completed"])
+            no_shows = len([a for a in appts_today if a.status == "no_show"])
+
+            # Calculate today's revenue from completed appointments
+            revenue = sum(a.price or 0 for a in appts_today if a.status == "completed")
+
+            # New clients today
+            new_clients = db.query(Client).filter(
+                Client.tenant_id == tenant.id,
+                func.date(Client.created_at) == today,
+            ).count()
+
+            if total_appts == 0 and new_clients == 0:
+                _daily_summary_sent[cache_key] = True
+                continue
+
+            # Build summary
+            parts = []
+            if completed > 0:
+                parts.append(f"{completed} citas completadas")
+            if no_shows > 0:
+                parts.append(f"{no_shows} no-show")
+            if revenue > 0:
+                parts.append(f"${revenue:,.0f} generados")
+            if new_clients > 0:
+                parts.append(f"{new_clients} clientes nuevos")
+
+            body = " | ".join(parts) if parts else f"{total_appts} citas hoy"
+
+            from push_sender import send_push
+            send_push(
+                tenant_id=tenant.id,
+                title="Resumen del dia",
+                body=body,
+                url="/dashboard",
+                user_type="admin",
+            )
+
+            _daily_summary_sent[cache_key] = True
+            print(f"[SCHEDULER] Daily summary push sent for tenant {tenant.id}: {body}")
+        except Exception as e:
+            print(f"[SCHEDULER] Daily summary error for tenant {tenant.id}: {e}")
+
+
+# ============================================================================
 # MAIN LOOP
 # ============================================================================
 def _scheduler_loop():
@@ -1879,6 +1974,12 @@ def _scheduler_loop():
                         run_workflows(db)
                     except Exception as e:
                         print(f"[SCHEDULER] Workflow engine error: {e}")
+
+                # Daily summary push (runs once at ~8 PM)
+                try:
+                    _daily_summary_push(db)
+                except Exception as e:
+                    print(f"[SCHEDULER] Daily summary error: {e}")
 
                 _check_noshow_followups(db)
                 _expire_old_notes(db)

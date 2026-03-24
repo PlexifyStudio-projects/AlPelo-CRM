@@ -258,6 +258,55 @@ def _run_migrations(engine):
     # NOTE: Dev users, tenants, and admins are all created from the Developer panel — no seeds.
 
 
+def _ensure_vapid_keys():
+    """Auto-generate VAPID keys for Web Push Notifications if they don't exist."""
+    from database.connection import SessionLocal
+    from database.models import PlatformConfig
+
+    db = SessionLocal()
+    try:
+        existing = db.query(PlatformConfig).filter(PlatformConfig.key == "VAPID_PRIVATE_KEY").first()
+        if existing and existing.value:
+            print("[VAPID] Keys already configured")
+            return
+
+        try:
+            from py_vapid import Vapid
+            vapid = Vapid()
+            vapid.generate_keys()
+            private_key = vapid.private_pem().decode('utf-8') if isinstance(vapid.private_pem(), bytes) else vapid.private_pem()
+            public_key = vapid.public_key_urlsafe_base64()
+        except ImportError:
+            try:
+                from pywebpush import Vapid as PyVapid
+                v = PyVapid()
+                v.generate_keys()
+                private_key = v.private_pem().decode('utf-8') if isinstance(v.private_pem(), bytes) else v.private_pem()
+                public_key = v.public_key_urlsafe_base64()
+            except Exception as e:
+                print(f"[VAPID] Could not generate keys: {e}")
+                return
+
+        for key, value, secret in [
+            ("VAPID_PRIVATE_KEY", private_key, True),
+            ("VAPID_PUBLIC_KEY", public_key, False),
+            ("VAPID_CONTACT_EMAIL", "mailto:dev@plexifystudio.com", False),
+        ]:
+            cfg = db.query(PlatformConfig).filter(PlatformConfig.key == key).first()
+            if cfg:
+                cfg.value = value
+                cfg.is_secret = secret
+            else:
+                db.add(PlatformConfig(key=key, value=value, is_secret=secret))
+
+        db.commit()
+        print(f"[VAPID] Keys generated — public key: {public_key[:20]}...")
+    except Exception as e:
+        print(f"[VAPID] Error: {e}")
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
@@ -266,6 +315,9 @@ async def lifespan(app: FastAPI):
     # Start background scheduler for reminders and pending tasks
     from scheduler import start_scheduler
     start_scheduler()
+
+    # Auto-generate VAPID keys for Web Push if they don't exist
+    _ensure_vapid_keys()
 
     print("[STARTUP] Plexify Studio API ready")
     yield
