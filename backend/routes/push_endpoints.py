@@ -92,11 +92,19 @@ def generate_vapid_keys(db: Session = Depends(get_db), user=Depends(get_current_
         return {"message": "VAPID keys already exist", "public_key": db.query(PlatformConfig).filter(PlatformConfig.key == "VAPID_PUBLIC_KEY").first().value}
 
     try:
-        from pywebpush import Vapid
-        vapid = Vapid()
+        from py_vapid import Vapid02
+        from cryptography.hazmat.primitives import serialization
+        import base64
+
+        vapid = Vapid02()
         vapid.generate_keys()
-        private_key = vapid.private_pem().decode('utf-8') if isinstance(vapid.private_pem(), bytes) else vapid.private_pem()
-        public_key = vapid.public_key_urlsafe_base64()
+        pub_bytes = vapid.public_key.public_bytes(
+            serialization.Encoding.X962,
+            serialization.PublicFormat.UncompressedPoint
+        )
+        public_key = base64.urlsafe_b64encode(pub_bytes).decode('utf-8').rstrip('=')
+        pem_bytes = vapid.private_pem()
+        private_key = pem_bytes.decode('utf-8') if isinstance(pem_bytes, bytes) else pem_bytes
 
         # Store in PlatformConfig
         for key, value, secret in [

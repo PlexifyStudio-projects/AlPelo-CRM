@@ -271,21 +271,26 @@ def _ensure_vapid_keys():
             return
 
         try:
-            from py_vapid import Vapid
-            vapid = Vapid()
+            from py_vapid import Vapid02
+            from cryptography.hazmat.primitives import serialization
+            import base64
+
+            vapid = Vapid02()
             vapid.generate_keys()
-            private_key = vapid.private_pem().decode('utf-8') if isinstance(vapid.private_pem(), bytes) else vapid.private_pem()
-            public_key = vapid.public_key_urlsafe_base64()
-        except ImportError:
-            try:
-                from pywebpush import Vapid as PyVapid
-                v = PyVapid()
-                v.generate_keys()
-                private_key = v.private_pem().decode('utf-8') if isinstance(v.private_pem(), bytes) else v.private_pem()
-                public_key = v.public_key_urlsafe_base64()
-            except Exception as e:
-                print(f"[VAPID] Could not generate keys: {e}")
-                return
+
+            # Get public key as base64url (no padding) — required by browser Push API
+            pub_bytes = vapid.public_key.public_bytes(
+                serialization.Encoding.X962,
+                serialization.PublicFormat.UncompressedPoint
+            )
+            public_key = base64.urlsafe_b64encode(pub_bytes).decode('utf-8').rstrip('=')
+
+            # Get private key as PEM string
+            pem_bytes = vapid.private_pem()
+            private_key = pem_bytes.decode('utf-8') if isinstance(pem_bytes, bytes) else pem_bytes
+        except Exception as e:
+            print(f"[VAPID] Could not generate keys: {e}")
+            return
 
         for key, value, secret in [
             ("VAPID_PRIVATE_KEY", private_key, True),
