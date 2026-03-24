@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import Card from '../../components/common/Card/Card';
+
 import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
 import aiService from '../../services/aiService';
@@ -470,17 +470,63 @@ const Settings = () => {
   };
 
   const b = 'settings';
+  const [openSection, setOpenSection] = useState(null);
+  const toggleSection = (id) => setOpenSection(prev => prev === id ? null : id);
+
+  const sections = [
+    { id: 'lina', icon: 'lina', title: 'Lina IA', desc: 'Prompt, contexto del negocio y pruebas de la asistente', color: '#7C3AED' },
+    { id: 'notif', icon: 'bell', title: 'Notificaciones', desc: 'Alertas de citas, mensajeria y sonidos', color: '#3B82F6' },
+    { id: 'meta', icon: 'meta', title: 'Meta / WhatsApp', desc: 'Conexion, token, perfil y plantillas de WhatsApp Business', color: '#1877F2' },
+    { id: 'loyalty', icon: 'star', title: 'Programa de Lealtad', desc: 'Creditos, niveles, referidos y bonificaciones', color: '#10B981' },
+    { id: 'google', icon: 'google', title: 'Google Reviews', desc: 'Redirige clientes satisfechos a dejar resenas', color: '#F59E0B' },
+  ];
+
+  const SectionIcon = ({ type, color }) => {
+    const icons = {
+      lina: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M12 2a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M4 21v-2a4 4 0 0 1 3-3.87"/><circle cx="12" cy="17" r="1"/><path d="M9 17h6"/></svg>,
+      bell: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+      meta: <svg width="24" height="24" viewBox="0 0 24 24" fill={color}><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/></svg>,
+      star: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+      google: <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
+    };
+    return icons[type] || null;
+  };
 
   return (
     <div className={b}>
       <div className={`${b}__header`}>
         <h2 className={`${b}__title`}>Configuracion</h2>
-        <p className={`${b}__subtitle`}>Personaliza como Lina atiende tu negocio</p>
+        <p className={`${b}__subtitle`}>Personaliza tu negocio y sus integraciones</p>
       </div>
 
-      <div className={`${b}__content`}>
-        {/* ========== LINA IA CONFIG ========== */}
-        <Card title="Lina IA — Contexto del negocio" className={`${b}__card ${b}__card--ai`}>
+      {/* ═══ SECTION CARDS GRID ═══ */}
+      <div className={`${b}__grid`}>
+        {sections.map(s => (
+          <button
+            key={s.id}
+            className={`${b}__section-card ${openSection === s.id ? `${b}__section-card--active` : ''}`}
+            onClick={() => toggleSection(s.id)}
+            style={{ '--accent': s.color }}
+          >
+            <div className={`${b}__section-icon`}>
+              <SectionIcon type={s.icon} color={s.color} />
+            </div>
+            <h3 className={`${b}__section-title`}>{s.title}</h3>
+            <p className={`${b}__section-desc`}>{s.desc}</p>
+            {s.id === 'meta' && metaStatus?.connected && (
+              <span className={`${b}__section-badge`}>Conectado</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* ═══ EXPANDED CONTENT ═══ */}
+      {openSection && (
+        <div className={`${b}__panel`} key={openSection}>
+
+          {/* ========== LINA IA CONFIG ========== */}
+          {openSection === 'lina' && (
+            <div className={`${b}__panel-content`}>
           <div className={`${b}__ai-field`}>
             <label className={`${b}__ai-label`}>
               Instrucciones del negocio
@@ -492,7 +538,7 @@ const Settings = () => {
               className={`${b}__ai-textarea`}
               value={businessContext}
               onChange={(e) => setBusinessContext(e.target.value)}
-              rows={22}
+              rows={14}
             />
             <span className={`${b}__ai-char-count`}>
               {businessContext.length} caracteres
@@ -525,10 +571,12 @@ const Settings = () => {
               {testResult.ok ? '✓' : '✗'} {testResult.msg}
             </div>
           )}
-        </Card>
+            </div>
+          )}
 
-        {/* ========== NOTIFICATIONS ========== */}
-        <Card title="Notificaciones" className={`${b}__card`}>
+          {/* ========== NOTIFICATIONS ========== */}
+          {openSection === 'notif' && (
+            <div className={`${b}__panel-content`}>
           <div className={`${b}__option`}>
             <div className={`${b}__option-info`}>
               <span className={`${b}__option-label`}>Notificaciones de citas</span>
@@ -556,10 +604,12 @@ const Settings = () => {
               <span className={`${b}__toggle-knob`} />
             </button>
           </div>
-        </Card>
+            </div>
+          )}
 
-        {/* ========== META / WHATSAPP ========== */}
-        <Card title="Meta / WhatsApp Business" className={`${b}__card ${b}__card--meta`}>
+          {/* ========== META / WHATSAPP ========== */}
+          {openSection === 'meta' && (
+            <div className={`${b}__panel-content`}>
           {/* Token expiry warning banner */}
           {metaStatus?.connected && isTokenExpiringSoon && (
             <div className={`${b}__meta-expiry-warning`}>
@@ -870,10 +920,12 @@ const Settings = () => {
               Meta API: {metaTemplates.error}
             </div>
           )}
-        </Card>
+            </div>
+          )}
 
-        {/* ========== LOYALTY PROGRAM ========== */}
-        <Card title="Programa de Lealtad" className={`${b}__card ${b}__card--loyalty`}>
+          {/* ========== LOYALTY PROGRAM ========== */}
+          {openSection === 'loyalty' && (
+            <div className={`${b}__panel-content`}>
           <div className={`${b}__option`}>
             <div className={`${b}__option-info`}>
               <span className={`${b}__option-label`}>Activar programa de lealtad</span>
@@ -1001,10 +1053,12 @@ const Settings = () => {
               {loyaltySaving ? 'Guardando...' : 'Guardar programa de lealtad'}
             </button>
           </div>
-        </Card>
+            </div>
+          )}
 
-        {/* ========== GOOGLE REVIEWS ========== */}
-        <Card title="Google Reviews" className={`${b}__card ${b}__card--google`}>
+          {/* ========== GOOGLE REVIEWS ========== */}
+          {openSection === 'google' && (
+            <div className={`${b}__panel-content`}>
           <div className={`${b}__meta-field`}>
             <label>URL de Google Reviews</label>
             <input
@@ -1026,8 +1080,11 @@ const Settings = () => {
               {googleSaving ? 'Guardando...' : 'Guardar URL'}
             </button>
           </div>
-        </Card>
-      </div>
+            </div>
+          )}
+
+        </div>
+      )}
 
       {/* Disconnect confirmation modal — rendered via portal to avoid stacking context issues */}
       {showDisconnectModal && createPortal(

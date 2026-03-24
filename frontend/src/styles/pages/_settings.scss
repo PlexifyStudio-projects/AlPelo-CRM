@@ -2,7 +2,7 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// Settings — Compact, Elegant Config Page
+// Settings — Premium Card Accordion Design
 // ============================================
 
 $fb-blue: #1877F2;
@@ -12,19 +12,17 @@ $ai-purple-light: #8B5CF6;
 $ai-purple-ghost: rgba(124, 58, 237, 0.06);
 $ai-purple-border: rgba(124, 58, 237, 0.15);
 
-// Compact overrides
 $_input-h: 36px;
 $_btn-h: 34px;
-$_card-pad: 20px 24px;
 $_gap: 16px;
 $_gap-sm: 10px;
 
 .settings {
   @include page-enter;
 
-  // HEADER — tighter
+  // HEADER
   &__header {
-    margin-bottom: $spacing-lg;
+    margin-bottom: $spacing-xl;
   }
 
   &__title {
@@ -39,49 +37,148 @@ $_gap-sm: 10px;
     margin-top: 2px;
   }
 
-  // CONTENT — 2-column grid for cards
-  &__content {
+  // ═══════════════════════════════════
+  // SECTION CARDS GRID — premium look
+  // ═══════════════════════════════════
+  &__grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: $_gap;
-    align-items: start;
+    grid-template-columns: repeat(5, 1fr);
+    gap: $_gap-sm;
+    margin-bottom: $_gap;
 
     @media (max-width: $breakpoint-lg) {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
   }
 
-  // CARDS — compact padding
-  &__card {
+  &__section-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 20px;
     background: $color-white;
+    border: 1.5px solid $border-color;
     border-radius: $border-radius-lg;
-    border: 1px solid $border-color;
+    cursor: pointer;
+    transition: all 250ms $ease-out-quart;
+    text-align: left;
+    font-family: $font-primary;
+
+    &:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      transform: translateY(-2px);
+    }
+
+    &--active {
+      border-color: var(--accent);
+      background: $color-white;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--accent);
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -$_gap-sm;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 8px solid var(--accent);
+      }
+    }
+  }
+
+  &__section-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-md;
+    background: $color-gray-50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2px;
+    transition: background 250ms ease;
+
+    .settings__section-card:hover &,
+    .settings__section-card--active & {
+      background: color-mix(in srgb, var(--accent) 8%, white);
+    }
+
+    svg {
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  &__section-title {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-gray-800;
+    margin: 0;
+    transition: color 200ms ease;
+
+    .settings__section-card--active & {
+      color: var(--accent);
+    }
+  }
+
+  &__section-desc {
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    line-height: 1.4;
+    margin: 0;
+  }
+
+  &__section-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 9px;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: $border-radius-full;
+    background: $color-success-bg;
+    color: $color-success-dark;
+    border: 1px solid $color-success-border;
+  }
+
+  // ═══════════════════════════════════
+  // EXPANDED PANEL — slides down below cards
+  // ═══════════════════════════════════
+  &__panel {
+    background: $color-white;
+    border: 1.5px solid $border-color;
+    border-radius: $border-radius-lg;
     box-shadow: $shadow-sm;
-    padding: $_card-pad;
+    overflow: hidden;
+    animation: settings-panel-open 250ms $ease-out-quart;
+    margin-bottom: $_gap;
   }
 
-  // AI card spans full width (textarea needs space)
-  &__card--ai {
-    grid-column: 1 / -1;
-    border-left: 3px solid $ai-purple;
-    background: linear-gradient(135deg, $color-white 0%, $ai-purple-ghost 100%);
+  &__panel-content {
+    padding: 24px;
   }
 
-  // Meta card spans full width
-  &__card--meta {
-    grid-column: 1 / -1;
-    border-top: 3px solid $fb-blue;
-  }
+  // ═══════════════════════════════════
+  // SHARED FORM ELEMENTS — compact
+  // ═══════════════════════════════════
 
-  &__card--loyalty {
-    border-left: 3px solid $color-success;
-  }
-
-  &__card--google {
-    border-left: 3px solid $color-warning;
-  }
-
-  // OPTION ROWS — compact
+  // OPTION ROWS
   &__option {
     @include flex-between;
     padding: $_gap-sm 0;
@@ -109,7 +206,7 @@ $_gap-sm: 10px;
     max-width: 340px;
   }
 
-  // TOGGLE — smaller
+  // TOGGLE — compact
   &__toggle {
     position: relative;
     width: 40px;
@@ -143,323 +240,85 @@ $_gap-sm: 10px;
     }
   }
 
-  // STATUS BADGES
-  &__status {
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    padding: 3px $_gap-sm;
-    border-radius: $border-radius-full;
-
-    &--pending { background: $color-warning-bg; color: $color-warning-dark; }
-    &--connected { background: $color-success-bg; color: $color-success-dark; }
-    &--disconnected { background: $color-error-bg; color: $color-error-dark; }
-  }
-
-  &__section-label {
-    @include label-text;
-    margin-bottom: $spacing-xs;
-    padding-top: $spacing-xs;
-  }
-
-  // ============================
-  // LINA AI SECTION
-  // ============================
-  &__form-section {
-    margin-bottom: $_gap;
-    padding-bottom: $_gap;
-    border-bottom: 1px solid $border-color-light;
-    &:last-of-type { border-bottom: none; margin-bottom: $_gap-sm; }
-  }
-
-  &__form-section-title {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
-    color: $color-gray-700;
-    margin: 0 0 $_gap-sm;
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-  }
-
-  &__form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: $_gap-sm;
+  // FORM INPUTS — 36px
+  &__meta-field {
+    @include flex-column;
+    gap: 3px;
     margin-bottom: $_gap-sm;
-
-    &--3col { grid-template-columns: 1fr 1fr 1fr; }
-
-    @media (max-width: $breakpoint-md) {
-      grid-template-columns: 1fr;
-      &--3col { grid-template-columns: 1fr; }
-    }
-  }
-
-  &__form-field {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
 
     label {
       font-size: $font-size-xs;
-      font-weight: $font-weight-semibold;
+      font-weight: $font-weight-medium;
       color: $color-gray-600;
     }
 
-    input, select {
+    input {
       height: $_input-h;
       padding: 0 $_gap-sm;
       border: 1.5px solid $border-color;
       border-radius: $border-radius-sm;
       font-size: $font-size-sm;
       font-family: $font-primary;
-      color: $color-secondary;
       background: $color-white;
       transition: all $transition-fast;
 
       &:focus {
         outline: none;
-        border-color: $ai-purple;
-        box-shadow: 0 0 0 2px $ai-purple-ghost;
+        border-color: $color-primary;
+        box-shadow: 0 0 0 2px $color-primary-ghost;
       }
 
       &::placeholder { color: $color-gray-300; }
     }
-
-    select {
-      appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-      padding-right: 30px;
-      cursor: pointer;
-    }
   }
 
-  // PRESETS
-  &__presets {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: $_gap-sm;
-    margin-bottom: $_gap;
-  }
-
-  &__preset {
-    @include flex-column;
-    gap: $spacing-xs;
-    padding: $_gap;
-    background: $color-gray-50;
-    border: 2px solid transparent;
-    border-radius: $border-radius-md;
-    cursor: pointer;
-    text-align: left;
-    transition: all $transition-fast;
-    position: relative;
-
-    &:hover {
-      border-color: rgba($ai-purple, 0.2);
-      background: $color-white;
-      box-shadow: $shadow-md;
-    }
-
-    &--active {
-      border-color: $ai-purple;
-      background: $color-white;
-      box-shadow: 0 0 30px rgba($ai-purple, 0.1);
-    }
-  }
-
-  &__preset-label {
-    display: inline-block;
+  &__meta-hint {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    text-transform: uppercase;
-    letter-spacing: $letter-spacing-wide;
-    color: $ai-purple;
-    background: $ai-purple-ghost;
-    padding: 2px 8px;
-    border-radius: $border-radius-full;
-    align-self: flex-start;
-  }
-
-  &__preset-name {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-bold;
-    color: $color-secondary;
-  }
-
-  &__preset-desc {
-    font-size: $font-size-xs;
-    color: $color-gray-500;
+    color: $color-gray-400;
     line-height: $line-height-snug;
   }
 
-  &__preset-check {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    color: $color-white;
-    background: $ai-purple;
-    padding: 2px 8px;
-    border-radius: $border-radius-full;
-    text-transform: uppercase;
+  &__meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $_gap-sm;
   }
 
-  &__card-desc {
-    font-size: $font-size-xs;
-    color: $color-gray-500;
-    line-height: $line-height-relaxed;
-    margin-bottom: $_gap;
+  &__meta-actions {
+    margin-top: $spacing-xs;
+    margin-bottom: $_gap-sm;
   }
 
-  &__ai-field {
-    margin-bottom: $_gap;
-
-    &--half { flex: 1; min-width: 200px; }
-    &--quarter { flex: 0 0 140px; min-width: 120px; }
-  }
-
-  &__ai-label {
-    @include flex-column;
-    gap: $spacing-2xs;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-700;
-    margin-bottom: $spacing-xs;
-  }
-
-  &__ai-label-hint {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-regular;
-    color: $color-gray-400;
-  }
-
-  &__ai-input {
-    width: 100%;
-    height: $_input-h;
-    padding: 0 $_gap-sm;
-    background: $color-white;
-    border: 1.5px solid $border-color;
-    border-radius: $border-radius-sm;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    color: $color-secondary;
-    transition: all $transition-fast;
-
-    &:focus {
-      outline: none;
-      border-color: $ai-purple;
-      box-shadow: 0 0 0 2px $ai-purple-ghost;
-    }
-  }
-
-  // Textarea — compact but functional
-  &__ai-textarea {
-    width: 100%;
-    min-height: 220px;
-    padding: $_gap-sm 12px;
-    background: $color-white;
-    border: 1.5px solid $ai-purple-border;
-    border-radius: $border-radius-sm;
-    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-    font-size: 12px;
-    color: $color-secondary;
-    line-height: 1.6;
-    resize: vertical;
-    @include custom-scrollbar;
-    transition: all $transition-fast;
-
-    &:focus {
-      outline: none;
-      border-color: $ai-purple;
-      box-shadow: 0 0 0 2px $ai-purple-ghost;
-      background: $color-white;
-    }
-
-    &::placeholder { color: $color-gray-300; }
-  }
-
-  &__ai-char-count {
-    display: block;
-    text-align: right;
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    margin-top: 2px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__ai-select {
-    width: 100%;
-    height: $_input-h;
-    padding: 0 $_gap-sm;
-    background: $color-white;
-    border: 1.5px solid $border-color;
-    border-radius: $border-radius-sm;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    color: $color-secondary;
-    cursor: pointer;
-    transition: all $transition-fast;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    padding-right: 30px;
-
-    &:focus {
-      outline: none;
-      border-color: $ai-purple;
-      box-shadow: 0 0 0 2px $ai-purple-ghost;
-    }
-  }
-
-  &__ai-range {
-    width: 100%;
-    height: 4px;
-    appearance: none;
-    background: $color-gray-200;
-    border-radius: $border-radius-full;
-    outline: none;
-    cursor: pointer;
-
-    &::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: $border-radius-full;
-      background: $ai-purple;
-      border: 2px solid $color-white;
-      box-shadow: $shadow-sm;
-      cursor: pointer;
-    }
-  }
-
-  &__ai-range-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    margin-top: 2px;
-  }
-
-  &__ai-row {
-    display: flex;
-    gap: $_gap;
-    flex-wrap: wrap;
-    margin-bottom: $_gap;
-  }
-
-  &__ai-actions {
+  &__meta-token-input {
     display: flex;
     align-items: center;
-    gap: $_gap-sm;
-    padding-top: $_gap;
-    border-top: 1px solid $border-color-light;
+    gap: $spacing-xs;
+
+    input {
+      flex: 1;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: $font-size-xs;
+    }
   }
 
-  // COMPACT BUTTONS
+  &__meta-eye {
+    height: $_input-h;
+    padding: 0 $_gap-sm;
+    border: 1.5px solid $border-color;
+    border-radius: $border-radius-sm;
+    background: $color-white;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    font-family: $font-primary;
+    color: $color-gray-500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all $transition-fast;
+
+    &:hover { border-color: $color-primary; color: $color-primary; }
+  }
+
+  // BUTTONS — compact
   &__ai-save {
     height: $_btn-h;
     padding: 0 $_gap;
@@ -479,11 +338,6 @@ $_gap-sm: 10px;
     }
 
     &:disabled { opacity: 0.5; cursor: not-allowed; }
-  }
-
-  &__ai-last-saved {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
   }
 
   &__ai-test {
@@ -507,51 +361,9 @@ $_gap-sm: 10px;
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  // PROVIDERS
-  &__providers {
-    margin-bottom: $_gap-sm;
-    padding-bottom: $_gap-sm;
-  }
-
-  &__provider-list {
-    display: flex;
-    gap: $spacing-xs;
-    margin-top: $spacing-xs;
-  }
-
-  &__provider {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: $border-radius-sm;
+  &__ai-last-saved {
     font-size: $font-size-2xs;
-    background: $color-gray-50;
-    border: 1.5px solid transparent;
-
-    &--ok { background: $color-success-bg; }
-    &--off { opacity: 0.4; }
-    &--active { border-color: $color-primary; background: $color-primary-ghost; }
-  }
-
-  &__provider-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: $color-gray-300;
-
-    .settings__provider--ok & { background: $color-success; }
-    .settings__provider--active & { background: $color-primary; }
-  }
-
-  &__provider-name {
-    font-weight: $font-weight-semibold;
-    color: $color-secondary;
-  }
-
-  &__provider-status {
     color: $color-gray-400;
-    font-size: $font-size-2xs;
   }
 
   &__test-result {
@@ -575,11 +387,83 @@ $_gap-sm: 10px;
     }
   }
 
-  // ============================
-  // META / WHATSAPP SECTION
-  // ============================
+  // ═══════════════════════════════════
+  // LINA AI SECTION
+  // ═══════════════════════════════════
+  &__ai-field {
+    margin-bottom: $_gap;
 
-  // Token expiry warning — compact banner
+    &--half { flex: 1; min-width: 200px; }
+    &--quarter { flex: 0 0 140px; min-width: 120px; }
+  }
+
+  &__ai-label {
+    @include flex-column;
+    gap: $spacing-2xs;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-700;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__ai-label-hint {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-regular;
+    color: $color-gray-400;
+  }
+
+  &__ai-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: $_gap-sm 12px;
+    background: $color-white;
+    border: 1.5px solid $ai-purple-border;
+    border-radius: $border-radius-sm;
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+    font-size: 12px;
+    color: $color-secondary;
+    line-height: 1.6;
+    resize: vertical;
+    @include custom-scrollbar;
+    transition: all $transition-fast;
+
+    &:focus {
+      outline: none;
+      border-color: $ai-purple;
+      box-shadow: 0 0 0 2px $ai-purple-ghost;
+    }
+
+    &::placeholder { color: $color-gray-300; }
+  }
+
+  &__ai-char-count {
+    display: block;
+    text-align: right;
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__ai-actions {
+    display: flex;
+    align-items: center;
+    gap: $_gap-sm;
+    padding-top: $_gap;
+    border-top: 1px solid $border-color-light;
+  }
+
+  &__ai-row {
+    display: flex;
+    gap: $_gap;
+    flex-wrap: wrap;
+    margin-bottom: $_gap;
+  }
+
+  // ═══════════════════════════════════
+  // META / WHATSAPP SECTION
+  // ═══════════════════════════════════
+
   &__meta-expiry-warning {
     display: flex;
     align-items: center;
@@ -613,7 +497,6 @@ $_gap-sm: 10px;
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  // Status — compact
   &__meta-status {
     display: flex;
     align-items: center;
@@ -631,10 +514,7 @@ $_gap-sm: 10px;
     border-radius: 50%;
     flex-shrink: 0;
 
-    &--on {
-      background: $color-success;
-      box-shadow: 0 0 6px rgba($color-success, 0.4);
-    }
+    &--on { background: $color-success; box-shadow: 0 0 6px rgba($color-success, 0.4); }
     &--off { background: $color-gray-300; }
   }
 
@@ -657,7 +537,6 @@ $_gap-sm: 10px;
 
   &__meta-connected-pill {
     display: inline-flex;
-    align-items: center;
     padding: 2px 8px;
     background: $color-success-bg;
     color: $color-success-dark;
@@ -689,13 +568,9 @@ $_gap-sm: 10px;
     border-color: $color-error-border;
     color: $color-error;
 
-    &:hover {
-      background: $color-error-bg;
-      border-color: $color-error;
-    }
+    &:hover { background: $color-error-bg; border-color: $color-error; }
   }
 
-  // Token info — compact row
   &__meta-token-info {
     display: flex;
     align-items: center;
@@ -715,7 +590,6 @@ $_gap-sm: 10px;
   &__meta-token-info-label {
     font-size: $font-size-2xs;
     color: $color-gray-400;
-    font-weight: $font-weight-medium;
   }
 
   &__meta-token-info-date {
@@ -729,13 +603,9 @@ $_gap-sm: 10px;
 
   &__meta-token-info-days {
     font-size: $font-size-2xs;
-    font-weight: $font-weight-regular;
     color: $color-gray-400;
 
-    &--warning {
-      color: $color-warning-dark;
-      font-weight: $font-weight-semibold;
-    }
+    &--warning { color: $color-warning-dark; font-weight: $font-weight-semibold; }
   }
 
   &__meta-token-refresh {
@@ -751,14 +621,10 @@ $_gap-sm: 10px;
     white-space: nowrap;
     transition: all $transition-fast;
 
-    &:hover:not(:disabled) {
-      background: $color-primary-ghost;
-      border-color: rgba($color-primary, 0.3);
-    }
+    &:hover:not(:disabled) { background: $color-primary-ghost; }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  // Facebook OAuth — compact, centered
   &__meta-oauth {
     @include flex-column;
     align-items: center;
@@ -801,7 +667,7 @@ $_gap-sm: 10px;
     max-width: 300px;
   }
 
-  // Manual config accordion — compact
+  // Manual config accordion
   &__meta-manual {
     border-top: 1px solid $border-color-light;
     margin-top: $_gap-sm;
@@ -820,7 +686,6 @@ $_gap-sm: 10px;
     font-weight: $font-weight-medium;
     color: $color-gray-500;
     cursor: pointer;
-    transition: color $transition-fast;
 
     &:hover { color: $color-gray-700; }
   }
@@ -839,87 +704,9 @@ $_gap-sm: 10px;
     animation: settings-slide-down 200ms $ease-out-quart;
   }
 
-  // Form inputs — COMPACT 36px
-  &__meta-field {
-    @include flex-column;
-    gap: 3px;
-    margin-bottom: $_gap-sm;
-
-    label {
-      font-size: $font-size-xs;
-      font-weight: $font-weight-medium;
-      color: $color-gray-600;
-    }
-
-    input {
-      height: $_input-h;
-      padding: 0 $_gap-sm;
-      border: 1.5px solid $border-color;
-      border-radius: $border-radius-sm;
-      font-size: $font-size-sm;
-      font-family: $font-primary;
-      background: $color-white;
-      transition: all $transition-fast;
-
-      &:focus {
-        outline: none;
-        border-color: $color-primary;
-        box-shadow: 0 0 0 2px $color-primary-ghost;
-      }
-
-      &::placeholder { color: $color-gray-300; }
-    }
-  }
-
-  &__meta-hint {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    line-height: $line-height-snug;
-  }
-
-  &__meta-token-input {
-    display: flex;
-    align-items: center;
-    gap: $spacing-xs;
-
-    input {
-      flex: 1;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: $font-size-xs;
-    }
-  }
-
-  &__meta-eye {
-    height: $_input-h;
-    padding: 0 $_gap-sm;
-    border: 1.5px solid $border-color;
-    border-radius: $border-radius-sm;
-    background: $color-white;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    font-family: $font-primary;
-    color: $color-gray-500;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all $transition-fast;
-
-    &:hover { border-color: $color-primary; color: $color-primary; }
-  }
-
-  &__meta-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: $_gap-sm;
-  }
-
-  &__meta-actions {
-    margin-top: $spacing-xs;
-    margin-bottom: $_gap-sm;
-  }
-
-  // ============================
-  // WA BUSINESS PROFILE — compact
-  // ============================
+  // ═══════════════════════════════════
+  // WA BUSINESS PROFILE
+  // ═══════════════════════════════════
   &__wa-profile {
     border-top: 1px solid $border-color-light;
     padding-top: $_gap;
@@ -948,8 +735,8 @@ $_gap-sm: 10px;
 
   &__wa-profile-photo-preview {
     flex-shrink: 0;
-    width: 64px;
-    height: 64px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     overflow: hidden;
     border: 2px solid $border-color-light;
@@ -963,15 +750,10 @@ $_gap-sm: 10px;
 
     &:hover {
       border-color: $color-primary;
-
       .settings__wa-profile-photo-overlay { opacity: 1; }
     }
 
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    img { width: 100%; height: 100%; object-fit: cover; }
   }
 
   &__wa-profile-photo-overlay {
@@ -990,8 +772,7 @@ $_gap-sm: 10px;
 
   &__wa-profile-photo-empty {
     color: $color-gray-400;
-
-    svg { width: 24px; height: 24px; }
+    svg { width: 22px; height: 22px; }
   }
 
   &__wa-profile-photo-select {
@@ -1034,7 +815,6 @@ $_gap-sm: 10px;
     display: flex;
     gap: $spacing-xs;
     margin-top: $spacing-xs;
-
     button { white-space: nowrap; }
   }
 
@@ -1050,7 +830,7 @@ $_gap-sm: 10px;
       font-size: $font-size-sm;
       font-family: inherit;
       resize: vertical;
-      min-height: 60px;
+      min-height: 52px;
 
       &:focus {
         outline: none;
@@ -1068,7 +848,7 @@ $_gap-sm: 10px;
     margin-top: 1px;
   }
 
-  // Templates section — compact list
+  // Templates list — compact
   &__meta-templates {
     border-top: 1px solid $border-color-light;
     padding-top: $_gap-sm;
@@ -1110,16 +890,13 @@ $_gap-sm: 10px;
     display: flex;
     align-items: center;
     gap: $_gap-sm;
-    padding: 6px $_gap-sm;
+    padding: 5px $_gap-sm;
     background: $color-gray-50;
     border-radius: $border-radius-sm;
     border: 1px solid $border-color-light;
     transition: all $transition-fast;
 
-    &:hover {
-      background: $color-white;
-      box-shadow: $shadow-xs;
-    }
+    &:hover { background: $color-white; box-shadow: $shadow-xs; }
   }
 
   &__meta-tpl-name {
@@ -1127,7 +904,7 @@ $_gap-sm: 10px;
     font-weight: $font-weight-semibold;
     color: $color-gray-700;
     font-family: 'JetBrains Mono', monospace;
-    min-width: 120px;
+    min-width: 100px;
   }
 
   &__meta-tpl-cat {
@@ -1146,156 +923,233 @@ $_gap-sm: 10px;
     @include truncate;
   }
 
-  // ============================
+  // ═══════════════════════════════════
+  // LEGACY FORM ELEMENTS (used in some sections)
+  // ═══════════════════════════════════
+  &__form-section {
+    margin-bottom: $_gap;
+    padding-bottom: $_gap;
+    border-bottom: 1px solid $border-color-light;
+    &:last-of-type { border-bottom: none; margin-bottom: $_gap-sm; }
+  }
+
+  &__form-section-title {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    color: $color-gray-700;
+    margin: 0 0 $_gap-sm;
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+  }
+
+  &__form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $_gap-sm;
+    margin-bottom: $_gap-sm;
+    &--3col { grid-template-columns: 1fr 1fr 1fr; }
+    @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
+  }
+
+  &__form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    label {
+      font-size: $font-size-xs;
+      font-weight: $font-weight-semibold;
+      color: $color-gray-600;
+    }
+
+    input, select {
+      height: $_input-h;
+      padding: 0 $_gap-sm;
+      border: 1.5px solid $border-color;
+      border-radius: $border-radius-sm;
+      font-size: $font-size-sm;
+      font-family: $font-primary;
+      color: $color-secondary;
+      background: $color-white;
+      transition: all $transition-fast;
+
+      &:focus {
+        outline: none;
+        border-color: $ai-purple;
+        box-shadow: 0 0 0 2px $ai-purple-ghost;
+      }
+
+      &::placeholder { color: $color-gray-300; }
+    }
+  }
+
+  &__card-desc {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+    margin-bottom: $_gap;
+  }
+
+  &__status {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    padding: 3px $_gap-sm;
+    border-radius: $border-radius-full;
+    &--pending { background: $color-warning-bg; color: $color-warning-dark; }
+    &--connected { background: $color-success-bg; color: $color-success-dark; }
+    &--disconnected { background: $color-error-bg; color: $color-error-dark; }
+  }
+
+  &__section-label {
+    @include label-text;
+    margin-bottom: $spacing-xs;
+    padding-top: $spacing-xs;
+  }
+
+  &__providers { margin-bottom: $_gap-sm; padding-bottom: $_gap-sm; }
+  &__provider-list { display: flex; gap: $spacing-xs; margin-top: $spacing-xs; }
+  &__provider {
+    display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+    border-radius: $border-radius-sm; font-size: $font-size-2xs;
+    background: $color-gray-50; border: 1.5px solid transparent;
+    &--ok { background: $color-success-bg; }
+    &--off { opacity: 0.4; }
+    &--active { border-color: $color-primary; background: $color-primary-ghost; }
+  }
+  &__provider-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: $color-gray-300;
+    .settings__provider--ok & { background: $color-success; }
+    .settings__provider--active & { background: $color-primary; }
+  }
+  &__provider-name { font-weight: $font-weight-semibold; color: $color-secondary; }
+  &__provider-status { color: $color-gray-400; font-size: $font-size-2xs; }
+
+  &__presets {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: $_gap-sm; margin-bottom: $_gap;
+  }
+  &__preset {
+    @include flex-column; gap: $spacing-xs; padding: $_gap; background: $color-gray-50;
+    border: 2px solid transparent; border-radius: $border-radius-md; cursor: pointer;
+    text-align: left; transition: all $transition-fast; position: relative;
+    &:hover { border-color: rgba($ai-purple, 0.2); background: $color-white; }
+    &--active { border-color: $ai-purple; background: $color-white; }
+  }
+  &__preset-label {
+    display: inline-block; font-size: $font-size-2xs; font-weight: $font-weight-semibold;
+    text-transform: uppercase; color: $ai-purple; background: $ai-purple-ghost;
+    padding: 2px 8px; border-radius: $border-radius-full; align-self: flex-start;
+  }
+  &__preset-name { font-size: $font-size-sm; font-weight: $font-weight-bold; color: $color-secondary; }
+  &__preset-desc { font-size: $font-size-xs; color: $color-gray-500; }
+  &__preset-check {
+    position: absolute; top: 8px; right: 8px; font-size: $font-size-2xs;
+    font-weight: $font-weight-bold; color: $color-white; background: $ai-purple;
+    padding: 2px 8px; border-radius: $border-radius-full;
+  }
+
+  &__ai-input {
+    width: 100%; height: $_input-h; padding: 0 $_gap-sm;
+    background: $color-white; border: 1.5px solid $border-color;
+    border-radius: $border-radius-sm; font-family: $font-primary;
+    font-size: $font-size-sm; color: $color-secondary; transition: all $transition-fast;
+    &:focus { outline: none; border-color: $ai-purple; box-shadow: 0 0 0 2px $ai-purple-ghost; }
+  }
+
+  &__ai-select {
+    width: 100%; height: $_input-h; padding: 0 $_gap-sm;
+    background: $color-white; border: 1.5px solid $border-color;
+    border-radius: $border-radius-sm; font-family: $font-primary;
+    font-size: $font-size-sm; color: $color-secondary; cursor: pointer;
+    appearance: none; transition: all $transition-fast;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px;
+    &:focus { outline: none; border-color: $ai-purple; box-shadow: 0 0 0 2px $ai-purple-ghost; }
+  }
+
+  &__ai-range {
+    width: 100%; height: 4px; appearance: none; background: $color-gray-200;
+    border-radius: $border-radius-full; outline: none; cursor: pointer;
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px;
+      border-radius: $border-radius-full; background: $ai-purple;
+      border: 2px solid $color-white; box-shadow: $shadow-sm;
+    }
+  }
+  &__ai-range-labels { display: flex; justify-content: space-between; font-size: $font-size-2xs; color: $color-gray-400; margin-top: 2px; }
+
+  // ═══════════════════════════════════
   // RESPONSIVE
-  // ============================
+  // ═══════════════════════════════════
   @media (max-width: $breakpoint-md) {
-    &__ai-row {
-      flex-direction: column;
-      gap: $_gap-sm;
-    }
-
-    &__ai-field--half,
-    &__ai-field--quarter {
-      flex: 1;
-      min-width: 100%;
-    }
-
-    &__ai-textarea {
-      min-height: 180px;
-    }
-
-    &__meta-row {
-      grid-template-columns: 1fr;
-    }
-
-    &__meta-status {
-      flex-wrap: wrap;
-    }
-
-    &__meta-token-info {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: $spacing-xs;
-    }
-
-    &__meta-expiry-warning {
-      flex-wrap: wrap;
-    }
+    &__ai-row { flex-direction: column; gap: $_gap-sm; }
+    &__ai-field--half, &__ai-field--quarter { flex: 1; min-width: 100%; }
+    &__ai-textarea { min-height: 160px; }
+    &__meta-row { grid-template-columns: 1fr; }
+    &__meta-status { flex-wrap: wrap; }
+    &__meta-token-info { flex-direction: column; align-items: flex-start; gap: $spacing-xs; }
+    &__meta-expiry-warning { flex-wrap: wrap; }
   }
 
   @media (max-width: $breakpoint-sm) {
-    &__card {
-      padding: 14px;
-    }
-
-    &__ai-actions {
-      flex-direction: column;
-      align-items: stretch;
-      gap: $spacing-xs;
-    }
-
-    &__option {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: $spacing-xs;
-    }
-
-    &__meta-fb-btn {
-      min-width: 100%;
-    }
+    &__ai-actions { flex-direction: column; align-items: stretch; gap: $spacing-xs; }
+    &__option { flex-direction: column; align-items: flex-start; gap: $spacing-xs; }
+    &__meta-fb-btn { min-width: 100%; }
   }
 }
 
-// ============================
+// ═══════════════════════════════════
 // DISCONNECT MODAL (portal)
-// ============================
+// ═══════════════════════════════════
 .settings__modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px); display: flex; align-items: center;
+  justify-content: center; z-index: 9999;
   animation: settings-fade-in 150ms ease-out;
 }
 
 .settings__modal {
-  background: $color-white;
-  border-radius: $border-radius-lg;
-  padding: $spacing-xl;
-  max-width: 380px;
-  width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  text-align: center;
+  background: $color-white; border-radius: $border-radius-lg;
+  padding: $spacing-xl; max-width: 380px; width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2); text-align: center;
   animation: settings-slide-down 200ms $ease-out-quart;
 }
 
 .settings__modal-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: $border-radius-full;
-  background: $color-error-bg;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto $_gap-sm;
-
+  width: 40px; height: 40px; border-radius: $border-radius-full;
+  background: $color-error-bg; display: flex; align-items: center;
+  justify-content: center; margin: 0 auto 10px;
   svg { width: 20px; height: 20px; }
 }
 
 .settings__modal-title {
-  font-size: $font-size-base;
-  font-weight: $font-weight-bold;
-  color: $color-gray-900;
-  margin: 0 0 $spacing-xs;
+  font-size: $font-size-base; font-weight: $font-weight-bold;
+  color: $color-gray-900; margin: 0 0 $spacing-xs;
 }
 
 .settings__modal-desc {
-  font-size: $font-size-xs;
-  color: $color-gray-500;
-  line-height: $line-height-relaxed;
-  margin: 0 0 $_gap;
+  font-size: $font-size-xs; color: $color-gray-500;
+  line-height: $line-height-relaxed; margin: 0 0 $_gap;
 }
 
 .settings__modal-actions {
-  display: flex;
-  gap: $_gap-sm;
-  justify-content: center;
+  display: flex; gap: $_gap-sm; justify-content: center;
 }
 
 .settings__modal-cancel {
-  height: $_btn-h;
-  padding: 0 $_gap;
-  border: 1px solid $border-color;
-  border-radius: $border-radius-sm;
-  background: $color-white;
-  font-family: $font-primary;
-  font-size: $font-size-xs;
-  font-weight: $font-weight-semibold;
-  color: $color-gray-600;
-  cursor: pointer;
-  transition: all $transition-fast;
-
-  &:hover { border-color: $color-gray-300; background: $color-gray-50; }
+  height: $_btn-h; padding: 0 $_gap; border: 1px solid $border-color;
+  border-radius: $border-radius-sm; background: $color-white;
+  font-family: $font-primary; font-size: $font-size-xs;
+  font-weight: $font-weight-semibold; color: $color-gray-600; cursor: pointer;
+  &:hover { background: $color-gray-50; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .settings__modal-confirm {
-  height: $_btn-h;
-  padding: 0 $_gap;
-  border: none;
-  border-radius: $border-radius-sm;
-  background: $color-error;
-  font-family: $font-primary;
-  font-size: $font-size-xs;
-  font-weight: $font-weight-semibold;
-  color: $color-white;
-  cursor: pointer;
-  transition: all $transition-fast;
-
+  height: $_btn-h; padding: 0 $_gap; border: none;
+  border-radius: $border-radius-sm; background: $color-error;
+  font-family: $font-primary; font-size: $font-size-xs;
+  font-weight: $font-weight-semibold; color: $color-white; cursor: pointer;
   &:hover:not(:disabled) { filter: brightness(0.9); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
@@ -1308,4 +1162,9 @@ $_gap-sm: 10px;
 @keyframes settings-slide-down {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes settings-panel-open {
+  from { opacity: 0; transform: translateY(-6px); max-height: 0; }
+  to { opacity: 1; transform: translateY(0); max-height: 2000px; }
 }
