@@ -77,6 +77,41 @@ const settingsService = {
     if (!res.ok) return { templates: [], error: 'Error de conexion' };
     return res.json();
   },
+
+  // --- WhatsApp Business Profile ---
+  getWhatsAppProfile: async () => {
+    const res = await fetch(`${_API}/settings/whatsapp-profile`, { credentials: 'include' });
+    if (!res.ok) return { profile: null };
+    return res.json();
+  },
+
+  updateWhatsAppProfile: async (data) => {
+    const res = await fetch(`${_API}/settings/whatsapp-profile`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al actualizar perfil');
+    }
+    return res.json();
+  },
+
+  updateWhatsAppProfilePhoto: async (imageUrl) => {
+    const res = await fetch(`${_API}/settings/whatsapp-profile-photo`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url: imageUrl }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al actualizar foto');
+    }
+    return res.json();
+  },
 };
 
 export default settingsService;

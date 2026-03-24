@@ -526,3 +526,122 @@ def get_meta_templates(db: Session = Depends(get_db), user=Depends(get_current_u
         return {"templates": [], "error": "Timeout al conectar con Meta API"}
     except Exception as e:
         return {"templates": [], "error": str(e)[:200]}
+
+
+# ============================================================================
+# WHATSAPP BUSINESS PROFILE (name + photo visible to clients)
+# ============================================================================
+
+@router.get("/settings/whatsapp-profile")
+def get_whatsapp_profile(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Fetch current WhatsApp Business Profile from Meta API."""
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="No tenant asociado")
+
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant or not tenant.wa_access_token or not tenant.wa_phone_number_id:
+        return {"profile": None, "error": "WhatsApp no configurado"}
+
+    try:
+        resp = httpx.get(
+            f"https://graph.facebook.com/{META_GRAPH_VERSION}/{tenant.wa_phone_number_id}/whatsapp_business_profile",
+            headers={"Authorization": f"Bearer {tenant.wa_access_token}"},
+            params={"fields": "about,address,description,email,profile_picture_url,websites,vertical"},
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            return {"profile": None, "error": f"Error {resp.status_code}"}
+
+        data = resp.json().get("data", [{}])
+        profile = data[0] if data else {}
+        return {"profile": profile}
+    except Exception as e:
+        return {"profile": None, "error": str(e)[:200]}
+
+
+@router.put("/settings/whatsapp-profile")
+async def update_whatsapp_profile(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Update WhatsApp Business Profile on Meta (about, description, address, etc)."""
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="No tenant asociado")
+
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant or not tenant.wa_access_token or not tenant.wa_phone_number_id:
+        raise HTTPException(status_code=400, detail="WhatsApp no configurado — conecta Meta primero")
+
+    # Build payload with only allowed fields
+    payload = {}
+    allowed = ["about", "address", "description", "email", "websites", "vertical"]
+    for field in allowed:
+        if field in data:
+            payload[field] = data[field]
+
+    payload["messaging_product"] = "whatsapp"
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"https://graph.facebook.com/{META_GRAPH_VERSION}/{tenant.wa_phone_number_id}/whatsapp_business_profile",
+                headers={
+                    "Authorization": f"Bearer {tenant.wa_access_token}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+            )
+            print(f"[WA PROFILE UPDATE] status={resp.status_code} body={resp.text[:300]}")
+
+            if resp.status_code == 200:
+                return {"success": True, "message": "Perfil de WhatsApp actualizado"}
+            else:
+                error = resp.json().get("error", {}).get("message", resp.text[:200])
+                raise HTTPException(status_code=400, detail=f"Meta API: {error}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)[:200])
+
+
+@router.put("/settings/whatsapp-profile-photo")
+async def update_whatsapp_profile_photo(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Update WhatsApp Business Profile photo via Meta API.
+    Accepts { "image_url": "https://..." } — Meta downloads the image from this URL.
+    Image must be JPEG/PNG, max 5MB, square recommended.
+    """
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="No tenant asociado")
+
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant or not tenant.wa_access_token or not tenant.wa_phone_number_id:
+        raise HTTPException(status_code=400, detail="WhatsApp no configurado")
+
+    image_url = (data.get("image_url") or "").strip()
+    if not image_url:
+        raise HTTPException(status_code=400, detail="image_url es requerido")
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(
+                f"https://graph.facebook.com/{META_GRAPH_VERSION}/{tenant.wa_phone_number_id}/whatsapp_business_profile",
+                headers={
+                    "Authorization": f"Bearer {tenant.wa_access_token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "messaging_product": "whatsapp",
+                    "profile_picture_url": image_url,
+                },
+            )
+            print(f"[WA PROFILE PHOTO] status={resp.status_code} body={resp.text[:300]}")
+
+            if resp.status_code == 200:
+                return {"success": True, "message": "Foto de perfil actualizada"}
+            else:
+                error = resp.json().get("error", {}).get("message", resp.text[:200])
+                raise HTTPException(status_code=400, detail=f"Meta API: {error}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)[:200])

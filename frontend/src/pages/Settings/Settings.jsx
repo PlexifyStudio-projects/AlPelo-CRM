@@ -243,6 +243,18 @@ const Settings = () => {
   });
   const [loyaltySaving, setLoyaltySaving] = useState(false);
 
+  // WhatsApp Business Profile state
+  const [waProfile, setWaProfile] = useState(null);
+  const [waAbout, setWaAbout] = useState('');
+  const [waDescription, setWaDescription] = useState('');
+  const [waAddress, setWaAddress] = useState('');
+  const [waEmail, setWaEmail] = useState('');
+  const [waWebsite, setWaWebsite] = useState('');
+  const [waPhotoUrl, setWaPhotoUrl] = useState('');
+  const [waProfileSaving, setWaProfileSaving] = useState(false);
+  const [waPhotoSaving, setWaPhotoSaving] = useState(false);
+  const [waProfileLoaded, setWaProfileLoaded] = useState(false);
+
   // Google Reviews state
   const [googleReviewUrl, setGoogleReviewUrl] = useState('');
   const [googleSaving, setGoogleSaving] = useState(false);
@@ -313,6 +325,56 @@ const Settings = () => {
   };
 
   useEffect(() => { loadMetaTemplates(); }, []);
+
+  // Load WhatsApp Business Profile
+  const loadWaProfile = useCallback(async () => {
+    try {
+      const { profile } = await settingsService.getWhatsAppProfile();
+      if (profile) {
+        setWaProfile(profile);
+        setWaAbout(profile.about || '');
+        setWaDescription(profile.description || '');
+        setWaAddress(profile.address || '');
+        setWaEmail(profile.email || '');
+        setWaWebsite(profile.websites?.[0] || '');
+        setWaPhotoUrl(profile.profile_picture_url || '');
+      }
+      setWaProfileLoaded(true);
+    } catch { setWaProfileLoaded(true); }
+  }, []);
+
+  useEffect(() => { loadWaProfile(); }, [loadWaProfile]);
+
+  const handleSaveWaProfile = async () => {
+    setWaProfileSaving(true);
+    try {
+      const payload = { about: waAbout.trim(), description: waDescription.trim() };
+      if (waAddress.trim()) payload.address = waAddress.trim();
+      if (waEmail.trim()) payload.email = waEmail.trim();
+      if (waWebsite.trim()) payload.websites = [waWebsite.trim()];
+      await settingsService.updateWhatsAppProfile(payload);
+      addNotification('Perfil de WhatsApp actualizado en Meta', 'success');
+      loadWaProfile();
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setWaProfileSaving(false);
+    }
+  };
+
+  const handleSaveWaPhoto = async () => {
+    if (!waPhotoUrl.trim()) return;
+    setWaPhotoSaving(true);
+    try {
+      await settingsService.updateWhatsAppProfilePhoto(waPhotoUrl.trim());
+      addNotification('Foto de perfil actualizada en Meta', 'success');
+      loadWaProfile();
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setWaPhotoSaving(false);
+    }
+  };
 
   const maskToken = (t) => t ? `${t.slice(0, 12)}...${t.slice(-8)}` : '';
 
@@ -635,6 +697,116 @@ const Settings = () => {
               </div>
             )}
           </div>
+
+          {/* ── WhatsApp Business Profile ── */}
+          {metaStatus?.connected && (
+            <div className={`${b}__wa-profile`}>
+              <h4 className={`${b}__wa-profile-title`}>Perfil de WhatsApp Business</h4>
+              <p className={`${b}__wa-profile-hint`}>
+                Esto es lo que ven tus clientes en WhatsApp: nombre, foto, descripcion y datos del negocio.
+              </p>
+
+              {/* Current photo preview */}
+              <div className={`${b}__wa-profile-photo-section`}>
+                <div className={`${b}__wa-profile-photo-preview`}>
+                  {waProfile?.profile_picture_url ? (
+                    <img src={waProfile.profile_picture_url} alt="Perfil WA" />
+                  ) : (
+                    <div className={`${b}__wa-profile-photo-empty`}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                  )}
+                </div>
+                <div className={`${b}__wa-profile-photo-input`}>
+                  <label>URL de la foto de perfil</label>
+                  <span className={`${b}__meta-hint`}>Debe ser una URL publica (JPEG o PNG, max 5MB, cuadrada recomendada)</span>
+                  <div className={`${b}__wa-profile-photo-row`}>
+                    <input
+                      type="text"
+                      value={waPhotoUrl}
+                      onChange={e => setWaPhotoUrl(e.target.value)}
+                      placeholder="https://tusitio.com/logo.jpg"
+                    />
+                    <button
+                      className={`${b}__ai-save`}
+                      onClick={handleSaveWaPhoto}
+                      disabled={waPhotoSaving || !waPhotoUrl.trim()}
+                    >
+                      {waPhotoSaving ? 'Subiendo...' : 'Actualizar foto'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile fields */}
+              <div className={`${b}__wa-profile-fields`}>
+                <div className={`${b}__meta-field`}>
+                  <label>Descripcion corta (About)</label>
+                  <span className={`${b}__meta-hint`}>Aparece debajo del nombre en el perfil (max 139 caracteres)</span>
+                  <input
+                    type="text"
+                    value={waAbout}
+                    onChange={e => setWaAbout(e.target.value.slice(0, 139))}
+                    placeholder="Ej: Peluqueria premium en Cabecera"
+                    maxLength={139}
+                  />
+                  <span className={`${b}__wa-profile-charcount`}>{waAbout.length}/139</span>
+                </div>
+
+                <div className={`${b}__meta-field`}>
+                  <label>Descripcion del negocio</label>
+                  <span className={`${b}__meta-hint`}>Descripcion completa visible en el perfil del negocio</span>
+                  <textarea
+                    value={waDescription}
+                    onChange={e => setWaDescription(e.target.value.slice(0, 512))}
+                    placeholder="Ej: En AlPelo nos especializamos en cortes modernos, barba y tratamientos capilares..."
+                    rows={3}
+                    maxLength={512}
+                  />
+                </div>
+
+                <div className={`${b}__meta-row`}>
+                  <div className={`${b}__meta-field`}>
+                    <label>Direccion</label>
+                    <input
+                      type="text"
+                      value={waAddress}
+                      onChange={e => setWaAddress(e.target.value)}
+                      placeholder="Ej: Calle 49 #35-21, Cabecera"
+                    />
+                  </div>
+                  <div className={`${b}__meta-field`}>
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      value={waEmail}
+                      onChange={e => setWaEmail(e.target.value)}
+                      placeholder="contacto@tunegocio.com"
+                    />
+                  </div>
+                </div>
+
+                <div className={`${b}__meta-field`}>
+                  <label>Sitio web</label>
+                  <input
+                    type="url"
+                    value={waWebsite}
+                    onChange={e => setWaWebsite(e.target.value)}
+                    placeholder="https://tunegocio.com"
+                  />
+                </div>
+              </div>
+
+              <button
+                className={`${b}__ai-save`}
+                onClick={handleSaveWaProfile}
+                disabled={waProfileSaving}
+                style={{ marginTop: '12px' }}
+              >
+                {waProfileSaving ? 'Guardando en Meta...' : 'Guardar perfil en WhatsApp'}
+              </button>
+            </div>
+          )}
 
           {/* Approved templates from Meta */}
           {metaTemplates && metaTemplates.templates && metaTemplates.templates.length > 0 && (
