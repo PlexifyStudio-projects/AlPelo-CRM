@@ -2,7 +2,7 @@
 @use '../abstracts/mixins' as *;
 
 // ============================================
-// Settings — Clean Card-Based Config Page
+// Settings — Compact, Elegant Config Page
 // ============================================
 
 $fb-blue: #1877F2;
@@ -12,50 +12,79 @@ $ai-purple-light: #8B5CF6;
 $ai-purple-ghost: rgba(124, 58, 237, 0.06);
 $ai-purple-border: rgba(124, 58, 237, 0.15);
 
+// Compact overrides
+$_input-h: 36px;
+$_btn-h: 34px;
+$_card-pad: 20px 24px;
+$_gap: 16px;
+$_gap-sm: 10px;
+
 .settings {
   @include page-enter;
 
-  // HEADER
+  // HEADER — tighter
   &__header {
-    margin-bottom: $spacing-2xl;
+    margin-bottom: $spacing-lg;
   }
 
   &__title {
-    @include heading($font-size-3xl);
+    @include heading($font-size-2xl);
     margin-bottom: 0;
     font-weight: $font-weight-extrabold;
   }
 
   &__subtitle {
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     color: $color-gray-400;
-    margin-top: $spacing-xs;
+    margin-top: 2px;
   }
 
-  // CONTENT — 32px gaps between cards
+  // CONTENT — 2-column grid for cards
   &__content {
-    @include flex-column;
-    gap: $spacing-xl;
-  }
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $_gap;
+    align-items: start;
 
-  // CARDS — white bg, 20px radius, subtle shadow, 1px border
-  &__card {
-    background: $color-white;
-    border-radius: $border-radius-xl;
-    border: 1px solid $border-color;
-    box-shadow: $shadow-sm;
-    padding: $spacing-lg $spacing-xl;
-
-    @media (max-width: $breakpoint-md) {
-      padding: $spacing-lg;
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: 1fr;
     }
   }
 
-  // OPTION ROWS
+  // CARDS — compact padding
+  &__card {
+    background: $color-white;
+    border-radius: $border-radius-lg;
+    border: 1px solid $border-color;
+    box-shadow: $shadow-sm;
+    padding: $_card-pad;
+  }
+
+  // AI card spans full width (textarea needs space)
+  &__card--ai {
+    grid-column: 1 / -1;
+    border-left: 3px solid $ai-purple;
+    background: linear-gradient(135deg, $color-white 0%, $ai-purple-ghost 100%);
+  }
+
+  // Meta card spans full width
+  &__card--meta {
+    grid-column: 1 / -1;
+    border-top: 3px solid $fb-blue;
+  }
+
+  &__card--loyalty {
+    border-left: 3px solid $color-success;
+  }
+
+  &__card--google {
+    border-left: 3px solid $color-warning;
+  }
+
+  // OPTION ROWS — compact
   &__option {
     @include flex-between;
-    padding: $spacing-md 0;
-    transition: background $transition-fast;
+    padding: $_gap-sm 0;
     border-radius: $border-radius-sm;
 
     & + & {
@@ -65,26 +94,26 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 
   &__option-info {
     @include flex-column;
-    gap: $spacing-2xs;
+    gap: 1px;
   }
 
   &__option-label {
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     color: $color-gray-700;
   }
 
   &__option-desc {
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     color: $color-gray-400;
-    max-width: 360px;
+    max-width: 340px;
   }
 
-  // TOGGLE — clean, green when active
+  // TOGGLE — smaller
   &__toggle {
     position: relative;
-    width: 48px;
-    height: 28px;
+    width: 40px;
+    height: 22px;
     background: $color-gray-200;
     border-radius: $border-radius-full;
     cursor: pointer;
@@ -100,71 +129,53 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 
   &__toggle-knob {
     position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 22px;
-    height: 22px;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
     background: $color-white;
     border-radius: $border-radius-full;
     box-shadow: $shadow-sm;
     transition: transform 250ms $ease-out-expo;
 
     .settings__toggle--active & {
-      transform: translateX(20px);
+      transform: translateX(18px);
     }
   }
 
   // STATUS BADGES
   &__status {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-semibold;
-    padding: 6px $spacing-md;
+    padding: 3px $_gap-sm;
     border-radius: $border-radius-full;
 
-    &--pending {
-      background: $color-warning-bg;
-      color: $color-warning-dark;
-    }
-
-    &--connected {
-      background: $color-success-bg;
-      color: $color-success-dark;
-    }
-
-    &--disconnected {
-      background: $color-error-bg;
-      color: $color-error-dark;
-    }
+    &--pending { background: $color-warning-bg; color: $color-warning-dark; }
+    &--connected { background: $color-success-bg; color: $color-success-dark; }
+    &--disconnected { background: $color-error-bg; color: $color-error-dark; }
   }
 
   &__section-label {
     @include label-text;
-    margin-bottom: $spacing-sm;
-    padding-top: $spacing-sm;
+    margin-bottom: $spacing-xs;
+    padding-top: $spacing-xs;
   }
 
   // ============================
-  // LINA AI SECTION — purple accents
+  // LINA AI SECTION
   // ============================
-  &__card--ai {
-    border-left: 3px solid $ai-purple;
-    background: linear-gradient(135deg, $color-white 0%, $ai-purple-ghost 100%);
-  }
-
-  // FORM SECTIONS (structured Lina config)
   &__form-section {
-    margin-bottom: $spacing-lg;
-    padding-bottom: $spacing-lg;
+    margin-bottom: $_gap;
+    padding-bottom: $_gap;
     border-bottom: 1px solid $border-color-light;
-
-    &:last-of-type { border-bottom: none; margin-bottom: $spacing-md; }
+    &:last-of-type { border-bottom: none; margin-bottom: $_gap-sm; }
   }
 
   &__form-section-title {
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     color: $color-gray-700;
-    margin: 0 0 $spacing-md;
+    margin: 0 0 $_gap-sm;
     display: flex;
     align-items: center;
     gap: $spacing-xs;
@@ -173,12 +184,10 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   &__form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: $spacing-md;
-    margin-bottom: $spacing-md;
+    gap: $_gap-sm;
+    margin-bottom: $_gap-sm;
 
-    &--3col {
-      grid-template-columns: 1fr 1fr 1fr;
-    }
+    &--3col { grid-template-columns: 1fr 1fr 1fr; }
 
     @media (max-width: $breakpoint-md) {
       grid-template-columns: 1fr;
@@ -189,7 +198,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   &__form-field {
     display: flex;
     flex-direction: column;
-    gap: $spacing-2xs;
+    gap: 2px;
 
     label {
       font-size: $font-size-xs;
@@ -198,10 +207,10 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     }
 
     input, select {
-      height: 42px;
-      padding: 0 $spacing-md;
+      height: $_input-h;
+      padding: 0 $_gap-sm;
       border: 1.5px solid $border-color;
-      border-radius: $border-radius-md;
+      border-radius: $border-radius-sm;
       font-size: $font-size-sm;
       font-family: $font-primary;
       color: $color-secondary;
@@ -211,7 +220,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
       &:focus {
         outline: none;
         border-color: $ai-purple;
-        box-shadow: 0 0 0 3px $ai-purple-ghost;
+        box-shadow: 0 0 0 2px $ai-purple-ghost;
       }
 
       &::placeholder { color: $color-gray-300; }
@@ -221,8 +230,8 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
       appearance: none;
       background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 36px;
+      background-position: right 10px center;
+      padding-right: 30px;
       cursor: pointer;
     }
   }
@@ -230,18 +239,18 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   // PRESETS
   &__presets {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: $spacing-md;
-    margin-bottom: $spacing-lg;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: $_gap-sm;
+    margin-bottom: $_gap;
   }
 
   &__preset {
     @include flex-column;
     gap: $spacing-xs;
-    padding: $spacing-lg;
+    padding: $_gap;
     background: $color-gray-50;
     border: 2px solid transparent;
-    border-radius: $border-radius-lg;
+    border-radius: $border-radius-md;
     cursor: pointer;
     text-align: left;
     transition: all $transition-fast;
@@ -256,7 +265,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     &--active {
       border-color: $ai-purple;
       background: $color-white;
-      box-shadow: 0 0 40px rgba($ai-purple, 0.12);
+      box-shadow: 0 0 30px rgba($ai-purple, 0.1);
     }
   }
 
@@ -268,57 +277,57 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     letter-spacing: $letter-spacing-wide;
     color: $ai-purple;
     background: $ai-purple-ghost;
-    padding: 3px $spacing-sm;
+    padding: 2px 8px;
     border-radius: $border-radius-full;
     align-self: flex-start;
   }
 
   &__preset-name {
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     color: $color-secondary;
   }
 
   &__preset-desc {
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     color: $color-gray-500;
     line-height: $line-height-snug;
   }
 
   &__preset-check {
     position: absolute;
-    top: $spacing-sm;
-    right: $spacing-sm;
+    top: 8px;
+    right: 8px;
     font-size: $font-size-2xs;
     font-weight: $font-weight-bold;
     color: $color-white;
     background: $ai-purple;
-    padding: 3px $spacing-sm;
+    padding: 2px 8px;
     border-radius: $border-radius-full;
     text-transform: uppercase;
   }
 
   &__card-desc {
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     color: $color-gray-500;
     line-height: $line-height-relaxed;
-    margin-bottom: $spacing-lg;
+    margin-bottom: $_gap;
   }
 
   &__ai-field {
-    margin-bottom: $spacing-xl;
+    margin-bottom: $_gap;
 
     &--half { flex: 1; min-width: 200px; }
-    &--quarter { flex: 0 0 160px; min-width: 140px; }
+    &--quarter { flex: 0 0 140px; min-width: 120px; }
   }
 
   &__ai-label {
     @include flex-column;
-    gap: $spacing-xs;
+    gap: $spacing-2xs;
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     color: $color-gray-700;
-    margin-bottom: $spacing-sm;
+    margin-bottom: $spacing-xs;
   }
 
   &__ai-label-hint {
@@ -329,11 +338,11 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 
   &__ai-input {
     width: 100%;
-    height: 48px;
-    padding: 0 $spacing-md;
+    height: $_input-h;
+    padding: 0 $_gap-sm;
     background: $color-white;
     border: 1.5px solid $border-color;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     font-family: $font-primary;
     font-size: $font-size-sm;
     color: $color-secondary;
@@ -342,22 +351,22 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     &:focus {
       outline: none;
       border-color: $ai-purple;
-      box-shadow: 0 0 0 3px $ai-purple-ghost;
+      box-shadow: 0 0 0 2px $ai-purple-ghost;
     }
   }
 
-  // Textarea with clean monospace font
+  // Textarea — compact but functional
   &__ai-textarea {
     width: 100%;
-    min-height: 320px;
-    padding: $spacing-md;
+    min-height: 220px;
+    padding: $_gap-sm 12px;
     background: $color-white;
     border: 1.5px solid $ai-purple-border;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-    font-size: $font-size-sm;
+    font-size: 12px;
     color: $color-secondary;
-    line-height: $line-height-relaxed;
+    line-height: 1.6;
     resize: vertical;
     @include custom-scrollbar;
     transition: all $transition-fast;
@@ -365,7 +374,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     &:focus {
       outline: none;
       border-color: $ai-purple;
-      box-shadow: 0 0 0 3px $ai-purple-ghost;
+      box-shadow: 0 0 0 2px $ai-purple-ghost;
       background: $color-white;
     }
 
@@ -375,19 +384,19 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   &__ai-char-count {
     display: block;
     text-align: right;
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
-    margin-top: $spacing-xs;
+    margin-top: 2px;
     font-variant-numeric: tabular-nums;
   }
 
   &__ai-select {
     width: 100%;
-    height: 48px;
-    padding: 0 $spacing-md;
+    height: $_input-h;
+    padding: 0 $_gap-sm;
     background: $color-white;
     border: 1.5px solid $border-color;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     font-family: $font-primary;
     font-size: $font-size-sm;
     color: $color-secondary;
@@ -396,19 +405,19 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2.5' stroke-linecap='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 40px;
+    background-position: right 10px center;
+    padding-right: 30px;
 
     &:focus {
       outline: none;
       border-color: $ai-purple;
-      box-shadow: 0 0 0 3px $ai-purple-ghost;
+      box-shadow: 0 0 0 2px $ai-purple-ghost;
     }
   }
 
   &__ai-range {
     width: 100%;
-    height: 6px;
+    height: 4px;
     appearance: none;
     background: $color-gray-200;
     border-radius: $border-radius-full;
@@ -417,11 +426,11 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 
     &::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 20px;
-      height: 20px;
+      width: 16px;
+      height: 16px;
       border-radius: $border-radius-full;
       background: $ai-purple;
-      border: 3px solid $color-white;
+      border: 2px solid $color-white;
       box-shadow: $shadow-sm;
       cursor: pointer;
     }
@@ -430,35 +439,36 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   &__ai-range-labels {
     display: flex;
     justify-content: space-between;
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
-    margin-top: $spacing-xs;
+    margin-top: 2px;
   }
 
   &__ai-row {
     display: flex;
-    gap: $spacing-xl;
+    gap: $_gap;
     flex-wrap: wrap;
-    margin-bottom: $spacing-xl;
+    margin-bottom: $_gap;
   }
 
   &__ai-actions {
     display: flex;
     align-items: center;
-    gap: $spacing-md;
-    padding-top: $spacing-lg;
+    gap: $_gap-sm;
+    padding-top: $_gap;
     border-top: 1px solid $border-color-light;
   }
 
+  // COMPACT BUTTONS
   &__ai-save {
-    height: 48px;
-    padding: 0 $spacing-xl;
+    height: $_btn-h;
+    padding: 0 $_gap;
     background: $color-primary;
     color: $color-white;
     font-family: $font-primary;
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     border: none;
     cursor: pointer;
     transition: all $transition-fast;
@@ -472,20 +482,20 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   }
 
   &__ai-last-saved {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
   }
 
   &__ai-test {
-    height: 48px;
-    padding: 0 $spacing-xl;
+    height: $_btn-h;
+    padding: 0 $_gap;
     background: transparent;
     color: $ai-purple;
     font-family: $font-primary;
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
     border: 1.5px solid $ai-purple-border;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     cursor: pointer;
     transition: all $transition-fast;
 
@@ -499,23 +509,23 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 
   // PROVIDERS
   &__providers {
-    margin-bottom: $spacing-md;
-    padding-bottom: $spacing-md;
+    margin-bottom: $_gap-sm;
+    padding-bottom: $_gap-sm;
   }
 
   &__provider-list {
     display: flex;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
     margin-top: $spacing-xs;
   }
 
   &__provider {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border-radius: $border-radius-md;
-    font-size: $font-size-xs;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-2xs;
     background: $color-gray-50;
     border: 1.5px solid transparent;
 
@@ -525,8 +535,8 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   }
 
   &__provider-dot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: $color-gray-300;
 
@@ -545,10 +555,10 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   }
 
   &__test-result {
-    margin-top: $spacing-md;
-    padding: $spacing-md $spacing-lg;
-    border-radius: $border-radius-md;
-    font-size: $font-size-sm;
+    margin-top: $_gap-sm;
+    padding: $_gap-sm $_gap;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-xs;
 
     &--ok {
       background: $color-success-bg;
@@ -568,74 +578,62 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   // ============================
   // META / WHATSAPP SECTION
   // ============================
-  &__card--meta {
-    border-top: 3px solid $fb-blue;
-  }
 
-  &__card--loyalty {
-    border-left: 3px solid $color-success;
-  }
-
-  &__card--google {
-    border-left: 3px solid $color-warning;
-  }
-
-  // Token expiry warning banner
+  // Token expiry warning — compact banner
   &__meta-expiry-warning {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
+    gap: $spacing-xs;
+    padding: 8px 12px;
     background: $color-warning-bg;
     border: 1px solid $color-warning-border;
-    border-radius: $border-radius-md;
-    margin-bottom: $spacing-lg;
-    font-size: $font-size-sm;
+    border-radius: $border-radius-sm;
+    margin-bottom: $_gap;
+    font-size: $font-size-xs;
     color: $color-warning-dark;
 
-    svg { flex-shrink: 0; }
-
+    svg { flex-shrink: 0; width: 14px; height: 14px; }
     span { flex: 1; }
   }
 
   &__meta-expiry-renew {
-    padding: 6px $spacing-md;
+    padding: 4px 10px;
     background: $color-warning-dark;
     color: $color-white;
     border: none;
     border-radius: $border-radius-sm;
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-semibold;
     font-family: $font-primary;
     cursor: pointer;
     white-space: nowrap;
     transition: all $transition-fast;
 
-    &:hover:not(:disabled) { background: darken(#D97706, 8%); }
+    &:hover:not(:disabled) { filter: brightness(0.9); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  // Status indicator
+  // Status — compact
   &__meta-status {
     display: flex;
     align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-md;
+    gap: $_gap-sm;
+    padding: $_gap-sm 14px;
     background: $color-gray-50;
-    border-radius: $border-radius-md;
-    margin-bottom: $spacing-lg;
+    border-radius: $border-radius-sm;
+    margin-bottom: $_gap;
     border: 1px solid $border-color-light;
   }
 
   &__meta-status-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
 
     &--on {
       background: $color-success;
-      box-shadow: 0 0 8px rgba($color-success, 0.4);
+      box-shadow: 0 0 6px rgba($color-success, 0.4);
     }
     &--off { background: $color-gray-300; }
   }
@@ -643,26 +641,24 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   &__meta-status-info {
     flex: 1;
     @include flex-column;
-    gap: 2px;
+    gap: 0;
   }
 
   &__meta-status-label {
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
     color: $color-gray-700;
   }
 
   &__meta-status-detail {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
   }
 
-  // Connected pill
   &__meta-connected-pill {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 4px $spacing-sm;
+    padding: 2px 8px;
     background: $color-success-bg;
     color: $color-success-dark;
     border: 1px solid $color-success-border;
@@ -672,15 +668,15 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     white-space: nowrap;
   }
 
-  &__meta-check {
-    padding: 8px $spacing-md;
+  &__meta-check,
+  &__meta-disconnect {
+    padding: 5px 10px;
     border: 1px solid $border-color;
     border-radius: $border-radius-sm;
     background: $color-white;
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-semibold;
     font-family: $font-primary;
-    color: $color-gray-600;
     cursor: pointer;
     transition: all $transition-fast;
     white-space: nowrap;
@@ -690,17 +686,8 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   }
 
   &__meta-disconnect {
-    padding: 8px $spacing-md;
-    border: 1px solid $color-error-border;
-    border-radius: $border-radius-sm;
-    background: $color-white;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    font-family: $font-primary;
+    border-color: $color-error-border;
     color: $color-error;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all $transition-fast;
 
     &:hover {
       background: $color-error-bg;
@@ -708,40 +695,40 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     }
   }
 
-  // Token info card (expiry + refresh)
+  // Token info — compact row
   &__meta-token-info {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: $spacing-md;
+    padding: $_gap-sm 14px;
     background: $color-gray-50;
     border: 1px solid $border-color-light;
-    border-radius: $border-radius-md;
-    margin-bottom: $spacing-lg;
+    border-radius: $border-radius-sm;
+    margin-bottom: $_gap;
   }
 
   &__meta-token-info-row {
     @include flex-column;
-    gap: 2px;
+    gap: 0;
   }
 
   &__meta-token-info-label {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
     font-weight: $font-weight-medium;
   }
 
   &__meta-token-info-date {
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
     color: $color-gray-700;
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
   }
 
   &__meta-token-info-days {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-regular;
     color: $color-gray-400;
 
@@ -752,12 +739,12 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   }
 
   &__meta-token-refresh {
-    padding: 8px $spacing-md;
+    padding: 5px 12px;
     background: transparent;
     color: $color-primary;
     border: 1.5px solid rgba($color-primary, 0.2);
     border-radius: $border-radius-sm;
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-semibold;
     font-family: $font-primary;
     cursor: pointer;
@@ -771,116 +758,104 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  // Facebook OAuth button
+  // Facebook OAuth — compact, centered
   &__meta-oauth {
     @include flex-column;
     align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-xl 0;
+    gap: $_gap-sm;
+    padding: $_gap 0;
   }
 
   &__meta-fb-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: $spacing-sm;
-    height: 48px;
-    padding: 0 $spacing-xl;
+    gap: 8px;
+    height: $_btn-h;
+    padding: 0 20px;
     background: $fb-blue;
     color: $color-white;
     border: none;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     font-family: $font-primary;
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     cursor: pointer;
     transition: all $transition-fast;
-    min-width: 280px;
+    min-width: 240px;
 
-    svg {
-      flex-shrink: 0;
-    }
+    svg { flex-shrink: 0; width: 16px; height: 16px; }
 
     &:hover:not(:disabled) {
       background: $fb-blue-hover;
-      box-shadow: 0 4px 16px rgba($fb-blue, 0.3);
-      transform: translateY(-1px);
+      box-shadow: 0 3px 12px rgba($fb-blue, 0.3);
     }
 
-    &:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
-    }
+    &:disabled { opacity: 0.7; cursor: not-allowed; }
   }
 
   &__meta-oauth-hint {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
     text-align: center;
-    max-width: 340px;
+    max-width: 300px;
   }
 
-  // Manual config accordion
+  // Manual config accordion — compact
   &__meta-manual {
     border-top: 1px solid $border-color-light;
-    margin-top: $spacing-md;
+    margin-top: $_gap-sm;
   }
 
   &__meta-manual-toggle {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
+    gap: 6px;
     width: 100%;
-    padding: $spacing-md 0;
+    padding: $_gap-sm 0;
     background: none;
     border: none;
     font-family: $font-primary;
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-weight: $font-weight-medium;
     color: $color-gray-500;
     cursor: pointer;
     transition: color $transition-fast;
 
-    &:hover {
-      color: $color-gray-700;
-    }
+    &:hover { color: $color-gray-700; }
   }
 
   &__meta-manual-chevron {
     transition: transform 250ms $ease-out-quart;
     flex-shrink: 0;
+    width: 14px;
+    height: 14px;
 
-    &--open {
-      transform: rotate(180deg);
-    }
+    &--open { transform: rotate(180deg); }
   }
 
   &__meta-manual-content {
-    padding-bottom: $spacing-md;
+    padding-bottom: $_gap-sm;
     animation: settings-slide-down 200ms $ease-out-quart;
   }
 
-  // Form inputs — 48px height, 12px radius, clean focus
+  // Form inputs — COMPACT 36px
   &__meta-field {
     @include flex-column;
-    gap: $spacing-xs;
-    margin-bottom: $spacing-md;
+    gap: 3px;
+    margin-bottom: $_gap-sm;
 
     label {
-      font-size: $font-size-sm;
+      font-size: $font-size-xs;
       font-weight: $font-weight-medium;
       color: $color-gray-600;
     }
 
     input {
-      height: 48px;
-      padding: 0 $spacing-md;
+      height: $_input-h;
+      padding: 0 $_gap-sm;
       border: 1.5px solid $border-color;
-      border-radius: $border-radius-md;
+      border-radius: $border-radius-sm;
       font-size: $font-size-sm;
       font-family: $font-primary;
       background: $color-white;
@@ -889,7 +864,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
       &:focus {
         outline: none;
         border-color: $color-primary;
-        box-shadow: 0 0 0 3px $color-primary-ghost;
+        box-shadow: 0 0 0 2px $color-primary-ghost;
       }
 
       &::placeholder { color: $color-gray-300; }
@@ -897,7 +872,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   }
 
   &__meta-hint {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-400;
     line-height: $line-height-snug;
   }
@@ -905,22 +880,22 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   &__meta-token-input {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
 
     input {
       flex: 1;
       font-family: 'JetBrains Mono', 'Fira Code', monospace;
-      font-size: $font-size-sm;
+      font-size: $font-size-xs;
     }
   }
 
   &__meta-eye {
-    height: 48px;
-    padding: 0 $spacing-md;
+    height: $_input-h;
+    padding: 0 $_gap-sm;
     border: 1.5px solid $border-color;
-    border-radius: $border-radius-md;
+    border-radius: $border-radius-sm;
     background: $color-white;
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-semibold;
     font-family: $font-primary;
     color: $color-gray-500;
@@ -934,45 +909,47 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   &__meta-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: $spacing-md;
+    gap: $_gap-sm;
   }
 
   &__meta-actions {
-    margin-top: $spacing-sm;
-    margin-bottom: $spacing-md;
+    margin-top: $spacing-xs;
+    margin-bottom: $_gap-sm;
   }
 
-  // WhatsApp Business Profile section
+  // ============================
+  // WA BUSINESS PROFILE — compact
+  // ============================
   &__wa-profile {
     border-top: 1px solid $border-color-light;
-    padding-top: $spacing-lg;
-    margin-top: $spacing-md;
+    padding-top: $_gap;
+    margin-top: $_gap-sm;
   }
 
   &__wa-profile-title {
-    font-size: $font-size-base;
+    font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     color: $color-gray-800;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   &__wa-profile-hint {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-500;
-    margin-bottom: $spacing-md;
+    margin-bottom: $_gap-sm;
   }
 
   &__wa-profile-photo-section {
     display: flex;
     align-items: flex-start;
-    gap: $spacing-lg;
-    margin-bottom: $spacing-md;
+    gap: $_gap;
+    margin-bottom: $_gap-sm;
   }
 
   &__wa-profile-photo-preview {
     flex-shrink: 0;
-    width: 80px;
-    height: 80px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     overflow: hidden;
     border: 2px solid $border-color-light;
@@ -987,9 +964,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     &:hover {
       border-color: $color-primary;
 
-      .settings__wa-profile-photo-overlay {
-        opacity: 1;
-      }
+      .settings__wa-profile-photo-overlay { opacity: 1; }
     }
 
     img {
@@ -1009,28 +984,32 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     opacity: 0;
     transition: opacity $transition-fast;
     color: white;
+
+    svg { width: 14px; height: 14px; }
   }
 
   &__wa-profile-photo-empty {
     color: $color-gray-400;
+
+    svg { width: 24px; height: 24px; }
   }
 
   &__wa-profile-photo-select {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: $spacing-xs $spacing-md;
+    gap: 5px;
+    padding: 5px 12px;
     border: 1px dashed $border-color-light;
     border-radius: $border-radius-sm;
     background: $color-gray-50;
     color: $color-gray-600;
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     cursor: pointer;
     transition: all $transition-fast;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 250px;
+    max-width: 220px;
 
     &:hover {
       border-color: $color-primary;
@@ -1047,49 +1026,36 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
       font-size: $font-size-xs;
       font-weight: $font-weight-medium;
       color: $color-gray-700;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
   }
 
   &__wa-profile-photo-row {
     display: flex;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
     margin-top: $spacing-xs;
 
-    input {
-      flex: 1;
-      padding: $spacing-xs $spacing-sm;
-      border: 1px solid $border-color-light;
-      border-radius: $border-radius-sm;
-      font-size: $font-size-sm;
-
-      &:focus {
-        outline: none;
-        border-color: $color-primary;
-      }
-    }
-
-    button {
-      white-space: nowrap;
-    }
+    button { white-space: nowrap; }
   }
 
   &__wa-profile-fields {
     @include flex-column;
-    gap: $spacing-sm;
+    gap: $spacing-xs;
 
     textarea {
       width: 100%;
-      padding: $spacing-xs $spacing-sm;
-      border: 1px solid $border-color-light;
+      padding: 8px $_gap-sm;
+      border: 1.5px solid $border-color;
       border-radius: $border-radius-sm;
       font-size: $font-size-sm;
       font-family: inherit;
       resize: vertical;
+      min-height: 60px;
 
       &:focus {
         outline: none;
         border-color: $color-primary;
+        box-shadow: 0 0 0 2px $color-primary-ghost;
       }
     }
   }
@@ -1099,21 +1065,21 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     color: $color-gray-400;
     text-align: right;
     display: block;
-    margin-top: 2px;
+    margin-top: 1px;
   }
 
-  // Templates section
+  // Templates section — compact list
   &__meta-templates {
     border-top: 1px solid $border-color-light;
-    padding-top: $spacing-md;
+    padding-top: $_gap-sm;
   }
 
   &__meta-templates-header {
     @include flex-between;
-    margin-bottom: $spacing-md;
+    margin-bottom: $_gap-sm;
 
     > span {
-      font-size: $font-size-sm;
+      font-size: $font-size-xs;
       font-weight: $font-weight-semibold;
       color: $color-gray-700;
     }
@@ -1121,13 +1087,13 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 
   &__meta-templates-badges {
     display: flex;
-    gap: $spacing-xs;
+    gap: $spacing-2xs;
   }
 
   &__meta-badge {
     font-size: $font-size-2xs;
     font-weight: $font-weight-semibold;
-    padding: 2px 8px;
+    padding: 1px 6px;
     border-radius: $border-radius-sm;
 
     &--approved { background: $color-success-bg; color: $color-success-dark; }
@@ -1137,14 +1103,14 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 
   &__meta-templates-list {
     @include flex-column;
-    gap: $spacing-xs;
+    gap: 4px;
   }
 
   &__meta-tpl {
     display: flex;
     align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-sm $spacing-md;
+    gap: $_gap-sm;
+    padding: 6px $_gap-sm;
     background: $color-gray-50;
     border-radius: $border-radius-sm;
     border: 1px solid $border-color-light;
@@ -1157,11 +1123,11 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   }
 
   &__meta-tpl-name {
-    font-size: $font-size-sm;
+    font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
     color: $color-gray-700;
     font-family: 'JetBrains Mono', monospace;
-    min-width: 140px;
+    min-width: 120px;
   }
 
   &__meta-tpl-cat {
@@ -1170,11 +1136,11 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     color: $color-gray-400;
     text-transform: uppercase;
     letter-spacing: $letter-spacing-wide;
-    min-width: 70px;
+    min-width: 60px;
   }
 
   &__meta-tpl-body {
-    font-size: $font-size-xs;
+    font-size: $font-size-2xs;
     color: $color-gray-500;
     flex: 1;
     @include truncate;
@@ -1184,11 +1150,9 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   // RESPONSIVE
   // ============================
   @media (max-width: $breakpoint-md) {
-    max-width: 100%;
-
     &__ai-row {
       flex-direction: column;
-      gap: $spacing-md;
+      gap: $_gap-sm;
     }
 
     &__ai-field--half,
@@ -1198,7 +1162,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     }
 
     &__ai-textarea {
-      min-height: 240px;
+      min-height: 180px;
     }
 
     &__meta-row {
@@ -1212,7 +1176,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
     &__meta-token-info {
       flex-direction: column;
       align-items: flex-start;
-      gap: $spacing-sm;
+      gap: $spacing-xs;
     }
 
     &__meta-expiry-warning {
@@ -1222,30 +1186,29 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 
   @media (max-width: $breakpoint-sm) {
     &__card {
-      padding: $spacing-md;
+      padding: 14px;
     }
 
     &__ai-actions {
       flex-direction: column;
       align-items: stretch;
-      gap: $spacing-sm;
+      gap: $spacing-xs;
     }
 
     &__option {
       flex-direction: column;
       align-items: flex-start;
-      gap: $spacing-sm;
+      gap: $spacing-xs;
     }
 
     &__meta-fb-btn {
       min-width: 100%;
     }
   }
-
 }
 
 // ============================
-// DISCONNECT MODAL (rendered via portal on body, outside .settings)
+// DISCONNECT MODAL (portal)
 // ============================
 .settings__modal-overlay {
   position: fixed;
@@ -1261,9 +1224,9 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 
 .settings__modal {
   background: $color-white;
-  border-radius: $border-radius-xl;
-  padding: $spacing-2xl;
-  max-width: 420px;
+  border-radius: $border-radius-lg;
+  padding: $spacing-xl;
+  max-width: 380px;
   width: 90%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   text-align: center;
@@ -1271,66 +1234,70 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
 }
 
 .settings__modal-icon {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: $border-radius-full;
   background: $color-error-bg;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto $spacing-md;
+  margin: 0 auto $_gap-sm;
+
+  svg { width: 20px; height: 20px; }
 }
 
 .settings__modal-title {
-  font-size: $font-size-lg;
+  font-size: $font-size-base;
   font-weight: $font-weight-bold;
   color: $color-gray-900;
-  margin: 0 0 $spacing-sm;
+  margin: 0 0 $spacing-xs;
 }
 
 .settings__modal-desc {
-  font-size: $font-size-sm;
+  font-size: $font-size-xs;
   color: $color-gray-500;
   line-height: $line-height-relaxed;
-  margin: 0 0 $spacing-xl;
+  margin: 0 0 $_gap;
 }
 
 .settings__modal-actions {
   display: flex;
-  gap: $spacing-sm;
+  gap: $_gap-sm;
   justify-content: center;
 }
 
 .settings__modal-cancel {
-  padding: 10px $spacing-xl;
-  background: $color-white;
-  color: $color-gray-600;
+  height: $_btn-h;
+  padding: 0 $_gap;
   border: 1px solid $border-color;
-  border-radius: $border-radius-md;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
+  border-radius: $border-radius-sm;
+  background: $color-white;
   font-family: $font-primary;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: $color-gray-600;
   cursor: pointer;
   transition: all $transition-fast;
 
-  &:hover { background: $color-gray-50; }
+  &:hover { border-color: $color-gray-300; background: $color-gray-50; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .settings__modal-confirm {
-  padding: 10px $spacing-xl;
-  background: $color-error;
-  color: $color-white;
+  height: $_btn-h;
+  padding: 0 $_gap;
   border: none;
-  border-radius: $border-radius-md;
-  font-size: $font-size-sm;
-  font-weight: $font-weight-semibold;
+  border-radius: $border-radius-sm;
+  background: $color-error;
   font-family: $font-primary;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: $color-white;
   cursor: pointer;
   transition: all $transition-fast;
 
-  &:hover:not(:disabled) { background: darken(#EF4444, 8%); }
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  &:hover:not(:disabled) { filter: brightness(0.9); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 @keyframes settings-fade-in {
@@ -1338,14 +1305,7 @@ $ai-purple-border: rgba(124, 58, 237, 0.15);
   to { opacity: 1; }
 }
 
-// Slide-down animation for manual config accordion
 @keyframes settings-slide-down {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
