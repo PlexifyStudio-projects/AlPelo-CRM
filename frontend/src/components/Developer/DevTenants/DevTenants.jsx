@@ -350,15 +350,21 @@ const DevTenants = () => {
                   <div className={`${b}__field`}>
                     <label>Telefono</label>
                     <div className={`${b}__phone-row`}>
-                      <select
-                        className={`${b}__phone-country`}
-                        value={formData.country}
-                        onChange={(e) => setFormData((f) => ({ ...f, country: e.target.value }))}
-                      >
-                        {COUNTRIES.map((c) => (
-                          <option key={c.code} value={c.code}>{c.flag} {c.prefix}</option>
-                        ))}
-                      </select>
+                      <div className={`${b}__phone-country-wrap`}>
+                        <span className={`${b}__phone-country-display`}>
+                          {(COUNTRIES.find((c) => c.code === formData.country) || COUNTRIES[0]).flag}{' '}
+                          {(COUNTRIES.find((c) => c.code === formData.country) || COUNTRIES[0]).prefix}
+                        </span>
+                        <select
+                          className={`${b}__phone-country`}
+                          value={formData.country}
+                          onChange={(e) => setFormData((f) => ({ ...f, country: e.target.value }))}
+                        >
+                          {COUNTRIES.map((c) => (
+                            <option key={c.code} value={c.code}>{c.flag} {c.name} ({c.prefix})</option>
+                          ))}
+                        </select>
+                      </div>
                       <input
                         className={`${b}__phone-input`}
                         value={formatPhone(formData.owner_phone, formData.country)}
