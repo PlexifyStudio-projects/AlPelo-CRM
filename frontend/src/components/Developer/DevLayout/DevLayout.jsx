@@ -3,7 +3,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 const DEV_MENU = [
   { id: 'dev-dashboard', label: 'Dashboard', sub: 'PANEL EJECUTIVO', icon: 'grid', group: 'main' },
   { id: 'dev-tenants', label: 'Agencias', sub: 'GESTION DE NEGOCIOS', icon: 'building', group: 'main' },
-  { id: 'dev-activity', label: 'Actividad IA', sub: 'MONITOREO EN TIEMPO REAL', icon: 'zap', group: 'monitor' },
   { id: 'dev-whatsapp', label: 'WhatsApp', sub: 'METRICAS DE MENSAJERIA', icon: 'message-circle', group: 'monitor' },
   { id: 'dev-health', label: 'Estado', sub: 'SALUD DEL SISTEMA', icon: 'heart-pulse', group: 'monitor' },
   { id: 'dev-alerts', label: 'Alertas', sub: 'NOTIFICACIONES CRITICAS', icon: 'bell-ring', group: 'monitor' },

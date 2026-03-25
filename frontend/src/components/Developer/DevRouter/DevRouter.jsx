@@ -6,7 +6,6 @@ import DevTenants from '../DevTenants/DevTenants';
 import DevUsage from '../DevUsage/DevUsage';
 import DevBilling from '../DevBilling/DevBilling';
 import DevProfile from '../DevProfile/DevProfile';
-import DevActivity from '../DevActivity/DevActivity';
 import DevWhatsApp from '../DevWhatsApp/DevWhatsApp';
 import DevClients from '../DevClients/DevClients';
 import DevPerformance from '../DevPerformance/DevPerformance';
@@ -32,7 +31,6 @@ const DevRouter = ({ user, onLogout }) => {
       case 'dev-tenants': return <DevTenants />;
       case 'dev-usage': return <DevUsage />;
       case 'dev-billing': return <DevBilling />;
-      case 'dev-activity': return <DevActivity />;
       case 'dev-whatsapp': return <DevWhatsApp />;
       case 'dev-clients': return <DevClients />;
       case 'dev-performance': return <DevPerformance />;
