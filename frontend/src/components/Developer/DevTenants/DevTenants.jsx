@@ -1,656 +1,319 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNotification } from '../../../context/NotificationContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const b = 'dev-tenants';
 
-const EMPTY_TENANT = {
-  name: '',
-  business_type: 'peluqueria',
-  owner_name: '',
-  owner_phone: '',
-  owner_email: '',
-  city: '',
-  country: '',
-  monthly_price: 0,
-  messages_limit: 5000,
-  plan: 'standard',
+const formatCOP = (v) => `$${Number(v || 0).toLocaleString('es-CO')}`;
+
+const PLANS = {
+  starter: { name: 'Starter', price: 190000, messages: 1500, color: '#3B82F6' },
+  pro: { name: 'Pro', price: 390000, messages: 4000, color: '#8B5CF6' },
+  business: { name: 'Business', price: 590000, messages: 7000, color: '#F59E0B' },
+  custom: { name: 'Custom', price: 0, messages: 0, color: '#94A3B8' },
 };
 
-const LATAM_COUNTRIES = {
-  CO: { name: 'Colombia', cities: ['Bogota', 'Medellin', 'Cali', 'Barranquilla', 'Cartagena', 'Bucaramanga', 'Cucuta', 'Pereira', 'Manizales', 'Santa Marta', 'Ibague', 'Villavicencio', 'Pasto', 'Monteria', 'Neiva', 'Armenia', 'Valledupar', 'Popayan', 'Sincelejo', 'Tunja'] },
-  CL: { name: 'Chile', cities: ['Santiago', 'Valparaiso', 'Concepcion', 'La Serena', 'Antofagasta', 'Temuco', 'Rancagua', 'Talca', 'Arica', 'Iquique', 'Puerto Montt', 'Chillan', 'Osorno', 'Calama', 'Copiapo', 'Punta Arenas'] },
-  AR: { name: 'Argentina', cities: ['Buenos Aires', 'Cordoba', 'Rosario', 'Mendoza', 'Tucuman', 'La Plata', 'Mar del Plata', 'Salta', 'Santa Fe', 'San Juan', 'Resistencia', 'Neuquen', 'Corrientes', 'Posadas', 'San Luis', 'Bahia Blanca'] },
-  PE: { name: 'Peru', cities: ['Lima', 'Arequipa', 'Trujillo', 'Chiclayo', 'Piura', 'Cusco', 'Iquitos', 'Huancayo', 'Tacna', 'Chimbote', 'Pucallpa', 'Cajamarca', 'Ayacucho', 'Juliaca', 'Ica'] },
-  VE: { name: 'Venezuela', cities: ['Caracas', 'Maracaibo', 'Valencia', 'Barquisimeto', 'Maracay', 'Ciudad Guayana', 'Barcelona', 'Merida', 'San Cristobal', 'Cumana', 'Barinas', 'Maturin', 'Puerto La Cruz', 'Cabimas'] },
-  EC: { name: 'Ecuador', cities: ['Quito', 'Guayaquil', 'Cuenca', 'Santo Domingo', 'Ambato', 'Machala', 'Portoviejo', 'Manta', 'Loja', 'Riobamba', 'Esmeraldas', 'Ibarra', 'Latacunga'] },
-  US: { name: 'Estados Unidos', cities: ['Miami', 'New York', 'Los Angeles', 'Houston', 'Chicago', 'Dallas', 'San Antonio', 'Phoenix', 'Orlando', 'Atlanta', 'San Francisco', 'Denver', 'Boston', 'Las Vegas', 'San Diego', 'Charlotte', 'Tampa', 'Austin', 'Nashville', 'Washington DC'] },
-  BR: { name: 'Brasil', cities: ['Sao Paulo', 'Rio de Janeiro', 'Brasilia', 'Salvador', 'Fortaleza', 'Belo Horizonte', 'Manaus', 'Curitiba', 'Recife', 'Porto Alegre', 'Goiania', 'Belem', 'Campinas', 'Guarulhos', 'Florianopolis'] },
-  MX: { name: 'Mexico', cities: ['Ciudad de Mexico', 'Guadalajara', 'Monterrey', 'Puebla', 'Tijuana', 'Leon', 'Cancun', 'Merida', 'Queretaro', 'Chihuahua', 'Aguascalientes', 'Toluca', 'Morelia', 'Oaxaca', 'Veracruz'] },
-  PA: { name: 'Panama', cities: ['Ciudad de Panama', 'San Miguelito', 'David', 'Colon', 'La Chorrera', 'Santiago', 'Chitre', 'Penonomé'] },
-  CR: { name: 'Costa Rica', cities: ['San Jose', 'Alajuela', 'Cartago', 'Heredia', 'Liberia', 'Limon', 'Puntarenas'] },
-  GT: { name: 'Guatemala', cities: ['Ciudad de Guatemala', 'Quetzaltenango', 'Escuintla', 'Mixco', 'Villa Nueva', 'Huehuetenango', 'Coban'] },
-  HN: { name: 'Honduras', cities: ['Tegucigalpa', 'San Pedro Sula', 'La Ceiba', 'Choloma', 'El Progreso', 'Comayagua'] },
-  SV: { name: 'El Salvador', cities: ['San Salvador', 'Santa Ana', 'San Miguel', 'Soyapango', 'Mejicanos', 'Santa Tecla'] },
-  NI: { name: 'Nicaragua', cities: ['Managua', 'Leon', 'Masaya', 'Matagalpa', 'Chinandega', 'Esteli', 'Granada'] },
-  DO: { name: 'Republica Dominicana', cities: ['Santo Domingo', 'Santiago', 'San Pedro de Macoris', 'La Romana', 'San Cristobal', 'Puerto Plata'] },
-  PY: { name: 'Paraguay', cities: ['Asuncion', 'Ciudad del Este', 'San Lorenzo', 'Luque', 'Capiata', 'Encarnacion'] },
-  UY: { name: 'Uruguay', cities: ['Montevideo', 'Salto', 'Paysandu', 'Las Piedras', 'Rivera', 'Maldonado', 'Punta del Este'] },
-  BO: { name: 'Bolivia', cities: ['La Paz', 'Santa Cruz', 'Cochabamba', 'Sucre', 'Oruro', 'Tarija', 'Potosi', 'Trinidad'] },
-  CU: { name: 'Cuba', cities: ['La Habana', 'Santiago de Cuba', 'Camaguey', 'Holguin', 'Santa Clara', 'Guantanamo'] },
-  PR: { name: 'Puerto Rico', cities: ['San Juan', 'Bayamon', 'Carolina', 'Ponce', 'Caguas', 'Mayaguez'] },
+const RECARGAS = [
+  { id: 'recarga_1000', name: '1,000 mensajes', messages: 1000, price: 80000 },
+  { id: 'recarga_3000', name: '3,000 mensajes', messages: 3000, price: 200000 },
+];
+
+const BUSINESS_TYPES = [
+  'peluqueria', 'barberia', 'spa', 'clinica', 'restaurante', 'gimnasio',
+  'veterinaria', 'hotel', 'salon_belleza', 'odontologia', 'otro',
+];
+
+const EMPTY_TENANT = {
+  name: '', business_type: 'peluqueria', owner_name: '', owner_phone: '',
+  owner_email: '', city: 'Bucaramanga', country: 'CO', plan: 'starter',
+  monthly_price: 190000, messages_limit: 1500,
 };
 
 const DevTenants = () => {
-  const { addNotification } = useNotification();
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ ...EMPTY_TENANT });
   const [editingId, setEditingId] = useState(null);
-  const [editingTenant, setEditingTenant] = useState(null);
-  const [actionLoading, setActionLoading] = useState(null);
-  const [fetchError, setFetchError] = useState(false);
-  // Admin credentials state
+  const [actionLoading, setActionLoading] = useState('');
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [showNewPwd, setShowNewPwd] = useState(false);
   const [credMsg, setCredMsg] = useState(null);
   const [savingCreds, setSavingCreds] = useState(false);
+  const [showRecarga, setShowRecarga] = useState(null);
+
+  const apiFetch = useCallback(async (path, opts = {}) => {
+    const res = await fetch(`${API_URL}${path}`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      ...opts,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error');
+    }
+    return res.json();
+  }, []);
 
   const fetchTenants = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/dev/tenants`, {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      setTenants(data || []);
-      setFetchError(false);
-    } catch {
-      setTenants([]);
-      setFetchError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    try { setTenants(await apiFetch('/dev/tenants')); } catch { setTenants([]); }
+    setLoading(false);
+  }, [apiFetch]);
 
   useEffect(() => { fetchTenants(); }, [fetchTenants]);
 
-  const slugify = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const slugify = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-  const handleOpenCreate = () => {
-    setFormData({ ...EMPTY_TENANT });
-    setEditingId(null);
-    setEditingTenant(null);
-    setAdminUsername('');
-    setAdminPassword('');
-    setNewPassword('');
-    setCredMsg(null);
-    setShowForm(true);
+  const handlePlanChange = (planKey) => {
+    const plan = PLANS[planKey];
+    setFormData((f) => ({ ...f, plan: planKey, monthly_price: plan.price, messages_limit: plan.messages }));
   };
 
-  const handleOpenEdit = (tenant) => {
+  const handleOpenCreate = () => {
+    setFormData({ ...EMPTY_TENANT }); setEditingId(null);
+    setAdminUsername(''); setAdminPassword(''); setCredMsg(null); setShowForm(true);
+  };
+
+  const handleOpenEdit = (t) => {
     setFormData({
-      name: tenant.name,
-      business_type: tenant.business_type || 'peluqueria',
-      owner_name: tenant.owner_name || '',
-      owner_phone: tenant.owner_phone || '',
-      owner_email: tenant.owner_email || '',
-      city: tenant.city || '',
-      country: tenant.country || 'CO',
-      monthly_price: tenant.monthly_price || 0,
-      messages_limit: tenant.messages_limit || 5000,
-      plan: tenant.plan || 'standard',
+      name: t.name, business_type: t.business_type || 'peluqueria',
+      owner_name: t.owner_name || '', owner_phone: t.owner_phone || '',
+      owner_email: t.owner_email || '', city: t.city || '', country: t.country || 'CO',
+      plan: t.plan || 'starter', monthly_price: t.monthly_price || 0,
+      messages_limit: t.messages_limit || 5000,
     });
-    setEditingId(tenant.id);
-    setEditingTenant(tenant);
-    setAdminUsername(tenant.admin_user?.username || '');
-    setNewPassword('');
-    setCredMsg(null);
-    setShowNewPwd(false);
-    setShowForm(true);
+    setEditingId(t.id); setAdminUsername(t.admin_user?.username || '');
+    setNewPassword(''); setCredMsg(null); setShowForm(true);
   };
 
   const handleSave = async () => {
-    if (!editingId) {
-      if (!adminUsername.trim() || !adminPassword.trim()) {
-        addNotification('Usuario y contrasena son obligatorios', 'error');
-        return;
-      }
-    }
-
+    setActionLoading('save');
     try {
-      const url = editingId
-        ? `${API_URL}/dev/tenants/${editingId}`
-        : `${API_URL}/dev/tenants`;
-      const method = editingId ? 'PUT' : 'POST';
-
-      const payload = { ...formData, plan: 'standard' };
-      // If "Otra..." was selected, use custom city value
-      if (payload.city === '__otra') payload.city = payload._customCity || '';
-      delete payload._customCity;
-      if (!editingId) {
-        payload.slug = slugify(payload.name);
-        payload.admin_username = adminUsername.trim();
-        payload.admin_password = adminPassword.trim();
+      if (editingId) {
+        await apiFetch(`/dev/tenants/${editingId}`, { method: 'PUT', body: JSON.stringify(formData) });
+      } else {
+        await apiFetch('/dev/tenants', {
+          method: 'POST',
+          body: JSON.stringify({ ...formData, slug: slugify(formData.name), admin_username: adminUsername, admin_password: adminPassword }),
+        });
       }
-
-      const res = await fetch(url, {
-        method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        addNotification(err.detail || 'Error al guardar', 'error');
-        return;
-      }
-
-      setShowForm(false);
-      addNotification(editingId ? 'Agencia actualizada' : 'Agencia creada exitosamente', 'success');
-      fetchTenants();
-    } catch (err) {
-      console.error('[DevTenants] Save error:', err);
-      addNotification('Error de conexion', 'error');
-    }
+      setShowForm(false); fetchTenants();
+    } catch (err) { setCredMsg({ type: 'error', text: err.message }); }
+    setActionLoading('');
   };
 
   const handleSaveCredentials = async () => {
     if (!editingId) return;
-    setSavingCreds(true);
-    setCredMsg(null);
-
-    const payload = {};
-    if (adminUsername && adminUsername !== editingTenant?.admin_user?.username) {
-      payload.username = adminUsername;
-    }
-    if (newPassword) {
-      if (newPassword.length < 6) {
-        setCredMsg({ type: 'error', text: 'Minimo 6 caracteres' });
-        setSavingCreds(false);
-        return;
-      }
-      payload.new_password = newPassword;
-    }
-
-    if (Object.keys(payload).length === 0) {
-      setCredMsg({ type: 'error', text: 'No hay cambios' });
-      setSavingCreds(false);
-      return;
-    }
-
+    setSavingCreds(true); setCredMsg(null);
     try {
-      const res = await fetch(`${API_URL}/dev/tenants/${editingId}/admin-credentials`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        setCredMsg({ type: 'error', text: err.detail || 'Error' });
-      } else {
-        setCredMsg({ type: 'success', text: 'Credenciales actualizadas' });
-        setNewPassword('');
-        fetchTenants();
-      }
-    } catch {
-      setCredMsg({ type: 'error', text: 'Error de conexion' });
-    }
+      const body = { username: adminUsername };
+      if (newPassword) body.password = newPassword;
+      await apiFetch(`/dev/tenants/${editingId}/admin-credentials`, { method: 'PUT', body: JSON.stringify(body) });
+      setCredMsg({ type: 'success', text: 'Credenciales actualizadas' }); fetchTenants();
+    } catch (err) { setCredMsg({ type: 'error', text: err.message }); }
     setSavingCreds(false);
   };
 
-  const handleToggleAI = async (tenant) => {
-    setActionLoading(`ai-${tenant.id}`);
-    try {
-      await fetch(`${API_URL}/dev/tenants/${tenant.id}/toggle-ai`, {
-        method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paused: !tenant.ai_is_paused }),
-      });
-      fetchTenants();
-    } catch { /* silent */ }
-    setActionLoading(null);
+  const handleToggleAI = async (id, current) => {
+    setActionLoading(`ai-${id}`);
+    try { await apiFetch(`/dev/tenants/${id}/toggle-ai`, { method: 'POST', body: JSON.stringify({ paused: !current }) }); fetchTenants(); } catch { /* */ }
+    setActionLoading('');
   };
 
-  const handleAddMessages = async (tenant, amount) => {
-    setActionLoading(`msg-${tenant.id}`);
-    try {
-      await fetch(`${API_URL}/dev/tenants/${tenant.id}/add-messages`, {
-        method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount }),
-      });
-      fetchTenants();
-    } catch { /* silent */ }
-    setActionLoading(null);
+  const handleRecarga = async (tenantId, recarga) => {
+    setActionLoading(`recarga-${tenantId}`);
+    try { await apiFetch(`/dev/tenants/${tenantId}/add-messages`, { method: 'POST', body: JSON.stringify({ amount: recarga.messages }) }); setShowRecarga(null); fetchTenants(); } catch { /* */ }
+    setActionLoading('');
   };
 
-  const handleToggleActive = async (tenant) => {
-    setActionLoading(`active-${tenant.id}`);
-    try {
-      await fetch(`${API_URL}/dev/tenants/${tenant.id}/toggle-active`, {
-        method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: !tenant.is_active }),
-      });
-      fetchTenants();
-    } catch { /* silent */ }
-    setActionLoading(null);
+  const handleToggleActive = async (id, current) => {
+    setActionLoading(`active-${id}`);
+    try { await apiFetch(`/dev/tenants/${id}/toggle-active`, { method: 'POST', body: JSON.stringify({ active: !current }) }); fetchTenants(); } catch { /* */ }
+    setActionLoading('');
   };
-
-  const getUsagePercent = (t) => t.messages_limit > 0 ? Math.round(((t.messages_used || 0) / t.messages_limit) * 100) : 0;
 
   if (loading) {
     return (
       <div className={b}>
         <div className={`${b}__header`}><h1 className={`${b}__title`}>Agencias</h1></div>
-        <div className={`${b}__loading`}>Cargando agencias...</div>
+        <p className={`${b}__loading`}>Cargando agencias...</p>
       </div>
     );
   }
 
   return (
     <div className={b}>
-      {/* Header */}
       <div className={`${b}__header`}>
         <div>
           <h1 className={`${b}__title`}>Agencias</h1>
-          <p className={`${b}__subtitle`}>{tenants.length} agencias registradas</p>
+          <p className={`${b}__subtitle`}>{tenants.length} negocios registrados en la plataforma</p>
         </div>
-        <button className={`${b}__btn-create`} onClick={handleOpenCreate}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+        <button className={`${b}__create-btn`} onClick={handleOpenCreate}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nueva agencia
         </button>
       </div>
 
-      {/* Empty State */}
-      {tenants.length === 0 && (
-        <div className={`${b}__empty`}>
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-          <p className={`${b}__empty-text`}>
-            {fetchError ? 'No se pudieron cargar las agencias' : 'No hay agencias registradas'}
-          </p>
-          <button className={`${b}__btn-create`} onClick={handleOpenCreate}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            Crear primera agencia
-          </button>
-        </div>
-      )}
-
       {/* Tenant Cards */}
-      {tenants.length > 0 && (
-        <div className={`${b}__grid`}>
-          {tenants.map((t) => {
-            const pct = getUsagePercent(t);
-            return (
-              <div key={t.id} className={`${b}__card ${!t.is_active ? `${b}__card--suspended` : ''}`}>
-                <div className={`${b}__card-header`}>
-                  <div className={`${b}__card-title-row`}>
-                    <h3 className={`${b}__card-name`}>{t.name}</h3>
-                  </div>
-                  <span className={`${b}__card-plan`} style={{ '--plan-color': '#4F6EF7' }}>
-                    Plexify
+      <div className={`${b}__grid`}>
+        {tenants.map((t) => {
+          const planInfo = PLANS[t.plan] || PLANS.custom;
+          const usagePct = t.messages_limit > 0 ? Math.round((t.messages_used / t.messages_limit) * 100) : 0;
+          const daysLeft = t.days_remaining;
+
+          return (
+            <div key={t.id} className={`${b}__card ${!t.is_active ? `${b}__card--suspended` : ''}`}>
+              <div className={`${b}__card-top`}>
+                <div className={`${b}__card-name-row`}>
+                  <h3 className={`${b}__card-name`}>{t.name}</h3>
+                  <span className={`${b}__plan-badge`} style={{ background: `${planInfo.color}15`, color: planInfo.color, borderColor: `${planInfo.color}30` }}>
+                    {planInfo.name}
                   </span>
                 </div>
+                <span className={`${b}__card-slug`}>{t.slug}</span>
+              </div>
 
-                {/* Usage bar */}
-                <div className={`${b}__card-usage`}>
-                  <div className={`${b}__card-usage-header`}>
-                    <span>Mensajes IA</span>
-                    <span className={`${b}__card-usage-count`}>
-                      {(t.messages_used || 0).toLocaleString('es-CO')} / {(t.messages_limit || 0).toLocaleString('es-CO')}
-                    </span>
-                  </div>
-                  <div className={`${b}__card-bar-track`}>
-                    <div
-                      className={`${b}__card-bar-fill ${pct > 80 ? `${b}__card-bar-fill--warning` : ''} ${pct > 95 ? `${b}__card-bar-fill--critical` : ''}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                  <span className={`${b}__card-usage-pct`}>{pct}% usado</span>
+              <div className={`${b}__usage`}>
+                <div className={`${b}__usage-header`}>
+                  <span className={`${b}__usage-label`}>Mensajes IA</span>
+                  <span className={`${b}__usage-count`}>{(t.messages_used || 0).toLocaleString('es-CO')} / {(t.messages_limit || 0).toLocaleString('es-CO')}</span>
                 </div>
-
-                {/* Info grid */}
-                <div className={`${b}__card-info`}>
-                  <div className={`${b}__card-info-item`}>
-                    <span className={`${b}__card-info-label`}>Dueno</span>
-                    <span className={`${b}__card-info-value`}>{t.owner_name || '—'}</span>
-                  </div>
-                  <div className={`${b}__card-info-item`}>
-                    <span className={`${b}__card-info-label`}>Ciudad</span>
-                    <span className={`${b}__card-info-value`}>{t.city || '—'}{t.country && LATAM_COUNTRIES[t.country] ? `, ${LATAM_COUNTRIES[t.country].name}` : ''}</span>
-                  </div>
-                  <div className={`${b}__card-info-item`}>
-                    <span className={`${b}__card-info-label`}>Usuario</span>
-                    <span className={`${b}__card-info-value ${b}__card-info-value--mono`}>
-                      {t.admin_user?.username || '—'}
-                    </span>
-                  </div>
-                  <div className={`${b}__card-info-item`}>
-                    <span className={`${b}__card-info-label`}>Clientes</span>
-                    <span className={`${b}__card-info-value`}>{t.total_clients || 0}</span>
-                  </div>
+                <div className={`${b}__usage-track`}>
+                  <div className={`${b}__usage-fill ${usagePct > 80 ? `${b}__usage-fill--warning` : ''} ${usagePct > 95 ? `${b}__usage-fill--critical` : ''}`} style={{ width: `${Math.min(usagePct, 100)}%` }} />
                 </div>
+                <div className={`${b}__usage-footer`}>
+                  <span>{usagePct}% usado</span>
+                  <button className={`${b}__recarga-btn`} onClick={() => setShowRecarga(showRecarga === t.id ? null : t.id)}>+ Recarga</button>
+                </div>
+                {showRecarga === t.id && (
+                  <div className={`${b}__recarga-panel`}>
+                    {RECARGAS.map((r) => (
+                      <button key={r.id} className={`${b}__recarga-option`} onClick={() => handleRecarga(t.id, r)} disabled={actionLoading === `recarga-${t.id}`}>
+                        <span>{r.name}</span>
+                        <span className={`${b}__recarga-price`}>{formatCOP(r.price)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-                {/* Status row */}
-                <div className={`${b}__card-status`}>
-                  <span className={`${b}__card-ai ${t.ai_is_paused ? `${b}__card-ai--paused` : `${b}__card-ai--active`}`}>
-                    IA: {t.ai_is_paused ? 'Pausada' : 'Activa'}
-                  </span>
-                  <span className={`${b}__card-active ${t.is_active ? `${b}__card-active--on` : `${b}__card-active--off`}`}>
-                    {t.is_active ? 'Activa' : 'Suspendida'}
+              <div className={`${b}__info-grid`}>
+                <div className={`${b}__info-item`}>
+                  <span className={`${b}__info-label`}>Plan</span>
+                  <span className={`${b}__info-value`}>{formatCOP(t.monthly_price)}/mes</span>
+                </div>
+                <div className={`${b}__info-item`}>
+                  <span className={`${b}__info-label`}>Vence</span>
+                  <span className={`${b}__info-value ${daysLeft != null && daysLeft <= 5 ? `${b}__info-value--warn` : ''}`}>
+                    {daysLeft != null ? `${daysLeft} dias` : 'Sin fecha'}
                   </span>
                 </div>
-
-                {/* Actions */}
-                <div className={`${b}__card-actions`}>
-                  <button className={`${b}__card-btn ${b}__card-btn--edit`} onClick={() => handleOpenEdit(t)} title="Editar">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                    Editar
-                  </button>
-                  <button
-                    className={`${b}__card-btn ${t.ai_is_paused ? `${b}__card-btn--resume` : `${b}__card-btn--pause`}`}
-                    onClick={() => handleToggleAI(t)}
-                    disabled={actionLoading === `ai-${t.id}`}
-                  >
-                    {t.ai_is_paused ? 'Reanudar IA' : 'Pausar IA'}
-                  </button>
-                  <button
-                    className={`${b}__card-btn ${b}__card-btn--add`}
-                    onClick={() => handleAddMessages(t, 5000)}
-                    disabled={actionLoading === `msg-${t.id}`}
-                    title="Sumar 5,000 mensajes"
-                  >
-                    +5,000 msgs
-                  </button>
-                  <button
-                    className={`${b}__card-btn ${t.is_active ? `${b}__card-btn--suspend` : `${b}__card-btn--activate`}`}
-                    onClick={() => handleToggleActive(t)}
-                    disabled={actionLoading === `active-${t.id}`}
-                  >
-                    {t.is_active ? 'Suspender' : 'Activar'}
-                  </button>
+                <div className={`${b}__info-item`}>
+                  <span className={`${b}__info-label`}>Clientes</span>
+                  <span className={`${b}__info-value`}>{t.total_clients || 0}</span>
+                </div>
+                <div className={`${b}__info-item`}>
+                  <span className={`${b}__info-label`}>Staff</span>
+                  <span className={`${b}__info-value`}>{t.total_staff || 0}</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Create/Edit Form Modal */}
+              {t.owner_name && (
+                <div className={`${b}__owner`}>
+                  <span>{t.owner_name}</span>
+                  {t.city && <span className={`${b}__owner-city`}>{t.city}</span>}
+                </div>
+              )}
+
+              <div className={`${b}__actions`}>
+                <button className={`${b}__action-btn`} onClick={() => handleOpenEdit(t)}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                  Editar
+                </button>
+                <button className={`${b}__action-btn ${t.ai_is_paused ? `${b}__action-btn--success` : `${b}__action-btn--warn`}`} onClick={() => handleToggleAI(t.id, t.ai_is_paused)} disabled={actionLoading === `ai-${t.id}`}>
+                  {t.ai_is_paused ? 'Activar IA' : 'Pausar IA'}
+                </button>
+                <button className={`${b}__action-btn ${t.is_active ? `${b}__action-btn--danger` : `${b}__action-btn--success`}`} onClick={() => handleToggleActive(t.id, t.is_active)} disabled={actionLoading === `active-${t.id}`}>
+                  {t.is_active ? 'Suspender' : 'Activar'}
+                </button>
+              </div>
+
+              <div className={`${b}__status-row`}>
+                <span className={`${b}__status ${t.ai_is_paused ? `${b}__status--off` : `${b}__status--on`}`}>
+                  IA {t.ai_is_paused ? 'Pausada' : 'Activa'}
+                </span>
+                <span className={`${b}__status ${t.is_active ? `${b}__status--on` : `${b}__status--off`}`}>
+                  {t.is_active ? 'Activa' : 'Suspendida'}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Modal Form */}
       {showForm && (
-        <div className={`${b}__modal-overlay`} onClick={() => setShowForm(false)}>
+        <div className={`${b}__overlay`} onClick={() => setShowForm(false)}>
           <div className={`${b}__modal`} onClick={(e) => e.stopPropagation()}>
             <div className={`${b}__modal-header`}>
-              <h3 className={`${b}__modal-title`}>
-                {editingId ? 'Editar agencia' : 'Nueva agencia'}
-              </h3>
+              <h2>{editingId ? 'Editar Agencia' : 'Nueva Agencia'}</h2>
               <button className={`${b}__modal-close`} onClick={() => setShowForm(false)}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 
             <div className={`${b}__modal-body`}>
-              {/* Business info */}
-              <div className={`${b}__form-row`}>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Nombre del negocio</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ej: AlPelo Peluqueria"
-                  />
-                </div>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Tipo de negocio</label>
-                  <select
-                    className={`${b}__form-select`}
-                    value={formData.business_type}
-                    onChange={(e) => setFormData({ ...formData, business_type: e.target.value })}
-                  >
-                    <option value="peluqueria">Peluqueria</option>
-                    <option value="barberia">Barberia</option>
-                    <option value="spa">Spa</option>
-                    <option value="consultorio">Consultorio</option>
-                    <option value="restaurante">Restaurante</option>
-                    <option value="gimnasio">Gimnasio</option>
-                    <option value="tienda">Tienda</option>
-                    <option value="otro">Otro</option>
-                  </select>
+              <div className={`${b}__form-section`}>
+                <h3 className={`${b}__form-section-title`}>Informacion del negocio</h3>
+                <div className={`${b}__form-grid`}>
+                  <div className={`${b}__field`}><label>Nombre</label><input value={formData.name} onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))} placeholder="Ej: AlPelo Peluqueria" /></div>
+                  <div className={`${b}__field`}><label>Tipo</label><select value={formData.business_type} onChange={(e) => setFormData((f) => ({ ...f, business_type: e.target.value }))}>{BUSINESS_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1).replace('_', ' ')}</option>)}</select></div>
+                  <div className={`${b}__field`}><label>Ciudad</label><input value={formData.city} onChange={(e) => setFormData((f) => ({ ...f, city: e.target.value }))} placeholder="Bucaramanga" /></div>
                 </div>
               </div>
 
-              <div className={`${b}__form-row`}>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Pais</label>
-                  <select
-                    className={`${b}__form-select`}
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value, city: '' })}
-                  >
-                    <option value="">Seleccionar pais...</option>
-                    {Object.entries(LATAM_COUNTRIES).map(([code, { name }]) => (
-                      <option key={code} value={code}>{name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Ciudad</label>
-                  {formData.country && LATAM_COUNTRIES[formData.country] ? (
-                    <select
-                      className={`${b}__form-select`}
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    >
-                      <option value="">Seleccionar ciudad...</option>
-                      {LATAM_COUNTRIES[formData.country].cities.map((city) => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                      <option value="__otra">Otra...</option>
-                    </select>
-                  ) : (
-                    <input
-                      className={`${b}__form-input`}
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      placeholder="Selecciona un pais primero"
-                      disabled={!formData.country}
-                    />
-                  )}
-                  {formData.city === '__otra' && (
-                    <input
-                      className={`${b}__form-input`}
-                      style={{ marginTop: '8px' }}
-                      value={formData._customCity || ''}
-                      onChange={(e) => setFormData({ ...formData, _customCity: e.target.value, city: e.target.value || '__otra' })}
-                      placeholder="Escribe la ciudad..."
-                      autoFocus
-                    />
-                  )}
+              <div className={`${b}__form-section`}>
+                <h3 className={`${b}__form-section-title`}>Propietario</h3>
+                <div className={`${b}__form-grid`}>
+                  <div className={`${b}__field`}><label>Nombre</label><input value={formData.owner_name} onChange={(e) => setFormData((f) => ({ ...f, owner_name: e.target.value }))} /></div>
+                  <div className={`${b}__field`}><label>Telefono</label><input value={formData.owner_phone} onChange={(e) => setFormData((f) => ({ ...f, owner_phone: e.target.value }))} placeholder="(300) 123-4567" /></div>
+                  <div className={`${b}__field`}><label>Email</label><input type="email" value={formData.owner_email} onChange={(e) => setFormData((f) => ({ ...f, owner_email: e.target.value }))} /></div>
                 </div>
               </div>
 
-              {/* Owner info */}
-              <div className={`${b}__form-divider`} />
-              <h4 className={`${b}__form-section`}>Datos del dueno</h4>
-
-              <div className={`${b}__form-row`}>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Nombre</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.owner_name}
-                    onChange={(e) => setFormData({ ...formData, owner_name: e.target.value })}
-                    placeholder="Nombre del dueno"
-                  />
-                </div>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Telefono</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.owner_phone}
-                    onChange={(e) => setFormData({ ...formData, owner_phone: e.target.value })}
-                    placeholder="+573001234567"
-                  />
+              <div className={`${b}__form-section`}>
+                <h3 className={`${b}__form-section-title`}>Plan & Paquete</h3>
+                <div className={`${b}__plan-grid`}>
+                  {Object.entries(PLANS).filter(([k]) => k !== 'custom').map(([key, plan]) => (
+                    <button key={key} type="button" className={`${b}__plan-card ${formData.plan === key ? `${b}__plan-card--selected` : ''}`} onClick={() => handlePlanChange(key)} style={{ '--plan-color': plan.color }}>
+                      <div className={`${b}__plan-card-glow`} />
+                      <span className={`${b}__plan-card-name`}>{plan.name}</span>
+                      <span className={`${b}__plan-card-price`}>{formatCOP(plan.price)}<small>/mes</small></span>
+                      <span className={`${b}__plan-card-msgs`}>{plan.messages.toLocaleString('es-CO')} mensajes</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className={`${b}__form-row`}>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Email</label>
-                  <input
-                    className={`${b}__form-input`}
-                    value={formData.owner_email}
-                    onChange={(e) => setFormData({ ...formData, owner_email: e.target.value })}
-                    placeholder="email@negocio.com"
-                  />
+              <div className={`${b}__form-section`}>
+                <h3 className={`${b}__form-section-title`}>{editingId ? 'Credenciales del Admin' : 'Crear Admin'}</h3>
+                <div className={`${b}__form-grid`}>
+                  <div className={`${b}__field`}><label>Usuario admin</label><input value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} placeholder="admin_alpelo" /></div>
+                  <div className={`${b}__field`}><label>{editingId ? 'Nueva contraseña' : 'Contraseña'}</label><input type="password" value={editingId ? newPassword : adminPassword} onChange={(e) => editingId ? setNewPassword(e.target.value) : setAdminPassword(e.target.value)} placeholder={editingId ? 'Sin cambios' : 'Min 6 caracteres'} /></div>
                 </div>
+                {editingId && <button className={`${b}__cred-btn`} onClick={handleSaveCredentials} disabled={savingCreds}>{savingCreds ? 'Guardando...' : 'Actualizar credenciales'}</button>}
               </div>
 
-              {/* Plan & pricing */}
-              <div className={`${b}__form-divider`} />
-              <h4 className={`${b}__form-section`}>Plan y facturacion</h4>
-
-              <div className={`${b}__form-row`}>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Precio mensual (COP)</label>
-                  <input
-                    className={`${b}__form-input`}
-                    type="number"
-                    min="0"
-                    max="99999999"
-                    value={formData.monthly_price}
-                    onChange={(e) => setFormData({ ...formData, monthly_price: Math.min(parseInt(e.target.value) || 0, 99999999) })}
-                    placeholder="250000"
-                  />
-                </div>
-                <div className={`${b}__form-field`}>
-                  <label className={`${b}__form-label`}>Limite de mensajes IA</label>
-                  <input
-                    className={`${b}__form-input`}
-                    type="number"
-                    min="0"
-                    max="1000000"
-                    value={formData.messages_limit}
-                    onChange={(e) => setFormData({ ...formData, messages_limit: Math.min(parseInt(e.target.value) || 0, 1000000) })}
-                    placeholder="5000"
-                  />
-                </div>
-              </div>
-
-              {/* Credentials section — ALWAYS visible */}
-              <div className={`${b}__form-divider`} />
-              <h4 className={`${b}__form-section`}>Credenciales de acceso</h4>
-
-              {editingId ? (
-                <>
-                  <div className={`${b}__form-row`}>
-                    <div className={`${b}__form-field`}>
-                      <label className={`${b}__form-label`}>Usuario actual</label>
-                      <input
-                        className={`${b}__form-input`}
-                        value={adminUsername}
-                        onChange={(e) => setAdminUsername(e.target.value)}
-                        placeholder="admin-alpelo"
-                      />
-                    </div>
-                    <div className={`${b}__form-field`}>
-                      <label className={`${b}__form-label`}>Nueva contrasena</label>
-                      <div className={`${b}__form-password-wrap`}>
-                        <input
-                          className={`${b}__form-input`}
-                          type={showNewPwd ? 'text' : 'password'}
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Dejar vacio para no cambiar"
-                        />
-                        <button
-                          type="button"
-                          className={`${b}__form-password-toggle`}
-                          onClick={() => setShowNewPwd(!showNewPwd)}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            {showNewPwd ? (
-                              <>
-                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                                <line x1="1" y1="1" x2="23" y2="23" />
-                              </>
-                            ) : (
-                              <>
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                                <circle cx="12" cy="12" r="3" />
-                              </>
-                            )}
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {credMsg && (
-                    <div className={`${b}__form-msg ${b}__form-msg--${credMsg.type}`}>
-                      {credMsg.text}
-                    </div>
-                  )}
-
-                  <button
-                    className={`${b}__form-btn-creds`}
-                    onClick={handleSaveCredentials}
-                    disabled={savingCreds}
-                  >
-                    {savingCreds ? 'Guardando...' : 'Actualizar credenciales'}
-                  </button>
-                </>
-              ) : (
-                <div className={`${b}__form-row`}>
-                  <div className={`${b}__form-field`}>
-                    <label className={`${b}__form-label`}>Usuario</label>
-                    <input
-                      className={`${b}__form-input`}
-                      value={adminUsername}
-                      onChange={(e) => setAdminUsername(e.target.value)}
-                      placeholder="admin-nombre"
-                      required
-                    />
-                  </div>
-                  <div className={`${b}__form-field`}>
-                    <label className={`${b}__form-label`}>Contrasena</label>
-                    <input
-                      className={`${b}__form-input`}
-                      type="password"
-                      value={adminPassword}
-                      onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder="Contrasena de acceso"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
+              {credMsg && <div className={`${b}__msg ${b}__msg--${credMsg.type}`}>{credMsg.text}</div>}
             </div>
 
             <div className={`${b}__modal-footer`}>
-              <button className={`${b}__modal-btn ${b}__modal-btn--cancel`} onClick={() => setShowForm(false)}>
-                Cancelar
-              </button>
-              <button className={`${b}__modal-btn ${b}__modal-btn--save`} onClick={handleSave}>
-                {editingId ? 'Guardar cambios' : 'Crear agencia'}
-              </button>
+              <button className={`${b}__btn-cancel`} onClick={() => setShowForm(false)}>Cancelar</button>
+              <button className={`${b}__btn-save`} onClick={handleSave} disabled={actionLoading === 'save'}>{actionLoading === 'save' ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear agencia'}</button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 };

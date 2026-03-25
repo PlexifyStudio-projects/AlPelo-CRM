@@ -23,6 +23,27 @@ router = APIRouter()
 
 DEV_ROLES = ["dev", "super_admin"]
 
+# ============================================================================
+# PLAN PACKAGES — Pricing & limits
+# ============================================================================
+PLANS = {
+    "starter": {"name": "Starter", "price": 190000, "messages": 1500},
+    "pro": {"name": "Pro", "price": 390000, "messages": 4000},
+    "business": {"name": "Business", "price": 590000, "messages": 7000},
+    "custom": {"name": "Custom", "price": 0, "messages": 0},
+}
+
+RECARGAS = [
+    {"id": "recarga_1000", "name": "1,000 mensajes", "messages": 1000, "price": 80000},
+    {"id": "recarga_3000", "name": "3,000 mensajes", "messages": 3000, "price": 200000},
+]
+
+
+@router.get("/dev/plans")
+def get_plans(user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+    return {"plans": PLANS, "recargas": RECARGAS}
+
 
 def _require_dev(current_user: Admin):
     """Ensure the current user is a developer/super admin."""
@@ -186,6 +207,12 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
     if existing:
         raise HTTPException(status_code=400, detail=f"Ya existe una agencia con slug '{slug}'")
 
+    # Resolve plan → price + messages
+    plan_key = data.get("plan", "starter")
+    plan_info = PLANS.get(plan_key, PLANS["starter"])
+    monthly_price = plan_info["price"] if plan_key != "custom" else int(data.get("monthly_price", 0))
+    messages_limit = plan_info["messages"] if plan_key != "custom" else int(data.get("messages_limit", 5000))
+
     tenant = Tenant(
         slug=slug,
         name=name,
@@ -194,9 +221,9 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
         owner_phone=data.get("owner_phone"),
         owner_email=data.get("owner_email"),
         ai_name=data.get("ai_name", "Lina"),
-        plan="standard",
-        monthly_price=int(data.get("monthly_price", 0)),
-        messages_limit=int(data.get("messages_limit", 5000)),
+        plan=plan_key,
+        monthly_price=monthly_price,
+        messages_limit=messages_limit,
         messages_used=0,
         paid_until=date.today() + timedelta(days=31),
         is_active=True,
@@ -289,6 +316,12 @@ def update_tenant(tenant_id: int, data: dict, db: Session = Depends(get_db), use
         "wa_webhook_token", "wa_phone_display",
         "monthly_price", "messages_limit", "plan",
     ]
+
+    # If plan changes, auto-resolve price + messages
+    if "plan" in data and data["plan"] in PLANS and data["plan"] != "custom":
+        plan_info = PLANS[data["plan"]]
+        data["monthly_price"] = plan_info["price"]
+        data["messages_limit"] = plan_info["messages"]
 
     for field in allowed_fields:
         if field in data:
