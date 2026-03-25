@@ -365,6 +365,151 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
   }
 
   // -----------------------------------------------
+  // CONTENT AREA (topbar + main)
+  // -----------------------------------------------
+  &__content-area {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  // -----------------------------------------------
+  // TOPBAR
+  // -----------------------------------------------
+  &__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+    padding: 0 32px;
+    background: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  &__topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #64748B;
+  }
+
+  &__topbar-env {
+    font-weight: 700;
+    color: #0F172A;
+  }
+
+  &__topbar-separator {
+    color: #CBD5E1;
+  }
+
+  &__topbar-role {
+    color: #94A3B8;
+    font-family: $_mono;
+    font-size: 12px;
+  }
+
+  &__topbar-right {
+    position: relative;
+  }
+
+  &__topbar-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    transition: all 200ms ease;
+    color: #475569;
+
+    &:hover {
+      background: #F8FAFC;
+      border-color: #E2E8F0;
+    }
+  }
+
+  &__topbar-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, $_accent, #1E40AF);
+    color: white;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  &__topbar-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+  }
+
+  &__topbar-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 220px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    z-index: 100;
+    animation: fadeInUp 200ms $ease-out-expo both;
+    overflow: hidden;
+  }
+
+  &__topbar-dd-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #F1F5F9;
+    font-size: 12px;
+    color: #94A3B8;
+    font-family: $_mono;
+  }
+
+  &__topbar-dd-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #475569;
+    cursor: pointer;
+    transition: background 150ms ease;
+
+    &:hover {
+      background: #F8FAFC;
+      color: #0F172A;
+    }
+
+    &--danger {
+      color: #EF4444;
+      &:hover { background: rgba(239, 68, 68, 0.05); }
+    }
+
+    svg { flex-shrink: 0; color: inherit; }
+  }
+
+  &__topbar-dd-divider {
+    height: 1px;
+    background: #F1F5F9;
+    margin: 4px 0;
+  }
+
+  // -----------------------------------------------
   // MAIN CONTENT
   // -----------------------------------------------
   &__main {

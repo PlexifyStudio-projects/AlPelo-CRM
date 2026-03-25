@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 const DEV_MENU = [
   { id: 'dev-dashboard', label: 'Dashboard', sub: 'PANEL EJECUTIVO', icon: 'grid', group: 'main' },
@@ -140,6 +140,68 @@ const Icons = {
   ),
 };
 
+const DevTopbar = ({ user, onNavigate, onLogout, b }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getInitials = (name) => {
+    if (!name) return 'DV';
+    return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  };
+
+  return (
+    <header className={`${b}__topbar`}>
+      <div className={`${b}__topbar-left`}>
+        <span className={`${b}__topbar-env`}>Plexify Studio</span>
+        <span className={`${b}__topbar-separator`}>/</span>
+        <span className={`${b}__topbar-role`}>Developer</span>
+      </div>
+
+      <div className={`${b}__topbar-right`} ref={ref}>
+        <button
+          className={`${b}__topbar-profile`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className={`${b}__topbar-avatar`}>
+            {getInitials(user?.name)}
+          </div>
+          <span className={`${b}__topbar-name`}>{user?.name || 'Developer'}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+        </button>
+
+        {isOpen && (
+          <div className={`${b}__topbar-dropdown`}>
+            <div className={`${b}__topbar-dd-header`}>
+              <span>{user?.email || user?.username}</span>
+            </div>
+            <button className={`${b}__topbar-dd-item`} onClick={() => { onNavigate('dev-profile'); setIsOpen(false); }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 00-16 0"/></svg>
+              Mi Perfil
+            </button>
+            <button className={`${b}__topbar-dd-item`} onClick={() => { onNavigate('dev-system'); setIsOpen(false); }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              Configuracion
+            </button>
+            <div className={`${b}__topbar-dd-divider`} />
+            <button className={`${b}__topbar-dd-item ${b}__topbar-dd-item--danger`} onClick={onLogout}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Cerrar Sesion
+            </button>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+};
+
 const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
   const [collapsed, setCollapsed] = useState(false);
   const b = 'dev-layout';
@@ -249,10 +311,15 @@ const DevLayout = ({ children, activeSection, onNavigate, onLogout, user }) => {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className={`${b}__main`}>
-        {children}
-      </main>
+      {/* Main content with topbar */}
+      <div className={`${b}__content-area`}>
+        {/* Topbar */}
+        <DevTopbar user={user} onNavigate={onNavigate} onLogout={onLogout} b={b} />
+
+        <main className={`${b}__main`}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 };
