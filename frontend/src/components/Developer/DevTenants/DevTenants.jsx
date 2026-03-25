@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const b = 'dev-tenants';
@@ -277,8 +278,8 @@ const DevTenants = () => {
         })}
       </div>
 
-      {/* Modal Form */}
-      {showForm && (
+      {/* Modal Form — Portal to body to escape overflow constraints */}
+      {showForm && createPortal(
         <div className={`${b}__overlay`} onClick={() => setShowForm(false)}>
           <div className={`${b}__modal`} onClick={(e) => e.stopPropagation()}>
             <div className={`${b}__modal-header`}>
@@ -338,7 +339,8 @@ const DevTenants = () => {
               <button className={`${b}__btn-save`} onClick={handleSave} disabled={actionLoading === 'save'}>{actionLoading === 'save' ? 'Guardando...' : editingId ? 'Guardar cambios' : 'Crear agencia'}</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
