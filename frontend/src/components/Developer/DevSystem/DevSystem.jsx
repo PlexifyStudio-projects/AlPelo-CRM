@@ -22,10 +22,9 @@ const SECTIONS = [
     id: 'meta', title: 'Meta Platform', desc: 'WhatsApp Business API, Facebook OAuth, webhook',
     color1: '#0082FB', color2: '#00C6FF',
     icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+      <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
         <defs><linearGradient id="meta-g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#0082FB"/><stop offset="100%" stopColor="#00C6FF"/></linearGradient></defs>
-        <path d="M12 2C6.48 2 2 6.48 2 12c0 2.69 1.07 5.13 2.81 6.93.04-.67.2-1.63.58-2.6.43-1.12 2.74-7.08 2.74-7.08s-.7-1.4-.7-3.46c0-3.24 1.88-5.66 4.22-5.66 1.99 0 2.95 1.49 2.95 3.28 0 2-.27 3.22-.97 5.31-.44 1.29-.18 2.71.67 3.57.85.86 2.2.97 3.44.36 2.28-1.12 3.39-4.37 3.39-7.91C21.13 6.02 17 2 12 2z" fill="url(#meta-g)"/>
-        <path d="M15.75 15.5c-1.58.78-3.54.14-3.54.14s-.83 2.8-1.03 3.38c-.74 2.14-2.19 4.28-2.32 4.46A9.97 9.97 0 0012 22c3.64 0 6.83-1.94 8.59-4.85-1.39.49-3.26.42-4.84-.65z" fill="url(#meta-g)" opacity="0.7"/>
+        <path fillRule="evenodd" d="M16.434 10.486C18.29 7.976 20.342 6 22.966 6 27.92 6 32 12.306 32.002 19.814c0 4.58-1.972 7.45-5.514 7.45-3.086 0-4.79-1.732-7.848-6.848l-1.334-2.246-.236-.394a110 110 0 00-1.06-1.754l-2.356 4.16c-3.346 5.85-5.23 7.082-7.846 7.082C2.172 27.264 0 24.434 0 19.946 0 12.776 3.99 6 9.196 6q.954-.002 1.848.244c.62.172 1.222.44 1.826.814 1.154.718 2.308 1.83 3.564 3.428zm3.032 4.448q-.756-1.23-1.454-2.266L18 12.652c1.69-2.61 3.086-3.908 4.744-3.908 3.446 0 6.204 5.074 6.204 11.306 0 2.376-.78 3.754-2.39 3.754-1.546 0-2.284-1.02-5.22-5.74zM9.692 9.512c1.45.2 2.77 1.268 4.68 4.002A424 424 0 0011.102 18.6c-2.714 4.252-3.652 5.206-5.162 5.206-1.554 0-2.48-1.364-2.48-3.8 0-5.204 2.596-10.528 5.692-10.528q.274 0 .54.036" fill="url(#meta-g)"/>
       </svg>
     ),
   },
@@ -58,13 +57,6 @@ const SECTIONS = [
     color1: '#DC2626', color2: '#EF4444',
     icon: (
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1"/></svg>
-    ),
-  },
-  {
-    id: 'infra', title: 'Infraestructura', desc: 'Servidor, base de datos, estado del sistema',
-    color1: '#0F766E', color2: '#14B8A6',
-    icon: (
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><circle cx="6" cy="6" r="1" fill="currentColor"/><circle cx="6" cy="18" r="1" fill="currentColor"/></svg>
     ),
   },
 ];
@@ -463,15 +455,19 @@ const DevSystem = () => {
                 </div>
 
                 {/* History */}
-                <h4 className={`${b}__cost-section-title`}>Historial mensual</h4>
-                <div className={`${b}__info-list`}>
-                  {(costs.history || []).map((h) => (
-                    <div key={h.period} className={`${b}__info-row`}>
-                      <span className={`${b}__info-label`}>{h.period}</span>
-                      <span className={`${b}__info-value`}>{formatCOP(h.cost_cop)} — {formatTokens(h.tokens)} tokens</span>
+                {(costs.history || []).filter((h) => h.tokens > 0).length > 0 && (
+                  <>
+                    <h4 className={`${b}__cost-section-title`}>Historial mensual</h4>
+                    <div className={`${b}__info-list`}>
+                      {(costs.history || []).filter((h) => h.tokens > 0).map((h) => (
+                        <div key={h.period} className={`${b}__info-row`}>
+                          <span className={`${b}__info-label`}>{h.period}</span>
+                          <span className={`${b}__info-value`}>{formatCOP(h.cost_cop)} — {formatTokens(h.tokens)} tokens</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                )}
               </>
             )}
 
@@ -509,7 +505,7 @@ const DevSystem = () => {
                 <div className={`${b}__info-list`}>
                   <div className={`${b}__info-row`}>
                     <span className={`${b}__info-label`}>JWT Secret Key</span>
-                    <span className={`${b}__info-value ${envVars.JWT_SECRET_KEY === 'NOT SET' ? `${b}__info-value--missing` : ''}`}>{envVars.JWT_SECRET_KEY !== 'NOT SET' ? 'Activa' : 'NO CONFIGURADA'}</span>
+                    <span className={`${b}__info-value`}>Activa (firma tokens de sesion)</span>
                   </div>
                   <div className={`${b}__info-row`}>
                     <span className={`${b}__info-label`}>Duracion de sesion</span>
@@ -523,52 +519,18 @@ const DevSystem = () => {
                     <span className={`${b}__info-label`}>Refresh token</span>
                     <span className={`${b}__info-value`}>Activo (auto-refresh en background)</span>
                   </div>
+                  <div className={`${b}__info-row`}>
+                    <span className={`${b}__info-label`}>Sesion unica por dispositivo</span>
+                    <span className={`${b}__info-value`}>Activo — 1 sesion por cuenta</span>
+                  </div>
                 </div>
                 <div className={`${b}__pricing-note`}>
-                  Cada usuario obtiene un JWT valido por 60 minutos al hacer login. Una vez expira, la sesion se cierra automaticamente. Las API keys de IA se guardan encriptadas en la base de datos, no en variables de entorno de Railway.
+                  <strong style={{ marginTop: 0 }}>Flujo de seguridad:</strong>
+                  Cada usuario obtiene un JWT valido por 60 minutos al hacer login. Solo puede haber UNA sesion activa por cuenta — si alguien intenta iniciar sesion desde otro dispositivo, vera una advertencia y podra cerrar la sesion anterior o cancelar. Las API keys de IA se guardan en la base de datos, no en variables de entorno de Railway.
                 </div>
               </>
             )}
 
-            {/* ─── INFRASTRUCTURE ─── */}
-            {openSection === 'infra' && (
-              <>
-                <div className={`${b}__panel-header`}>
-                  <h3>Infraestructura</h3>
-                  <p>Estado del servidor y la base de datos. Util para diagnosticar problemas de rendimiento o conexion.</p>
-                </div>
-                <div className={`${b}__info-list`}>
-                  <div className={`${b}__info-row`}>
-                    <span className={`${b}__info-label`}>Python</span>
-                    <span className={`${b}__info-value`}>{d.python_version || '—'}</span>
-                  </div>
-                  <div className={`${b}__info-row`}>
-                    <span className={`${b}__info-label`}>Plataforma</span>
-                    <span className={`${b}__info-value`}>{d.platform || '—'}</span>
-                  </div>
-                  <div className={`${b}__info-row`}>
-                    <span className={`${b}__info-label`}>Base de datos</span>
-                    <span className={`${b}__info-value`}>{d.database_connected ? 'PostgreSQL — Conectada' : 'Desconectada'}</span>
-                  </div>
-                  <div className={`${b}__info-row`}>
-                    <span className={`${b}__info-label`}>Admins registrados</span>
-                    <span className={`${b}__info-value`}>{d.admin_users || 0}</span>
-                  </div>
-                  <div className={`${b}__info-row`}>
-                    <span className={`${b}__info-label`}>Tenants</span>
-                    <span className={`${b}__info-value`}>{d.tenants || 0}</span>
-                  </div>
-                  <div className={`${b}__info-row`}>
-                    <span className={`${b}__info-label`}>Registros WA</span>
-                    <span className={`${b}__info-value`}>{(d.total_messages || 0).toLocaleString('es-CO')} mensajes — {d.total_conversations || 0} conversaciones</span>
-                  </div>
-                  <div className={`${b}__info-row`}>
-                    <span className={`${b}__info-label`}>Clientes en plataforma</span>
-                    <span className={`${b}__info-value`}>{d.total_clients || 0}</span>
-                  </div>
-                </div>
-              </>
-            )}
 
           </div>
         </div>

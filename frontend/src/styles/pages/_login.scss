@@ -611,6 +611,56 @@
     }
   }
 
+  // ─── Active Session Warning ───
+  &__session-warning {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-lg;
+    text-align: center;
+    color: #1E40AF;
+    background: rgba(59, 130, 246, 0.06);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: $border-radius-md;
+    animation: fadeInUp 300ms $ease-out-quart both;
+
+    svg { color: #3B82F6; opacity: 0.9; }
+    strong { font-size: $font-size-sm; font-weight: $font-weight-bold; color: #1E3A8A; }
+    span { font-size: $font-size-xs; line-height: $line-height-base; color: #1E40AF; }
+  }
+
+  &__session-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    margin-top: 4px;
+  }
+
+  &__session-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 200ms ease;
+
+    &--force {
+      background: #1E40AF;
+      color: white;
+      border: none;
+      &:hover { background: #3B82F6; }
+    }
+
+    &--cancel {
+      background: transparent;
+      color: #64748B;
+      border: 1px solid #E2E8F0;
+      &:hover { border-color: #94A3B8; }
+    }
+  }
+
   // ─── Submit button ───
   &__submit {
     position: relative;

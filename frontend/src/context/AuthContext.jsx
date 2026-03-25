@@ -51,8 +51,22 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, []);
 
-  const login = async (username, password) => {
+  const login = async (username, password, forceSession = false) => {
     const credentials = await authService.verifyCredentials(username, password);
+
+    // Single-device session enforcement
+    if (credentials.has_active_session && !forceSession) {
+      const err = new Error('Hay otra sesion activa con esta cuenta. ¿Deseas cerrarla e iniciar aqui?');
+      err.code = 'ACTIVE_SESSION';
+      err.credentials = credentials;
+      throw err;
+    }
+
+    // If forcing, close the other session first
+    if (forceSession && credentials.has_active_session) {
+      await authService.forceLogout(credentials.user_id, credentials.role);
+    }
+
     const tokenData = await authService.createToken(credentials);
 
     const loggedUser = {

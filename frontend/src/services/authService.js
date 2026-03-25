@@ -79,6 +79,15 @@ const authService = {
     return res.json();
   },
 
+  forceLogout: async (userId, role) => {
+    await fetch(`${API_BASE}/force-logout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, role }),
+    });
+  },
+
   logout: async () => {
     await fetch(`${API_BASE}/logout`, {
       method: 'POST',

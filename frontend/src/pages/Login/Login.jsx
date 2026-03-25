@@ -207,6 +207,7 @@ const Login = ({ onLogin }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const [mounted, setMounted] = useState(false);
+  const [activeSessionPrompt, setActiveSessionPrompt] = useState(false);
 
   const b = 'login';
 
@@ -244,13 +245,30 @@ const Login = ({ onLogin }) => {
         localStorage.removeItem('alpelo_remember_user');
       }
     } catch (err) {
-      if (err.code === 'SUSPENDED') {
+      if (err.code === 'ACTIVE_SESSION') {
+        setActiveSessionPrompt(true);
+        setError('');
+      } else if (err.code === 'SUSPENDED') {
         setSuspended(true);
         setError(err.message);
       } else {
         setSuspended(false);
         setError(err.message || 'Error al iniciar sesion');
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleForceLogin = async () => {
+    setIsLoading(true);
+    setActiveSessionPrompt(false);
+    try {
+      await onLogin(credentials.username, credentials.password, true);
+      if (rememberMe) localStorage.setItem('alpelo_remember_user', credentials.username);
+      else localStorage.removeItem('alpelo_remember_user');
+    } catch (err) {
+      setError(err.message || 'Error al iniciar sesion');
     } finally {
       setIsLoading(false);
     }
@@ -431,8 +449,25 @@ const Login = ({ onLogin }) => {
                   </label>
                 </div>
 
+                {/* Active Session Warning */}
+                {activeSessionPrompt && (
+                  <div className={`${b}__session-warning`}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <strong>Sesion activa detectada</strong>
+                    <span>Hay otro dispositivo conectado con esta cuenta. Solo puede haber una sesion activa a la vez.</span>
+                    <div className={`${b}__session-actions`}>
+                      <button type="button" className={`${b}__session-btn ${b}__session-btn--force`} onClick={handleForceLogin}>
+                        Cerrar otra sesion e ingresar aqui
+                      </button>
+                      <button type="button" className={`${b}__session-btn ${b}__session-btn--cancel`} onClick={() => setActiveSessionPrompt(false)}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Error */}
-                {error && !suspended && (
+                {error && !suspended && !activeSessionPrompt && (
                   <div className={`${b}__error`}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10" />

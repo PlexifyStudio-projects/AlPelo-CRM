@@ -144,20 +144,50 @@ def verify_credentials(login_data: LoginRequest, db: Session = Depends(get_db)):
                 headers=CORS_HEADERS
             )
 
-    return UserCredentials(
-        user_id=user.id,
-        username=user.username,
-        role=user.role
+    # 5) Check for active session on another device
+    has_active_session = False
+    if getattr(user, 'active_session_token', None):
+        # Verify the existing token is still valid (not expired)
+        existing_payload = verify_token(user.active_session_token)
+        if existing_payload:
+            has_active_session = True
+
+    return JSONResponse(
+        content={
+            "user_id": user.id,
+            "username": user.username,
+            "role": user.role,
+            "has_active_session": has_active_session,
+        },
+        headers=CORS_HEADERS
     )
 
 
 @router.post("/create-token")
-def create_token(request: TokenRequest):
+def create_token(request: TokenRequest, db: Session = Depends(get_db)):
     token = create_access_token(data={
         "sub": request.username,
         "user_id": request.user_id,
         "role": request.role
     })
+
+    # Save active session token for single-device enforcement
+    try:
+        from database.models import Staff
+        if request.role == "staff":
+            staff = db.query(Staff).filter(Staff.id == request.user_id).first()
+            if staff:
+                staff.active_session_token = token
+                staff.session_started_at = datetime.utcnow()
+                db.commit()
+        else:
+            admin = db.query(Admin).filter(Admin.id == request.user_id).first()
+            if admin:
+                admin.active_session_token = token
+                admin.session_started_at = datetime.utcnow()
+                db.commit()
+    except Exception:
+        pass
 
     response = JSONResponse(
         content={
@@ -208,14 +238,37 @@ def refresh_token(request: Request):
 
 
 @router.post("/logout")
-def logout(request: Request):
+def logout(request: Request, db: Session = Depends(get_db)):
     token = request.cookies.get("access_token")
+    auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+    if not token and auth_header and auth_header.lower().startswith("bearer "):
+        token = auth_header[7:].strip()
+
     username = "unknown"
 
     if token:
         payload = verify_token(token)
         if payload:
             username = payload.get("sub", "unknown")
+            user_id = payload.get("user_id")
+            role = payload.get("role")
+            # Clear active session
+            try:
+                if role == "staff":
+                    from database.models import Staff
+                    staff = db.query(Staff).filter(Staff.id == user_id).first()
+                    if staff:
+                        staff.active_session_token = None
+                        staff.session_started_at = None
+                        db.commit()
+                else:
+                    admin = db.query(Admin).filter(Admin.id == user_id).first()
+                    if admin:
+                        admin.active_session_token = None
+                        admin.session_started_at = None
+                        db.commit()
+            except Exception:
+                pass
 
     response = JSONResponse(
         content={
@@ -229,6 +282,35 @@ def logout(request: Request):
 
     response.delete_cookie(key="access_token", path="/")
     return response
+
+
+@router.post("/force-logout")
+def force_logout_user(data: dict, db: Session = Depends(get_db)):
+    """Force close another user's session so the new login can proceed."""
+    user_id = data.get("user_id")
+    role = data.get("role", "admin")
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id requerido")
+
+    try:
+        if role == "staff":
+            from database.models import Staff
+            staff = db.query(Staff).filter(Staff.id == user_id).first()
+            if staff:
+                staff.active_session_token = None
+                staff.session_started_at = None
+                db.commit()
+        else:
+            admin = db.query(Admin).filter(Admin.id == user_id).first()
+            if admin:
+                admin.active_session_token = None
+                admin.session_started_at = None
+                db.commit()
+    except Exception:
+        pass
+
+    return JSONResponse(content={"ok": True, "message": "Session forced closed"}, headers=CORS_HEADERS)
 
 
 @router.get("/me")

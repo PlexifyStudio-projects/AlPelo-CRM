@@ -57,6 +57,11 @@ def _run_migrations(engine):
         # Staff login credentials
         ("staff", "username", "VARCHAR"),
         ("staff", "password", "VARCHAR"),
+        # Single-device session
+        ("admin", "active_session_token", "TEXT"),
+        ("admin", "session_started_at", "TIMESTAMP"),
+        ("staff", "active_session_token", "TEXT"),
+        ("staff", "session_started_at", "TIMESTAMP"),
         # Meta OAuth token expiry
         ("tenant", "wa_token_expires_at", "TIMESTAMP"),
         # Billing: service paid until date

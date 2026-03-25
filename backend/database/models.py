@@ -16,6 +16,8 @@ class Admin(Base):
     role = Column(String, nullable=False, default="admin")
     is_active = Column(Boolean, default=True)
     tenant_id = Column(Integer, nullable=True)  # Links admin to a tenant
+    active_session_token = Column(Text, nullable=True)  # Single-device session enforcement
+    session_started_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
