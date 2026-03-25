@@ -41,6 +41,7 @@ const DevTenants = () => {
   const [credMsg, setCredMsg] = useState(null);
   const [savingCreds, setSavingCreds] = useState(false);
   const [showRecarga, setShowRecarga] = useState(null);
+  const [customRecarga, setCustomRecarga] = useState('');
 
   const apiFetch = useCallback(async (path, opts = {}) => {
     const res = await fetch(`${API_URL}${path}`, {
@@ -122,7 +123,15 @@ const DevTenants = () => {
 
   const handleRecarga = async (tenantId, recarga) => {
     setActionLoading(`recarga-${tenantId}`);
-    try { await apiFetch(`/dev/tenants/${tenantId}/add-messages`, { method: 'POST', body: JSON.stringify({ amount: recarga.messages }) }); setShowRecarga(null); fetchTenants(); } catch { /* */ }
+    try { await apiFetch(`/dev/tenants/${tenantId}/add-messages`, { method: 'POST', body: JSON.stringify({ amount: recarga.messages }) }); setShowRecarga(null); setCustomRecarga(''); fetchTenants(); } catch { /* */ }
+    setActionLoading('');
+  };
+
+  const handleCustomRecarga = async (tenantId) => {
+    const amount = parseInt(customRecarga);
+    if (!amount || amount <= 0) return;
+    setActionLoading(`recarga-${tenantId}`);
+    try { await apiFetch(`/dev/tenants/${tenantId}/add-messages`, { method: 'POST', body: JSON.stringify({ amount }) }); setShowRecarga(null); setCustomRecarga(''); fetchTenants(); } catch { /* */ }
     setActionLoading('');
   };
 
@@ -193,6 +202,23 @@ const DevTenants = () => {
                         <span className={`${b}__recarga-price`}>{formatCOP(r.price)}</span>
                       </button>
                     ))}
+                    <div className={`${b}__recarga-custom`}>
+                      <input
+                        type="number"
+                        className={`${b}__recarga-input`}
+                        placeholder="Cantidad"
+                        value={customRecarga}
+                        onChange={(e) => setCustomRecarga(e.target.value)}
+                        min="1"
+                      />
+                      <button
+                        className={`${b}__recarga-custom-btn`}
+                        onClick={() => handleCustomRecarga(t.id)}
+                        disabled={!customRecarga || actionLoading === `recarga-${t.id}`}
+                      >
+                        Agregar
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

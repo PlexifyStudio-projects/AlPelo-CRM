@@ -114,6 +114,27 @@ $_danger: #EF4444;
 
   &__recarga-price { font-family: $_mono; font-weight: 800; color: $_primary; font-size: 13px; }
 
+  &__recarga-custom {
+    display: flex; gap: 6px; align-items: center; width: 100%;
+    margin-top: 4px; padding-top: 8px; border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  &__recarga-input {
+    flex: 1; padding: 8px 12px; border: 1.5px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px; font-size: 13px; font-family: $_mono; color: $_text-primary;
+    background: #fff; min-width: 0;
+    &:focus { outline: none; border-color: $_primary-light; }
+    &::placeholder { color: $_text-muted; }
+  }
+
+  &__recarga-custom-btn {
+    padding: 8px 14px; background: $_primary; color: white; border: none;
+    border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+    white-space: nowrap; transition: all 200ms ease;
+    &:hover { background: $_primary-light; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
   // ─── Info Grid ───
   &__info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
   &__info-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
