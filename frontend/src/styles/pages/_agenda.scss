@@ -7,13 +7,15 @@
 // ════════════════════════════════════════════════════════════
 
 .agenda {
-  
+
   padding: $spacing-lg $spacing-xl;
   display: flex;
   flex-direction: column;
   gap: $spacing-sm;
   height: calc(100vh - #{$header-height});
   overflow: hidden;
+  max-width: 100%;
+  box-sizing: border-box;
 
   // ═══════════════════════════════════════════════════════
   // TOPBAR — Refined Navigation Bar
@@ -2171,6 +2173,10 @@
   // ═══════════════════════════════════════════════════════
   // RESPONSIVE
   // ═══════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════
+  // RESPONSIVE — Tablet & Mobile
+  // ═══════════════════════════════════════════════════════
+
   @media (max-width: $breakpoint-xl) {
     &__nav-label {
       min-width: 180px;
@@ -2214,42 +2220,73 @@
     }
   }
 
+  // ── TABLET ──
   @media (max-width: $breakpoint-md) {
     padding: $spacing-sm;
     gap: $spacing-xs;
 
     &__topbar {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    &__topbar-left {
-      text-align: center;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 8px;
       align-items: center;
     }
 
+    &__topbar-left {
+      flex: 0 0 auto;
+
+      .agenda__title { font-size: $font-size-lg; }
+      .agenda__subtitle { display: none; }
+    }
+
     &__topbar-center {
+      flex: 1;
       justify-content: center;
+      order: 0;
+    }
+
+    &__nav-label {
+      min-width: 140px;
+      font-size: $font-size-xs;
+    }
+
+    &__nav-arrow {
+      width: 30px;
+      height: 30px;
+    }
+
+    &__today-btn {
+      padding: 5px 14px;
+      font-size: $font-size-2xs;
     }
 
     &__topbar-right {
-      justify-content: center;
+      gap: 6px;
     }
 
+    &__vt-btn {
+      padding: 5px 12px;
+      font-size: $font-size-2xs;
+    }
+
+    &__create-btn {
+      padding: 6px 14px;
+      font-size: $font-size-xs;
+      span { display: none; } // Hide "Nueva cita" text, show only +
+    }
+
+    // Overview — compact horizontal
     &__overview {
-      flex-direction: column;
-      gap: $spacing-sm;
-      padding: $spacing-sm;
+      padding: $spacing-xs $spacing-sm;
+      gap: $spacing-xs;
     }
 
     &__ov-stats {
       flex-wrap: wrap;
-      justify-content: center;
+      gap: $spacing-xs;
     }
 
-    &__ov-divider {
-      display: none;
-    }
+    &__ov-divider { display: none; }
 
     &__ov-right {
       width: 100%;
@@ -2263,45 +2300,60 @@
     &__staff-drop-btn {
       width: 100%;
       justify-content: space-between;
+      font-size: $font-size-xs;
     }
 
+    // Calendar — fit within viewport, no horizontal overflow
     &__cal-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scroll-snap-type: x mandatory;
+      overflow-x: hidden;
     }
 
     &__cal-header,
     &__cal-grid {
-      min-width: 700px;
+      min-width: 0 !important;
     }
 
-    // Snap points for horizontal scroll
-    &__day-col {
-      scroll-snap-align: start;
+    &__time-col {
+      min-width: 40px;
     }
 
+    &__time-text {
+      font-size: 8px;
+    }
+
+    // Events — smaller on tablet
+    &__event {
+      height: 22px !important;
+      font-size: 10px;
+    }
+
+    &__event-service,
+    &__event-price {
+      display: none; // Only show name + time on tablet
+    }
+
+    // Modal — full screen
     &__modal {
-      margin: $spacing-sm;
+      margin: $spacing-xs;
       max-height: 95vh;
-      border-radius: $border-radius-xl;
+      border-radius: $border-radius-lg;
     }
 
     &__modal-body {
-      padding: $spacing-md;
+      padding: $spacing-sm;
     }
 
     &__modal-head {
-      padding: $spacing-sm $spacing-md;
-      border-radius: $border-radius-lg $border-radius-lg 0 0;
+      padding: $spacing-xs $spacing-sm;
     }
 
     &__avail-staff {
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
     }
 
     &__modal-foot {
       flex-direction: column;
+      gap: $spacing-xs;
     }
 
     &__modal-foot-right {
@@ -2314,11 +2366,154 @@
     &__btn--danger {
       width: 100%;
       justify-content: center;
-      text-align: center;
     }
 
     &__row {
       grid-template-columns: 1fr !important;
+    }
+  }
+
+  // ── PHONE ──
+  @media (max-width: $breakpoint-sm) {
+    padding: 8px;
+    gap: 4px;
+
+    &__topbar {
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    &__topbar-left {
+      flex-shrink: 1;
+      min-width: 0;
+      .agenda__title { font-size: $font-size-base; }
+      .agenda__subtitle { display: none; }
+    }
+
+    &__topbar-center {
+      width: 100%;
+      order: 3;
+      justify-content: center;
+    }
+
+    &__topbar-right {
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    &__nav-label {
+      min-width: 0;
+      font-size: $font-size-2xs;
+      white-space: nowrap;
+    }
+
+    &__nav-arrow {
+      width: 28px;
+      height: 28px;
+    }
+
+    &__today-btn {
+      padding: 4px 10px;
+      font-size: 10px;
+    }
+
+    &__vt-btn {
+      padding: 4px 10px;
+      font-size: 10px;
+    }
+
+    &__create-btn {
+      padding: 5px 10px;
+      font-size: 11px;
+      gap: 4px;
+    }
+
+    // Overview — minimal inline
+    &__overview {
+      padding: 6px 8px;
+      border-radius: $border-radius-md;
+      flex-wrap: wrap;
+    }
+
+    &__ov-stats {
+      gap: 4px;
+    }
+
+    &__ov-stat {
+      gap: 4px;
+    }
+
+    &__ov-stat-content {
+      gap: 0;
+    }
+
+    &__ov-num {
+      font-size: 12px;
+    }
+
+    &__ov-label {
+      font-size: 8px;
+      letter-spacing: 0;
+    }
+
+    // Calendar — day view (auto from JSX), single column
+    &__cal-scroll {
+      overflow-x: hidden;
+    }
+
+    &__cal-header,
+    &__cal-grid {
+      min-width: 0 !important;
+    }
+
+    &__time-col {
+      min-width: 36px;
+    }
+
+    &__time-text {
+      font-size: 8px;
+    }
+
+    &__col-head {
+      padding: 8px 4px;
+    }
+
+    &__col-num {
+      font-size: $font-size-lg;
+    }
+
+    &__event {
+      height: 28px !important;
+      border-radius: 6px;
+    }
+
+    &__event-name {
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    &__event-time {
+      font-size: 10px;
+    }
+
+    &__event-service {
+      font-size: 10px;
+    }
+
+    &__event-price {
+      font-size: 10px;
+    }
+
+    // Modal — bottom sheet
+    &__modal-overlay {
+      align-items: flex-end;
+    }
+
+    &__modal {
+      margin: 0;
+      border-radius: $border-radius-xl $border-radius-xl 0 0;
+      max-height: 92vh;
+      width: 100%;
     }
   }
 }
