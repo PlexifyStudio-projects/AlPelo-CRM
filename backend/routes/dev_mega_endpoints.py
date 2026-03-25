@@ -1013,7 +1013,8 @@ def ai_cost_breakdown(db: Session = Depends(get_db), user: Admin = Depends(get_c
     primary = db.query(AIProvider).filter(AIProvider.is_primary == True).first()
     input_rate = primary.input_cost_per_mtok if primary else 3.0
     output_rate = primary.output_cost_per_mtok if primary else 15.0
-    blended_rate = (input_rate + output_rate) / 2  # simplified blend
+    # Weighted blend: ~70% input, ~30% output (realistic for chat AI)
+    blended_rate = round(input_rate * 0.7 + output_rate * 0.3, 2)
 
     # Per-tenant breakdown this month
     metrics = db.query(UsageMetrics).filter(UsageMetrics.period == current_period).all()

@@ -12,9 +12,6 @@ const formatTokens = (n) => {
   return n.toString();
 };
 
-// Claude Sonnet pricing: $3/MTok input, $15/MTok output — blended ~$5.4/MTok
-// TRM approximate: 1 USD = 4,200 COP
-const USD_PER_MTOK = 5.4;
 const TRM = 4200;
 
 const DevDashboard = ({ onNavigate }) => {
@@ -75,9 +72,9 @@ const DevDashboard = ({ onNavigate }) => {
   const wa = waHealth || {};
   const al = alerts || {};
 
-  // Cost calculation — exact: tokens this month * rate, then to COP
+  // Cost from backend (already calculated with provider rate)
   const tokensMonth = s.total_ai_tokens || 0;
-  const costUSD = (tokensMonth / 1_000_000) * USD_PER_MTOK;
+  const costUSD = s.cost_estimate_usd || 0;
   const costCOP = Math.round(costUSD * TRM);
 
   // Dynamic period label
