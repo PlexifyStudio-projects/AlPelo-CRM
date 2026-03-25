@@ -81,6 +81,7 @@ const DevSystem = () => {
   const [providerSaving, setProviderSaving] = useState(false);
   const [editingProvider, setEditingProvider] = useState(null);
   const [editForm, setEditForm] = useState({});
+  const [toast, setToast] = useState(null); // { type: 'success'|'error', title, message }
 
   // Costs
   const [costs, setCosts] = useState(null);
@@ -116,6 +117,13 @@ const DevSystem = () => {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 6000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
   // Meta save
   const handleMetaSave = async () => {
     setMetaSaving(true); setMetaMsg('');
@@ -144,10 +152,21 @@ const DevSystem = () => {
     try {
       const result = await apiFetch(`/dev/ai-providers/${id}/health-check`, { method: 'POST' });
       if (result.status === 'down') {
-        alert(`Health check FALLIDO:\n${result.error || 'Error desconocido'}`);
+        // Parse the error to extract the actual message
+        let errorMsg = result.error || 'Error desconocido';
+        try {
+          const parsed = JSON.parse(errorMsg.replace(/^HTTP \d+: /, ''));
+          if (parsed.error?.message) errorMsg = parsed.error.message;
+          else if (parsed.message) errorMsg = parsed.message;
+        } catch { /* use raw */ }
+        setToast({ type: 'error', title: 'Health check fallido', message: errorMsg });
+      } else {
+        setToast({ type: 'success', title: 'Proveedor saludable', message: 'La conexion con la API funciona correctamente.' });
       }
       fetchAll();
-    } catch { /* */ }
+    } catch {
+      setToast({ type: 'error', title: 'Error', message: 'No se pudo realizar el health check.' });
+    }
   };
 
   const handleSaveEdit = async (id) => {
@@ -533,6 +552,26 @@ const DevSystem = () => {
 
 
           </div>
+        </div>
+      )}
+
+      {/* Toast notification */}
+      {toast && (
+        <div className={`${b}__toast ${b}__toast--${toast.type}`} onClick={() => setToast(null)}>
+          <div className={`${b}__toast-icon`}>
+            {toast.type === 'success' ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            )}
+          </div>
+          <div className={`${b}__toast-body`}>
+            <strong className={`${b}__toast-title`}>{toast.title}</strong>
+            <p className={`${b}__toast-message`}>{toast.message}</p>
+          </div>
+          <button className={`${b}__toast-close`} onClick={() => setToast(null)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       )}
     </div>
