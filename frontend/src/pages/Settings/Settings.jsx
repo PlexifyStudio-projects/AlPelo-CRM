@@ -618,6 +618,73 @@ const Settings = () => {
               <span className={`${b}__toggle-knob`} />
             </button>
           </div>
+
+          {/* Push notification debug */}
+          <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '16px', marginTop: '12px' }}>
+            <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Notificaciones Push</h4>
+            <div id="push-debug" style={{ fontSize: '12px', color: '#64748B', marginBottom: '10px', lineHeight: 1.6 }}>
+              Cargando estado...
+            </div>
+            <button
+              className={`${b}__ai-save`}
+              onClick={async () => {
+                const dbg = document.getElementById('push-debug');
+                const lines = [];
+
+                // 1. Check API support
+                lines.push(`Notification API: ${'Notification' in window ? 'SI' : 'NO'}`);
+                lines.push(`Service Worker: ${'serviceWorker' in navigator ? 'SI' : 'NO'}`);
+                lines.push(`PushManager: ${'PushManager' in window ? 'SI' : 'NO'}`);
+
+                // 2. Check permission
+                if ('Notification' in window) {
+                  lines.push(`Permiso actual: ${Notification.permission}`);
+                  if (Notification.permission === 'default') {
+                    const result = await Notification.requestPermission();
+                    lines.push(`Permiso solicitado: ${result}`);
+                  }
+                }
+
+                // 3. Check SW registration
+                if ('serviceWorker' in navigator) {
+                  const reg = await navigator.serviceWorker.getRegistration('/AlPelo-CRM/');
+                  lines.push(`SW registrado: ${reg ? 'SI' : 'NO'}`);
+                  if (reg) {
+                    const sub = await reg.pushManager?.getSubscription();
+                    lines.push(`Push suscrito: ${sub ? 'SI' : 'NO'}`);
+                  }
+                }
+
+                // 4. Try to show notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                  try {
+                    const reg = await navigator.serviceWorker?.getRegistration('/AlPelo-CRM/');
+                    if (reg) {
+                      await reg.showNotification('Plexify Studio', {
+                        body: 'Las notificaciones funcionan correctamente!',
+                        icon: '/AlPelo-CRM/icon-192.svg',
+                        badge: '/AlPelo-CRM/badge-72.svg',
+                        tag: 'test-' + Date.now(),
+                      });
+                      lines.push('Test: Notificacion enviada via SW');
+                    } else {
+                      new Notification('Plexify Studio', { body: 'Test de notificacion!' });
+                      lines.push('Test: Notificacion enviada via API');
+                    }
+                  } catch (e) {
+                    lines.push(`Test ERROR: ${e.message}`);
+                  }
+                } else {
+                  lines.push('Test: No se puede enviar (sin permiso)');
+                }
+
+                lines.push(`User Agent: ${navigator.userAgent.slice(0, 80)}...`);
+                dbg.innerHTML = lines.join('<br>');
+              }}
+            >
+              Probar notificaciones
+            </button>
+          </div>
             </div>
           )}
 
