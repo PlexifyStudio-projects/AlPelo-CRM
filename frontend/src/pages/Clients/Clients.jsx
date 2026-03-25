@@ -25,17 +25,21 @@ const Clients = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [rfmData, setRfmData] = useState(null);
+  const [rfmFilter, setRfmFilter] = useState(null); // null = no RFM filter
   const { addNotification } = useNotification();
   const b = 'clients';
 
   const loadClients = useCallback(async () => {
     try {
-      const [clientList, kpiData] = await Promise.all([
+      const [clientList, kpiData, rfm] = await Promise.all([
         clientService.list(),
         clientService.kpis(),
+        clientService.rfm().catch(() => null),
       ]);
       setClients(clientList);
       setKpis(kpiData);
+      if (rfm) setRfmData(rfm);
     } catch (err) {
       addNotification('Error al cargar clientes: ' + err.message, 'error');
     } finally {
@@ -71,6 +75,14 @@ const Clients = () => {
       result = result.filter((c) => c.status === statusFilter);
     }
 
+    // RFM filter — match by client ID from rfmData
+    if (rfmFilter && rfmData?.clients) {
+      const rfmClientIds = new Set(
+        rfmData.clients.filter((r) => r.segment === rfmFilter).map((r) => r.client_id)
+      );
+      result = result.filter((c) => rfmClientIds.has(c.id));
+    }
+
     result.sort((a, bClient) => {
       let aVal = a[sortConfig.key];
       let bVal = bClient[sortConfig.key];
@@ -82,7 +94,7 @@ const Clients = () => {
     });
 
     return result;
-  }, [clients, searchQuery, statusFilter, sortConfig]);
+  }, [clients, searchQuery, statusFilter, sortConfig, rfmFilter, rfmData]);
 
   const handleSaveClient = async (clientData) => {
     try {
@@ -252,6 +264,36 @@ const Clients = () => {
             <span className={`${b}__kpi-label`}>VIP</span>
           </div>
         </div>
+
+        {/* RFM Segments */}
+        {rfmData?.summary && Object.keys(rfmData.summary).length > 0 && (
+          <div className={`${b}__rfm-bar`}>
+            <span className={`${b}__rfm-title`}>Segmentacion RFM</span>
+            <div className={`${b}__rfm-chips`}>
+              <button
+                className={`${b}__rfm-chip ${!rfmFilter ? `${b}__rfm-chip--active` : ''}`}
+                onClick={() => setRfmFilter(null)}
+              >
+                Todos
+              </button>
+              {Object.entries(rfmData.segments).map(([key, meta]) => {
+                const count = rfmData.summary[key] || 0;
+                if (count === 0) return null;
+                return (
+                  <button
+                    key={key}
+                    className={`${b}__rfm-chip ${rfmFilter === key ? `${b}__rfm-chip--active` : ''}`}
+                    onClick={() => setRfmFilter(rfmFilter === key ? null : key)}
+                    style={rfmFilter === key ? { background: meta.color, borderColor: meta.color, color: '#fff' } : { borderColor: `${meta.color}40`, color: meta.color }}
+                  >
+                    <span className={`${b}__rfm-dot`} style={{ background: meta.color }} />
+                    {meta.label} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <ClientFilters

@@ -325,6 +325,131 @@ def get_dashboard_kpis(db: Session = Depends(get_db), user: Admin = Depends(get_
 
 
 # ============================================================================
+# RFM SEGMENTATION
+# ============================================================================
+
+RFM_SEGMENTS = {
+    # (R_high, F_high, M_high) → segment
+    (True, True, True): "vip",
+    (True, True, False): "leal",
+    (True, False, True): "potencial",
+    (True, False, False): "reciente",
+    (False, True, True): "prioritario",
+    (False, True, False): "frecuente",
+    (False, False, True): "valioso",
+    (False, False, False): "inactivo",
+}
+
+RFM_META = {
+    "vip":         {"label": "VIP", "color": "#8B5CF6", "desc": "Frecuente, reciente, alto gasto"},
+    "leal":        {"label": "Leal", "color": "#3B82F6", "desc": "Viene seguido y hace poco"},
+    "potencial":   {"label": "Potencial", "color": "#10B981", "desc": "Gasto alto, puede ser mas frecuente"},
+    "reciente":    {"label": "Reciente", "color": "#06B6D4", "desc": "Visito hace poco, en crecimiento"},
+    "prioritario": {"label": "Prioritario", "color": "#F59E0B", "desc": "Frecuente y valioso, pero lleva tiempo sin venir"},
+    "frecuente":   {"label": "Frecuente", "color": "#64748B", "desc": "Viene seguido pero gasto bajo"},
+    "valioso":     {"label": "Valioso", "color": "#D97706", "desc": "Gasto alto pero lleva tiempo sin venir"},
+    "inactivo":    {"label": "Inactivo", "color": "#94A3B8", "desc": "Bajo en las 3 metricas"},
+    "nuevo":       {"label": "Nuevo", "color": "#22C55E", "desc": "Sin historial suficiente"},
+}
+
+
+@router.get("/clients/rfm")
+def get_clients_rfm(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Calculate RFM scores for all clients. Returns segmented list."""
+    tid = safe_tid(user, db)
+
+    query = db.query(Client).filter(Client.is_active == True)
+    if tid:
+        query = query.filter(Client.tenant_id == tid)
+    clients = query.all()
+
+    now = date.today()
+    results = []
+
+    # Gather all visit data in bulk for performance
+    all_visits = {}
+    visit_query = db.query(
+        VisitHistory.client_id,
+        func.count(VisitHistory.id).label("total_visits"),
+        func.coalesce(func.sum(VisitHistory.amount), 0).label("total_spent"),
+        func.max(VisitHistory.visit_date).label("last_visit"),
+    ).filter(VisitHistory.status == "completed")
+    if tid:
+        visit_query = visit_query.filter(VisitHistory.tenant_id == tid)
+    visit_query = visit_query.group_by(VisitHistory.client_id)
+
+    for row in visit_query.all():
+        all_visits[row.client_id] = {
+            "total_visits": row.total_visits,
+            "total_spent": row.total_spent,
+            "last_visit": row.last_visit,
+        }
+
+    # Calculate R, F, M values for each client
+    raw_data = []
+    for c in clients:
+        v = all_visits.get(c.id, {})
+        visits = v.get("total_visits", 0)
+        spent = v.get("total_spent", 0)
+        last = v.get("last_visit")
+        days_since = (now - last).days if last else 999
+
+        raw_data.append({
+            "client_id": c.id,
+            "client_code": c.client_id,
+            "name": c.name,
+            "phone": c.phone,
+            "recency": days_since,
+            "frequency": visits,
+            "monetary": spent,
+            "last_visit": last.isoformat() if last else None,
+        })
+
+    if not raw_data:
+        return {"clients": [], "segments": RFM_META, "summary": {}}
+
+    # Calculate percentile thresholds (median-based for small datasets)
+    recencies = sorted([d["recency"] for d in raw_data])
+    frequencies = sorted([d["frequency"] for d in raw_data])
+    monetaries = sorted([d["monetary"] for d in raw_data])
+
+    r_median = recencies[len(recencies) // 2] if recencies else 30
+    f_median = max(frequencies[len(frequencies) // 2], 1) if frequencies else 2
+    m_median = max(monetaries[len(monetaries) // 2], 1) if monetaries else 50000
+
+    # Assign segments
+    segment_counts = {}
+    for d in raw_data:
+        if d["frequency"] == 0:
+            segment = "nuevo"
+        else:
+            r_high = d["recency"] <= r_median  # Lower recency = better (came recently)
+            f_high = d["frequency"] >= f_median
+            m_high = d["monetary"] >= m_median
+            segment = RFM_SEGMENTS.get((r_high, f_high, m_high), "inactivo")
+
+        d["segment"] = segment
+        d["segment_label"] = RFM_META[segment]["label"]
+        d["segment_color"] = RFM_META[segment]["color"]
+        segment_counts[segment] = segment_counts.get(segment, 0) + 1
+
+    # Sort: VIP first, then by monetary desc
+    segment_order = ["vip", "leal", "potencial", "prioritario", "valioso", "reciente", "frecuente", "nuevo", "inactivo"]
+    raw_data.sort(key=lambda x: (segment_order.index(x["segment"]) if x["segment"] in segment_order else 99, -x["monetary"]))
+
+    return {
+        "clients": raw_data,
+        "segments": RFM_META,
+        "summary": segment_counts,
+        "thresholds": {
+            "recency_median_days": r_median,
+            "frequency_median": f_median,
+            "monetary_median": m_median,
+        },
+    }
+
+
+# ============================================================================
 # SERVICE ENDPOINTS
 # ============================================================================
 

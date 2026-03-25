@@ -92,6 +92,12 @@ const clientService = {
     const res = await fetch(`${API}/dashboard/kpis`, opts);
     return handleResponse(res);
   },
+
+  // ========================= RFM SEGMENTATION =========================
+  rfm: async () => {
+    const res = await fetch(`${API}/clients/rfm`, opts);
+    return handleResponse(res);
+  },
 };
 
 export default clientService;
