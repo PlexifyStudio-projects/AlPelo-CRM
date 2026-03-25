@@ -20,10 +20,15 @@ html {
   hanging-punctuation: first last;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+  max-width: 100vw;
 }
 
 img,

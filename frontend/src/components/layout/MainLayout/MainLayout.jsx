@@ -20,7 +20,7 @@ const MENU_ITEMS = [
   { id: 'chat-ai', label: 'Lina IA', description: 'ASISTENTE INTELIGENTE', section: 'WHATSAPP' },
 ];
 
-const MOBILE_BREAKPOINT = 768;
+const MOBILE_BREAKPOINT = 1024;
 
 const AIPauseBanner = () => {
   const { tenant } = useTenant();

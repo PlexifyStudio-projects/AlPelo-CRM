@@ -15,7 +15,13 @@
   height: calc(100vh - #{$header-height});
   overflow: hidden;
   max-width: 100%;
+  width: 100%;
   box-sizing: border-box;
+
+  // Force all children to respect container width
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
 
   // ═══════════════════════════════════════════════════════
   // TOPBAR — Refined Navigation Bar
@@ -24,9 +30,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: $spacing-lg;
+    gap: $spacing-sm;
     flex-shrink: 0;
-    
+    flex-wrap: wrap;
   }
 
   &__topbar-left {
@@ -225,7 +231,8 @@
     background: $color-white;
     border: 1.5px solid $color-gray-200;
     box-shadow: $shadow-sm;
-    
+    flex-wrap: wrap;
+
     position: relative;
 
     &::before {
@@ -2321,15 +2328,53 @@
       font-size: 8px;
     }
 
-    // Events — smaller on tablet
+    // Column headers — compact
+    &__col-head {
+      padding: 6px 2px;
+    }
+
+    &__col-day {
+      font-size: 9px;
+    }
+
+    &__col-num {
+      font-size: $font-size-sm;
+      width: 28px;
+      height: 28px;
+    }
+
+    &__col-badge {
+      font-size: 8px;
+      padding: 1px 4px;
+    }
+
+    &__time-col {
+      min-width: 40px;
+    }
+
+    &__time-text {
+      font-size: 8px;
+    }
+
+    // Events — compact on tablet week view
     &__event {
-      height: 22px !important;
-      font-size: 10px;
+      height: 20px !important;
+      font-size: 9px;
+      border-radius: 4px;
+    }
+
+    &__event-name {
+      font-size: 9px;
+    }
+
+    &__event-time {
+      font-size: 8px;
     }
 
     &__event-service,
-    &__event-price {
-      display: none; // Only show name + time on tablet
+    &__event-price,
+    &__event-badge {
+      display: none; // Only show name on tablet week
     }
 
     // Modal — full screen

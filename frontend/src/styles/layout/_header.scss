@@ -52,7 +52,7 @@
   // -----------------------------------------------
   // MOBILE RESPONSIVE
   // -----------------------------------------------
-  @media (max-width: $breakpoint-md) {
+  @media (max-width: $breakpoint-lg) {
     padding: 0 $spacing-md;
     gap: $spacing-xs;
   }

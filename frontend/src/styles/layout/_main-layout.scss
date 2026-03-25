@@ -37,6 +37,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     width: 100%;
+    max-width: 100vw;
     // full width — no max-width constraint
     @include custom-scrollbar;
     position: relative;
@@ -75,10 +76,10 @@
   }
 
   // -----------------------------------------------
-  // MOBILE
+  // MOBILE / TABLET — sidebar is overlay, no margin
   // -----------------------------------------------
   &--mobile &__content {
-    margin-left: 0;
+    margin-left: 0 !important;
   }
 
   &__backdrop {
@@ -91,13 +92,14 @@
     -webkit-backdrop-filter: blur(4px);
   }
 
-  @media (max-width: $breakpoint-md) {
+  @media (max-width: $breakpoint-lg) {
     &__content {
-      margin-left: 0;
+      margin-left: 0 !important;
     }
 
     &__main {
       padding: $spacing-md $spacing-sm $spacing-xl;
+      max-width: 100vw;
     }
   }
 
