@@ -80,6 +80,18 @@ const FILTER_GROUPS = [
         { value: 'en_riesgo', label: 'En riesgo' },
         { value: 'inactivo', label: 'Inactivos' },
       ]},
+      { key: 'rfm_segment', type: 'select', label: 'Segmento RFM', options: [
+        { value: '', label: 'Todos' },
+        { value: 'vip', label: 'VIP — Frecuente, reciente, alto gasto' },
+        { value: 'leal', label: 'Leal — Viene seguido y hace poco' },
+        { value: 'potencial', label: 'Potencial — Alto gasto, puede ser mas frecuente' },
+        { value: 'reciente', label: 'Reciente — Visito hace poco' },
+        { value: 'prioritario', label: 'Prioritario — Frecuente y valioso, pero ausente' },
+        { value: 'frecuente', label: 'Frecuente — Viene seguido, gasto bajo' },
+        { value: 'valioso', label: 'Valioso — Alto gasto pero ausente' },
+        { value: 'inactivo', label: 'Inactivo — Bajo en todo' },
+        { value: 'nuevo', label: 'Nuevo — Sin historial' },
+      ]},
     ],
   },
   {
@@ -166,6 +178,10 @@ const QUICK_SEGMENTS = [
   { label: 'Frecuentes (5+)', filters: { min_visits: 5 } },
   { label: 'Cumpleaneros', filters: { birthday_month: true } },
   { label: 'Alto valor (top 20%)', filters: { top_spenders_pct: 20 } },
+  { label: 'RFM: VIP', filters: { rfm_segment: 'vip' } },
+  { label: 'RFM: Leales', filters: { rfm_segment: 'leal' } },
+  { label: 'RFM: Prioritarios', filters: { rfm_segment: 'prioritario' } },
+  { label: 'RFM: Potenciales', filters: { rfm_segment: 'potencial' } },
 ];
 
 const formatCOP = (n) => {

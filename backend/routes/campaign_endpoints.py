@@ -112,6 +112,7 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
     created_from = filters.get("created_from")  # client registration date
     created_to = filters.get("created_to")
     no_show_count = filters.get("no_show_count")  # min no-shows
+    rfm_segment = filters.get("rfm_segment")  # RFM segment: vip, leal, potencial, etc.
 
     clients = q.all()
 
@@ -158,6 +159,26 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
             "services": services_used,
             "payments": payment_methods_used,
         })
+
+    # ── RFM segment computation (if rfm_segment filter is set) ──
+    if rfm_segment:
+        from routes.search_endpoints import RFM_SEGMENTS
+        recencies = sorted([e["days_since"] for e in enriched if e["days_since"] is not None])
+        frequencies = sorted([e["total_visits"] for e in enriched])
+        monetaries = sorted([e["total_spent"] for e in enriched])
+        r_med = recencies[len(recencies) // 2] if recencies else 30
+        f_med = max(frequencies[len(frequencies) // 2], 1) if frequencies else 2
+        m_med = max(monetaries[len(monetaries) // 2], 1) if monetaries else 50000
+
+        for e in enriched:
+            if e["total_visits"] == 0:
+                e["rfm_segment"] = "nuevo"
+            else:
+                ds = e["days_since"] if e["days_since"] is not None else 999
+                r_high = ds <= r_med
+                f_high = e["total_visits"] >= f_med
+                m_high = e["total_spent"] >= m_med
+                e["rfm_segment"] = RFM_SEGMENTS.get((r_high, f_high, m_high), "inactivo")
 
     # ── For top_spenders_pct, compute threshold ──
     spend_threshold = 0
@@ -253,6 +274,9 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
                 continue
         if no_show_count:
             if e["no_show_count"] < int(no_show_count):
+                continue
+        if rfm_segment:
+            if e.get("rfm_segment") != rfm_segment:
                 continue
 
         result.append(e)
