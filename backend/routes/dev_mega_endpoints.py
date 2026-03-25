@@ -22,6 +22,7 @@ from database.models import (
     Admin, Tenant, UsageMetrics, PlatformConfig,
     Client, Staff, WhatsAppMessage, WhatsAppConversation,
     Appointment, Service, VisitHistory, BusinessProspect, ErrorLog,
+    AIProvider,
 )
 from middleware.auth_middleware import get_current_user
 
@@ -771,3 +772,341 @@ def delete_prospect(
 def prospect_categories(user: Admin = Depends(get_current_user)):
     _require_dev(user)
     return {"categories": PROSPECT_CATEGORIES}
+
+
+# ============================================================================
+# 7. AI PROVIDER MANAGEMENT — Multi-provider with failover
+# ============================================================================
+
+AI_PROVIDER_TYPES = [
+    {"id": "anthropic", "name": "Anthropic (Claude)", "models": [
+        "claude-sonnet-4-20250514", "claude-haiku-4-5-20251001", "claude-opus-4-20250514",
+    ]},
+    {"id": "openai", "name": "OpenAI (ChatGPT)", "models": [
+        "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo",
+    ]},
+    {"id": "google", "name": "Google (Gemini)", "models": [
+        "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash",
+    ]},
+    {"id": "deepseek", "name": "DeepSeek", "models": [
+        "deepseek-chat", "deepseek-reasoner",
+    ]},
+    {"id": "mistral", "name": "Mistral AI", "models": [
+        "mistral-large-latest", "mistral-medium-latest", "mistral-small-latest",
+    ]},
+    {"id": "groq", "name": "Groq (Fast inference)", "models": [
+        "llama-3.3-70b-versatile", "mixtral-8x7b-32768",
+    ]},
+]
+
+
+@router.get("/dev/ai-providers")
+def list_ai_providers(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+    providers = db.query(AIProvider).order_by(AIProvider.priority.asc()).all()
+    return {
+        "providers": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "provider_type": p.provider_type,
+                "api_key_preview": f"***{p.api_key[-4:]}" if p.api_key and len(p.api_key) > 4 else "***",
+                "model": p.model,
+                "priority": p.priority,
+                "is_active": p.is_active,
+                "is_primary": p.is_primary,
+                "status": p.status,
+                "last_health_check": p.last_health_check.isoformat() if p.last_health_check else None,
+                "input_cost_per_mtok": p.input_cost_per_mtok,
+                "output_cost_per_mtok": p.output_cost_per_mtok,
+                "notes": p.notes,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+            }
+            for p in providers
+        ],
+        "available_types": AI_PROVIDER_TYPES,
+    }
+
+
+@router.post("/dev/ai-providers")
+def create_ai_provider(data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+
+    name = (data.get("name") or "").strip()
+    provider_type = (data.get("provider_type") or "").strip()
+    api_key = (data.get("api_key") or "").strip()
+    model = (data.get("model") or "").strip()
+
+    if not name or not provider_type or not api_key or not model:
+        raise HTTPException(status_code=400, detail="Nombre, tipo, API key y modelo son requeridos")
+
+    # If this is the first provider or marked as primary, set it
+    existing_count = db.query(func.count(AIProvider.id)).scalar() or 0
+    is_primary = data.get("is_primary", existing_count == 0)
+
+    if is_primary:
+        # Unset any existing primary
+        db.query(AIProvider).filter(AIProvider.is_primary == True).update({"is_primary": False})
+
+    provider = AIProvider(
+        name=name,
+        provider_type=provider_type,
+        api_key=api_key,
+        model=model,
+        priority=data.get("priority", existing_count + 1),
+        is_active=True,
+        is_primary=is_primary,
+        status="unknown",
+        input_cost_per_mtok=data.get("input_cost_per_mtok", 3.0),
+        output_cost_per_mtok=data.get("output_cost_per_mtok", 15.0),
+        notes=data.get("notes"),
+    )
+    db.add(provider)
+    db.commit()
+    db.refresh(provider)
+
+    return {"ok": True, "id": provider.id, "name": provider.name, "is_primary": provider.is_primary}
+
+
+@router.put("/dev/ai-providers/{provider_id}")
+def update_ai_provider(provider_id: int, data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+
+    p = db.query(AIProvider).filter(AIProvider.id == provider_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+
+    for field in ["name", "provider_type", "model", "notes"]:
+        if field in data:
+            setattr(p, field, data[field])
+    if "api_key" in data and data["api_key"]:
+        p.api_key = data["api_key"]
+    if "is_active" in data:
+        p.is_active = data["is_active"]
+    if "priority" in data:
+        p.priority = data["priority"]
+    if "input_cost_per_mtok" in data:
+        p.input_cost_per_mtok = data["input_cost_per_mtok"]
+    if "output_cost_per_mtok" in data:
+        p.output_cost_per_mtok = data["output_cost_per_mtok"]
+
+    if data.get("is_primary"):
+        db.query(AIProvider).filter(AIProvider.id != provider_id, AIProvider.is_primary == True).update({"is_primary": False})
+        p.is_primary = True
+
+    p.updated_at = datetime.utcnow()
+    db.commit()
+
+    return {"ok": True, "id": p.id}
+
+
+@router.delete("/dev/ai-providers/{provider_id}")
+def delete_ai_provider(provider_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+
+    p = db.query(AIProvider).filter(AIProvider.id == provider_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+    if p.is_primary:
+        raise HTTPException(status_code=400, detail="No puedes eliminar el proveedor primario. Asigna otro como primario primero.")
+
+    db.delete(p)
+    db.commit()
+    return {"ok": True, "deleted": provider_id}
+
+
+@router.post("/dev/ai-providers/{provider_id}/health-check")
+def check_ai_provider_health(provider_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Quick health check — send a tiny prompt to verify the provider works."""
+    _require_dev(user)
+
+    p = db.query(AIProvider).filter(AIProvider.id == provider_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Proveedor no encontrado")
+
+    try:
+        if p.provider_type == "anthropic":
+            resp = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                json={"model": p.model, "max_tokens": 10, "messages": [{"role": "user", "content": "ping"}]},
+                headers={"x-api-key": p.api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            p.status = "healthy"
+
+        elif p.provider_type == "openai":
+            resp = httpx.post(
+                "https://api.openai.com/v1/chat/completions",
+                json={"model": p.model, "max_tokens": 10, "messages": [{"role": "user", "content": "ping"}]},
+                headers={"Authorization": f"Bearer {p.api_key}", "Content-Type": "application/json"},
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            p.status = "healthy"
+
+        elif p.provider_type == "google":
+            resp = httpx.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{p.model}:generateContent?key={p.api_key}",
+                json={"contents": [{"parts": [{"text": "ping"}]}]},
+                timeout=15.0,
+            )
+            resp.raise_for_status()
+            p.status = "healthy"
+
+        else:
+            p.status = "unknown"
+
+    except httpx.HTTPStatusError as e:
+        p.status = "down"
+        p.notes = f"HTTP {e.response.status_code}: {e.response.text[:200]}"
+    except Exception as e:
+        p.status = "down"
+        p.notes = f"Error: {str(e)[:200]}"
+
+    p.last_health_check = datetime.utcnow()
+    db.commit()
+
+    return {"id": p.id, "status": p.status, "checked_at": p.last_health_check.isoformat()}
+
+
+# ============================================================================
+# 8. AI COST BREAKDOWN — Real-time desglose
+# ============================================================================
+
+@router.get("/dev/ai-cost-breakdown")
+def ai_cost_breakdown(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+
+    now = datetime.utcnow()
+    current_period = f"{now.year}-{now.month:02d}"
+
+    # Get primary provider costs
+    primary = db.query(AIProvider).filter(AIProvider.is_primary == True).first()
+    input_rate = primary.input_cost_per_mtok if primary else 3.0
+    output_rate = primary.output_cost_per_mtok if primary else 15.0
+    blended_rate = (input_rate + output_rate) / 2  # simplified blend
+
+    # Per-tenant breakdown this month
+    metrics = db.query(UsageMetrics).filter(UsageMetrics.period == current_period).all()
+    tenants = {t.id: t.name for t in db.query(Tenant).all()}
+
+    tenant_costs = []
+    total_tokens_month = 0
+    total_messages_month = 0
+
+    for m in metrics:
+        tokens = m.ai_tokens_used or 0
+        msgs = (m.wa_messages_sent or 0) + (m.wa_messages_received or 0)
+        campaigns = m.campaigns_sent or 0
+        cost_usd = round((tokens / 1_000_000) * blended_rate, 4)
+        total_tokens_month += tokens
+        total_messages_month += msgs
+
+        tenant_costs.append({
+            "tenant_id": m.tenant_id,
+            "tenant_name": tenants.get(m.tenant_id, f"Tenant {m.tenant_id}"),
+            "tokens": tokens,
+            "messages_sent": m.wa_messages_sent or 0,
+            "messages_received": m.wa_messages_received or 0,
+            "campaigns": campaigns,
+            "cost_usd": cost_usd,
+            "cost_cop": round(cost_usd * 4200),
+        })
+
+    # All-time totals
+    all_time = db.query(
+        func.coalesce(func.sum(UsageMetrics.ai_tokens_used), 0),
+        func.coalesce(func.sum(UsageMetrics.wa_messages_sent), 0),
+        func.coalesce(func.sum(UsageMetrics.campaigns_sent), 0),
+    ).first()
+
+    total_cost_month_usd = round((total_tokens_month / 1_000_000) * blended_rate, 4)
+    total_cost_alltime_usd = round((all_time[0] / 1_000_000) * blended_rate, 4)
+
+    # Historical by month (last 6 months)
+    history = []
+    for i in range(5, -1, -1):
+        y = now.year
+        mo = now.month - i
+        while mo <= 0:
+            mo += 12
+            y -= 1
+        period = f"{y}-{mo:02d}"
+        period_tokens = db.query(func.coalesce(func.sum(UsageMetrics.ai_tokens_used), 0)).filter(
+            UsageMetrics.period == period
+        ).scalar() or 0
+        period_cost = round((period_tokens / 1_000_000) * blended_rate, 4)
+        history.append({"period": period, "tokens": period_tokens, "cost_usd": period_cost, "cost_cop": round(period_cost * 4200)})
+
+    # Cost per action type (estimated)
+    lina_msgs = db.query(func.count(WhatsAppMessage.id)).filter(
+        WhatsAppMessage.sent_by == 'lina_ia',
+        WhatsAppMessage.created_at >= now.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+    ).scalar() or 0
+    avg_tokens_per_lina = 800  # ~800 tokens avg per Lina response
+    lina_cost_usd = round((lina_msgs * avg_tokens_per_lina / 1_000_000) * blended_rate, 4)
+
+    return {
+        "period": current_period,
+        "provider": {
+            "name": primary.name if primary else "Sin configurar",
+            "model": primary.model if primary else "N/A",
+            "input_rate": input_rate,
+            "output_rate": output_rate,
+            "blended_rate": round(blended_rate, 2),
+        },
+        "trm": 4200,
+        "this_month": {
+            "tokens": total_tokens_month,
+            "cost_usd": total_cost_month_usd,
+            "cost_cop": round(total_cost_month_usd * 4200),
+            "messages": total_messages_month,
+            "by_tenant": sorted(tenant_costs, key=lambda x: x["cost_usd"], reverse=True),
+        },
+        "all_time": {
+            "tokens": all_time[0],
+            "messages": all_time[1],
+            "campaigns": all_time[2],
+            "cost_usd": total_cost_alltime_usd,
+            "cost_cop": round(total_cost_alltime_usd * 4200),
+        },
+        "estimated_by_action": {
+            "lina_responses": {"count": lina_msgs, "est_tokens": lina_msgs * avg_tokens_per_lina, "cost_usd": lina_cost_usd, "cost_cop": round(lina_cost_usd * 4200)},
+            "strategy_calls": {"note": "~4000 tokens per call, tracked in usage_metrics"},
+            "prospector_calls": {"note": "~3000 tokens per call, tracked in usage_metrics"},
+        },
+        "history": history,
+    }
+
+
+# ============================================================================
+# 9. ALLOWED ORIGINS — Editable from Dev Panel
+# ============================================================================
+
+@router.get("/dev/allowed-origins")
+def get_allowed_origins(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+    origins_str = os.environ.get("ALLOWED_ORIGINS", "")
+    origins = [o.strip() for o in origins_str.split(",") if o.strip()]
+    return {"origins": origins, "raw": origins_str}
+
+
+@router.put("/dev/allowed-origins")
+def update_allowed_origins(data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    _require_dev(user)
+    origins = data.get("origins", [])
+    if not isinstance(origins, list):
+        raise HTTPException(status_code=400, detail="Origins debe ser una lista")
+    new_val = ",".join(o.strip() for o in origins if o.strip())
+    os.environ["ALLOWED_ORIGINS"] = new_val
+
+    # Also save to PlatformConfig for persistence
+    existing = db.query(PlatformConfig).filter(PlatformConfig.key == "ALLOWED_ORIGINS").first()
+    if existing:
+        existing.value = new_val
+    else:
+        db.add(PlatformConfig(key="ALLOWED_ORIGINS", value=new_val, is_secret=False))
+    db.commit()
+
+    return {"ok": True, "origins": origins}

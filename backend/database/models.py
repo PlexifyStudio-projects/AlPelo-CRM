@@ -863,6 +863,30 @@ class CashRegister(Base):
 
 
 # ============================================================================
+# AI PROVIDER — Multi-provider with failover
+# ============================================================================
+
+class AIProvider(Base):
+    __tablename__ = "ai_provider"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    provider_type = Column(String(50), nullable=False)  # anthropic, openai, google, etc
+    api_key = Column(Text, nullable=False)
+    model = Column(String(100), nullable=False)
+    priority = Column(Integer, nullable=False, default=1)  # 1 = primary, 2 = fallback, etc
+    is_active = Column(Boolean, default=True)
+    is_primary = Column(Boolean, default=False)
+    status = Column(String(20), default="unknown")  # healthy, degraded, down, unknown
+    last_health_check = Column(DateTime, nullable=True)
+    input_cost_per_mtok = Column(Float, default=3.0)  # USD per 1M input tokens
+    output_cost_per_mtok = Column(Float, default=15.0)  # USD per 1M output tokens
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ============================================================================
 # DEV PANEL MEGA — Business Prospector + Error Log
 # ============================================================================
 
