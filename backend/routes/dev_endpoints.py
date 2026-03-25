@@ -156,19 +156,10 @@ def dev_stats(db: Session = Depends(get_db), user: Admin = Depends(get_current_u
     # ALL-TIME tokens (sum across all periods)
     all_tokens = db.query(func.coalesce(func.sum(UsageMetrics.ai_tokens_used), 0)).scalar() or 0
 
-    # Cost estimate — use provider rate from DB if available
-    try:
-        from database.models import AIProvider
-        primary_prov = db.query(AIProvider).filter(AIProvider.is_primary == True).first()
-        if primary_prov:
-            blended = round(primary_prov.input_cost_per_mtok * 0.7 + primary_prov.output_cost_per_mtok * 0.3, 2)
-        else:
-            blended = 5.4
-    except Exception:
-        blended = 5.4
-
-    cost_estimate = round((total_tokens / 1_000_000) * blended, 2)
-    cost_all_time = round((all_tokens / 1_000_000) * blended, 2)
+    # Cost estimate — $5.40/MTok blended (Claude Sonnet: $3 input × 80% + $15 output × 20%)
+    BLENDED_RATE = 5.4
+    cost_estimate = round((total_tokens / 1_000_000) * BLENDED_RATE, 2)
+    cost_all_time = round((all_tokens / 1_000_000) * BLENDED_RATE, 2)
 
     return {
         "total_tenants": len(tenants),
