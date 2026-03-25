@@ -3,38 +3,57 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect, u
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const NotificationContext = createContext(null);
 
-// Show native browser notification (works when tab is open)
-function showBrowserNotification(title, body, link, type) {
-  if (!('Notification' in window)) return;
-  if (Notification.permission !== 'granted') {
+// Request notification permission proactively
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
-    return;
   }
+}
 
-  // Don't show if tab is focused (user is already looking at the app)
+// Show native browser notification — uses Service Worker on mobile, Notification API on desktop
+async function showBrowserNotification(title, body, link, type) {
+  if (!('Notification' in window)) return;
+
+  if (Notification.permission === 'default') {
+    const result = await Notification.requestPermission();
+    if (result !== 'granted') return;
+  }
+  if (Notification.permission !== 'granted') return;
+
+  // Don't show if tab/window is focused
   if (document.hasFocus()) return;
 
+  const options = {
+    body: body || '',
+    icon: '/AlPelo-CRM/icon-192.svg',
+    badge: '/AlPelo-CRM/badge-72.svg',
+    tag: 'plexify-' + (type || 'general') + '-' + Date.now(),
+    silent: false,
+    data: { url: link },
+  };
+
+  // Mobile: must use Service Worker's showNotification()
+  // Desktop: can use new Notification() directly
   try {
-    const n = new Notification(title || 'Plexify Studio', {
-      body: body || '',
-      icon: '/AlPelo-CRM/icon-192.svg',
-      badge: '/AlPelo-CRM/badge-72.svg',
-      tag: 'plexify-' + (type || 'general') + '-' + Date.now(),
-      silent: false,
-      requireInteraction: false,
-    });
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration('/AlPelo-CRM/');
+      if (reg) {
+        await reg.showNotification(title || 'Plexify Studio', options);
+        return;
+      }
+    }
+    // Fallback: desktop Notification constructor
+    const n = new Notification(title || 'Plexify Studio', options);
     if (link) {
       n.onclick = () => {
         window.focus();
-        if (link.startsWith('/')) {
-          window.location.href = window.location.origin + '/AlPelo-CRM' + link;
-        }
+        window.location.href = window.location.origin + '/AlPelo-CRM' + link;
         n.close();
       };
     }
     setTimeout(() => n.close(), 10000);
   } catch {
-    // Notification constructor can fail in some contexts
+    // Silent fail
   }
 }
 
@@ -76,6 +95,7 @@ export const NotificationProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    requestNotificationPermission();
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 10000);
     return () => clearInterval(interval);
