@@ -126,14 +126,26 @@ def dev_stats(db: Session = Depends(get_db), user: Admin = Depends(get_current_u
         WhatsAppMessage.created_at >= today_start
     ).scalar()
 
-    # Cost estimate (Sonnet 4.5 blended rate $5.4/MTok)
+    # GLOBAL counts (all time)
+    lina_total = db.query(func.count(WhatsAppMessage.id)).filter(
+        WhatsAppMessage.sent_by == 'lina_ia'
+    ).scalar() or 0
+    total_wa_messages = db.query(func.count(WhatsAppMessage.id)).scalar() or 0
+
+    # ALL-TIME tokens (sum across all periods)
+    all_tokens = db.query(func.coalesce(func.sum(UsageMetrics.ai_tokens_used), 0)).scalar() or 0
+
+    # Cost estimate (Sonnet blended rate $5.4/MTok)
     cost_estimate = round((total_tokens / 1_000_000) * 5.4, 2)
+    cost_all_time = round((all_tokens / 1_000_000) * 5.4, 2)
 
     return {
         "total_tenants": len(tenants),
         "active_tenants": len(active_tenants),
         "total_messages_sent": total_messages,
+        "total_wa_messages": total_wa_messages,
         "total_ai_tokens": total_tokens,
+        "all_time_tokens": all_tokens,
         "mrr": mrr,
         "total_clients": total_clients,
         "total_staff": total_staff,
@@ -141,7 +153,10 @@ def dev_stats(db: Session = Depends(get_db), user: Admin = Depends(get_current_u
         "total_appointments": total_appointments,
         "messages_today": msgs_today,
         "lina_messages_today": lina_msgs_today,
+        "lina_total": lina_total,
         "cost_estimate_usd": cost_estimate,
+        "cost_all_time_usd": cost_all_time,
+        "period": current_period,
         "tenants": tenant_list,
     }
 

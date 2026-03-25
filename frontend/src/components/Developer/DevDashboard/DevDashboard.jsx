@@ -75,14 +75,19 @@ const DevDashboard = ({ onNavigate }) => {
   const wa = waHealth || {};
   const al = alerts || {};
 
-  // Cost calculation — exact: tokens * rate, then to COP
-  const tokens = s.total_ai_tokens || 0;
-  const costUSD = (tokens / 1_000_000) * USD_PER_MTOK;
+  // Cost calculation — exact: tokens this month * rate, then to COP
+  const tokensMonth = s.total_ai_tokens || 0;
+  const costUSD = (tokensMonth / 1_000_000) * USD_PER_MTOK;
   const costCOP = Math.round(costUSD * TRM);
 
-  // Lina total messages this month (not just today)
-  const linaTotalMonth = s.lina_messages_today || 0; // we'll enhance this with total
-  const totalMessages = s.total_messages_sent || 0;
+  // Dynamic period label
+  const period = s.period || '';
+  const monthNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const periodLabel = period ? `${monthNames[parseInt(period.split('-')[1])]} ${period.split('-')[0]}` : '';
+
+  // Real counts from DB
+  const linaTotal = s.lina_total || 0;
+  const totalWAMessages = s.total_wa_messages || 0;
 
   return (
     <div className={b}>
@@ -90,7 +95,7 @@ const DevDashboard = ({ onNavigate }) => {
       <div className={`${b}__header`}>
         <div>
           <h1 className={`${b}__title`}>Panel Ejecutivo</h1>
-          <p className={`${b}__subtitle`}>Resumen de toda la plataforma — Marzo 2026</p>
+          <p className={`${b}__subtitle`}>Resumen de toda la plataforma{periodLabel ? ` — ${periodLabel}` : ''}</p>
         </div>
         <div className={`${b}__header-actions`}>
           <div className={`${b}__header-right`}>
@@ -139,7 +144,7 @@ const DevDashboard = ({ onNavigate }) => {
           <div className={`${b}__kpi-info`}>
             <span className={`${b}__kpi-value`}>{formatCOP(costCOP)}</span>
             <span className={`${b}__kpi-label`}>Costo IA este mes</span>
-            <span className={`${b}__kpi-sub`}>USD ${costUSD.toFixed(2)} — {formatTokens(tokens)} tokens</span>
+            <span className={`${b}__kpi-sub`}>USD ${costUSD.toFixed(2)} — {formatTokens(tokensMonth)} tokens</span>
           </div>
         </div>
 
@@ -164,9 +169,9 @@ const DevDashboard = ({ onNavigate }) => {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" /></svg>
             </div>
             <div className={`${b}__kpi-info`}>
-              <span className={`${b}__kpi-value`}>{formatNum(totalMessages)}</span>
-              <span className={`${b}__kpi-label`}>Mensajes Totales</span>
-              <span className={`${b}__kpi-sub`}>WhatsApp enviados + recibidos</span>
+              <span className={`${b}__kpi-value`}>{formatNum(totalWAMessages)}</span>
+              <span className={`${b}__kpi-label`}>Mensajes WhatsApp</span>
+              <span className={`${b}__kpi-sub`}>{formatNum(s.messages_today)} hoy — total en DB</span>
             </div>
           </div>
 
@@ -175,9 +180,9 @@ const DevDashboard = ({ onNavigate }) => {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
             </div>
             <div className={`${b}__kpi-info`}>
-              <span className={`${b}__kpi-value`}>{formatNum(s.lina_messages_today)}</span>
+              <span className={`${b}__kpi-value`}>{formatNum(linaTotal)}</span>
               <span className={`${b}__kpi-label`}>Respuestas Lina IA</span>
-              <span className={`${b}__kpi-sub`}>{s.messages_today || 0} mensajes hoy</span>
+              <span className={`${b}__kpi-sub`}>{formatNum(s.lina_messages_today)} hoy — total historico</span>
             </div>
           </div>
 

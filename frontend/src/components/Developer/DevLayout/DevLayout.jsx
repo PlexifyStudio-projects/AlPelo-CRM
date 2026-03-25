@@ -15,7 +15,7 @@ const DEV_MENU = [
   { id: 'dev-prospector', label: 'Tendencias', sub: 'PROSPECTOR IA', icon: 'search', group: 'analytics' },
   { id: 'dev-usage', label: 'Consumo', sub: 'USO DE RECURSOS', icon: 'bar-chart', group: 'billing' },
   { id: 'dev-billing', label: 'Facturacion', sub: 'COBROS Y PAGOS', icon: 'dollar', group: 'billing' },
-  { id: 'dev-system', label: 'Sistema', sub: 'CONFIGURACION', icon: 'settings', group: 'system' },
+  { id: 'dev-system', label: 'Configuracion', sub: 'PLATAFORMA E INTEGRACIONES', icon: 'settings', group: 'system' },
 ];
 
 const GROUP_LABELS = {
