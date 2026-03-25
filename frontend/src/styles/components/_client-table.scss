@@ -23,7 +23,7 @@
     &::-webkit-scrollbar { height: 6px; }
     &::-webkit-scrollbar-thumb { background: $color-gray-200; border-radius: 6px; }
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-sm) {
       display: none;
     }
   }

@@ -7,7 +7,8 @@
 
 .clients {
   @include page-enter;
-  // max-width removed — full-width content
+  max-width: 100%;
+  overflow-x: hidden;
 
   // HEADER
   &__header {
