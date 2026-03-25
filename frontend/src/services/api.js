@@ -1,27 +1,48 @@
-// Base API configuration - conectar con backend real después
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+/**
+ * API Token Manager + Global Fetch Interceptor
+ *
+ * Automatically adds Bearer token to ALL fetch requests to the API.
+ * This makes auth work on mobile (where cross-origin cookies are blocked).
+ * Desktop still works via cookies as fallback.
+ */
 
-const apiRequest = async (endpoint, options = {}) => {
-  const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  };
+const TOKEN_KEY = 'plexify_token';
+const API_HOST = (import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api').replace('/api', '');
 
-  const token = localStorage.getItem('plexify_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+export function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token) {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+// ── Global fetch interceptor ──
+// Patches window.fetch to add Authorization header to API requests
+const _originalFetch = window.fetch;
+
+window.fetch = function (url, options = {}) {
+  const urlStr = typeof url === 'string' ? url : url?.url || '';
+
+  // Only intercept requests to our API
+  if (urlStr.includes('alpelo-crm-production.up.railway.app') || urlStr.includes('/api/')) {
+    const token = getToken();
+    if (token) {
+      const headers = new Headers(options.headers || {});
+      if (!headers.has('Authorization') && !headers.has('authorization')) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      options = { ...options, headers };
+    }
+    // Always include credentials for cookie fallback
+    if (!options.credentials) {
+      options.credentials = 'include';
+    }
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
+  return _originalFetch.call(window, url, options);
 };
-
-export default apiRequest;

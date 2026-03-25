@@ -8,7 +8,13 @@ from database.models import Admin, Staff
 from auth.jwt_handler import SECRET_KEY, ALGORITHM
 
 
-def _get_token_from_cookie(request: Request) -> Optional[str]:
+def _get_token(request: Request) -> Optional[str]:
+    """Get token from Authorization header (Bearer) or cookie — mobile-safe."""
+    # 1. Try Authorization header first (works cross-origin on mobile)
+    auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        return auth_header[7:].strip()
+    # 2. Fallback to cookie (works on desktop)
     return request.cookies.get("access_token")
 
 
@@ -20,7 +26,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         detail="Could not validate credentials.",
     )
 
-    token = _get_token_from_cookie(request)
+    token = _get_token(request)
     if not token:
         raise credentials_exception
 
@@ -57,7 +63,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
 
 
 def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
-    token = _get_token_from_cookie(request)
+    token = _get_token(request)
     if not token:
         return None
 

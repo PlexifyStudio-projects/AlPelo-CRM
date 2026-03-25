@@ -1,3 +1,5 @@
+import { setToken, clearToken } from './api.js';
+
 const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const API_BASE = `${_API}/auth`;
 
@@ -42,7 +44,12 @@ const authService = {
 
     if (!res.ok) throw new Error('Error al crear la sesión');
 
-    return res.json();
+    const data = await res.json();
+    // Save token for Bearer auth (mobile compatibility)
+    if (data.access_token) {
+      setToken(data.access_token);
+    }
+    return data;
   },
 
   refreshToken: async () => {
@@ -53,7 +60,12 @@ const authService = {
 
     if (!res.ok) return null;
 
-    return res.json();
+    const data = await res.json();
+    // Update stored token
+    if (data.access_token) {
+      setToken(data.access_token);
+    }
+    return data;
   },
 
   getProfile: async () => {
@@ -72,6 +84,7 @@ const authService = {
       method: 'POST',
       credentials: 'include',
     });
+    clearToken();
   },
 };
 

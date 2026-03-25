@@ -163,6 +163,7 @@ def create_token(request: TokenRequest):
         content={
             "success": True,
             "message": "Token created successfully",
+            "access_token": token,
             "user": {
                 "username": request.username,
                 "user_id": request.user_id,
@@ -178,7 +179,13 @@ def create_token(request: TokenRequest):
 
 @router.post("/refresh-token")
 def refresh_token(request: Request):
-    token = request.cookies.get("access_token")
+    # Read token from header or cookie
+    token = None
+    auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
+    if auth_header and auth_header.lower().startswith("bearer "):
+        token = auth_header[7:].strip()
+    if not token:
+        token = request.cookies.get("access_token")
     if not token:
         return JSONResponse(status_code=401, content={"refreshed": False}, headers=CORS_HEADERS)
 
@@ -193,7 +200,7 @@ def refresh_token(request: Request):
     new_token = create_access_token(data={"sub": username, "user_id": user_id, "role": role})
 
     response = JSONResponse(
-        content={"refreshed": True, "username": username},
+        content={"refreshed": True, "username": username, "access_token": new_token},
         headers=CORS_HEADERS
     )
     response.set_cookie(value=new_token, **COOKIE_CONFIG)
