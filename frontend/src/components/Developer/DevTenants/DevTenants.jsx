@@ -18,6 +18,49 @@ const RECARGAS = [
   { id: 'recarga_3000', name: '3,000 mensajes', messages: 3000, price: 200000 },
 ];
 
+const COUNTRIES = [
+  { code: 'CO', name: 'Colombia', prefix: '+57', flag: '🇨🇴', phoneMask: '(###) ###-####' },
+  { code: 'VE', name: 'Venezuela', prefix: '+58', flag: '🇻🇪', phoneMask: '(###) ###-####' },
+  { code: 'PE', name: 'Peru', prefix: '+51', flag: '🇵🇪', phoneMask: '(###) ###-###' },
+  { code: 'EC', name: 'Ecuador', prefix: '+593', flag: '🇪🇨', phoneMask: '(##) ###-####' },
+  { code: 'CL', name: 'Chile', prefix: '+56', flag: '🇨🇱', phoneMask: '(#) ####-####' },
+  { code: 'AR', name: 'Argentina', prefix: '+54', flag: '🇦🇷', phoneMask: '(##) ####-####' },
+  { code: 'BR', name: 'Brasil', prefix: '+55', flag: '🇧🇷', phoneMask: '(##) #####-####' },
+  { code: 'BO', name: 'Bolivia', prefix: '+591', flag: '🇧🇴', phoneMask: '(#) ###-####' },
+  { code: 'GT', name: 'Guatemala', prefix: '+502', flag: '🇬🇹', phoneMask: '(####) ####' },
+  { code: 'UY', name: 'Uruguay', prefix: '+598', flag: '🇺🇾', phoneMask: '(##) ###-###' },
+  { code: 'PA', name: 'Panama', prefix: '+507', flag: '🇵🇦', phoneMask: '(####) ####' },
+  { code: 'PY', name: 'Paraguay', prefix: '+595', flag: '🇵🇾', phoneMask: '(###) ###-###' },
+  { code: 'MX', name: 'Mexico', prefix: '+52', flag: '🇲🇽', phoneMask: '(##) ####-####' },
+  { code: 'CR', name: 'Costa Rica', prefix: '+506', flag: '🇨🇷', phoneMask: '(####) ####' },
+  { code: 'DO', name: 'Rep. Dominicana', prefix: '+1', flag: '🇩🇴', phoneMask: '(###) ###-####' },
+  { code: 'US', name: 'Estados Unidos', prefix: '+1', flag: '🇺🇸', phoneMask: '(###) ###-####' },
+  { code: 'ES', name: 'Espana', prefix: '+34', flag: '🇪🇸', phoneMask: '(###) ###-###' },
+];
+
+const formatPhone = (raw, countryCode) => {
+  const digits = (raw || '').replace(/\D/g, '');
+  const country = COUNTRIES.find((c) => c.code === countryCode) || COUNTRIES[0];
+  const mask = country.phoneMask;
+  let result = '';
+  let di = 0;
+  for (let i = 0; i < mask.length && di < digits.length; i++) {
+    if (mask[i] === '#') {
+      result += digits[di++];
+    } else {
+      result += mask[i];
+    }
+  }
+  return result;
+};
+
+const displayPhone = (raw, countryCode) => {
+  if (!raw) return '';
+  const country = COUNTRIES.find((c) => c.code === countryCode) || COUNTRIES[0];
+  const formatted = formatPhone(raw, countryCode);
+  return `${country.prefix} ${formatted}`;
+};
+
 const BUSINESS_TYPES = [
   'peluqueria', 'barberia', 'spa', 'clinica', 'restaurante', 'gimnasio',
   'veterinaria', 'hotel', 'salon_belleza', 'odontologia', 'otro',
@@ -248,6 +291,7 @@ const DevTenants = () => {
               {t.owner_name && (
                 <div className={`${b}__owner`}>
                   <span>{t.owner_name}</span>
+                  {t.owner_phone && <span className={`${b}__owner-phone`}>{displayPhone(t.owner_phone, t.country)}</span>}
                   {t.city && <span className={`${b}__owner-city`}>{t.city}</span>}
                 </div>
               )}
@@ -303,7 +347,29 @@ const DevTenants = () => {
                 <h3 className={`${b}__form-section-title`}>Propietario</h3>
                 <div className={`${b}__form-grid`}>
                   <div className={`${b}__field`}><label>Nombre</label><input value={formData.owner_name} onChange={(e) => setFormData((f) => ({ ...f, owner_name: e.target.value }))} /></div>
-                  <div className={`${b}__field`}><label>Telefono</label><input value={formData.owner_phone} onChange={(e) => setFormData((f) => ({ ...f, owner_phone: e.target.value }))} placeholder="(300) 123-4567" /></div>
+                  <div className={`${b}__field`}>
+                    <label>Telefono</label>
+                    <div className={`${b}__phone-row`}>
+                      <select
+                        className={`${b}__phone-country`}
+                        value={formData.country}
+                        onChange={(e) => setFormData((f) => ({ ...f, country: e.target.value }))}
+                      >
+                        {COUNTRIES.map((c) => (
+                          <option key={c.code} value={c.code}>{c.flag} {c.prefix}</option>
+                        ))}
+                      </select>
+                      <input
+                        className={`${b}__phone-input`}
+                        value={formatPhone(formData.owner_phone, formData.country)}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, '');
+                          setFormData((f) => ({ ...f, owner_phone: digits }));
+                        }}
+                        placeholder={COUNTRIES.find((c) => c.code === formData.country)?.phoneMask.replace(/#/g, '0') || '(300) 123-4567'}
+                      />
+                    </div>
+                  </div>
                   <div className={`${b}__field`}><label>Email</label><input type="email" value={formData.owner_email} onChange={(e) => setFormData((f) => ({ ...f, owner_email: e.target.value }))} /></div>
                 </div>
               </div>

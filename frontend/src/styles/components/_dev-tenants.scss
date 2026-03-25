@@ -344,6 +344,14 @@ $_danger: #EF4444;
     font-size: 14px;
     color: $_text-secondary;
     font-weight: 500;
+    flex-wrap: wrap;
+  }
+
+  &__owner-phone {
+    font-size: 12px;
+    font-family: $_mono;
+    color: $_primary-light;
+    font-weight: 600;
   }
 
   &__owner-city {
@@ -353,6 +361,49 @@ $_danger: #EF4444;
     padding: 2px 8px;
     background: rgba(0, 0, 0, 0.03);
     border-radius: 6px;
+  }
+
+  // ─── Phone Input Row ───
+  &__phone-row {
+    display: flex;
+    gap: 0;
+    border: 1.5px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 200ms ease;
+
+    &:focus-within {
+      border-color: $_primary-light;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+  }
+
+  &__phone-country {
+    padding: 12px 8px 12px 14px;
+    border: none;
+    background: rgba(248, 250, 252, 0.8);
+    font-size: 14px;
+    color: $_text-primary;
+    cursor: pointer;
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    min-width: 95px;
+
+    &:focus { outline: none; }
+  }
+
+  &__phone-input {
+    flex: 1;
+    padding: 12px 14px;
+    border: none !important;
+    box-shadow: none !important;
+    font-size: 14px;
+    font-family: $_mono;
+    color: $_text-primary;
+    background: rgba(248, 250, 252, 0.8);
+    letter-spacing: 0.03em;
+
+    &:focus { outline: none; background: #fff; }
+    &::placeholder { color: $_text-muted; font-family: $_mono; }
   }
 
   // ─── Actions ───
