@@ -1016,6 +1016,12 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     )
                     db.add(message)
 
+                    # Track inbound message in usage metrics
+                    try:
+                        track_message_received(tenant_id=conv.tenant_id)
+                    except Exception:
+                        pass
+
                     # Update conversation
                     conv.last_message_at = datetime.utcnow()
                     conv.unread_count = (conv.unread_count or 0) + 1
