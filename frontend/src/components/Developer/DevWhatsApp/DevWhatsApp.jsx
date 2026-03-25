@@ -88,7 +88,7 @@ const DevWhatsApp = () => {
           <span className={`${b}__kpi-label`}>Total conversaciones</span>
         </div>
         <div className={`${b}__kpi`}>
-          <span className={`${b}__kpi-value`}>{(d.total_messages || 0).toLocaleString('es-CO')}</span>
+          <span className={`${b}__kpi-value`}>{(d.total_messages_used || 0).toLocaleString('es-CO')}</span>
           <span className={`${b}__kpi-label`}>Total mensajes</span>
         </div>
         <div className={`${b}__kpi`}>

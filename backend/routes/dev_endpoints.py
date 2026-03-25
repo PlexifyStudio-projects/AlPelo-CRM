@@ -979,6 +979,12 @@ def dev_whatsapp_health(tenant_id: int = None, db: Session = Depends(get_db), us
     display_tenant = tenant or (all_tenants[0] if all_tenants else None)
     has_token = bool(display_tenant and getattr(display_tenant, 'wa_access_token', None))
 
+    # Real counter: sum of messages_used across tenants (never resets when chats are deleted)
+    if tenant:
+        messages_used_total = getattr(tenant, 'messages_used', 0) or 0
+    else:
+        messages_used_total = sum(getattr(t, 'messages_used', 0) or 0 for t in all_tenants)
+
     return {
         "tenants": tenants_list,
         "selected_tenant": {"id": tenant.id, "name": tenant.name} if tenant else None,
@@ -987,6 +993,7 @@ def dev_whatsapp_health(tenant_id: int = None, db: Session = Depends(get_db), us
         "ai_active_conversations": ai_active_convos,
         "total_unread": total_unread,
         "total_messages": total_messages,
+        "total_messages_used": messages_used_total,
         "messages_today": msgs_today,
         "inbound_today": inbound_today,
         "outbound_today": outbound_today,

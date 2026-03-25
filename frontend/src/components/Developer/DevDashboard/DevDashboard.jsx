@@ -84,7 +84,7 @@ const DevDashboard = ({ onNavigate }) => {
 
   // Real counts from DB
   const linaTotal = s.lina_total || 0;
-  const totalWAMessages = s.total_wa_messages || 0;
+  const totalWAMessages = s.total_messages_sent || 0; // persistent counter (sum of tenant.messages_used)
 
   return (
     <div className={b}>
@@ -168,7 +168,7 @@ const DevDashboard = ({ onNavigate }) => {
             <div className={`${b}__kpi-info`}>
               <span className={`${b}__kpi-value`}>{formatNum(totalWAMessages)}</span>
               <span className={`${b}__kpi-label`}>Mensajes WhatsApp</span>
-              <span className={`${b}__kpi-sub`}>{formatNum(s.messages_today)} hoy — total en DB</span>
+              <span className={`${b}__kpi-sub`}>{formatNum(s.messages_today)} hoy — suma de todas las agencias</span>
             </div>
           </div>
 
