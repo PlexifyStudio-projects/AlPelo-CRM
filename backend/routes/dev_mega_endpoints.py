@@ -799,6 +799,24 @@ AI_PROVIDER_TYPES = [
     ]},
 ]
 
+# Official pricing per provider (USD per 1M tokens) — auto-assigned
+PROVIDER_PRICING = {
+    "anthropic": {"claude-sonnet-4-20250514": (3.0, 15.0), "claude-haiku-4-5-20251001": (0.80, 4.0), "claude-opus-4-20250514": (15.0, 75.0), "_default": (3.0, 15.0)},
+    "openai": {"gpt-4o": (2.50, 10.0), "gpt-4o-mini": (0.15, 0.60), "gpt-4-turbo": (10.0, 30.0), "gpt-3.5-turbo": (0.50, 1.50), "_default": (2.50, 10.0)},
+    "google": {"gemini-2.0-flash": (0.10, 0.40), "gemini-1.5-pro": (1.25, 5.0), "gemini-1.5-flash": (0.075, 0.30), "_default": (1.25, 5.0)},
+    "deepseek": {"deepseek-chat": (0.14, 0.28), "deepseek-reasoner": (0.55, 2.19), "_default": (0.14, 0.28)},
+    "mistral": {"mistral-large-latest": (2.0, 6.0), "mistral-medium-latest": (2.7, 8.1), "mistral-small-latest": (0.2, 0.6), "_default": (2.0, 6.0)},
+    "groq": {"llama-3.3-70b-versatile": (0.59, 0.79), "mixtral-8x7b-32768": (0.24, 0.24), "_default": (0.59, 0.79)},
+}
+
+
+def _get_pricing(provider_type: str, model: str):
+    """Get official pricing for a provider+model combo."""
+    provider_prices = PROVIDER_PRICING.get(provider_type, {})
+    if model in provider_prices:
+        return provider_prices[model]
+    return provider_prices.get("_default", (3.0, 15.0))
+
 
 @router.get("/dev/ai-providers")
 def list_ai_providers(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
@@ -857,8 +875,8 @@ def create_ai_provider(data: dict, db: Session = Depends(get_db), user: Admin = 
         is_active=True,
         is_primary=is_primary,
         status="unknown",
-        input_cost_per_mtok=data.get("input_cost_per_mtok", 3.0),
-        output_cost_per_mtok=data.get("output_cost_per_mtok", 15.0),
+        input_cost_per_mtok=_get_pricing(provider_type, model)[0],
+        output_cost_per_mtok=_get_pricing(provider_type, model)[1],
         notes=data.get("notes"),
     )
     db.add(provider)
@@ -876,19 +894,21 @@ def update_ai_provider(provider_id: int, data: dict, db: Session = Depends(get_d
     if not p:
         raise HTTPException(status_code=404, detail="Proveedor no encontrado")
 
-    for field in ["name", "provider_type", "model", "notes"]:
+    for field in ["name", "provider_type", "notes"]:
         if field in data:
             setattr(p, field, data[field])
     if "api_key" in data and data["api_key"]:
         p.api_key = data["api_key"]
+    if "model" in data and data["model"]:
+        p.model = data["model"]
+        # Auto-update pricing when model changes
+        inp, out = _get_pricing(p.provider_type, p.model)
+        p.input_cost_per_mtok = inp
+        p.output_cost_per_mtok = out
     if "is_active" in data:
         p.is_active = data["is_active"]
     if "priority" in data:
         p.priority = data["priority"]
-    if "input_cost_per_mtok" in data:
-        p.input_cost_per_mtok = data["input_cost_per_mtok"]
-    if "output_cost_per_mtok" in data:
-        p.output_cost_per_mtok = data["output_cost_per_mtok"]
 
     if data.get("is_primary"):
         db.query(AIProvider).filter(AIProvider.id != provider_id, AIProvider.is_primary == True).update({"is_primary": False})
@@ -959,15 +979,23 @@ def check_ai_provider_health(provider_id: int, db: Session = Depends(get_db), us
 
     except httpx.HTTPStatusError as e:
         p.status = "down"
-        p.notes = f"HTTP {e.response.status_code}: {e.response.text[:200]}"
+        error_detail = e.response.text[:300]
+        p.notes = f"HTTP {e.response.status_code}: {error_detail}"
+        print(f"[HealthCheck] {p.name} FAILED: HTTP {e.response.status_code} — {error_detail}")
     except Exception as e:
         p.status = "down"
-        p.notes = f"Error: {str(e)[:200]}"
+        p.notes = f"Error: {str(e)[:300]}"
+        print(f"[HealthCheck] {p.name} FAILED: {e}")
 
     p.last_health_check = datetime.utcnow()
     db.commit()
 
-    return {"id": p.id, "status": p.status, "checked_at": p.last_health_check.isoformat()}
+    return {
+        "id": p.id,
+        "status": p.status,
+        "checked_at": p.last_health_check.isoformat(),
+        "error": p.notes if p.status == "down" else None,
+    }
 
 
 # ============================================================================

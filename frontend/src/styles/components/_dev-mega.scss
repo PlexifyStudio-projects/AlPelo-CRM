@@ -1872,6 +1872,20 @@ $_danger: #EF4444;
     &--danger:hover { background: rgba(239, 68, 68, 0.08); color: $_danger; border-color: rgba(239, 68, 68, 0.2); }
   }
 
+  &__provider-edit {
+    width: 100%;
+    padding: 4px 0;
+  }
+
+  &__provider-edit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+
+    @media (max-width: 600px) { grid-template-columns: 1fr; }
+  }
+
   // ─── Cost cards ───
   &__cost-summary {
     display: grid;

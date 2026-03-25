@@ -85,8 +85,10 @@ const DevSystem = () => {
   const [providers, setProviders] = useState([]);
   const [providerTypes, setProviderTypes] = useState([]);
   const [addingProvider, setAddingProvider] = useState(false);
-  const [newProvider, setNewProvider] = useState({ name: '', provider_type: 'anthropic', api_key: '', model: 'claude-sonnet-4-20250514', input_cost_per_mtok: 3.0, output_cost_per_mtok: 15.0 });
+  const [newProvider, setNewProvider] = useState({ name: '', provider_type: 'anthropic', api_key: '', model: 'claude-sonnet-4-20250514' });
   const [providerSaving, setProviderSaving] = useState(false);
+  const [editingProvider, setEditingProvider] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
   // Costs
   const [costs, setCosts] = useState(null);
@@ -140,14 +142,30 @@ const DevSystem = () => {
     try {
       await apiFetch('/dev/ai-providers', { method: 'POST', body: JSON.stringify(newProvider) });
       setAddingProvider(false);
-      setNewProvider({ name: '', provider_type: 'anthropic', api_key: '', model: 'claude-sonnet-4-20250514', input_cost_per_mtok: 3.0, output_cost_per_mtok: 15.0 });
+      setNewProvider({ name: '', provider_type: 'anthropic', api_key: '', model: 'claude-sonnet-4-20250514' });
       fetchAll();
     } catch { /* */ }
     setProviderSaving(false);
   };
 
   const handleHealthCheck = async (id) => {
-    try { await apiFetch(`/dev/ai-providers/${id}/health-check`, { method: 'POST' }); fetchAll(); } catch { /* */ }
+    try {
+      const result = await apiFetch(`/dev/ai-providers/${id}/health-check`, { method: 'POST' });
+      if (result.status === 'down') {
+        alert(`Health check FALLIDO:\n${result.error || 'Error desconocido'}`);
+      }
+      fetchAll();
+    } catch { /* */ }
+  };
+
+  const handleSaveEdit = async (id) => {
+    setProviderSaving(true);
+    try {
+      await apiFetch(`/dev/ai-providers/${id}`, { method: 'PUT', body: JSON.stringify(editForm) });
+      setEditingProvider(null);
+      fetchAll();
+    } catch { /* */ }
+    setProviderSaving(false);
   };
 
   const handleSetPrimary = async (id) => {
@@ -278,35 +296,76 @@ const DevSystem = () => {
                   <div className={`${b}__provider-list`}>
                     {providers.map((p) => (
                       <div key={p.id} className={`${b}__provider ${p.is_primary ? `${b}__provider--primary` : ''} ${!p.is_active ? `${b}__provider--inactive` : ''}`}>
-                        <div className={`${b}__provider-left`}>
-                          <span className={`${b}__provider-status`} style={{ background: STATUS_COLORS[p.status] || '#94A3B8' }} title={p.status} />
-                          <div className={`${b}__provider-info`}>
-                            <span className={`${b}__provider-name`}>
-                              {p.name}
-                              {p.is_primary && <span className={`${b}__provider-badge`}>PRIMARIO</span>}
-                              {!p.is_active && <span className={`${b}__provider-badge ${b}__provider-badge--off`}>INACTIVO</span>}
-                            </span>
-                            <span className={`${b}__provider-model`}>{p.model} — {p.api_key_preview}</span>
+                        {editingProvider === p.id ? (
+                          /* ─── Edit Mode ─── */
+                          <div className={`${b}__provider-edit`}>
+                            <div className={`${b}__provider-edit-grid`}>
+                              <div className={`${b}__field`}>
+                                <label>Nombre</label>
+                                <input value={editForm.name || ''} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+                              </div>
+                              <div className={`${b}__field`}>
+                                <label>Proveedor</label>
+                                <select className={`${b}__select`} value={editForm.provider_type || ''} onChange={(e) => { const t = providerTypes.find((x) => x.id === e.target.value); setEditForm((f) => ({ ...f, provider_type: e.target.value, model: t?.models[0] || f.model })); }}>
+                                  {providerTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                </select>
+                              </div>
+                              <div className={`${b}__field`}>
+                                <label>Modelo</label>
+                                <select className={`${b}__select`} value={editForm.model || ''} onChange={(e) => setEditForm((f) => ({ ...f, model: e.target.value }))}>
+                                  {(providerTypes.find((t) => t.id === editForm.provider_type)?.models || []).map((m) => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                              </div>
+                              <div className={`${b}__field`}>
+                                <label>API Key (dejar vacio para mantener actual)</label>
+                                <input type="password" placeholder="Dejar vacio para no cambiar" value={editForm.api_key || ''} onChange={(e) => setEditForm((f) => ({ ...f, api_key: e.target.value }))} />
+                              </div>
+                            </div>
+                            <div className={`${b}__form-actions`}>
+                              <button className={`${b}__btn-save`} onClick={() => handleSaveEdit(p.id)} disabled={providerSaving}>{providerSaving ? 'Guardando...' : 'Guardar'}</button>
+                              <button className={`${b}__btn-cancel`} onClick={() => setEditingProvider(null)}>Cancelar</button>
+                            </div>
                           </div>
-                        </div>
-                        <div className={`${b}__provider-actions`}>
-                          <button className={`${b}__provider-btn`} onClick={() => handleHealthCheck(p.id)} title="Verificar salud">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                          </button>
-                          {!p.is_primary && (
-                            <button className={`${b}__provider-btn`} onClick={() => handleSetPrimary(p.id)} title="Hacer primario">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                            </button>
-                          )}
-                          <button className={`${b}__provider-btn`} onClick={() => handleToggleProvider(p.id, p.is_active)} title={p.is_active ? 'Desactivar' : 'Activar'}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{p.is_active ? <><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></> : <path d="M17 7l-10 10M7 7l10 10"/>}</svg>
-                          </button>
-                          {!p.is_primary && (
-                            <button className={`${b}__provider-btn ${b}__provider-btn--danger`} onClick={() => handleDeleteProvider(p.id)} title="Eliminar">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                            </button>
-                          )}
-                        </div>
+                        ) : (
+                          /* ─── Display Mode ─── */
+                          <>
+                            <div className={`${b}__provider-left`}>
+                              <span className={`${b}__provider-status`} style={{ background: STATUS_COLORS[p.status] || '#94A3B8' }} title={p.status} />
+                              <div className={`${b}__provider-info`}>
+                                <span className={`${b}__provider-name`}>
+                                  {p.name}
+                                  {p.is_primary && <span className={`${b}__provider-badge`}>PRIMARIO</span>}
+                                  {!p.is_active && <span className={`${b}__provider-badge ${b}__provider-badge--off`}>INACTIVO</span>}
+                                </span>
+                                <span className={`${b}__provider-model`}>
+                                  {p.model} — {p.api_key_preview} — ${p.input_cost_per_mtok}/${ p.output_cost_per_mtok} MTok
+                                  {p.last_health_check && ` — Check: ${new Date(p.last_health_check).toLocaleString('es-CO')}`}
+                                </span>
+                              </div>
+                            </div>
+                            <div className={`${b}__provider-actions`}>
+                              <button className={`${b}__provider-btn`} onClick={() => handleHealthCheck(p.id)} title="Verificar salud">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                              </button>
+                              <button className={`${b}__provider-btn`} onClick={() => { setEditingProvider(p.id); setEditForm({ name: p.name, provider_type: p.provider_type, model: p.model, api_key: '' }); }} title="Editar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                              </button>
+                              {!p.is_primary && (
+                                <button className={`${b}__provider-btn`} onClick={() => handleSetPrimary(p.id)} title="Hacer primario">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                </button>
+                              )}
+                              <button className={`${b}__provider-btn`} onClick={() => handleToggleProvider(p.id, p.is_active)} title={p.is_active ? 'Desactivar' : 'Activar'}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{p.is_active ? <><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></> : <path d="M17 7l-10 10M7 7l10 10"/>}</svg>
+                              </button>
+                              {!p.is_primary && (
+                                <button className={`${b}__provider-btn ${b}__provider-btn--danger`} onClick={() => handleDeleteProvider(p.id)} title="Eliminar">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -334,16 +393,6 @@ const DevSystem = () => {
                     <div className={`${b}__field`}>
                       <label>API Key</label>
                       <input type="password" placeholder="sk-ant-..." value={newProvider.api_key} onChange={(e) => setNewProvider((p) => ({ ...p, api_key: e.target.value }))} />
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                      <div className={`${b}__field`}>
-                        <label>Costo Input (USD/MTok)</label>
-                        <input type="number" step="0.1" value={newProvider.input_cost_per_mtok} onChange={(e) => setNewProvider((p) => ({ ...p, input_cost_per_mtok: parseFloat(e.target.value) }))} />
-                      </div>
-                      <div className={`${b}__field`}>
-                        <label>Costo Output (USD/MTok)</label>
-                        <input type="number" step="0.1" value={newProvider.output_cost_per_mtok} onChange={(e) => setNewProvider((p) => ({ ...p, output_cost_per_mtok: parseFloat(e.target.value) }))} />
-                      </div>
                     </div>
                     <div className={`${b}__form-actions`}>
                       <button className={`${b}__btn-save`} onClick={handleAddProvider} disabled={providerSaving || !newProvider.name || !newProvider.api_key}>{providerSaving ? 'Guardando...' : 'Agregar proveedor'}</button>
