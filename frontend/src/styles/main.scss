@@ -42,6 +42,7 @@
 @use 'components/dev-pages';
 @use 'components/dev-profile';
 @use 'components/dev-tenants';
+@use 'components/dev-mega';
 @use 'components/empty-state';
 @use 'components/import-modal';
 @use 'components/input';
@@ -65,7 +66,7 @@
 @use 'pages/inbox';
 @use 'pages/lina-activity';
 @use 'pages/login';
-@use 'pages/messaging';
+// messaging removed — templates now in campaigns
 @use 'pages/not-found';
 @use 'pages/profile';
 @use 'pages/services';

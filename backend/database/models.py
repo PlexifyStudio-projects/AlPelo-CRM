@@ -860,3 +860,43 @@ class CashRegister(Base):
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ============================================================================
+# DEV PANEL MEGA — Business Prospector + Error Log
+# ============================================================================
+
+class BusinessProspect(Base):
+    __tablename__ = "business_prospects"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    owner_name = Column(String(255), nullable=True)
+    phone = Column(String(50), nullable=True)
+    email = Column(String(255), nullable=True)
+    business_type = Column(String(100), nullable=True)
+    city = Column(String(100), nullable=True)
+    address = Column(Text, nullable=True)
+    ai_analysis = Column(Text, nullable=True)
+    why_plexify = Column(Text, nullable=True)
+    status = Column(String(20), nullable=False, default="pending")
+    notes = Column(Text, nullable=True)
+    source = Column(String(50), nullable=False, default="ai_prospector")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    contacted_at = Column(DateTime, nullable=True)
+
+
+class ErrorLog(Base):
+    __tablename__ = "error_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    endpoint = Column(String(255), nullable=True)
+    method = Column(String(10), nullable=True)
+    status_code = Column(Integer, nullable=True)
+    error_type = Column(String(100), nullable=True)
+    message = Column(Text, nullable=True)
+    traceback_text = Column(Text, nullable=True)
+    tenant_id = Column(Integer, nullable=True)
+    user_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

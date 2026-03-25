@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import setup_cors_middleware
 from auth import auth_router
-from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router, staff_router, settings_router, campaign_router, schedule_router, loyalty_router, review_router, pos_router, ai_strategy_router, push_router
+from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router, staff_router, settings_router, campaign_router, schedule_router, loyalty_router, review_router, pos_router, ai_strategy_router, push_router, dev_mega_router
 from database.connection import engine, Base
 
 
@@ -356,6 +356,52 @@ app = FastAPI(
 
 setup_cors_middleware(app)
 
+
+# ============================================================================
+# ERROR LOGGING MIDDLEWARE — Captures 5xx and unhandled exceptions
+# ============================================================================
+from fastapi import Request
+from database.connection import SessionLocal
+from database.models import ErrorLog
+import traceback as tb_module
+
+@app.middleware("http")
+async def error_logging_middleware(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        if response.status_code >= 500:
+            try:
+                db = SessionLocal()
+                db.add(ErrorLog(
+                    endpoint=str(request.url.path),
+                    method=request.method,
+                    status_code=response.status_code,
+                    error_type="HTTP_5xx",
+                    message=f"Server returned {response.status_code}",
+                ))
+                db.commit()
+                db.close()
+            except Exception:
+                pass
+        return response
+    except Exception as exc:
+        try:
+            db = SessionLocal()
+            db.add(ErrorLog(
+                endpoint=str(request.url.path),
+                method=request.method,
+                status_code=500,
+                error_type=type(exc).__name__,
+                message=str(exc)[:500],
+                traceback_text=tb_module.format_exc()[:2000],
+            ))
+            db.commit()
+            db.close()
+        except Exception:
+            pass
+        raise
+
+
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(create_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
@@ -378,6 +424,7 @@ app.include_router(review_router, prefix="/api", tags=["Reviews"])
 app.include_router(pos_router, prefix="/api", tags=["POS"])
 app.include_router(ai_strategy_router, prefix="/api", tags=["AI Strategy"])
 app.include_router(push_router, prefix="/api", tags=["Push Notifications"])
+app.include_router(dev_mega_router, prefix="/api", tags=["Dev Panel MEGA"])
 
 from routes.notification_endpoints import router as notification_router
 app.include_router(notification_router, prefix="/api", tags=["Notifications"])
