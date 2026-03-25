@@ -56,10 +56,10 @@ export const AuthProvider = ({ children }) => {
     const handleSessionReplaced = () => {
       setUser(null);
       setIsAuthenticated(false);
+      setLoading(false);
       localStorage.removeItem(STORAGE_KEY);
-      // Show message on next render via sessionStorage flag
+      // Flag so Login page shows the message (no reload needed, React re-renders to Login)
       sessionStorage.setItem('session_replaced', '1');
-      window.location.reload();
     };
     window.addEventListener('session-replaced', handleSessionReplaced);
     return () => window.removeEventListener('session-replaced', handleSessionReplaced);

@@ -51,8 +51,9 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
             raise credentials_exception
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tu cuenta esta desactivada. Comunicate con tu empleador.")
-        # Single-device check: if token doesn't match active session, reject
-        if getattr(user, 'active_session_token', None) and user.active_session_token != token:
+        # Single-device check: only reject if there IS a different active token stored
+        stored_token = getattr(user, 'active_session_token', None) or None
+        if stored_token and stored_token != token:
             raise session_replaced
         user._auth_role = "staff"
         return user
@@ -65,8 +66,9 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is deactivated")
 
-    # Single-device check
-    if getattr(user, 'active_session_token', None) and user.active_session_token != token:
+    # Single-device check: only reject if there IS a different active token stored
+    stored_token = getattr(user, 'active_session_token', None) or None
+    if stored_token and stored_token != token:
         raise session_replaced
 
     user._auth_role = user.role
