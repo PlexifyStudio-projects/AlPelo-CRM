@@ -46,12 +46,12 @@ const AIPauseBanner = () => {
 const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < MOBILE_BREAKPOINT);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
   const [inboxUnread, setInboxUnread] = useState(0);
 
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth < MOBILE_BREAKPOINT;
+      const mobile = window.innerWidth <= MOBILE_BREAKPOINT;
       setIsMobile(mobile);
       if (!mobile) setIsMobileMenuOpen(false);
     };
