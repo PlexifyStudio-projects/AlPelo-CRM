@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Modal from '../../common/Modal/Modal';
 import Input from '../../common/Input/Input';
+import { formatPhone } from '../../../utils/formatters';
 import Button from '../../common/Button/Button';
 import { formatCurrency } from '../../../utils/formatters';
 import clientService from '../../../services/clientService';
@@ -193,7 +194,7 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
                         <div className={`${b}__result-avatar`}>{getInitials(client.name)}</div>
                         <div className={`${b}__result-info`}>
                           <span className={`${b}__result-name`}>{client.name}</span>
-                          <span className={`${b}__result-meta`}>{client.client_id} &middot; {client.phone}</span>
+                          <span className={`${b}__result-meta`}>{client.client_id} &middot; {formatPhone(client.phone)}</span>
                         </div>
                         <span className={`${b}__result-status`}>{client.total_visits} visitas</span>
                       </button>
@@ -231,7 +232,7 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
               <div className={`${b}__result-avatar`}>{getInitials(selectedClient.name)}</div>
               <div className={`${b}__result-info`}>
                 <span className={`${b}__result-name`}>{selectedClient.name}</span>
-                <span className={`${b}__result-meta`}>{selectedClient.client_id} &middot; {selectedClient.phone}</span>
+                <span className={`${b}__result-meta`}>{selectedClient.client_id} &middot; {formatPhone(selectedClient.phone)}</span>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setStep('search')} type="button">Cambiar</Button>
             </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
+import { formatPhone } from '../../../utils/formatters';
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
 const b = 'checkout-modal';
@@ -338,7 +339,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
                     setClientSearch('');
                     setClientResults([]);
                   }} type="button">
-                    {c.name} <small style={{ color: '#94A3B8' }}>{c.phone}</small>
+                    {c.name} <small style={{ color: '#94A3B8' }}>{formatPhone(c.phone)}</small>
                   </button>
                 ))}
               </div>

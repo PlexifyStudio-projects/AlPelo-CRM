@@ -6,6 +6,7 @@ import {
   AreaChart, Area, ResponsiveContainer, Tooltip, XAxis, YAxis,
   PieChart, Pie, Cell, Legend,
 } from 'recharts';
+import { formatPhone } from '../../utils/formatters';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -815,7 +816,7 @@ const Dashboard = ({ onNavigate }) => {
                 <div className="dashboard__alert-icon">$</div>
                 <div className="dashboard__alert-content dashboard__alert-content--clickable" onClick={() => onNavigate && onNavigate('inbox')}>
                   <span className="dashboard__alert-client">{alert.client_name}</span>
-                  <span className="dashboard__alert-phone">{alert.phone}</span>
+                  <span className="dashboard__alert-phone">{formatPhone(alert.phone)}</span>
                   <span className="dashboard__alert-goto">Ver en Inbox →</span>
                 </div>
                 <button

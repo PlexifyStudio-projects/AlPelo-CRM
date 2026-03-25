@@ -7,6 +7,7 @@ import clientService from '../../services/clientService';
 import staffService from '../../services/staffService';
 import servicesService from '../../services/servicesService';
 import templateService from '../../services/templateService';
+import { formatPhone } from '../../utils/formatters';
 
 const B = 'campaigns';
 
@@ -1012,7 +1013,7 @@ const Campaigns = () => {
                       <div className={`${B}__contacts-col ${B}__contacts-col--name`}>
                         <span className={`${B}__contact-name`}>{c.name}</span>
                       </div>
-                      <div className={`${B}__contacts-col ${B}__contacts-col--phone`}>{c.phone}</div>
+                      <div className={`${B}__contacts-col ${B}__contacts-col--phone`}>{formatPhone(c.phone)}</div>
                       <div className={`${B}__contacts-col ${B}__contacts-col--status`}>
                         <span className={`${B}__contact-status ${B}__contact-status--${c.status}`}>{c.status}</span>
                       </div>
@@ -1059,7 +1060,7 @@ const Campaigns = () => {
                           {q.status === 'failed' && <XCircleIcon />}
                         </div>
                         <span className={`${B}__sending-queue-name`}>{q.name}</span>
-                        <span className={`${B}__sending-queue-phone`}>{q.phone}</span>
+                        <span className={`${B}__sending-queue-phone`}>{formatPhone(q.phone)}</span>
                       </div>
                     ))}
                   </div>
@@ -1076,7 +1077,7 @@ const Campaigns = () => {
                           {entry.status === 'sent' ? <CheckCircleIcon /> : <XCircleIcon />}
                         </span>
                         <span className={`${B}__log-name`}>{entry.name}</span>
-                        <span className={`${B}__log-phone`}>{entry.phone}</span>
+                        <span className={`${B}__log-phone`}>{formatPhone(entry.phone)}</span>
                         {entry.status === 'sent' ? (
                           <span className={`${B}__log-result ${B}__log-result--ok`}>Enviado</span>
                         ) : (

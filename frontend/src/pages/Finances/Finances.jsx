@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useTenant } from '../../context/TenantContext';
 import { useNotification } from '../../context/NotificationContext';
+import { formatPhone } from '../../utils/formatters';
 import financeService from '../../services/financeService';
 import clientService from '../../services/clientService';
 import servicesService from '../../services/servicesService';
@@ -1848,7 +1849,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                 </div>
                 <div className="finances__client-selected-info">
                   <span className="finances__client-selected-name">{selectedClient.name}</span>
-                  <span className="finances__client-selected-meta">{selectedClient.client_id} · {selectedClient.phone}</span>
+                  <span className="finances__client-selected-meta">{selectedClient.client_id} · {formatPhone(selectedClient.phone)}</span>
                 </div>
                 <button type="button" className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => {
                   setSelectedClient(null);
@@ -1877,7 +1878,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         <span className="finances__client-dropdown-avatar">{c.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}</span>
                         <div className="finances__client-dropdown-info">
                           <span className="finances__client-dropdown-name">{c.name}</span>
-                          <span className="finances__client-dropdown-meta">{c.client_id} · {c.phone} · {c.total_visits || 0} visitas</span>
+                          <span className="finances__client-dropdown-meta">{c.client_id} · {formatPhone(c.phone)} · {c.total_visits || 0} visitas</span>
                         </div>
                       </button>
                     ))}

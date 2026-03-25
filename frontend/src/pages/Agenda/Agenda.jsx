@@ -6,6 +6,7 @@ import servicesService from '../../services/servicesService';
 import clientService from '../../services/clientService';
 import { useNotification } from '../../context/NotificationContext';
 import CheckoutModal from '../../components/common/CheckoutModal/CheckoutModal';
+import { formatPhone } from '../../utils/formatters';
 
 const b = 'agenda';
 
@@ -895,7 +896,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                     </div>
                     <div className={`${b}__client-chip-info`}>
                       <span className={`${b}__client-chip-name`}>{selectedClient.name}</span>
-                      <span className={`${b}__client-chip-phone`}>{selectedClient.phone}</span>
+                      <span className={`${b}__client-chip-phone`}>{formatPhone(selectedClient.phone)}</span>
                     </div>
                     {selectedClient.status && (
                       <span className={`${b}__client-tag ${b}__client-tag--${selectedClient.status}`}>{selectedClient.status}</span>
@@ -936,7 +937,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                             <div className={`${b}__search-item-avatar`}>{c.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}</div>
                             <div className={`${b}__search-item-info`}>
                               <span className={`${b}__search-item-name`}>{c.name}</span>
-                              <span className={`${b}__search-item-phone`}>{c.phone}</span>
+                              <span className={`${b}__search-item-phone`}>{formatPhone(c.phone)}</span>
                             </div>
                             {c.total_visits > 0 && <span className={`${b}__search-item-visits`}>{c.total_visits} visitas</span>}
                           </button>

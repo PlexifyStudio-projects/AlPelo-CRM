@@ -1,4 +1,4 @@
-import { daysSince, formatCurrency, formatDate } from '../../../utils/formatters';
+import { daysSince, formatCurrency, formatDate, formatPhone } from '../../../utils/formatters';
 import { STATUS_META } from '../../../utils/clientStatus';
 
 const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
@@ -92,7 +92,7 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
                     </div>
                     <div className={`${b}__client-info`}>
                       <span className={`${b}__client-name`}>{client.name}</span>
-                      <span className={`${b}__client-phone`}>{client.phone}</span>
+                      <span className={`${b}__client-phone`}>{formatPhone(client.phone)}</span>
                     </div>
                   </div>
                 </td>
@@ -153,7 +153,7 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
               </div>
               <div className={`${b}__card-info`}>
                 <span className={`${b}__client-name`}>{client.name}</span>
-                <span className={`${b}__client-phone`}>{client.client_id} &middot; {client.phone}</span>
+                <span className={`${b}__client-phone`}>{client.client_id} &middot; {formatPhone(client.phone)}</span>
               </div>
               <span className={`${b}__status ${b}__status--${client.status}`}>
                 {client.status === 'vip' && (
