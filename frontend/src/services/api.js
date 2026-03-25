@@ -44,5 +44,19 @@ window.fetch = function (url, options = {}) {
     }
   }
 
-  return _originalFetch.call(window, url, options);
+  return _originalFetch.call(window, url, options).then((response) => {
+    // Detect session replaced (another device logged in)
+    if (response.status === 401 && urlStr.includes('/api/') && !urlStr.includes('/auth/')) {
+      const cloned = response.clone();
+      cloned.json().then((data) => {
+        if (data?.detail === 'SESSION_REPLACED') {
+          clearToken();
+          localStorage.removeItem('plexify_user');
+          // Dispatch custom event so AuthContext can react
+          window.dispatchEvent(new CustomEvent('session-replaced'));
+        }
+      }).catch(() => {});
+    }
+    return response;
+  });
 };

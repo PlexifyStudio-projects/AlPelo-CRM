@@ -51,6 +51,20 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, []);
 
+  // Listen for session-replaced events (another device logged in with this account)
+  useEffect(() => {
+    const handleSessionReplaced = () => {
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem(STORAGE_KEY);
+      // Show message on next render via sessionStorage flag
+      sessionStorage.setItem('session_replaced', '1');
+      window.location.reload();
+    };
+    window.addEventListener('session-replaced', handleSessionReplaced);
+    return () => window.removeEventListener('session-replaced', handleSessionReplaced);
+  }, []);
+
   const login = async (username, password, forceSession = false) => {
     const credentials = await authService.verifyCredentials(username, password);
 

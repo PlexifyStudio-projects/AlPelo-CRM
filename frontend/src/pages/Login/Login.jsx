@@ -217,6 +217,11 @@ const Login = ({ onLogin }) => {
       setCredentials((prev) => ({ ...prev, username: saved }));
       setRememberMe(true);
     }
+    // Check if session was replaced
+    if (sessionStorage.getItem('session_replaced')) {
+      sessionStorage.removeItem('session_replaced');
+      setError('Tu sesion fue cerrada porque alguien inicio sesion desde otro dispositivo.');
+    }
     const timer = setTimeout(() => setMounted(true), 100);
     return () => clearTimeout(timer);
   }, []);
