@@ -117,7 +117,7 @@ class AgendaErrorBoundary extends React.Component {
 const AgendaInner = ({ staffOnlyId = null }) => {
   const isStaffMode = !!staffOnlyId;
   // ── Calendar states ──
-  const [view, setView] = useState(() => window.innerWidth < 768 ? 'day' : 'week');
+  const [view, setView] = useState(() => window.innerWidth < 576 ? 'day' : 'week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
   const [staff, setStaff] = useState([]);

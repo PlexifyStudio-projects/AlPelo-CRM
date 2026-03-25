@@ -788,7 +788,7 @@
   // -----------------------------------------------
   // MOBILE — Slide-in with dark backdrop blur
   // -----------------------------------------------
-  @media (max-width: $breakpoint-md) {
+  @media (max-width: #{$breakpoint-md - 1}) {
     transform: translateX(-100%);
     transition: transform 300ms $ease-out-expo;
     box-shadow: none;
