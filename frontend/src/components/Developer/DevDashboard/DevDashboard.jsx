@@ -259,10 +259,10 @@ const DevDashboard = ({ onNavigate }) => {
       {/* Quick nav cards */}
       <div className={`${b}__quick-nav`}>
         {[
-          { id: 'dev-comparison', label: 'Comparativa', desc: 'Cross-tenant analytics', icon: '📊' },
-          { id: 'dev-mrr', label: 'MRR', desc: 'Ingresos y proyeccion', icon: '💰' },
-          { id: 'dev-health', label: 'Estado', desc: 'Salud del sistema', icon: '🏥' },
-          { id: 'dev-prospector', label: 'Tendencias', desc: 'Prospector IA', icon: '🔍' },
+          { id: 'dev-prospector', label: 'Tendencias', desc: 'Prospector de negocios IA', icon: '🔍' },
+          { id: 'dev-tenants', label: 'Agencias', desc: 'Gestionar negocios', icon: '🏢' },
+          { id: 'dev-billing', label: 'Facturacion', desc: 'Cobros y pagos', icon: '💰' },
+          { id: 'dev-system', label: 'Configuracion', desc: 'Plataforma e integraciones', icon: '⚙️' },
         ].map((nav) => (
           <button
             key={nav.id}

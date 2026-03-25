@@ -774,6 +774,32 @@ def prospect_categories(user: Admin = Depends(get_current_user)):
     return {"categories": PROSPECT_CATEGORIES}
 
 
+@router.post("/dev/prospects/seed")
+def seed_prospects(data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Bulk insert prospects without AI. For seeding/testing."""
+    _require_dev(user)
+    items = data.get("prospects", [])
+    saved = 0
+    for p in items:
+        if not p.get("name"):
+            continue
+        exists = db.query(BusinessProspect).filter(
+            func.lower(BusinessProspect.name) == p["name"].lower()
+        ).first()
+        if exists:
+            continue
+        db.add(BusinessProspect(
+            name=p["name"], owner_name=p.get("owner_name"), phone=p.get("phone"),
+            email=p.get("email"), business_type=p.get("business_type"),
+            city=p.get("city", "Bucaramanga"), address=p.get("address"),
+            ai_analysis=p.get("ai_analysis"), why_plexify=p.get("why_plexify"),
+            status="pending", source="manual_seed",
+        ))
+        saved += 1
+    db.commit()
+    return {"saved": saved, "total_sent": len(items)}
+
+
 # ============================================================================
 # 7. AI PROVIDER MANAGEMENT — Multi-provider with failover
 # ============================================================================
