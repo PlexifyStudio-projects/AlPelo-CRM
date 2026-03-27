@@ -50,7 +50,7 @@ const Inventory = () => {
       setProducts(data.products || []);
       setSummary(data.summary || {});
     } catch (e) {
-      addNotification({ type: 'error', title: 'Error cargando inventario', detail: e.message });
+      addNotification('Error cargando inventario: ' + e.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -74,21 +74,21 @@ const Inventory = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         });
-        addNotification({ type: 'success', title: 'Producto actualizado' });
+        addNotification('Producto actualizado', 'success');
       } else {
         await fetchApi('/inventory/products', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         });
-        addNotification({ type: 'success', title: 'Producto creado' });
+        addNotification('Producto creado', 'success');
       }
       setShowModal(false);
       setEditProduct(null);
       loadProducts();
       loadCategories();
     } catch (e) {
-      addNotification({ type: 'error', title: 'Error', detail: e.message });
+      addNotification('Error: ' + e.message, 'error');
     }
   };
 
@@ -96,10 +96,10 @@ const Inventory = () => {
     if (!confirm('Desactivar este producto?')) return;
     try {
       await fetchApi(`/inventory/products/${id}`, { method: 'DELETE' });
-      addNotification({ type: 'success', title: 'Producto desactivado' });
+      addNotification('Producto desactivado', 'success');
       loadProducts();
     } catch (e) {
-      addNotification({ type: 'error', title: 'Error', detail: e.message });
+      addNotification('Error: ' + e.message, 'error');
     }
   };
 
@@ -110,11 +110,11 @@ const Inventory = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      addNotification({ type: 'success', title: `Stock ${data.type === 'purchase' ? 'agregado' : 'ajustado'}` });
+      addNotification(`Stock ${data.type === 'purchase' ? 'agregado' : 'ajustado'}`, 'success');
       setShowStockModal(null);
       loadProducts();
     } catch (e) {
-      addNotification({ type: 'error', title: 'Error', detail: e.message });
+      addNotification('Error: ' + e.message, 'error');
     }
   };
 

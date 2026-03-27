@@ -16,7 +16,7 @@
   }
 
   &__subtitle {
-    color: $text-muted;
+    color: $color-gray-400;
     margin: 0.25rem 0 0;
     font-size: 0.9rem;
   }
@@ -65,7 +65,7 @@
 
   &__kpi-label {
     font-size: 0.8rem;
-    color: $text-muted;
+    color: $color-gray-400;
     margin-top: 0.25rem;
   }
 
@@ -144,7 +144,7 @@
     align-items: center;
     gap: 0.4rem;
     font-size: 0.85rem;
-    color: $text-muted;
+    color: $color-gray-400;
     cursor: pointer;
     white-space: nowrap;
 
@@ -169,7 +169,7 @@
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: $text-muted;
+      color: $color-gray-400;
       border-bottom: 1px solid #E5E7EB;
       white-space: nowrap;
     }
@@ -198,7 +198,7 @@
 
   &__sku {
     font-size: 0.75rem;
-    color: $text-muted;
+    color: $color-gray-400;
     font-family: monospace;
   }
 
@@ -247,7 +247,7 @@
     border-radius: 6px;
     padding: 0.35rem;
     cursor: pointer;
-    color: $text-muted;
+    color: $color-gray-400;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -303,7 +303,7 @@
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: $text-muted;
+    color: $color-gray-400;
     padding: 0;
     line-height: 1;
   }
@@ -331,7 +331,7 @@
     label {
       font-size: 0.8rem;
       font-weight: 600;
-      color: $text-muted;
+      color: $color-gray-400;
     }
 
     input, select, textarea {
@@ -344,7 +344,7 @@
       &:focus { border-color: $color-primary; }
     }
 
-    small { font-size: 0.75rem; color: $text-muted; }
+    small { font-size: 0.75rem; color: $color-gray-400; }
   }
 
   &__new-cat {
@@ -417,7 +417,7 @@
     transition: all 0.15s;
 
     strong { font-size: 0.85rem; }
-    small { font-size: 0.7rem; color: $text-muted; }
+    small { font-size: 0.7rem; color: $color-gray-400; }
 
     &--active {
       border-color: $color-primary;
@@ -438,7 +438,7 @@
   &__loading {
     text-align: center;
     padding: 3rem;
-    color: $text-muted;
+    color: $color-gray-400;
     font-size: 0.95rem;
   }
 
