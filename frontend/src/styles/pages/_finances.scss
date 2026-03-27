@@ -3939,4 +3939,167 @@
     gap: $spacing-sm;
     margin-top: $spacing-lg;
   }
+
+  // ── FORECAST / PROYECCIÓN TAB ──
+
+  &__forecast {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  &__forecast-loading {
+    text-align: center;
+    padding: 3rem;
+    color: $color-gray-400;
+  }
+
+  &__forecast-month {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  &__forecast-month-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+
+    h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $color-secondary;
+    }
+  }
+
+  &__forecast-trend {
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+
+  &__forecast-month-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  &__forecast-kpi {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background: $color-gray-50;
+    border-radius: 10px;
+
+    &--projected {
+      background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+      border: 1px solid #93C5FD;
+    }
+  }
+
+  &__forecast-kpi-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: $color-secondary;
+  }
+
+  &__forecast-kpi-label {
+    font-size: 0.78rem;
+    color: $color-gray-400;
+    margin-top: 0.2rem;
+  }
+
+  &__forecast-progress {
+    margin-top: 0.5rem;
+  }
+
+  &__forecast-progress-bar {
+    position: relative;
+    height: 12px;
+    background: $color-gray-100;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  &__forecast-progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: #059669;
+    border-radius: 6px;
+    z-index: 2;
+    transition: width 0.6s ease;
+  }
+
+  &__forecast-progress-projected {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: rgba(59, 130, 246, 0.25);
+    border-radius: 6px;
+    z-index: 1;
+    transition: width 0.6s ease;
+  }
+
+  &__forecast-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    color: $color-gray-400;
+  }
+
+  &__forecast-week {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+
+    h3 {
+      margin: 0 0 0.75rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: $color-secondary;
+    }
+  }
+
+  &__forecast-week-summary {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: $color-gray-500;
+
+    strong { color: $color-secondary; }
+  }
+
+  &__forecast-chart {
+    margin-bottom: 1.25rem;
+  }
+
+  &__forecast-today-row {
+    background: #EFF6FF !important;
+    font-weight: 600;
+  }
+
+  &__forecast-past-row {
+    opacity: 0.6;
+  }
+
+  &__forecast-today-badge {
+    display: inline-block;
+    background: $color-primary;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
 }

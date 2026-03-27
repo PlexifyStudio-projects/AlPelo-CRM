@@ -217,6 +217,7 @@ const PAYMENT_METHODS = [
 
 const TAB_OPTIONS = [
   { value: 'resumen', label: 'Resumen' },
+  { value: 'forecast', label: 'Proyección' },
   { value: 'reportes', label: 'Reportes' },
   { value: 'gastos', label: 'Gastos' },
   { value: 'comisiones', label: 'Comisiones' },
@@ -2613,6 +2614,141 @@ const TabCaja = () => {
   );
 };
 
+// ===== TAB: FORECAST / PROYECCIÓN =====
+const TabForecast = () => {
+  const [forecast, setForecast] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const resp = await fetch(`${API_URL}/finances/forecast`, { credentials: 'include' });
+        if (resp.ok) setForecast(await resp.json());
+      } catch { /* silent */ }
+      finally { setLoading(false); }
+    })();
+  }, []);
+
+  if (loading) return <div className="finances__forecast-loading">Calculando proyección...</div>;
+  if (!forecast) return <div className="finances__forecast-loading">Sin datos para proyectar</div>;
+
+  const { week, month } = forecast;
+  const trendColor = month.trend_pct >= 0 ? '#059669' : '#DC2626';
+  const trendIcon = month.trend_pct >= 0 ? '↑' : '↓';
+
+  return (
+    <div className="finances__forecast">
+      {/* Monthly Overview */}
+      <div className="finances__forecast-month">
+        <div className="finances__forecast-month-header">
+          <h3>Proyección mensual — {month.name}</h3>
+          <span className="finances__forecast-trend" style={{ color: trendColor }}>
+            {trendIcon} {Math.abs(month.trend_pct)}% vs mes anterior
+          </span>
+        </div>
+        <div className="finances__forecast-month-kpis">
+          <div className="finances__forecast-kpi">
+            <span className="finances__forecast-kpi-value">{formatCOP(month.actual_so_far)}</span>
+            <span className="finances__forecast-kpi-label">Facturado ({month.days_elapsed} dias)</span>
+          </div>
+          <div className="finances__forecast-kpi finances__forecast-kpi--projected">
+            <span className="finances__forecast-kpi-value">{formatCOP(month.projected_total)}</span>
+            <span className="finances__forecast-kpi-label">Proyección cierre de mes</span>
+          </div>
+          <div className="finances__forecast-kpi">
+            <span className="finances__forecast-kpi-value">{formatCOP(month.daily_run_rate)}</span>
+            <span className="finances__forecast-kpi-label">Promedio diario</span>
+          </div>
+          <div className="finances__forecast-kpi">
+            <span className="finances__forecast-kpi-value">{formatCOP(month.future_confirmed)}</span>
+            <span className="finances__forecast-kpi-label">Confirmado por cobrar</span>
+          </div>
+          <div className="finances__forecast-kpi">
+            <span className="finances__forecast-kpi-value">{formatCOP(month.prev_month_total)}</span>
+            <span className="finances__forecast-kpi-label">Mes anterior (total)</span>
+          </div>
+          <div className="finances__forecast-kpi">
+            <span className="finances__forecast-kpi-value">{month.days_remaining}</span>
+            <span className="finances__forecast-kpi-label">Dias restantes</span>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="finances__forecast-progress">
+          <div className="finances__forecast-progress-bar">
+            <div
+              className="finances__forecast-progress-fill"
+              style={{ width: `${Math.min(100, month.prev_month_total > 0 ? (month.actual_so_far / month.prev_month_total * 100) : 0)}%` }}
+            />
+            <div
+              className="finances__forecast-progress-projected"
+              style={{ width: `${Math.min(100, month.prev_month_total > 0 ? (month.projected_total / month.prev_month_total * 100) : 0)}%` }}
+            />
+          </div>
+          <div className="finances__forecast-progress-labels">
+            <span>$0</span>
+            <span>{formatCOP(month.prev_month_total)} (mes anterior)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Weekly Chart */}
+      <div className="finances__forecast-week">
+        <h3>Semana actual ({week.start} — {week.end})</h3>
+        <div className="finances__forecast-week-summary">
+          <span>Confirmado: <strong>{formatCOP(week.total_confirmed)}</strong></span>
+          <span>Proyectado: <strong>{formatCOP(week.total_projected)}</strong></span>
+        </div>
+        <div className="finances__forecast-chart">
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={week.daily} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="day_name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
+              <Tooltip
+                formatter={(value) => formatCOP(value)}
+                labelFormatter={(label) => label}
+              />
+              <Legend />
+              <Bar dataKey="actual" name="Real" fill="#059669" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="confirmed" name="Confirmado" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="historical_avg" name="Promedio histórico" fill="#D1D5DB" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Daily breakdown table */}
+        <table className="finances__table">
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Real</th>
+              <th>Confirmado</th>
+              <th>Prom. historico</th>
+              <th>Proyectado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {week.daily.map((d) => (
+              <tr key={d.date} className={d.is_today ? 'finances__forecast-today-row' : d.is_past ? 'finances__forecast-past-row' : ''}>
+                <td>
+                  <strong>{d.day_name} {d.day_number}</strong>
+                  {d.is_today && <span className="finances__forecast-today-badge">HOY</span>}
+                </td>
+                <td>{d.actual !== null ? formatCOP(d.actual) : '—'}</td>
+                <td>{formatCOP(d.confirmed)}</td>
+                <td style={{ color: '#94A3B8' }}>{formatCOP(d.historical_avg)}</td>
+                <td><strong>{formatCOP(d.projected)}</strong></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+
 // ===== MAIN COMPONENT =====
 const Finances = () => {
   const { tenant } = useTenant();
@@ -2790,6 +2926,7 @@ const Finances = () => {
 
       {/* TAB CONTENT */}
       {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'forecast' && <TabForecast />}
       {activeTab === 'reportes' && <TabReportes period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}

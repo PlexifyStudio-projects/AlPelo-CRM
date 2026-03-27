@@ -977,3 +977,187 @@ def export_transactions(
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=transacciones_{start}_{end}.csv"},
     )
+
+
+# ============================================================================
+# REVENUE FORECAST — Projection based on confirmed appointments + history
+# ============================================================================
+
+@router.get("/finances/forecast")
+def revenue_forecast(
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    """Revenue forecast: confirmed appointments + historical averages per day-of-week."""
+    from database.models import Appointment
+    from routes._helpers import now_colombia
+
+    tid = safe_tid(current_user, db)
+    today = now_colombia().date()
+    current_weekday = today.weekday()  # 0=Monday
+
+    # ── 1. This week: confirmed appointment revenue ──
+    week_start = today - timedelta(days=current_weekday)
+    week_end = week_start + timedelta(days=6)
+
+    week_apts_q = db.query(Appointment).filter(
+        Appointment.date >= week_start,
+        Appointment.date <= week_end,
+        Appointment.status.in_(["confirmed", "completed", "paid"]),
+    )
+    if tid:
+        week_apts_q = week_apts_q.filter(Appointment.tenant_id == tid)
+    week_apts = week_apts_q.all()
+
+    # Group by date
+    week_confirmed = {}
+    for a in week_apts:
+        d = a.date.isoformat() if hasattr(a.date, 'isoformat') else str(a.date)
+        week_confirmed[d] = week_confirmed.get(d, 0) + (a.price or 0)
+
+    # ── 2. Historical averages per day-of-week (last 12 weeks) ──
+    twelve_weeks_ago = today - timedelta(weeks=12)
+    hist_q = db.query(
+        func.extract('dow', VisitHistory.visit_date).label('dow'),
+        func.avg(VisitHistory.amount).label('avg_amount'),
+        func.count(VisitHistory.id).label('visit_count'),
+        func.sum(VisitHistory.amount).label('total_amount'),
+    ).filter(
+        VisitHistory.visit_date >= twelve_weeks_ago,
+        VisitHistory.visit_date < today,
+    )
+    if tid:
+        hist_q = hist_q.filter(VisitHistory.tenant_id == tid)
+    hist_rows = hist_q.group_by('dow').all()
+
+    # PostgreSQL dow: 0=Sunday, 1=Monday... Convert to Python weekday (0=Monday)
+    hist_by_weekday = {}
+    weeks_counted = {}
+    for row in hist_rows:
+        pg_dow = int(row.dow)  # 0=Sun, 1=Mon, ...
+        py_weekday = (pg_dow - 1) % 7  # Convert to 0=Mon
+        total = float(row.total_amount or 0)
+        count = int(row.visit_count or 0)
+        # Estimate number of weeks with data for this day
+        hist_by_weekday[py_weekday] = total
+        weeks_counted[py_weekday] = max(1, count // max(1, count // 12 if count > 12 else 1))
+
+    # Calculate weekly average per day
+    day_avg = {}
+    for wd in range(7):
+        total = hist_by_weekday.get(wd, 0)
+        # Divide by ~12 weeks to get weekly average
+        day_avg[wd] = round(total / 12, 0) if total > 0 else 0
+
+    # ── 3. Build daily forecast for this week ──
+    DIAS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
+    daily_forecast = []
+    total_confirmed = 0
+    total_projected = 0
+
+    for i in range(7):
+        d = week_start + timedelta(days=i)
+        d_iso = d.isoformat()
+        weekday = d.weekday()
+        confirmed = week_confirmed.get(d_iso, 0)
+        historical_avg = day_avg.get(weekday, 0)
+        is_past = d < today
+        is_today_flag = d == today
+
+        if is_past:
+            # Past days: use actual revenue
+            actual_q = db.query(func.coalesce(func.sum(VisitHistory.amount), 0)).filter(
+                VisitHistory.visit_date == d,
+            )
+            if tid:
+                actual_q = actual_q.filter(VisitHistory.tenant_id == tid)
+            actual = float(actual_q.scalar() or 0)
+            projected = actual
+        else:
+            # Future days: max of confirmed appointments or historical average
+            actual = 0
+            projected = max(confirmed, historical_avg)
+
+        total_confirmed += confirmed
+        total_projected += projected
+
+        daily_forecast.append({
+            "date": d_iso,
+            "day_name": DIAS[weekday],
+            "day_number": d.day,
+            "is_past": is_past,
+            "is_today": is_today_flag,
+            "confirmed": round(confirmed, 0),
+            "historical_avg": round(historical_avg, 0),
+            "projected": round(projected, 0),
+            "actual": round(actual, 0) if is_past else None,
+        })
+
+    # ── 4. Monthly projection ──
+    month_start = date(today.year, today.month, 1)
+    next_month = date(today.year + (1 if today.month == 12 else 0), (today.month % 12) + 1, 1)
+    month_end = next_month - timedelta(days=1)
+    days_in_month = (month_end - month_start).days + 1
+    days_elapsed = (today - month_start).days + 1
+    days_remaining = days_in_month - days_elapsed
+
+    # Actual revenue this month so far
+    month_actual_q = db.query(func.coalesce(func.sum(VisitHistory.amount), 0)).filter(
+        VisitHistory.visit_date >= month_start,
+        VisitHistory.visit_date <= today,
+    )
+    if tid:
+        month_actual_q = month_actual_q.filter(VisitHistory.tenant_id == tid)
+    month_actual = float(month_actual_q.scalar() or 0)
+
+    # Last month total for comparison
+    prev_month_start = date(today.year - (1 if today.month == 1 else 0), (today.month - 2) % 12 + 1, 1)
+    prev_month_end = month_start - timedelta(days=1)
+    prev_month_q = db.query(func.coalesce(func.sum(VisitHistory.amount), 0)).filter(
+        VisitHistory.visit_date >= prev_month_start,
+        VisitHistory.visit_date <= prev_month_end,
+    )
+    if tid:
+        prev_month_q = prev_month_q.filter(VisitHistory.tenant_id == tid)
+    prev_month_total = float(prev_month_q.scalar() or 0)
+
+    # Daily run rate
+    daily_run_rate = month_actual / max(1, days_elapsed)
+    month_projected = month_actual + (daily_run_rate * days_remaining)
+
+    # Trend vs last month
+    if prev_month_total > 0:
+        month_trend_pct = round(((month_projected - prev_month_total) / prev_month_total) * 100, 1)
+    else:
+        month_trend_pct = 0
+
+    # ── 5. Confirmed appointments for rest of month ──
+    future_confirmed_q = db.query(func.coalesce(func.sum(Appointment.price), 0)).filter(
+        Appointment.date > today,
+        Appointment.date <= month_end,
+        Appointment.status == "confirmed",
+    )
+    if tid:
+        future_confirmed_q = future_confirmed_q.filter(Appointment.tenant_id == tid)
+    future_confirmed = float(future_confirmed_q.scalar() or 0)
+
+    return {
+        "week": {
+            "start": week_start.isoformat(),
+            "end": week_end.isoformat(),
+            "daily": daily_forecast,
+            "total_confirmed": round(total_confirmed, 0),
+            "total_projected": round(total_projected, 0),
+        },
+        "month": {
+            "name": today.strftime("%B %Y"),
+            "actual_so_far": round(month_actual, 0),
+            "projected_total": round(month_projected, 0),
+            "daily_run_rate": round(daily_run_rate, 0),
+            "days_elapsed": days_elapsed,
+            "days_remaining": days_remaining,
+            "prev_month_total": round(prev_month_total, 0),
+            "trend_pct": month_trend_pct,
+            "future_confirmed": round(future_confirmed, 0),
+        },
+    }
