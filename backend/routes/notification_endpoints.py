@@ -67,6 +67,6 @@ def clear_all(db: Session = Depends(get_db), user: Admin = Depends(get_current_u
     q = db.query(Notification)
     if tid:
         q = q.filter(Notification.tenant_id == tid)
-    q.filter(Notification.is_read == True).delete()
+    q.delete()
     db.commit()
     return {"success": True}
