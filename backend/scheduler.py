@@ -600,7 +600,7 @@ def _check_custom_reminders(db):
         msg += f" para {service_name}."
         msg += " Te esperamos! 💈"
 
-        wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg)
+        wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, msg, db=db)
         _store_outbound_message(db, conv.id, msg, wa_sent, tag=dedup_tag)
 
         status_tag = "COMPLETADO:" if wa_sent else "FALLIDO:"
@@ -863,7 +863,7 @@ def _morning_review(db):
                 continue
 
             # Send via WhatsApp
-            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean)
+            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean, db=db)
 
             # Store in DB
             msg = WhatsAppMessage(
@@ -1041,7 +1041,7 @@ def _sweep_missed_conversations(db):
             if not clean:
                 continue
 
-            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean)
+            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean, db=db)
             _store_outbound_message(db, conv.id, clean, wa_sent, tag="sweep")
 
             processed += 1
@@ -1239,7 +1239,7 @@ def _execute_pending_tasks(db):
                 continue
 
             # Send via WhatsApp
-            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean)
+            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean, db=db)
             _store_outbound_message(db, conv.id, clean, wa_sent, tag=dedup_tag)
 
             # Mark note as completed
@@ -1416,7 +1416,7 @@ def _detect_unresolved_messages(db):
                 continue
 
             # Send via WhatsApp and store with dedup tag
-            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean)
+            wa_sent = _send_whatsapp_sync(conv.wa_contact_phone, clean, db=db)
             _store_outbound_message(db, conv.id, clean, wa_sent, tag="unresolved")
 
             recovered += 1
@@ -1449,9 +1449,13 @@ def _check_token_health():
     if not _wa_token_paused:
         return  # Token is fine, nothing to do
 
-    # Token is paused — check if it's back
-    token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-    phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
+    # Token is paused — check if it's back (read from tenant DB first, not stale env var)
+    db = SessionLocal()
+    try:
+        token, phone_id = _get_wa_config(db)
+    finally:
+        db.close()
+
     api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 
     if not token:

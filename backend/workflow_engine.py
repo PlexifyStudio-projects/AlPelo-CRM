@@ -1267,7 +1267,7 @@ def execute_daily_summary(db, workflow, tenant):
     owner_phone = tenant.owner_phone
     if owner_phone:
         from scheduler import _send_whatsapp_sync
-        wa_sent = _send_whatsapp_sync(owner_phone, msg)
+        wa_sent = _send_whatsapp_sync(owner_phone, msg, db=db)
 
         execution = WorkflowExecution(
             workflow_id=workflow.id,

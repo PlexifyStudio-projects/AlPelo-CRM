@@ -268,12 +268,19 @@ async def _fetch_profile_photo(conv_id: int, wa_phone: str):
     photo_url = None
     clean_phone = normalize_phone(wa_phone)
 
+    # Read token from tenant DB (not stale env var)
+    db_temp = SessionLocal()
+    try:
+        token, phone_id = _get_wa_config_cached(db_temp)
+    finally:
+        db_temp.close()
+
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             # Approach 1: Direct profile picture endpoint (works for some contacts)
             resp = await client.get(
                 f"https://graph.facebook.com/{WA_API_VERSION}/{clean_phone}/profile_picture",
-                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+                headers={"Authorization": f"Bearer {token}"},
                 params={"type": "large", "redirect": "false"},
             )
             if resp.status_code == 200:
@@ -287,8 +294,8 @@ async def _fetch_profile_photo(conv_id: int, wa_phone: str):
             # Approach 2: Contacts endpoint with phone number
             if not photo_url:
                 resp2 = await client.post(
-                    f"https://graph.facebook.com/{WA_API_VERSION}/{WA_PHONE_ID}/contacts",
-                    headers={"Authorization": f"Bearer {WA_TOKEN}", "Content-Type": "application/json"},
+                    f"https://graph.facebook.com/{WA_API_VERSION}/{phone_id}/contacts",
+                    headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
                     json={"blocking": "wait", "contacts": [f"+{clean_phone}"], "force_check": True},
                 )
                 if resp2.status_code == 200:
@@ -2171,13 +2178,14 @@ async def refresh_profile_photo(conv_id: int, db: Session = Depends(get_db), use
     phone = normalize_phone(conv.wa_contact_phone)
 
     # Try multiple Meta API approaches to get profile picture
+    token, _ = _get_wa_config_cached(db)
     photo_url = None
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             # Approach 1: Business API contacts endpoint
             resp = await client.get(
                 f"https://graph.facebook.com/{WA_API_VERSION}/{phone}/profile_picture",
-                headers={"Authorization": f"Bearer {WA_TOKEN}"},
+                headers={"Authorization": f"Bearer {token}"},
                 params={"type": "large"},
             )
             if resp.status_code == 200:
