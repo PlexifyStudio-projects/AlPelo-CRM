@@ -58,6 +58,30 @@ def now_colombia() -> datetime:
 
 
 # ============================================================================
+# ANTHROPIC API KEY — Read from AIProvider DB first, fallback to env var
+# ============================================================================
+
+def get_anthropic_key(db: Session = None) -> tuple[str, str]:
+    """Get Anthropic API key and model from AIProvider DB > env var.
+    Returns (api_key, model)."""
+    import os
+    from database.models import AIProvider
+
+    if db:
+        try:
+            provider = db.query(AIProvider).filter(
+                AIProvider.provider_type == "anthropic",
+                AIProvider.is_active == True,
+            ).order_by(AIProvider.is_primary.desc(), AIProvider.priority.asc()).first()
+            if provider and provider.api_key:
+                return provider.api_key, provider.model or "claude-sonnet-4-20250514"
+        except Exception:
+            pass
+
+    return os.getenv("ANTHROPIC_API_KEY", ""), "claude-sonnet-4-20250514"
+
+
+# ============================================================================
 # WHATSAPP TOKEN — Read from tenant DB first, fallback to env var
 # ============================================================================
 

@@ -673,10 +673,11 @@ Responde SOLO en JSON con este formato exacto (sin markdown, sin explicaciones):
   {{"body": "mensaje aquí", "reason": "por qué funciona este enfoque"}}
 ]"""
 
-    # Call Claude API
-    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    # Call Claude API — read from AIProvider DB first, fallback to env var
+    from routes._helpers import get_anthropic_key
+    api_key, _model = get_anthropic_key(db)
     if not api_key:
-        raise HTTPException(status_code=500, detail="API key de IA no configurada")
+        raise HTTPException(status_code=500, detail="API key de IA no configurada. Configúrala en Dev Panel > AI Providers.")
 
     try:
         async with httpx.AsyncClient(timeout=30) as client_http:

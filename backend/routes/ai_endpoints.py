@@ -3193,9 +3193,15 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
     if tenant and tenant.ai_is_paused:
         raise HTTPException(status_code=403, detail="La IA está pausada para esta agencia. Reactívala desde el panel de desarrollo.")
 
-    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    # Read API key from AIProvider DB first (Dev Panel), fallback to env var
+    from database.models import AIProvider
+    _provider = db.query(AIProvider).filter(
+        AIProvider.provider_type == "anthropic",
+        AIProvider.is_active == True,
+    ).order_by(AIProvider.is_primary.desc(), AIProvider.priority.asc()).first()
+    anthropic_key = (_provider.api_key if _provider and _provider.api_key else None) or os.getenv("ANTHROPIC_API_KEY")
     if not anthropic_key:
-        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada en el servidor.")
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada. Configúrala en Dev Panel > Configuración > AI Providers.")
 
     _tid = user.tenant_id if user.tenant_id else (tenant.id if tenant else None)
     if _tid:
@@ -3330,19 +3336,32 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
 
 async def _call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None, model_override: str = None, tenant_id: int = 1) -> str:
     """Standalone AI call for WhatsApp auto-reply. Uses Claude only. Supports image vision.
-    model_override: if provided, use this model. Otherwise reads from AIConfig."""
-    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
-    if not anthropic_key:
-        return "Disculpa, no puedo responder en este momento. Intenta de nuevo mas tarde."
-
-    # Resolve model: override > AIConfig > default Sonnet
-    if not model_override:
-        db_temp = SessionLocal()
-        try:
+    model_override: if provided, use this model. Otherwise reads from AIConfig/AIProvider."""
+    # Read API key from AIProvider DB first (Dev Panel config), fallback to env var
+    anthropic_key = None
+    db_temp = SessionLocal()
+    try:
+        from database.models import AIProvider
+        provider = db_temp.query(AIProvider).filter(
+            AIProvider.provider_type == "anthropic",
+            AIProvider.is_active == True,
+        ).order_by(AIProvider.is_primary.desc(), AIProvider.priority.asc()).first()
+        if provider and provider.api_key:
+            anthropic_key = provider.api_key
+            if not model_override:
+                model_override = provider.model or "claude-sonnet-4-20250514"
+        # Resolve model from AIConfig if still not set
+        if not model_override:
             config = db_temp.query(AIConfig).filter(AIConfig.is_active == True).first()
             model_override = config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-20250514"
-        finally:
-            db_temp.close()
+    finally:
+        db_temp.close()
+
+    # Fallback to env var
+    if not anthropic_key:
+        anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    if not anthropic_key:
+        return "Disculpa, no puedo responder en este momento. Intenta de nuevo mas tarde."
 
     # Build the user message — with image if provided (Claude Vision)
     if image_b64 and image_mime:
@@ -3381,14 +3400,34 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
 
 def _call_ai_sync(system_prompt: str, history: list, user_message: str) -> str:
     """Synchronous AI call for scheduler morning review (runs in background thread)."""
-    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    # Read API key from AIProvider DB first, fallback to env var
+    anthropic_key = None
+    model = "claude-sonnet-4-20250514"
+    try:
+        from database.models import AIProvider
+        db_temp = SessionLocal()
+        try:
+            provider = db_temp.query(AIProvider).filter(
+                AIProvider.provider_type == "anthropic",
+                AIProvider.is_active == True,
+            ).order_by(AIProvider.is_primary.desc(), AIProvider.priority.asc()).first()
+            if provider and provider.api_key:
+                anthropic_key = provider.api_key
+                if provider.model:
+                    model = provider.model
+        finally:
+            db_temp.close()
+    except Exception:
+        pass
+    if not anthropic_key:
+        anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     if not anthropic_key:
         return None
 
     messages = list(history) + [{"role": "user", "content": user_message}]
 
     payload = {
-        "model": "claude-sonnet-4-20250514",
+        "model": model,
         "max_tokens": 2048,
         "system": [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
         "messages": messages,

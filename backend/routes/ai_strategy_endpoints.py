@@ -34,12 +34,18 @@ _API_URL = "https://api.anthropic.com/v1/messages"
 
 def _call_strategy_ai(system_prompt: str, user_message: str, tenant_id: int = 1, max_tokens: int = 4096) -> dict:
     """Call Claude with a structured prompt and parse the JSON response."""
-    anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    from routes._helpers import get_anthropic_key
+    from database.connection import SessionLocal
+    _db = SessionLocal()
+    try:
+        anthropic_key, model = get_anthropic_key(_db)
+    finally:
+        _db.close()
     if not anthropic_key:
-        raise HTTPException(status_code=503, detail="API key de IA no configurada")
+        raise HTTPException(status_code=503, detail="API key de IA no configurada. Configúrala en Dev Panel > AI Providers.")
 
     payload = {
-        "model": _MODEL,
+        "model": model,
         "max_tokens": max_tokens,
         "system": [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
         "messages": [{"role": "user", "content": user_message}],
