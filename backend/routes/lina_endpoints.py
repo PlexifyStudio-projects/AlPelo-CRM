@@ -365,12 +365,19 @@ async def get_lina_task(task_id: int, db: Session = Depends(get_db)):
 async def lina_health(db: Session = Depends(get_db)):
     """Check if WhatsApp token is valid."""
     from routes._helpers import get_wa_token, get_wa_phone_id
+    # Force fresh read from DB (no stale cache)
+    db.expire_all()
     # Try to get tenant_id from first active tenant (health check is global)
     _tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
     _tid = _tenant.id if _tenant else None
     token = get_wa_token(db, _tid)
     phone_id = get_wa_phone_id(db, _tid)
     api_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+
+    # Fallback: also check env var to compare
+    env_token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+    token_source = "db" if (token and token != env_token) else ("env" if token == env_token else "none")
+    print(f"[HEALTH] tenant_id={_tid}, token_source={token_source}, token_len={len(token) if token else 0}, token_start={token[:20] if token else 'NONE'}..., phone_id={phone_id}")
 
     if not token:
         return {"status": "error", "token_set": False, "message": "Token de WhatsApp no configurado"}
@@ -386,6 +393,7 @@ async def lina_health(db: Session = Depends(get_db)):
                 return {"status": "ok", "token_set": True, "message": "Token valido, WhatsApp conectado"}
             else:
                 error = data.get("error", {}).get("message", "Error desconocido")
+                print(f"[HEALTH] Meta API error: {error}")
                 return {"status": "error", "token_set": True, "message": f"Token invalido: {error}"}
     except Exception as e:
         return {"status": "error", "token_set": True, "message": f"Error de conexion: {str(e)[:100]}"}
