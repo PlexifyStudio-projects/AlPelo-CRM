@@ -434,6 +434,9 @@ app.include_router(dev_mega_router, prefix="/api", tags=["Dev Panel MEGA"])
 from routes.notification_endpoints import router as notification_router
 app.include_router(notification_router, prefix="/api", tags=["Notifications"])
 
+from routes.inventory_endpoints import router as inventory_router
+app.include_router(inventory_router, prefix="/api", tags=["Inventory"])
+
 
 # ============================================================================
 # FACTORY RESET — Dev-only endpoint to wipe all tenant data

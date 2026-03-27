@@ -10,13 +10,14 @@ const MENU_ITEMS = [
   { id: 'clients', label: 'Clientes', description: 'CRM Y GESTION DE CLIENTES', section: 'GESTION PRINCIPAL' },
   { id: 'campaigns', label: 'Campañas', description: 'RECUPERACIÓN Y RETENCIÓN', section: 'GESTION PRINCIPAL' },
   { id: 'services', label: 'Servicios', description: 'CATALOGO Y PRECIOS', section: 'GESTION PRINCIPAL' },
+  { id: 'inventory', label: 'Inventario', description: 'PRODUCTOS Y STOCK', section: 'GESTION PRINCIPAL' },
   { id: 'finances', label: 'Finanzas', description: 'INGRESOS Y METRICAS', section: 'GESTION PRINCIPAL' },
   { id: 'lina-activity', label: 'Actividad Lina', description: 'MONITOREO EN TIEMPO REAL', section: 'GESTION PRINCIPAL' },
   { id: 'team', label: 'Equipo', description: 'RENDIMIENTO Y FEEDBACK', section: 'GESTION PRINCIPAL' },
   { id: 'automations', label: 'Automatizaciones', description: 'WORKFLOWS INTELIGENTES', section: 'MARKETING' },
   // { id: 'content-studio', label: 'Estudio IA', description: 'CONTENIDO CON INTELIGENCIA ARTIFICIAL', section: 'MARKETING' }, // En mantenimiento
   { id: 'inbox', label: 'Inbox', description: 'CONVERSACIONES WHATSAPP', section: 'WHATSAPP' },
-  { id: 'messaging', label: 'Plantillas', description: 'MENSAJES MASIVOS', section: 'WHATSAPP' },
+  // Plantillas moved to Campañas page
   { id: 'chat-ai', label: 'Lina IA', description: 'ASISTENTE INTELIGENTE', section: 'WHATSAPP' },
 ];
 

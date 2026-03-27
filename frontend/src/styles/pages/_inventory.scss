@@ -1,0 +1,454 @@
+.inventory {
+  padding: 2rem;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+  }
+
+  &__title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: $color-secondary;
+    margin: 0;
+  }
+
+  &__subtitle {
+    color: $text-muted;
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+  }
+
+  &__add-btn {
+    background: $color-primary;
+    color: white;
+    border: none;
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+
+    &:hover { background: $color-primary-light; }
+  }
+
+  // ── KPIs ──
+  &__kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  &__kpi {
+    background: white;
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0,0,0,0.06);
+
+    &--alert {
+      border-color: #FCA5A5;
+      background: #FEF2F2;
+    }
+  }
+
+  &__kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $color-secondary;
+  }
+
+  &__kpi-label {
+    font-size: 0.8rem;
+    color: $text-muted;
+    margin-top: 0.25rem;
+  }
+
+  // ── Alert banner ──
+  &__alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: #FEF3C7;
+    border: 1px solid #F59E0B;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    color: #92400E;
+
+    button {
+      margin-left: auto;
+      background: #F59E0B;
+      color: white;
+      border: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.8rem;
+    }
+  }
+
+  &__alert-icon {
+    background: #F59E0B;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  // ── Filters ──
+  &__filters {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  &__search {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.6rem 1rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    outline: none;
+
+    &:focus { border-color: $color-primary; }
+  }
+
+  &__filter-select {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: white;
+    cursor: pointer;
+  }
+
+  &__filter-check {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: $text-muted;
+    cursor: pointer;
+    white-space: nowrap;
+
+    input { cursor: pointer; }
+  }
+
+  // ── Table ──
+  &__table-wrap {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.06);
+    overflow-x: auto;
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+
+    th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: $text-muted;
+      border-bottom: 1px solid #E5E7EB;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #F3F4F6;
+      vertical-align: middle;
+    }
+
+    tbody tr:hover { background: #F9FAFB; }
+  }
+
+  &__row--low-stock {
+    background: #FEF2F2 !important;
+  }
+
+  &__product-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    strong { font-weight: 600; }
+  }
+
+  &__sku {
+    font-size: 0.75rem;
+    color: $text-muted;
+    font-family: monospace;
+  }
+
+  &__category-chip {
+    background: #EFF6FF;
+    color: #1E40AF;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  &__margin {
+    font-weight: 600;
+    font-size: 0.85rem;
+
+    &--high { color: #059669; }
+    &--mid { color: #D97706; }
+    &--low { color: #DC2626; }
+  }
+
+  &__stock {
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+
+    &--ok { color: #059669; background: #ECFDF5; }
+    &--low { color: #DC2626; background: #FEF2F2; }
+  }
+
+  &__stock-warning {
+    font-size: 0.7rem;
+    color: #DC2626;
+    margin-left: 0.4rem;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  &__action-btn {
+    background: none;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    padding: 0.35rem;
+    cursor: pointer;
+    color: $text-muted;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+
+    &:hover { border-color: $color-primary; color: $color-primary; }
+
+    &--stock {
+      border-color: #059669;
+      color: #059669;
+
+      &:hover { background: #ECFDF5; }
+    }
+
+    &--delete:hover { border-color: #DC2626; color: #DC2626; }
+  }
+
+  // ── Modal ──
+  &__modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  &__modal {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+
+    &--stock { max-width: 480px; }
+  }
+
+  &__modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #E5E7EB;
+
+    h2 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+  }
+
+  &__modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: $text-muted;
+    padding: 0;
+    line-height: 1;
+  }
+
+  &__modal-form {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+
+    &--prices { grid-template-columns: 1fr 1fr auto; }
+  }
+
+  &__form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: $text-muted;
+    }
+
+    input, select, textarea {
+      padding: 0.55rem 0.75rem;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      outline: none;
+
+      &:focus { border-color: $color-primary; }
+    }
+
+    small { font-size: 0.75rem; color: $text-muted; }
+  }
+
+  &__new-cat {
+    margin-top: 0.4rem;
+  }
+
+  &__margin-display {
+    padding: 0.55rem 0.75rem;
+    background: #F3F4F6;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #059669;
+    text-align: center;
+  }
+
+  &__modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #F3F4F6;
+  }
+
+  &__btn-cancel {
+    padding: 0.6rem 1.25rem;
+    background: white;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  &__btn-save {
+    padding: 0.6rem 1.25rem;
+    background: $color-primary;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+
+    &:hover { background: $color-primary-light; }
+  }
+
+  // ── Stock modal ──
+  &__stock-current {
+    padding: 0.75rem 1.5rem;
+    background: #F3F4F6;
+    font-size: 0.95rem;
+  }
+
+  &__stock-types {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  &__stock-type {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.65rem 0.75rem;
+    background: white;
+    border: 2px solid #E5E7EB;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+
+    strong { font-size: 0.85rem; }
+    small { font-size: 0.7rem; color: $text-muted; }
+
+    &--active {
+      border-color: $color-primary;
+      background: #EFF6FF;
+    }
+  }
+
+  &__stock-preview {
+    padding: 0.6rem 0.75rem;
+    background: #ECFDF5;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: #065F46;
+
+    &--negative { color: #DC2626; }
+  }
+
+  &__loading {
+    text-align: center;
+    padding: 3rem;
+    color: $text-muted;
+    font-size: 0.95rem;
+  }
+
+  // ── Responsive ──
+  @media (max-width: 768px) {
+    padding: 1rem;
+
+    &__form-row { grid-template-columns: 1fr; }
+    &__form-row--prices { grid-template-columns: 1fr 1fr; }
+    &__stock-types { grid-template-columns: 1fr; }
+    &__kpis { grid-template-columns: repeat(2, 1fr); }
+  }
+}

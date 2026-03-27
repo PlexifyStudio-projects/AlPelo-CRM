@@ -926,3 +926,46 @@ class ErrorLog(Base):
     tenant_id = Column(Integer, nullable=True)
     user_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# ============================================================================
+# INVENTORY — Products & Stock Management
+# ============================================================================
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    sku = Column(String(100), nullable=True)  # Optional product code
+    category = Column(String(100), nullable=True)  # e.g. "Cuidado capilar", "Styling", "Skincare"
+    description = Column(Text, nullable=True)
+    price = Column(Float, nullable=False, default=0)  # Selling price
+    cost = Column(Float, nullable=False, default=0)   # Purchase cost
+    stock = Column(Integer, nullable=False, default=0)
+    min_stock = Column(Integer, nullable=False, default=5)  # Alert threshold
+    supplier = Column(String(255), nullable=True)
+    image_url = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    movements = relationship("InventoryMovement", back_populates="product", lazy="dynamic")
+
+
+class InventoryMovement(Base):
+    __tablename__ = "inventory_movements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    movement_type = Column(String(20), nullable=False)  # purchase, sale, adjustment, return, loss
+    quantity = Column(Integer, nullable=False)  # Positive = stock in, negative = stock out
+    unit_cost = Column(Float, nullable=True)  # Cost per unit at time of movement
+    note = Column(Text, nullable=True)
+    reference_id = Column(Integer, nullable=True)  # Optional link to checkout_id, invoice_id, etc.
+    created_by = Column(String(100), nullable=True)  # Username who performed the action
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    product = relationship("Product", back_populates="movements")

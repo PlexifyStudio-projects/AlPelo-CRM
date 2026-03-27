@@ -5,11 +5,11 @@ import StaffRouter from '../components/Staff/StaffRouter/StaffRouter';
 import Login from '../pages/Login/Login';
 import Dashboard from '../pages/Dashboard/Dashboard';
 import Clients from '../pages/Clients/Clients';
-import Messaging from '../pages/Messaging/Messaging';
 import ChatAI from '../pages/ChatAI/ChatAI';
 import Team from '../pages/Team/Team';
 import Inbox from '../pages/Inbox/Inbox';
 import Services from '../pages/Services/Services';
+import Inventory from '../pages/Inventory/Inventory';
 import Agenda from '../pages/Agenda/Agenda';
 import Finances from '../pages/Finances/Finances';
 import LinaActivity from '../pages/LinaActivity/LinaActivity';
@@ -67,10 +67,11 @@ const AppRouter = () => {
       case 'automations': return <Automations />;
       case 'content-studio': return <ContentStudio />;
       case 'services': return <Services />;
+      case 'inventory': return <Inventory />;
       case 'finances': return <Finances />;
       case 'lina-activity': return <LinaActivity />;
       case 'inbox': return <Inbox />;
-      case 'messaging': return <Messaging />;
+      case 'messaging': return null; // Removed — templates now in Campañas
       case 'chat-ai': return <ChatAI />;
       case 'team': return <Team />;
       case 'profile': return <AdminProfile user={user} onUpdate={updateProfile} />;
