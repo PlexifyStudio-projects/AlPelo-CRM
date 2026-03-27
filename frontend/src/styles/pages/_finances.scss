@@ -3945,161 +3945,268 @@
   &__forecast {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
 
   &__forecast-loading {
     text-align: center;
     padding: 3rem;
     color: $color-gray-400;
+    font-size: 0.95rem;
   }
 
-  &__forecast-month {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-  }
-
-  &__forecast-month-header {
+  // ── Hero: big number ──
+  &__fc-hero {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.25rem;
-
-    h3 {
-      margin: 0;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: $color-secondary;
-    }
+    background: white;
+    border-radius: 16px;
+    padding: 1.75rem 2rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    gap: 2rem;
+    flex-wrap: wrap;
   }
 
-  &__forecast-trend {
-    font-weight: 700;
-    font-size: 0.9rem;
+  &__fc-hero-label {
+    margin: 0;
+    font-size: 0.85rem;
+    color: $color-gray-400;
+    font-weight: 500;
   }
 
-  &__forecast-month-kpis {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.25rem;
+  &__fc-hero-amount {
+    margin: 0.25rem 0 0;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: $color-secondary;
+    letter-spacing: -0.5px;
   }
 
-  &__forecast-kpi {
+  &__fc-hero-sub {
+    margin: 0.25rem 0 0;
+    font-size: 0.85rem;
+    color: $color-gray-400;
+  }
+
+  &__fc-hero-right {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  &__fc-hero-card {
     display: flex;
     flex-direction: column;
-    padding: 1rem;
     background: $color-gray-50;
-    border-radius: 10px;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    min-width: 160px;
 
-    &--projected {
-      background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
-      border: 1px solid #93C5FD;
-    }
+    &--green { background: #ECFDF5; }
+    &--red { background: #FEF2F2; }
   }
 
-  &__forecast-kpi-value {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: $color-secondary;
-  }
-
-  &__forecast-kpi-label {
-    font-size: 0.78rem;
-    color: $color-gray-400;
-    margin-top: 0.2rem;
-  }
-
-  &__forecast-progress {
-    margin-top: 0.5rem;
-  }
-
-  &__forecast-progress-bar {
-    position: relative;
-    height: 12px;
-    background: $color-gray-100;
-    border-radius: 6px;
-    overflow: hidden;
-  }
-
-  &__forecast-progress-fill {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    background: #059669;
-    border-radius: 6px;
-    z-index: 2;
-    transition: width 0.6s ease;
-  }
-
-  &__forecast-progress-projected {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    background: rgba(59, 130, 246, 0.25);
-    border-radius: 6px;
-    z-index: 1;
-    transition: width 0.6s ease;
-  }
-
-  &__forecast-progress-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 0.35rem;
+  &__fc-hero-card-label {
     font-size: 0.75rem;
     color: $color-gray-400;
   }
 
-  &__forecast-week {
+  &__fc-hero-card-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: $color-secondary;
+    margin-top: 0.2rem;
+
+    .finances__fc-hero-card--green & { color: #059669; }
+    .finances__fc-hero-card--red & { color: #DC2626; }
+  }
+
+  // ── Progress bar ──
+  &__fc-progress-section {
     background: white;
     border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  &__fc-progress-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+    font-size: 0.85rem;
+    color: $color-gray-500;
+  }
+
+  &__fc-progress-pct {
+    font-weight: 700;
+    color: $color-primary;
+  }
+
+  &__fc-progress-track {
+    height: 10px;
+    background: $color-gray-100;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+
+  &__fc-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #059669, #34D399);
+    border-radius: 5px;
+    transition: width 0.8s ease;
+  }
+
+  // ── KPIs row ──
+  &__fc-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  &__fc-kpi {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: white;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  &__fc-kpi-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  &__fc-kpi-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $color-secondary;
+    display: block;
+  }
+
+  &__fc-kpi-label {
+    font-size: 0.75rem;
+    color: $color-gray-400;
+  }
+
+  // ── Weekly card ──
+  &__fc-week-card {
+    background: white;
+    border-radius: 16px;
     padding: 1.5rem;
     border: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  &__fc-week-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 
     h3 {
-      margin: 0 0 0.75rem;
-      font-size: 1.1rem;
+      margin: 0;
+      font-size: 1.05rem;
       font-weight: 700;
       color: $color-secondary;
     }
   }
 
-  &__forecast-week-summary {
+  &__fc-week-totals {
     display: flex;
-    gap: 2rem;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    color: $color-gray-500;
+    gap: 1.5rem;
+    font-size: 0.85rem;
+    color: $color-gray-400;
 
     strong { color: $color-secondary; }
   }
 
-  &__forecast-chart {
-    margin-bottom: 1.25rem;
+  &__fc-chart { margin-bottom: 1.25rem; }
+
+  // ── Daily cards ──
+  &__fc-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
   }
 
-  &__forecast-today-row {
-    background: #EFF6FF !important;
-    font-weight: 600;
+  &__fc-day {
+    background: $color-gray-50;
+    border-radius: 10px;
+    padding: 0.75rem;
+    text-align: center;
+    transition: all 0.2s;
+
+    &--today {
+      background: #EFF6FF;
+      border: 2px solid $color-primary;
+    }
+
+    &--past { opacity: 0.5; }
   }
 
-  &__forecast-past-row {
-    opacity: 0.6;
+  &__fc-day-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-bottom: 0.4rem;
   }
 
-  &__forecast-today-badge {
-    display: inline-block;
+  &__fc-day-name {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: $color-gray-500;
+    text-transform: uppercase;
+  }
+
+  &__fc-day-num {
+    font-size: 0.75rem;
+    color: $color-gray-400;
+  }
+
+  &__fc-day-badge {
     background: $color-primary;
     color: white;
+    font-size: 0.55rem;
+    font-weight: 800;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+  }
+
+  &__fc-day-amount {
+    font-size: 1rem;
+    font-weight: 800;
+    margin-bottom: 0.15rem;
+  }
+
+  &__fc-day-sub {
     font-size: 0.65rem;
-    font-weight: 700;
-    padding: 0.1rem 0.4rem;
-    border-radius: 4px;
-    margin-left: 0.4rem;
-    vertical-align: middle;
+    color: $color-gray-400;
+  }
+
+  &__fc-day-hint {
+    font-size: 0.6rem;
+    color: $color-gray-300;
+    margin-top: 0.25rem;
+  }
+
+  // Responsive
+  @media (max-width: 768px) {
+    &__fc-hero { flex-direction: column; align-items: flex-start; padding: 1.25rem; }
+    &__fc-hero-amount { font-size: 2rem; }
+    &__fc-hero-right { flex-direction: column; width: 100%; }
+    &__fc-hero-card { min-width: 0; }
+    &__fc-days { grid-template-columns: repeat(4, 1fr); }
+    &__fc-kpis { grid-template-columns: 1fr; }
   }
 }
