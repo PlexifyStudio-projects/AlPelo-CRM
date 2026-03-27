@@ -662,7 +662,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   // ═══════════════════════════════════════════════════
   return (
-    <div className={b}>
+    <div className={`${b}${draggingApt ? ` ${b}--dragging` : ''}`}>
 
       {/* ── TOPBAR ── */}
       <div className={`${b}__topbar`}>

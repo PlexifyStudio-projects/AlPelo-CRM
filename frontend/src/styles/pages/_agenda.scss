@@ -789,6 +789,15 @@
     flex-direction: column;
     gap: 2px;
     padding: 1px 0;
+
+    // During drag, non-dragged events must not block drop targets
+    .agenda--dragging & {
+      pointer-events: none;
+
+      .agenda__event--dragging {
+        pointer-events: auto;
+      }
+    }
   }
 
   &__event {
