@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List
 
 from database.connection import get_db
-from database.models import Admin
+from database.models import Admin, Staff
 from schemas import (
     LoginRequest, UserCredentials, TokenRequest,
     AdminResponse, AdminProfileUpdate, ChangePasswordRequest,
@@ -208,7 +208,7 @@ def create_token(request: TokenRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/refresh-token")
-def refresh_token(request: Request):
+def refresh_token(request: Request, db: Session = Depends(get_db)):
     # Read token from header or cookie
     token = None
     auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
@@ -228,6 +228,18 @@ def refresh_token(request: Request):
     role = payload.get("role")
 
     new_token = create_access_token(data={"sub": username, "user_id": user_id, "role": role})
+
+    # Update active_session_token in DB so single-device check doesn't reject the refreshed token
+    try:
+        if role == "staff":
+            user = db.query(Staff).filter(Staff.id == user_id).first()
+        else:
+            user = db.query(Admin).filter(Admin.id == user_id).first()
+        if user:
+            user.active_session_token = new_token
+            db.commit()
+    except Exception:
+        pass
 
     response = JSONResponse(
         content={"refreshed": True, "username": username, "access_token": new_token},
