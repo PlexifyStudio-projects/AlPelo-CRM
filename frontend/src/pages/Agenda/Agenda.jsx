@@ -158,6 +158,55 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [staffPaymentCode, setStaffPaymentCode] = useState('');
   const [staffCompleting, setStaffCompleting] = useState(false);
 
+  // ── Drag-and-drop rescheduling ──
+  const [draggingApt, setDraggingApt] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null);  // { date, time }
+
+  const handleDragStart = useCallback((e, apt) => {
+    if (isStaffMode || apt.status === 'completed' || apt.status === 'paid' || apt.status === 'cancelled') return;
+    setDraggingApt(apt);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(apt.id));
+    // Make ghost semi-transparent
+    if (e.target) e.target.style.opacity = '0.5';
+  }, [isStaffMode]);
+
+  const handleDragEnd = useCallback((e) => {
+    if (e.target) e.target.style.opacity = '1';
+    setDraggingApt(null);
+    setDropTarget(null);
+  }, []);
+
+  const handleDragOver = useCallback((e, date, time) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDropTarget({ date: toISO(date), time });
+  }, []);
+
+  const handleDrop = useCallback(async (e, date, time) => {
+    e.preventDefault();
+    setDropTarget(null);
+    if (!draggingApt) return;
+
+    const newDate = toISO(date);
+    const newTime = time;
+
+    // Skip if same date+time
+    if (newDate === draggingApt.date && newTime === draggingApt.time) {
+      setDraggingApt(null);
+      return;
+    }
+
+    try {
+      await appointmentService.update(draggingApt.id, { date: newDate, time: newTime });
+      addNotification(`Cita de ${draggingApt.client_name} movida a ${newTime}`, 'success');
+      loadData();
+    } catch (err) {
+      addNotification('Error al mover cita: ' + (err.message || 'Conflicto de horario'), 'error');
+    }
+    setDraggingApt(null);
+  }, [draggingApt, addNotification]);
+
   // ─── Calendar derived ──────────────────────────────
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
   const columns = view === 'week' ? weekDays : [currentDate];
@@ -809,8 +858,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                         const endTime = getEndTime(apt.time, apt.duration_minutes || svc?.duration_minutes || 30);
                         return (
                           <div key={apt.id}
-                            className={`${b}__event ${(apt.status === 'completed' || apt.status === 'paid') ? (isStaffMode ? `${b}__event--done-staff` : `${b}__event--done`) : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''}`}
+                            className={`${b}__event ${(apt.status === 'completed' || apt.status === 'paid') ? (isStaffMode ? `${b}__event--done-staff` : `${b}__event--done`) : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''} ${draggingApt?.id === apt.id ? `${b}__event--dragging` : ''}`}
                             style={{ '--c': staffColor, '--sc': statusColor, animationDelay: `${evIdx * 30}ms` }}
+                            draggable={!isStaffMode && apt.status === 'confirmed'}
+                            onDragStart={(e) => handleDragStart(e, apt)}
+                            onDragEnd={handleDragEnd}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (isStaffMode) {
@@ -849,15 +901,28 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                       <div className={`${b}__now-line`} />
                     </div>
                   )}
-                  {/* Clickable slots (30-min each) — hidden for staff */}
-                  {!isStaffMode && HOURS.map(h => [
-                    <div key={`a${h}`} className={`${b}__slot`}
-                      style={{ top: `${hourTop(h)}px`, height: `${slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2] - hourTop(h)}px` }}
-                      onClick={() => openCreate(day, `${pad2(h)}:00`)} />,
-                    <div key={`b${h}`} className={`${b}__slot`}
-                      style={{ top: `${slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2]}px`, height: `${hourTop(h) + hourHeight(h) - slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2]}px` }}
-                      onClick={() => openCreate(day, `${pad2(h)}:30`)} />,
-                  ])}
+                  {/* Clickable + droppable slots (30-min each) — hidden for staff */}
+                  {!isStaffMode && HOURS.map(h => {
+                    const t1 = `${pad2(h)}:00`;
+                    const t2 = `${pad2(h)}:30`;
+                    const dt = toISO(day);
+                    return [
+                      <div key={`a${h}`}
+                        className={`${b}__slot ${dropTarget?.date === dt && dropTarget?.time === t1 ? `${b}__slot--drop-target` : ''}`}
+                        style={{ top: `${hourTop(h)}px`, height: `${slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2] - hourTop(h)}px` }}
+                        onClick={() => openCreate(day, t1)}
+                        onDragOver={(e) => handleDragOver(e, day, t1)}
+                        onDragLeave={() => setDropTarget(null)}
+                        onDrop={(e) => handleDrop(e, day, t1)} />,
+                      <div key={`b${h}`}
+                        className={`${b}__slot ${dropTarget?.date === dt && dropTarget?.time === t2 ? `${b}__slot--drop-target` : ''}`}
+                        style={{ top: `${slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2]}px`, height: `${hourTop(h) + hourHeight(h) - slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2]}px` }}
+                        onClick={() => openCreate(day, t2)}
+                        onDragOver={(e) => handleDragOver(e, day, t2)}
+                        onDragLeave={() => setDropTarget(null)}
+                        onDrop={(e) => handleDrop(e, day, t2)} />,
+                    ];
+                  })}
                 </div>
               );
             })}

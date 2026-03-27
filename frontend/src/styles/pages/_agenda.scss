@@ -854,6 +854,25 @@
       opacity: 0.25;
       text-decoration: line-through;
     }
+
+    &--dragging {
+      opacity: 0.3;
+      border-style: dashed;
+    }
+
+    &[draggable="true"] {
+      cursor: grab;
+
+      &:active { cursor: grabbing; }
+    }
+  }
+
+  &__slot--drop-target {
+    background: rgba($color-primary, 0.12) !important;
+    border: 2px dashed $color-primary !important;
+    border-radius: 6px;
+    z-index: 5;
+    transition: background 150ms ease;
   }
 
   &__event-accent {
