@@ -1254,3 +1254,27 @@ def dismiss_payment_alert(conversation_id: int, db: Session = Depends(get_db), u
         conv.tags = [t for t in conv.tags if "Pago pendiente" not in t]
     db.commit()
     return {"ok": True}
+
+
+# ============================================================================
+# NO-SHOW RISK — Prediction per appointment
+# ============================================================================
+
+@router.get("/appointments/no-show-risk")
+def appointment_no_show_risk(
+    date_str: Optional[str] = Query(None, alias="date"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Get no-show risk scores for all confirmed appointments on a date."""
+    from no_show_predictor import get_appointments_with_risk
+    from routes._helpers import now_colombia
+
+    tid = safe_tid(user, db)
+    target_date = date.fromisoformat(date_str) if date_str else now_colombia().date()
+    results = get_appointments_with_risk(db, target_date, tid)
+    return {
+        "date": target_date.isoformat(),
+        "appointments": results,
+        "high_risk_count": sum(1 for r in results if r["risk_score"] >= 45),
+    }

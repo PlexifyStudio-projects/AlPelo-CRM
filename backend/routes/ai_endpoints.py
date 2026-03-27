@@ -2450,6 +2450,109 @@ REGLA DE PRIVACIDAD ABSOLUTA: Los slots marcados [Ocupado] son de OTROS clientes
                 apt_lines.append(f"  {a.time} | [Ocupado] | {staff_obj.name if staff_obj else '?'} | {a.status}")
         sections.append(f"AGENDA MAÑANA ({tomorrow.strftime('%d/%m/%Y')}) — {len(tomorrows_apts)} citas (ESTAS YA EXISTEN):\n" + "\n".join(apt_lines))
 
+    # ── PRECISION SCHEDULING: Optimal slots per staff for today + tomorrow ──
+    def _find_optimal_slots(apts, staff_list, target_date, schedule_map=None):
+        """Find optimal free slots per staff, prioritizing gap-filling."""
+        OPEN_H, CLOSE_H = 8, 20  # default business hours (8am-8pm)
+        SLOT_DURATION = 30  # minutes
+        lines = []
+        for s in staff_list:
+            s_apts = sorted(
+                [a for a in apts if a.staff_id == s.id],
+                key=lambda a: a.time
+            )
+            # Build busy intervals
+            busy = []
+            for a in s_apts:
+                try:
+                    h, m = int(a.time.split(":")[0]), int(a.time.split(":")[1])
+                    start = h * 60 + m
+                    end = start + (a.duration_minutes or 30)
+                    busy.append((start, end))
+                except (ValueError, AttributeError):
+                    pass
+
+            # Find free slots
+            free_slots = []
+            t = OPEN_H * 60
+            close = CLOSE_H * 60
+            for bs, be in busy:
+                if t < bs:
+                    free_slots.append((t, bs, bs - t, 'gap'))  # gap between appointments
+                t = max(t, be)
+            if t < close:
+                free_slots.append((t, close, close - t, 'tail'))  # end of day
+
+            if not free_slots:
+                continue
+
+            # Score slots: gaps first (fill holes), then shorter gaps prioritized
+            scored = []
+            for fs, fe, dur, slot_type in free_slots:
+                if dur < SLOT_DURATION:
+                    continue
+                score = 100 if slot_type == 'gap' else 50  # gaps > tail
+                score += max(0, 60 - dur)  # shorter gaps score higher (tighter fit)
+                h, m = divmod(fs, 60)
+                scored.append((score, f"{h:02d}:{m:02d}", dur, slot_type))
+
+            scored.sort(key=lambda x: -x[0])
+            top3 = scored[:3]
+            if top3:
+                slot_strs = []
+                for sc, time_str, dur, stype in top3:
+                    label = "llena hueco" if stype == 'gap' else "final del dia"
+                    slot_strs.append(f"{time_str} ({label}, {dur}min libres)")
+                lines.append(f"  {s.name}: {' | '.join(slot_strs)}")
+
+        return lines
+
+    # Get staff for slots
+    slot_staff = staff_q.all() if 'staff_q' not in dir() else db.query(Staff).filter(Staff.is_active == True, *([Staff.tenant_id == tenant_id] if tenant_id else [])).all()
+
+    today_slots = _find_optimal_slots(todays_apts, slot_staff, today)
+    tomorrow_slots = _find_optimal_slots(tomorrows_apts if tomorrows_apts else [], slot_staff, tomorrow)
+
+    if today_slots or tomorrow_slots:
+        slot_section = "HORARIOS OPTIMOS (sugeridos por el sistema — llenan huecos de la agenda):"
+        if today_slots:
+            slot_section += f"\nHoy ({today.strftime('%d/%m')}):\n" + "\n".join(today_slots)
+        if tomorrow_slots:
+            slot_section += f"\nManana ({tomorrow.strftime('%d/%m')}):\n" + "\n".join(tomorrow_slots)
+        slot_section += "\nINSTRUCCION: Cuando el cliente pida cita, sugiere PRIMERO estos horarios optimos (llenan huecos). Si no le sirven, ofrece otros disponibles."
+        sections.append(slot_section)
+
+    # ── No-Show Risk alerts for today's appointments ──
+    try:
+        from no_show_predictor import calculate_no_show_risk
+        high_risk = []
+        for a in todays_apts:
+            if a.status != 'confirmed':
+                continue
+            risk = calculate_no_show_risk(a, db, tenant_id)
+            if risk["risk_score"] >= 45:
+                high_risk.append(f"  {a.time} {a.client_name}: riesgo {risk['risk_score']}% ({', '.join(risk['factors'][:2])})")
+        if high_risk:
+            sections.append(f"ALERTA NO-SHOW — {len(high_risk)} cita(s) HOY con alto riesgo de inasistencia:\n" + "\n".join(high_risk) + "\nACCION: Si el cliente de alto riesgo te escribe, confirma su cita proactivamente: 'Te confirmo tu cita de hoy a las X?'")
+    except Exception:
+        pass
+
+    # ── Client preferred time from memory ──
+    if conv_id:
+        try:
+            _conv_for_mem = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+            if _conv_for_mem and _conv_for_mem.client_id:
+                from database.models import ClientMemory
+                pref_memories = db.query(ClientMemory).filter(
+                    ClientMemory.client_id == _conv_for_mem.client_id,
+                    ClientMemory.content.ilike("%horario%") | ClientMemory.content.ilike("%prefiere%tarde%") | ClientMemory.content.ilike("%prefiere%manana%") | ClientMemory.content.ilike("%siempre viene%"),
+                ).limit(3).all()
+                if pref_memories:
+                    pref_lines = [f"  - {m.content[:100]}" for m in pref_memories]
+                    sections.append("PREFERENCIAS DE HORARIO DEL CLIENTE (de memoria):\n" + "\n".join(pref_lines) + "\nUsa esta info para sugerir horarios que le convengan.")
+        except Exception:
+            pass
+
     # Pending tasks — notes with "PENDIENTE" across ALL clients (Lina's task memory)
     pending_q = (
         db.query(ClientNote)
@@ -2513,6 +2616,65 @@ REGLA DE PRIVACIDAD ABSOLUTA: Los slots marcados [Ocupado] son de OTROS clientes
             client_name = client.name if client else "?"
             learn_lines.append(f"  {client_name}: {n.content[:150]}")
         sections.append(f"🧠 MEMORIA DE LINA ({len(learned_notes)} aprendizajes de clientes):\n" + "\n".join(learn_lines))
+
+    # ── AI Marketing Intelligence: proactive suggestions (admin chat only) ──
+    if not conv_id:  # Admin chat (no conv_id = not WhatsApp)
+        try:
+            marketing_tips = []
+            # 1. Inactive clients
+            thirty_days_ago = datetime.now().date() - timedelta(days=30)
+            inactive_count = db.query(Client).filter(
+                Client.is_active == True,
+                *([Client.tenant_id == tenant_id] if tenant_id else []),
+            ).filter(
+                ~Client.id.in_(
+                    db.query(VisitHistory.client_id).filter(
+                        VisitHistory.visit_date >= thirty_days_ago,
+                    ).distinct()
+                )
+            ).count()
+            if inactive_count >= 5:
+                marketing_tips.append(f"Tienes {inactive_count} clientes que no vienen hace +30 dias. Puedo generar una campana de reactivacion.")
+
+            # 2. Upcoming birthdays (next 7 days)
+            from sqlalchemy import extract
+            today_date = datetime.now().date()
+            bday_clients = db.query(Client).filter(
+                Client.birthday.isnot(None),
+                Client.is_active == True,
+                *([Client.tenant_id == tenant_id] if tenant_id else []),
+            ).all()
+            upcoming_bdays = []
+            for c in bday_clients:
+                try:
+                    bday_this_year = c.birthday.replace(year=today_date.year)
+                    days_to = (bday_this_year - today_date).days
+                    if 0 <= days_to <= 7:
+                        upcoming_bdays.append(c.name.split()[0])
+                except (ValueError, AttributeError):
+                    pass
+            if upcoming_bdays:
+                marketing_tips.append(f"Cumpleanos esta semana: {', '.join(upcoming_bdays[:5])}. Puedo enviarles felicitacion + descuento.")
+
+            # 3. Low activity days
+            from collections import Counter
+            DIAS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
+            recent_visits = db.query(VisitHistory).filter(
+                VisitHistory.visit_date >= today_date - timedelta(days=60),
+                *([VisitHistory.tenant_id == tenant_id] if tenant_id else []),
+            ).all()
+            if recent_visits:
+                day_counts = Counter(v.visit_date.weekday() for v in recent_visits)
+                if day_counts:
+                    avg = sum(day_counts.values()) / max(len(day_counts), 1)
+                    weak_days = [DIAS[d] for d, c in day_counts.items() if c < avg * 0.6]
+                    if weak_days:
+                        marketing_tips.append(f"Los {', '.join(weak_days)} facturas menos. Considera una promo para esos dias.")
+
+            if marketing_tips:
+                sections.append("SUGERENCIAS DE MARKETING (basadas en datos reales):\n" + "\n".join(f"  - {t}" for t in marketing_tips) + "\nSi el admin pregunta sobre campanas o marketing, usa estas sugerencias.")
+        except Exception:
+            pass
 
     return "\n\n".join(sections)
 

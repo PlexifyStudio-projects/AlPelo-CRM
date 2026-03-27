@@ -1610,7 +1610,97 @@ def _proactive_reconnect(db):
 
 
 # ============================================================================
-# 8. META TOKEN AUTO-REFRESH — Renew tokens before they expire
+# 8. STAFF PREPARATION AI — Briefing 30 min before appointment
+# ============================================================================
+_sent_briefings = set()  # Track (apt_id) to avoid duplicates
+
+def _send_staff_briefings(db):
+    """Send staff a prep briefing 30 min before their next appointment."""
+    from database.models import Appointment, Client, VisitHistory, Notification, Staff, Service
+
+    now = _now_colombia()
+    today = now.date()
+    target_time_start = now + timedelta(minutes=25)
+    target_time_end = now + timedelta(minutes=35)
+
+    # Find appointments 25-35 min from now
+    apts = db.query(Appointment).filter(
+        Appointment.date == today,
+        Appointment.status == "confirmed",
+    ).all()
+
+    for apt in apts:
+        if apt.id in _sent_briefings:
+            continue
+        try:
+            h, m = int(apt.time.split(":")[0]), int(apt.time.split(":")[1])
+            apt_dt = now.replace(hour=h, minute=m, second=0, microsecond=0)
+            diff_min = (apt_dt - now).total_seconds() / 60
+
+            if not (25 <= diff_min <= 35):
+                continue
+
+            # Build briefing
+            staff = db.query(Staff).filter(Staff.id == apt.staff_id).first()
+            if not staff:
+                continue
+
+            svc = db.query(Service).filter(Service.id == apt.service_id).first()
+            client = db.query(Client).filter(Client.id == apt.client_id).first() if apt.client_id else None
+
+            briefing_parts = [f"Proxima cita {apt.time}"]
+            briefing_parts.append(f"Cliente: {apt.client_name}")
+            briefing_parts.append(f"Servicio: {svc.name if svc else '?'} ({apt.duration_minutes or 30}min)")
+
+            if client:
+                total_visits = len(client.visits) if client.visits else 0
+                if total_visits == 0:
+                    briefing_parts.append("NUEVO: Primera visita")
+                elif total_visits >= 10:
+                    briefing_parts.append(f"VIP: {total_visits} visitas")
+                else:
+                    briefing_parts.append(f"Visitas: {total_visits}")
+
+                # Favorite service
+                if client.favorite_service:
+                    briefing_parts.append(f"Servicio favorito: {client.favorite_service}")
+
+                # Notes/preferences
+                if client.notes:
+                    for note in client.notes[:2]:
+                        if 'APRENDIZAJE' in (note.content or '').upper() or 'PREFERENCIA' in (note.content or '').upper():
+                            briefing_parts.append(f"Nota: {note.content[:80]}")
+
+                # No-show risk
+                try:
+                    from no_show_predictor import calculate_no_show_risk
+                    risk = calculate_no_show_risk(apt, db)
+                    if risk["risk_score"] >= 45:
+                        briefing_parts.append(f"RIESGO NO-SHOW: {risk['risk_score']}%")
+                except Exception:
+                    pass
+
+            # Create notification for staff
+            notif = Notification(
+                tenant_id=apt.tenant_id,
+                type="staff_briefing",
+                title=f"En 30min: {apt.client_name}",
+                detail=" | ".join(briefing_parts),
+                icon="briefing",
+            )
+            db.add(notif)
+            _sent_briefings.add(apt.id)
+
+            print(f"[SCHEDULER] Staff briefing for {staff.name}: {apt.client_name} at {apt.time}")
+
+        except Exception as e:
+            print(f"[SCHEDULER] Briefing error for apt {apt.id}: {e}")
+
+    db.commit()
+
+
+# ============================================================================
+# 9. META TOKEN AUTO-REFRESH — Renew tokens before they expire
 # ============================================================================
 _last_token_refresh_date = None
 
@@ -1980,6 +2070,7 @@ def _scheduler_loop():
                         print(f"[SCHEDULER] Lina task worker error: {e}")
 
                     _morning_review(db)
+                    _send_staff_briefings(db)
                     _sweep_missed_conversations(db)
                     _detect_unresolved_messages(db)
 
