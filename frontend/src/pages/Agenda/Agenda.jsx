@@ -158,6 +158,20 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [staffPaymentCode, setStaffPaymentCode] = useState('');
   const [staffCompleting, setStaffCompleting] = useState(false);
 
+  // ── Precision Scheduling: optimal slots ──
+  const [optimalSlots, setOptimalSlots] = useState(null);
+  const [showOptimal, setShowOptimal] = useState(false);
+
+  const loadOptimalSlots = useCallback(async () => {
+    try {
+      const dateStr = toISO(currentDate);
+      const resp = await fetch(`${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/appointments/optimal-slots?date=${dateStr}`, { credentials: 'include' });
+      if (resp.ok) setOptimalSlots(await resp.json());
+    } catch { /* silent */ }
+  }, [currentDate]);
+
+  useEffect(() => { if (showOptimal) loadOptimalSlots(); }, [showOptimal, loadOptimalSlots]);
+
   // ── Drag-and-drop rescheduling ──
   const [draggingApt, setDraggingApt] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);  // { date, time }
@@ -782,6 +796,45 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           </div>
         </div>
       </div>
+
+      {/* ── PRECISION SCHEDULING: Optimal slots panel ── */}
+      {!isStaffMode && (
+        <div className={`${b}__optimal`}>
+          <button className={`${b}__optimal-toggle`} onClick={() => setShowOptimal(p => !p)}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Horarios sugeridos
+            <span className={`${b}__optimal-arrow ${showOptimal ? `${b}__optimal-arrow--open` : ''}`}><ChevronDown /></span>
+          </button>
+          {showOptimal && optimalSlots && (
+            <div className={`${b}__optimal-grid`}>
+              {optimalSlots.staff?.map(s => (
+                <div key={s.staff_id} className={`${b}__optimal-staff`}>
+                  <div className={`${b}__optimal-staff-head`}>
+                    <span className={`${b}__optimal-staff-dot`} style={{ background: staffColorMap[s.staff_id] || '#6B6B63' }} />
+                    <strong>{s.staff_name}</strong>
+                    <span className={`${b}__optimal-util`}>{s.utilization_pct}% ocupado</span>
+                  </div>
+                  <div className={`${b}__optimal-slots`}>
+                    {s.free_slots.length === 0 ? (
+                      <span className={`${b}__optimal-full`}>Agenda llena</span>
+                    ) : s.free_slots.slice(0, 4).map((slot, i) => (
+                      <button
+                        key={i}
+                        className={`${b}__optimal-slot ${slot.type === 'gap' ? `${b}__optimal-slot--gap` : ''}`}
+                        onClick={() => openCreate(currentDate, slot.start)}
+                        title={slot.reason}
+                      >
+                        <span className={`${b}__optimal-slot-time`}>{slot.start}</span>
+                        <span className={`${b}__optimal-slot-info`}>{slot.duration_min}min {slot.type === 'gap' ? '· hueco' : ''}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── CALENDAR ── */}
       <div className={`${b}__calendar`}>

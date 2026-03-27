@@ -500,6 +500,128 @@
   }
 
   // ═══════════════════════════════════════════════════════
+  // PRECISION SCHEDULING — Optimal Slots Panel
+  // ═══════════════════════════════════════════════════════
+  &__optimal {
+    margin: 0 $spacing-sm $spacing-xs;
+  }
+
+  &__optimal-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: white;
+    border: 1px solid $color-gray-200;
+    border-radius: 8px;
+    padding: 0.5rem 0.85rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $color-primary;
+    transition: all 0.15s;
+    width: 100%;
+
+    &:hover { background: $color-gray-50; }
+
+    svg { opacity: 0.7; }
+  }
+
+  &__optimal-arrow {
+    margin-left: auto;
+    transition: transform 0.2s;
+    display: flex;
+
+    &--open { transform: rotate(180deg); }
+  }
+
+  &__optimal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+  }
+
+  &__optimal-staff {
+    background: white;
+    border: 1px solid $color-gray-100;
+    border-radius: 10px;
+    padding: 0.75rem;
+  }
+
+  &__optimal-staff-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+
+    strong { color: $color-secondary; }
+  }
+
+  &__optimal-staff-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &__optimal-util {
+    margin-left: auto;
+    font-size: 0.7rem;
+    color: $color-gray-400;
+    font-weight: 500;
+  }
+
+  &__optimal-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  &__optimal-full {
+    font-size: 0.75rem;
+    color: $color-gray-400;
+    font-style: italic;
+  }
+
+  &__optimal-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: $color-gray-50;
+    border: 1px solid $color-gray-200;
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      background: rgba($color-primary, 0.08);
+      border-color: $color-primary;
+    }
+
+    &--gap {
+      border-color: #059669;
+      background: #ECFDF5;
+
+      &:hover { background: #D1FAE5; }
+
+      .agenda__optimal-slot-time { color: #059669; }
+    }
+  }
+
+  &__optimal-slot-time {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: $color-secondary;
+  }
+
+  &__optimal-slot-info {
+    font-size: 0.6rem;
+    color: $color-gray-400;
+  }
+
+  // ═══════════════════════════════════════════════════════
   // CALENDAR CONTAINER — Premium Card
   // ═══════════════════════════════════════════════════════
   &__calendar {

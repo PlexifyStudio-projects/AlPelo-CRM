@@ -1278,3 +1278,110 @@ def appointment_no_show_risk(
         "appointments": results,
         "high_risk_count": sum(1 for r in results if r["risk_score"] >= 45),
     }
+
+
+# ============================================================================
+# PRECISION SCHEDULING — Optimal slots per staff
+# ============================================================================
+
+@router.get("/appointments/optimal-slots")
+def optimal_slots(
+    date_str: Optional[str] = Query(None, alias="date"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Get optimal (gap-filling) time slots per staff for a given date."""
+    from database.models import Appointment, Staff, StaffSchedule
+    from routes._helpers import now_colombia
+
+    tid = safe_tid(user, db)
+    target_date = date.fromisoformat(date_str) if date_str else now_colombia().date()
+    weekday = target_date.weekday()
+
+    # Get active staff
+    staff_q = db.query(Staff).filter(Staff.is_active == True)
+    if tid:
+        staff_q = staff_q.filter(Staff.tenant_id == tid)
+    all_staff = staff_q.all()
+
+    # Get appointments for the date
+    apts_q = db.query(Appointment).filter(
+        Appointment.date == target_date,
+        Appointment.status.in_(["confirmed", "completed", "paid"]),
+    )
+    if tid:
+        apts_q = apts_q.filter(Appointment.tenant_id == tid)
+    all_apts = apts_q.order_by(Appointment.time).all()
+
+    OPEN_H, CLOSE_H = 8, 20
+
+    results = []
+    for s in all_staff:
+        # Check staff schedule for this day
+        try:
+            sched = db.query(StaffSchedule).filter(
+                StaffSchedule.staff_id == s.id,
+                StaffSchedule.day_of_week == weekday,
+                StaffSchedule.is_working == True,
+            ).first()
+            if sched:
+                s_open = int(sched.start_time.split(":")[0]) if sched.start_time else OPEN_H
+                s_close = int(sched.end_time.split(":")[0]) if sched.end_time else CLOSE_H
+            else:
+                s_open, s_close = OPEN_H, CLOSE_H
+        except Exception:
+            s_open, s_close = OPEN_H, CLOSE_H
+
+        # Build busy intervals for this staff
+        s_apts = sorted([a for a in all_apts if a.staff_id == s.id], key=lambda a: a.time)
+        busy = []
+        for a in s_apts:
+            try:
+                h, m = int(a.time.split(":")[0]), int(a.time.split(":")[1])
+                start = h * 60 + m
+                end = start + (a.duration_minutes or 30)
+                busy.append((start, end))
+            except (ValueError, AttributeError):
+                pass
+
+        # Find free slots
+        free_slots = []
+        t = s_open * 60
+        close = s_close * 60
+        for bs, be in busy:
+            if t < bs and (bs - t) >= 15:
+                free_slots.append({
+                    "start": f"{t // 60:02d}:{t % 60:02d}",
+                    "end": f"{bs // 60:02d}:{bs % 60:02d}",
+                    "duration_min": bs - t,
+                    "type": "gap",
+                    "priority": "high",
+                    "reason": "Llena hueco entre citas",
+                })
+            t = max(t, be)
+        if t < close and (close - t) >= 15:
+            free_slots.append({
+                "start": f"{t // 60:02d}:{t % 60:02d}",
+                "end": f"{close // 60:02d}:{close % 60:02d}",
+                "duration_min": close - t,
+                "type": "tail",
+                "priority": "normal",
+                "reason": "Final del dia",
+            })
+
+        # Sort: gaps first, then by start time
+        free_slots.sort(key=lambda x: (0 if x["type"] == "gap" else 1, x["start"]))
+
+        results.append({
+            "staff_id": s.id,
+            "staff_name": s.name,
+            "total_appointments": len(s_apts),
+            "working_hours": f"{s_open:02d}:00 - {s_close:02d}:00",
+            "free_slots": free_slots,
+            "utilization_pct": round(sum(b[1] - b[0] for b in busy) / max(1, (s_close - s_open) * 60) * 100, 1),
+        })
+
+    return {
+        "date": target_date.isoformat(),
+        "staff": results,
+    }
