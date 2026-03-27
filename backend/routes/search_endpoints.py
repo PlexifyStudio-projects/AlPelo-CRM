@@ -1286,17 +1286,19 @@ def appointment_no_show_risk(
 
 @router.get("/appointments/optimal-slots")
 def optimal_slots(
-    target: Optional[str] = Query(None),
+    target: str = Query(""),
     db: Session = Depends(get_db),
-    user=Depends(get_current_user),
+    user: Admin = Depends(get_current_user),
 ):
-    """Get optimal (gap-filling) time slots per staff for a given date. Pass ?target=2026-03-27 or ?date=2026-03-27"""
+    """Get optimal (gap-filling) time slots per staff for a given date. Pass ?target=2026-03-27"""
     from database.models import Appointment, Staff, StaffSchedule
     from routes._helpers import now_colombia
-    from starlette.requests import Request
 
     tid = safe_tid(user, db)
-    target_date = date.fromisoformat(target) if target else now_colombia().date()
+    try:
+        target_date = date.fromisoformat(target) if target and target.strip() else now_colombia().date()
+    except (ValueError, TypeError):
+        target_date = now_colombia().date()
     weekday = target_date.weekday()
 
     # Get active staff
