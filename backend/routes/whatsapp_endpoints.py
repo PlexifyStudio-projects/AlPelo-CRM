@@ -2012,6 +2012,27 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     mem_thread.start()
                 except Exception as mem_err:
                     print(f"[Lina IA] Memory extraction error (non-critical): {mem_err}")
+
+                # POST-RESPONSE: Progressive Learning — track conversation outcome
+                try:
+                    # Check if response contained an action (booking, scheduling, etc.)
+                    had_action = bool(action_matches) if 'action_matches' in dir() else False
+                    # Check if admin intervened (sent manual message after Lina)
+                    # This is checked on next cycle via _detect_admin_interventions
+                    from database.models import LinaActivityEvent
+                    outcome_event = LinaActivityEvent(
+                        event_type="outcome",
+                        title=f"Respuesta {'con accion' if had_action else 'informativa'}",
+                        detail=f"Conv {conv_id}: {'Ejecuto accion' if had_action else 'Solo texto'}. Inbound: {(inbound_text or '')[:60]}",
+                        status="ok",
+                        contact_name=conv.wa_contact_name or "",
+                        conv_id=conv_id,
+                        tenant_id=_conv_tid,
+                    )
+                    db.add(outcome_event)
+                    db.commit()
+                except Exception:
+                    pass
             else:
                 log_event("respuesta", f"Mensaje generado pero fallo el envio", detail=clean_response[:150], conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
 
