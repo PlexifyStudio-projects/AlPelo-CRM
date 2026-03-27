@@ -873,6 +873,21 @@
     border-radius: 6px;
     z-index: 5;
     transition: background 150ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__drop-label {
+    background: $color-primary;
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
 
   &__event-accent {

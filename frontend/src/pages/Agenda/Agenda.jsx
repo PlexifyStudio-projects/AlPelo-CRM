@@ -906,21 +906,27 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                     const t1 = `${pad2(h)}:00`;
                     const t2 = `${pad2(h)}:30`;
                     const dt = toISO(day);
+                    const isDrop1 = dropTarget?.date === dt && dropTarget?.time === t1;
+                    const isDrop2 = dropTarget?.date === dt && dropTarget?.time === t2;
                     return [
                       <div key={`a${h}`}
-                        className={`${b}__slot ${dropTarget?.date === dt && dropTarget?.time === t1 ? `${b}__slot--drop-target` : ''}`}
+                        className={`${b}__slot ${isDrop1 ? `${b}__slot--drop-target` : ''}`}
                         style={{ top: `${hourTop(h)}px`, height: `${slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2] - hourTop(h)}px` }}
                         onClick={() => openCreate(day, t1)}
                         onDragOver={(e) => handleDragOver(e, day, t1)}
                         onDragLeave={() => setDropTarget(null)}
-                        onDrop={(e) => handleDrop(e, day, t1)} />,
+                        onDrop={(e) => handleDrop(e, day, t1)}>
+                        {isDrop1 && <span className={`${b}__drop-label`}>{formatTime12(t1)}</span>}
+                      </div>,
                       <div key={`b${h}`}
-                        className={`${b}__slot ${dropTarget?.date === dt && dropTarget?.time === t2 ? `${b}__slot--drop-target` : ''}`}
+                        className={`${b}__slot ${isDrop2 ? `${b}__slot--drop-target` : ''}`}
                         style={{ top: `${slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2]}px`, height: `${hourTop(h) + hourHeight(h) - slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2]}px` }}
                         onClick={() => openCreate(day, t2)}
                         onDragOver={(e) => handleDragOver(e, day, t2)}
                         onDragLeave={() => setDropTarget(null)}
-                        onDrop={(e) => handleDrop(e, day, t2)} />,
+                        onDrop={(e) => handleDrop(e, day, t2)}>
+                        {isDrop2 && <span className={`${b}__drop-label`}>{formatTime12(t2)}</span>}
+                      </div>,
                     ];
                   })}
                 </div>
