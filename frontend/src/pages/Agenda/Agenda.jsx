@@ -164,15 +164,19 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   const loadOptimalSlots = useCallback(async () => {
     try {
-      // Always show for today (not the calendar's current view date)
       const dateStr = toISO(new Date());
-      const resp = await fetch(`${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/appointments/optimal-slots?date=${dateStr}`, { credentials: 'include' });
+      const url = `${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/appointments/optimal-slots?target=${dateStr}`;
+      const resp = await fetch(url, { credentials: 'include' });
+      const data = await resp.json();
       if (resp.ok) {
-        const data = await resp.json();
         setOptimalSlots(data);
+      } else {
+        console.error('[OptimalSlots] Error:', data);
+        setOptimalSlots({ staff: [] });
       }
     } catch (e) {
-      console.error('[OptimalSlots]', e);
+      console.error('[OptimalSlots] Fetch error:', e);
+      setOptimalSlots({ staff: [] });
     }
   }, []);
 

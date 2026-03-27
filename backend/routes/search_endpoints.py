@@ -1262,16 +1262,16 @@ def dismiss_payment_alert(conversation_id: int, db: Session = Depends(get_db), u
 
 @router.get("/appointments/no-show-risk")
 def appointment_no_show_risk(
-    date_str: Optional[str] = Query(None, alias="date"),
+    target: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    """Get no-show risk scores for all confirmed appointments on a date."""
+    """Get no-show risk scores for all confirmed appointments on a date. ?target=2026-03-27"""
     from no_show_predictor import get_appointments_with_risk
     from routes._helpers import now_colombia
 
     tid = safe_tid(user, db)
-    target_date = date.fromisoformat(date_str) if date_str else now_colombia().date()
+    target_date = date.fromisoformat(target) if target else now_colombia().date()
     results = get_appointments_with_risk(db, target_date, tid)
     return {
         "date": target_date.isoformat(),
@@ -1286,16 +1286,17 @@ def appointment_no_show_risk(
 
 @router.get("/appointments/optimal-slots")
 def optimal_slots(
-    date_str: Optional[str] = Query(None, alias="date"),
+    target: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    """Get optimal (gap-filling) time slots per staff for a given date."""
+    """Get optimal (gap-filling) time slots per staff for a given date. Pass ?target=2026-03-27 or ?date=2026-03-27"""
     from database.models import Appointment, Staff, StaffSchedule
     from routes._helpers import now_colombia
+    from starlette.requests import Request
 
     tid = safe_tid(user, db)
-    target_date = date.fromisoformat(date_str) if date_str else now_colombia().date()
+    target_date = date.fromisoformat(target) if target else now_colombia().date()
     weekday = target_date.weekday()
 
     # Get active staff
