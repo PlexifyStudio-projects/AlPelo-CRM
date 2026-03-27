@@ -210,7 +210,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   // ─── Calendar derived ──────────────────────────────
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
   const columns = view === 'week' ? weekDays : [currentDate];
-  const baseSlotH = view === 'week' ? 18 : 24; // base height per 15-min slot
+  const baseSlotH = view === 'week' ? 28 : 32; // height per 15-min slot (taller for visibility)
   const gridCols = view === 'week' ? '56px repeat(7, 1fr)' : '56px 1fr';
 
   const staffColorMap = useMemo(() => {
@@ -807,13 +807,20 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           </div>
 
           <div className={`${b}__cal-grid`} style={{ gridTemplateColumns: gridCols }}>
-            {/* ── Time column ── */}
+            {/* ── Time column with 15-min labels ── */}
             <div className={`${b}__time-col`} style={{ height: `${totalH}px` }}>
-              {HOURS.map(h => (
-                <div key={h} className={`${b}__time-cell`} style={{ top: `${hourTop(h)}px`, height: `${hourHeight(h)}px` }}>
-                  <span className={`${b}__time-text`}>{formatHourLabel(h)}</span>
-                </div>
-              ))}
+              {HOURS.map(h => {
+                const si0 = (h - HOURS_START) * SLOTS_PER_HOUR;
+                return [0, 15, 30, 45].map((m, mi) => (
+                  <div key={`${h}-${m}`}
+                    className={`${b}__time-cell ${mi === 0 ? `${b}__time-cell--hour` : `${b}__time-cell--sub`}`}
+                    style={{ top: `${slotTops[si0 + mi]}px`, height: `${baseSlotH}px` }}>
+                    <span className={`${b}__time-text`}>
+                      {mi === 0 ? formatHourLabel(h) : `${pad2(m)}`}
+                    </span>
+                  </div>
+                ));
+              })}
             </div>
 
             {/* ── Day columns ── */}
@@ -833,10 +840,14 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                   {HOURS.map(h => (
                     <div key={`hl-${h}`} className={`${b}__hour-line`} style={{ top: `${hourTop(h)}px` }} />
                   ))}
-                  {/* Half-hour grid lines */}
+                  {/* 15-min grid lines */}
                   {HOURS.map(h => {
-                    const si = (h - HOURS_START) * SLOTS_PER_HOUR + 2;
-                    return <div key={`hh-${h}`} className={`${b}__half-line`} style={{ top: `${slotTops[si]}px` }} />;
+                    const base = (h - HOURS_START) * SLOTS_PER_HOUR;
+                    return [
+                      <div key={`q1-${h}`} className={`${b}__quarter-line`} style={{ top: `${slotTops[base + 1]}px` }} />,
+                      <div key={`hh-${h}`} className={`${b}__half-line`} style={{ top: `${slotTops[base + 2]}px` }} />,
+                      <div key={`q3-${h}`} className={`${b}__quarter-line`} style={{ top: `${slotTops[base + 3]}px` }} />,
+                    ];
                   })}
 
                   {/* Empty state for the column */}
@@ -901,33 +912,25 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                       <div className={`${b}__now-line`} />
                     </div>
                   )}
-                  {/* Clickable + droppable slots (30-min each) — hidden for staff */}
+                  {/* Clickable + droppable slots (15-min each) — hidden for staff */}
                   {!isStaffMode && HOURS.map(h => {
-                    const t1 = `${pad2(h)}:00`;
-                    const t2 = `${pad2(h)}:30`;
                     const dt = toISO(day);
-                    const isDrop1 = dropTarget?.date === dt && dropTarget?.time === t1;
-                    const isDrop2 = dropTarget?.date === dt && dropTarget?.time === t2;
-                    return [
-                      <div key={`a${h}`}
-                        className={`${b}__slot ${isDrop1 ? `${b}__slot--drop-target` : ''}`}
-                        style={{ top: `${hourTop(h)}px`, height: `${slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2] - hourTop(h)}px` }}
-                        onClick={() => openCreate(day, t1)}
-                        onDragOver={(e) => handleDragOver(e, day, t1)}
-                        onDragLeave={() => setDropTarget(null)}
-                        onDrop={(e) => handleDrop(e, day, t1)}>
-                        {isDrop1 && <span className={`${b}__drop-label`}>{formatTime12(t1)}</span>}
-                      </div>,
-                      <div key={`b${h}`}
-                        className={`${b}__slot ${isDrop2 ? `${b}__slot--drop-target` : ''}`}
-                        style={{ top: `${slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2]}px`, height: `${hourTop(h) + hourHeight(h) - slotTops[(h - HOURS_START) * SLOTS_PER_HOUR + 2]}px` }}
-                        onClick={() => openCreate(day, t2)}
-                        onDragOver={(e) => handleDragOver(e, day, t2)}
-                        onDragLeave={() => setDropTarget(null)}
-                        onDrop={(e) => handleDrop(e, day, t2)}>
-                        {isDrop2 && <span className={`${b}__drop-label`}>{formatTime12(t2)}</span>}
-                      </div>,
-                    ];
+                    return [0, 15, 30, 45].map((m) => {
+                      const t = `${pad2(h)}:${pad2(m)}`;
+                      const si = (h - HOURS_START) * SLOTS_PER_HOUR + (m / SLOT_MIN);
+                      const isDrop = dropTarget?.date === dt && dropTarget?.time === t;
+                      return (
+                        <div key={`s${h}${m}`}
+                          className={`${b}__slot ${isDrop ? `${b}__slot--drop-target` : ''}`}
+                          style={{ top: `${slotTops[si]}px`, height: `${baseSlotH}px` }}
+                          onClick={() => openCreate(day, t)}
+                          onDragOver={(e) => handleDragOver(e, day, t)}
+                          onDragLeave={() => setDropTarget(null)}
+                          onDrop={(e) => handleDrop(e, day, t)}>
+                          {isDrop && <span className={`${b}__drop-label`}>{formatTime12(t)}</span>}
+                        </div>
+                      );
+                    });
                   })}
                 </div>
               );
