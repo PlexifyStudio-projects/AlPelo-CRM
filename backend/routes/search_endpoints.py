@@ -1303,6 +1303,7 @@ def optimal_slots(
     if tid:
         staff_q = staff_q.filter(Staff.tenant_id == tid)
     all_staff = staff_q.all()
+    print(f"[OPTIMAL-SLOTS] date={target_date}, tid={tid}, staff_count={len(all_staff)}")
 
     # Get appointments for the date
     apts_q = db.query(Appointment).filter(

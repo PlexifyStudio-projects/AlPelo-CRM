@@ -164,11 +164,17 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   const loadOptimalSlots = useCallback(async () => {
     try {
-      const dateStr = toISO(currentDate);
+      // Always show for today (not the calendar's current view date)
+      const dateStr = toISO(new Date());
       const resp = await fetch(`${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/appointments/optimal-slots?date=${dateStr}`, { credentials: 'include' });
-      if (resp.ok) setOptimalSlots(await resp.json());
-    } catch { /* silent */ }
-  }, [currentDate]);
+      if (resp.ok) {
+        const data = await resp.json();
+        setOptimalSlots(data);
+      }
+    } catch (e) {
+      console.error('[OptimalSlots]', e);
+    }
+  }, []);
 
   useEffect(() => { if (showOptimal) loadOptimalSlots(); }, [showOptimal, loadOptimalSlots]);
 
@@ -805,9 +811,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             Horarios sugeridos
             <span className={`${b}__optimal-arrow ${showOptimal ? `${b}__optimal-arrow--open` : ''}`}><ChevronDown /></span>
           </button>
-          {showOptimal && optimalSlots && (
+          {showOptimal && (
             <div className={`${b}__optimal-grid`}>
-              {optimalSlots.staff?.map(s => (
+              {!optimalSlots ? (
+                <span style={{ padding: '0.75rem', color: '#94A3B8', fontSize: '0.85rem' }}>Cargando...</span>
+              ) : (!optimalSlots.staff || optimalSlots.staff.length === 0) ? (
+                <span style={{ padding: '0.75rem', color: '#94A3B8', fontSize: '0.85rem' }}>No hay profesionales activos</span>
+              ) : optimalSlots.staff?.map(s => (
                 <div key={s.staff_id} className={`${b}__optimal-staff`}>
                   <div className={`${b}__optimal-staff-head`}>
                     <span className={`${b}__optimal-staff-dot`} style={{ background: staffColorMap[s.staff_id] || '#6B6B63' }} />
