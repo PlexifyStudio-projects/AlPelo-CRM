@@ -165,7 +165,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const loadOptimalSlots = useCallback(async () => {
     try {
       const dateStr = toISO(new Date());
-      const url = `${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/appointments/optimal-slots?target=${dateStr}`;
+      const url = `${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/schedule/optimal-slots?target=${dateStr}`;
       const resp = await fetch(url, { credentials: 'include' });
       const data = await resp.json();
       if (resp.ok) {

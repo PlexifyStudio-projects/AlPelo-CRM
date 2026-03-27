@@ -1260,7 +1260,7 @@ def dismiss_payment_alert(conversation_id: int, db: Session = Depends(get_db), u
 # NO-SHOW RISK — Prediction per appointment
 # ============================================================================
 
-@router.get("/appointments/no-show-risk")
+@router.get("/schedule/no-show-risk")
 def appointment_no_show_risk(
     target: Optional[str] = Query(None),
     db: Session = Depends(get_db),
@@ -1284,7 +1284,7 @@ def appointment_no_show_risk(
 # PRECISION SCHEDULING — Optimal slots per staff
 # ============================================================================
 
-@router.get("/appointments/optimal-slots")
+@router.get("/schedule/optimal-slots")
 def optimal_slots(
     target: str = Query(""),
     db: Session = Depends(get_db),
