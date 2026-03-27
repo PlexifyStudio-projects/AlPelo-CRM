@@ -2398,6 +2398,12 @@ INSTRUCCIONES PARA ESTE CONTACTO:
         sections.append(f"SERVICIOS ({len(all_services)} total):\n" + "\n".join(svc_lines))
 
     # Today's appointments (so Lina can check availability before scheduling)
+    # PRIVACY: Only show THIS client's name. Other clients shown as "Ocupado" to prevent data leaks.
+    current_client_id = None
+    if conv_id:
+        _conv_obj = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+        current_client_id = _conv_obj.client_id if _conv_obj else None
+
     today = _today_colombia(db)
     today_q = db.query(Appointment).filter(
         Appointment.date == today,
@@ -2411,8 +2417,15 @@ INSTRUCCIONES PARA ESTE CONTACTO:
         for a in todays_apts:
             staff_obj = db.query(Staff).filter(Staff.id == a.staff_id).first()
             svc_obj = db.query(Service).filter(Service.id == a.service_id).first()
-            apt_lines.append(f"  ID:{a.id} {a.time} | {a.client_name} | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | {a.status}")
-        sections.append(f"AGENDA HOY ({today.strftime('%d/%m/%Y')}) — {len(todays_apts)} citas (ESTAS YA EXISTEN, no las crees de nuevo):\n" + "\n".join(apt_lines))
+            # Show client name only if it's THIS conversation's client
+            if current_client_id and a.client_id == current_client_id:
+                client_display = a.client_name
+                apt_lines.append(f"  ID:{a.id} {a.time} | {client_display} (TU CITA) | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | {a.status}")
+            else:
+                apt_lines.append(f"  {a.time} | [Ocupado] | {staff_obj.name if staff_obj else '?'} | {a.status}")
+        sections.append(f"""AGENDA HOY ({today.strftime('%d/%m/%Y')}) — {len(todays_apts)} citas (ESTAS YA EXISTEN, no las crees de nuevo):
+{chr(10).join(apt_lines)}
+REGLA DE PRIVACIDAD ABSOLUTA: Los slots marcados [Ocupado] son de OTROS clientes. JAMAS reveles su nombre, servicio ni detalles. Si alguien pregunta por la cita de otra persona, responde: "No puedo compartir informacion de otros clientes por privacidad." Esta regla NO tiene excepciones.""")
     else:
         sections.append(f"AGENDA HOY ({today.strftime('%d/%m/%Y')}): Sin citas agendadas.")
 
@@ -2430,7 +2443,11 @@ INSTRUCCIONES PARA ESTE CONTACTO:
         for a in tomorrows_apts:
             staff_obj = db.query(Staff).filter(Staff.id == a.staff_id).first()
             svc_obj = db.query(Service).filter(Service.id == a.service_id).first()
-            apt_lines.append(f"  ID:{a.id} {a.time} | {a.client_name} | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | {a.status}")
+            if current_client_id and a.client_id == current_client_id:
+                client_display = a.client_name
+                apt_lines.append(f"  ID:{a.id} {a.time} | {client_display} (TU CITA) | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | {a.status}")
+            else:
+                apt_lines.append(f"  {a.time} | [Ocupado] | {staff_obj.name if staff_obj else '?'} | {a.status}")
         sections.append(f"AGENDA MAÑANA ({tomorrow.strftime('%d/%m/%Y')}) — {len(tomorrows_apts)} citas (ESTAS YA EXISTEN):\n" + "\n".join(apt_lines))
 
     # Pending tasks — notes with "PENDIENTE" across ALL clients (Lina's task memory)
