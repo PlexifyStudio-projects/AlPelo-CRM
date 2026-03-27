@@ -3372,7 +3372,10 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
             pass
         return text.strip()
     except Exception as e:
-        print(f"[AI WhatsApp] Claude ({model_override}) failed: {e}")
+        error_str = str(e)[:200]
+        print(f"[AI WhatsApp] Claude ({model_override}) failed: {error_str}")
+        from activity_log import log_event
+        log_event("error", f"Fallo llamada a Claude: {error_str}", detail=f"Modelo: {model_override}. Verificar API key y creditos.", status="error", tenant_id=tenant_id)
         return None
 
 
