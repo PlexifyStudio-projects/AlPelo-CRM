@@ -106,21 +106,25 @@ WA_WEBHOOK_VERIFY_TOKEN = os.getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN", "plexify_we
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 
-def _get_wa_config_cached(db=None):
-    """Get WA token + phone_id from tenant DB or env vars."""
-    # Strategy: try tenant DB first, then env vars
+def _get_wa_config_cached(db=None, tenant_id=None):
+    """Get WA token + phone_id from tenant DB or env vars.
+    Prefers tenant with wa_access_token configured (not just first active)."""
     token = ""
     phone_id = ""
-    source = "none"
 
     # 1) Try tenant DB
     if db:
         try:
-            t = db.query(Tenant).filter(Tenant.is_active == True).first()
+            if tenant_id:
+                t = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+            else:
+                t = db.query(Tenant).filter(
+                    Tenant.is_active == True,
+                    Tenant.wa_access_token.isnot(None),
+                ).first()
             if t:
                 if t.wa_access_token:
                     token = t.wa_access_token
-                    source = f"tenant_db(id={t.id})"
                 if t.wa_phone_number_id:
                     phone_id = t.wa_phone_number_id
         except Exception as e:
@@ -129,11 +133,9 @@ def _get_wa_config_cached(db=None):
     # 2) Fallback to env vars
     if not token:
         token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
-        source = "env_var" if token else "EMPTY"
     if not phone_id:
         phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
 
-    print(f"[WA-DEBUG] Token source={source}, token_len={len(token)}, token_start={token[:15]}..., phone_id={phone_id}")
     return token, phone_id
 
 

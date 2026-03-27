@@ -40,14 +40,22 @@ def _replace_note_prefix(content: str, new_prefix: str) -> str:
     return content
 
 
-def _get_wa_config(db=None):
-    """Get WA token and phone_id from tenant DB (first active) or env vars."""
+def _get_wa_config(db=None, tenant_id=None):
+    """Get WA token and phone_id from tenant DB or env vars.
+    Prefers tenant with wa_access_token configured (not just first active)."""
     token = os.getenv("WHATSAPP_ACCESS_TOKEN", "")
     phone_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID", "")
     if db:
         try:
             from database.models import Tenant
-            tenant = db.query(Tenant).filter(Tenant.is_active == True).first()
+            if tenant_id:
+                tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+            else:
+                # Pick tenant that actually has WA configured
+                tenant = db.query(Tenant).filter(
+                    Tenant.is_active == True,
+                    Tenant.wa_access_token.isnot(None),
+                ).first()
             if tenant:
                 if tenant.wa_access_token:
                     token = tenant.wa_access_token
@@ -98,7 +106,10 @@ def _send_whatsapp_sync(phone: str, text: str, db=None) -> bool:
                 try:
                     if db:
                         from database.models import Tenant
-                        t = db.query(Tenant).filter(Tenant.is_active == True).first()
+                        t = db.query(Tenant).filter(
+                            Tenant.is_active == True,
+                            Tenant.wa_access_token.isnot(None),
+                        ).first()
                         if t:
                             t.messages_used = (t.messages_used or 0) + 1
                             db.commit()
