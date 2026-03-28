@@ -237,10 +237,13 @@ export default function Register() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({ detail: 'Error de conexión' }));
 
       if (!res.ok) {
-        setError(data.detail || 'Error al crear el negocio');
+        let errMsg = 'Error al crear el negocio';
+        if (typeof data.detail === 'string') errMsg = data.detail;
+        else if (Array.isArray(data.detail)) errMsg = data.detail.map(e => typeof e === 'string' ? e : (e.msg || JSON.stringify(e))).join('. ');
+        setError(errMsg);
         setLoading(false);
         return;
       }

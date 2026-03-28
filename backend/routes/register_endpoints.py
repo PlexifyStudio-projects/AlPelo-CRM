@@ -52,8 +52,8 @@ class RegisterRequest(BaseModel):
     services: List[RegisterService] = []
     staff: List[RegisterStaff] = []
 
-    # Automations (IDs of selected workflows)
-    automation_ids: List[int] = []
+    # Automations (workflow type strings, e.g. "reminder_24h", "birthday")
+    automation_ids: List[str] = []
 
     # Payment (simulated for now)
     payment_ref: Optional[str] = None
