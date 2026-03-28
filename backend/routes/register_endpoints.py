@@ -97,8 +97,8 @@ def register_business(data: RegisterRequest, db: Session = Depends(get_db)):
     if not data.email or "@" not in data.email:
         raise HTTPException(400, "Email inválido")
 
-    # Check unique username
-    existing_user = db.query(Admin).filter(Admin.username == data.username.strip().lower()).first()
+    # Check unique username (case-insensitive check, stored as-is)
+    existing_user = db.query(Admin).filter(Admin.username == data.username.strip()).first()
     if existing_user:
         raise HTTPException(409, "Ese nombre de usuario ya está en uso")
 
@@ -146,7 +146,7 @@ def register_business(data: RegisterRequest, db: Session = Depends(get_db)):
     admin = Admin(
         name=data.owner_name.strip(),
         email=data.email.strip().lower(),
-        username=data.username.strip().lower(),
+        username=data.username.strip(),
         password=hash_password(data.password),
         role="admin",
         is_active=True,
@@ -188,22 +188,10 @@ def register_business(data: RegisterRequest, db: Session = Depends(get_db)):
         print(f"[REGISTER] Error: {e}")
         raise HTTPException(500, "Error al crear el negocio. Intenta de nuevo.")
 
-    # --- Generate JWT ---
-    token = create_access_token(data={
-        "sub": admin.username,
-        "user_id": admin.id,
-        "role": "admin",
-    })
-
-    # Update active_session_token
-    admin.active_session_token = token
-    admin.session_started_at = datetime.utcnow()
-    db.commit()
-
+    # No auto-login — user logs in manually to activate session
     return {
         "success": True,
         "message": f"Negocio '{tenant.name}' creado exitosamente",
-        "access_token": token,
         "tenant": {
             "id": tenant.id,
             "slug": tenant.slug,

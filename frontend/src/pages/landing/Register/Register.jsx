@@ -248,11 +248,7 @@ export default function Register() {
         return;
       }
 
-      // Store token for auto-login
-      if (data.access_token) {
-        localStorage.setItem('token', data.access_token);
-      }
-
+      // No auto-login — user logs in manually
       setResult(data);
       setStep(8);
     } catch (err) {
@@ -501,35 +497,84 @@ export default function Register() {
             {/* Step 7 — Done */}
             {step === 7 && (
               <div className="reg__step reg__step--done">
-                <span className="reg__done-icon">🎉</span>
-                <h2 className="reg__step-title">¡Tu negocio está listo!</h2>
-                <p className="reg__step-sub">Todo configurado. Ya puedes empezar a gestionar tu negocio.</p>
-
-                <div className="reg__done-cards">
-                  <div className="reg__done-card">
-                    <span>🖥️</span>
-                    <div>
-                      <strong>Tu CRM</strong>
-                      <span>Usuario: {form.username}</span>
-                      <small>Plan {selectedPlan.name}</small>
+                {loading ? (
+                  <>
+                    <div className="reg__processing">
+                      <div className="reg__processing-spinner" />
+                      <h2 className="reg__step-title">Procesando pago...</h2>
+                      <p className="reg__step-sub">Estamos verificando tu pago y creando tu cuenta. No cierres esta ventana.</p>
                     </div>
-                  </div>
-                  <div className="reg__done-card">
-                    <span>📱</span>
-                    <div>
-                      <strong>Tu página de reservas</strong>
-                      <span>plexify.studio/book/{slug}</span>
-                      <small>Comparte en Instagram y Google</small>
-                    </div>
-                  </div>
-                </div>
+                  </>
+                ) : result ? (
+                  <>
+                    <span className="reg__done-icon">🎉</span>
+                    <h2 className="reg__step-title">¡Pago exitoso! Tu negocio está listo.</h2>
+                    <p className="reg__step-sub">Guarda tus credenciales de acceso. Las necesitarás para iniciar sesión.</p>
 
-                <button
-                  className="reg__btn reg__btn--primary"
-                  onClick={() => { window.location.href = (import.meta.env.BASE_URL || '/') + 'dashboard'; }}
-                >
-                  Entrar a mi CRM →
-                </button>
+                    <div className="reg__credentials">
+                      <div className="reg__credential-row">
+                        <span className="reg__credential-label">Negocio</span>
+                        <span className="reg__credential-value">{result.tenant?.name || form.businessName}</span>
+                      </div>
+                      <div className="reg__credential-row">
+                        <span className="reg__credential-label">Plan</span>
+                        <span className="reg__credential-value">{selectedPlan.name} — {formatCOP(selectedPlan.price)}/mes</span>
+                      </div>
+                      <div className="reg__credential-row">
+                        <span className="reg__credential-label">Usuario</span>
+                        <span className="reg__credential-value reg__credential-value--mono">{result.admin?.username || form.username}</span>
+                        <button className="reg__copy-btn" onClick={() => { navigator.clipboard.writeText(result.admin?.username || form.username); }}>Copiar</button>
+                      </div>
+                      <div className="reg__credential-row">
+                        <span className="reg__credential-label">Contraseña</span>
+                        <span className="reg__credential-value reg__credential-value--mono">{form.password}</span>
+                        <button className="reg__copy-btn" onClick={() => { navigator.clipboard.writeText(form.password); }}>Copiar</button>
+                      </div>
+                      <div className="reg__credential-row">
+                        <span className="reg__credential-label">Email</span>
+                        <span className="reg__credential-value">{form.email}</span>
+                      </div>
+                      <div className="reg__credential-row">
+                        <span className="reg__credential-label">Reservas</span>
+                        <span className="reg__credential-value reg__credential-value--mono">plexify.studio/book/{result.tenant?.slug || slug}</span>
+                        <button className="reg__copy-btn" onClick={() => { navigator.clipboard.writeText(`plexify.studio/book/${result.tenant?.slug || slug}`); }}>Copiar</button>
+                      </div>
+                    </div>
+
+                    <div className="reg__done-actions">
+                      <button
+                        className="reg__btn reg__btn--ghost"
+                        onClick={() => {
+                          const text = `PlexifyStudio — Credenciales de acceso\n\nNegocio: ${result.tenant?.name || form.businessName}\nPlan: ${selectedPlan.name}\nUsuario: ${result.admin?.username || form.username}\nContraseña: ${form.password}\nEmail: ${form.email}\nReservas: plexify.studio/book/${result.tenant?.slug || slug}\n`;
+                          const blob = new Blob([text], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = 'plexify-credenciales.txt';
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        Descargar credenciales
+                      </button>
+                      <button
+                        className="reg__btn reg__btn--primary"
+                        onClick={() => { window.location.href = (import.meta.env.BASE_URL || '/') + 'login'; }}
+                      >
+                        Iniciar sesión →
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="reg__done-icon">❌</span>
+                    <h2 className="reg__step-title">Pago rechazado</h2>
+                    <p className="reg__step-sub">{error || 'No se pudo procesar el pago. Verifica los datos de tu tarjeta e intenta de nuevo.'}</p>
+                    <button className="reg__btn reg__btn--primary" onClick={() => setStep(6)}>
+                      ← Volver a intentar
+                    </button>
+                  </>
+                )}
               </div>
             )}
 
