@@ -87,15 +87,54 @@ PLAN_CONFIG = {
 def register_business(data: RegisterRequest, db: Session = Depends(get_db)):
     """Public endpoint: create a new business (tenant + admin + services + staff)."""
 
-    # --- Validation ---
-    if not data.business_name or not data.business_name.strip():
-        raise HTTPException(400, "El nombre del negocio es obligatorio")
-    if not data.username or len(data.username.strip()) < 3:
+    import re as _re
+
+    # --- Input sanitization (strip whitespace, prevent injection) ---
+    data.business_name = data.business_name.strip()
+    data.username = data.username.strip()
+    data.email = data.email.strip().lower()
+    data.owner_name = data.owner_name.strip()
+    data.city = data.city.strip()
+    data.address = data.address.strip()
+    data.phone = data.phone.strip()
+
+    # --- Strict validation ---
+    if not data.business_name or len(data.business_name) < 3:
+        raise HTTPException(400, "El nombre del negocio debe tener al menos 3 caracteres")
+    if len(data.business_name) > 100:
+        raise HTTPException(400, "El nombre del negocio es demasiado largo (máx 100)")
+
+    if not data.owner_name or len(data.owner_name) < 3:
+        raise HTTPException(400, "Tu nombre debe tener al menos 3 caracteres")
+
+    if not data.username or len(data.username) < 3:
         raise HTTPException(400, "El usuario debe tener al menos 3 caracteres")
-    if not data.password or len(data.password) < 6:
-        raise HTTPException(400, "La contraseña debe tener al menos 6 caracteres")
-    if not data.email or "@" not in data.email:
+    if len(data.username) > 50:
+        raise HTTPException(400, "El usuario es demasiado largo (máx 50)")
+    if ' ' in data.username:
+        raise HTTPException(400, "El usuario no puede tener espacios")
+
+    if not data.email or not _re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', data.email):
         raise HTTPException(400, "Email inválido")
+
+    if not data.password or len(data.password) < 8:
+        raise HTTPException(400, "La contraseña debe tener mínimo 8 caracteres")
+    if not _re.search(r'[A-Z]', data.password):
+        raise HTTPException(400, "La contraseña debe tener al menos una mayúscula")
+    if not _re.search(r'[0-9]', data.password):
+        raise HTTPException(400, "La contraseña debe tener al menos un número")
+
+    if not data.city:
+        raise HTTPException(400, "La ciudad es obligatoria")
+
+    if data.phone and len(data.phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')) < 7:
+        raise HTTPException(400, "Número de teléfono inválido")
+
+    if data.plan not in PLAN_CONFIG:
+        raise HTTPException(400, f"Plan inválido: {data.plan}")
+
+    if not data.staff or not any(s.name.strip() for s in data.staff):
+        raise HTTPException(400, "Agrega al menos un profesional")
 
     # Check unique username (case-insensitive check, stored as-is)
     existing_user = db.query(Admin).filter(Admin.username == data.username.strip()).first()

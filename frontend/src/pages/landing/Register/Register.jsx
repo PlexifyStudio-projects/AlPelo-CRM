@@ -191,8 +191,51 @@ export default function Register() {
     }
   };
 
+  const validateStep = () => {
+    switch (step) {
+      case 1: // Tu negocio
+        if (!form.businessName.trim()) return 'El nombre del negocio es obligatorio';
+        if (form.businessName.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres';
+        if (!form.businessType) return 'Selecciona el tipo de negocio';
+        if (!form.city.trim()) return 'La ciudad es obligatoria';
+        if (!form.phone || form.phone.replace(/\D/g, '').length < 7) return 'Ingresa un número de teléfono válido';
+        return null;
+      case 2: // Tu cuenta
+        if (!form.ownerName.trim()) return 'Tu nombre es obligatorio';
+        if (form.ownerName.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres';
+        if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'Ingresa un correo electrónico válido';
+        if (!form.username.trim()) return 'El nombre de usuario es obligatorio';
+        if (form.username.trim().length < 3) return 'El usuario debe tener al menos 3 caracteres';
+        if (/\s/.test(form.username)) return 'El usuario no puede tener espacios';
+        if (!form.password) return 'La contraseña es obligatoria';
+        if (form.password.length < 8) return 'La contraseña debe tener mínimo 8 caracteres';
+        if (!/[A-Z]/.test(form.password)) return 'La contraseña debe tener al menos una mayúscula';
+        if (!/[0-9]/.test(form.password)) return 'La contraseña debe tener al menos un número';
+        return null;
+      case 3: // Equipo
+        const validStaff = form.staff.filter(s => s.name.trim());
+        if (validStaff.length === 0) return 'Agrega al menos un profesional';
+        for (const s of validStaff) {
+          if (s.name.trim().length < 2) return `El nombre "${s.name}" es muy corto`;
+        }
+        return null;
+      case 4: // Plan
+        if (!form.plan) return 'Selecciona un plan';
+        return null;
+      case 5: // Automatizaciones
+        return null; // opcional
+      default:
+        return null;
+    }
+  };
+
   const next = () => {
     setError('');
+    const err = validateStep();
+    if (err) {
+      setError(err);
+      return;
+    }
     if (step === 1) ensureServices();
     setStep(s => Math.min(s + 1, 7));
   };
