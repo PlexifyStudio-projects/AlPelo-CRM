@@ -1,0 +1,1709 @@
+@use '../abstracts' as *;
+
+// ============================================
+// LINA AI SPOTLIGHT — AI Command Center Mockup (VIBRANT DARK)
+// ============================================
+
+// ---- Keyframes ----
+
+@keyframes lina-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes lina-capability-in {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes holographic-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes mockup-glow-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes mockup-fade-in {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) rotateY(-8deg) rotateX(4deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(-4deg) rotateX(2deg) scale(1);
+  }
+}
+
+@keyframes float-card-in-1 {
+  from {
+    opacity: 0;
+    transform: translateX(20px) translateY(10px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
+}
+
+@keyframes float-card-in-2 {
+  from {
+    opacity: 0;
+    transform: translateX(-20px) translateY(10px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
+}
+
+@keyframes float-card-in-3 {
+  from {
+    opacity: 0;
+    transform: translateX(20px) translateY(-10px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(0) scale(1);
+  }
+}
+
+@keyframes float-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes float-bob-alt {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+
+@keyframes lina-status-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba($color-success, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 8px 3px rgba($color-success, 0.25);
+  }
+}
+
+@keyframes message-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes circuit-node-pulse {
+  0%, 100% { opacity: 0.3; r: 3; }
+  50% { opacity: 0.8; r: 4.5; }
+}
+
+// ============================================
+// LINA HERO — Futuristic AI Hero Section
+// ============================================
+
+@keyframes lina-stat-count {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes lina-badge-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba($color-secondary, 0.2); }
+  50% { box-shadow: 0 0 24px rgba($color-secondary, 0.35); }
+}
+
+.lina-hero {
+  position: relative;
+  overflow: hidden;
+  padding-top: calc($header-height + $spacing-4xl + 2rem);
+  padding-bottom: $spacing-4xl;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 30%, rgba($color-secondary, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 30% 60%, rgba($color-primary, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, $color-bg-primary 0%, $color-bg-secondary 100%);
+  text-align: center;
+
+  @include respond-to('md') {
+    padding-top: calc($header-height + $spacing-3xl);
+    padding-bottom: $spacing-3xl;
+  }
+
+  @include respond-to('sm') {
+    padding-top: calc($header-height + $spacing-2xl);
+    padding-bottom: $spacing-2xl;
+  }
+
+  // ---- Particle Ring Background ----
+  &__particles {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.45;
+    pointer-events: none;
+
+    .particle-ring {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  // ---- Container ----
+  &__container {
+    @include container;
+    max-width: 860px;
+    position: relative;
+    z-index: 1;
+  }
+
+  // ---- Badge ----
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-xs $spacing-md;
+    background: linear-gradient(135deg, rgba($color-primary, 0.15), rgba($color-secondary, 0.2), rgba($color-accent, 0.12));
+    border: $border-width solid rgba($color-secondary, 0.25);
+    border-radius: $border-radius-full;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-secondary-light;
+    margin-bottom: $spacing-xl;
+    animation: lina-badge-glow 3s ease-in-out infinite;
+
+    @include respond-to('sm') {
+      font-size: $font-size-xs;
+      margin-bottom: $spacing-lg;
+    }
+  }
+
+  &__badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $color-success;
+    box-shadow: 0 0 6px rgba($color-success, 0.6);
+    animation: lina-status-pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  // ---- Title ----
+  &__title {
+    @include heading($font-size-4xl);
+    margin-bottom: $spacing-md;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+
+    @include respond-to('md') {
+      font-size: $font-size-3xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-2xl;
+    }
+
+    @include respond-to('xs') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__title-gradient {
+    background: linear-gradient(135deg, #f97316, #ec4899, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: clamp(3rem, 8vw, 5.5rem);
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    display: block;
+  }
+
+  // ---- Subtitle ----
+  &__subtitle {
+    @include heading($font-size-xl);
+    color: $text-primary;
+    margin-bottom: $spacing-lg;
+    font-weight: $font-weight-medium;
+    letter-spacing: -0.01em;
+
+    @include respond-to('sm') {
+      font-size: $font-size-lg;
+    }
+  }
+
+  // ---- Description ----
+  &__description {
+    @include body-text($font-size-lg);
+    color: $text-secondary;
+    max-width: 640px;
+    margin-inline: auto;
+    line-height: $line-height-relaxed;
+    margin-bottom: $spacing-2xl;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+    }
+
+    @include respond-to('xs') {
+      font-size: $font-size-sm;
+    }
+  }
+
+  // ---- Animated Stats ----
+  &__stats {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-2xl;
+
+    @include respond-to('sm') {
+      gap: $spacing-lg;
+    }
+
+    @include respond-to('xs') {
+      flex-direction: column;
+      align-items: center;
+      gap: $spacing-md;
+    }
+  }
+
+  &__stat {
+    text-align: center;
+    animation: lina-stat-count 0.6s ease-out both;
+
+    &:nth-child(1) { animation-delay: 0.2s; }
+    &:nth-child(2) { animation-delay: 0.4s; }
+    &:nth-child(3) { animation-delay: 0.6s; }
+
+    @include respond-to('xs') {
+      width: 100%;
+      padding: $spacing-sm 0;
+      border-bottom: 1px solid $border-color;
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+
+  &__stat-value {
+    display: block;
+    @include heading($font-size-3xl);
+    background: linear-gradient(135deg, #f97316, #ec4899, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    @include respond-to('sm') {
+      font-size: $font-size-2xl;
+    }
+  }
+
+  &__stat-label {
+    display: block;
+    @include body-text($font-size-sm);
+    color: $text-muted;
+    margin-top: $spacing-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: $font-weight-medium;
+  }
+}
+
+// ---- Section ----
+
+.lina-ai {
+  @include section-padding;
+  position: relative;
+  overflow: hidden;
+  // Gradient that flows FROM the hero white INTO warm vibrant tones
+  background: linear-gradient(
+    180deg,
+    #fdf2e9 0%,
+    #fceee3 15%,
+    #f8e8f4 40%,
+    #f0e4fa 60%,
+    #eadaf5 80%,
+    #e4d4f4 100%
+  );
+
+  // Vivid warm radial bursts
+  &::before {
+    content: '';
+    position: absolute;
+    top: 30%;
+    right: -10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(#f97316, 0.12) 0%, rgba(#ec4899, 0.06) 40%, transparent 70%);
+    pointer-events: none;
+    filter: blur(40px);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 15%;
+    left: -5%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(#8b5cf6, 0.08) 0%, rgba(#6366f1, 0.04) 40%, transparent 70%);
+    pointer-events: none;
+    filter: blur(60px);
+  }
+
+  // ---- Tech grid background ----
+  &__grid-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(#8b5cf6, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(#8b5cf6, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 80%);
+  }
+
+  // ---- Container ----
+  &__container {
+    @include container;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: $spacing-xl;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+
+    @include respond-to('lg') {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+
+    @include respond-to('sm') {
+      gap: $spacing-lg;
+    }
+
+    @include respond-to('xs') {
+      gap: $spacing-md;
+    }
+  }
+
+  // ========== LEFT SIDE — Content ==========
+  &__content {
+    opacity: 0;
+
+    .lina-ai--visible & {
+      animation: lina-fade-up 0.7s ease forwards;
+    }
+
+    @include respond-to('lg') {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    @include respond-to('sm') {
+      text-align: center;
+    }
+  }
+
+  // ---- Badge with holographic shimmer ----
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    background: linear-gradient(135deg, rgba(#f97316, 0.12), rgba(#ec4899, 0.1));
+    color: #ea580c;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    padding: $spacing-xs $spacing-md;
+    border-radius: $border-radius-full;
+    margin-bottom: $spacing-lg;
+    letter-spacing: 0.02em;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(#f97316, 0.15);
+
+    svg {
+      color: #f97316;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-xs;
+      padding: 6px $spacing-sm;
+      margin-bottom: $spacing-md;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        110deg,
+        transparent 20%,
+        rgba(255, 255, 255, 0.12) 40%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.12) 60%,
+        transparent 80%
+      );
+      background-size: 200% 100%;
+      animation: holographic-shimmer 3s ease-in-out infinite;
+      pointer-events: none;
+      border-radius: inherit;
+    }
+  }
+
+  &__title {
+    @include heading($font-size-3xl);
+    margin-bottom: $spacing-lg;
+    letter-spacing: -0.02em;
+    color: $text-primary;
+
+    &--highlight {
+      background: linear-gradient(135deg, #f97316, #ec4899, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    @include respond-to('md') {
+      font-size: $font-size-2xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-xl;
+    }
+
+    @include respond-to('xs') {
+      font-size: $font-size-lg;
+    }
+  }
+
+  &__description {
+    @include body-text($font-size-md);
+    color: $text-secondary;
+    margin-bottom: $spacing-xl;
+    max-width: 520px;
+    line-height: $line-height-relaxed;
+
+    @include respond-to('lg') {
+      margin-inline: auto;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+    }
+
+    @include respond-to('xs') {
+      font-size: $font-size-sm;
+    }
+  }
+
+  // ---- Capabilities list ----
+  &__capabilities {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 $spacing-xl;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+
+    @include respond-to('lg') {
+      align-items: center;
+    }
+  }
+
+  &__capability {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    opacity: 0;
+    transform: translateX(-24px);
+
+    .lina-ai--visible & {
+      animation: lina-capability-in 0.5s ease forwards;
+    }
+
+    @for $i from 1 through 6 {
+      &:nth-child(#{$i}) {
+        .lina-ai--visible & {
+          animation-delay: #{0.3 + ($i * 0.1)}s;
+        }
+      }
+    }
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-xs;
+      gap: $spacing-xs;
+    }
+  }
+
+  // ---- CTA button ----
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-xl;
+    min-height: 48px;
+    background: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
+    color: $color-white;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    border-radius: $border-radius-full;
+    text-decoration: none;
+    box-shadow: 0 4px 20px rgba(#f97316, 0.3);
+    @include transition(all, $transition-base);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(#ec4899, 0.4);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    svg {
+      @include transition(transform, $transition-fast);
+    }
+
+    &:hover svg {
+      transform: translateX(4px);
+    }
+
+    @include respond-to('sm') {
+      width: 100%;
+      justify-content: center;
+      font-size: $font-size-sm;
+      padding: $spacing-sm $spacing-lg;
+    }
+  }
+
+  // ========== RIGHT SIDE — AI Command Center Mockup ==========
+  &__visual {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: visible;
+    min-height: 500px;
+
+    @include respond-to('md') { min-height: 400px; }
+    @include respond-to('sm') { min-height: 280px; }
+    @include respond-to('xs') { min-height: 240px; }
+
+    @include respond-to('lg') {
+      max-width: 560px;
+      margin-inline: auto;
+      width: 100%;
+    }
+
+    @include respond-to('sm') {
+      max-width: 100%;
+    }
+  }
+
+  // ---- Circuit board background ----
+  &__circuit {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.7;
+
+    @include respond-to('md') {
+      opacity: 0.4;
+    }
+
+    @include respond-to('sm') {
+      display: none;
+    }
+  }
+
+  &__circuit-svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  &__circuit-node {
+    animation: circuit-node-pulse 3s ease-in-out infinite;
+
+    &:nth-child(odd) {
+      animation-delay: -1.5s;
+    }
+  }
+
+  &__circuit-pulse {
+    filter: blur(1px);
+
+    &--1 { filter: drop-shadow(0 0 4px rgba($color-corporate, 0.6)); }
+    &--2 { filter: drop-shadow(0 0 4px rgba($color-secondary, 0.5)); }
+    &--3 { filter: drop-shadow(0 0 3px rgba($color-corporate, 0.4)); }
+  }
+
+  // ---- Mockup container ----
+  &__mockup {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 520px;
+    opacity: 0;
+    overflow: visible;
+
+    .lina-ai--visible & {
+      animation: mockup-fade-in 1s ease forwards 0.3s;
+    }
+
+    // Perspective + tilt for depth
+    transform: perspective(1200px) rotateY(-4deg) rotateX(2deg);
+    @include transition(transform, 0.4s);
+
+    &:hover {
+      transform: perspective(1200px) rotateY(-1deg) rotateX(0.5deg);
+    }
+
+    @include respond-to('sm') {
+      transform: none;
+      max-width: 100%;
+
+      &:hover {
+        transform: none;
+      }
+    }
+  }
+
+  // ---- Glow behind mockup ----
+  &__mockup-glow {
+    position: absolute;
+    inset: -60px;
+    background: radial-gradient(
+      ellipse at 50% 50%,
+      rgba(#f97316, 0.15) 0%,
+      rgba(#ec4899, 0.12) 30%,
+      rgba(#8b5cf6, 0.08) 60%,
+      transparent 100%
+    );
+    border-radius: 50%;
+    filter: blur(50px);
+    z-index: -1;
+    animation: mockup-glow-pulse 4s ease-in-out infinite;
+
+    @include respond-to('sm') {
+      inset: -30px;
+      filter: blur(40px);
+    }
+  }
+
+  // ---- Browser frame ----
+  &__mockup-frame {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba($color-corporate, 0.3);
+    background: rgba(15, 23, 42, 0.02);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow:
+      0 24px 70px rgba(0, 0, 0, 0.1),
+      0 0 50px rgba($color-corporate, 0.15),
+      0 0 100px rgba($color-primary, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    @include transition(box-shadow, $transition-base);
+
+    .lina-ai__mockup:hover & {
+      box-shadow:
+        0 32px 90px rgba(0, 0, 0, 0.12),
+        0 0 70px rgba($color-corporate, 0.22),
+        0 0 120px rgba($color-primary, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    @include respond-to('sm') {
+      border-radius: 12px;
+    }
+  }
+
+  // ---- Browser top bar ----
+  &__mockup-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 11px 16px;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.03) 0%, rgba(15, 23, 42, 0.01) 100%);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  }
+
+  &__mockup-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.1);
+
+    &:nth-child(1) { background: #ff5f57; }
+    &:nth-child(2) { background: #ffbd2e; }
+    &:nth-child(3) { background: #28ca41; }
+  }
+
+  &__mockup-url {
+    margin-left: 10px;
+    font-size: 11px;
+    color: rgba(15, 23, 42, 0.35);
+    font-family: $font-family-mono, 'Courier New', monospace;
+    letter-spacing: 0.02em;
+  }
+
+  // ---- Chat interface ----
+  &__chat {
+    background: $color-bg-primary;
+    display: flex;
+    flex-direction: column;
+  }
+
+  // ---- Chat header ----
+  &__chat-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid $border-color;
+    background: rgba(15, 23, 42, 0.02);
+
+    @include respond-to('sm') {
+      padding: 10px 14px;
+      gap: 10px;
+    }
+  }
+
+  &__chat-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: $gradient-primary;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  &__chat-name {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-primary;
+    letter-spacing: 0.01em;
+  }
+
+  &__chat-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: $text-muted;
+  }
+
+  &__chat-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $color-success;
+    animation: lina-status-pulse 2s ease infinite;
+  }
+
+  // ---- Chat messages ----
+  &__chat-messages {
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 220px;
+
+    @include respond-to('sm') {
+      padding: 14px;
+      gap: 10px;
+      min-height: 180px;
+    }
+  }
+
+  // ---- Messages ----
+  &__message {
+    max-width: 90%;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 12.5px;
+    line-height: 1.55;
+
+    .lina-ai--visible & {
+      animation: message-slide-in 0.5s ease forwards;
+    }
+
+    p {
+      margin: 0;
+      color: inherit;
+    }
+
+    p + p {
+      margin-top: 8px;
+    }
+
+    strong {
+      color: $text-primary;
+      font-weight: 700;
+    }
+
+    @include respond-to('sm') {
+      font-size: 11.5px;
+      padding: 10px 12px;
+    }
+
+    &--user {
+      align-self: flex-end;
+      background: rgba($color-primary, 0.25);
+      border: 1px solid rgba($color-primary, 0.2);
+      color: $text-primary;
+
+      .lina-ai--visible & {
+        animation-delay: 0.5s;
+      }
+    }
+
+    &--lina {
+      align-self: flex-start;
+      background: rgba(15, 23, 42, 0.03);
+      border: 1px solid rgba(15, 23, 42, 0.06);
+      color: $text-secondary;
+      border-left: 3px solid transparent;
+      border-image: linear-gradient(to bottom, $color-corporate, $color-primary, $color-secondary) 1;
+      letter-spacing: 0.005em;
+
+      .lina-ai--visible & {
+        animation-delay: 0.8s;
+      }
+    }
+  }
+
+  &__message-highlight {
+    background: rgba($color-corporate, 0.1);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 8px;
+    padding: 10px 12px;
+    border-left: 3px solid $color-corporate-light;
+    font-size: 11.5px;
+    color: $text-secondary;
+    border: 1px solid rgba($color-corporate, 0.15);
+    border-left: 3px solid $color-corporate-light;
+
+    @include respond-to('sm') {
+      font-size: 10.5px;
+      padding: 6px 8px;
+    }
+  }
+
+  // ---- Action cards ----
+  &__chat-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .lina-ai--visible & {
+      animation: message-slide-in 0.5s ease forwards;
+      animation-delay: 1.1s;
+      opacity: 0;
+    }
+
+    @include respond-to('sm') {
+      gap: 6px;
+    }
+  }
+
+  &__action-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.03);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    color: $text-secondary;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    @include transition(all, $transition-fast);
+    font-family: inherit;
+
+    &:hover {
+      background: rgba($color-corporate, 0.2);
+      border-color: rgba($color-corporate, 0.4);
+      color: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba($color-corporate, 0.15);
+    }
+
+    svg {
+      flex-shrink: 0;
+      color: $color-corporate-light;
+      opacity: 0.9;
+    }
+
+    @include respond-to('sm') {
+      padding: 5px 9px;
+      font-size: 10px;
+    }
+  }
+
+  // ---- Input bar ----
+  &__chat-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.01) 0%, rgba(15, 23, 42, 0.03) 100%);
+
+    @include respond-to('sm') {
+      padding: 10px 14px;
+    }
+  }
+
+  &__chat-input-icon {
+    font-size: 14px;
+    opacity: 0.5;
+  }
+
+  &__chat-input-text {
+    flex: 1;
+    font-size: 12px;
+    color: rgba(15, 23, 42, 0.25);
+  }
+
+  &__chat-input-send {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, $color-corporate, $color-corporate-light);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    @include transition(all, $transition-fast);
+
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.45);
+    }
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  // ========== FLOATING NOTIFICATION CARDS ==========
+  &__float-card {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: $glass-bg-hover;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid $glass-border;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    z-index: 10;
+    opacity: 0;
+    white-space: nowrap;
+
+    @include respond-to('sm') {
+      padding: 7px 10px;
+      gap: 7px;
+    }
+
+    // Top-right
+    &--1 {
+      top: 5%;
+      right: -60px;
+      z-index: 10;
+
+      .lina-ai--visible & {
+        animation: float-card-in-1 0.6s ease forwards 1.2s, float-bob 4s ease-in-out infinite 1.8s;
+      }
+
+      box-shadow: 0 8px 24px rgba($color-success, 0.15);
+
+      @include respond-to('lg') {
+        right: -20px;
+        display: none;
+      }
+    }
+
+    // Left-middle
+    &--2 {
+      top: 45%;
+      left: -70px;
+      z-index: 10;
+
+      .lina-ai--visible & {
+        animation: float-card-in-2 0.6s ease forwards 1.5s, float-bob-alt 5s ease-in-out infinite 2.1s;
+      }
+
+      box-shadow: 0 8px 24px rgba($color-info, 0.15);
+
+      @include respond-to('lg') {
+        left: -20px;
+        display: none;
+      }
+    }
+
+    // Bottom-right
+    &--3 {
+      bottom: 10%;
+      right: -50px;
+      z-index: 10;
+
+      .lina-ai--visible & {
+        animation: float-card-in-3 0.6s ease forwards 1.8s, float-bob 4.5s ease-in-out infinite 2.4s;
+      }
+
+      box-shadow: 0 8px 24px rgba($color-primary, 0.15);
+
+      @include respond-to('lg') {
+        right: -20px;
+        display: none;
+      }
+    }
+  }
+
+  &__float-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 13px;
+    flex-shrink: 0;
+
+    &--green {
+      background: rgba($color-success, 0.2);
+      color: $color-success;
+      font-weight: 700;
+    }
+
+    &--blue {
+      background: rgba($color-info, 0.2);
+      color: $color-info;
+    }
+
+    &--purple {
+      background: rgba($color-primary, 0.2);
+      color: $color-primary;
+    }
+
+    @include respond-to('sm') {
+      width: 24px;
+      height: 24px;
+      font-size: 11px;
+    }
+  }
+
+  &__float-card-title {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-primary;
+    line-height: 1.2;
+
+    @include respond-to('sm') {
+      font-size: 10.5px;
+    }
+  }
+
+  &__float-card-desc {
+    display: block;
+    font-size: 10.5px;
+    color: $text-secondary;
+    line-height: 1.2;
+
+    @include respond-to('sm') {
+      font-size: 9.5px;
+    }
+  }
+
+  // ======================================================
+  // INTERACTIVE PARTICLE RING (Canvas)
+  // ======================================================
+
+  &__particle-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute;
+    inset: 0;
+    cursor: default;
+  }
+
+  // Typewriter effect
+  @keyframes lina-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  &__typing {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 12px 22px;
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 100px;
+    z-index: 2;
+    max-width: 85%;
+
+    @include respond-to('sm') {
+      padding: 9px 16px;
+      max-width: 90%;
+    }
+
+    @include respond-to('xs') {
+      padding: 7px 12px;
+      max-width: 92%;
+    }
+  }
+
+  &__typing-cursor-wrap {
+    display: flex;
+    align-items: center;
+  }
+
+  &__typing-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: $text-secondary;
+    white-space: nowrap;
+    overflow: hidden;
+    letter-spacing: 0.01em;
+
+    @include respond-to('sm') {
+      font-size: 11px;
+    }
+
+    @include respond-to('xs') {
+      font-size: 10px;
+    }
+  }
+
+  &__typing-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 14px;
+    background: $color-secondary;
+    margin-left: 1px;
+    border-radius: 1px;
+    animation: lina-blink 0.8s ease-in-out infinite;
+    box-shadow: 0 0 6px rgba(14, 165, 233, 0.5);
+  }
+
+  // ======================================================
+  // CSS PARTICLE FALLBACK (unused — Canvas replaced this)
+  // ======================================================
+
+  @keyframes particles-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes particles-glow-breathe {
+    0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.08); }
+  }
+
+  @keyframes particles-ring-pulse {
+    0%, 100% { opacity: 0.05; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.15; transform: translate(-50%, -50%) scale(1.02); }
+  }
+
+  @keyframes particles-center-spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  &__particles {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    margin: 0 auto;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+    &:hover {
+      transform: scale(1.05);
+
+      .lina-ai__particles-glow {
+        opacity: 0.8;
+        filter: blur(45px);
+      }
+
+      .lina-ai__particles-ring {
+        opacity: 0.22;
+      }
+    }
+
+    @include respond-to('lg') { width: 420px; height: 420px; }
+    @include respond-to('md') { width: 360px; height: 360px; }
+    @include respond-to('sm') { width: 280px; height: 280px; }
+    @include respond-to('xs') { width: 240px; height: 240px; }
+  }
+
+  // Pulsing structural ring
+  &__particles-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    border: 1px solid rgba(14, 165, 233, 0.1);
+    animation: particles-ring-pulse 6s ease-in-out infinite;
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: -10px; left: -10px; right: -10px; bottom: -10px;
+      border-radius: 50%;
+      border: 1px solid rgba(37, 99, 235, 0.06);
+      animation: particles-ring-pulse 6s ease-in-out infinite 3s;
+    }
+  }
+
+  // Center glow — bigger & more vibrant
+  &__particles-glow {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      rgba(16, 185, 129, 0.22) 0%,
+      rgba(14, 165, 233, 0.28) 25%,
+      rgba(244, 114, 182, 0.18) 45%,
+      rgba(37, 99, 235, 0.12) 65%,
+      transparent 80%
+    );
+    filter: blur(50px);
+    animation: particles-glow-breathe 5s ease-in-out infinite;
+    transition: opacity 0.4s ease, filter 0.4s ease;
+  }
+
+  // Each layer is a single dot that casts 45 box-shadows
+  &__particles-layer {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 2px; height: 2px;
+    border-radius: 50%;
+    background: transparent;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+    // Layer 1: Top-right arc — pinks & warm oranges (0° to 120°)
+    &--1 {
+      animation: particles-rotate 100s linear infinite;
+      box-shadow:
+        141px -8px 0 1px rgba(14, 165, 233, 0.65),
+        148px -23px 0 2px rgba(14, 165, 233, 0.45),
+        133px -41px 0 0.5px rgba(14, 165, 233, 0.72),
+        156px -4px 0 1.5px rgba(244, 114, 182, 0.35),
+        121px -78px 0 1px rgba(14, 165, 233, 0.55),
+        137px -53px 0 2.5px rgba(244, 114, 182, 0.28),
+        152px -12px 0 0.5px rgba(14, 165, 233, 0.48),
+        112px -89px 0 1.5px rgba(16, 185, 129, 0.38),
+        143px -37px 0 1px rgba(14, 165, 233, 0.62),
+        127px -71px 0 0.5px rgba(244, 114, 182, 0.42),
+        158px 7px 0 1px rgba(14, 165, 233, 0.32),
+        117px -84px 0 2px rgba(16, 185, 129, 0.45),
+        101px -99px 0 0.5px rgba(16, 185, 129, 0.38),
+        149px -29px 0 1.5px rgba(14, 165, 233, 0.52),
+        134px -58px 0 3px rgba(244, 114, 182, 0.22),
+        87px -108px 0 1px rgba(16, 185, 129, 0.48),
+        72px -118px 0 0.5px rgba(251, 146, 60, 0.35),
+        57px -126px 0 1.5px rgba(16, 185, 129, 0.42),
+        41px -131px 0 1px rgba(251, 146, 60, 0.48),
+        22px -137px 0 2px rgba(16, 185, 129, 0.52),
+        3px -139px 0 1px rgba(251, 146, 60, 0.45),
+        -18px -136px 0 0.5px rgba(16, 185, 129, 0.38),
+        163px 18px 0 0.5px rgba(14, 165, 233, 0.22),
+        172px -2px 0 1px rgba(14, 165, 233, 0.18),
+        167px -31px 0 0.5px rgba(244, 114, 182, 0.2),
+        108px -93px 0 2.5px rgba(16, 185, 129, 0.3),
+        93px -103px 0 0.5px rgba(251, 146, 60, 0.4),
+        78px -114px 0 1px rgba(16, 185, 129, 0.35),
+        62px -122px 0 1.5px rgba(251, 146, 60, 0.28),
+        47px -129px 0 0.5px rgba(16, 185, 129, 0.45),
+        33px -134px 0 1px rgba(251, 146, 60, 0.38),
+        -8px -140px 0 2px rgba(16, 185, 129, 0.32),
+        -33px -133px 0 0.5px rgba(16, 185, 129, 0.28),
+        176px -18px 0 0.5px rgba(14, 165, 233, 0.12),
+        182px 8px 0 1px rgba(244, 114, 182, 0.1),
+        169px -47px 0 0.5px rgba(14, 165, 233, 0.14),
+        124px -74px 0 1px rgba(244, 114, 182, 0.5),
+        139px -48px 0 0.5px rgba(14, 165, 233, 0.55),
+        153px -17px 0 2px rgba(244, 114, 182, 0.3),
+        146px -33px 0 1px rgba(14, 165, 233, 0.42),
+        119px -82px 0 0.5px rgba(16, 185, 129, 0.4),
+        105px -95px 0 1.5px rgba(16, 185, 129, 0.35),
+        84px -112px 0 1px rgba(251, 146, 60, 0.32),
+        51px -128px 0 0.5px rgba(16, 185, 129, 0.42),
+        13px -141px 0 1px rgba(251, 146, 60, 0.38);
+    }
+
+    // Layer 2: Bottom-left arc — purples & deep violets (180° to 300°)
+    &--2 {
+      animation: particles-rotate 110s linear infinite reverse;
+      box-shadow:
+        -102px 98px 0 1px rgba(37, 99, 235, 0.62),
+        -121px 79px 0 2px rgba(37, 99, 235, 0.42),
+        -131px 53px 0 0.5px rgba(124, 58, 237, 0.55),
+        -142px 28px 0 1.5px rgba(37, 99, 235, 0.45),
+        -146px 8px 0 1px rgba(124, 58, 237, 0.35),
+        -141px -13px 0 2.5px rgba(37, 99, 235, 0.28),
+        -132px -38px 0 0.5px rgba(124, 58, 237, 0.52),
+        -116px -63px 0 1.5px rgba(37, 99, 235, 0.38),
+        -107px 93px 0 1px rgba(124, 58, 237, 0.55),
+        -92px 108px 0 0.5px rgba(37, 99, 235, 0.45),
+        -77px 118px 0 2px rgba(124, 58, 237, 0.32),
+        -57px 128px 0 1px rgba(37, 99, 235, 0.52),
+        -37px 133px 0 0.5px rgba(124, 58, 237, 0.42),
+        -17px 137px 0 1.5px rgba(37, 99, 235, 0.35),
+        8px 139px 0 1px rgba(124, 58, 237, 0.45),
+        33px 134px 0 2px rgba(37, 99, 235, 0.28),
+        53px 127px 0 0.5px rgba(124, 58, 237, 0.55),
+        73px 117px 0 1px rgba(37, 99, 235, 0.42),
+        93px 103px 0 1.5px rgba(124, 58, 237, 0.35),
+        108px 88px 0 3px rgba(37, 99, 235, 0.22),
+        -112px 86px 0 1px rgba(124, 58, 237, 0.38),
+        -127px 61px 0 0.5px rgba(37, 99, 235, 0.48),
+        -137px 36px 0 1.5px rgba(124, 58, 237, 0.42),
+        -143px 13px 0 1px rgba(37, 99, 235, 0.35),
+        -97px 104px 0 2px rgba(124, 58, 237, 0.3),
+        -82px 113px 0 0.5px rgba(37, 99, 235, 0.52),
+        -62px 124px 0 1px rgba(124, 58, 237, 0.45),
+        -42px 131px 0 0.5px rgba(37, 99, 235, 0.38),
+        -22px 136px 0 1.5px rgba(124, 58, 237, 0.32),
+        13px 138px 0 1px rgba(37, 99, 235, 0.42),
+        43px 130px 0 2.5px rgba(124, 58, 237, 0.25),
+        63px 122px 0 0.5px rgba(37, 99, 235, 0.48),
+        83px 111px 0 1px rgba(124, 58, 237, 0.38),
+        -158px 42px 0 0.5px rgba(37, 99, 235, 0.15),
+        -163px 18px 0 1px rgba(124, 58, 237, 0.12),
+        -155px -22px 0 0.5px rgba(37, 99, 235, 0.18),
+        -72px 119px 0 1.5px rgba(124, 58, 237, 0.4),
+        -47px 129px 0 0.5px rgba(37, 99, 235, 0.35),
+        -27px 135px 0 1px rgba(124, 58, 237, 0.42),
+        18px 138px 0 0.5px rgba(37, 99, 235, 0.32),
+        48px 128px 0 1px rgba(124, 58, 237, 0.45),
+        103px 95px 0 0.5px rgba(37, 99, 235, 0.35),
+        -118px 72px 0 2px rgba(124, 58, 237, 0.3),
+        -148px 25px 0 1px rgba(37, 99, 235, 0.22),
+        123px 73px 0 0.5px rgba(37, 99, 235, 0.28);
+    }
+
+    // Layer 3: Right side arc — magentas & pinks (300° to 60°)
+    &--3 {
+      animation: particles-rotate 90s linear infinite;
+      box-shadow:
+        138px 22px 0 1px rgba(244, 114, 182, 0.58),
+        142px -7px 0 0.5px rgba(14, 165, 233, 0.48),
+        131px 43px 0 2px rgba(244, 114, 182, 0.35),
+        147px -18px 0 1px rgba(14, 165, 233, 0.55),
+        122px 62px 0 0.5px rgba(244, 114, 182, 0.65),
+        136px 33px 0 1.5px rgba(14, 165, 233, 0.42),
+        148px 3px 0 2.5px rgba(244, 114, 182, 0.28),
+        113px 78px 0 1px rgba(14, 165, 233, 0.52),
+        143px -28px 0 0.5px rgba(244, 114, 182, 0.45),
+        127px 52px 0 1px rgba(14, 165, 233, 0.38),
+        103px 92px 0 1.5px rgba(244, 114, 182, 0.55),
+        93px 102px 0 0.5px rgba(14, 165, 233, 0.42),
+        134px 38px 0 1px rgba(244, 114, 182, 0.35),
+        118px 68px 0 2px rgba(14, 165, 233, 0.28),
+        108px 82px 0 0.5px rgba(244, 114, 182, 0.48),
+        139px 13px 0 3px rgba(14, 165, 233, 0.2),
+        145px -13px 0 1px rgba(244, 114, 182, 0.52),
+        129px 57px 0 0.5px rgba(14, 165, 233, 0.45),
+        98px 97px 0 1.5px rgba(244, 114, 182, 0.35),
+        151px -8px 0 1px rgba(14, 165, 233, 0.42),
+        88px 107px 0 0.5px rgba(244, 114, 182, 0.55),
+        133px -43px 0 1px rgba(14, 165, 233, 0.48),
+        125px -67px 0 2px rgba(16, 185, 129, 0.35),
+        116px -83px 0 0.5px rgba(251, 146, 60, 0.42),
+        107px -91px 0 1.5px rgba(16, 185, 129, 0.38),
+        162px 12px 0 0.5px rgba(244, 114, 182, 0.18),
+        168px -8px 0 1px rgba(14, 165, 233, 0.15),
+        157px -33px 0 0.5px rgba(244, 114, 182, 0.2),
+        171px 22px 0 1px rgba(14, 165, 233, 0.12),
+        153px 48px 0 0.5px rgba(244, 114, 182, 0.16),
+        143px 62px 0 1px rgba(14, 165, 233, 0.14),
+        83px 112px 0 2px rgba(244, 114, 182, 0.3),
+        73px 117px 0 0.5px rgba(14, 165, 233, 0.4),
+        128px -73px 0 1px rgba(16, 185, 129, 0.32),
+        111px -87px 0 0.5px rgba(251, 146, 60, 0.38),
+        137px -48px 0 1.5px rgba(14, 165, 233, 0.45),
+        119px 65px 0 1px rgba(244, 114, 182, 0.5),
+        109px 85px 0 0.5px rgba(14, 165, 233, 0.38),
+        97px 99px 0 2px rgba(244, 114, 182, 0.28),
+        141px 17px 0 0.5px rgba(14, 165, 233, 0.55),
+        135px -52px 0 1px rgba(244, 114, 182, 0.4),
+        124px 58px 0 0.5px rgba(14, 165, 233, 0.45),
+        114px 75px 0 1.5px rgba(244, 114, 182, 0.32),
+        155px -2px 0 1px rgba(14, 165, 233, 0.38),
+        148px -22px 0 0.5px rgba(244, 114, 182, 0.42);
+    }
+
+    // Layer 4: Left side arc — purples blending to pinks
+    &--4 {
+      animation: particles-rotate 85s linear infinite reverse;
+      box-shadow:
+        -139px -18px 0 1px rgba(37, 99, 235, 0.52),
+        -143px 7px 0 0.5px rgba(124, 58, 237, 0.45),
+        -132px -42px 0 2px rgba(37, 99, 235, 0.35),
+        -147px 22px 0 1px rgba(124, 58, 237, 0.55),
+        -123px -61px 0 0.5px rgba(37, 99, 235, 0.62),
+        -137px -32px 0 1.5px rgba(124, 58, 237, 0.42),
+        -148px 12px 0 2.5px rgba(37, 99, 235, 0.28),
+        -114px -77px 0 1px rgba(14, 165, 233, 0.48),
+        -128px -52px 0 0.5px rgba(37, 99, 235, 0.55),
+        -108px -88px 0 1px rgba(14, 165, 233, 0.42),
+        -98px -97px 0 1.5px rgba(16, 185, 129, 0.35),
+        -88px -107px 0 0.5px rgba(14, 165, 233, 0.48),
+        -133px -37px 0 3px rgba(37, 99, 235, 0.2),
+        -118px -67px 0 1px rgba(124, 58, 237, 0.45),
+        -103px -93px 0 0.5px rgba(14, 165, 233, 0.38),
+        -141px -3px 0 1px rgba(37, 99, 235, 0.52),
+        -145px 17px 0 2px rgba(124, 58, 237, 0.32),
+        -136px 38px 0 0.5px rgba(37, 99, 235, 0.45),
+        -127px 57px 0 1px rgba(124, 58, 237, 0.55),
+        -117px 72px 0 1.5px rgba(37, 99, 235, 0.38),
+        -107px 87px 0 0.5px rgba(124, 58, 237, 0.48),
+        -93px -102px 0 1px rgba(16, 185, 129, 0.35),
+        -78px -113px 0 2px rgba(14, 165, 233, 0.28),
+        -63px -121px 0 0.5px rgba(16, 185, 129, 0.42),
+        -48px -128px 0 1px rgba(16, 185, 129, 0.38),
+        -162px -8px 0 0.5px rgba(37, 99, 235, 0.15),
+        -168px 12px 0 1px rgba(124, 58, 237, 0.12),
+        -157px 38px 0 0.5px rgba(37, 99, 235, 0.18),
+        -153px -28px 0 1px rgba(124, 58, 237, 0.14),
+        -171px 3px 0 0.5px rgba(37, 99, 235, 0.1),
+        -113px -82px 0 1px rgba(14, 165, 233, 0.4),
+        -83px -108px 0 0.5px rgba(16, 185, 129, 0.35),
+        -68px -117px 0 1.5px rgba(14, 165, 233, 0.3),
+        -53px -125px 0 1px rgba(16, 185, 129, 0.42),
+        -38px -131px 0 0.5px rgba(16, 185, 129, 0.35),
+        -142px -12px 0 1px rgba(37, 99, 235, 0.48),
+        -134px 43px 0 2px rgba(124, 58, 237, 0.28),
+        -122px 63px 0 0.5px rgba(37, 99, 235, 0.42),
+        -112px 78px 0 1px rgba(124, 58, 237, 0.35),
+        -102px 93px 0 1.5px rgba(37, 99, 235, 0.28),
+        -147px 27px 0 0.5px rgba(124, 58, 237, 0.45),
+        -138px -27px 0 1px rgba(37, 99, 235, 0.38),
+        -128px -57px 0 0.5px rgba(124, 58, 237, 0.52),
+        -118px -72px 0 2px rgba(37, 99, 235, 0.3),
+        -108px 83px 0 0.5px rgba(124, 58, 237, 0.42);
+    }
+
+    // Layer 5: Dense inner cloud — mixed colors, tighter radius (100-130px)
+    &--5 {
+      animation: particles-rotate 95s linear infinite;
+      box-shadow:
+        113px -13px 0 1px rgba(14, 165, 233, 0.62),
+        108px -38px 0 0.5px rgba(244, 114, 182, 0.52),
+        117px 12px 0 2px rgba(16, 185, 129, 0.45),
+        103px -53px 0 1.5px rgba(251, 146, 60, 0.38),
+        -108px 33px 0 1px rgba(37, 99, 235, 0.55),
+        -113px 13px 0 0.5px rgba(124, 58, 237, 0.62),
+        -106px -18px 0 2.5px rgba(37, 99, 235, 0.28),
+        -98px -43px 0 1px rgba(14, 165, 233, 0.42),
+        73px -93px 0 1.5px rgba(16, 185, 129, 0.52),
+        58px -103px 0 0.5px rgba(251, 146, 60, 0.58),
+        43px -110px 0 1px rgba(16, 185, 129, 0.45),
+        -58px 103px 0 2px rgba(124, 58, 237, 0.42),
+        -43px 110px 0 0.5px rgba(37, 99, 235, 0.48),
+        -73px 93px 0 1px rgba(124, 58, 237, 0.35),
+        88px 70px 0 0.5px rgba(244, 114, 182, 0.52),
+        98px 48px 0 3px rgba(14, 165, 233, 0.22),
+        110px 23px 0 1px rgba(244, 114, 182, 0.45),
+        -88px -68px 0 0.5px rgba(16, 185, 129, 0.42),
+        -73px -88px 0 1.5px rgba(14, 165, 233, 0.35),
+        23px 113px 0 1px rgba(37, 99, 235, 0.45),
+        -23px -116px 0 0.5px rgba(251, 146, 60, 0.52),
+        3px 118px 0 2px rgba(124, 58, 237, 0.32),
+        -3px -120px 0 1px rgba(16, 185, 129, 0.48),
+        -110px -23px 0 0.5px rgba(37, 99, 235, 0.55),
+        106px -33px 0 1.5px rgba(14, 165, 233, 0.42),
+        93px 78px 0 1px rgba(244, 114, 182, 0.38),
+        78px 93px 0 0.5px rgba(14, 165, 233, 0.48),
+        63px 103px 0 1px rgba(37, 99, 235, 0.42),
+        -63px -103px 0 2px rgba(16, 185, 129, 0.3),
+        -48px -108px 0 0.5px rgba(251, 146, 60, 0.45),
+        48px -108px 0 1px rgba(16, 185, 129, 0.38),
+        -93px 78px 0 1.5px rgba(124, 58, 237, 0.42),
+        -83px -78px 0 0.5px rgba(14, 165, 233, 0.35),
+        83px -78px 0 1px rgba(244, 114, 182, 0.48),
+        -98px -48px 0 0.5px rgba(37, 99, 235, 0.42),
+        -113px 8px 0 2px rgba(124, 58, 237, 0.28),
+        118px -3px 0 0.5px rgba(14, 165, 233, 0.55),
+        33px -113px 0 1px rgba(251, 146, 60, 0.42),
+        -33px 112px 0 0.5px rgba(37, 99, 235, 0.48),
+        13px -117px 0 1.5px rgba(16, 185, 129, 0.35),
+        -13px 115px 0 1px rgba(124, 58, 237, 0.42),
+        103px 58px 0 0.5px rgba(244, 114, 182, 0.45),
+        -103px 58px 0 1px rgba(124, 58, 237, 0.38),
+        68px -98px 0 2px rgba(16, 185, 129, 0.28),
+        -68px 98px 0 0.5px rgba(37, 99, 235, 0.52);
+    }
+
+    // Layer 6: Outermost halo — very faint particles at 160-195px
+    &--6 {
+      animation: particles-rotate 120s linear infinite reverse;
+      box-shadow:
+        181px -8px 0 0.5px rgba(14, 165, 233, 0.15),
+        176px -38px 0 1px rgba(244, 114, 182, 0.12),
+        171px -63px 0 0.5px rgba(16, 185, 129, 0.15),
+        187px 22px 0 1.5px rgba(14, 165, 233, 0.1),
+        -176px 33px 0 0.5px rgba(37, 99, 235, 0.15),
+        -182px 8px 0 1px rgba(124, 58, 237, 0.12),
+        -171px -28px 0 0.5px rgba(37, 99, 235, 0.1),
+        62px -173px 0 1.5px rgba(16, 185, 129, 0.12),
+        32px -181px 0 0.5px rgba(251, 146, 60, 0.15),
+        -28px 179px 0 1px rgba(124, 58, 237, 0.1),
+        -58px 171px 0 0.5px rgba(37, 99, 235, 0.12),
+        132px -123px 0 1.5px rgba(14, 165, 233, 0.1),
+        -128px 123px 0 0.5px rgba(124, 58, 237, 0.1),
+        152px 98px 0 1px rgba(244, 114, 182, 0.08),
+        -148px -98px 0 0.5px rgba(16, 185, 129, 0.1),
+        102px 153px 0 1.5px rgba(37, 99, 235, 0.08),
+        -98px -152px 0 0.5px rgba(16, 185, 129, 0.12),
+        192px -3px 0 1px rgba(14, 165, 233, 0.08),
+        -188px -13px 0 0.5px rgba(37, 99, 235, 0.08),
+        8px -193px 0 1px rgba(251, 146, 60, 0.1),
+        -8px 191px 0 0.5px rgba(124, 58, 237, 0.08),
+        163px -82px 0 1px rgba(244, 114, 182, 0.1),
+        -162px 83px 0 0.5px rgba(37, 99, 235, 0.1),
+        172px 52px 0 1.5px rgba(14, 165, 233, 0.08),
+        -168px -53px 0 0.5px rgba(124, 58, 237, 0.1),
+        82px -168px 0 1px rgba(16, 185, 129, 0.1),
+        -78px 167px 0 0.5px rgba(37, 99, 235, 0.1),
+        118px -142px 0 1px rgba(244, 114, 182, 0.08),
+        -113px 143px 0 0.5px rgba(124, 58, 237, 0.08),
+        142px -118px 0 1.5px rgba(14, 165, 233, 0.07),
+        -138px 117px 0 0.5px rgba(37, 99, 235, 0.07),
+        178px -48px 0 1px rgba(244, 114, 182, 0.1),
+        -174px 47px 0 0.5px rgba(124, 58, 237, 0.1),
+        48px 178px 0 1px rgba(37, 99, 235, 0.06),
+        -42px -177px 0 0.5px rgba(16, 185, 129, 0.08),
+        167px 68px 0 1px rgba(244, 114, 182, 0.07),
+        -163px -67px 0 0.5px rgba(124, 58, 237, 0.08),
+        88px 163px 0 1.5px rgba(37, 99, 235, 0.06),
+        -82px -162px 0 0.5px rgba(16, 185, 129, 0.08),
+        158px -88px 0 1px rgba(14, 165, 233, 0.08),
+        -153px 87px 0 0.5px rgba(124, 58, 237, 0.07),
+        183px 32px 0 1px rgba(244, 114, 182, 0.06),
+        -179px -28px 0 0.5px rgba(37, 99, 235, 0.06),
+        22px -188px 0 1px rgba(251, 146, 60, 0.08),
+        -18px 187px 0 0.5px rgba(124, 58, 237, 0.06);
+    }
+  }
+
+  // Center icon — 80px with strong glass effect and rotation
+  &__particles-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(
+      135deg,
+      rgba(16, 185, 129, 0.18),
+      rgba(14, 165, 233, 0.16),
+      rgba(59, 130, 246, 0.12),
+      rgba(37, 99, 235, 0.1)
+    );
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1.5px solid rgba(37, 99, 235, 0.18);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow:
+      0 0 50px rgba(14, 165, 233, 0.2),
+      0 0 100px rgba(37, 99, 235, 0.12),
+      0 0 150px rgba(16, 185, 129, 0.06),
+      inset 0 0 30px rgba(255, 255, 255, 0.05);
+    z-index: 2;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    animation: particles-center-spin 200s linear infinite;
+
+    svg {
+      width: 36px; height: 36px;
+      filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.4));
+    }
+
+    &:hover {
+      transform: translate(-50%, -50%) scale(1.12);
+      box-shadow:
+        0 0 70px rgba(14, 165, 233, 0.25),
+        0 0 120px rgba(37, 99, 235, 0.15),
+        0 0 170px rgba(16, 185, 129, 0.08),
+        inset 0 0 40px rgba(255, 255, 255, 0.08);
+    }
+
+    @include respond-to('md') { width: 64px; height: 64px; svg { width: 30px; height: 30px; } }
+    @include respond-to('sm') { width: 52px; height: 52px; svg { width: 24px; height: 24px; } }
+  }
+}

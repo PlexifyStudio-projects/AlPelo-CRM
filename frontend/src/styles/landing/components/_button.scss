@@ -1,0 +1,91 @@
+// ============================================
+// BUTTON — BEM Component (VIBRANT DARK THEME)
+// ============================================
+
+@use '../abstracts' as *;
+
+.button {
+  @include button-reset;
+  @include flex-center;
+  display: inline-flex;
+  gap: $spacing-sm;
+  font-family: $font-family-primary;
+  font-weight: $font-weight-semibold;
+  border-radius: $border-radius-md;
+  @include transition(all);
+  @include focus-visible;
+  cursor: pointer;
+  white-space: nowrap;
+
+  // Sizes
+  &--sm {
+    height: 36px;
+    padding-inline: $spacing-md;
+    font-size: $font-size-sm;
+  }
+
+  &--md {
+    height: 44px;
+    padding-inline: $spacing-xl;
+    font-size: $font-size-sm;
+  }
+
+  &--lg {
+    height: 52px;
+    padding-inline: $spacing-2xl;
+    font-size: $font-size-base;
+  }
+
+  // Variants
+  &--primary {
+    background: $gradient-primary;
+    color: $color-white;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+
+    &:hover {
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
+  }
+
+  &--secondary {
+    background: $glass-bg;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: $text-primary;
+    border: $border-width solid $glass-border;
+
+    &:hover {
+      background: $glass-bg-hover;
+      border-color: rgba(15, 23, 42, 0.12);
+    }
+  }
+
+  &--ghost {
+    background-color: transparent;
+    color: $text-secondary;
+
+    &:hover {
+      background-color: rgba(37, 99, 235, 0.04);
+      color: $text-primary;
+    }
+  }
+
+  &--disabled,
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  // Full width
+  &--full {
+    width: 100%;
+    justify-content: center;
+  }
+
+  // Mobile touch targets — enforce 44px min-height
+  @include respond-to('sm') {
+    min-height: 44px;
+  }
+}

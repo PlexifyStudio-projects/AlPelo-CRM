@@ -1,0 +1,265 @@
+@use '../abstracts' as *;
+
+// ============================================
+// STATS — Pain + Gain (Wall Street impact)
+// ============================================
+
+.stats {
+  @include section-padding;
+  margin-top: -60px;
+  padding-top: calc(#{$spacing-4xl} + 60px);
+  position: relative;
+  background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.4) 8%, rgba(255,255,255,0.7) 16%, rgba(255,255,255,0.9) 25%, #ffffff 40%, #f0f7ff 70%, #f0f7ff 100%);
+
+  &__container {
+    @include container;
+  }
+
+  // ═══════════════════════════════
+  // PAIN SECTION
+  // ═══════════════════════════════
+
+  &__pain {
+    margin-bottom: $spacing-3xl;
+  }
+
+  &__pain-header {
+    text-align: center;
+    margin-bottom: $spacing-3xl;
+
+    @include respond-to('sm') { margin-bottom: $spacing-2xl; }
+  }
+
+  &__badge {
+    display: inline-block;
+    padding: 8px 20px;
+    border-radius: $border-radius-full;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    margin-bottom: $spacing-lg;
+    letter-spacing: 0.02em;
+
+    &--red {
+      background: rgba(#dc2626, 0.08);
+      color: #dc2626;
+      border: 1px solid rgba(#dc2626, 0.12);
+    }
+  }
+
+  &__pain-title {
+    @include heading($font-size-4xl);
+    letter-spacing: -0.03em;
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+
+    &--red {
+      color: #dc2626;
+    }
+
+    @include respond-to('md') { font-size: $font-size-3xl; }
+    @include respond-to('sm') { font-size: $font-size-2xl; }
+  }
+
+  &__pain-sub {
+    @include body-text($font-size-lg);
+    color: $text-muted;
+    max-width: 500px;
+    margin-inline: auto;
+
+    @include respond-to('sm') { font-size: $font-size-base; }
+  }
+
+  // ── Pain Cards ──
+  &__pain-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-lg;
+
+    @include respond-to('lg') { grid-template-columns: repeat(2, 1fr); }
+    @include respond-to('sm') { grid-template-columns: 1fr; gap: $spacing-md; }
+  }
+
+  &__pain-card {
+    text-align: center;
+    padding: $spacing-2xl $spacing-lg;
+    border-radius: $border-radius-xl;
+    background: #ffffff;
+    border: 1px solid rgba(#dc2626, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    // Red top accent line
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #dc2626, #ea580c);
+    }
+
+    &:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(#dc2626, 0.08);
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-xl $spacing-md;
+    }
+  }
+
+  &__pain-number {
+    font-family: $font-family-heading;
+    font-size: 4rem;
+    font-weight: $font-weight-extrabold;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin-bottom: $spacing-sm;
+
+    @include respond-to('md') { font-size: 3.2rem; }
+    @include respond-to('sm') { font-size: 2.8rem; }
+  }
+
+  &__pain-headline {
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+    color: $text-primary;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__pain-desc {
+    font-size: $font-size-sm;
+    color: $text-muted;
+    line-height: $line-height-relaxed;
+  }
+
+  // ═══════════════════════════════
+  // DIVIDER
+  // ═══════════════════════════════
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-3xl;
+
+    @include respond-to('sm') { gap: $spacing-md; }
+  }
+
+  &__divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba($color-primary, 0.15), transparent);
+  }
+
+  &__divider-text {
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    white-space: nowrap;
+    padding: $spacing-sm $spacing-lg;
+    background: rgba($color-primary, 0.04);
+    border-radius: $border-radius-full;
+    border: 1px solid rgba($color-primary, 0.1);
+
+    @include respond-to('sm') { font-size: $font-size-sm; padding: $spacing-xs $spacing-md; }
+  }
+
+  // ═══════════════════════════════
+  // GAIN SECTION
+  // ═══════════════════════════════
+
+  &__gain-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-md;
+    margin-bottom: $spacing-3xl;
+
+    @include respond-to('lg') { grid-template-columns: repeat(2, 1fr); }
+    @include respond-to('sm') { grid-template-columns: 1fr; }
+  }
+
+  &__gain-card {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-lg;
+    border-radius: $border-radius-lg;
+    background: rgba($color-primary, 0.03);
+    border: 1px solid rgba($color-primary, 0.08);
+    transition: transform 0.3s ease, background 0.3s ease;
+
+    // Green top accent
+    position: relative;
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #10b981, #2563eb);
+      border-radius: 3px 3px 0 0;
+    }
+
+    &:hover {
+      transform: translateY(-4px);
+      background: rgba($color-primary, 0.06);
+    }
+  }
+
+  &__gain-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  &__gain-text {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    line-height: $line-height-base;
+  }
+
+  // ═══════════════════════════════
+  // CTA
+  // ═══════════════════════════════
+
+  &__cta-wrap {
+    text-align: center;
+  }
+
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 18px 40px;
+    background: linear-gradient(135deg, #dc2626, #ea580c);
+    color: white;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    border-radius: $border-radius-full;
+    text-decoration: none;
+    box-shadow: 0 6px 24px rgba(#dc2626, 0.3);
+    transition: all 0.3s ease;
+    letter-spacing: -0.01em;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 36px rgba(#dc2626, 0.4);
+    }
+
+    @include respond-to('sm') {
+      width: 100%;
+      justify-content: center;
+      font-size: $font-size-base;
+      padding: 16px 32px;
+    }
+  }
+
+  &__cta-note {
+    margin-top: $spacing-md;
+    font-size: $font-size-sm;
+    color: $text-muted;
+  }
+}

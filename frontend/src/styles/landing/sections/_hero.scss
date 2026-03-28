@@ -1,0 +1,311 @@
+@use '../abstracts' as *;
+
+@keyframes hero-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-image-in { from { opacity: 0; transform: translateY(30px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes hero-lina-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes hero-blob { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -20px) scale(1.08); } }
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #ffffff 60%, #fef7f0 85%, #fdf2e9 100%);
+  padding: calc(#{$header-height} + 48px) 0 48px;
+
+  @include respond-to('md') { padding: calc(#{$header-height} + 32px) 0 32px; }
+  @include respond-to('sm') { padding: calc(#{$header-height} + 24px) 0 24px; }
+  @include respond-to('xs') { padding: calc(#{$header-height} + 16px) 0 16px; }
+
+  // Ambient blobs
+  &__ambient {
+    position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+
+  &__ambient-blob {
+    position: absolute; border-radius: 50%; filter: blur(100px);
+
+    &--1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba($color-primary, 0.15) 0%, transparent 70%);
+      top: -20%; right: 10%;
+      animation: hero-blob 18s ease-in-out infinite;
+
+      @include respond-to('sm') { width: 350px; height: 350px; }
+    }
+
+    &--2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba($color-secondary, 0.1) 0%, transparent 70%);
+      bottom: -15%; left: -5%;
+      animation: hero-blob 22s ease-in-out infinite reverse;
+
+      @include respond-to('sm') { width: 280px; height: 280px; }
+    }
+  }
+
+  // Subtle grid pattern
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba($color-primary, 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse 60% 50% at 70% 40%, rgba(0,0,0,0.5) 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 60% 50% at 70% 40%, rgba(0,0,0,0.5) 0%, transparent 70%);
+  }
+
+  // ========== CONTAINER — Split layout ==========
+  &__container {
+    @include container;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 40px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+
+    @include respond-to('lg') { gap: 40px; }
+    @include respond-to('md') { grid-template-columns: 1fr; gap: 48px; text-align: center; }
+    @include respond-to('sm') { gap: 32px; }
+    @include respond-to('xs') { gap: 24px; }
+  }
+
+  // ========== LEFT — Text ==========
+  &__left {
+    display: flex;
+    flex-direction: column;
+
+    @include respond-to('md') { align-items: center; }
+  }
+
+  &__badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px 6px 12px;
+    border-radius: 100px;
+    background: rgba($color-primary, 0.08);
+    border: 1px solid rgba($color-primary, 0.18);
+    color: $color-primary;
+    font-size: 0.8rem; font-weight: 500;
+    margin-bottom: 24px;
+    width: fit-content;
+    opacity: 0;
+    .hero--visible & { animation: hero-in 0.6s ease forwards; }
+
+    @include respond-to('sm') { font-size: 0.7rem; padding: 5px 12px 5px 10px; margin-bottom: 16px; }
+  }
+
+  &__badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: $color-primary;
+    box-shadow: 0 0 8px rgba($color-primary, 0.6);
+  }
+
+  &__title {
+    font-family: $font-family-heading;
+    font-size: 4.2rem; font-weight: 800;
+    letter-spacing: -0.035em; line-height: 1.08;
+    color: $text-primary;
+    margin-bottom: 20px;
+    opacity: 0;
+    .hero--visible & { animation: hero-in 0.7s ease forwards 0.1s; }
+
+    &--highlight {
+      background: $gradient-text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    @include respond-to('lg') { font-size: 3.2rem; }
+    @include respond-to('md') { font-size: 2.8rem; }
+    @include respond-to('sm') { font-size: 2.2rem; letter-spacing: -0.03em; }
+    @include respond-to('xs') { font-size: 1.8rem; }
+  }
+
+  &__subtitle {
+    font-size: 1.15rem; color: $text-secondary;
+    line-height: 1.7; max-width: 480px;
+    margin-bottom: 36px;
+    opacity: 0;
+    .hero--visible & { animation: hero-in 0.7s ease forwards 0.2s; }
+    @include respond-to('md') { max-width: 560px; margin-inline: auto; }
+    @include respond-to('sm') { font-size: 1rem; margin-bottom: 24px; }
+    @include respond-to('xs') { font-size: 0.925rem; }
+  }
+
+  &__actions {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px;
+    opacity: 0;
+    .hero--visible & { animation: hero-in 0.7s ease forwards 0.3s; }
+    @include respond-to('sm') { flex-direction: column; width: 100%; }
+  }
+
+  &__cta {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: $font-family-primary; font-weight: 600; font-size: 1rem;
+    border-radius: 12px; padding: 16px 32px;
+    min-height: 52px;
+    transition: all 0.3s ease; text-decoration: none;
+
+    &--primary {
+      background: linear-gradient(135deg, $color-primary, $color-primary-light);
+      color: white; box-shadow: 0 4px 20px rgba($color-primary, 0.35);
+      &:hover { box-shadow: 0 8px 30px rgba($color-primary, 0.5); transform: translateY(-2px); }
+      svg { transition: transform 0.3s ease; }
+      &:hover svg { transform: translateX(4px); }
+    }
+
+    &--outline {
+      color: $text-secondary;
+      border: 1px solid $glass-border;
+      background: $glass-bg;
+      backdrop-filter: blur(12px);
+      &:hover { color: $text-primary; border-color: rgba($color-primary, 0.15); background: $glass-bg-hover; }
+    }
+
+    @include respond-to('sm') { width: 100%; justify-content: center; }
+  }
+
+  &__proof {
+    display: flex; align-items: center; gap: 16px;
+    font-size: 0.8rem; color: $text-muted;
+    opacity: 0;
+    .hero--visible & { animation: hero-in 0.6s ease forwards 0.4s; }
+    @include respond-to('sm') { flex-wrap: wrap; justify-content: center; gap: 10px; }
+    @include respond-to('xs') { font-size: 0.7rem; gap: 8px; }
+  }
+
+  // ========== RIGHT — Dashboard Preview ==========
+  &__right {
+    position: relative;
+    opacity: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    max-height: 480px;
+    .hero--visible & {
+      animation:
+        hero-image-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.4s,
+        hero-float 6s ease-in-out infinite 1.3s;
+    }
+
+    // ── Floating WhatsApp labels ──
+    .hero__float-label {
+      position: absolute;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba($color-primary, 0.1);
+      border-radius: 10px;
+      font-size: 11px;
+      color: $text-secondary;
+      white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      opacity: 0;
+
+      b { color: $text-primary; font-weight: 600; }
+
+      .hero--visible & {
+        animation: hero-in 0.6s ease forwards;
+      }
+
+      &--1 {
+        top: -12px;
+        right: 20%;
+        .hero--visible & { animation-delay: 1.2s; }
+      }
+
+      &--2 {
+        bottom: 15%;
+        left: -30px;
+        .hero--visible & { animation-delay: 1.6s; }
+      }
+
+      &--3 {
+        bottom: -8px;
+        right: 10%;
+        .hero--visible & { animation-delay: 2.0s; }
+      }
+
+      @include respond-to('md') { display: none; }
+    }
+
+    .hero__float-label-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    // Scale the inner preview down so it looks like a real app screenshot
+    .features__preview-frame {
+      transform: scale(0.50);
+      transform-origin: top left;
+      width: 200%; // 1/0.50 to fill the container
+      transition: none;
+      pointer-events: none;
+
+      &:hover {
+        transform: scale(0.50);
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.1), 0 0 40px rgba($color-primary, 0.08);
+      }
+    }
+
+    @include respond-to('lg') {
+      max-height: 420px;
+
+      .features__preview-frame {
+        transform: scale(0.48);
+        width: 208%;
+      }
+    }
+
+    @include respond-to('md') {
+      width: 100%;
+      max-width: 100%;
+      max-height: 400px;
+      margin: 0 auto;
+
+      .features__preview-frame {
+        transform: scale(0.55);
+        width: 182%;
+      }
+    }
+
+    @include respond-to('sm') {
+      max-height: 320px;
+
+      .features__preview-frame {
+        transform: scale(0.45);
+        width: 222%;
+      }
+    }
+  }
+
+  &__image-glow {
+    position: absolute;
+    inset: -60px;
+    background: radial-gradient(ellipse, rgba($color-primary, 0.08) 0%, transparent 65%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .features__preview-frame {
+    position: relative;
+    z-index: 1;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow:
+      0 30px 80px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba($color-primary, 0.08);
+    // sin hover effects
+
+    // No hover effect — keep it clean
+
+    @include respond-to('md') { border-radius: 16px; }
+    @include respond-to('sm') { border-radius: 12px; }
+  }
+}

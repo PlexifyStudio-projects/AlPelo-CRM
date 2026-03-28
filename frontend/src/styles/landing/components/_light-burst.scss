@@ -1,0 +1,16 @@
+.light-burst {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+
+  &__glow {
+    animation: burst-breathe 6s ease-in-out infinite;
+  }
+}
+
+@keyframes burst-breathe {
+  0%, 100% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+}

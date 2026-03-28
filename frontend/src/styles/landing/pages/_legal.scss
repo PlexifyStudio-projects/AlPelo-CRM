@@ -1,0 +1,59 @@
+@use '../abstracts' as *;
+
+// ============================================
+// LEGAL PAGE — Privacy & Terms
+// ============================================
+
+.legal {
+  @include section-padding;
+  background-color: $color-bg-primary;
+
+  &__container {
+    @include container;
+    max-width: 800px;
+  }
+
+  &__section {
+    margin-bottom: $spacing-3xl;
+    scroll-margin-top: 120px;
+  }
+
+  &__heading {
+    @include heading($font-size-2xl);
+    color: $text-primary;
+    margin-bottom: $spacing-sm;
+    padding-bottom: $spacing-sm;
+    border-bottom: 1px solid $border-color;
+  }
+
+  &__updated {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin-bottom: $spacing-xl;
+  }
+
+  &__subheading {
+    font-size: $font-size-lg;
+    font-weight: 600;
+    color: $text-primary;
+    margin-top: $spacing-lg;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__text {
+    font-size: $font-size-base;
+    color: $text-secondary;
+    line-height: 1.7;
+    margin-bottom: $spacing-md;
+  }
+
+  &__link {
+    color: $color-primary;
+    text-decoration: underline;
+    transition: color $transition-base;
+
+    &:hover {
+      color: $color-primary-light;
+    }
+  }
+}

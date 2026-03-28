@@ -1,0 +1,79 @@
+// ============================================
+// TYPOGRAPHY — Base typographic styles
+// ============================================
+
+@use '../abstracts' as *;
+
+body {
+  font-family: $font-family-primary;
+  font-size: $font-size-base;
+  font-weight: $font-weight-regular;
+  line-height: $line-height-base;
+  color: $text-primary;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-family-heading;
+  font-weight: $font-weight-bold;
+  line-height: $line-height-tight;
+  color: $text-primary;
+  letter-spacing: -0.03em;
+}
+
+h1 { font-size: $font-size-6xl; font-weight: $font-weight-extrabold; }
+h2 { font-size: $font-size-5xl; font-weight: $font-weight-bold; }
+h3 { font-size: $font-size-4xl; }
+h4 { font-size: $font-size-3xl; }
+h5 { font-size: $font-size-xl; }
+h6 { font-size: $font-size-lg; }
+
+p {
+  color: $text-secondary;
+  line-height: $line-height-relaxed;
+}
+
+a {
+  color: $color-primary-light;
+  @include transition(color);
+
+  &:hover {
+    color: $color-primary;
+  }
+}
+
+strong {
+  font-weight: $font-weight-semibold;
+}
+
+small {
+  font-size: $font-size-sm;
+}
+
+// Gradient text utility
+.text-gradient {
+  background: $gradient-text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-hero {
+  background: $gradient-hero;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+// Responsive typography
+@include respond-to('md') {
+  h1 { font-size: $font-size-5xl; }
+  h2 { font-size: $font-size-4xl; }
+  h3 { font-size: $font-size-3xl; }
+  h4 { font-size: $font-size-2xl; }
+}
+
+@include respond-to('sm') {
+  h1 { font-size: $font-size-4xl; }
+  h2 { font-size: $font-size-3xl; }
+  h3 { font-size: $font-size-2xl; }
+}

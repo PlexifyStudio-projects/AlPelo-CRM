@@ -1,0 +1,311 @@
+// ============================================
+// LINA AVATAR — Floating AI Entity
+// Luminous orb with eye-tracking iris
+// ============================================
+
+@use 'sass:math';
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ── Keyframes ────────────────────────────────
+
+@keyframes lina-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes lina-orbit-reverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+
+@keyframes lina-pulse-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@keyframes lina-surface-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes lina-pupil-breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 30px #3b82f6,
+      0 0 60px rgba(#2563eb, 0.6),
+      inset 0 0 15px rgba(#fff, 0.4);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow:
+      0 0 40px #3b82f6,
+      0 0 80px rgba(#2563eb, 0.8),
+      inset 0 0 20px rgba(#fff, 0.5);
+  }
+}
+
+@keyframes lina-streak {
+  0% { opacity: 0; transform: translateX(-100%) rotate(-25deg); }
+  15% { opacity: 0.8; }
+  50%, 100% { opacity: 0; transform: translateX(200%) rotate(-25deg); }
+}
+
+@keyframes lina-ambient-breathe {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+@keyframes lina-orb-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 60px rgba(#2563eb, 0.35),
+      0 0 120px rgba(#2563eb, 0.15),
+      0 0 200px rgba(#0ea5e9, 0.08),
+      inset 0 0 50px rgba(#3b82f6, 0.2),
+      inset 0 -30px 50px rgba(#0ea5e9, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 80px rgba(#2563eb, 0.45),
+      0 0 150px rgba(#2563eb, 0.2),
+      0 0 250px rgba(#0ea5e9, 0.1),
+      inset 0 0 60px rgba(#3b82f6, 0.25),
+      inset 0 -30px 60px rgba(#0ea5e9, 0.15);
+  }
+}
+
+// ── Main Container ───────────────────────────
+
+.lina-avatar {
+  position: fixed;
+  z-index: 90;
+  width: 300px;
+  height: 300px;
+  pointer-events: none;
+
+  // Default position (hero — left side)
+  top: 40%;
+  left: 10%;
+  transform: translateY(-50%) scale(1);
+  opacity: 1;
+
+  transition:
+    top 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+    left 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.8s ease;
+
+  @include respond-to('lg') {
+    display: none;
+  }
+
+  // ── Ambient Glow ───────────────────────────────
+
+  &__glow {
+    position: absolute;
+    inset: -60%;
+    border-radius: $border-radius-full;
+    background: radial-gradient(
+      circle at center,
+      rgba(#2563eb, 0.25) 0%,
+      rgba(#0ea5e9, 0.15) 25%,
+      rgba(#2563eb, 0.08) 45%,
+      transparent 65%
+    );
+    animation: lina-ambient-breathe 4s ease-in-out infinite;
+  }
+
+  // ── Holographic Rings ──────────────────────────
+
+  &__ring {
+    position: absolute;
+    border-radius: $border-radius-full;
+
+    &--outer {
+      inset: -6%;
+      border: 1.5px solid rgba(#3b82f6, 0.3);
+      animation: lina-orbit 18s linear infinite;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: -4px;
+        left: 50%;
+        width: 8px;
+        height: 8px;
+        border-radius: $border-radius-full;
+        background: #3b82f6;
+        box-shadow: 0 0 16px 4px rgba(#3b82f6, 1);
+        transform: translateX(-50%);
+      }
+    }
+
+    &--inner {
+      inset: 6%;
+      border: 1px solid rgba(#0ea5e9, 0.2);
+      animation: lina-orbit-reverse 12s linear infinite;
+
+      &::before {
+        content: '';
+        position: absolute;
+        bottom: -3px;
+        left: 50%;
+        width: 6px;
+        height: 6px;
+        border-radius: $border-radius-full;
+        background: #38bdf8;
+        box-shadow: 0 0 14px 3px rgba(#0ea5e9, 1);
+        transform: translateX(-50%);
+      }
+    }
+  }
+
+  // ── Core Orb ───────────────────────────────────
+
+  &__orb {
+    position: absolute;
+    inset: 15%;
+    border-radius: $border-radius-full;
+    overflow: hidden;
+    background: radial-gradient(
+      ellipse at 30% 25%,
+      #3b82f6 0%,
+      #2563eb 25%,
+      #1d4ed8 50%,
+      #1e40af 80%,
+      #1e3a8a 100%
+    );
+    border: 2px solid rgba(#93c5fd, 0.5);
+    animation: lina-orb-glow 4s ease-in-out infinite;
+  }
+
+  // ── Holographic Surface ────────────────────────
+
+  &__surface {
+    position: absolute;
+    inset: 0;
+    border-radius: $border-radius-full;
+    background: linear-gradient(
+      135deg,
+      rgba(#3b82f6, 0.15) 0%,
+      rgba(#0ea5e9, 0.2) 25%,
+      rgba(#2563eb, 0.1) 50%,
+      rgba(#10b981, 0.12) 75%,
+      rgba(#3b82f6, 0.15) 100%
+    );
+    background-size: 400% 400%;
+    animation: lina-surface-shift 6s ease infinite;
+  }
+
+  // ── Iris (follows mouse) ───────────────────────
+
+  &__iris {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -34px;
+    margin-left: -34px;
+    width: 68px;
+    height: 68px;
+    border-radius: $border-radius-full;
+    background: radial-gradient(
+      circle at 40% 35%,
+      rgba(#93c5fd, 0.6) 0%,
+      rgba(#2563eb, 0.8) 30%,
+      rgba(#1d4ed8, 0.9) 60%,
+      rgba(#1e3a8a, 1) 100%
+    );
+    box-shadow:
+      0 0 25px rgba(#2563eb, 0.5),
+      inset 0 0 20px rgba(#3b82f6, 0.3);
+    transition: none;
+  }
+
+  // ── Pupil ──────────────────────────────────────
+
+  &__pupil {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -14px;
+    margin-left: -14px;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-full;
+    background: radial-gradient(
+      circle at 42% 38%,
+      #fff 0%,
+      #dbeafe 15%,
+      #3b82f6 35%,
+      #1d4ed8 60%,
+      #1e3a8a 100%
+    );
+    animation: lina-pupil-breathe 3s ease-in-out infinite;
+  }
+
+  &__pupil-reflection {
+    position: absolute;
+    top: 20%;
+    left: 58%;
+    width: 8px;
+    height: 8px;
+    border-radius: $border-radius-full;
+    background: #fff;
+    box-shadow: 0 0 8px rgba(#fff, 0.9);
+  }
+
+  // ── Light Streaks ──────────────────────────────
+
+  &__streak {
+    position: absolute;
+    width: 120%;
+    height: 2px;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(#3b82f6, 0.7) 30%,
+      rgba(#fff, 0.9) 50%,
+      rgba(#38bdf8, 0.7) 70%,
+      transparent 100%
+    );
+
+    &--1 {
+      top: 35%;
+      left: -10%;
+      animation: lina-streak 5s ease-in-out infinite;
+    }
+
+    &--2 {
+      top: 62%;
+      left: -10%;
+      animation: lina-streak 5s ease-in-out 2.5s infinite;
+      opacity: 0.7;
+    }
+  }
+
+  // ── Orbiting Particles ─────────────────────────
+
+  &__particles {
+    position: absolute;
+    inset: 0;
+    animation: lina-orbit 25s linear infinite;
+  }
+
+  &__particle {
+    position: absolute;
+    border-radius: $border-radius-full;
+
+    &:nth-child(1) { top: -4%;  left: 48%;  width: 5px; height: 5px; background: #3b82f6; box-shadow: 0 0 10px 2px #3b82f6; animation: lina-pulse-glow 2s ease-in-out 0s infinite; }
+    &:nth-child(2) { top: 10%;  left: 82%;  width: 4px; height: 4px; background: #93c5fd; box-shadow: 0 0 8px 2px #93c5fd; animation: lina-pulse-glow 2.3s ease-in-out 0.3s infinite; }
+    &:nth-child(3) { top: 45%;  left: 98%;  width: 5px; height: 5px; background: #38bdf8; box-shadow: 0 0 10px 2px #38bdf8; animation: lina-pulse-glow 2.6s ease-in-out 0.6s infinite; }
+    &:nth-child(4) { top: 82%;  left: 80%;  width: 4px; height: 4px; background: #3b82f6; box-shadow: 0 0 8px 2px #3b82f6; animation: lina-pulse-glow 2.1s ease-in-out 0.9s infinite; }
+    &:nth-child(5) { top: 100%; left: 46%;  width: 5px; height: 5px; background: #34d399; box-shadow: 0 0 10px 2px #34d399; animation: lina-pulse-glow 2.4s ease-in-out 1.2s infinite; }
+    &:nth-child(6) { top: 82%;  left: 12%;  width: 4px; height: 4px; background: #93c5fd; box-shadow: 0 0 8px 2px #93c5fd; animation: lina-pulse-glow 2.7s ease-in-out 1.5s infinite; }
+    &:nth-child(7) { top: 45%;  left: -2%;  width: 5px; height: 5px; background: #0ea5e9; box-shadow: 0 0 10px 2px #0ea5e9; animation: lina-pulse-glow 2.2s ease-in-out 1.8s infinite; }
+    &:nth-child(8) { top: 10%;  left: 14%;  width: 4px; height: 4px; background: #3b82f6; box-shadow: 0 0 8px 2px #3b82f6; animation: lina-pulse-glow 2.5s ease-in-out 2.1s infinite; }
+  }
+}

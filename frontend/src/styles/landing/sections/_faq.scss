@@ -1,0 +1,210 @@
+@use '../abstracts' as *;
+
+// ============================================
+// FAQ SECTION — VIBRANT DARK THEME
+// ============================================
+
+@keyframes faq-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.faq {
+  @include section-padding;
+  background-color: $color-bg-primary;
+  position: relative;
+
+  &__container {
+    @include container;
+    max-width: 840px;
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: $spacing-3xl;
+
+    @include respond-to('sm') {
+      margin-bottom: $spacing-2xl;
+    }
+  }
+
+  &__title {
+    @include heading($font-size-4xl);
+    margin-bottom: $spacing-md;
+    color: $text-primary;
+
+    @include respond-to('md') {
+      font-size: $font-size-3xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-2xl;
+    }
+
+    @include respond-to('xs') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__subtitle {
+    @include body-text($font-size-lg);
+    color: $text-secondary;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+    }
+  }
+
+  // ---------- List ----------
+  &__list {
+    @include flex-column;
+    gap: 0;
+  }
+
+  // ---------- Item ----------
+  &__item {
+    border-bottom: 1px solid $border-color;
+    @include transition(border-color);
+    border-left: 3px solid transparent;
+    border-radius: 2px 0 0 2px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, border-left-color 0.3s ease;
+
+    &:first-child {
+      border-top: 1px solid $border-color;
+    }
+
+    &:hover {
+      background-color: rgba(37, 99, 235, 0.02);
+    }
+
+    &--active {
+      border-left: 3px solid $color-primary;
+
+      .faq__question {
+        color: $color-primary-light;
+      }
+
+      .faq__icon-vertical {
+        opacity: 0;
+        transform: scaleY(0);
+      }
+
+      .faq__icon {
+        background: rgba($color-primary, 0.15);
+        color: $color-primary-light;
+        transform: rotate(90deg);
+      }
+
+      .faq__answer-inner {
+        animation: faq-slide-down 0.35s ease-out forwards;
+      }
+    }
+  }
+
+  // ---------- Question ----------
+  &__question {
+    @include button-reset;
+    @include focus-visible;
+    @include flex-between;
+    width: 100%;
+    padding: $spacing-lg $spacing-xl;
+    min-height: 44px;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    text-align: left;
+    @include transition;
+    gap: $spacing-md;
+
+    &:hover {
+      background: rgba(37, 99, 235, 0.02);
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-md;
+      font-size: $font-size-sm;
+    }
+
+    @include respond-to('xs') {
+      padding: $spacing-sm $spacing-md;
+      min-height: 48px; // maintain touch target at xs
+    }
+  }
+
+  &__question-text {
+    flex: 1;
+    line-height: $line-height-base;
+  }
+
+  // ---------- Icon ----------
+  &__icon {
+    flex-shrink: 0;
+    @include flex-center;
+    width: 28px;
+    height: 28px;
+    border-radius: $border-radius-full;
+    background-color: rgba(15, 23, 42, 0.06);
+    color: $text-secondary;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+    .faq__item--active & {
+      background: rgba($color-primary, 0.15);
+      color: $color-primary-light;
+      transform: rotate(90deg);
+    }
+  }
+
+  &__icon-svg {
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &__icon-vertical {
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    transform-origin: center;
+
+    .faq__item--active & {
+      opacity: 0;
+      transform: scaleY(0);
+    }
+  }
+
+  // ---------- Answer ----------
+  &__answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &__answer--open {
+    max-height: 500px; // allow longer answers on mobile without clipping
+  }
+
+  &__answer-inner {
+    padding: 0 $spacing-xl $spacing-lg;
+    opacity: 0;
+
+    .faq__item--active & {
+      animation: faq-slide-down 0.35s ease-out 0.1s forwards;
+    }
+
+    @include respond-to('sm') {
+      padding: 0 $spacing-md $spacing-md;
+    }
+  }
+
+  &__answer-text {
+    @include body-text($font-size-base);
+    line-height: $line-height-relaxed;
+    color: $text-secondary;
+
+    @include respond-to('sm') {
+      font-size: $font-size-sm;
+    }
+  }
+}

@@ -2276,6 +2276,18 @@ REGLA SOBRE DATOS INTERNOS: No menciones IDs de cliente ni datos tecnicos. El te
                 if total_visits == 0:
                     hints.append("CLIENTE NUEVO: Primer contacto. Da la mejor primera impresion.")
 
+                # === SENTIMENT ANALYSIS — adapt tone based on client mood ===
+                try:
+                    _conv_sentiment = getattr(conv, 'last_sentiment', None) if conv else None
+                    if _conv_sentiment == "urgent":
+                        hints.append("ALERTA SENTIMIENTO: El cliente parece MUY molesto o tiene una urgencia. Responde con empatia maxima, discúlpate si aplica, y ofrece solucion inmediata. NO uses tono alegre.")
+                    elif _conv_sentiment == "negative":
+                        hints.append("SENTIMIENTO NEGATIVO: El cliente parece insatisfecho o frustrado. Usa un tono empatico y comprensivo. Pregunta que sucedio y ofrece ayuda concreta.")
+                    elif _conv_sentiment == "positive":
+                        hints.append("SENTIMIENTO POSITIVO: El cliente esta contento. Aprovecha para fidelizar, sugerir servicios adicionales o pedir resena.")
+                except Exception:
+                    pass
+
                 # === LONG-TERM MEMORY (pgvector / semantic search) ===
                 try:
                     from ai_memory_extractor import get_relevant_memories
@@ -3344,7 +3356,12 @@ async def _call_anthropic(api_key: str, model: str, system_prompt: str, messages
         "messages": messages,
         "temperature": temperature,
     }
-    headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01", "content-type": "application/json"}
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "prompt-caching-2024-07-31",
+        "content-type": "application/json",
+    }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post("https://api.anthropic.com/v1/messages", json=payload, headers=headers)
@@ -3513,7 +3530,7 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
 # STANDALONE AI CALL — Used by WhatsApp auto-reply
 # ============================================================================
 
-async def _call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None, model_override: str = None, tenant_id: int = 1) -> str:
+async def _call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None, model_override: str = None, tenant_id: int = 1, max_tokens: int = 2048) -> str:
     """Standalone AI call for WhatsApp auto-reply. Uses Claude only. Supports image vision.
     model_override: if provided, use this model. Otherwise reads from AIConfig/AIProvider."""
     # Read API key from AIProvider DB first (Dev Panel config), fallback to env var
@@ -3561,7 +3578,7 @@ async def _call_ai(system_prompt: str, history: list, user_message: str, image_b
     messages = list(history) + [{"role": "user", "content": user_content}]
 
     try:
-        text, tokens = await _call_anthropic(anthropic_key, model_override, system_prompt, messages, 0.4, 2048)
+        text, tokens = await _call_anthropic(anthropic_key, model_override, system_prompt, messages, 0.4, max_tokens)
         # Track AI usage per tenant
         try:
             from routes._usage_tracker import track_ai_usage

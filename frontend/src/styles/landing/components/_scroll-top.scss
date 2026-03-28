@@ -1,0 +1,59 @@
+// ============================================
+// SCROLL TOP — Component (VIBRANT DARK THEME)
+// ============================================
+
+@use '../abstracts' as *;
+
+.scroll-top {
+  position: fixed;
+  bottom: $spacing-xl;
+  right: $spacing-xl;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(37, 99, 235, 0.4);
+  color: $color-white;
+  border-radius: $border-radius-full;
+  box-shadow: $shadow-lg, 0 0 20px rgba(37, 99, 235, 0.2);
+  cursor: pointer;
+  z-index: $z-sticky;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(12px);
+  transition: opacity $transition-base, visibility $transition-base, transform $transition-base, background-color $transition-fast;
+
+  &:hover {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    transform: translateY(-2px);
+    box-shadow: $shadow-xl, 0 0 30px rgba(37, 99, 235, 0.35);
+  }
+
+  &:active {
+    background: linear-gradient(135deg, #1e40af, #2563eb);
+    transform: translateY(0);
+  }
+
+  @include focus-visible;
+
+  &--visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  &__icon {
+    flex-shrink: 0;
+  }
+
+  @include respond-to('sm') {
+    bottom: $spacing-lg;
+    right: $spacing-lg;
+    width: 48px;
+    height: 48px;
+  }
+}

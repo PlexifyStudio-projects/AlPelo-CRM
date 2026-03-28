@@ -1767,6 +1767,9 @@ const Inbox = () => {
                           </span>
                         )}
                       </span>
+                      {conv.last_sentiment && conv.last_sentiment !== 'neutral' && (
+                        <span className={`${b}__conv-sentiment ${b}__conv-sentiment--${conv.last_sentiment}`} title={conv.last_sentiment === 'positive' ? 'Positivo' : conv.last_sentiment === 'negative' ? 'Negativo' : conv.last_sentiment === 'urgent' ? 'Urgente' : ''} />
+                      )}
                       <span className={`${b}__conv-time`}>{formatConvTime(conv.last_message_at)}</span>
                     </div>
                     <div className={`${b}__conv-bottom`}>
@@ -1907,16 +1910,6 @@ const Inbox = () => {
                 </span>
               </div>
 
-              <button className={`${b}__header-action`} title="Videollamada (proximamente)">
-                {Icons.video}
-              </button>
-              <button className={`${b}__header-action`} title="Llamada de voz (proximamente)">
-                {Icons.phone}
-              </button>
-              <button className={`${b}__header-action`} onClick={() => { setShowSearchInChat(!showSearchInChat); setSearchInChatQuery(''); }} title="Buscar en el chat">
-                {Icons.search}
-              </button>
-
               {/* AI Toggle */}
               <button
                 className={`${b}__ai-toggle ${isAiActive ? `${b}__ai-toggle--ai` : `${b}__ai-toggle--human`}`}
@@ -1925,10 +1918,6 @@ const Inbox = () => {
               >
                 {isAiActive ? Icons.robot : Icons.user}
                 <span>{isAiActive ? 'Lina IA' : 'Manual'}</span>
-              </button>
-
-              <button className={`${b}__info-btn ${showClientInfo ? `${b}__info-btn--active` : ''}`} onClick={() => setShowClientInfo(!showClientInfo)}>
-                {showClientInfo ? Icons.close : Icons.info}
               </button>
             </div>
 
@@ -2085,6 +2074,9 @@ const Inbox = () => {
                               <p className={`${b}__message-text`}>{msg.content || msg.text}</p>
                             )}
                             <div className={`${b}__message-meta`}>
+                              {!isSent && msg.sentiment && msg.sentiment !== 'neutral' && (
+                                <span className={`${b}__sentiment-dot ${b}__sentiment-dot--${msg.sentiment}`} title={msg.sentiment === 'positive' ? 'Positivo' : msg.sentiment === 'negative' ? 'Negativo' : 'Urgente'} />
+                              )}
                               {isStarred && <span className={`${b}__message-star`}>{Icons.star}</span>}
                               <span className={`${b}__message-time`}>{formatTime(msg.created_at || msg.time)}</span>
                               {isSent && <MessageStatus status={msg.status} />}
@@ -2236,14 +2228,9 @@ const Inbox = () => {
               <button className={`${b}__input-action ${showEmojiPicker ? `${b}__input-action--active` : ''}`} onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowAttachMenu(false); setShowQuickReplies(false); }} title="Emojis">
                 {Icons.smiley}
               </button>
-              <button className={`${b}__input-action ${showAttachMenu ? `${b}__input-action--active` : ''}`} onClick={() => { setShowAttachMenu(!showAttachMenu); setShowEmojiPicker(false); setShowQuickReplies(false); }} title="Adjuntar">
-                {Icons.attach}
-              </button>
+              {/* Attach button removed — not functional yet */}
 
-              {/* Quick reply button */}
-              <button className={`${b}__quick-reply-btn ${showQuickReplies ? `${b}__quick-reply-btn--active` : ''}`} onClick={() => { setShowQuickReplies(!showQuickReplies); setShowEmojiPicker(false); setShowAttachMenu(false); }} title="Respuestas rapidas">
-                {Icons.lightning}
-              </button>
+              {/* Quick replies removed */}
 
               <div className={`${b}__input-wrapper`}>
                 <textarea
@@ -2257,21 +2244,12 @@ const Inbox = () => {
                 />
               </div>
 
-              {/* Template button */}
-              <button className={`${b}__input-action`} onClick={() => setShowTemplates(!showTemplates)} title="Plantillas">
-                {Icons.template}
-              </button>
+              {/* Templates removed from input bar */}
 
-              {/* Mic / Send */}
-              {messageInput.trim() ? (
-                <button className={`${b}__send-btn ${b}__send-btn--active`} onClick={handleSendMessage} disabled={sendingMessage}>
-                  {Icons.send}
-                </button>
-              ) : (
-                <button className={`${b}__mic-btn`} title="Mensaje de voz (proximamente)">
-                  {Icons.mic}
-                </button>
-              )}
+              {/* Send button — always visible */}
+              <button className={`${b}__send-btn ${messageInput.trim() ? `${b}__send-btn--active` : ''}`} onClick={handleSendMessage} disabled={sendingMessage || !messageInput.trim()}>
+                {Icons.send}
+              </button>
             </div>
           </>
         ) : (

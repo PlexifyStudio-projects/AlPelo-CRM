@@ -1,0 +1,73 @@
+.mesh-gradient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f7ff 50%, #ffffff 100%);
+
+  &__blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.12;
+    animation: mesh-float 20s ease-in-out infinite;
+
+    &--1 {
+      width: 600px;
+      height: 600px;
+      background: #2563eb;
+      top: -10%;
+      left: -10%;
+      animation-delay: 0s;
+    }
+
+    &--2 {
+      width: 500px;
+      height: 500px;
+      background: #0ea5e9;
+      top: 40%;
+      right: -10%;
+      animation-delay: -7s;
+    }
+
+    &--3 {
+      width: 450px;
+      height: 450px;
+      background: #10b981;
+      bottom: -10%;
+      left: 30%;
+      animation-delay: -14s;
+    }
+  }
+
+  // Reduce blob sizes on mobile to prevent overflow
+  @media (max-width: 768px) {
+    &__blob {
+      filter: blur(80px);
+      opacity: 0.08;
+
+      &--1 {
+        width: 300px;
+        height: 300px;
+      }
+
+      &--2 {
+        width: 250px;
+        height: 250px;
+      }
+
+      &--3 {
+        width: 220px;
+        height: 220px;
+      }
+    }
+  }
+}
+
+@keyframes mesh-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(50px, -30px) scale(1.1); }
+  50% { transform: translate(-20px, 40px) scale(0.95); }
+  75% { transform: translate(30px, 20px) scale(1.05); }
+}

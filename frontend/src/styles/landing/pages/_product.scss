@@ -1,0 +1,2072 @@
+@use '../abstracts' as *;
+
+// ============================================
+// PRODUCT PAGES — Shared styles (VIBRANT DARK THEME)
+// ============================================
+
+// ---------- Product Page Wrapper ----------
+.product-page {
+  background-color: $color-bg-primary;
+  min-height: 100vh;
+
+  &--premium {
+    background: linear-gradient(180deg, $color-bg-primary 0%, $color-bg-secondary 50%, $color-bg-primary 100%);
+  }
+}
+
+// ---------- Product Hero ----------
+.product-hero {
+  padding-top: calc($header-height + $spacing-4xl);
+  padding-bottom: $spacing-3xl;
+  background: linear-gradient(
+    180deg,
+    $color-bg-primary 0%,
+    $color-bg-secondary 100%
+  );
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+
+  @include respond-to('md') {
+    padding-top: calc($header-height + $spacing-3xl);
+    padding-bottom: $spacing-2xl;
+  }
+
+  @include respond-to('sm') {
+    padding-top: calc($header-height + $spacing-2xl);
+    padding-bottom: $spacing-xl;
+  }
+
+  // Premium variant with radial glow
+  &--premium {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 40%, rgba($color-primary, 0.12) 0%, transparent 70%),
+      linear-gradient(180deg, $color-bg-primary 0%, $color-bg-secondary 100%);
+  }
+
+  &__container {
+    @include container;
+    max-width: 800px;
+    position: relative;
+    z-index: 1;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-xs $spacing-md;
+    background: linear-gradient(135deg, rgba($color-primary, 0.15), rgba($color-secondary, 0.15));
+    border: $border-width solid rgba($color-primary, 0.2);
+    border-radius: $border-radius-full;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-primary-light;
+    margin-bottom: $spacing-lg;
+
+    @include respond-to('sm') {
+      font-size: $font-size-xs;
+    }
+
+    &--premium {
+      background: linear-gradient(135deg, rgba($color-primary, 0.2), rgba($color-secondary, 0.2), rgba($color-accent, 0.15));
+      border-color: rgba($color-secondary, 0.3);
+      color: $color-secondary-light;
+    }
+  }
+
+  &__badge-icon {
+    @include flex-center;
+    width: 20px;
+    height: 20px;
+    color: $color-primary-light;
+  }
+
+  &__title {
+    @include heading($font-size-4xl);
+    margin-bottom: $spacing-md;
+    letter-spacing: -0.02em;
+    color: $text-primary;
+
+    @include respond-to('md') {
+      font-size: $font-size-3xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-2xl;
+    }
+
+    @include respond-to('xs') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__title-accent {
+    background: $gradient-text;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  &__subtitle {
+    @include body-text($font-size-lg);
+    color: $text-secondary;
+    max-width: 620px;
+    margin-inline: auto;
+    line-height: $line-height-relaxed;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+    }
+
+    @include respond-to('xs') {
+      font-size: $font-size-sm;
+    }
+  }
+
+  &__stats {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-2xl;
+    margin-top: $spacing-2xl;
+
+    @include respond-to('sm') {
+      gap: $spacing-lg;
+      margin-top: $spacing-xl;
+    }
+
+    @include respond-to('xs') {
+      flex-direction: column;
+      align-items: center;
+      gap: $spacing-md;
+    }
+  }
+
+  &__stat {
+    text-align: center;
+
+    @include respond-to('xs') {
+      width: 100%;
+      padding: $spacing-sm 0;
+      border-bottom: 1px solid $border-color;
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+  }
+
+  &__stat-value {
+    display: block;
+    @include heading($font-size-3xl);
+    background: $gradient-text;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    @include respond-to('sm') {
+      font-size: $font-size-2xl;
+    }
+  }
+
+  &__stat-label {
+    display: block;
+    @include body-text($font-size-sm);
+    color: $text-muted;
+    margin-top: $spacing-xs;
+  }
+}
+
+// ---------- Product Features ----------
+.product-features {
+  @include section-padding;
+  background-color: $color-bg-primary;
+
+  &__container {
+    @include container;
+  }
+
+  &__heading {
+    @include heading($font-size-3xl);
+    text-align: center;
+    margin-bottom: $spacing-3xl;
+    color: $text-primary;
+    letter-spacing: -0.01em;
+
+    @include respond-to('md') {
+      font-size: $font-size-2xl;
+      margin-bottom: $spacing-2xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: $spacing-3xl;
+
+    @include respond-to('sm') {
+      margin-bottom: $spacing-2xl;
+    }
+  }
+
+  &__label {
+    display: inline-block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-primary-light;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__title {
+    @include heading($font-size-3xl);
+    letter-spacing: -0.01em;
+    color: $text-primary;
+
+    @include respond-to('md') {
+      font-size: $font-size-2xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__grid {
+    @include grid(3, $spacing-xl);
+
+    @include respond-to('lg') {
+      @include grid(2, $spacing-xl);
+    }
+
+    @include respond-to('sm') {
+      @include grid(1, $spacing-lg);
+    }
+
+    // 5-card layout
+    &--five {
+      @include grid(3, $spacing-xl);
+
+      @include respond-to('lg') {
+        @include grid(2, $spacing-xl);
+      }
+
+      @include respond-to('sm') {
+        @include grid(1, $spacing-lg);
+      }
+    }
+
+    // 6-card layout (3x2)
+    &--six {
+      @include grid(3, $spacing-xl);
+
+      @include respond-to('lg') {
+        @include grid(2, $spacing-xl);
+      }
+
+      @include respond-to('sm') {
+        @include grid(1, $spacing-lg);
+      }
+    }
+  }
+
+  &__card {
+    background: $glass-bg;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: $border-width solid $glass-border;
+    border-radius: $border-radius-xl;
+    padding: $spacing-xl;
+    position: relative;
+    overflow: hidden;
+    @include transition(all, $transition-base);
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: $gradient-primary;
+      opacity: 0;
+      @include transition(opacity, $transition-base);
+    }
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: $shadow-xl, $shadow-glow;
+      border-color: rgba(15, 23, 42, 0.12);
+      background: $glass-bg-hover;
+
+      &::before {
+        opacity: 1;
+      }
+    }
+
+    &:hover .product-features__icon {
+      background: $gradient-primary;
+      color: $color-white;
+    }
+
+    &:hover .product-features__card-icon {
+      background: $gradient-primary;
+      color: $color-white;
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-lg;
+    }
+
+    @include respond-to('xs') {
+      padding: $spacing-md;
+    }
+  }
+
+  // Support both naming conventions: __icon and __card-icon
+  &__icon,
+  &__card-icon {
+    @include flex-center;
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-lg;
+    background: linear-gradient(135deg, rgba($color-primary, 0.15), rgba($color-secondary, 0.15));
+    color: $color-primary-light;
+    margin-bottom: $spacing-lg;
+    @include transition(all, $transition-base);
+  }
+
+  &__card-title {
+    @include heading($font-size-lg, $font-weight-semibold);
+    margin-bottom: $spacing-sm;
+    color: $text-primary;
+  }
+
+  &__card-text,
+  &__card-description {
+    @include body-text($font-size-base);
+    color: $text-secondary;
+    line-height: $line-height-relaxed;
+  }
+}
+
+// ---------- Product Steps ----------
+.product-steps {
+  @include section-padding;
+  background: linear-gradient(180deg, $color-bg-secondary, $color-bg-primary);
+
+  &__container {
+    @include container;
+  }
+
+  &__heading {
+    @include heading($font-size-3xl);
+    text-align: center;
+    margin-bottom: $spacing-3xl;
+    color: $text-primary;
+    letter-spacing: -0.01em;
+
+    @include respond-to('md') {
+      font-size: $font-size-2xl;
+      margin-bottom: $spacing-2xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: $spacing-3xl;
+
+    @include respond-to('sm') {
+      margin-bottom: $spacing-2xl;
+    }
+  }
+
+  &__label {
+    display: inline-block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-primary-light;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__title {
+    @include heading($font-size-3xl);
+    letter-spacing: -0.01em;
+    color: $text-primary;
+
+    @include respond-to('md') {
+      font-size: $font-size-2xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__grid {
+    @include grid(3, $spacing-xl);
+
+    @include respond-to('md') {
+      @include grid(1, $spacing-xl);
+    }
+
+    &--four {
+      @include grid(4, $spacing-xl);
+
+      @include respond-to('lg') {
+        @include grid(2, $spacing-xl);
+      }
+
+      @include respond-to('sm') {
+        @include grid(1, $spacing-lg);
+      }
+    }
+  }
+
+  &__item,
+  &__card {
+    text-align: center;
+    padding: $spacing-xl;
+    position: relative;
+
+    @include respond-to('sm') {
+      padding: $spacing-lg;
+    }
+  }
+
+  &__number,
+  &__card-number {
+    @include flex-center;
+    width: 56px;
+    height: 56px;
+    border-radius: $border-radius-full;
+    margin-inline: auto;
+    margin-bottom: $spacing-lg;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    // Gradient text for step numbers
+    background: $gradient-text;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    border: 2px solid rgba($color-primary, 0.3);
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: $border-radius-full;
+      background: $gradient-primary;
+      opacity: 0.1;
+      z-index: -1;
+    }
+  }
+
+  &__item-title,
+  &__card-title {
+    @include heading($font-size-lg, $font-weight-semibold);
+    margin-bottom: $spacing-sm;
+    color: $text-primary;
+  }
+
+  &__item-text,
+  &__card-description {
+    @include body-text($font-size-base);
+    color: $text-secondary;
+    line-height: $line-height-relaxed;
+    max-width: 320px;
+    margin-inline: auto;
+  }
+
+  // Connector line between steps (desktop only)
+  &__connector {
+    display: none;
+
+    @include min-width('md') {
+      display: block;
+      position: absolute;
+      top: 28px + 24px;
+      left: calc(50% + 40px);
+      width: calc(100% - 80px);
+      height: 2px;
+      background: linear-gradient(90deg, rgba($color-primary, 0.3), rgba($color-secondary, 0.3));
+
+      &::after {
+        content: '';
+        position: absolute;
+        right: -4px;
+        top: -3px;
+        width: 8px;
+        height: 8px;
+        border-top: 2px solid rgba($color-secondary, 0.4);
+        border-right: 2px solid rgba($color-secondary, 0.4);
+        transform: rotate(45deg);
+      }
+    }
+  }
+}
+
+// ---------- Product Actions ----------
+.product-actions {
+  @include section-padding;
+  background-color: $color-bg-primary;
+
+  &__container {
+    @include container;
+  }
+
+  &__heading {
+    @include heading($font-size-3xl);
+    text-align: center;
+    margin-bottom: $spacing-md;
+    color: $text-primary;
+    letter-spacing: -0.01em;
+
+    @include respond-to('md') {
+      font-size: $font-size-2xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__subheading {
+    @include body-text($font-size-lg);
+    text-align: center;
+    color: $text-secondary;
+    margin-bottom: $spacing-3xl;
+    max-width: 600px;
+    margin-inline: auto;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+      margin-bottom: $spacing-2xl;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: $spacing-lg;
+
+    @include respond-to('sm') {
+      grid-template-columns: repeat(2, 1fr);
+      gap: $spacing-md;
+    }
+  }
+
+  &__card {
+    @include flex-column;
+    align-items: center;
+    gap: $spacing-md;
+    padding: $spacing-xl $spacing-md;
+    background: rgba(15, 23, 42, 0.02);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: $border-width solid rgba(15, 23, 42, 0.06);
+    border-radius: $border-radius-xl;
+    text-align: center;
+    cursor: default;
+    @include transition(all, $transition-base);
+
+    &:hover {
+      transform: translateY(-3px);
+      background: rgba(15, 23, 42, 0.06);
+      border-color: rgba($color-primary, 0.2);
+      box-shadow: $shadow-lg, 0 0 20px rgba($color-primary, 0.1);
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-lg $spacing-sm;
+    }
+  }
+
+  &__card-icon {
+    @include flex-center;
+    width: 52px;
+    height: 52px;
+    border-radius: $border-radius-lg;
+    background: linear-gradient(135deg, rgba($color-primary, 0.12), rgba($color-secondary, 0.12));
+    color: $color-primary-light;
+    @include transition(all, $transition-base);
+
+    .product-actions__card:hover & {
+      background: $gradient-primary;
+      color: $color-white;
+    }
+  }
+
+  &__card-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    line-height: $line-height-tight;
+  }
+}
+
+// ---------- Product Workflows ----------
+.product-workflows {
+  @include section-padding;
+  background: linear-gradient(180deg, $color-bg-primary, $color-bg-secondary);
+
+  &__container {
+    @include container;
+  }
+
+  &__heading {
+    @include heading($font-size-3xl);
+    text-align: center;
+    margin-bottom: $spacing-md;
+    color: $text-primary;
+
+    @include respond-to('md') {
+      font-size: $font-size-2xl;
+    }
+  }
+
+  &__subheading {
+    @include body-text($font-size-lg);
+    text-align: center;
+    color: $text-secondary;
+    margin-bottom: $spacing-3xl;
+    max-width: 600px;
+    margin-inline: auto;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+      margin-bottom: $spacing-2xl;
+    }
+  }
+
+  &__grid {
+    @include grid(2, $spacing-xl);
+
+    @include respond-to('md') {
+      @include grid(1, $spacing-lg);
+    }
+  }
+
+  &__card {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-lg;
+    padding: $spacing-xl;
+    background: rgba(15, 23, 42, 0.02);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: $border-width solid rgba(15, 23, 42, 0.06);
+    border-radius: $border-radius-xl;
+    @include transition(all, $transition-base);
+
+    &:hover {
+      transform: translateY(-2px);
+      background: rgba(15, 23, 42, 0.06);
+      border-color: rgba(15, 23, 42, 0.1);
+      box-shadow: $shadow-lg, $shadow-glow;
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-lg;
+      gap: $spacing-md;
+    }
+  }
+
+  &__card-icon {
+    @include flex-center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: $border-radius-lg;
+    background: linear-gradient(135deg, rgba($color-primary, 0.15), rgba($color-secondary, 0.15));
+    color: $color-primary-light;
+    font-size: $font-size-lg;
+    @include transition(all, $transition-base);
+
+    .product-workflows__card:hover & {
+      background: $gradient-primary;
+      color: $color-white;
+    }
+  }
+
+  &__card-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__card-title {
+    @include heading($font-size-base, $font-weight-semibold);
+    color: $text-primary;
+  }
+
+  &__card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px $spacing-sm;
+    border-radius: $border-radius-full;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+
+    &--whatsapp {
+      background: rgba($color-success, 0.12);
+      color: $color-success;
+    }
+
+    &--crm {
+      background: rgba($color-info, 0.12);
+      color: $color-info;
+    }
+
+    &--marketing {
+      background: rgba($color-secondary, 0.12);
+      color: $color-secondary-light;
+    }
+  }
+
+  &__card-text {
+    @include body-text($font-size-sm);
+    color: $text-secondary;
+    line-height: $line-height-relaxed;
+  }
+
+  &__card-toggle {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    margin-top: $spacing-sm;
+    color: $text-muted;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+  }
+
+  &__toggle-pill {
+    width: 36px;
+    height: 20px;
+    border-radius: $border-radius-full;
+    background: rgba($color-success, 0.25);
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 18px;
+      width: 16px;
+      height: 16px;
+      border-radius: $border-radius-full;
+      background: $color-success;
+      @include transition(left, $transition-fast);
+    }
+  }
+}
+
+// ---------- Product Mockup ----------
+.product-mockup {
+  @include section-padding;
+  background-color: $color-bg-primary;
+
+  &__container {
+    @include container;
+    text-align: center;
+  }
+
+  &__header {
+    margin-bottom: $spacing-2xl;
+  }
+
+  &__label {
+    display: inline-block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-primary-light;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__title {
+    @include heading($font-size-2xl);
+    letter-spacing: -0.01em;
+    color: $text-primary;
+
+    @include respond-to('sm') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__frame {
+    max-width: 960px;
+    margin-inline: auto;
+    border-radius: $border-radius-xl;
+    border: $border-width solid $glass-border;
+    background: $glass-bg;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: $shadow-xl;
+    overflow: hidden;
+    @include transition(all, $transition-slow);
+
+    &:hover {
+      box-shadow: $shadow-2xl, $shadow-glow;
+      transform: translateY(-2px);
+    }
+
+    @include respond-to('sm') {
+      border-radius: $border-radius-lg;
+    }
+  }
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: rgba(15, 23, 42, 0.02);
+    border-bottom: $border-width solid $border-color;
+  }
+
+  &__toolbar-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: $border-radius-full;
+
+    &--red { background-color: #ef4444; }
+    &--yellow { background-color: #f59e0b; }
+    &--green { background-color: #10b981; }
+  }
+
+  &__placeholder {
+    @include flex-center;
+    min-height: 400px;
+    padding: $spacing-2xl;
+    color: $text-muted;
+    font-size: $font-size-md;
+    font-weight: $font-weight-medium;
+
+    @include respond-to('sm') {
+      min-height: 240px;
+      padding: $spacing-lg;
+    }
+  }
+
+  &__placeholder-content {
+    @include flex-column;
+    align-items: center;
+    gap: $spacing-md;
+  }
+
+  &__placeholder-icon {
+    @include flex-center;
+    width: 64px;
+    height: 64px;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, rgba($color-primary, 0.15), rgba($color-secondary, 0.15));
+    color: $color-primary-light;
+  }
+}
+
+// ---------- Product Tabs (Finanzas sub-modules) ----------
+.product-tabs {
+  @include section-padding;
+  background-color: $color-bg-secondary;
+
+  &__container {
+    @include container;
+  }
+
+  &__heading {
+    @include heading($font-size-3xl);
+    text-align: center;
+    margin-bottom: $spacing-md;
+    color: $text-primary;
+
+    @include respond-to('md') {
+      font-size: $font-size-2xl;
+    }
+  }
+
+  &__subheading {
+    @include body-text($font-size-lg);
+    text-align: center;
+    color: $text-secondary;
+    margin-bottom: $spacing-2xl;
+    max-width: 600px;
+    margin-inline: auto;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+    }
+  }
+
+  &__nav {
+    display: flex;
+    justify-content: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-2xl;
+    flex-wrap: wrap;
+
+    @include respond-to('sm') {
+      gap: $spacing-xs;
+    }
+  }
+
+  &__tab {
+    padding: $spacing-sm $spacing-lg;
+    border-radius: $border-radius-full;
+    background: rgba(15, 23, 42, 0.03);
+    border: $border-width solid rgba(15, 23, 42, 0.06);
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: default;
+    @include transition(all, $transition-base);
+
+    &:hover {
+      background: rgba(15, 23, 42, 0.06);
+      color: $text-primary;
+    }
+
+    &--active {
+      background: $gradient-primary;
+      border-color: transparent;
+      color: $color-white;
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-xs $spacing-md;
+      font-size: $font-size-xs;
+    }
+  }
+
+  &__content {
+    @include grid(2, $spacing-xl);
+    max-width: 900px;
+    margin-inline: auto;
+
+    @include respond-to('md') {
+      @include grid(1, $spacing-lg);
+    }
+  }
+
+  &__item {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-md;
+    padding: $spacing-lg;
+    background: rgba(15, 23, 42, 0.02);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: $border-width solid rgba(15, 23, 42, 0.06);
+    border-radius: $border-radius-lg;
+    @include transition(all, $transition-base);
+
+    &:hover {
+      background: rgba(15, 23, 42, 0.06);
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+  }
+
+  &__item-icon {
+    @include flex-center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: $border-radius-md;
+    background: linear-gradient(135deg, rgba($color-primary, 0.15), rgba($color-secondary, 0.15));
+    color: $color-primary-light;
+    font-size: $font-size-lg;
+  }
+
+  &__item-body {
+    flex: 1;
+  }
+
+  &__item-title {
+    @include heading($font-size-base, $font-weight-semibold);
+    color: $text-primary;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__item-text {
+    @include body-text($font-size-sm);
+    color: $text-secondary;
+    line-height: $line-height-relaxed;
+  }
+}
+
+// ============================================
+// ENHANCED PRODUCT PAGES — Visual Enhancements
+// ============================================
+
+// ---------- Particle Ring Background in Hero ----------
+.product-hero__particles-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-height: 300px;
+  overflow: hidden;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+
+  canvas {
+    width: 100% !important;
+    height: 300px !important;
+  }
+}
+
+// ---------- Animated Stat Counters ----------
+.product-hero__stat-value--animate {
+  animation: statPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes statPop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// ---------- Fade-Up Micro-Interaction ----------
+[data-animate="fade-up"] {
+  opacity: 0;
+  transform: translateY(24px);
+  animation: fadeUpIn 0.5s ease forwards;
+
+  @for $i from 1 through 6 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.1}s;
+    }
+  }
+}
+
+@keyframes fadeUpIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ---------- Feature Card Accent Color Variants ----------
+.product-features__card {
+  &--blue {
+    &::before {
+      background: linear-gradient(90deg, #3b82f6, #60a5fa) !important;
+    }
+
+    &:hover .product-features__card-icon {
+      background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+    }
+  }
+
+  &--green {
+    &::before {
+      background: linear-gradient(90deg, #10b981, #34d399) !important;
+    }
+
+    &:hover .product-features__card-icon {
+      background: linear-gradient(135deg, #10b981, #34d399) !important;
+    }
+  }
+
+  &--orange {
+    &::before {
+      background: linear-gradient(90deg, #f97316, #fb923c) !important;
+    }
+
+    &:hover .product-features__card-icon {
+      background: linear-gradient(135deg, #f97316, #fb923c) !important;
+    }
+  }
+
+  &--purple {
+    &::before {
+      background: linear-gradient(90deg, #2563eb, #3b82f6) !important;
+    }
+
+    &:hover .product-features__card-icon {
+      background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+    }
+  }
+
+  &--pink {
+    &::before {
+      background: linear-gradient(90deg, #0ea5e9, #38bdf8) !important;
+    }
+
+    &:hover .product-features__card-icon {
+      background: linear-gradient(135deg, #0ea5e9, #38bdf8) !important;
+    }
+  }
+}
+
+// ---------- Mockup Toolbar Title ----------
+.product-mockup__toolbar-title {
+  margin-left: auto;
+  font-size: $font-size-xs;
+  color: $text-muted;
+  font-weight: $font-weight-medium;
+}
+
+// ============================================
+// SIMULATED CLIENT TABLE (Clientes mockup)
+// ============================================
+.product-mock-table {
+  padding: $spacing-lg;
+  font-size: $font-size-sm;
+
+  @include respond-to('sm') {
+    padding: $spacing-md;
+    font-size: $font-size-xs;
+  }
+
+  // -- KPI Bar --
+  &__kpis {
+    display: flex;
+    gap: $spacing-lg;
+    margin-bottom: $spacing-lg;
+    padding-bottom: $spacing-md;
+    border-bottom: $border-width solid rgba(15, 23, 42, 0.06);
+    overflow-x: auto;
+
+    @include respond-to('sm') {
+      gap: $spacing-md;
+    }
+  }
+
+  &__kpi {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 80px;
+  }
+
+  &__kpi-value {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    background: $gradient-text;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    &--success {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    &--warning {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    &--accent {
+      background: linear-gradient(135deg, #0ea5e9, #38bdf8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-lg;
+    }
+  }
+
+  &__kpi-label {
+    font-size: $font-size-xs;
+    color: $text-muted;
+    white-space: nowrap;
+  }
+
+  // -- Search Bar --
+  &__search {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: rgba(15, 23, 42, 0.02);
+    border: $border-width solid rgba(15, 23, 42, 0.06);
+    border-radius: $border-radius-lg;
+    color: $text-muted;
+    margin-bottom: $spacing-md;
+    font-size: $font-size-sm;
+
+    @include respond-to('sm') {
+      font-size: $font-size-xs;
+    }
+  }
+
+  // -- Table Row --
+  &__row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr 0.6fr 0.8fr;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    border-bottom: $border-width solid rgba(15, 23, 42, 0.03);
+    transition: background 0.2s ease;
+
+    &:hover:not(&--header) {
+      background: rgba(15, 23, 42, 0.02);
+    }
+
+    &--header {
+      font-weight: $font-weight-semibold;
+      color: $text-muted;
+      text-transform: uppercase;
+      font-size: $font-size-xs;
+      letter-spacing: 0.05em;
+      border-bottom-color: rgba(15, 23, 42, 0.06);
+    }
+
+    @include respond-to('md') {
+      grid-template-columns: 1.5fr 1fr 0.8fr;
+
+      .product-mock-table__cell--visits,
+      .product-mock-table__cell--spent {
+        display: none;
+      }
+    }
+
+    @include respond-to('sm') {
+      grid-template-columns: 1fr 0.8fr;
+      gap: $spacing-xs;
+
+      .product-mock-table__cell--contact {
+        display: none;
+      }
+    }
+  }
+
+  &__cell {
+    color: $text-secondary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &--name {
+      display: flex;
+      align-items: center;
+      gap: $spacing-sm;
+      color: $text-primary;
+      font-weight: $font-weight-medium;
+    }
+
+    &--spent {
+      font-weight: $font-weight-semibold;
+      color: $text-primary;
+    }
+  }
+
+  // -- Avatar --
+  &__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, rgba($color-primary, 0.25), rgba($color-secondary, 0.25));
+    color: $color-primary-light;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+  }
+
+  // -- Status Badges --
+  &__status {
+    display: inline-block;
+    padding: 2px $spacing-sm;
+    border-radius: $border-radius-full;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    white-space: nowrap;
+
+    &--vip {
+      background: rgba($color-secondary, 0.15);
+      color: $color-secondary-light;
+    }
+
+    &--active {
+      background: rgba($color-success, 0.15);
+      color: $color-success;
+    }
+
+    &--new {
+      background: rgba($color-info, 0.15);
+      color: $color-info;
+    }
+
+    &--risk {
+      background: rgba($color-warning, 0.15);
+      color: $color-warning;
+    }
+
+    &--inactive {
+      background: rgba($color-gray-500, 0.15);
+      color: $color-gray-400;
+    }
+  }
+}
+
+// ============================================
+// PRODUCT PIPELINE — Animated 4-Phase Pipeline (Lina IA)
+// ============================================
+.product-pipeline {
+  @include section-padding;
+  background: linear-gradient(180deg, $color-bg-primary, $color-bg-secondary);
+  overflow: hidden;
+
+  &__container {
+    @include container;
+    text-align: center;
+  }
+
+  &__label {
+    display: inline-block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-primary-light;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__heading {
+    @include heading($font-size-3xl);
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+    letter-spacing: -0.01em;
+
+    @include respond-to('md') { font-size: $font-size-2xl; }
+    @include respond-to('sm') { font-size: $font-size-xl; }
+  }
+
+  &__subheading {
+    @include body-text($font-size-lg);
+    color: $text-secondary;
+    margin-bottom: $spacing-3xl;
+    max-width: 620px;
+    margin-inline: auto;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+      margin-bottom: $spacing-2xl;
+    }
+  }
+
+  // Pipeline track — horizontal on desktop, vertical on mobile
+  &__track {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+
+    @include respond-to('md') {
+      flex-direction: column;
+      align-items: center;
+      gap: $spacing-md;
+    }
+  }
+
+  // Connector arrows between phases
+  &__connector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0 $spacing-xs;
+    color: rgba($color-primary, 0.35);
+    opacity: 0;
+    transform: scaleX(0);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+
+    @include respond-to('md') {
+      transform: scaleY(0) rotate(90deg);
+      padding: $spacing-xs 0;
+    }
+
+    @include respond-to('sm') {
+      svg { width: 24px; height: 18px; }
+    }
+  }
+
+  // Individual phase cards
+  &__phase {
+    flex: 0 1 220px;
+    text-align: center;
+    padding: $spacing-xl $spacing-lg;
+    background: rgba(15, 23, 42, 0.02);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: $border-width solid rgba(15, 23, 42, 0.06);
+    border-radius: $border-radius-xl;
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+
+    &:hover {
+      border-color: rgba($color-primary, 0.25);
+      box-shadow: 0 0 24px rgba($color-primary, 0.1);
+    }
+
+    @include respond-to('md') {
+      flex: none;
+      width: 100%;
+      max-width: 360px;
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-lg $spacing-md;
+    }
+  }
+
+  &__phase-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-sm;
+    margin-bottom: $spacing-md;
+  }
+
+  &__phase-number {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+    color: $color-primary-light;
+    background: rgba($color-primary, 0.15);
+    padding: 2px $spacing-sm;
+    border-radius: $border-radius-full;
+    letter-spacing: 0.05em;
+  }
+
+  &__phase-icon {
+    color: $color-primary-light;
+  }
+
+  &__phase-name {
+    @include heading($font-size-lg, $font-weight-bold);
+    color: $text-primary;
+    margin-bottom: $spacing-sm;
+    letter-spacing: 0.04em;
+  }
+
+  &__phase-desc {
+    @include body-text($font-size-sm);
+    color: $text-secondary;
+    line-height: $line-height-relaxed;
+  }
+
+  // Staggered animation when visible
+  &--visible {
+    .product-pipeline__phase {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .product-pipeline__phase--1 { transition-delay: 0.1s; }
+    .product-pipeline__phase--2 { transition-delay: 0.35s; }
+    .product-pipeline__phase--3 { transition-delay: 0.6s; }
+    .product-pipeline__phase--4 { transition-delay: 0.85s; }
+
+    .product-pipeline__connector {
+      opacity: 1;
+      transform: scaleX(1);
+
+      @include respond-to('md') {
+        transform: scaleY(1) rotate(90deg);
+      }
+    }
+
+    .product-pipeline__connector:nth-of-type(2) { transition-delay: 0.25s; }
+    .product-pipeline__connector:nth-of-type(4) { transition-delay: 0.5s; }
+    .product-pipeline__connector:nth-of-type(6) { transition-delay: 0.75s; }
+  }
+}
+
+// ============================================
+// PRODUCT STRATEGY — Expanded Strategy Cards (Lina IA)
+// ============================================
+.product-strategy {
+  @include section-padding;
+  background-color: $color-bg-primary;
+  overflow: hidden;
+
+  &__container {
+    @include container;
+    text-align: center;
+  }
+
+  &__label {
+    display: inline-block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary-light;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__heading {
+    @include heading($font-size-3xl);
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+    letter-spacing: -0.01em;
+
+    @include respond-to('md') { font-size: $font-size-2xl; }
+    @include respond-to('sm') { font-size: $font-size-xl; }
+  }
+
+  &__subheading {
+    @include body-text($font-size-lg);
+    color: $text-secondary;
+    margin-bottom: $spacing-3xl;
+    max-width: 640px;
+    margin-inline: auto;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+      margin-bottom: $spacing-2xl;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: $spacing-xl;
+    text-align: left;
+
+    @include respond-to('sm') {
+      grid-template-columns: 1fr;
+      gap: $spacing-lg;
+    }
+  }
+
+  &__card {
+    padding: $spacing-xl;
+    background: rgba(15, 23, 42, 0.02);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: $border-width solid rgba(15, 23, 42, 0.06);
+    border-radius: $border-radius-xl;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.5s ease, transform 0.5s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    &:hover {
+      transform: translateY(-4px) !important;
+      background: rgba(15, 23, 42, 0.06);
+
+      &::before { opacity: 1; }
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-lg;
+    }
+
+    // Color variants
+    &--blue {
+      &::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+      &:hover { border-color: rgba(#3b82f6, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba(#3b82f6, 0.12); }
+      .product-strategy__card-icon { background: linear-gradient(135deg, rgba(#3b82f6, 0.15), rgba(#60a5fa, 0.15)); color: #60a5fa; }
+      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, #3b82f6, #60a5fa); color: #fff; }
+    }
+
+    &--purple {
+      &::before { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+      &:hover { border-color: rgba(#2563eb, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba(#2563eb, 0.12); }
+      .product-strategy__card-icon { background: linear-gradient(135deg, rgba(#2563eb, 0.15), rgba(#3b82f6, 0.15)); color: #3b82f6; }
+      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; }
+    }
+
+    &--green {
+      &::before { background: linear-gradient(90deg, #10b981, #34d399); }
+      &:hover { border-color: rgba(#10b981, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba(#10b981, 0.12); }
+      .product-strategy__card-icon { background: linear-gradient(135deg, rgba(#10b981, 0.15), rgba(#34d399, 0.15)); color: #34d399; }
+      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, #10b981, #34d399); color: #fff; }
+    }
+
+    &--amber {
+      &::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+      &:hover { border-color: rgba(#f59e0b, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba(#f59e0b, 0.12); }
+      .product-strategy__card-icon { background: linear-gradient(135deg, rgba(#f59e0b, 0.15), rgba(#fbbf24, 0.15)); color: #fbbf24; }
+      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #fff; }
+    }
+
+    &--cyan {
+      &::before { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
+      &:hover { border-color: rgba(#06b6d4, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba(#06b6d4, 0.12); }
+      .product-strategy__card-icon { background: linear-gradient(135deg, rgba(#06b6d4, 0.15), rgba(#22d3ee, 0.15)); color: #22d3ee; }
+      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, #06b6d4, #22d3ee); color: #fff; }
+    }
+
+    &--pink {
+      &::before { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
+      &:hover { border-color: rgba(#0ea5e9, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba(#0ea5e9, 0.12); }
+      .product-strategy__card-icon { background: linear-gradient(135deg, rgba(#0ea5e9, 0.15), rgba(#38bdf8, 0.15)); color: #38bdf8; }
+      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, #0ea5e9, #38bdf8); color: #fff; }
+    }
+
+    &--red {
+      &::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+      &:hover { border-color: rgba(#ef4444, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba(#ef4444, 0.12); }
+      .product-strategy__card-icon { background: linear-gradient(135deg, rgba(#ef4444, 0.15), rgba(#f87171, 0.15)); color: #f87171; }
+      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; }
+    }
+  }
+
+  &__card-icon {
+    @include flex-center;
+    width: 52px;
+    height: 52px;
+    border-radius: $border-radius-lg;
+    margin-bottom: $spacing-lg;
+    transition: all 0.3s ease;
+  }
+
+  &__card-title {
+    @include heading($font-size-lg, $font-weight-semibold);
+    color: $text-primary;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__card-desc {
+    @include body-text($font-size-sm);
+    color: $text-secondary;
+    line-height: $line-height-relaxed;
+  }
+
+  // Staggered entrance when visible
+  &--visible .product-strategy__card {
+    opacity: 1;
+    transform: translateY(0);
+
+    @for $i from 1 through 7 {
+      &:nth-child(#{$i}) {
+        transition-delay: #{$i * 0.08}s;
+      }
+    }
+  }
+}
+
+// ============================================
+// PRODUCT SETUP — Configuration Mockup (Lina IA)
+// ============================================
+.product-setup {
+  @include section-padding;
+  background: linear-gradient(180deg, $color-bg-secondary, $color-bg-primary);
+
+  &__container {
+    @include container;
+    text-align: center;
+  }
+
+  &__label {
+    display: inline-block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-success;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: $spacing-sm;
+  }
+
+  &__heading {
+    @include heading($font-size-3xl);
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+    letter-spacing: -0.01em;
+
+    @include respond-to('md') { font-size: $font-size-2xl; }
+    @include respond-to('sm') { font-size: $font-size-xl; }
+  }
+
+  &__subheading {
+    @include body-text($font-size-lg);
+    color: $text-secondary;
+    margin-bottom: $spacing-3xl;
+    max-width: 600px;
+    margin-inline: auto;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+      margin-bottom: $spacing-2xl;
+    }
+  }
+
+  // Mockup frame
+  &__mockup {
+    max-width: 680px;
+    margin-inline: auto;
+    border-radius: $border-radius-xl;
+    border: $border-width solid rgba(15, 23, 42, 0.06);
+    background: rgba(15, 23, 42, 0.02);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: $shadow-xl;
+    overflow: hidden;
+    text-align: left;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+
+    &:hover {
+      box-shadow: $shadow-2xl, $shadow-glow;
+      transform: translateY(-2px);
+    }
+
+    @include respond-to('sm') {
+      border-radius: $border-radius-lg;
+    }
+  }
+
+  &__mockup-toolbar {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    background: rgba(15, 23, 42, 0.02);
+    border-bottom: $border-width solid rgba(15, 23, 42, 0.06);
+  }
+
+  &__mockup-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: $border-radius-full;
+
+    &--red { background-color: #ef4444; }
+    &--yellow { background-color: #f59e0b; }
+    &--green { background-color: #10b981; }
+  }
+
+  &__mockup-title {
+    margin-left: auto;
+    font-size: $font-size-xs;
+    color: $text-muted;
+    font-weight: $font-weight-medium;
+  }
+
+  &__mockup-body {
+    padding: $spacing-xl;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+
+    @include respond-to('sm') {
+      padding: $spacing-lg;
+      gap: $spacing-md;
+    }
+  }
+
+  // Form fields
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__field-label {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-secondary;
+  }
+
+  &__field-input {
+    padding: $spacing-sm $spacing-md;
+    background: rgba(15, 23, 42, 0.03);
+    border: $border-width solid rgba(15, 23, 42, 0.06);
+    border-radius: $border-radius-md;
+  }
+
+  &__field-placeholder {
+    font-size: $font-size-sm;
+    color: $text-muted;
+  }
+
+  &__field--large {
+    .product-setup__field-textarea {
+      min-height: 120px;
+      padding: $spacing-md;
+      background: rgba(15, 23, 42, 0.03);
+      border: $border-width solid rgba(15, 23, 42, 0.06);
+      border-radius: $border-radius-md;
+      position: relative;
+
+      @include respond-to('sm') {
+        min-height: 100px;
+      }
+    }
+  }
+
+  &__field-text {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    line-height: $line-height-relaxed;
+  }
+
+  &__field-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 16px;
+    background: $color-primary-light;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: setupBlink 1s step-end infinite;
+  }
+
+  &__field-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-md;
+    padding-top: $spacing-sm;
+    border-top: $border-width solid rgba(15, 23, 42, 0.06);
+
+    @include respond-to('sm') {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  &__field-hint {
+    font-size: $font-size-xs;
+    color: $text-muted;
+  }
+
+  &__field-button {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-sm $spacing-lg;
+    background: $gradient-primary;
+    border-radius: $border-radius-md;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-white;
+    white-space: nowrap;
+    cursor: default;
+    flex-shrink: 0;
+  }
+}
+
+@keyframes setupBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+// ============================================
+// SIMULATED WEEKLY CALENDAR (Agenda mockup)
+// ============================================
+.product-mock-calendar {
+  padding: $spacing-md;
+  overflow-x: auto;
+
+  @include respond-to('sm') {
+    padding: $spacing-sm;
+  }
+
+  // -- Calendar Header --
+  &__header {
+    display: grid;
+    grid-template-columns: 48px repeat(6, 1fr);
+    gap: 1px;
+    margin-bottom: 2px;
+
+    @include respond-to('sm') {
+      grid-template-columns: 36px repeat(6, 1fr);
+    }
+  }
+
+  &__time-gutter {
+    // empty spacer for the time column
+  }
+
+  &__day-header {
+    text-align: center;
+    padding: $spacing-sm $spacing-xs;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $text-primary;
+    background: rgba(15, 23, 42, 0.02);
+    border-radius: $border-radius-sm $border-radius-sm 0 0;
+
+    @include respond-to('sm') {
+      font-size: $font-size-xs;
+      padding: $spacing-xs;
+    }
+  }
+
+  // -- Calendar Body --
+  &__body {
+    display: grid;
+    grid-template-columns: 48px repeat(6, 1fr);
+    gap: 1px;
+
+    @include respond-to('sm') {
+      grid-template-columns: 36px repeat(6, 1fr);
+    }
+  }
+
+  // -- Time Column --
+  &__time-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__time-label {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: $spacing-sm;
+    font-size: $font-size-xs;
+    color: $text-muted;
+
+    @include respond-to('sm') {
+      height: 32px;
+      font-size: 10px;
+      padding-right: $spacing-xs;
+    }
+  }
+
+  // -- Day Column --
+  &__day-col {
+    position: relative;
+  }
+
+  &__slot {
+    height: 40px;
+    border-bottom: $border-width solid rgba(15, 23, 42, 0.03);
+    border-right: $border-width solid rgba(15, 23, 42, 0.02);
+    background: rgba(15, 23, 42, 0.01);
+
+    &:hover {
+      background: rgba(15, 23, 42, 0.02);
+    }
+
+    @include respond-to('sm') {
+      height: 32px;
+    }
+  }
+
+  // -- Event Block --
+  &__event {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    border-radius: $border-radius-sm;
+    padding: 3px 6px;
+    overflow: hidden;
+    z-index: 1;
+    cursor: default;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      transform: scale(1.03);
+      z-index: 2;
+    }
+
+    &--blue {
+      background: rgba(#3b82f6, 0.25);
+      border-left: 3px solid #3b82f6;
+      box-shadow: 0 0 8px rgba(#3b82f6, 0.15);
+
+      &:hover {
+        box-shadow: 0 0 16px rgba(#3b82f6, 0.3);
+      }
+    }
+
+    &--green {
+      background: rgba(#10b981, 0.25);
+      border-left: 3px solid #10b981;
+      box-shadow: 0 0 8px rgba(#10b981, 0.15);
+
+      &:hover {
+        box-shadow: 0 0 16px rgba(#10b981, 0.3);
+      }
+    }
+
+    &--purple {
+      background: rgba(#2563eb, 0.25);
+      border-left: 3px solid #2563eb;
+      box-shadow: 0 0 8px rgba(#2563eb, 0.15);
+
+      &:hover {
+        box-shadow: 0 0 16px rgba(#2563eb, 0.3);
+      }
+    }
+
+    &--pink {
+      background: rgba(#0ea5e9, 0.25);
+      border-left: 3px solid #0ea5e9;
+      box-shadow: 0 0 8px rgba(#0ea5e9, 0.15);
+
+      &:hover {
+        box-shadow: 0 0 16px rgba(#0ea5e9, 0.3);
+      }
+    }
+
+    &--orange {
+      background: rgba(#f97316, 0.25);
+      border-left: 3px solid #f97316;
+      box-shadow: 0 0 8px rgba(#f97316, 0.15);
+
+      &:hover {
+        box-shadow: 0 0 16px rgba(#f97316, 0.3);
+      }
+    }
+  }
+
+  &__event-label {
+    font-size: 10px;
+    font-weight: $font-weight-medium;
+    color: $text-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    line-height: 1.4;
+
+    @include respond-to('sm') {
+      font-size: 9px;
+    }
+  }
+}

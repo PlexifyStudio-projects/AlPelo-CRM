@@ -1,0 +1,320 @@
+@use '../abstracts' as *;
+
+// ============================================
+// FOOTER — Dark Premium 2026
+// ============================================
+
+$ft-dark: #0a0a14;
+$ft-surface: #12121e;
+$ft-border: rgba(255, 255, 255, 0.06);
+$ft-muted: #475569;
+$ft-text: #94a3b8;
+$ft-white: #e2e8f0;
+
+.footer {
+  background: $ft-dark;
+  color: $ft-text;
+  padding-block: 0 $spacing-xl;
+  position: relative;
+  overflow: hidden;
+
+  // Subtle gradient glow at top
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 300px;
+    background: radial-gradient(ellipse, rgba($color-primary, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  // ── CTA Strip ──
+  &__cta-strip {
+    background: $ft-surface;
+    border-top: 1px solid $ft-border;
+    border-bottom: 1px solid $ft-border;
+    margin-bottom: $spacing-3xl;
+  }
+
+  &__cta-inner {
+    @include container;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $spacing-xl;
+    padding-block: $spacing-2xl;
+
+    @include respond-to('md') {
+      flex-direction: column;
+      text-align: center;
+      gap: $spacing-lg;
+      padding-block: $spacing-xl;
+    }
+  }
+
+  &__cta-title {
+    font-family: $font-family-heading;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $ft-white;
+    margin-bottom: $spacing-xs;
+
+    @include respond-to('sm') { font-size: $font-size-lg; }
+  }
+
+  &__cta-highlight {
+    background: linear-gradient(135deg, $color-primary, #0ea5e9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  &__cta-desc {
+    font-size: $font-size-sm;
+    color: $ft-muted;
+    line-height: $line-height-relaxed;
+  }
+
+  &__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    padding: $spacing-md $spacing-xl;
+    min-height: 48px;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    border-radius: $border-radius-full;
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba($color-primary, 0.25);
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 8px 28px rgba($color-primary, 0.4);
+      transform: translateY(-2px);
+    }
+
+    svg { transition: transform 0.3s ease; }
+    &:hover svg { transform: translateX(4px); }
+  }
+
+  // ── Container ──
+  &__container {
+    @include container;
+    position: relative;
+    z-index: 1;
+  }
+
+  // ── Grid ──
+  &__grid {
+    display: grid;
+    grid-template-columns: 1.5fr repeat(2, 1fr) 1.2fr;
+    gap: $spacing-2xl;
+    margin-bottom: $spacing-3xl;
+
+    @include respond-to('lg') {
+      grid-template-columns: repeat(2, 1fr);
+      gap: $spacing-xl;
+    }
+
+    @include respond-to('sm') {
+      grid-template-columns: 1fr;
+      gap: $spacing-xl;
+    }
+  }
+
+  // ── Brand ──
+  &__brand {
+    @include respond-to('lg') { grid-column: 1 / -1; }
+  }
+
+  &__logo {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-sm;
+    text-decoration: none;
+    margin-bottom: $spacing-md;
+    transition: opacity 0.3s ease;
+
+    &:hover { opacity: 0.85; }
+
+    svg { flex-shrink: 0; }
+  }
+
+  &__logo-name {
+    display: block;
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  &__logo-sub {
+    display: block;
+    font-size: 10px;
+    color: $ft-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  &__description {
+    font-size: $font-size-sm;
+    color: $ft-muted;
+    line-height: $line-height-relaxed;
+    max-width: 320px;
+    margin-bottom: $spacing-lg;
+  }
+
+  // ── Social ──
+  &__social {
+    display: flex;
+    gap: $spacing-sm;
+  }
+
+  &__social-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: $ft-surface;
+    border: 1px solid $ft-border;
+    color: $ft-text;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    svg { width: 18px; height: 18px; }
+
+    &:nth-child(1):hover { background: rgba(#25d366, 0.15); border-color: rgba(#25d366, 0.3); color: #25d366; }
+    &:nth-child(2):hover { background: rgba($color-primary, 0.15); border-color: rgba($color-primary, 0.3); color: $color-primary-light; }
+    &:nth-child(3):hover { background: rgba(#e4405f, 0.15); border-color: rgba(#e4405f, 0.3); color: #e4405f; }
+    &:nth-child(4):hover { background: rgba(#fe2c55, 0.15); border-color: rgba(#fe2c55, 0.3); color: #fe2c55; }
+
+    &:hover { transform: scale(1.08) translateY(-2px); }
+  }
+
+  // ── Columns ──
+  &__column-title {
+    font-size: $font-size-xs;
+    font-weight: 700;
+    color: $ft-white;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: $spacing-lg;
+  }
+
+  &__link {
+    display: block;
+    font-size: $font-size-sm;
+    color: $ft-muted;
+    padding-block: $spacing-xs;
+    text-decoration: none;
+    transition: color 0.3s ease, transform 0.3s ease;
+
+    &:hover {
+      color: $ft-white;
+      transform: translateX(4px);
+    }
+
+    @include respond-to('sm') {
+      padding-block: $spacing-sm;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+  }
+
+  // ── Contact Cards ──
+  &__contact-cards {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  &__contact-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: $ft-surface;
+    border: 1px solid $ft-border;
+    border-radius: 14px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba($color-primary, 0.2);
+      transform: translateY(-2px);
+    }
+
+    svg { color: $color-primary-light; flex-shrink: 0; }
+  }
+
+  &__contact-label {
+    display: block;
+    font-size: 9px;
+    font-weight: 700;
+    color: $ft-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+
+  &__contact-value {
+    display: block;
+    font-size: $font-size-sm;
+    color: $ft-white;
+    font-weight: 500;
+  }
+
+  // ── Bottom ──
+  &__bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: $spacing-xl;
+    border-top: 1px solid $ft-border;
+    flex-wrap: wrap;
+    gap: $spacing-md;
+
+    @include respond-to('sm') {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  &__copyright {
+    font-size: $font-size-sm;
+    color: $ft-muted;
+  }
+
+  &__bottom-links {
+    display: flex;
+    align-items: center;
+    gap: $spacing-lg;
+
+    @include respond-to('sm') {
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: $spacing-sm $spacing-md;
+    }
+  }
+
+  &__bottom-link {
+    font-size: $font-size-sm;
+    color: $ft-muted;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+
+    &:hover { color: $ft-white; }
+  }
+}

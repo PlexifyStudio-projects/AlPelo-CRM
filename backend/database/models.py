@@ -172,6 +172,7 @@ class WhatsAppConversation(Base):
     last_message_at = Column(DateTime, nullable=True)
     is_ai_active = Column(Boolean, default=True)
     unread_count = Column(Integer, default=0)
+    last_sentiment = Column(String, nullable=True)  # sentiment of last inbound message
     tags = Column(JSON, default=list)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -193,6 +194,8 @@ class WhatsAppMessage(Base):
     sent_by = Column(String, nullable=True)  # staff name or 'lina_ia' or null (client)
     media_url = Column(Text, nullable=True)  # URL for images, stickers, videos, audio, documents
     media_mime_type = Column(String, nullable=True)  # e.g. image/jpeg, video/mp4, image/webp
+    sentiment = Column(String, nullable=True)  # positive, neutral, negative, urgent (inbound only)
+    sentiment_score = Column(Float, nullable=True)  # -1.0 to 1.0
     created_at = Column(DateTime, default=datetime.utcnow)
 
     conversation = relationship("WhatsAppConversation", back_populates="messages")

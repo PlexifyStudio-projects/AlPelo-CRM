@@ -1,0 +1,158 @@
+// ============================================
+// VARIABLES — PlexifyStudio CRM
+// ============================================
+
+// ---------- Colors ----------
+// LIGHT CORPORATE PALETTE — Blue + White + Green accents
+$color-primary: #2563eb;
+$color-primary-light: #3b82f6;
+$color-primary-dark: #1d4ed8;
+
+$color-secondary: #0ea5e9;
+$color-secondary-light: #38bdf8;
+$color-secondary-dark: #0284c7;
+
+$color-corporate: #1e40af;
+$color-corporate-light: #2563eb;
+$color-corporate-dark: #1e3a8a;
+
+$color-accent: #10b981;
+$color-accent-light: #34d399;
+
+$color-gold: #d4a853;
+$color-slate-blue: #475569;
+
+$color-success: #10b981;
+$color-warning: #f59e0b;
+$color-error: #ef4444;
+$color-info: #3b82f6;
+$color-sky: #0ea5e9;
+
+// Neutrals
+$color-white: #ffffff;
+$color-black: #0f172a;
+$color-gray-50: #f8fafc;
+$color-gray-100: #f1f5f9;
+$color-gray-200: #e2e8f0;
+$color-gray-300: #cbd5e1;
+$color-gray-400: #94a3b8;
+$color-gray-500: #64748b;
+$color-gray-600: #475569;
+$color-gray-700: #334155;
+$color-gray-800: #1e293b;
+$color-gray-900: #0f172a;
+
+// Light backgrounds
+$color-bg-primary: #ffffff;
+$color-bg-secondary: #f0f7ff;
+$color-bg-tertiary: #e8f1fd;
+$color-bg-card: rgba(255, 255, 255, 0.85);
+
+// Background
+$bg-body: $color-bg-primary;
+$bg-card: $color-bg-card;
+$bg-dark: #f8fafc;
+
+// Text on light
+$text-primary: #0f172a;
+$text-secondary: #475569;
+$text-muted: #64748b;
+$text-inverse: #ffffff;
+
+// Borders
+$border-color: rgba(15, 23, 42, 0.08);
+
+// Glass (light theme)
+$glass-bg: rgba(255, 255, 255, 0.7);
+$glass-border: rgba(15, 23, 42, 0.08);
+$glass-bg-hover: rgba(255, 255, 255, 0.9);
+
+// Corporate gradients
+$gradient-hero: linear-gradient(135deg, #2563eb 0%, #0ea5e9 50%, #10b981 100%);
+$gradient-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+$gradient-warm: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
+$gradient-accent: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #0ea5e9 100%);
+$gradient-text: linear-gradient(135deg, #1e40af, #2563eb, #0ea5e9);
+
+// ---------- Typography ----------
+$font-family-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-family-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-family-mono: 'Fira Code', 'Courier New', monospace;
+
+$font-size-xs: 0.75rem;    // 12px
+$font-size-sm: 0.875rem;   // 14px
+$font-size-base: 1rem;     // 16px
+$font-size-md: 1.125rem;   // 18px
+$font-size-lg: 1.25rem;    // 20px
+$font-size-xl: 1.5rem;     // 24px
+$font-size-2xl: 1.875rem;  // 30px
+$font-size-3xl: 2.25rem;   // 36px
+$font-size-4xl: 3rem;      // 48px
+$font-size-5xl: 3.75rem;   // 60px
+$font-size-6xl: 4.5rem;    // 72px
+
+$font-weight-light: 300;
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-extrabold: 800;
+
+$line-height-tight: 1.2;
+$line-height-base: 1.5;
+$line-height-relaxed: 1.75;
+
+// ---------- Spacing ----------
+$spacing-xs: 0.25rem;   // 4px
+$spacing-sm: 0.5rem;    // 8px
+$spacing-md: 1rem;      // 16px
+$spacing-lg: 1.5rem;    // 24px
+$spacing-xl: 2rem;      // 32px
+$spacing-2xl: 3rem;     // 48px
+$spacing-3xl: 4rem;     // 64px
+$spacing-4xl: 6rem;     // 96px
+
+// ---------- Borders ----------
+$border-radius-sm: 0.25rem;
+$border-radius-md: 0.5rem;
+$border-radius-lg: 0.75rem;
+$border-radius-xl: 1rem;
+$border-radius-2xl: 1.5rem;
+$border-radius-full: 9999px;
+
+$border-width: 1px;
+
+// ---------- Shadows ----------
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+$shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+$shadow-glow: 0 0 30px rgba(37, 99, 235, 0.1);
+
+// ---------- Transitions ----------
+$transition-fast: 150ms ease;
+$transition-base: 250ms ease;
+$transition-slow: 350ms ease;
+
+// ---------- Breakpoints ----------
+$breakpoint-xs: 480px;
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+
+// ---------- Layout ----------
+$container-max-width: 1280px;
+$container-padding: $spacing-lg;
+$header-height: 72px;
+
+// ---------- Z-index ----------
+$z-dropdown: 100;
+$z-sticky: 200;
+$z-fixed: 300;
+$z-modal-backdrop: 400;
+$z-modal: 500;
+$z-popover: 600;
+$z-tooltip: 700;

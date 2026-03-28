@@ -70,6 +70,10 @@ def _run_migrations(engine):
         ("tenant", "google_review_url", "VARCHAR(500)"),
         # Google Reviews
         ("tenant", "google_review_url", "VARCHAR(500)"),
+        # Sentiment Analysis
+        ("whatsapp_message", "sentiment", "VARCHAR(20)"),
+        ("whatsapp_message", "sentiment_score", "FLOAT"),
+        ("whatsapp_conversation", "last_sentiment", "VARCHAR(20)"),
     ]
 
     for table, column, col_type in migrations:
@@ -436,6 +440,9 @@ app.include_router(notification_router, prefix="/api", tags=["Notifications"])
 
 from routes.inventory_endpoints import router as inventory_router
 app.include_router(inventory_router, prefix="/api", tags=["Inventory"])
+
+from routes.register_endpoints import router as register_router
+app.include_router(register_router, prefix="/api", tags=["Public Register"])
 
 
 # ============================================================================

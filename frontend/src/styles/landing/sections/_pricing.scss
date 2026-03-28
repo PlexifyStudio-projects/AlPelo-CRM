@@ -1,0 +1,504 @@
+@use '../abstracts' as *;
+
+$pr: #635bff;
+$pr-light: #7c73ff;
+
+@keyframes pr-fade-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pr-check-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pr {
+  background: #ffffff;
+
+  // ═══ HERO ═══
+  &__hero {
+    padding: calc(#{$header-height} + 80px) 0 48px;
+    text-align: center;
+    background: #ffffff;
+  }
+
+  &__hero-inner {
+    @include container;
+    max-width: 600px;
+  }
+
+  &__hero-eyebrow {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $pr;
+    letter-spacing: 0.03em;
+    margin-bottom: $spacing-md;
+  }
+
+  &__hero-title {
+    font-family: $font-family-heading;
+    font-size: 3rem;
+    font-weight: 800;
+    color: $text-primary;
+    line-height: 1.12;
+    letter-spacing: -0.035em;
+    margin-bottom: $spacing-md;
+
+    &--accent { color: $pr; }
+
+    @include respond-to('md') { font-size: 2.4rem; }
+    @include respond-to('sm') { font-size: 2rem; }
+  }
+
+  &__hero-sub {
+    font-size: $font-size-lg;
+    color: $text-muted;
+    line-height: 1.6;
+
+    @include respond-to('sm') { font-size: $font-size-base; }
+  }
+
+  // ═══ CARDS ═══
+  &__cards {
+    padding: 0 0 64px;
+  }
+
+  &__cards-inner {
+    @include container;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    max-width: 1100px;
+    background: #ffffff;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.02);
+
+    @include respond-to('md') {
+      grid-template-columns: 1fr;
+      max-width: 440px;
+    }
+  }
+
+  // ── Card ──
+  &__card {
+    display: flex;
+    flex-direction: column;
+    padding: 40px 32px;
+    background: #ffffff;
+    border-right: 1px solid rgba(15, 23, 42, 0.06);
+    position: relative;
+    transition: background 0.3s ease;
+
+    &:last-child { border-right: none; }
+
+    &:hover { background: #fafafa; }
+
+    @include respond-to('md') {
+      border-right: none;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+      padding: 32px 28px;
+      &:last-child { border-bottom: none; }
+    }
+
+    // Featured
+    &--featured {
+      background: #f8f7ff;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, $pr, $pr-light);
+      }
+
+      &:hover { background: #f3f1ff; }
+
+      .pr__card-amount { color: $pr; }
+    }
+  }
+
+  &__card-badge {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
+    font-size: 10px;
+    font-weight: 700;
+    background: $pr;
+    color: white;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  &__card-header { margin-bottom: 20px; }
+
+  &__card-name {
+    font-family: $font-family-heading;
+    font-size: $font-size-lg;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: 4px;
+  }
+
+  &__card-desc {
+    font-size: 13px;
+    color: $text-muted;
+    line-height: 1.5;
+  }
+
+  // Price
+  &__card-price {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    margin-bottom: 24px;
+  }
+
+  &__card-currency {
+    font-size: $font-size-lg;
+    font-weight: 600;
+    color: $text-primary;
+    line-height: 1;
+  }
+
+  &__card-amount {
+    font-family: $font-family-heading;
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: $text-primary;
+    letter-spacing: -0.03em;
+    line-height: 1;
+
+    @include respond-to('sm') { font-size: 2.2rem; }
+  }
+
+  &__card-period {
+    font-size: 13px;
+    color: $text-muted;
+    margin-left: 6px;
+    align-self: flex-end;
+    margin-bottom: 4px;
+  }
+
+  // CTA
+  &__card-cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 11px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+
+    // Shimmer on hover
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      transition: left 0.5s ease;
+    }
+
+    &:hover::after { left: 100%; }
+
+    svg { transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    &:hover svg { transform: translateX(3px); }
+
+    &--primary {
+      background: $pr;
+      color: white;
+
+      &:hover { background: $pr-light; }
+    }
+
+    &--outline {
+      background: white;
+      color: $text-primary;
+      border: 1px solid rgba(15, 23, 42, 0.15);
+
+      &:hover { border-color: $pr; color: $pr; }
+    }
+  }
+
+  // Features
+  &__card-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: $text-secondary;
+      line-height: 1.4;
+      transition: transform 0.2s ease;
+
+      &:hover { transform: translateX(2px); }
+
+      svg { flex-shrink: 0; }
+    }
+
+    &--disabled {
+      opacity: 0.35;
+      &:hover { transform: none; }
+    }
+  }
+
+  // ═══ ADDON ═══
+  &__addon-section {
+    padding: 0 0 64px;
+    @include container;
+    max-width: 860px;
+  }
+
+  &__addon {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 28px;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: #f8fafc;
+    transition: border-color 0.3s ease;
+
+    &:hover { border-color: rgba($pr, 0.15); }
+
+    @include respond-to('md') { flex-direction: column; text-align: center; padding: 24px; }
+  }
+
+  &__addon-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex: 1;
+
+    svg { flex-shrink: 0; color: $pr; margin-top: 1px; }
+    strong { display: block; font-size: 14px; color: $text-primary; margin-bottom: 1px; }
+    span { font-size: 12px; color: $text-muted; }
+
+    @include respond-to('md') { flex-direction: column; align-items: center; }
+  }
+
+  &__addon-right {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+    @include respond-to('sm') { flex-direction: column; width: 100%; }
+  }
+
+  &__addon-pill {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: white;
+    font-size: 13px;
+    color: $text-secondary;
+    transition: all 0.2s ease;
+
+    &:hover { border-color: rgba($pr, 0.2); transform: translateY(-1px); }
+
+    strong { color: $text-primary; }
+    span { display: block; font-weight: 600; color: $pr; margin-top: 2px; }
+  }
+
+  // ═══ PAYMENTS ═══
+  &__payments {
+    padding: 64px 0;
+    background: #ffffff;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+  }
+
+  &__payments-inner {
+    @include container;
+    max-width: 860px;
+  }
+
+  &__payments-header {
+    text-align: center;
+    margin-bottom: $spacing-2xl;
+  }
+
+  &__payments-title {
+    font-family: $font-family-heading;
+    font-size: $font-size-xl;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__payments-sub {
+    font-size: 14px;
+    color: $text-muted;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  &__payments-methods {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-lg;
+    margin-bottom: $spacing-2xl;
+
+    @include respond-to('md') { grid-template-columns: 1fr; }
+  }
+
+  &__payment-group {
+    text-align: center;
+  }
+
+  &__payment-group-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: $spacing-md;
+  }
+
+  &__payment-logos {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__payment-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: white;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: rgba($pr, 0.15);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+  }
+
+  &__payments-trust {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $spacing-md;
+    padding: $spacing-xl;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid rgba(15, 23, 42, 0.06);
+
+    @include respond-to('lg') { grid-template-columns: repeat(2, 1fr); }
+    @include respond-to('sm') { grid-template-columns: 1fr; }
+  }
+
+  &__payments-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: $text-secondary;
+
+    svg { flex-shrink: 0; color: #10b981; }
+  }
+
+  // ═══ FAQ ═══
+  &__faq-section {
+    padding: 64px 0 80px;
+    background: #f8fafc;
+    border-top: 1px solid rgba(15, 23, 42, 0.06);
+  }
+
+  &__faq-inner {
+    @include container;
+    max-width: 640px;
+  }
+
+  &__faq-title {
+    font-family: $font-family-heading;
+    font-size: $font-size-xl;
+    font-weight: 700;
+    color: $text-primary;
+    text-align: center;
+    margin-bottom: $spacing-2xl;
+  }
+
+  &__faq-item {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    &:first-child { border-top: 1px solid rgba(15, 23, 42, 0.06); }
+  }
+
+  &__faq-q {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 18px 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: $font-family-primary;
+    font-size: 15px;
+    font-weight: 500;
+    color: $text-primary;
+    text-align: left;
+    gap: $spacing-md;
+    transition: color 0.2s ease;
+
+    &:hover { color: $pr; }
+  }
+
+  &__faq-chevron {
+    flex-shrink: 0;
+    color: $text-muted;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+
+    .pr__faq-item--open & {
+      transform: rotate(180deg);
+      color: $pr;
+    }
+  }
+
+  &__faq-a-wrap {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+
+    .pr__faq-item--open & { max-height: 200px; }
+  }
+
+  &__faq-a {
+    font-size: 14px;
+    color: $text-secondary;
+    line-height: 1.7;
+    padding-bottom: 18px;
+    animation: pr-fade-in 0.3s ease;
+  }
+}

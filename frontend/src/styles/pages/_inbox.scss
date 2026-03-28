@@ -27,11 +27,11 @@
     position: relative;
 
     @media (max-width: $breakpoint-lg) { width: 320px; min-width: 320px; }
-    @media (max-width: $breakpoint-md) { width: 100%; min-width: 100%; }
+    @media (max-width: 1024px) { width: 100%; min-width: 100%; }
   }
 
   &--chat-open &__list-panel {
-    @media (max-width: $breakpoint-md) { display: none; }
+    @media (max-width: 1024px) { display: none; }
   }
 
   // --- List Header ---
@@ -529,11 +529,11 @@
 
     > * { position: relative; z-index: 1; }
 
-    @media (max-width: $breakpoint-md) { display: none; }
+    @media (max-width: 1024px) { display: none; }
   }
 
   &--chat-open &__chat-panel {
-    @media (max-width: $breakpoint-md) { display: flex; }
+    @media (max-width: 1024px) { display: flex; }
   }
 
   // --- Chat Header ---
@@ -543,12 +543,14 @@
     gap: $spacing-sm;
     padding: $spacing-sm $spacing-lg;
     background: $color-white;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     flex-shrink: 0;
     min-height: 60px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    position: relative;
+    z-index: 2;
 
-    @media (max-width: $breakpoint-md) { padding: $spacing-sm $spacing-md; }
+    @media (max-width: 1024px) { padding: $spacing-sm $spacing-md; }
   }
 
   &__back-btn {
@@ -563,7 +565,7 @@
     border-radius: $border-radius-sm;
     transition: background $duration-fast ease;
     &:hover { background: $color-gray-50; }
-    @media (max-width: $breakpoint-md) { display: flex; }
+    @media (max-width: 1024px) { display: flex; }
   }
 
   &__chat-avatar {
@@ -775,7 +777,7 @@
     @include custom-scrollbar;
     min-width: 0;
 
-    @media (max-width: $breakpoint-md) { padding: $spacing-sm $spacing-md; }
+    @media (max-width: 1024px) { padding: $spacing-sm $spacing-md; }
   }
 
   &__messages-inner {
@@ -1197,6 +1199,40 @@
     font-size: 10px;
     font-weight: $font-weight-bold;
     flex-shrink: 0;
+  }
+
+  // --- Sentiment Indicators ---
+  &__sentiment-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+
+    &--positive { background: #22C55E; }
+    &--negative { background: #EF4444; }
+    &--urgent {
+      background: #F97316;
+      animation: sentimentPulse 1.5s ease-in-out infinite;
+    }
+  }
+
+  &__conv-sentiment {
+    width: 8px;
+    height: 8px;
+    border-radius: $border-radius-full;
+    flex-shrink: 0;
+
+    &--positive { background: #22C55E; }
+    &--negative { background: #EF4444; }
+    &--urgent {
+      background: #F97316;
+      animation: sentimentPulse 1.5s ease-in-out infinite;
+    }
+  }
+
+  @keyframes sentimentPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.3); }
   }
 
   // --- Message Context Menu ---
@@ -1810,8 +1846,11 @@
     max-height: 120px;
     font-family: $font-primary;
     line-height: 1.5;
-    outline: none;
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-appearance: none;
     letter-spacing: $letter-spacing-normal;
+    &:focus { outline: none !important; box-shadow: none !important; }
     &::placeholder { color: $color-gray-300; }
   }
 
@@ -2804,7 +2843,7 @@
     border-bottom: 1px solid $color-gray-200;
     font-size: $font-size-xs;
 
-    @media (max-width: $breakpoint-md) { padding: 5px $spacing-md; }
+    @media (max-width: 1024px) { display: none; }
   }
 
   &__client-bar-id {

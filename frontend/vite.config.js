@@ -11,5 +11,9 @@ export default defineConfig({
     watch: {
       usePolling: true,
     },
+    // Fix: redirect /AlPelo-CRM (no trailing slash) to /AlPelo-CRM/
+    proxy: {},
   },
+  // Ensure all SPA routes under base return index.html
+  appType: 'spa',
 })

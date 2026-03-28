@@ -1,0 +1,70 @@
+@use '../abstracts' as *;
+
+// ============================================
+// PAGE HERO — Shared page header (VIBRANT DARK THEME)
+// ============================================
+
+.page-hero {
+  padding-top: calc($header-height + $spacing-4xl);
+  padding-bottom: $spacing-3xl;
+  background: linear-gradient(
+    180deg,
+    $color-bg-primary 0%,
+    $color-bg-secondary 100%
+  );
+  text-align: center;
+
+  @include respond-to('md') {
+    padding-top: calc($header-height + $spacing-3xl);
+    padding-bottom: $spacing-2xl;
+  }
+
+  @include respond-to('sm') {
+    padding-top: calc($header-height + $spacing-2xl);
+    padding-bottom: $spacing-xl;
+  }
+
+  @include respond-to('xs') {
+    padding-top: calc($header-height + $spacing-xl);
+  }
+
+  &__container {
+    @include container;
+    max-width: 800px;
+  }
+
+  &__title {
+    @include heading($font-size-4xl);
+    margin-bottom: $spacing-md;
+    letter-spacing: -0.02em;
+    color: $text-primary;
+
+    @include respond-to('md') {
+      font-size: $font-size-3xl;
+    }
+
+    @include respond-to('sm') {
+      font-size: $font-size-2xl;
+    }
+
+    @include respond-to('xs') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__subtitle {
+    @include body-text($font-size-lg);
+    color: $text-secondary;
+    max-width: 600px;
+    margin-inline: auto;
+    line-height: $line-height-relaxed;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+    }
+
+    @include respond-to('xs') {
+      font-size: $font-size-sm;
+    }
+  }
+}

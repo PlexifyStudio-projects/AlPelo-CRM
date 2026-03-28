@@ -1,0 +1,91 @@
+@use '../abstracts' as *;
+
+// ============================================
+// NOT FOUND (404) PAGE — VIBRANT DARK THEME
+// ============================================
+
+.not-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - #{$header-height});
+  padding: calc(#{$header-height} + #{$spacing-3xl}) $container-padding $spacing-3xl;
+  background: linear-gradient(
+    180deg,
+    $color-bg-primary 0%,
+    $color-bg-secondary 50%,
+    $color-bg-primary 100%
+  );
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+
+  // Subtle background glow
+  &::before {
+    content: '';
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(
+      ellipse at center,
+      rgba($color-primary, 0.1) 0%,
+      rgba($color-secondary, 0.05) 40%,
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
+  &__container {
+    @include container;
+    @include flex-column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    max-width: 560px;
+  }
+
+  &__code {
+    font-family: $font-family-heading;
+    font-size: 8rem;
+    font-weight: $font-weight-extrabold;
+    line-height: 1;
+    background: $gradient-hero;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: $spacing-md;
+    letter-spacing: -0.05em;
+
+    @include respond-to('md') {
+      font-size: 6rem;
+    }
+
+    @include respond-to('sm') {
+      font-size: 5rem;
+    }
+  }
+
+  &__title {
+    @include heading($font-size-2xl);
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+
+    @include respond-to('sm') {
+      font-size: $font-size-xl;
+    }
+  }
+
+  &__text {
+    @include body-text($font-size-md);
+    color: $text-secondary;
+    margin-bottom: $spacing-2xl;
+    max-width: 400px;
+
+    @include respond-to('sm') {
+      font-size: $font-size-base;
+    }
+  }
+}

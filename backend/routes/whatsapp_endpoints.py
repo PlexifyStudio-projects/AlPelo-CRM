@@ -397,6 +397,7 @@ def list_conversations(db: Session = Depends(get_db), user=Depends(get_current_u
                 "last_message_direction": last_msg.direction if last_msg else None,
                 "is_ai_active": c.is_ai_active,
                 "unread_count": c.unread_count,
+                "last_sentiment": getattr(c, "last_sentiment", None),
                 "tags": c.tags or [],
                 "client": client_data,
             })
@@ -588,6 +589,8 @@ def list_messages(conv_id: int, db: Session = Depends(get_db), user=Depends(get_
             "sent_by": m.sent_by,
             "media_url": _resolve_media_url(m.media_url),
             "media_mime_type": m.media_mime_type,
+            "sentiment": getattr(m, "sentiment", None),
+            "sentiment_score": getattr(m, "sentiment_score", None),
             "created_at": m.created_at.isoformat() if m.created_at else None,
         }
         for m in messages
@@ -1025,6 +1028,38 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                     )
                     db.add(message)
 
+                    # --- Sentiment Analysis (rule-based, zero AI tokens) ---
+                    _msg_sentiment = None
+                    try:
+                        if msg_type == "text" and content:
+                            from sentiment_analyzer import analyze_sentiment as _analyze_sent
+                            _sent_result = _analyze_sent(content)
+                            _msg_sentiment = _sent_result["sentiment"]
+                            message.sentiment = _msg_sentiment
+                            message.sentiment_score = _sent_result["score"]
+                            conv.last_sentiment = _msg_sentiment
+
+                            # Alert admin on negative/urgent messages
+                            if _msg_sentiment in ("negative", "urgent"):
+                                _sent_label = "Urgente" if _msg_sentiment == "urgent" else "Negativo"
+                                _alert_icon = "🚨" if _msg_sentiment == "urgent" else "⚠️"
+                                _client_name = conv.wa_contact_name or from_phone or "Cliente"
+                                try:
+                                    from notifications import notify
+                                    notify(conv.tenant_id, "sentiment_alert",
+                                           f"{_alert_icon} {_client_name} — Mensaje {_sent_label}",
+                                           (content or "")[:150],
+                                           icon=_alert_icon, link="/inbox")
+                                except Exception:
+                                    pass
+                                log_event("sistema", f"Sentimiento {_sent_label} detectado",
+                                          detail=f"{_client_name}: {(content or '')[:80]}",
+                                          conv_id=conv.id,
+                                          contact_name=_client_name,
+                                          status="warning")
+                    except Exception as e:
+                        print(f"[SENTIMENT] Error: {e}")
+
                     # Track inbound message in usage metrics
                     try:
                         track_message_received(tenant_id=conv.tenant_id)
@@ -1433,12 +1468,12 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         return
 
             # Step 3: Get conversation history and generate AI response
-            # Fetch 40 messages for better context (Lina needs full picture to avoid repetitions)
+            # 15 messages is sufficient context — saves ~1,500 tokens vs 40
             recent_msgs = (
                 db.query(WhatsAppMessage)
                 .filter(WhatsAppMessage.conversation_id == conv_id)
                 .order_by(WhatsAppMessage.created_at.desc())
-                .limit(40)
+                .limit(15)
                 .all()
             )
             recent_msgs.reverse()
@@ -1502,7 +1537,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             log_event("sistema", f"🧠 Paso 3: Analizando y generando respuesta", detail=f"Mensaje del cliente: {(inbound_text or '')[:100]}", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="info")
 
             _conv_tid = getattr(conv, 'tenant_id', None) or 1
-            ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type, tenant_id=_conv_tid)
+            ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type, tenant_id=_conv_tid, max_tokens=800)
 
             if not ai_response or not ai_response.strip():
                 print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")

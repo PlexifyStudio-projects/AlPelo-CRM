@@ -1,9 +1,33 @@
-import { AuthProvider } from './context/AuthContext';
-import { NotificationProvider } from './context/NotificationContext';
-import { TenantProvider } from './context/TenantContext';
-import AppRouter from './routes/AppRouter';
-import { Component } from 'react';
+import { Component, lazy, Suspense } from 'react';
 import './styles/main.scss';
+
+// ============================================
+// Plexify Studio — Unified App
+// Public routes → Landing (marketing site)
+// Everything else → CRM app (auth required)
+// ============================================
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, ''); // e.g. "/AlPelo-CRM"
+
+const LANDING_PATHS = [
+  '/', '/about', '/features', '/pricing', '/contact', '/demo',
+  '/faq', '/legal', '/register', '/lina-ia', '/finanzas',
+  '/automatizaciones',
+];
+
+function isLandingRoute() {
+  // Strip the base prefix to get the clean path
+  const raw = window.location.pathname;
+  const path = raw.startsWith(BASE) ? raw.slice(BASE.length) || '/' : raw;
+
+  if (LANDING_PATHS.includes(path)) return true;
+  if (path.startsWith('/producto/')) return true;
+  return false;
+}
+
+// Lazy load both apps — only one loads at a time
+const LandingRouter = lazy(() => import('./routes/LandingRouter'));
+const CRMShell = lazy(() => import('./CRMShell'));
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -39,15 +63,14 @@ class ErrorBoundary extends Component {
 }
 
 function App() {
+  const hasToken = !!localStorage.getItem('token');
+  const showLanding = isLandingRoute() && !hasToken;
+
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <TenantProvider>
-          <NotificationProvider>
-            <AppRouter />
-          </NotificationProvider>
-        </TenantProvider>
-      </AuthProvider>
+      <Suspense fallback={null}>
+        {showLanding ? <LandingRouter /> : <CRMShell />}
+      </Suspense>
     </ErrorBoundary>
   );
 }
