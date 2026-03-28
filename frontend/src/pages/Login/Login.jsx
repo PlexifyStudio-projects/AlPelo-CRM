@@ -522,6 +522,17 @@ const Login = ({ onLogin }) => {
               </form>
             </div>
 
+            {/* Back to landing */}
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <a
+                href={import.meta.env.BASE_URL || '/'}
+                onClick={(e) => { e.preventDefault(); localStorage.removeItem('token'); window.location.href = import.meta.env.BASE_URL || '/'; }}
+                style={{ fontSize: 13, color: '#6366f1', textDecoration: 'none', cursor: 'pointer', fontWeight: 500 }}
+              >
+                ← Volver al inicio
+              </a>
+            </div>
+
             {/* Footer */}
             <div className={`${b}__footer`}>
               <div className={`${b}__footer-divider`} />
