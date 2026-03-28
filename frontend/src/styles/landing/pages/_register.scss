@@ -617,4 +617,62 @@ $rg: #635bff;
     font-size: 14px;
     margin-top: 12px;
   }
+
+  // ============================
+  // STEP DONE — Success screen
+  // ============================
+  &__step--done {
+    text-align: center;
+    padding-top: 20px;
+  }
+
+  &__done-icon {
+    font-size: 56px;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  &__done-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 28px 0;
+    text-align: left;
+  }
+
+  &__done-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px 20px;
+
+    > span:first-child {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    strong {
+      font-size: 15px;
+      color: #0f172a;
+    }
+
+    span {
+      font-size: 13px;
+      color: #475569;
+    }
+
+    small {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  }
 }
