@@ -311,12 +311,20 @@ export default function Register() {
           <div className="reg__form-side">
             {/* Progress */}
             <div className="reg__progress">
-              {STEPS.map((s) => (
-                <div key={s.num} className={`reg__progress-step ${step >= s.num ? 'reg__progress-step--active' : ''} ${step === s.num ? 'reg__progress-step--current' : ''}`}>
-                  <span className="reg__progress-num">{step > s.num ? '✓' : s.num}</span>
-                  <span className="reg__progress-label">{s.title}</span>
-                </div>
-              ))}
+              {STEPS.map((s) => {
+                const completed = step > s.num;
+                const canClick = completed && step < 7;
+                return (
+                  <div
+                    key={s.num}
+                    className={`reg__progress-step ${step >= s.num ? 'reg__progress-step--active' : ''} ${step === s.num ? 'reg__progress-step--current' : ''} ${canClick ? 'reg__progress-step--clickable' : ''}`}
+                    onClick={() => { if (canClick) { setError(''); setStep(s.num); } }}
+                  >
+                    <span className="reg__progress-num">{completed ? '✓' : s.num}</span>
+                    <span className="reg__progress-label">{s.title}</span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Step 1 — Business */}

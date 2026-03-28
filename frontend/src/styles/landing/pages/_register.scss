@@ -78,6 +78,19 @@ $rg: #635bff;
     @include respond-to('sm') { display: none; }
   }
 
+  &__progress-step--clickable {
+    cursor: pointer;
+
+    &:hover .reg__progress-num {
+      background: darken($rg, 8%);
+      transform: scale(1.1);
+    }
+
+    &:hover .reg__progress-label {
+      color: $rg;
+    }
+  }
+
   // Step content
   &__step {
     flex: 1;
