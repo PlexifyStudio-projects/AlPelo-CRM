@@ -244,6 +244,7 @@ export default function Register() {
   const handlePayAndCreate = async () => {
     setError('');
     setLoading(true);
+    setStep(7); // Show processing spinner immediately
 
     try {
       const activeServices = form.services.filter(s => s.active).map(s => ({
@@ -276,7 +277,7 @@ export default function Register() {
           services: activeServices,
           staff: validStaff,
           automation_ids: form.automationIds,
-          payment_ref: 'SIM-' + Date.now(), // Simulated payment
+          payment_ref: 'SIM-' + Date.now(),
         }),
       });
 
@@ -287,15 +288,15 @@ export default function Register() {
         if (typeof data.detail === 'string') errMsg = data.detail;
         else if (Array.isArray(data.detail)) errMsg = data.detail.map(e => typeof e === 'string' ? e : (e.msg || JSON.stringify(e))).join('. ');
         setError(errMsg);
+        setResult(null); // triggers "rejected" screen
         setLoading(false);
         return;
       }
 
-      // No auto-login — user logs in manually
       setResult(data);
-      setStep(8);
     } catch (err) {
       setError('Error de conexión. Intenta de nuevo.');
+      setResult(null);
     } finally {
       setLoading(false);
     }
