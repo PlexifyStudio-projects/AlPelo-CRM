@@ -52,26 +52,26 @@ const SERVICE_TEMPLATES = {
 
 const PLANS = [
   {
-    id: 'standard',
-    name: 'Estándar',
-    price: 79900,
-    automations: 3,
-    features: ['CRM completo', 'Agenda de citas', 'WhatsApp básico', '500 mensajes/mes', '3 automatizaciones'],
-  },
-  {
-    id: 'professional',
-    name: 'Profesional',
-    price: 149900,
-    popular: true,
+    id: 'starter',
+    name: 'Starter',
+    price: 190000,
     automations: 5,
-    features: ['Todo de Estándar', 'Lina IA completa', 'Campañas masivas', '2,000 mensajes/mes', '5 automatizaciones', 'Finanzas y reportes'],
+    features: ['CRM completo — clientes ilimitados', 'Agenda y calendario visual', 'Inbox WhatsApp en tiempo real', 'Lina IA — 1,500 mensajes/mes', '5 automatizaciones activas', 'Catálogo de servicios', 'Dashboard básico', 'Soporte por email'],
   },
   {
-    id: 'enterprise',
-    name: 'Empresarial',
-    price: 249900,
-    automations: 999,
-    features: ['Todo de Profesional', 'Automatizaciones ilimitadas', '10,000 mensajes/mes', 'Soporte prioritario', 'Multi-sucursal'],
+    id: 'pro',
+    name: 'Pro',
+    price: 390000,
+    popular: true,
+    automations: 12,
+    features: ['Todo lo del plan Starter', 'Lina IA — 4,000 mensajes/mes', '12 automatizaciones activas', 'Finanzas y reportes avanzados', 'Comisiones automáticas', 'Programa de lealtad completo', 'Campañas WhatsApp masivas', 'Google Reviews integrado', 'Soporte prioritario'],
+  },
+  {
+    id: 'business',
+    name: 'Business',
+    price: 590000,
+    automations: 20,
+    features: ['Todo lo del plan Pro', 'Lina IA — 7,000 mensajes/mes', '20 automatizaciones activas', 'Campañas masivas ilimitadas', 'Reportes ejecutivos avanzados', 'Multi-profesionales ilimitados', 'Soporte dedicado 24/7', 'Onboarding personalizado'],
   },
 ];
 
@@ -138,7 +138,7 @@ export default function Register() {
     ownerName: '', email: '', username: '', password: '',
     services: [],
     staff: [{ name: '', specialty: '' }],
-    plan: 'professional',
+    plan: 'pro',
     automationIds: [],
   });
 

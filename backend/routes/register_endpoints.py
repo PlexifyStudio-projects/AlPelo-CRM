@@ -62,23 +62,23 @@ class RegisterRequest(BaseModel):
 # --- Plan config ---
 
 PLAN_CONFIG = {
-    "standard": {
-        "monthly_price": 79900,
-        "messages_limit": 500,
-        "max_automations": 3,
-        "label": "Estándar",
-    },
-    "professional": {
-        "monthly_price": 149900,
-        "messages_limit": 2000,
+    "starter": {
+        "monthly_price": 190000,
+        "messages_limit": 1500,
         "max_automations": 5,
-        "label": "Profesional",
+        "label": "Starter",
     },
-    "enterprise": {
-        "monthly_price": 249900,
-        "messages_limit": 10000,
-        "max_automations": 999,
-        "label": "Empresarial",
+    "pro": {
+        "monthly_price": 390000,
+        "messages_limit": 4000,
+        "max_automations": 12,
+        "label": "Pro",
+    },
+    "business": {
+        "monthly_price": 590000,
+        "messages_limit": 7000,
+        "max_automations": 20,
+        "label": "Business",
     },
 }
 
@@ -117,7 +117,7 @@ def register_business(data: RegisterRequest, db: Session = Depends(get_db)):
         counter += 1
 
     # --- Plan ---
-    plan_info = PLAN_CONFIG.get(data.plan, PLAN_CONFIG["standard"])
+    plan_info = PLAN_CONFIG.get(data.plan, PLAN_CONFIG["starter"])
 
     # --- Create Tenant ---
     tenant = Tenant(
