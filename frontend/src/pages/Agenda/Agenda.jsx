@@ -162,6 +162,18 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [optimalSlots, setOptimalSlots] = useState(null);
   const [showOptimal, setShowOptimal] = useState(false);
 
+  // ── Smart Search ──
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef(null);
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    const handler = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
   const loadOptimalSlots = useCallback(async () => {
     try {
       const dateStr = toISO(new Date());
@@ -480,6 +492,30 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       noShow: todayAll.filter(a => a.status === 'no_show').length,
     };
   }, [appointments]);
+
+  // ─── Smart Search Results ──────────────────────────
+  const searchResults = useMemo(() => {
+    if (!searchQuery || searchQuery.length < 2) return [];
+    const q = searchQuery.toLowerCase().trim();
+    return appointments
+      .filter(a => {
+        const haystack = [
+          a.client_name, a.service_name, a.staff_name,
+          formatCOP(a.price), a.status, STATUS_META[a.status]?.label,
+          a.time, formatTime12(a.time), a.date, a.notes,
+        ].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(q);
+      })
+      .sort((a, b) => {
+        // Today first, then future, then past
+        const today = toISO(new Date());
+        const aToday = a.date === today ? 0 : a.date > today ? 1 : 2;
+        const bToday = b.date === today ? 0 : b.date > today ? 1 : 2;
+        if (aToday !== bToday) return aToday - bToday;
+        return a.date.localeCompare(b.date) || a.time.localeCompare(b.time);
+      })
+      .slice(0, 15);
+  }, [searchQuery, appointments]);
 
   // ─── Navigation ────────────────────────────────────
   const navLabel = useMemo(() => {
@@ -805,6 +841,80 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* ── SMART SEARCH BAR ── */}
+      <div className={`${b}__search`} ref={searchRef}>
+        <div className={`${b}__search-box ${searchOpen ? `${b}__search-box--open` : ''}`}>
+          <SearchIcon />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+            onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)}
+            placeholder="Buscar cliente, servicio, precio, estado..."
+            className={`${b}__search-input`}
+          />
+          {searchQuery && (
+            <button className={`${b}__search-clear`} onClick={() => { setSearchQuery(''); setSearchOpen(false); }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
+          )}
+        </div>
+        {searchOpen && searchResults.length > 0 && (
+          <div className={`${b}__search-results`}>
+            <div className={`${b}__search-results-header`}>
+              <span>{searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}</span>
+            </div>
+            {searchResults.map((apt) => {
+              const sc = STATUS_META[apt.status]?.color || '#6B6B63';
+              const sl = STATUS_META[apt.status]?.label || apt.status;
+              const dayName = DAYS_SHORT[new Date(apt.date + 'T12:00:00').getDay()];
+              const dateShort = apt.date.split('-').slice(1).reverse().join('/');
+              return (
+                <button key={apt.id} className={`${b}__search-result`} onClick={() => {
+                  setSearchOpen(false);
+                  // Navigate to the day of this appointment
+                  const aptDate = new Date(apt.date + 'T12:00:00');
+                  setCurrentDate(aptDate);
+                  if (view === 'week') {
+                    // Already shows the week
+                  } else {
+                    setView('day');
+                  }
+                  // Open edit modal
+                  setTimeout(() => openEdit(apt), 200);
+                }}>
+                  <div className={`${b}__search-result-status`} style={{ background: sc }} />
+                  <div className={`${b}__search-result-info`}>
+                    <div className={`${b}__search-result-top`}>
+                      <strong>{apt.client_name}</strong>
+                      <span className={`${b}__search-result-badge`} style={{ color: sc, background: `${sc}15` }}>{sl}</span>
+                    </div>
+                    <div className={`${b}__search-result-bottom`}>
+                      <span>{apt.service_name || 'Servicio'}</span>
+                      <span className={`${b}__search-result-sep`}>&middot;</span>
+                      <span>{dayName} {dateShort}</span>
+                      <span className={`${b}__search-result-sep`}>&middot;</span>
+                      <span>{formatTime12(apt.time)}</span>
+                      <span className={`${b}__search-result-sep`}>&middot;</span>
+                      <span>{formatCOP(apt.price)}</span>
+                      {apt.staff_name && <>
+                        <span className={`${b}__search-result-sep`}>&middot;</span>
+                        <span>{apt.staff_name}</span>
+                      </>}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {searchOpen && searchQuery.length >= 2 && searchResults.length === 0 && (
+          <div className={`${b}__search-results`}>
+            <div className={`${b}__search-empty`}>No se encontraron citas para "{searchQuery}"</div>
+          </div>
+        )}
       </div>
 
       {/* ── PRECISION SCHEDULING: Optimal slots panel ── */}

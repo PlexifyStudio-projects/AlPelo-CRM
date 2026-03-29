@@ -2899,3 +2899,156 @@
   background: $color-gray-50;
   border-top: 1px solid $color-gray-100;
 }
+
+// ════════════════════════════════════════════════════════════
+// SMART SEARCH BAR
+// ════════════════════════════════════════════════════════════
+
+.agenda__search {
+  position: relative;
+  z-index: 50;
+}
+
+.agenda__search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  box-shadow: $shadow-xs;
+  transition: all $transition-base;
+
+  > svg { color: $color-gray-400; flex-shrink: 0; }
+
+  &:focus-within, &--open {
+    border-color: $color-primary-light;
+    box-shadow: $shadow-sm, 0 0 0 3px $color-primary-ghost;
+  }
+}
+
+.agenda__search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: $font-size-sm;
+  color: $color-gray-800;
+  background: transparent;
+
+  &::placeholder { color: $color-gray-300; }
+}
+
+.agenda__search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: $color-gray-50;
+  color: $color-gray-400;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all $transition-fast;
+
+  &:hover { background: $color-gray-100; color: $color-gray-600; }
+}
+
+.agenda__search-results {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  box-shadow: $shadow-xl;
+  max-height: 420px;
+  overflow-y: auto;
+  animation: agendaSearchDrop 0.2s $ease-out-expo;
+}
+
+.agenda__search-results-header {
+  padding: 8px 16px;
+  font-size: $font-size-2xs;
+  color: $color-gray-400;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing-wider;
+  border-bottom: 1px solid $border-color-light;
+  background: $color-gray-50;
+}
+
+.agenda__search-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid $border-color-light;
+  transition: background $transition-fast;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: $color-primary-ghost; }
+}
+
+.agenda__search-result-status {
+  width: 4px;
+  height: 36px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.agenda__search-result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.agenda__search-result-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  > strong {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-800;
+  }
+}
+
+.agenda__search-result-badge {
+  padding: 2px 8px;
+  border-radius: $border-radius-full;
+  font-size: 10px;
+  font-weight: $font-weight-semibold;
+}
+
+.agenda__search-result-bottom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: $font-size-xs;
+  color: $color-gray-400;
+  flex-wrap: wrap;
+}
+
+.agenda__search-result-sep {
+  color: $color-gray-200;
+}
+
+.agenda__search-empty {
+  padding: 20px 16px;
+  text-align: center;
+  font-size: $font-size-sm;
+  color: $color-gray-400;
+}
+
+@keyframes agendaSearchDrop {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
