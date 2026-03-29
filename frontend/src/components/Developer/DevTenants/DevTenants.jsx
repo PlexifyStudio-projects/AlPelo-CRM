@@ -464,44 +464,89 @@ function LocationsPanel({ tenantId }) {
 
   return (
     <div className={`${b}__locations`}>
-      <button className={`${b}__locations-toggle`} onClick={() => setOpen(!open)}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
-        </svg>
-        Sedes ({locations.length || '...'})
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
+      <div className={`${b}__locations-header`}>
+        <button className={`${b}__locations-toggle`} onClick={() => setOpen(!open)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+          </svg>
+          <span>Sedes</span>
+          <span className={`${b}__locations-count`}>{locations.length}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+        {open && !adding && (
+          <button className={`${b}__locations-add-btn`} onClick={() => setAdding(true)}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            Nueva sede
+          </button>
+        )}
+      </div>
+
       {open && (
-        <div className={`${b}__locations-list`}>
+        <div className={`${b}__locations-body`}>
+          {/* Existing locations */}
+          {locations.length === 0 && !adding && (
+            <div className={`${b}__locations-empty`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.4">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+              </svg>
+              <span>Sin sedes configuradas</span>
+            </div>
+          )}
+
           {locations.map(loc => (
-            <div key={loc.id} className={`${b}__location-item`}>
-              <div className={`${b}__location-info`}>
-                <strong>{loc.name}</strong>
-                {loc.is_default && <span className={`${b}__location-badge`}>Principal</span>}
-                <span className={`${b}__location-meta`}>{loc.address || 'Sin dirección'} · {loc.staff_count} staff · {loc.appointments_count} citas</span>
+            <div key={loc.id} className={`${b}__location-card`}>
+              <div className={`${b}__location-pin`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" opacity="0.6">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+              </div>
+              <div className={`${b}__location-data`}>
+                <div className={`${b}__location-name`}>
+                  {loc.name}
+                  {loc.is_default && <span className={`${b}__location-badge`}>Principal</span>}
+                </div>
+                <div className={`${b}__location-details`}>
+                  {loc.address && <span>{loc.address}</span>}
+                  <span>{loc.staff_count} staff</span>
+                  <span>{loc.appointments_count} citas</span>
+                  <span>{loc.opening_time || '08:00'} - {loc.closing_time || '19:00'}</span>
+                </div>
               </div>
               {!loc.is_default && (
-                <button className={`${b}__location-del`} onClick={() => handleDelete(loc.id)} title="Desactivar">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                <button className={`${b}__location-del`} onClick={() => handleDelete(loc.id)} title="Desactivar sede">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                 </button>
               )}
             </div>
           ))}
-          {adding ? (
-            <div className={`${b}__location-form`}>
-              <input placeholder="Nombre de la sede" value={newName} onChange={e => setNewName(e.target.value)} className={`${b}__location-input`} />
-              <input placeholder="Dirección (opcional)" value={newAddr} onChange={e => setNewAddr(e.target.value)} className={`${b}__location-input`} />
-              <div className={`${b}__location-form-btns`}>
-                <button onClick={handleCreate} disabled={saving || !newName.trim()} className={`${b}__action-btn ${b}__action-btn--success`}>{saving ? 'Creando...' : 'Crear'}</button>
-                <button onClick={() => setAdding(false)} className={`${b}__action-btn`}>Cancelar</button>
+
+          {/* Create form */}
+          {adding && (
+            <div className={`${b}__location-create`}>
+              <h4 className={`${b}__location-create-title`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                Nueva sede
+              </h4>
+              <div className={`${b}__location-create-fields`}>
+                <div className={`${b}__location-field`}>
+                  <label>Nombre de la sede *</label>
+                  <input placeholder="Ej: Sede Norte, Sucursal Centro..." value={newName} onChange={e => setNewName(e.target.value)} />
+                </div>
+                <div className={`${b}__location-field`}>
+                  <label>Dirección</label>
+                  <input placeholder="Ej: Cra 33 #48-20, Bucaramanga" value={newAddr} onChange={e => setNewAddr(e.target.value)} />
+                </div>
+              </div>
+              <div className={`${b}__location-create-actions`}>
+                <button className={`${b}__location-create-btn`} onClick={handleCreate} disabled={saving || !newName.trim()}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                  {saving ? 'Creando...' : 'Crear sede'}
+                </button>
+                <button className={`${b}__location-cancel-btn`} onClick={() => { setAdding(false); setNewName(''); setNewAddr(''); }}>Cancelar</button>
               </div>
             </div>
-          ) : (
-            <button className={`${b}__location-add`} onClick={() => setAdding(true)}>
-              + Agregar sede
-            </button>
           )}
         </div>
       )}

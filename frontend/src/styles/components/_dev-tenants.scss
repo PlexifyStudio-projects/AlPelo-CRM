@@ -773,70 +773,132 @@ $_danger: #EF4444;
 // ════════════════════════════════════════════
 
 .dev-tenants__locations {
-  margin-top: 12px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  padding-top: 10px;
+  margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;
+}
+
+.dev-tenants__locations-header {
+  display: flex; align-items: center; gap: 8px;
 }
 
 .dev-tenants__locations-toggle {
-  display: flex; align-items: center; gap: 8px; width: 100%;
+  display: flex; align-items: center; gap: 8px; flex: 1;
   background: none; border: none; color: $color-gray-400; font-size: $font-size-xs;
-  cursor: pointer; padding: 6px 0; transition: color 0.15s;
+  font-weight: $font-weight-medium; cursor: pointer; padding: 6px 0; transition: color 0.15s;
+  > svg:first-child { color: $color-primary-light; }
   &:hover { color: white; }
 }
 
-.dev-tenants__locations-list {
-  margin-top: 8px; display: flex; flex-direction: column; gap: 6px;
+.dev-tenants__locations-count {
+  background: rgba($color-primary-light, 0.15); color: $color-primary-light;
+  font-size: 10px; font-weight: $font-weight-bold; padding: 1px 7px; border-radius: 99px;
 }
 
-.dev-tenants__location-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 12px; background: rgba(255,255,255,0.04); border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.06);
+.dev-tenants__locations-add-btn {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba($color-success, 0.1); border: 1px solid rgba($color-success, 0.2);
+  color: $color-success; font-size: 10px; font-weight: $font-weight-semibold;
+  padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: all 0.15s;
+  &:hover { background: rgba($color-success, 0.2); }
 }
 
-.dev-tenants__location-info {
-  flex: 1; min-width: 0;
-  strong { display: block; font-size: $font-size-xs; color: white; }
+.dev-tenants__locations-body {
+  margin-top: 10px; display: flex; flex-direction: column; gap: 8px;
+}
+
+.dev-tenants__locations-empty {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 16px; color: $color-gray-500; font-size: $font-size-xs;
+  background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.08);
+}
+
+.dev-tenants__location-card {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; background: rgba(255,255,255,0.04); border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06); transition: all 0.15s;
+  &:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); }
+}
+
+.dev-tenants__location-pin {
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  background: rgba($color-primary-light, 0.1); border-radius: 6px; color: $color-primary-light; flex-shrink: 0;
+}
+
+.dev-tenants__location-data { flex: 1; min-width: 0; }
+
+.dev-tenants__location-name {
+  font-size: $font-size-xs; font-weight: $font-weight-semibold; color: white;
+  display: flex; align-items: center; gap: 6px;
 }
 
 .dev-tenants__location-badge {
-  display: inline-block; padding: 1px 6px; border-radius: 99px;
-  font-size: 9px; background: rgba($color-primary-light, 0.2); color: $color-primary-light;
-  margin-left: 6px;
+  display: inline-block; padding: 1px 7px; border-radius: 99px;
+  font-size: 9px; font-weight: $font-weight-bold;
+  background: rgba($color-primary-light, 0.15); color: $color-primary-light;
 }
 
-.dev-tenants__location-meta {
-  display: block; font-size: 10px; color: $color-gray-500; margin-top: 2px;
+.dev-tenants__location-details {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;
+  > span {
+    font-size: 10px; color: $color-gray-500;
+    &::after { content: '·'; margin-left: 4px; color: rgba(255,255,255,0.15); }
+    &:last-child::after { display: none; }
+  }
 }
 
 .dev-tenants__location-del {
-  background: none; border: none; color: $color-gray-500; cursor: pointer; padding: 4px;
-  border-radius: 4px;
+  background: none; border: none; color: $color-gray-600; cursor: pointer;
+  padding: 6px; border-radius: 4px; flex-shrink: 0; transition: all 0.15s;
   &:hover { color: $color-error; background: rgba($color-error, 0.1); }
 }
 
-.dev-tenants__location-form {
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 8px; background: rgba(255,255,255,0.04); border-radius: 6px;
+.dev-tenants__location-create {
+  padding: 14px; background: rgba($color-primary-light, 0.04);
+  border: 1px solid rgba($color-primary-light, 0.12); border-radius: 8px;
 }
 
-.dev-tenants__location-input {
-  padding: 7px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
-  background: rgba(255,255,255,0.06); color: white; font-size: $font-size-xs;
-  &::placeholder { color: $color-gray-500; }
-  &:focus { border-color: $color-primary-light; outline: none; }
+.dev-tenants__location-create-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: $font-size-xs; font-weight: $font-weight-semibold; color: $color-primary-light;
+  margin-bottom: 10px;
 }
 
-.dev-tenants__location-form-btns {
-  display: flex; gap: 6px;
+.dev-tenants__location-create-fields {
+  display: flex; flex-direction: column; gap: 8px;
 }
 
-.dev-tenants__location-add {
-  background: none; border: 1px dashed rgba(255,255,255,0.15); border-radius: 6px;
-  color: $color-gray-500; font-size: $font-size-xs; padding: 8px; cursor: pointer;
+.dev-tenants__location-field {
+  > label {
+    display: block; font-size: 10px; color: $color-gray-500;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;
+  }
+  > input {
+    width: 100%; padding: 9px 12px;
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 6px;
+    background: rgba(255,255,255,0.06); color: white; font-size: $font-size-xs;
+    outline: none; transition: border-color 0.15s;
+    &::placeholder { color: $color-gray-500; }
+    &:focus { border-color: $color-primary-light; box-shadow: 0 0 0 2px rgba($color-primary-light, 0.15); }
+  }
+}
+
+.dev-tenants__location-create-actions {
+  display: flex; gap: 8px; margin-top: 12px;
+}
+
+.dev-tenants__location-create-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 16px; background: $color-primary-light; color: white;
+  border: none; border-radius: 6px; font-size: $font-size-xs; font-weight: $font-weight-semibold;
+  cursor: pointer; transition: all 0.15s;
+  &:hover { background: $color-primary; }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+.dev-tenants__location-cancel-btn {
+  padding: 8px 14px; background: none; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px; color: $color-gray-400; font-size: $font-size-xs; cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: $color-primary-light; color: $color-primary-light; }
+  &:hover { border-color: rgba(255,255,255,0.25); color: white; }
 }
 
 @keyframes tenantFadeIn { from { opacity: 0; } to { opacity: 1; } }
