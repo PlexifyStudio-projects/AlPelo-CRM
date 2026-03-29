@@ -858,6 +858,107 @@
 }
 
 // ============================================
+// LOCATION SELECTOR (Multi-Location)
+// ============================================
+
+.sidebar__location {
+    padding: 0 $spacing-md $spacing-sm;
+    position: relative;
+  }
+
+.sidebar__location-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: $border-radius-sm;
+    color: $color-gray-300;
+    font-size: $font-size-xs;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    > svg:first-child { color: $color-primary-light; flex-shrink: 0; }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+  }
+
+.sidebar__location-label {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+.sidebar__location-chevron {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+    opacity: 0.5;
+
+    &--open { transform: rotate(180deg); }
+  }
+
+.sidebar__location-drop {
+    position: absolute;
+    left: $spacing-md;
+    right: $spacing-md;
+    top: calc(100% + 4px);
+    background: $color-gray-700;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: $border-radius-sm;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+    overflow: hidden;
+    animation: sidebarLocDrop 0.15s ease;
+  }
+
+.sidebar__location-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: $color-gray-300;
+    font-size: $font-size-xs;
+    cursor: pointer;
+    text-align: left;
+    transition: background $transition-fast;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: rgba(255, 255, 255, 0.08); }
+    &--active { background: rgba($color-primary-light, 0.15); color: white; }
+  }
+
+.sidebar__location-badge {
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: $border-radius-full;
+    background: rgba($color-primary-light, 0.2);
+    color: $color-primary-light;
+    margin-left: auto;
+  }
+
+.sidebar__location-check {
+    margin-left: auto;
+    color: $color-primary-light;
+    font-size: $font-size-xs;
+  }
+
+@keyframes sidebarLocDrop {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// ============================================
 // SIDEBAR KEYFRAMES
 // ============================================
 @keyframes sidebarOnlinePulse {

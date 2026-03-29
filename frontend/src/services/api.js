@@ -42,6 +42,18 @@ window.fetch = function (url, options = {}) {
     if (!options.credentials) {
       options.credentials = 'include';
     }
+
+    // Multi-location: inject location_id on GET requests
+    const locationId = localStorage.getItem('plexify_location');
+    if (locationId && locationId !== 'all' && options.method !== 'POST' && options.method !== 'PUT' && options.method !== 'DELETE') {
+      try {
+        const u = new URL(urlStr.startsWith('http') ? urlStr : `${window.location.origin}${urlStr}`);
+        if (!u.searchParams.has('location_id')) {
+          u.searchParams.set('location_id', locationId);
+          url = u.toString();
+        }
+      } catch { /* URL parse error, skip */ }
+    }
   }
 
   return _originalFetch.call(window, url, options).then((response) => {

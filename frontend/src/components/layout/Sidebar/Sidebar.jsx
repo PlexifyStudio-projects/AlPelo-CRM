@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTenant } from '../../../context/TenantContext';
+import LocationSelector from './LocationSelector';
 
 const SVG_ICONS = {
   dashboard: (
@@ -186,6 +187,9 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
       </div>
 
       <div className={`${b}__brand-divider`} />
+
+      {/* Location Selector (multi-location) */}
+      <LocationSelector />
 
       {/* Navigation */}
       <nav className={`${b}__nav`}>
