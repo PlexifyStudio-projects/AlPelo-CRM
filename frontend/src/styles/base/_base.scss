@@ -213,16 +213,3 @@ a {
   }
 }
 
-// -----------------------------------------------
-// DYNAMIC BRAND COLOR OVERRIDES
-// These use CSS custom properties set by TenantContext
-// so they update at runtime when brand_color changes.
-// -----------------------------------------------
-
-// Override primary-colored buttons globally
-[style*="--color-primary"],
-:root {
-  // Gradient using dynamic primary color
-  --gradient-primary: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
-  --shadow-primary: 0 4px 16px rgba(var(--color-primary-rgb), 0.2);
-}

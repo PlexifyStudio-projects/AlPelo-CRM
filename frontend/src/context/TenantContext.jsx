@@ -66,47 +66,29 @@ export const TenantProvider = ({ children }) => {
     const root = document.documentElement;
     const hex = tenant.primary_color;
 
-    const parseHex = (h) => {
-      const c = h.replace('#', '');
-      return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)];
-    };
-    const lighten = (c, pct) => Math.min(255, Math.round(c + (255 - c) * pct));
-    const darken = (c, pct) => Math.round(c * (1 - pct));
-
-    // Primary color
-    const [r, g, b] = parseHex(hex);
+    // Set primary color
     root.style.setProperty('--color-primary', hex);
+
+    // Parse hex to RGB for rgba() usage in SCSS
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
     root.style.setProperty('--color-primary-rgb', `${r}, ${g}, ${b}`);
-    root.style.setProperty('--color-primary-light', `rgb(${lighten(r, 0.2)}, ${lighten(g, 0.2)}, ${lighten(b, 0.2)})`);
-    root.style.setProperty('--color-primary-lighter', `rgb(${lighten(r, 0.4)}, ${lighten(g, 0.4)}, ${lighten(b, 0.4)})`);
 
-    // Dark variant — from DB or auto-generated
-    if (tenant.brand_color_dark) {
-      root.style.setProperty('--color-primary-dark', tenant.brand_color_dark);
-      const [dr, dg, db] = parseHex(tenant.brand_color_dark);
-      root.style.setProperty('--color-primary-darker', `rgb(${darken(dr, 0.3)}, ${darken(dg, 0.3)}, ${darken(db, 0.3)})`);
-    } else {
-      root.style.setProperty('--color-primary-dark', `rgb(${darken(r, 0.25)}, ${darken(g, 0.25)}, ${darken(b, 0.25)})`);
-      root.style.setProperty('--color-primary-darker', `rgb(${darken(r, 0.45)}, ${darken(g, 0.45)}, ${darken(b, 0.45)})`);
-    }
+    // Generate light variant (lighter by mixing with white)
+    const lighten = (c, pct) => Math.min(255, Math.round(c + (255 - c) * pct));
+    const lightR = lighten(r, 0.2);
+    const lightG = lighten(g, 0.2);
+    const lightB = lighten(b, 0.2);
+    root.style.setProperty('--color-primary-light', `rgb(${lightR}, ${lightG}, ${lightB})`);
 
-    // Accent color
-    if (tenant.brand_color_accent) {
-      root.style.setProperty('--color-accent', tenant.brand_color_accent);
-      const [ar, ag, ab] = parseHex(tenant.brand_color_accent);
-      root.style.setProperty('--color-accent-light', `rgb(${lighten(ar, 0.25)}, ${lighten(ag, 0.25)}, ${lighten(ab, 0.25)})`);
-    }
-
-    // Glow/ghost variants for buttons
-    root.style.setProperty('--color-primary-glow', `rgba(${r}, ${g}, ${b}, 0.25)`);
-    root.style.setProperty('--color-primary-ghost', `rgba(${r}, ${g}, ${b}, 0.06)`);
-
-    // Update page title
-    const brandName = tenant.brand_name || tenant.name;
-    if (brandName && brandName !== 'Mi Negocio') {
-      document.title = `${brandName} — CRM`;
-    }
-  }, [tenant?.primary_color, tenant?.brand_color_dark, tenant?.brand_color_accent, tenant?.brand_name, tenant?.name]);
+    // Generate dark variant (darker by mixing with black)
+    const darken = (c, pct) => Math.round(c * (1 - pct));
+    const darkR = darken(r, 0.25);
+    const darkG = darken(g, 0.25);
+    const darkB = darken(b, 0.25);
+    root.style.setProperty('--color-primary-dark', `rgb(${darkR}, ${darkG}, ${darkB})`);
+  }, [tenant?.primary_color]);
 
   // Refresh tenant data (e.g. after usage changes)
   const refreshTenant = useCallback(() => {

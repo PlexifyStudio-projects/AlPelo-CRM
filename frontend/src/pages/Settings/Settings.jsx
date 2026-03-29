@@ -474,7 +474,6 @@ const Settings = () => {
   const toggleSection = (id) => setOpenSection(prev => prev === id ? null : id);
 
   const sections = [
-    { id: 'brand', title: 'Marca e Identidad', desc: 'Logo, colores, nombre de tu negocio — tu marca en toda la plataforma', color1: '#EC4899', color2: '#F97316' },
     { id: 'lina', title: 'Lina IA', desc: 'Prompt, contexto del negocio y pruebas de la asistente', color1: '#7C3AED', color2: '#A855F7' },
     { id: 'notif', title: 'Notificaciones', desc: 'Alertas de citas, mensajeria y sonidos', color1: '#3B82F6', color2: '#60A5FA' },
     { id: 'meta', title: 'Meta / WhatsApp', desc: 'Conexion, token, perfil y plantillas de WhatsApp Business', color1: '#1877F2', color2: '#00C6FF' },
@@ -539,9 +538,6 @@ const Settings = () => {
       {/* ═══ EXPANDED CONTENT ═══ */}
       {openSection && (
         <div className={`${b}__panel`} key={openSection}>
-
-          {/* ========== BRANDING / WHITE-LABEL ========== */}
-          {openSection === 'brand' && <BrandingPanel addNotification={addNotification} />}
 
           {/* ========== LINA IA CONFIG ========== */}
           {openSection === 'lina' && (
