@@ -46,6 +46,53 @@ def safe_tid(user, db: Session):
 
 
 # ============================================================================
+# MULTI-LOCATION — Location helpers
+# ============================================================================
+
+_LOCATION_COLS_READY: bool | None = None
+
+
+def location_cols_ready(db: Session) -> bool:
+    """Check if location_id columns are migrated."""
+    global _LOCATION_COLS_READY
+    if _LOCATION_COLS_READY is not None:
+        return _LOCATION_COLS_READY
+    try:
+        result = db.execute(text(
+            "SELECT column_name FROM information_schema.columns "
+            "WHERE table_name='appointment' AND column_name='location_id'"
+        ))
+        _LOCATION_COLS_READY = result.fetchone() is not None
+    except Exception:
+        _LOCATION_COLS_READY = False
+    return _LOCATION_COLS_READY
+
+
+def safe_lid(user, db: Session, location_id_param=None):
+    """Return location_id for query filtering.
+    Priority: explicit param > staff primary_location > None (all locations).
+    Returns None if multi-location not active or admin viewing all."""
+    if not location_cols_ready(db):
+        return None
+    if location_id_param is not None:
+        if str(location_id_param) == "all" or str(location_id_param) == "":
+            return None
+        return int(location_id_param)
+    # Staff auto-scope to their primary location
+    if getattr(user, '_auth_role', '') == 'staff':
+        return getattr(user, 'primary_location_id', None)
+    return None  # Admin sees all by default
+
+
+def apply_location_filter(query, model, location_id):
+    """Apply location_id filter if provided and model supports it.
+    Backward compatible: if location_id is None, no filter applied."""
+    if location_id is not None and hasattr(model, 'location_id'):
+        return query.filter(model.location_id == location_id)
+    return query
+
+
+# ============================================================================
 # COLOMBIA TIMEZONE — Single source of truth (UTC-5)
 # ============================================================================
 

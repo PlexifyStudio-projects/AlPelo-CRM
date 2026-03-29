@@ -27,6 +27,7 @@ class Staff(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=True)
+    primary_location_id = Column(Integer, nullable=True)  # Multi-location: default sede
     name = Column(String, nullable=False)
     phone = Column(String, nullable=True)
     email = Column(String, nullable=True)
@@ -75,6 +76,7 @@ class VisitHistory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=True)
+    location_id = Column(Integer, nullable=True)  # Multi-location
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=False)
     staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
     service_name = Column(String, nullable=False)
@@ -140,6 +142,7 @@ class Appointment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=True)
+    location_id = Column(Integer, nullable=True)  # Multi-location: which sede
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
     client_name = Column(String, nullable=False)
     client_phone = Column(String, nullable=False)
@@ -165,6 +168,7 @@ class WhatsAppConversation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=True)
+    location_id = Column(Integer, nullable=True)  # Multi-location
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
     wa_contact_phone = Column(String, nullable=False)
     wa_contact_name = Column(String, nullable=True)
@@ -283,6 +287,44 @@ class Tenant(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+# ============================================================================
+# MULTI-LOCATION — Sedes por tenant
+# ============================================================================
+
+class Location(Base):
+    """A physical location/branch within a tenant (business).
+    One tenant can have many locations. Clients are shared; staff, agenda, inventory are per-location."""
+    __tablename__ = "location"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    slug = Column(String(100), nullable=False)
+    address = Column(Text, nullable=True)
+    phone = Column(String(30), nullable=True)
+    opening_time = Column(String(5), nullable=True, default="08:00")
+    closing_time = Column(String(5), nullable=True, default="19:00")
+    days_open = Column(JSON, default=list)  # [0,1,2,3,4,5] = Mon-Sat
+    wa_phone_number_id = Column(String(50), nullable=True)  # Optional per-location WA number
+    is_active = Column(Boolean, default=True)
+    is_default = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+class StaffLocation(Base):
+    """Many-to-many: staff can work at multiple locations."""
+    __tablename__ = "staff_location"
+
+    id = Column(Integer, primary_key=True, index=True)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
+    location_id = Column(Integer, ForeignKey("public.location.id"), nullable=False)
+    is_primary = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class PlatformConfig(Base):
     """Global platform-wide key-value configuration (Meta credentials, etc.).
     NOT per-tenant — these are Plexify Studio's own settings."""
@@ -332,6 +374,7 @@ class Expense(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=True)
+    location_id = Column(Integer, nullable=True)  # Multi-location
     category = Column(String, nullable=False)  # arriendo, nomina, productos, servicios, marketing, otros
     description = Column(Text, nullable=False)
     amount = Column(Integer, nullable=False)  # COP sin decimales
@@ -747,6 +790,7 @@ class StaffSchedule(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    location_id = Column(Integer, nullable=True)  # Multi-location
     staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
     day_of_week = Column(Integer, nullable=False)  # 0=Monday ... 6=Sunday (Python weekday)
     start_time = Column(String(5), nullable=True)  # "09:00"
@@ -766,6 +810,7 @@ class StaffDayOff(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    location_id = Column(Integer, nullable=True)  # Multi-location
     staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
     date = Column(Date, nullable=False)
     reason = Column(String(200), nullable=True)
@@ -860,6 +905,7 @@ class Checkout(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    location_id = Column(Integer, nullable=True)  # Multi-location
     appointment_id = Column(Integer, ForeignKey("public.appointment.id"), nullable=True)
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
     client_name = Column(String, nullable=False)
@@ -917,11 +963,12 @@ class CheckoutItem(Base):
 # ============================================================================
 
 class CashRegister(Base):
-    """Daily cash register session — one per day per tenant."""
+    """Daily cash register session — one per day per location."""
     __tablename__ = "cash_register"
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    location_id = Column(Integer, nullable=True)  # Multi-location
     date = Column(Date, nullable=False)
     status = Column(String(20), nullable=False, default="open")  # open, closed
 
@@ -1026,6 +1073,7 @@ class Product(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=False, index=True)
+    location_id = Column(Integer, nullable=True)  # Multi-location: stock per sede
     name = Column(String(255), nullable=False)
     sku = Column(String(100), nullable=True)  # Optional product code
     category = Column(String(100), nullable=True)  # e.g. "Cuidado capilar", "Styling", "Skincare"
@@ -1048,6 +1096,7 @@ class InventoryMovement(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=False, index=True)
+    location_id = Column(Integer, nullable=True)  # Multi-location
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     movement_type = Column(String(20), nullable=False)  # purchase, sale, adjustment, return, loss
     quantity = Column(Integer, nullable=False)  # Positive = stock in, negative = stock out

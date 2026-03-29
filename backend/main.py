@@ -80,6 +80,18 @@ def _run_migrations(engine):
         ("tenant", "brand_color_dark", "VARCHAR(20)"),
         ("tenant", "brand_color_accent", "VARCHAR(20)"),
         ("tenant", "brand_name", "VARCHAR(200)"),
+        # Multi-location
+        ("staff", "primary_location_id", "INTEGER"),
+        ("appointment", "location_id", "INTEGER"),
+        ("visit_history", "location_id", "INTEGER"),
+        ("whatsapp_conversation", "location_id", "INTEGER"),
+        ("expense", "location_id", "INTEGER"),
+        ("staff_schedule", "location_id", "INTEGER"),
+        ("staff_day_off", "location_id", "INTEGER"),
+        ("checkout", "location_id", "INTEGER"),
+        ("cash_register", "location_id", "INTEGER"),
+        ("products", "location_id", "INTEGER"),
+        ("inventory_movements", "location_id", "INTEGER"),
     ]
 
     for table, column, col_type in migrations:
@@ -269,6 +281,62 @@ def _run_migrations(engine):
                 print(f"[MIGRATION] Switched {r2.rowcount} tenant(s) to Sonnet 4")
     except Exception as e:
         print(f"[MIGRATION] AI model switch: {e}")
+
+    # --- location table (Multi-Location / Sedes) ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='location'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.location (
+                        id SERIAL PRIMARY KEY,
+                        tenant_id INTEGER NOT NULL REFERENCES public.tenant(id),
+                        name VARCHAR(200) NOT NULL,
+                        slug VARCHAR(100) NOT NULL,
+                        address TEXT,
+                        phone VARCHAR(30),
+                        opening_time VARCHAR(5) DEFAULT '08:00',
+                        closing_time VARCHAR(5) DEFAULT '19:00',
+                        days_open JSON DEFAULT '[0,1,2,3,4,5]',
+                        wa_phone_number_id VARCHAR(50),
+                        is_active BOOLEAN DEFAULT TRUE,
+                        is_default BOOLEAN DEFAULT FALSE,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_location_tenant ON public.location(tenant_id)"))
+                conn.execute(text("CREATE INDEX idx_location_active ON public.location(tenant_id, is_active)"))
+                print("[MIGRATION] Created location table")
+    except Exception as e:
+        print(f"[MIGRATION] location table: {e}")
+
+    # --- staff_location table (Many-to-many staff↔location) ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='staff_location'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.staff_location (
+                        id SERIAL PRIMARY KEY,
+                        staff_id INTEGER NOT NULL REFERENCES public.staff(id) ON DELETE CASCADE,
+                        location_id INTEGER NOT NULL REFERENCES public.location(id) ON DELETE CASCADE,
+                        is_primary BOOLEAN DEFAULT FALSE,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_staff_loc_staff ON public.staff_location(staff_id)"))
+                conn.execute(text("CREATE INDEX idx_staff_loc_loc ON public.staff_location(location_id)"))
+                conn.execute(text("CREATE UNIQUE INDEX idx_staff_loc_unique ON public.staff_location(staff_id, location_id)"))
+                print("[MIGRATION] Created staff_location table")
+    except Exception as e:
+        print(f"[MIGRATION] staff_location table: {e}")
 
     # --- automation_rule table (Automation Studio) ---
     try:
@@ -521,6 +589,9 @@ app.include_router(register_router, prefix="/api", tags=["Public Register"])
 
 from routes.automation_studio_endpoints import router as automation_studio_router
 app.include_router(automation_studio_router, prefix="/api", tags=["Automation Studio"])
+
+from routes.location_endpoints import router as location_router
+app.include_router(location_router, prefix="/api", tags=["Locations"])
 
 
 # ============================================================================
