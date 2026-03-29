@@ -623,13 +623,53 @@ async def submit_to_meta(rule_id: int, db: Session = Depends(get_db), user=Depen
                 error_subcode = error.get("error_subcode", 0)
                 print(f"[AUTO-STUDIO META] ERROR code={error_code} subcode={error_subcode} msg={error_msg} user_msg={error_user_msg}")
 
-                # Check if template already exists
-                is_duplicate = error_code == 2388023 or "already exists" in error_msg.lower()
+                # Check if template already exists (English or Spanish error)
+                is_duplicate = (
+                    error_code == 2388023 or
+                    "already exists" in error_msg.lower() or
+                    "ya existe" in error_msg.lower() or
+                    "ya existe" in error_user_msg.lower()
+                )
+
                 if is_duplicate:
+                    # Retry with _v2, _v3, etc.
+                    for suffix_num in range(2, 6):
+                        v_slug = f"{slug}_v{suffix_num}"
+                        payload["name"] = v_slug
+                        print(f"[AUTO-STUDIO META] Retrying with slug: {v_slug}")
+                        retry_resp = await client.post(
+                            f"https://graph.facebook.com/{WA_API_VERSION}/{tenant.wa_business_account_id}/message_templates",
+                            headers={"Authorization": f"Bearer {tenant.wa_access_token}", "Content-Type": "application/json"},
+                            json=payload,
+                        )
+                        retry_data = retry_resp.json()
+                        print(f"[AUTO-STUDIO META] Retry response: {retry_resp.status_code} {json.dumps(retry_data, ensure_ascii=False)[:300]}")
+
+                        if retry_resp.status_code in (200, 201):
+                            retry_status = retry_data.get("status", "PENDING")
+                            rule.meta_template_name = v_slug
+                            rule.meta_template_status = "approved" if retry_status == "APPROVED" else "pending"
+                            action_config["template_name"] = v_slug
+                            action_config["template_language"] = "es"
+                            action_config["variables"] = variables
+                            rule.action_config = action_config
+                            rule.updated_at = datetime.utcnow()
+                            db.commit()
+                            return {
+                                "ok": True,
+                                "meta_status": rule.meta_template_status,
+                                "template_name": v_slug,
+                            }
+
+                        # Check if this suffix also exists
+                        retry_err = retry_data.get("error", {}).get("error_user_msg", "")
+                        if "ya existe" not in retry_err.lower() and "already exists" not in retry_err.lower():
+                            break  # Different error, stop retrying
+
+                    # If all retries failed, still save as pending
                     rule.meta_template_name = slug
                     rule.meta_template_status = "pending"
                     action_config["template_name"] = slug
-                    action_config["template_language"] = "es"
                     action_config["variables"] = variables
                     rule.action_config = action_config
                     db.commit()
@@ -637,14 +677,16 @@ async def submit_to_meta(rule_id: int, db: Session = Depends(get_db), user=Depen
                         "ok": True,
                         "meta_status": "pending",
                         "template_name": slug,
-                        "note": "Template already exists, checking status...",
+                        "note": "Template exists in Meta, verifying status...",
                     }
+
                 detail_msg = error_user_msg or error_msg
                 raise HTTPException(400, f"Meta rechazó la plantilla: {detail_msg}")
 
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[AUTO-STUDIO META] Exception: {e}")
         raise HTTPException(500, f"Error al enviar a Meta: {str(e)}")
 
 
