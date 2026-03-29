@@ -114,15 +114,6 @@ TRIGGER_DEFINITIONS = [
      "config_fields": [{"key": "days", "label": "Días antes de vencer", "type": "number", "default": 7, "min": 1, "max": 30}],
      "variables": ["nombre", "negocio", "dias"]},
 
-    # ── OPERACIONES ──
-    {"type": "daily_summary", "name": "Resumen diario", "description": "Resumen del día enviado al dueño/admin", "category": "operations",
-     "config_fields": [], "variables": ["negocio"]},
-    {"type": "staff_briefing", "name": "Briefing para equipo", "description": "Info del próximo cliente 30 min antes de la cita", "category": "operations",
-     "config_fields": [], "variables": ["nombre", "servicio", "profesional"]},
-    {"type": "low_stock_alert", "name": "Alerta de inventario", "description": "Cuando un producto baja del stock mínimo", "category": "operations",
-     "config_fields": [], "variables": ["negocio"]},
-    {"type": "new_booking_alert", "name": "Alerta de nueva cita", "description": "Notificar al admin cuando llega una cita nueva", "category": "operations",
-     "config_fields": [], "variables": ["nombre", "hora", "fecha", "servicio"]},
 ]
 
 

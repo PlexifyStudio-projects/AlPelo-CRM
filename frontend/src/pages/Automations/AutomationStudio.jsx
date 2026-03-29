@@ -108,7 +108,6 @@ const CATEGORY_META = {
   marketing: { label: 'Marketing', color: '#EC4899', icon: MegaphoneIcon },
   loyalty: { label: 'Fidelización', color: '#D97706', icon: HeartIcon },
   payments: { label: 'Pagos y Facturación', color: '#10B981', icon: DollarIcon },
-  operations: { label: 'Operaciones', color: '#6366F1', icon: SettingsIcon },
 };
 
 const META_STATUS = {
