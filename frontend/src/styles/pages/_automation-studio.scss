@@ -1364,6 +1364,96 @@
     color: $color-accent;
     background: $color-accent-ghost;
   }
+
+  // ════════════════════════════════════════════
+  // DELETE CONFIRMATION MODAL
+  // ════════════════════════════════════════════
+
+  &__modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: $z-modal;
+    animation: fadeIn 0.15s ease;
+  }
+
+  &__modal {
+    background: $bg-card;
+    border-radius: $border-radius-lg;
+    padding: $spacing-xl;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: $shadow-2xl;
+    text-align: center;
+    animation: fadeInUp 0.2s $ease-out-expo;
+
+    > h3 {
+      font-size: $font-size-md;
+      font-weight: $font-weight-semibold;
+      color: $color-gray-800;
+      margin-top: $spacing-sm;
+    }
+
+    > p {
+      font-size: $font-size-sm;
+      color: $color-gray-500;
+      margin-top: $spacing-sm;
+      line-height: $line-height-base;
+    }
+  }
+
+  &__modal-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: $color-error-bg;
+    color: $color-error;
+  }
+
+  &__modal-actions {
+    display: flex;
+    gap: $spacing-sm;
+    margin-top: $spacing-lg;
+    justify-content: center;
+  }
+
+  &__modal-btn--cancel {
+    padding: 8px 20px;
+    border: 1px solid $border-color;
+    background: none;
+    border-radius: $border-radius-sm;
+    color: $color-gray-500;
+    font-size: $font-size-sm;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover { background: $color-gray-50; }
+  }
+
+  &__modal-btn--delete {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    background: $color-error;
+    color: white;
+    border: none;
+    border-radius: $border-radius-sm;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover { background: $color-error-dark; }
+  }
 }
 
 // ════════════════════════════════════════════
@@ -1373,6 +1463,11 @@
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes spin {

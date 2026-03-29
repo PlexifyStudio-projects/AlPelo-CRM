@@ -113,7 +113,6 @@ export default function AutomationStudio() {
   };
 
   const handleDelete = async (rule) => {
-    if (!window.confirm(`¿Eliminar "${rule.name}"? Se perderá todo el historial.`)) return;
     try {
       await svc.delete(rule.id);
       addNotification('Automatización eliminada', 'success');
@@ -302,10 +301,23 @@ export default function AutomationStudio() {
 // ═══════════════════════════════════════════════
 
 function AutomationCard({ rule, onToggle, onEdit, onDelete, onDuplicate, onSubmitMeta, onCheckMeta, onHistory }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const TriggerIcon = TRIGGER_ICONS[rule.trigger_type] || ZapIcon;
   const catMeta = CATEGORY_META[rule.trigger_category] || CATEGORY_META.appointments;
   const metaStatus = META_STATUS[rule.meta_template_status] || META_STATUS.draft;
   const msg = rule.action_config?.message || '';
+
+  // Build real trigger description with config values
+  const triggerDesc = (() => {
+    const cfg = rule.trigger_config || {};
+    switch (rule.trigger_type) {
+      case 'hours_before_appt': return `Se envía ${cfg.hours || 24} horas antes de una cita`;
+      case 'hours_after_complete': return `Se envía ${cfg.hours || 2} horas después de completar`;
+      case 'days_since_visit': return `Cliente sin visitar en ${cfg.days || 30} días`;
+      case 'visit_milestone': return `Al alcanzar ${cfg.milestone || 10} visitas`;
+      default: return rule.trigger_description || rule.trigger_name;
+    }
+  })();
 
   return (
     <div className={`${B}__card ${rule.is_enabled ? `${B}__card--active` : ''}`}>
@@ -315,7 +327,7 @@ function AutomationCard({ rule, onToggle, onEdit, onDelete, onDuplicate, onSubmi
         </div>
         <div className={`${B}__card-info`}>
           <h3 className={`${B}__card-name`}>{rule.name}</h3>
-          <p className={`${B}__card-trigger`}>{rule.trigger_description || rule.trigger_name}</p>
+          <p className={`${B}__card-trigger`}>{triggerDesc}</p>
         </div>
         <button
           className={`${B}__toggle ${rule.is_enabled ? `${B}__toggle--on` : ''}`}
@@ -360,8 +372,30 @@ function AutomationCard({ rule, onToggle, onEdit, onDelete, onDuplicate, onSubmi
             <SendIcon size={16} /> Meta
           </button>
         )}
-        <button className={`${B}__card-action--delete`} onClick={() => onDelete(rule)} title="Eliminar"><TrashIcon size={16} /></button>
+        {rule.meta_template_status === 'pending' && (
+          <button className={`${B}__card-action--meta`} onClick={() => onCheckMeta(rule)} title="Verificar estado Meta">
+            <ClockIcon size={16} /> Verificar
+          </button>
+        )}
+        <button className={`${B}__card-action--delete`} onClick={() => setConfirmDelete(true)} title="Eliminar"><TrashIcon size={16} /></button>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {confirmDelete && (
+        <div className={`${B}__modal-overlay`} onClick={() => setConfirmDelete(false)}>
+          <div className={`${B}__modal`} onClick={e => e.stopPropagation()}>
+            <div className={`${B}__modal-icon`}><TrashIcon size={24} /></div>
+            <h3>Eliminar automatización</h3>
+            <p>¿Estás seguro de eliminar <strong>"{rule.name}"</strong>? Se perderá todo el historial de ejecuciones.</p>
+            <div className={`${B}__modal-actions`}>
+              <button className={`${B}__modal-btn--cancel`} onClick={() => setConfirmDelete(false)}>Cancelar</button>
+              <button className={`${B}__modal-btn--delete`} onClick={() => { setConfirmDelete(false); onDelete(rule); }}>
+                <TrashIcon size={14} /> Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

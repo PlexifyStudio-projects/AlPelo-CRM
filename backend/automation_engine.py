@@ -303,10 +303,29 @@ def _send_and_log(db, rule, client, phone, message, appointment_id=None, is_chai
 # Each returns a list of (client, appointment_or_None) tuples
 # ============================================================================
 
-def _eval_hours_before_appt(db, rule, tenant):
+def _eval_hours_before_appt(db, rule, tenant, preview_mode=False):
     """Trigger: X hours before a confirmed appointment."""
     now = _now_colombia()
     hours = (rule.trigger_config or {}).get("hours", 24)
+
+    if preview_mode:
+        # Preview: show all clients with confirmed appointments (any date)
+        appts = (
+            db.query(Appointment)
+            .filter(
+                Appointment.tenant_id == tenant.id,
+                Appointment.status == "confirmed",
+                Appointment.date >= now.date(),
+            )
+            .all()
+        )
+        results = []
+        for appt in appts:
+            client = db.query(Client).filter(Client.id == appt.client_id).first()
+            if client:
+                results.append((client, appt))
+        return results
+
     target_time = now + timedelta(hours=hours)
     window_start = target_time - timedelta(minutes=5)
     window_end = target_time + timedelta(minutes=5)
@@ -334,9 +353,19 @@ def _eval_hours_before_appt(db, rule, tenant):
     return results
 
 
-def _eval_hours_after_complete(db, rule, tenant):
+def _eval_hours_after_complete(db, rule, tenant, preview_mode=False):
     """Trigger: X hours after appointment completed."""
     now = _now_colombia()
+
+    if preview_mode:
+        # Preview: all clients with completed appointments recently
+        cutoff = now - timedelta(days=7)
+        appts = db.query(Appointment).filter(
+            Appointment.tenant_id == tenant.id, Appointment.status == "completed",
+            Appointment.updated_at >= cutoff,
+        ).all()
+        return [(db.query(Client).filter(Client.id == a.client_id).first(), a) for a in appts if db.query(Client).filter(Client.id == a.client_id).first()]
+
     hours = (rule.trigger_config or {}).get("hours", 2)
     target_time = now - timedelta(hours=hours)
     window_start = target_time - timedelta(minutes=5)
@@ -361,8 +390,18 @@ def _eval_hours_after_complete(db, rule, tenant):
     return results
 
 
-def _eval_appointment_created(db, rule, tenant):
+def _eval_appointment_created(db, rule, tenant, preview_mode=False):
     """Trigger: New appointment created (within last 5 min)."""
+    if preview_mode:
+        # Preview: all clients with recent confirmed appointments
+        appts = db.query(Appointment).filter(Appointment.tenant_id == tenant.id, Appointment.status == "confirmed").order_by(Appointment.created_at.desc()).limit(50).all()
+        results = []
+        for appt in appts:
+            client = db.query(Client).filter(Client.id == appt.client_id).first()
+            if client:
+                results.append((client, appt))
+        return results
+
     cutoff = datetime.utcnow() - timedelta(minutes=5)
     appts = (
         db.query(Appointment)
@@ -381,8 +420,12 @@ def _eval_appointment_created(db, rule, tenant):
     return results
 
 
-def _eval_appointment_cancelled(db, rule, tenant):
+def _eval_appointment_cancelled(db, rule, tenant, preview_mode=False):
     """Trigger: Appointment cancelled (within last 5 min)."""
+    if preview_mode:
+        appts = db.query(Appointment).filter(Appointment.tenant_id == tenant.id, Appointment.status == "cancelled").limit(50).all()
+        return [(db.query(Client).filter(Client.id == a.client_id).first(), a) for a in appts if db.query(Client).filter(Client.id == a.client_id).first()]
+
     cutoff = datetime.utcnow() - timedelta(minutes=5)
     appts = (
         db.query(Appointment)
@@ -401,9 +444,21 @@ def _eval_appointment_cancelled(db, rule, tenant):
     return results
 
 
-def _eval_no_show(db, rule, tenant):
+def _eval_no_show(db, rule, tenant, preview_mode=False):
     """Trigger: Client was a no-show (checks yesterday's no-shows at eval hour)."""
     now = _now_colombia()
+
+    if preview_mode:
+        # Preview: any no-show clients in last 30 days
+        cutoff = (now - timedelta(days=30)).date()
+        appts = db.query(Appointment).filter(Appointment.tenant_id == tenant.id, Appointment.status == "no_show", Appointment.date >= cutoff).all()
+        results = []
+        for appt in appts:
+            client = db.query(Client).filter(Client.id == appt.client_id).first()
+            if client:
+                results.append((client, appt))
+        return results
+
     eval_hour = rule.eval_hour or 9
     if now.hour != eval_hour:
         return []
@@ -426,17 +481,18 @@ def _eval_no_show(db, rule, tenant):
     return results
 
 
-def _eval_days_since_visit(db, rule, tenant):
+def _eval_days_since_visit(db, rule, tenant, preview_mode=False):
     """Trigger: Client hasn't visited in X days. Universal for any business."""
     now = _now_colombia()
-    eval_hour = rule.eval_hour or 10
-    if now.hour != eval_hour:
-        return []
+
+    if not preview_mode:
+        eval_hour = rule.eval_hour or 10
+        if now.hour != eval_hour:
+            return []
 
     days = (rule.trigger_config or {}).get("days", 30)
     cutoff_date = (now - timedelta(days=days)).date()
 
-    # Subquery: last visit per client
     from sqlalchemy import func
     last_visits = (
         db.query(
@@ -466,8 +522,13 @@ def _eval_days_since_visit(db, rule, tenant):
     return [(c, None) for c in clients]
 
 
-def _eval_new_client(db, rule, tenant):
+def _eval_new_client(db, rule, tenant, preview_mode=False):
     """Trigger: New client registered (within last 5 min)."""
+    if preview_mode:
+        # Preview: all active clients (any new client would match)
+        clients = db.query(Client).filter(Client.tenant_id == tenant.id, Client.is_active == True, Client.accepts_whatsapp == True).all()
+        return [(c, None) for c in clients]
+
     cutoff = datetime.utcnow() - timedelta(minutes=5)
     clients = (
         db.query(Client)
@@ -481,14 +542,15 @@ def _eval_new_client(db, rule, tenant):
     return [(c, None) for c in clients]
 
 
-def _eval_birthday(db, rule, tenant):
+def _eval_birthday(db, rule, tenant, preview_mode=False):
     """Trigger: Client's birthday is today."""
     now = _now_colombia()
-    eval_hour = rule.eval_hour or 9
-    if now.hour != eval_hour:
-        return []
 
-    today = now.date()
+    if not preview_mode:
+        eval_hour = rule.eval_hour or 9
+        if now.hour != eval_hour:
+            return []
+
     clients = (
         db.query(Client)
         .filter(
@@ -500,6 +562,11 @@ def _eval_birthday(db, rule, tenant):
         .all()
     )
 
+    if preview_mode:
+        # Preview: all clients with birthday set (potential reach)
+        return [(c, None) for c in clients]
+
+    today = now.date()
     results = []
     for c in clients:
         if c.birthday and c.birthday.month == today.month and c.birthday.day == today.day:
@@ -507,29 +574,31 @@ def _eval_birthday(db, rule, tenant):
     return results
 
 
-def _eval_visit_milestone(db, rule, tenant):
+def _eval_visit_milestone(db, rule, tenant, preview_mode=False):
     """Trigger: Client reaches X visits."""
     now = _now_colombia()
-    eval_hour = rule.eval_hour or 10
-    if now.hour != eval_hour:
-        return []
+
+    if not preview_mode:
+        eval_hour = rule.eval_hour or 10
+        if now.hour != eval_hour:
+            return []
 
     milestone = (rule.trigger_config or {}).get("milestone", 10)
     from sqlalchemy import func
 
-    visit_counts = (
-        db.query(
-            VisitHistory.client_id,
-            func.count(VisitHistory.id).label("total"),
+    if preview_mode:
+        # Preview: clients approaching or at milestone
+        visit_counts = db.query(VisitHistory.client_id, func.count(VisitHistory.id).label("total")).filter(
+            VisitHistory.tenant_id == tenant.id, VisitHistory.status == "completed",
+        ).group_by(VisitHistory.client_id).having(func.count(VisitHistory.id) >= max(1, milestone - 2)).all()
+    else:
+        visit_counts = (
+            db.query(VisitHistory.client_id, func.count(VisitHistory.id).label("total"))
+            .filter(VisitHistory.tenant_id == tenant.id, VisitHistory.status == "completed")
+            .group_by(VisitHistory.client_id)
+            .having(func.count(VisitHistory.id) == milestone)
+            .all()
         )
-        .filter(
-            VisitHistory.tenant_id == tenant.id,
-            VisitHistory.status == "completed",
-        )
-        .group_by(VisitHistory.client_id)
-        .having(func.count(VisitHistory.id) == milestone)
-        .all()
-    )
 
     results = []
     for vc in visit_counts:
@@ -539,12 +608,29 @@ def _eval_visit_milestone(db, rule, tenant):
     return results
 
 
-def _eval_client_anniversary(db, rule, tenant):
+def _eval_client_anniversary(db, rule, tenant, preview_mode=False):
     """Trigger: 1-year anniversary since client's first visit."""
     now = _now_colombia()
-    eval_hour = rule.eval_hour or 10
-    if now.hour != eval_hour:
-        return []
+
+    if not preview_mode:
+        eval_hour = rule.eval_hour or 10
+        if now.hour != eval_hour:
+            return []
+
+    if preview_mode:
+        # Preview: clients who have been around for ~1 year
+        from sqlalchemy import func
+        one_year_ago = (now - timedelta(days=365)).date()
+        two_years_ago = (now - timedelta(days=730)).date()
+        first_visits = db.query(VisitHistory.client_id, func.min(VisitHistory.visit_date).label("first_visit")).filter(
+            VisitHistory.tenant_id == tenant.id, VisitHistory.status == "completed",
+        ).group_by(VisitHistory.client_id).having(func.min(VisitHistory.visit_date).between(two_years_ago, one_year_ago)).all()
+        results = []
+        for fv in first_visits:
+            client = db.query(Client).filter(Client.id == fv.client_id, Client.is_active == True).first()
+            if client:
+                results.append((client, None))
+        return results
 
     today = now.date()
     one_year_ago = today.replace(year=today.year - 1)
@@ -572,8 +658,13 @@ def _eval_client_anniversary(db, rule, tenant):
     return results
 
 
-def _eval_payment_received(db, rule, tenant):
+def _eval_payment_received(db, rule, tenant, preview_mode=False):
     """Trigger: Appointment marked as paid (within last 5 min)."""
+    if preview_mode:
+        # Preview: clients with any completed & paid appointments
+        clients = db.query(Client).filter(Client.tenant_id == tenant.id, Client.is_active == True, Client.accepts_whatsapp == True).all()
+        return [(c, None) for c in clients]
+
     cutoff = datetime.utcnow() - timedelta(minutes=5)
     appts = (
         db.query(Appointment)
@@ -584,7 +675,6 @@ def _eval_payment_received(db, rule, tenant):
         )
         .all()
     )
-    # Only those with a matching VisitHistory that has payment_method set
     results = []
     for appt in appts:
         visit = (
@@ -604,9 +694,14 @@ def _eval_payment_received(db, rule, tenant):
     return results
 
 
-def _eval_payment_pending(db, rule, tenant):
+def _eval_payment_pending(db, rule, tenant, preview_mode=False):
     """Trigger: Appointment completed 24h ago but no payment recorded."""
     now = _now_colombia()
+
+    if preview_mode:
+        clients = db.query(Client).filter(Client.tenant_id == tenant.id, Client.is_active == True, Client.accepts_whatsapp == True).all()
+        return [(c, None) for c in clients]
+
     eval_hour = rule.eval_hour or 10
     if now.hour != eval_hour:
         return []
@@ -634,7 +729,7 @@ def _eval_payment_pending(db, rule, tenant):
             )
             .first()
         )
-        if not visit:  # No payment recorded
+        if not visit:
             client = db.query(Client).filter(Client.id == appt.client_id).first()
             if client:
                 results.append((client, appt))
@@ -963,17 +1058,12 @@ def preview_audience(db, tenant_id, trigger_type, trigger_config, filter_config)
     if not evaluator:
         return {"total_clients": total_clients, "matching": 0, "sample_names": []}
 
-    # For preview, some triggers need hour override
-    # We temporarily patch eval_hour to current hour so time-gated triggers run
-    original_hour = temp_rule.eval_hour
-    temp_rule.eval_hour = _now_colombia().hour
-
+    # Use preview_mode=True to bypass time windows and show potential reach
     try:
-        candidates = evaluator(db, temp_rule, tenant)
-    except Exception:
+        candidates = evaluator(db, temp_rule, tenant, preview_mode=True)
+    except Exception as e:
+        print(f"[AUTO-ENGINE] Preview error for {trigger_type}: {e}")
         candidates = []
-
-    temp_rule.eval_hour = original_hour
     filtered = _apply_filters(candidates, filter_config)
 
     sample_names = [

@@ -521,25 +521,39 @@ async def submit_to_meta(rule_id: int, db: Session = Depends(get_db), user=Depen
     if not message:
         raise HTTPException(400, "El mensaje no puede estar vacío")
 
-    # Convert variables to Meta format
-    converted_body, variables = _convert_variables_to_meta(message)
+    # Pad message if starts/ends with variable (Meta rejects this)
+    padded_message = message
+    if padded_message.strip().startswith("{{"):
+        padded_message = "Hola " + padded_message
+    if padded_message.strip().endswith("}}"):
+        padded_message = padded_message + "."
 
-    # Build template slug
+    # Convert variables to Meta format
+    converted_body, variables = _convert_variables_to_meta(padded_message)
+
+    # Build template slug — clean for Meta (lowercase, underscores, no special chars)
     base_slug = _AUTOMATION_TEMPLATE_SLUG_MAP.get(rule.trigger_type, "auto_custom")
     slug = f"{base_slug}_{rule.id}"
+    slug = re.sub(r'[^a-z0-9_]', '_', slug.lower())[:64]
 
-    # Example values for Meta
+    # Example values for Meta (comprehensive like old system)
     example_values = {
         "nombre": "Juan",
-        "negocio": tenant.name,
+        "negocio": tenant.name or "Mi Negocio",
         "hora": "10:00 AM",
-        "fecha": "15/04/2026",
+        "fecha": "15 de abril de 2026",
         "profesional": "Carlos",
         "servicio": "Consulta General",
         "dias": "30",
         "descuento": "20%",
+        "monto": "50000",
+        "visitas": "12",
+        "puntos": "500",
+        "telefono": "+573001234567",
+        "direccion": "Calle 123",
+        "plan": "Premium",
     }
-    example_params = [example_values.get(v, v) for v in variables]
+    example_params = [example_values.get(v, f"valor_{v}") for v in variables]
 
     # Determine category
     trigger_def = next((t for t in TRIGGER_DEFINITIONS if t["type"] == rule.trigger_type), None)
@@ -555,7 +569,7 @@ async def submit_to_meta(rule_id: int, db: Session = Depends(get_db), user=Depen
         "type": "BODY",
         "text": converted_body,
     }]
-    if example_params:
+    if variables and example_params:
         components[0]["example"] = {"body_text": [example_params]}
 
     payload = {
