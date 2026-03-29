@@ -130,13 +130,24 @@ def ai_provider_status():
 # BUSINESS CONTEXT BUILDER — Feeds real DB data to the AI
 # ============================================================================
 
-def _build_business_context(db: Session) -> str:
-    """Build a rich context string from the database for the AI."""
+def _build_business_context(db: Session, tenant_id: int = None, location_id: int = None) -> str:
+    """Build a rich context string from the database for the AI.
+    Filters by tenant_id (ALWAYS) and location_id (when multi-location)."""
+    from database.models import Location, StaffLocation
 
     sections = []
 
+    # --- Location header (if multi-location) ---
+    if location_id:
+        loc = db.query(Location).filter(Location.id == location_id).first()
+        if loc:
+            sections.append(f"=== UBICACION ACTIVA ===\nSede: {loc.name}\nDireccion: {loc.address or 'No definida'}\nHorario: {loc.opening_time or '08:00'} - {loc.closing_time or '19:00'}\nIMPORTANTE: La informacion que ves es EXCLUSIVAMENTE de esta sede.\n")
+
     # --- KPIs ---
-    clients_all = db.query(Client).filter(Client.is_active == True).all()
+    clients_q = db.query(Client).filter(Client.is_active == True)
+    if tenant_id:
+        clients_q = clients_q.filter(Client.tenant_id == tenant_id)
+    clients_all = clients_q.all()
     enriched = [compute_client_list_item(c, db) for c in clients_all]
     total = len(enriched)
     by_status = {}
@@ -164,8 +175,22 @@ Ingreso total registrado: ${total_revenue:,} COP""")
     sections.append("=== LISTA DE CLIENTES ===\n" + "\n".join(client_lines) if client_lines else "=== CLIENTES ===\nNo hay clientes registrados.")
 
     # --- Staff (compact, show active + inactive separately) ---
-    staff_active = db.query(Staff).filter(Staff.is_active == True).all()
-    staff_inactive = db.query(Staff).filter(Staff.is_active == False).all()
+    staff_q = db.query(Staff).filter(Staff.is_active == True)
+    staff_iq = db.query(Staff).filter(Staff.is_active == False)
+    if tenant_id:
+        staff_q = staff_q.filter(Staff.tenant_id == tenant_id)
+        staff_iq = staff_iq.filter(Staff.tenant_id == tenant_id)
+    if location_id:
+        loc_staff_ids = [sl.staff_id for sl in db.query(StaffLocation).filter(StaffLocation.location_id == location_id).all()]
+        if loc_staff_ids:
+            staff_q = staff_q.filter(Staff.id.in_(loc_staff_ids))
+            staff_iq = staff_iq.filter(Staff.id.in_(loc_staff_ids))
+        else:
+            # No staff assigned to location — fall back to primary_location
+            staff_q = staff_q.filter(Staff.primary_location_id == location_id)
+            staff_iq = staff_iq.filter(Staff.primary_location_id == location_id)
+    staff_active = staff_q.all()
+    staff_inactive = staff_iq.all()
     staff_lines = [f"  - ID:{s.id} {s.name} ({s.role})" for s in staff_active]
     if staff_inactive:
         staff_lines.append("  --- DESACTIVADOS ---")
@@ -173,13 +198,12 @@ Ingreso total registrado: ${total_revenue:,} COP""")
     sections.append("=== EQUIPO ===\n" + "\n".join(staff_lines) if staff_lines else "=== EQUIPO ===\nNo hay staff.")
 
     # --- Recent visits (last 10) ---
-    recent_visits = (
-        db.query(VisitHistory)
-        .filter(VisitHistory.status == "completed")
-        .order_by(VisitHistory.visit_date.desc())
-        .limit(10)
-        .all()
-    )
+    visits_q = db.query(VisitHistory).filter(VisitHistory.status == "completed")
+    if tenant_id:
+        visits_q = visits_q.filter(VisitHistory.tenant_id == tenant_id)
+    if location_id:
+        visits_q = visits_q.filter(VisitHistory.location_id == location_id)
+    recent_visits = visits_q.order_by(VisitHistory.visit_date.desc()).limit(10).all()
     if recent_visits:
         visit_lines = []
         for v in recent_visits:
@@ -192,20 +216,21 @@ Ingreso total registrado: ${total_revenue:,} COP""")
         sections.append("=== ULTIMAS VISITAS ===\n" + "\n".join(visit_lines))
 
     # --- Top services ---
-    top_services = (
-        db.query(VisitHistory.service_name, func.count().label("cnt"), func.sum(VisitHistory.amount).label("total"))
-        .filter(VisitHistory.status == "completed")
-        .group_by(VisitHistory.service_name)
-        .order_by(func.count().desc())
-        .limit(10)
-        .all()
-    )
+    top_q = db.query(VisitHistory.service_name, func.count().label("cnt"), func.sum(VisitHistory.amount).label("total")).filter(VisitHistory.status == "completed")
+    if tenant_id:
+        top_q = top_q.filter(VisitHistory.tenant_id == tenant_id)
+    if location_id:
+        top_q = top_q.filter(VisitHistory.location_id == location_id)
+    top_services = top_q.group_by(VisitHistory.service_name).order_by(func.count().desc()).limit(10).all()
     if top_services:
         svc_lines = [f"  - {s.service_name}: {s.cnt} veces, ${s.total:,} COP" for s in top_services]
         sections.append("=== SERVICIOS MAS POPULARES ===\n" + "\n".join(svc_lines))
 
-    # --- Service catalog (compact: name, price, duration only) ---
-    all_services = db.query(Service).filter(Service.is_active == True).order_by(Service.category, Service.name).all()
+    # --- Service catalog (compact: name, price, duration only) — SHARED across locations ---
+    svc_cat_q = db.query(Service).filter(Service.is_active == True)
+    if tenant_id:
+        svc_cat_q = svc_cat_q.filter(Service.tenant_id == tenant_id)
+    all_services = svc_cat_q.order_by(Service.category, Service.name).all()
     if all_services:
         catalog_lines = []
         current_cat = None
@@ -220,10 +245,12 @@ Ingreso total registrado: ${total_revenue:,} COP""")
     # --- Upcoming appointments (today + next 3 days) ---
     today = _today_colombia(db)
     upcoming_end = today + timedelta(days=3)
-    upcoming_apts = db.query(Appointment).filter(
-        Appointment.date >= today,
-        Appointment.date <= upcoming_end
-    ).order_by(Appointment.date, Appointment.time).all()
+    apt_q = db.query(Appointment).filter(Appointment.date >= today, Appointment.date <= upcoming_end)
+    if tenant_id:
+        apt_q = apt_q.filter(Appointment.tenant_id == tenant_id)
+    if location_id:
+        apt_q = apt_q.filter(Appointment.location_id == location_id)
+    upcoming_apts = apt_q.order_by(Appointment.date, Appointment.time).all()
     if upcoming_apts:
         apt_lines = []
         current_day = None
@@ -239,14 +266,12 @@ Ingreso total registrado: ${total_revenue:,} COP""")
         total_today = len([a for a in upcoming_apts if a.date == today])
         sections.append(f"=== AGENDA PROXIMA ({len(upcoming_apts)} citas, {total_today} hoy) ===\n" + "\n".join(apt_lines))
 
-    # --- Global learnings (admin-taught rules — HIGHEST PRIORITY) ---
+    # --- Global learnings (admin-taught rules — SHARED across locations) ---
     from database.models import LinaLearning
-    global_learnings = (
-        db.query(LinaLearning)
-        .filter(LinaLearning.is_active == True)
-        .order_by(LinaLearning.created_at.desc())
-        .all()
-    )
+    learn_q = db.query(LinaLearning).filter(LinaLearning.is_active == True)
+    if tenant_id:
+        learn_q = learn_q.filter(LinaLearning.tenant_id == tenant_id)
+    global_learnings = learn_q.order_by(LinaLearning.created_at.desc()).all()
     if global_learnings:
         rule_lines = []
         by_category = {}
@@ -293,9 +318,12 @@ Ingreso total registrado: ${total_revenue:,} COP""")
     return "\n\n".join(sections)
 
 
-def _build_inbox_context(db: Session) -> str:
+def _build_inbox_context(db: Session, tenant_id: int = None) -> str:
     """Build WhatsApp inbox summary for AI context — includes last messages."""
-    convs = db.query(WhatsAppConversation).order_by(WhatsAppConversation.last_message_at.desc()).limit(20).all()
+    conv_q = db.query(WhatsAppConversation)
+    if tenant_id:
+        conv_q = conv_q.filter(WhatsAppConversation.tenant_id == tenant_id)
+    convs = conv_q.order_by(WhatsAppConversation.last_message_at.desc()).limit(20).all()
     if not convs:
         return "=== INBOX WHATSAPP ===\nNo hay conversaciones activas."
 
@@ -2691,14 +2719,17 @@ REGLA DE PRIVACIDAD ABSOLUTA: Los slots marcados [Ocupado] son de OTROS clientes
     return "\n\n".join(sections)
 
 
-def _build_system_prompt(db: Session, is_whatsapp: bool = False, conv_id: int = None, tenant_id: int = None) -> str:
+def _build_system_prompt(db: Session, is_whatsapp: bool = False, conv_id: int = None, tenant_id: int = None, location_id: int = None) -> str:
     """Build the full system prompt with business context + hardcoded Lina brain + dynamic data."""
-    # Resolve tenant_id from conversation if not provided
-    if not tenant_id and conv_id:
+    # Resolve tenant_id and location_id from conversation if not provided
+    if conv_id:
         from database.models import WhatsAppConversation
         conv_obj = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
         if conv_obj:
-            tenant_id = getattr(conv_obj, 'tenant_id', None)
+            if not tenant_id:
+                tenant_id = getattr(conv_obj, 'tenant_id', None)
+            if not location_id:
+                location_id = getattr(conv_obj, 'location_id', None)
 
     # Filter AIConfig by tenant — CRITICAL for multi-tenant isolation
     if tenant_id:
@@ -3213,8 +3244,8 @@ SEGURIDAD: No expongas credenciales/DB. Solo datos reales. Pagos: NUNCA confirme
 
 {wa_context}"""
 
-    crm_context = _build_business_context(db)
-    inbox_summary = _build_inbox_context(db)
+    crm_context = _build_business_context(db, tenant_id=tenant_id, location_id=location_id)
+    inbox_summary = _build_inbox_context(db, tenant_id=tenant_id)
 
     return f"""{DEFAULT_ADMIN_PERSONALITY}
 
