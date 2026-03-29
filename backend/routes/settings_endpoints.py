@@ -706,3 +706,81 @@ async def update_whatsapp_profile_photo(
     except Exception as e:
         print(f"[WA PHOTO ERROR] {e}")
         raise HTTPException(status_code=500, detail=str(e)[:200])
+
+
+# ════════════════════════════════════════════════════════════
+# WHITE-LABEL BRANDING
+# ════════════════════════════════════════════════════════════
+
+@router.get("/settings/branding")
+async def get_branding(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Get current branding settings for the tenant."""
+    tid = safe_tid(user, db)
+    if not tid:
+        return {"logo_url": None, "brand_color": None, "brand_color_dark": None, "brand_color_accent": None, "brand_name": None}
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(404, "Tenant no encontrado")
+    return {
+        "logo_url": getattr(tenant, 'logo_url', None),
+        "brand_color": getattr(tenant, 'brand_color', None),
+        "brand_color_dark": getattr(tenant, 'brand_color_dark', None),
+        "brand_color_accent": getattr(tenant, 'brand_color_accent', None),
+        "brand_name": getattr(tenant, 'brand_name', None),
+        "name": tenant.name,
+        "business_type": tenant.business_type,
+    }
+
+
+@router.put("/settings/branding")
+async def update_branding(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Update branding settings for the tenant."""
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(404, "Tenant no encontrado")
+
+    if "brand_color" in body:
+        tenant.brand_color = body["brand_color"]
+    if "brand_color_dark" in body:
+        tenant.brand_color_dark = body["brand_color_dark"]
+    if "brand_color_accent" in body:
+        tenant.brand_color_accent = body["brand_color_accent"]
+    if "brand_name" in body:
+        tenant.brand_name = body["brand_name"]
+    if "logo_url" in body:
+        tenant.logo_url = body["logo_url"]
+    if "name" in body:
+        tenant.name = body["name"]
+
+    tenant.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/settings/branding/logo")
+async def upload_logo(file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Upload logo as base64 data URI (stored in DB, no external storage needed)."""
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(404, "Tenant no encontrado")
+
+    import base64
+    content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(400, "Logo demasiado grande (máx 2MB)")
+
+    mime = file.content_type or "image/png"
+    b64 = base64.b64encode(content).decode("utf-8")
+    data_uri = f"data:{mime};base64,{b64}"
+
+    tenant.logo_url = data_uri
+    tenant.updated_at = datetime.utcnow()
+    db.commit()
+
+    return {"ok": True, "logo_url": data_uri}

@@ -271,6 +271,13 @@ class Tenant(Base):
     # Google Reviews
     google_review_url = Column(String(500), nullable=True)  # e.g. "https://g.page/r/xxx/review"
 
+    # White-label Branding
+    logo_url = Column(Text, nullable=True)  # URL or base64 data URI
+    brand_color = Column(String(20), nullable=True)  # Primary color hex e.g. "#2D5A3D"
+    brand_color_dark = Column(String(20), nullable=True)  # Dark variant
+    brand_color_accent = Column(String(20), nullable=True)  # Accent color
+    brand_name = Column(String(200), nullable=True)  # Display name override (e.g. "AlPelo CRM")
+
     # Meta
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

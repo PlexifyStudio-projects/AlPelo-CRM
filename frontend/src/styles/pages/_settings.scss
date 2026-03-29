@@ -1276,3 +1276,139 @@ $_gap-sm: 10px;
   from { opacity: 0; transform: translateY(-6px); max-height: 0; }
   to { opacity: 1; transform: translateY(0); max-height: 2000px; }
 }
+
+// ════════════════════════════════════════════════════
+// BRANDING PANEL — White-label settings
+// ════════════════════════════════════════════════════
+
+.settings__brand-section {
+  margin-bottom: $spacing-xl;
+}
+
+.settings__brand-label {
+  display: flex; align-items: center; gap: 8px;
+  font-size: $font-size-sm; font-weight: $font-weight-semibold; color: $color-gray-700;
+  margin-bottom: 4px;
+}
+
+.settings__brand-optional {
+  font-size: $font-size-2xs; color: $color-gray-400; background: $color-gray-50;
+  padding: 1px 8px; border-radius: $border-radius-full; font-weight: $font-weight-regular;
+}
+
+.settings__brand-hint {
+  font-size: $font-size-xs; color: $color-gray-400; margin-bottom: 8px;
+}
+
+.settings__brand-input {
+  width: 100%; max-width: 400px; padding: 10px 14px;
+  border: 1px solid $border-color; border-radius: $border-radius-sm;
+  font-size: $font-size-sm; color: $color-gray-800; outline: none;
+  &:focus { border-color: $color-primary-light; box-shadow: 0 0 0 3px $color-primary-ghost; }
+}
+
+.settings__brand-logo-area {
+  display: flex; align-items: flex-start; gap: $spacing-lg;
+}
+
+.settings__brand-logo-preview {
+  width: 100px; height: 100px; border-radius: $border-radius-md;
+  border: 2px dashed $color-gray-200; display: flex; align-items: center; justify-content: center;
+  overflow: hidden; background: $color-gray-50; flex-shrink: 0;
+
+  > img { width: 100%; height: 100%; object-fit: contain; }
+}
+
+.settings__brand-logo-placeholder {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  color: $color-gray-300;
+  > span { font-size: $font-size-2xs; }
+}
+
+.settings__brand-logo-actions {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.settings__brand-btn {
+  padding: 8px 18px; border: 1px solid $border-color; border-radius: $border-radius-sm;
+  background: white; color: $color-gray-600; font-size: $font-size-sm; cursor: pointer;
+  transition: all $transition-fast;
+  &:hover { background: $color-gray-50; border-color: $color-gray-200; }
+  &:disabled { opacity: 0.5; }
+  &--danger { color: $color-error; border-color: $color-error-border; &:hover { background: $color-error-bg; } }
+  &--small { padding: 4px 10px; font-size: $font-size-xs; background: none; border: none; color: $color-gray-400; cursor: pointer; &:hover { color: $color-error; } }
+}
+
+.settings__brand-colors {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+}
+
+.settings__brand-color-btn {
+  width: 40px; height: 40px; border-radius: $border-radius-sm; border: 3px solid transparent;
+  cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s ease; background: none; padding: 0;
+
+  &--active { border-color: var(--bc); box-shadow: 0 0 0 2px white, 0 0 0 4px var(--bc); }
+  &:hover { transform: scale(1.1); }
+}
+
+.settings__brand-color-swatch {
+  width: 100%; height: 100%; border-radius: calc($border-radius-sm - 3px); background: var(--bc);
+}
+
+.settings__brand-color-custom {
+  display: flex; align-items: center; gap: 10px;
+  > input[type="color"] {
+    width: 40px; height: 40px; border: 2px solid $border-color; border-radius: $border-radius-sm;
+    cursor: pointer; padding: 2px; background: white;
+  }
+  > span { font-size: $font-size-xs; color: $color-gray-500; }
+}
+
+.settings__brand-preview {
+  display: flex; border-radius: $border-radius-md; overflow: hidden;
+  border: 1px solid $border-color; height: 140px; box-shadow: $shadow-sm;
+}
+
+.settings__brand-preview-sidebar {
+  width: 180px; background: linear-gradient(180deg, color-mix(in srgb, var(--bp) 90%, black) 0%, color-mix(in srgb, var(--bp) 70%, black) 100%);
+  padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  color: white; font-size: $font-size-sm; font-weight: $font-weight-semibold;
+}
+
+.settings__brand-preview-logo {
+  width: 48px; height: 48px; border-radius: $border-radius-sm; object-fit: contain;
+  background: rgba(255,255,255,0.1);
+}
+
+.settings__brand-preview-logo-placeholder {
+  width: 48px; height: 48px; border-radius: $border-radius-sm;
+  background: rgba(255,255,255,0.15); border: 1px dashed rgba(255,255,255,0.3);
+}
+
+.settings__brand-preview-content {
+  flex: 1; padding: 16px; background: $color-gray-50;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.settings__brand-preview-header {
+  font-size: $font-size-md; font-weight: $font-weight-semibold; color: $color-gray-800;
+}
+
+.settings__brand-preview-btn {
+  display: inline-flex; padding: 8px 16px; border-radius: $border-radius-sm;
+  background: var(--bp); color: white; font-size: $font-size-sm; font-weight: $font-weight-medium;
+  align-self: flex-start;
+}
+
+.settings__brand-save {
+  padding-top: $spacing-lg; border-top: 1px solid $border-color-light;
+}
+
+.settings__brand-save-btn {
+  padding: 10px 24px; background: $gradient-primary; color: white; border: none;
+  border-radius: $border-radius-sm; font-size: $font-size-sm; font-weight: $font-weight-semibold;
+  cursor: pointer; transition: all $transition-base; box-shadow: $shadow-colored-primary;
+  &:hover { transform: translateY(-1px); box-shadow: $shadow-lg; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+}

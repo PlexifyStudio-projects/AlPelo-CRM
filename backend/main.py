@@ -74,6 +74,12 @@ def _run_migrations(engine):
         ("whatsapp_message", "sentiment", "VARCHAR(20)"),
         ("whatsapp_message", "sentiment_score", "FLOAT"),
         ("whatsapp_conversation", "last_sentiment", "VARCHAR(20)"),
+        # White-label Branding
+        ("tenant", "logo_url", "TEXT"),
+        ("tenant", "brand_color", "VARCHAR(20)"),
+        ("tenant", "brand_color_dark", "VARCHAR(20)"),
+        ("tenant", "brand_color_accent", "VARCHAR(20)"),
+        ("tenant", "brand_name", "VARCHAR(200)"),
     ]
 
     for table, column, col_type in migrations:

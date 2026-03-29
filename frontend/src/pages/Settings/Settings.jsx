@@ -474,6 +474,7 @@ const Settings = () => {
   const toggleSection = (id) => setOpenSection(prev => prev === id ? null : id);
 
   const sections = [
+    { id: 'brand', title: 'Marca e Identidad', desc: 'Logo, colores, nombre de tu negocio — tu marca en toda la plataforma', color1: '#EC4899', color2: '#F97316' },
     { id: 'lina', title: 'Lina IA', desc: 'Prompt, contexto del negocio y pruebas de la asistente', color1: '#7C3AED', color2: '#A855F7' },
     { id: 'notif', title: 'Notificaciones', desc: 'Alertas de citas, mensajeria y sonidos', color1: '#3B82F6', color2: '#60A5FA' },
     { id: 'meta', title: 'Meta / WhatsApp', desc: 'Conexion, token, perfil y plantillas de WhatsApp Business', color1: '#1877F2', color2: '#00C6FF' },
@@ -499,6 +500,7 @@ const Settings = () => {
       lina: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill={`url(#${gid})`} opacity=".3"/><path d="M9.5 7.5C8 9 6 11 6 14c0 2 1 4 3.5 4.5" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><path d="M14.5 7.5C16 9 18 11 18 14c0 2-1 4-3.5 4.5" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="5.5" r="2.5" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M10 19c0 1.1.9 2 2 2s2-.9 2-2" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="13" r="1" fill={`url(#${gid})`} opacity=".6"/></svg>,
       notif: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill={`url(#${gid})`} opacity=".15"/><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.73 21a2 2 0 0 1-3.46 0" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="18" cy="5" r="3" fill={`url(#${gid})`} opacity=".5"/></svg>,
       meta: <svg width="28" height="28" viewBox="0 0 16 16" fill="none">{grad}<path fillRule="evenodd" d="M8.217 5.243C9.145 3.988 10.171 3 11.483 3 13.96 3 16 6.153 16.001 9.907c0 2.29-.986 3.725-2.757 3.725-1.543 0-2.395-.866-3.924-3.424l-.667-1.123-.118-.197a55 55 0 0 0-.53-.877l-1.178 2.08c-1.673 2.925-2.615 3.541-3.923 3.541C1.086 13.632 0 12.217 0 9.973 0 6.388 1.995 3 4.598 3q.477-.001.924.122c.31.086.611.22.913.407.577.359 1.154.915 1.782 1.714m1.516 2.224q-.378-.615-.727-1.133L9 6.326c.845-1.305 1.543-1.954 2.372-1.954 1.723 0 3.102 2.537 3.102 5.653 0 1.188-.39 1.877-1.195 1.877-.773 0-1.142-.51-2.61-2.87zM4.846 4.756c.725.1 1.385.634 2.34 2.001A212 212 0 0 0 5.551 9.3c-1.357 2.126-1.826 2.603-2.581 2.603-.777 0-1.24-.682-1.24-1.9 0-2.602 1.298-5.264 2.846-5.264q.137 0 .27.018" fill={`url(#${gid})`} /></svg>,
+      brand: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<rect x="3" y="3" width="18" height="18" rx="3" fill={`url(#${gid})`} opacity=".15" /><rect x="3" y="3" width="18" height="18" rx="3" stroke={`url(#${gid})`} strokeWidth="1.5"/><circle cx="12" cy="10" r="3" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M7 18c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/></svg>,
       loyalty: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" fill={`url(#${gid})`} opacity=".15"/><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinejoin="round"/></svg>,
       google: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
     };
@@ -537,6 +539,9 @@ const Settings = () => {
       {/* ═══ EXPANDED CONTENT ═══ */}
       {openSection && (
         <div className={`${b}__panel`} key={openSection}>
+
+          {/* ========== BRANDING / WHITE-LABEL ========== */}
+          {openSection === 'brand' && <BrandingPanel addNotification={addNotification} />}
 
           {/* ========== LINA IA CONFIG ========== */}
           {openSection === 'lina' && (
@@ -1291,5 +1296,202 @@ const Settings = () => {
     </div>
   );
 };
+
+// ════════════════════════════════════════════════════
+// BRANDING PANEL — White-label settings
+// ════════════════════════════════════════════════════
+
+const PRESET_COLORS = [
+  { name: 'Azul Corporativo', color: '#1E40AF' },
+  { name: 'Verde Bosque', color: '#2D5A3D' },
+  { name: 'Rojo Elegante', color: '#DC2626' },
+  { name: 'Morado Premium', color: '#7C3AED' },
+  { name: 'Naranja Cálido', color: '#EA580C' },
+  { name: 'Turquesa Moderno', color: '#0891B2' },
+  { name: 'Rosa Suave', color: '#DB2777' },
+  { name: 'Índigo Profundo', color: '#4338CA' },
+  { name: 'Esmeralda', color: '#059669' },
+  { name: 'Slate Oscuro', color: '#334155' },
+];
+
+function BrandingPanel({ addNotification }) {
+  const { tenant, refreshTenant } = useTenant();
+  const [brandName, setBrandName] = useState('');
+  const [brandColor, setBrandColor] = useState('#1E40AF');
+  const [accentColor, setAccentColor] = useState('');
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+  const bb = 'settings';
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings/branding`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setBrandName(data.brand_name || data.name || '');
+          setBrandColor(data.brand_color || '#1E40AF');
+          setAccentColor(data.brand_color_accent || '');
+          setLogoUrl(data.logo_url || null);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/settings/branding`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          brand_name: brandName,
+          brand_color: brandColor,
+          brand_color_accent: accentColor || null,
+        }),
+      });
+      if (res.ok) {
+        addNotification('Marca actualizada — recarga para ver los cambios', 'success');
+        refreshTenant();
+      } else {
+        addNotification('Error al guardar', 'error');
+      }
+    } catch (e) { addNotification(e.message, 'error'); }
+    setSaving(false);
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { addNotification('Máximo 2MB', 'error'); return; }
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await fetch(`${API_URL}/settings/branding/logo`, {
+        method: 'POST', credentials: 'include', body: form,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLogoUrl(data.logo_url);
+        addNotification('Logo actualizado', 'success');
+        refreshTenant();
+      } else {
+        addNotification('Error al subir logo', 'error');
+      }
+    } catch (e) { addNotification(e.message, 'error'); }
+    setUploading(false);
+  };
+
+  const removeLogo = async () => {
+    try {
+      await fetch(`${API_URL}/settings/branding`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logo_url: null }),
+      });
+      setLogoUrl(null);
+      addNotification('Logo eliminado', 'success');
+      refreshTenant();
+    } catch {}
+  };
+
+  return (
+    <div className={`${bb}__panel-content`}>
+      <h3 className={`${bb}__panel-title`}>Marca e Identidad</h3>
+      <p className={`${bb}__panel-desc`}>Personaliza la apariencia de tu plataforma. Tu equipo y clientes verán tu marca, no la nuestra.</p>
+
+      {/* Logo */}
+      <div className={`${bb}__brand-section`}>
+        <label className={`${bb}__brand-label`}>Logo del negocio</label>
+        <div className={`${bb}__brand-logo-area`}>
+          <div className={`${bb}__brand-logo-preview`}>
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" />
+            ) : (
+              <div className={`${bb}__brand-logo-placeholder`}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                </svg>
+                <span>Sin logo</span>
+              </div>
+            )}
+          </div>
+          <div className={`${bb}__brand-logo-actions`}>
+            <input type="file" ref={fileRef} accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
+            <button className={`${bb}__brand-btn`} onClick={() => fileRef.current?.click()} disabled={uploading}>
+              {uploading ? 'Subiendo...' : logoUrl ? 'Cambiar logo' : 'Subir logo'}
+            </button>
+            {logoUrl && <button className={`${bb}__brand-btn ${bb}__brand-btn--danger`} onClick={removeLogo}>Eliminar</button>}
+            <span className={`${bb}__brand-hint`}>PNG, JPG o SVG. Máximo 2MB.</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Brand Name */}
+      <div className={`${bb}__brand-section`}>
+        <label className={`${bb}__brand-label`}>Nombre de marca</label>
+        <p className={`${bb}__brand-hint`}>Se muestra en el sidebar, título de la página y recibos.</p>
+        <input className={`${bb}__brand-input`} value={brandName} onChange={e => setBrandName(e.target.value)}
+          placeholder="Ej: AlPelo CRM, Mi Barbería, etc." />
+      </div>
+
+      {/* Primary Color */}
+      <div className={`${bb}__brand-section`}>
+        <label className={`${bb}__brand-label`}>Color principal</label>
+        <p className={`${bb}__brand-hint`}>Define el color del sidebar, botones y acentos en toda la plataforma.</p>
+        <div className={`${bb}__brand-colors`}>
+          {PRESET_COLORS.map(p => (
+            <button key={p.color} className={`${bb}__brand-color-btn ${brandColor === p.color ? `${bb}__brand-color-btn--active` : ''}`}
+              style={{ '--bc': p.color }} onClick={() => setBrandColor(p.color)} title={p.name}>
+              <span className={`${bb}__brand-color-swatch`} />
+              {brandColor === p.color && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>}
+            </button>
+          ))}
+          <div className={`${bb}__brand-color-custom`}>
+            <input type="color" value={brandColor} onChange={e => setBrandColor(e.target.value)} />
+            <span>Personalizado</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Accent Color */}
+      <div className={`${bb}__brand-section`}>
+        <label className={`${bb}__brand-label`}>Color de acento <span className={`${bb}__brand-optional`}>Opcional</span></label>
+        <p className={`${bb}__brand-hint`}>Color secundario para badges, highlights y detalles.</p>
+        <div className={`${bb}__brand-color-custom`}>
+          <input type="color" value={accentColor || '#6366F1'} onChange={e => setAccentColor(e.target.value)} />
+          <span>{accentColor || 'No definido (se usa el por defecto)'}</span>
+          {accentColor && <button className={`${bb}__brand-btn--small`} onClick={() => setAccentColor('')}>Quitar</button>}
+        </div>
+      </div>
+
+      {/* Preview */}
+      <div className={`${bb}__brand-section`}>
+        <label className={`${bb}__brand-label`}>Vista previa</label>
+        <div className={`${bb}__brand-preview`} style={{ '--bp': brandColor }}>
+          <div className={`${bb}__brand-preview-sidebar`}>
+            {logoUrl ? <img src={logoUrl} alt="" className={`${bb}__brand-preview-logo`} /> :
+              <div className={`${bb}__brand-preview-logo-placeholder`} />}
+            <span>{brandName || 'Mi Negocio'}</span>
+          </div>
+          <div className={`${bb}__brand-preview-content`}>
+            <div className={`${bb}__brand-preview-header`}>Dashboard</div>
+            <div className={`${bb}__brand-preview-btn`}>Botón principal</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Save */}
+      <div className={`${bb}__brand-save`}>
+        <button className={`${bb}__brand-save-btn`} onClick={handleSave} disabled={saving}>
+          {saving ? 'Guardando...' : 'Guardar cambios de marca'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default Settings;
