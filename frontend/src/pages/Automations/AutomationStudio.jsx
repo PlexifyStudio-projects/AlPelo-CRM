@@ -41,24 +41,74 @@ const LayersIcon = (p) => <Icon {...p} d={<><polygon points="12 2 2 7 12 12 22 7
 const RefreshIcon = (p) => <Icon {...p} d={<><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></>} />;
 const WhatsAppIcon = (p) => <Icon {...p} size={16} fill="#25D366" stroke="none" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />;
 
+// Additional icons for new triggers
+const HeartIcon = (p) => <Icon {...p} d={<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />} />;
+const TrendingUpIcon = (p) => <Icon {...p} d={<><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></>} />;
+const RepeatIcon = (p) => <Icon {...p} d={<><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></>} />;
+const ShieldIcon = (p) => <Icon {...p} d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />;
+const PackageIcon = (p) => <Icon {...p} d={<><line x1="16.5" y1="9.4" x2="7.5" y2="4.21" /><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></>} />;
+const ThumbsUpIcon = (p) => <Icon {...p} d={<><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></>} />;
+const MailIcon = (p) => <Icon {...p} d={<><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></>} />;
+const BellIcon = (p) => <Icon {...p} d={<><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></>} />;
+const ClipboardIcon = (p) => <Icon {...p} d={<><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" /></>} />;
+const MegaphoneIcon = (p) => <Icon {...p} d={<><path d="M3 11l18-5v12L3 13v-2z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" /></>} />;
+const PercentIcon = (p) => <Icon {...p} d={<><line x1="19" y1="5" x2="5" y2="19" /><circle cx="6.5" cy="6.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" /></>} />;
+const CrownIcon = (p) => <Icon {...p} d={<><path d="M2 4l3 12h14l3-12-5 4-5-4-5 4z" /><line x1="2" y1="20" x2="22" y2="20" /></>} />;
+const SettingsIcon = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>} />;
+
 const TRIGGER_ICONS = {
+  // Citas
   hours_before_appt: ClockIcon, hours_after_complete: CheckIcon, appointment_created: CalendarIcon,
-  appointment_cancelled: XIcon, no_show: AlertIcon, days_since_visit: HistoryIcon,
-  new_client: UserPlusIcon, birthday: GiftIcon, visit_milestone: StarIcon,
-  client_anniversary: AwardIcon, payment_received: DollarIcon, payment_pending: DollarIcon,
+  appointment_cancelled: XIcon, appointment_rescheduled: RepeatIcon, no_show: AlertIcon,
+  rebooking_reminder: RefreshIcon,
+  // Clientes
+  new_client: UserPlusIcon, days_since_visit: HistoryIcon, birthday: GiftIcon,
+  visit_milestone: StarIcon, client_anniversary: AwardIcon, vip_reached: CrownIcon,
+  client_at_risk: ShieldIcon,
+  // Marketing
+  satisfaction_survey: ThumbsUpIcon, review_request: StarIcon, referral_program: UsersIcon,
+  seasonal_promo: MegaphoneIcon, winback_offer: PercentIcon, upsell_suggestion: TrendingUpIcon,
+  // Fidelización
+  loyalty_welcome: HeartIcon, loyalty_points: StarIcon, loyalty_reward: GiftIcon,
+  first_visit_thanks: HeartIcon, vip_exclusive: CrownIcon,
+  // Pagos
+  payment_received: DollarIcon, payment_pending: DollarIcon, digital_receipt: ClipboardIcon,
+  membership_expiring: ClockIcon,
+  // Operaciones
+  daily_summary: BarChartIcon, staff_briefing: ClipboardIcon, low_stock_alert: PackageIcon,
+  new_booking_alert: BellIcon,
 };
 
 const TRIGGER_COLORS = {
+  // Citas — Blues
   hours_before_appt: '#3B82F6', hours_after_complete: '#10B981', appointment_created: '#6366F1',
-  appointment_cancelled: '#EF4444', no_show: '#F59E0B', days_since_visit: '#8B5CF6',
-  new_client: '#06B6D4', birthday: '#EC4899', visit_milestone: '#F97316',
-  client_anniversary: '#14B8A6', payment_received: '#10B981', payment_pending: '#F59E0B',
+  appointment_cancelled: '#EF4444', appointment_rescheduled: '#F59E0B', no_show: '#DC2626',
+  rebooking_reminder: '#0EA5E9',
+  // Clientes — Purples/Pinks
+  new_client: '#06B6D4', days_since_visit: '#8B5CF6', birthday: '#EC4899',
+  visit_milestone: '#F97316', client_anniversary: '#14B8A6', vip_reached: '#D97706',
+  client_at_risk: '#EF4444',
+  // Marketing — Warm tones
+  satisfaction_survey: '#10B981', review_request: '#F59E0B', referral_program: '#8B5CF6',
+  seasonal_promo: '#EC4899', winback_offer: '#EF4444', upsell_suggestion: '#F97316',
+  // Fidelización — Gold/Warm
+  loyalty_welcome: '#EC4899', loyalty_points: '#D97706', loyalty_reward: '#10B981',
+  first_visit_thanks: '#06B6D4', vip_exclusive: '#D97706',
+  // Pagos — Greens
+  payment_received: '#10B981', payment_pending: '#F59E0B', digital_receipt: '#3B82F6',
+  membership_expiring: '#EF4444',
+  // Operaciones — Neutrals
+  daily_summary: '#6366F1', staff_briefing: '#3B82F6', low_stock_alert: '#EF4444',
+  new_booking_alert: '#F59E0B',
 };
 
 const CATEGORY_META = {
-  appointments: { label: 'Citas', color: '#3B82F6', icon: CalendarIcon },
+  appointments: { label: 'Citas y Agenda', color: '#3B82F6', icon: CalendarIcon },
   clients: { label: 'Clientes', color: '#8B5CF6', icon: UsersIcon },
-  payments: { label: 'Pagos', color: '#10B981', icon: DollarIcon },
+  marketing: { label: 'Marketing', color: '#EC4899', icon: MegaphoneIcon },
+  loyalty: { label: 'Fidelización', color: '#D97706', icon: HeartIcon },
+  payments: { label: 'Pagos y Facturación', color: '#10B981', icon: DollarIcon },
+  operations: { label: 'Operaciones', color: '#6366F1', icon: SettingsIcon },
 };
 
 const META_STATUS = {

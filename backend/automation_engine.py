@@ -737,19 +737,47 @@ def _eval_payment_pending(db, rule, tenant, preview_mode=False):
 
 
 # Map trigger_type → evaluator function
+# New triggers reuse existing evaluators with the same patterns
 TRIGGER_EVALUATORS = {
+    # Citas
     "hours_before_appt": _eval_hours_before_appt,
     "hours_after_complete": _eval_hours_after_complete,
     "appointment_created": _eval_appointment_created,
     "appointment_cancelled": _eval_appointment_cancelled,
+    "appointment_rescheduled": _eval_appointment_created,  # Same pattern as created (recent changes)
     "no_show": _eval_no_show,
+    "rebooking_reminder": _eval_days_since_visit,  # Same pattern: days since last visit
+    # Clientes
     "days_since_visit": _eval_days_since_visit,
     "new_client": _eval_new_client,
     "birthday": _eval_birthday,
     "visit_milestone": _eval_visit_milestone,
     "client_anniversary": _eval_client_anniversary,
+    "vip_reached": _eval_visit_milestone,  # Same logic: reached X visits
+    "client_at_risk": _eval_days_since_visit,  # Same: days inactive
+    # Marketing
+    "satisfaction_survey": _eval_hours_after_complete,  # Same: X hours after visit
+    "review_request": _eval_hours_after_complete,
+    "referral_program": _eval_new_client,  # Targets all active clients
+    "seasonal_promo": _eval_new_client,  # Targets all active clients
+    "winback_offer": _eval_days_since_visit,  # Same: days without visit
+    "upsell_suggestion": _eval_hours_after_complete,
+    # Fidelización
+    "loyalty_welcome": _eval_new_client,
+    "loyalty_points": _eval_visit_milestone,
+    "loyalty_reward": _eval_new_client,  # All active clients
+    "first_visit_thanks": _eval_hours_after_complete,
+    "vip_exclusive": _eval_new_client,  # Filtered by VIP status in filter_config
+    # Pagos
     "payment_received": _eval_payment_received,
     "payment_pending": _eval_payment_pending,
+    "digital_receipt": _eval_payment_received,
+    "membership_expiring": _eval_days_since_visit,  # Reuse days pattern
+    # Operaciones
+    "daily_summary": _eval_new_client,  # Sends to admin (filtered)
+    "staff_briefing": _eval_hours_before_appt,  # Same: hours before appt
+    "low_stock_alert": _eval_new_client,  # Admin notification
+    "new_booking_alert": _eval_appointment_created,
 }
 
 
