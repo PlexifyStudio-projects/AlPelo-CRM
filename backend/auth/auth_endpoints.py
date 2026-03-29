@@ -58,9 +58,75 @@ def initial_setup(data: AdminSetupRequest, db: Session = Depends(get_db)):
     return AdminResponse.model_validate(admin)
 
 
+@router.post("/users", response_model=AdminResponse)
+def create_admin(data: AdminSetupRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """Create an additional admin user for the same tenant.
+    Only admins and devs can create new admins."""
+    from routes._helpers import safe_tid
+
+    # Only admin or dev can create admins
+    if current_user.role not in ("admin", "dev", "super_admin"):
+        raise HTTPException(status_code=403, detail="No tienes permiso para crear administradores")
+
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 6 caracteres")
+
+    # Check username uniqueness
+    if db.query(Admin).filter(Admin.username == data.username).first():
+        raise HTTPException(status_code=400, detail="Este nombre de usuario ya existe")
+
+    # Check email uniqueness
+    if db.query(Admin).filter(Admin.email == data.email).first():
+        raise HTTPException(status_code=400, detail="Este correo ya está registrado")
+
+    # Assign to same tenant as creator
+    tid = safe_tid(current_user, db) or getattr(current_user, 'tenant_id', None)
+
+    admin = Admin(
+        name=data.name,
+        email=data.email,
+        phone=getattr(data, 'phone', None),
+        username=data.username,
+        password=hash_password(data.password),
+        role="admin",
+        is_active=True,
+        tenant_id=tid,
+    )
+    db.add(admin)
+    db.commit()
+    db.refresh(admin)
+    return AdminResponse.model_validate(admin)
+
+
+@router.delete("/users/{user_id}")
+def delete_admin(user_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """Deactivate an admin user. Cannot delete yourself."""
+    if current_user.id == user_id:
+        raise HTTPException(status_code=400, detail="No puedes eliminarte a ti mismo")
+
+    admin = db.query(Admin).filter(Admin.id == user_id).first()
+    if not admin:
+        raise HTTPException(status_code=404, detail="Administrador no encontrado")
+
+    # Check same tenant
+    from routes._helpers import safe_tid
+    tid = safe_tid(current_user, db)
+    if tid and admin.tenant_id != tid and current_user.role != "dev":
+        raise HTTPException(status_code=403, detail="No tienes acceso a este administrador")
+
+    admin.is_active = False
+    db.commit()
+    return {"ok": True, "message": f"Administrador {admin.name} desactivado"}
+
+
 @router.get("/users", response_model=List[AdminResponse])
-def list_users(db: Session = Depends(get_db)):
-    return [AdminResponse.model_validate(a) for a in db.query(Admin).all()]
+def list_users(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
+    """List admin users. Admins see only their tenant's admins, devs see all."""
+    from routes._helpers import safe_tid
+    tid = safe_tid(current_user, db)
+    if tid and current_user.role != "dev":
+        return [AdminResponse.model_validate(a) for a in db.query(Admin).filter(Admin.tenant_id == tid, Admin.is_active == True).all()]
+    return [AdminResponse.model_validate(a) for a in db.query(Admin).filter(Admin.is_active == True).all()]
 
 
 @router.get("/users/{user_id}", response_model=AdminResponse)

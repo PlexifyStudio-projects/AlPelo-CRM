@@ -15,7 +15,8 @@ from database.connection import get_db
 from database.models import (
     Admin, Tenant, UsageMetrics, PlatformConfig,
     Client, Staff, WhatsAppMessage, WhatsAppConversation,
-    Appointment, Service, VisitHistory, ClientNote
+    Appointment, Service, VisitHistory, ClientNote,
+    Location, StaffLocation,
 )
 from middleware.auth_middleware import get_current_user
 
@@ -1379,4 +1380,127 @@ def fix_conversation_links(db: Session = Depends(get_db), user: Admin = Depends(
         "conversations_fixed_tenant": fixed_tenant,
         "total_conversations": len(all_convs),
         "details": details,
+    }
+
+
+# ============================================================================
+# LOCATION MANAGEMENT (Dev Panel — manage sedes per tenant)
+# ============================================================================
+
+@router.get("/dev/tenants/{tenant_id}/locations")
+def dev_list_locations(tenant_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """List all locations for a tenant (dev only)."""
+    if user.role not in DEV_ROLES:
+        raise HTTPException(403, "Dev only")
+    locations = db.query(Location).filter(Location.tenant_id == tenant_id).order_by(Location.is_default.desc(), Location.name).all()
+    return [_serialize_location(loc, db) for loc in locations]
+
+
+@router.post("/dev/tenants/{tenant_id}/locations")
+def dev_create_location(tenant_id: int, body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Create a location for a tenant (dev only)."""
+    if user.role not in DEV_ROLES:
+        raise HTTPException(403, "Dev only")
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(404, "Tenant no encontrado")
+
+    import re
+    name = body.get("name", "").strip()
+    if not name:
+        raise HTTPException(400, "Nombre requerido")
+    slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+
+    existing_count = db.query(Location).filter(Location.tenant_id == tenant_id).count()
+
+    loc = Location(
+        tenant_id=tenant_id,
+        name=name,
+        slug=slug,
+        address=body.get("address"),
+        phone=body.get("phone"),
+        opening_time=body.get("opening_time", "08:00"),
+        closing_time=body.get("closing_time", "19:00"),
+        days_open=body.get("days_open", [0, 1, 2, 3, 4, 5]),
+        is_default=existing_count == 0,
+        is_active=True,
+    )
+    db.add(loc)
+    db.commit()
+    db.refresh(loc)
+    return _serialize_location(loc, db)
+
+
+@router.put("/dev/locations/{location_id}")
+def dev_update_location(location_id: int, body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Update a location (dev only)."""
+    if user.role not in DEV_ROLES:
+        raise HTTPException(403, "Dev only")
+    loc = db.query(Location).filter(Location.id == location_id).first()
+    if not loc:
+        raise HTTPException(404, "Sede no encontrada")
+    for field in ["name", "address", "phone", "opening_time", "closing_time", "days_open", "wa_phone_number_id", "is_active"]:
+        if field in body:
+            setattr(loc, field, body[field])
+    loc.updated_at = datetime.utcnow()
+    db.commit()
+    return _serialize_location(loc, db)
+
+
+@router.delete("/dev/locations/{location_id}")
+def dev_delete_location(location_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Delete a location (dev only)."""
+    if user.role not in DEV_ROLES:
+        raise HTTPException(403, "Dev only")
+    loc = db.query(Location).filter(Location.id == location_id).first()
+    if not loc:
+        raise HTTPException(404, "Sede no encontrada")
+    loc.is_active = False
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/dev/locations/{location_id}/assign-staff")
+def dev_assign_staff_to_location(location_id: int, body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Assign staff to a location (dev only)."""
+    if user.role not in DEV_ROLES:
+        raise HTTPException(403, "Dev only")
+    loc = db.query(Location).filter(Location.id == location_id).first()
+    if not loc:
+        raise HTTPException(404, "Sede no encontrada")
+
+    staff_ids = body.get("staff_ids", [])
+    is_primary = body.get("is_primary", False)
+    assigned = 0
+    for sid in staff_ids:
+        existing = db.query(StaffLocation).filter(StaffLocation.staff_id == sid, StaffLocation.location_id == location_id).first()
+        if not existing:
+            db.add(StaffLocation(staff_id=sid, location_id=location_id, is_primary=is_primary))
+            assigned += 1
+        if is_primary:
+            staff = db.query(Staff).filter(Staff.id == sid).first()
+            if staff:
+                staff.primary_location_id = location_id
+    db.commit()
+    return {"ok": True, "assigned": assigned}
+
+
+def _serialize_location(loc, db):
+    staff_count = db.query(StaffLocation).filter(StaffLocation.location_id == loc.id).count()
+    apt_count = db.query(Appointment).filter(Appointment.location_id == loc.id).count()
+    return {
+        "id": loc.id,
+        "tenant_id": loc.tenant_id,
+        "name": loc.name,
+        "slug": loc.slug,
+        "address": loc.address,
+        "phone": loc.phone,
+        "opening_time": loc.opening_time,
+        "closing_time": loc.closing_time,
+        "days_open": loc.days_open,
+        "wa_phone_number_id": loc.wa_phone_number_id,
+        "is_active": loc.is_active,
+        "is_default": loc.is_default,
+        "staff_count": staff_count,
+        "appointments_count": apt_count,
     }
