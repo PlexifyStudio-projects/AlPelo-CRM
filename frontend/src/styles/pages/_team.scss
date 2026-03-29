@@ -2283,3 +2283,86 @@
     }
   }
 }
+
+// ════════════════════════════════════════════
+// ADMINS PANEL
+// ════════════════════════════════════════════
+
+.team__admins {
+  background: white;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-md;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+}
+
+.team__admins-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: $spacing-md;
+  > svg { color: $color-primary; }
+  h3 { font-size: $font-size-sm; font-weight: $font-weight-semibold; color: $color-gray-700; }
+}
+
+.team__admins-count {
+  background: $color-primary-ghost; color: $color-primary; font-size: $font-size-2xs;
+  font-weight: $font-weight-bold; padding: 2px 8px; border-radius: $border-radius-full;
+}
+
+.team__admins-add {
+  margin-left: auto; background: none; border: 1px solid $border-color; border-radius: $border-radius-sm;
+  padding: 5px 14px; font-size: $font-size-xs; color: $color-gray-500; cursor: pointer;
+  transition: all $transition-fast;
+  &:hover { border-color: $color-primary; color: $color-primary; }
+}
+
+.team__admins-form {
+  padding: $spacing-md; background: $color-gray-50; border-radius: $border-radius-sm;
+  margin-bottom: $spacing-md; border: 1px solid $border-color-light;
+}
+
+.team__admins-form-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;
+  > input {
+    padding: 9px 12px; border: 1px solid $border-color; border-radius: $border-radius-xs;
+    font-size: $font-size-sm; color: $color-gray-700; outline: none;
+    &:focus { border-color: $color-primary-light; box-shadow: 0 0 0 2px $color-primary-ghost; }
+    &::placeholder { color: $color-gray-300; }
+  }
+}
+
+.team__admins-error {
+  color: $color-error; font-size: $font-size-xs; margin-top: 6px;
+}
+
+.team__admins-list {
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.team__admins-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+  background: $color-gray-50; border-radius: $border-radius-sm; border: 1px solid $border-color-light;
+}
+
+.team__admins-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: $gradient-primary; color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: $font-size-sm; font-weight: $font-weight-bold; flex-shrink: 0;
+}
+
+.team__admins-info {
+  flex: 1; min-width: 0;
+  strong { display: block; font-size: $font-size-sm; color: $color-gray-800; }
+  span { display: block; font-size: $font-size-xs; color: $color-gray-400; margin-top: 1px; }
+}
+
+.team__admins-role {
+  font-size: $font-size-2xs; font-weight: $font-weight-semibold; color: $color-primary;
+  background: $color-primary-ghost; padding: 3px 10px; border-radius: $border-radius-full;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.team__admins-deactivate {
+  background: none; border: none; color: $color-gray-400; cursor: pointer; padding: 4px;
+  border-radius: $border-radius-xs;
+  &:hover { color: $color-error; background: $color-error-bg; }
+}

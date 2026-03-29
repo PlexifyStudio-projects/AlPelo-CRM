@@ -1086,6 +1086,9 @@ const Team = () => {
         </div>
       </div>
 
+      {/* Admin Users Section */}
+      <AdminsPanel />
+
       {/* Filters */}
       <div className={`${b}__toolbar`}>
         <div className={`${b}__search`}>
@@ -1223,5 +1226,117 @@ const Team = () => {
     </div>
   );
 };
+
+// ════════════════════════════════════════════
+// ADMINS PANEL — Manage admin users for the tenant
+// ════════════════════════════════════════════
+
+const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+function AdminsPanel() {
+  const [admins, setAdmins] = useState([]);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', username: '', password: '', phone: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const { addNotification } = useNotification();
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/auth/users`, { credentials: 'include' });
+      if (res.ok) setAdmins(await res.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleCreate = async () => {
+    setError('');
+    if (!form.name || !form.username || !form.password || !form.email) {
+      setError('Todos los campos son requeridos');
+      return;
+    }
+    if (form.password.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/users`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        addNotification('Administrador creado exitosamente', 'success');
+        setForm({ name: '', email: '', username: '', password: '', phone: '' });
+        setShowAdd(false);
+        load();
+      } else {
+        const err = await res.json();
+        setError(err.detail || 'Error al crear');
+      }
+    } catch (e) { setError(e.message); }
+    setSaving(false);
+  };
+
+  const handleDeactivate = async (id, name) => {
+    if (!window.confirm(`¿Desactivar a ${name}?`)) return;
+    try {
+      const res = await fetch(`${API_URL}/auth/users/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (res.ok) { addNotification(`${name} desactivado`, 'success'); load(); }
+    } catch {}
+  };
+
+  if (admins.length === 0) return null;
+
+  return (
+    <div className={`${b}__admins`}>
+      <div className={`${b}__admins-header`}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" />
+          <path d="M20 8v6" /><path d="M23 11h-6" />
+        </svg>
+        <h3>Administradores</h3>
+        <span className={`${b}__admins-count`}>{admins.length}</span>
+        <button className={`${b}__admins-add`} onClick={() => setShowAdd(!showAdd)}>
+          {showAdd ? 'Cancelar' : '+ Agregar admin'}
+        </button>
+      </div>
+
+      {showAdd && (
+        <div className={`${b}__admins-form`}>
+          <div className={`${b}__admins-form-grid`}>
+            <input placeholder="Nombre completo" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+            <input placeholder="Correo electrónico" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+            <input placeholder="Usuario" value={form.username} onChange={e => setForm({...form, username: e.target.value})} />
+            <input placeholder="Contraseña (mín 6 chars)" type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
+            <input placeholder="Teléfono (opcional)" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+          </div>
+          {error && <p className={`${b}__admins-error`}>{error}</p>}
+          <button className={`${b}__btn ${b}__btn--primary`} onClick={handleCreate} disabled={saving} style={{ marginTop: 8 }}>
+            {saving ? 'Creando...' : 'Crear administrador'}
+          </button>
+        </div>
+      )}
+
+      <div className={`${b}__admins-list`}>
+        {admins.map(a => (
+          <div key={a.id} className={`${b}__admins-item`}>
+            <div className={`${b}__admins-avatar`}>{(a.name || 'A').charAt(0).toUpperCase()}</div>
+            <div className={`${b}__admins-info`}>
+              <strong>{a.name}</strong>
+              <span>{a.username} · {a.email}</span>
+            </div>
+            <span className={`${b}__admins-role`}>{a.role}</span>
+            <button className={`${b}__admins-deactivate`} onClick={() => handleDeactivate(a.id, a.name)} title="Desactivar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default Team;

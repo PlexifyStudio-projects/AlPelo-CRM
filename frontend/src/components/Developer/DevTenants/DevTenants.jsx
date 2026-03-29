@@ -309,6 +309,9 @@ const DevTenants = () => {
                 </button>
               </div>
 
+              {/* Sedes / Locations */}
+              <LocationsPanel tenantId={t.id} />
+
               <div className={`${b}__status-row`}>
                 <span className={`${b}__status ${t.ai_is_paused ? `${b}__status--off` : `${b}__status--on`}`}>
                   IA {t.ai_is_paused ? 'Pausada' : 'Activa'}
@@ -417,5 +420,93 @@ const DevTenants = () => {
     </div>
   );
 };
+
+// ════════════════════════════════════════════
+// LOCATIONS PANEL — Manage sedes per tenant
+// ════════════════════════════════════════════
+function LocationsPanel({ tenantId }) {
+  const [locations, setLocations] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newAddr, setNewAddr] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/dev/tenants/${tenantId}/locations`, { credentials: 'include' });
+      if (res.ok) setLocations(await res.json());
+    } catch {}
+  }, [tenantId]);
+
+  useEffect(() => { if (open) load(); }, [open, load]);
+
+  const handleCreate = async () => {
+    if (!newName.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/dev/tenants/${tenantId}/locations`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName, address: newAddr }),
+      });
+      if (res.ok) { setNewName(''); setNewAddr(''); setAdding(false); load(); }
+    } catch {}
+    setSaving(false);
+  };
+
+  const handleDelete = async (locId) => {
+    try {
+      await fetch(`${API_URL}/dev/locations/${locId}`, { method: 'DELETE', credentials: 'include' });
+      load();
+    } catch {}
+  };
+
+  return (
+    <div className={`${b}__locations`}>
+      <button className={`${b}__locations-toggle`} onClick={() => setOpen(!open)}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+        </svg>
+        Sedes ({locations.length || '...'})
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 'auto', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open && (
+        <div className={`${b}__locations-list`}>
+          {locations.map(loc => (
+            <div key={loc.id} className={`${b}__location-item`}>
+              <div className={`${b}__location-info`}>
+                <strong>{loc.name}</strong>
+                {loc.is_default && <span className={`${b}__location-badge`}>Principal</span>}
+                <span className={`${b}__location-meta`}>{loc.address || 'Sin dirección'} · {loc.staff_count} staff · {loc.appointments_count} citas</span>
+              </div>
+              {!loc.is_default && (
+                <button className={`${b}__location-del`} onClick={() => handleDelete(loc.id)} title="Desactivar">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+              )}
+            </div>
+          ))}
+          {adding ? (
+            <div className={`${b}__location-form`}>
+              <input placeholder="Nombre de la sede" value={newName} onChange={e => setNewName(e.target.value)} className={`${b}__location-input`} />
+              <input placeholder="Dirección (opcional)" value={newAddr} onChange={e => setNewAddr(e.target.value)} className={`${b}__location-input`} />
+              <div className={`${b}__location-form-btns`}>
+                <button onClick={handleCreate} disabled={saving || !newName.trim()} className={`${b}__action-btn ${b}__action-btn--success`}>{saving ? 'Creando...' : 'Crear'}</button>
+                <button onClick={() => setAdding(false)} className={`${b}__action-btn`}>Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <button className={`${b}__location-add`} onClick={() => setAdding(true)}>
+              + Agregar sede
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default DevTenants;
