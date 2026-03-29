@@ -290,16 +290,6 @@ async def create_automation(body: dict, db: Session = Depends(get_db), user=Depe
     if not tid:
         raise HTTPException(400, "No tenant assigned")
 
-    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-    plan_limit = get_plan_limit(tenant) if tenant else 3
-    current_count = db.query(AutomationRule).filter(AutomationRule.tenant_id == tid).count()
-
-    if current_count >= plan_limit:
-        raise HTTPException(
-            403,
-            f"Límite de automatizaciones alcanzado ({plan_limit} en plan {tenant.plan}). Actualiza tu plan para crear más."
-        )
-
     trigger_type = body.get("trigger_type")
     if trigger_type not in TRIGGER_EVALUATORS:
         raise HTTPException(400, f"Trigger type '{trigger_type}' no válido")
@@ -412,12 +402,6 @@ async def duplicate_automation(rule_id: int, db: Session = Depends(get_db), user
     ).first()
     if not rule:
         raise HTTPException(404, "Automatización no encontrada")
-
-    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-    plan_limit = get_plan_limit(tenant) if tenant else 3
-    current_count = db.query(AutomationRule).filter(AutomationRule.tenant_id == tid).count()
-    if current_count >= plan_limit:
-        raise HTTPException(403, f"Límite de plan alcanzado ({plan_limit})")
 
     new_rule = AutomationRule(
         tenant_id=tid,
