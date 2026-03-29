@@ -858,6 +858,53 @@
 }
 
 // ============================================
+// WHITE-LABEL BRANDED SIDEBAR
+// When tenant has brand_color set, override the default navy with their color
+// ============================================
+
+.sidebar--branded {
+  // Override sidebar background with brand color (dark gradient)
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand) 85%, black) 0%,
+    color-mix(in srgb, var(--brand) 65%, black) 50%,
+    color-mix(in srgb, var(--brand) 85%, black) 100%
+  );
+
+  // Active nav items use brand color
+  .sidebar__nav-link--active {
+    background: rgba(255, 255, 255, 0.12);
+    border-left-color: white;
+
+    .sidebar__nav-text { color: white; }
+  }
+
+  // Logo icon background with brand tint
+  .sidebar__logo-icon {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+
+  // Category labels
+  .sidebar__nav-category { color: rgba(255, 255, 255, 0.4); }
+
+  // Badge
+  .sidebar__user-badge { background: rgba(255, 255, 255, 0.15); color: white; }
+
+  // Collapse button
+  .sidebar__collapse-btn {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+
+    &:hover { background: rgba(255, 255, 255, 0.15); color: white; }
+  }
+
+  // Usage bar
+  .sidebar__usage-fill { background: white; }
+}
+
+// ============================================
 // SIDEBAR KEYFRAMES
 // ============================================
 @keyframes sidebarOnlinePulse {

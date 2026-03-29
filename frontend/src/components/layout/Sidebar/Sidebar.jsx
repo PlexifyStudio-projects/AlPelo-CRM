@@ -143,7 +143,8 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
   const userRole = user?.role === 'admin' ? 'Administrador' : user?.role === 'dev' ? 'Desarrollador' : 'Profesional';
 
   return (
-    <aside className={`${b} ${isCollapsed ? `${b}--collapsed` : ''} ${isMobileOpen ? `${b}--mobile-open` : ''}`}>
+    <aside className={`${b} ${isCollapsed ? `${b}--collapsed` : ''} ${isMobileOpen ? `${b}--mobile-open` : ''} ${tenant.brand_color ? `${b}--branded` : ''}`}
+      style={tenant.brand_color ? { '--brand': tenant.brand_color } : undefined}>
       {/* Brand */}
       <div className={`${b}__brand`}>
         <div className={`${b}__brand-inner`}>
