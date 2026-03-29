@@ -15,7 +15,7 @@ import Finances from '../pages/Finances/Finances';
 import LinaActivity from '../pages/LinaActivity/LinaActivity';
 import Campaigns from '../pages/Campaigns/Campaigns';
 import ContentStudio from '../pages/ContentStudio/ContentStudio';
-import Automations from '../pages/Automations/Automations';
+import Automations from '../pages/Automations/AutomationStudio';
 import Profile from '../pages/Profile/Profile';
 import AdminProfile from '../pages/AdminProfile/AdminProfile';
 import Settings from '../pages/Settings/Settings';

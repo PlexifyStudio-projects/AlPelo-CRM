@@ -505,6 +505,85 @@ class WorkflowExecution(Base):
 
 
 # ============================================================================
+# AUTOMATION STUDIO — User-created automations (replaces hardcoded workflows)
+# ============================================================================
+
+class AutomationRule(Base):
+    """User-created automation rule. Universal triggers for any business type.
+    Replaces the 42 hardcoded WorkflowTemplate functions with a generic engine."""
+    __tablename__ = "automation_rule"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    name = Column(String(200), nullable=False)  # "Recordatorio de cita 24h"
+
+    # Trigger: WHEN does it fire?
+    trigger_type = Column(String(50), nullable=False)
+    # Trigger types: hours_before_appt, hours_after_complete, appointment_created,
+    # appointment_cancelled, no_show, days_since_visit, new_client, birthday,
+    # visit_milestone, client_anniversary, payment_received, payment_pending
+    trigger_config = Column(JSON, nullable=False, default=dict)
+    # { "hours": 24, "eval_hour": 10, "days": 30, "milestone": 10 }
+
+    # Filter: WHO receives it?
+    filter_config = Column(JSON, nullable=False, default=dict)
+    # { "status": ["vip","activo"], "tags": ["premium"], "min_visits": 5,
+    #   "min_spend": 100000, "service": "Corte", "accepts_whatsapp": true }
+
+    # Action: WHAT does it do?
+    action_type = Column(String(30), nullable=False, default="send_whatsapp")
+    # Action types: send_whatsapp, notify_admin, update_tag, create_note
+    action_config = Column(JSON, nullable=False, default=dict)
+    # { "message": "Hola {{nombre}}...", "template_name": "react_30",
+    #   "template_language": "es", "variables": ["nombre","negocio","dias"] }
+
+    # Chain: follow-up if no reply
+    chain_config = Column(JSON, nullable=True)
+    # { "if_no_reply_days": 3, "then_message": "...", "then_template_name": "..." }
+
+    # Meta approval
+    meta_template_name = Column(String(100), nullable=True)
+    meta_template_status = Column(String(20), nullable=False, default="draft")
+    # draft, pending, approved, rejected
+
+    # Execution control
+    is_enabled = Column(Boolean, default=False)
+    cooldown_days = Column(Integer, nullable=False, default=1)  # Don't repeat to same client in X days
+    max_per_day = Column(Integer, nullable=False, default=20)  # Max sends per day
+    eval_hour = Column(Integer, nullable=True)  # Hour to evaluate (null = realtime)
+
+    # Stats
+    stats_sent = Column(Integer, default=0)
+    stats_responded = Column(Integer, default=0)
+    stats_failed = Column(Integer, default=0)
+    last_triggered_at = Column(DateTime, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    tenant = relationship("Tenant", foreign_keys=[tenant_id])
+
+
+class AutomationExecution(Base):
+    """Log of each automation execution — tracks what was sent to whom."""
+    __tablename__ = "automation_execution"
+
+    id = Column(Integer, primary_key=True, index=True)
+    automation_id = Column(Integer, ForeignKey("public.automation_rule.id"), nullable=False)
+    tenant_id = Column(Integer, ForeignKey("public.tenant.id"), nullable=False)
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
+    appointment_id = Column(Integer, ForeignKey("public.appointment.id"), nullable=True)
+    phone = Column(String, nullable=False)
+    message_sent = Column(Text, nullable=False)
+    is_chain = Column(Boolean, default=False)  # True if this is a follow-up chain message
+    status = Column(String(20), default="sent")  # sent, delivered, failed, responded
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    automation = relationship("AutomationRule", foreign_keys=[automation_id])
+
+
+# ============================================================================
 # AI MEMORY — Long-term client memory with embeddings (pgvector)
 # ============================================================================
 

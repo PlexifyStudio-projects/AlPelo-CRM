@@ -264,6 +264,75 @@ def _run_migrations(engine):
     except Exception as e:
         print(f"[MIGRATION] AI model switch: {e}")
 
+    # --- automation_rule table (Automation Studio) ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='automation_rule'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.automation_rule (
+                        id SERIAL PRIMARY KEY,
+                        tenant_id INTEGER NOT NULL REFERENCES public.tenant(id),
+                        name VARCHAR(200) NOT NULL,
+                        trigger_type VARCHAR(50) NOT NULL,
+                        trigger_config JSON NOT NULL DEFAULT '{}',
+                        filter_config JSON NOT NULL DEFAULT '{}',
+                        action_type VARCHAR(30) NOT NULL DEFAULT 'send_whatsapp',
+                        action_config JSON NOT NULL DEFAULT '{}',
+                        chain_config JSON,
+                        meta_template_name VARCHAR(100),
+                        meta_template_status VARCHAR(20) NOT NULL DEFAULT 'draft',
+                        is_enabled BOOLEAN DEFAULT FALSE,
+                        cooldown_days INTEGER NOT NULL DEFAULT 1,
+                        max_per_day INTEGER NOT NULL DEFAULT 20,
+                        eval_hour INTEGER,
+                        stats_sent INTEGER DEFAULT 0,
+                        stats_responded INTEGER DEFAULT 0,
+                        stats_failed INTEGER DEFAULT 0,
+                        last_triggered_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_automation_rule_tenant ON public.automation_rule(tenant_id)"))
+                conn.execute(text("CREATE INDEX idx_automation_rule_enabled ON public.automation_rule(tenant_id, is_enabled)"))
+                print("[MIGRATION] Created automation_rule table")
+    except Exception as e:
+        print(f"[MIGRATION] automation_rule table: {e}")
+
+    # --- automation_execution table (Automation Studio logs) ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='automation_execution'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.automation_execution (
+                        id SERIAL PRIMARY KEY,
+                        automation_id INTEGER NOT NULL REFERENCES public.automation_rule(id) ON DELETE CASCADE,
+                        tenant_id INTEGER NOT NULL REFERENCES public.tenant(id),
+                        client_id INTEGER REFERENCES public.client(id),
+                        appointment_id INTEGER REFERENCES public.appointment(id),
+                        phone VARCHAR NOT NULL,
+                        message_sent TEXT NOT NULL,
+                        is_chain BOOLEAN DEFAULT FALSE,
+                        status VARCHAR(20) DEFAULT 'sent',
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_auto_exec_automation ON public.automation_execution(automation_id)"))
+                conn.execute(text("CREATE INDEX idx_auto_exec_tenant ON public.automation_execution(tenant_id)"))
+                conn.execute(text("CREATE INDEX idx_auto_exec_client ON public.automation_execution(client_id)"))
+                conn.execute(text("CREATE INDEX idx_auto_exec_created ON public.automation_execution(created_at DESC)"))
+                print("[MIGRATION] Created automation_execution table")
+    except Exception as e:
+        print(f"[MIGRATION] automation_execution table: {e}")
+
     # NOTE: Dev users, tenants, and admins are all created from the Developer panel — no seeds.
 
 
@@ -443,6 +512,9 @@ app.include_router(inventory_router, prefix="/api", tags=["Inventory"])
 
 from routes.register_endpoints import router as register_router
 app.include_router(register_router, prefix="/api", tags=["Public Register"])
+
+from routes.automation_studio_endpoints import router as automation_studio_router
+app.include_router(automation_studio_router, prefix="/api", tags=["Automation Studio"])
 
 
 # ============================================================================

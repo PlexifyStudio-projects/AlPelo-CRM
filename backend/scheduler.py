@@ -2074,12 +2074,19 @@ def _scheduler_loop():
                     _sweep_missed_conversations(db)
                     _detect_unresolved_messages(db)
 
-                    # Automated workflows engine (all enabled workflows)
+                    # Legacy workflow engine (hardcoded 42 workflows)
                     try:
                         from workflow_engine import run_workflows
                         run_workflows(db)
                     except Exception as e:
                         print(f"[SCHEDULER] Workflow engine error: {e}")
+
+                    # Automation Studio engine (user-created automations)
+                    try:
+                        from automation_engine import run_automations
+                        run_automations(db)
+                    except Exception as e:
+                        print(f"[SCHEDULER] Automation engine error: {e}")
 
                 # Daily summary push (runs once at ~8 PM)
                 try:
