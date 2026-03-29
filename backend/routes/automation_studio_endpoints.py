@@ -5,6 +5,7 @@
 
 import os
 import re
+import json
 import httpx
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -579,9 +580,12 @@ async def submit_to_meta(rule_id: int, db: Session = Depends(get_db), user=Depen
         "components": components,
     }
 
+    print(f"[AUTO-STUDIO META] URL: https://graph.facebook.com/{WA_API_VERSION}/{tenant.wa_business_account_id}/message_templates")
+    print(f"[AUTO-STUDIO META] Payload: {json.dumps(payload, ensure_ascii=False)}")
+
     # Submit to Meta
     try:
-        async with httpx.AsyncClient(timeout=15) as client:
+        async with httpx.AsyncClient(timeout=20) as client:
             resp = await client.post(
                 f"https://graph.facebook.com/{WA_API_VERSION}/{tenant.wa_business_account_id}/message_templates",
                 headers={
@@ -591,6 +595,7 @@ async def submit_to_meta(rule_id: int, db: Session = Depends(get_db), user=Depen
                 json=payload,
             )
             data = resp.json()
+            print(f"[AUTO-STUDIO META] Response {resp.status_code}: {json.dumps(data, ensure_ascii=False)[:500]}")
 
             if resp.status_code in (200, 201):
                 status = data.get("status", "PENDING")
@@ -613,8 +618,14 @@ async def submit_to_meta(rule_id: int, db: Session = Depends(get_db), user=Depen
             else:
                 error = data.get("error", {})
                 error_msg = error.get("message", str(data)[:300])
+                error_user_msg = error.get("error_user_msg", "")
+                error_code = error.get("code", 0)
+                error_subcode = error.get("error_subcode", 0)
+                print(f"[AUTO-STUDIO META] ERROR code={error_code} subcode={error_subcode} msg={error_msg} user_msg={error_user_msg}")
+
                 # Check if template already exists
-                if error.get("code") == 100 and "already exists" in error_msg.lower():
+                is_duplicate = error_code == 2388023 or "already exists" in error_msg.lower()
+                if is_duplicate:
                     rule.meta_template_name = slug
                     rule.meta_template_status = "pending"
                     action_config["template_name"] = slug
@@ -628,7 +639,8 @@ async def submit_to_meta(rule_id: int, db: Session = Depends(get_db), user=Depen
                         "template_name": slug,
                         "note": "Template already exists, checking status...",
                     }
-                raise HTTPException(400, f"Meta rechazó la plantilla: {error_msg}")
+                detail_msg = error_user_msg or error_msg
+                raise HTTPException(400, f"Meta rechazó la plantilla: {detail_msg}")
 
     except HTTPException:
         raise
