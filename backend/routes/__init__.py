@@ -7,7 +7,6 @@ from .whatsapp_endpoints import router as whatsapp_router
 from .dev_endpoints import router as dev_router
 from .finance_endpoints import router as finance_router
 from .content_studio import router as content_studio_router
-from .automation_endpoints import router as automation_router
 from .template_endpoints import router as template_router
 from .lina_endpoints import router as lina_router
 from .staff_endpoints import router as staff_router
@@ -19,28 +18,12 @@ from .review_endpoints import router as review_router
 from .pos_endpoints import router as pos_router
 from .ai_strategy_endpoints import router as ai_strategy_router
 from .push_endpoints import router as push_router
-# dev_mega_endpoints merged into dev_endpoints (Phase 4 refactor)
 
 __all__ = [
-    "create_router",
-    "search_router",
-    "update_router",
-    "delete_router",
-    "ai_router",
-    "whatsapp_router",
-    "dev_router",
-    "finance_router",
-    "content_studio_router",
-    "automation_router",
-    "template_router",
-    "lina_router",
-    "staff_router",
-    "settings_router",
-    "campaign_router",
-    "schedule_router",
-    "loyalty_router",
-    "review_router",
-    "pos_router",
-    "ai_strategy_router",
+    "create_router", "search_router", "update_router", "delete_router",
+    "ai_router", "whatsapp_router", "dev_router", "finance_router",
+    "content_studio_router", "template_router", "lina_router",
+    "staff_router", "settings_router", "campaign_router", "schedule_router",
+    "loyalty_router", "review_router", "pos_router", "ai_strategy_router",
     "push_router",
 ]

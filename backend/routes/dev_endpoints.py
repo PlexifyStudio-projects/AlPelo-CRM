@@ -1315,17 +1315,7 @@ def reset_tenant_workflows(tenant_id: int, db: Session = Depends(get_db), user: 
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
-    from database.models import WorkflowTemplate
-    from routes.automation_endpoints import seed_workflows_for_tenant
-
-    # Delete existing workflows
-    deleted = db.query(WorkflowTemplate).filter(WorkflowTemplate.tenant_id == tenant.id).delete()
-    db.commit()
-
-    # Re-seed with 40 new workflows
-    seed_workflows_for_tenant(tenant.id, tenant.name)
-
-    return {"success": True, "deleted": deleted, "tenant": tenant.name, "message": f"Workflows reseteados para {tenant.name}"}
+    return {"success": True, "message": "Legacy workflows removed. Use Automation Studio instead."}
 
 
 @router.post("/dev/cleanup-duplicate-conversations")

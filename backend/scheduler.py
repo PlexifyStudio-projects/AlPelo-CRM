@@ -432,10 +432,9 @@ def _check_30min_reminders(db):
             # If free text fails (24h window expired), try with approved template
             if not wa_sent:
                 try:
-                    from workflow_engine import _send_template_sync
-                    # Use "recordatorio_de_cita_1h" or similar approved template
+                    from services.whatsapp.template_sender import send_template_sync
                     params = [client_first, appt.time, staff_first or "tu profesional", service_name]
-                    wa_sent = _send_template_sync(conv.wa_contact_phone, "recordatorio_de_cita_1h", parameters=params, db=db)
+                    wa_sent = send_template_sync(conv.wa_contact_phone, "recordatorio_de_cita_1h", parameters=params, db=db)
                     if wa_sent:
                         msg = f"[Template] Recordatorio de cita a las {appt.time} con {staff_first} para {service_name}"
                         print(f"[SCHEDULER] 30-min reminder sent via TEMPLATE for appt #{appt.id}")
@@ -2114,12 +2113,8 @@ def _scheduler_loop():
                     _sweep_missed_conversations(db)
                     _detect_unresolved_messages(db)
 
-                    # Legacy workflow engine (hardcoded 42 workflows)
-                    try:
-                        from workflow_engine import run_workflows
-                        run_workflows(db)
-                    except Exception as e:
-                        print(f"[SCHEDULER] Workflow engine error: {e}")
+                    # Legacy workflow engine REMOVED (Phase 5 refactor)
+                    # All automations now run through Automation Studio only.
 
                     # Automation Studio engine (user-created automations)
                     try:
