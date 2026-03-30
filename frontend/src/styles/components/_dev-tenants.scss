@@ -40,6 +40,25 @@ $_danger: #EF4444;
   &__subtitle { font-size: 13px; color: $_text-muted; margin-top: 4px; }
   &__loading { padding: 60px; text-align: center; color: $_text-muted; font-family: $_mono; font-size: 13px; }
 
+  &__search {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; background: white; border: 1px solid $border-color;
+    border-radius: $border-radius-md; margin-bottom: $spacing-md;
+    box-shadow: $shadow-xs; transition: all $transition-fast;
+    > svg { color: $color-gray-400; flex-shrink: 0; }
+    &:focus-within { border-color: $color-primary-light; box-shadow: $shadow-sm, 0 0 0 3px $color-primary-ghost; }
+  }
+  &__search-input {
+    flex: 1; border: none; outline: none; font-size: $font-size-sm; color: $color-gray-800; background: transparent;
+    &::placeholder { color: $color-gray-300; }
+  }
+  &__search-clear {
+    display: flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+    border: none; background: $color-gray-50; color: $color-gray-400; border-radius: 50%; cursor: pointer;
+    transition: all $transition-fast;
+    &:hover { background: $color-gray-100; color: $color-gray-600; }
+  }
+
   &__create-btn {
     display: inline-flex;
     align-items: center;

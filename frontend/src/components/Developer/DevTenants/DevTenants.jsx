@@ -75,6 +75,7 @@ const EMPTY_TENANT = {
 const DevTenants = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ ...EMPTY_TENANT });
   const [editingId, setEditingId] = useState(null);
@@ -185,6 +186,12 @@ const DevTenants = () => {
     setActionLoading('');
   };
 
+  const filteredTenants = searchQuery.trim().length < 2 ? tenants : tenants.filter(t => {
+    const q = searchQuery.toLowerCase();
+    return [t.name, t.slug, t.owner_name, t.owner_phone, t.owner_email, t.city, t.plan, t.business_type]
+      .filter(Boolean).join(' ').toLowerCase().includes(q);
+  });
+
   if (loading) {
     return (
       <div className={b}>
@@ -199,7 +206,7 @@ const DevTenants = () => {
       <div className={`${b}__header`}>
         <div>
           <h1 className={`${b}__title`}>Agencias</h1>
-          <p className={`${b}__subtitle`}>{tenants.length} negocios registrados en la plataforma</p>
+          <p className={`${b}__subtitle`}>{searchQuery ? `${filteredTenants.length} de ${tenants.length}` : tenants.length} negocios registrados</p>
         </div>
         <button className={`${b}__create-btn`} onClick={handleOpenCreate}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -207,9 +214,26 @@ const DevTenants = () => {
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className={`${b}__search`}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Buscar por nombre, slug, dueño, ciudad, plan..."
+          className={`${b}__search-input`}
+        />
+        {searchQuery && (
+          <button className={`${b}__search-clear`} onClick={() => setSearchQuery('')}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        )}
+      </div>
+
       {/* Tenant Cards */}
       <div className={`${b}__grid`}>
-        {tenants.map((t) => {
+        {filteredTenants.map((t) => {
           const planInfo = PLANS[t.plan] || PLANS.custom;
           const usagePct = t.messages_limit > 0 ? Math.round((t.messages_used / t.messages_limit) * 100) : 0;
           const daysLeft = t.days_remaining;
