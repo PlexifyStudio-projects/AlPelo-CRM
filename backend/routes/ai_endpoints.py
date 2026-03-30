@@ -37,22 +37,25 @@ _TIMEZONE_OFFSETS = {
 # Default offset (Colombia) — used when no tenant loaded
 _DEFAULT_OFFSET = timedelta(hours=-5)
 
-def _get_tenant_offset(db=None) -> timedelta:
-    """Get timezone offset from tenant config. Falls back to Colombia (UTC-5)."""
-    if db:
+def _get_tenant_offset(db=None, tenant_id=None) -> timedelta:
+    """Get timezone offset. Uses Colombia (UTC-5) as default.
+    IMPORTANT: Always returns -5 for Colombia. The tenant lookup was unreliable
+    (grabbed wrong tenant, caused Lina to think Saturday was Sunday)."""
+    if db and tenant_id:
         try:
             from database.models import Tenant
-            tenant = db.query(Tenant).first()
+            tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
             if tenant and tenant.timezone:
                 offset_hours = _TIMEZONE_OFFSETS.get(tenant.timezone, -5)
                 return timedelta(hours=offset_hours)
         except Exception:
             pass
+    # ALWAYS Colombia UTC-5 as safe default
     return _DEFAULT_OFFSET
 
 def _now_colombia(db=None) -> datetime:
-    """Current datetime in the tenant's timezone (defaults to Colombia UTC-5)."""
-    return datetime.utcnow() + _get_tenant_offset(db)
+    """Current datetime in Colombia (UTC-5). ALWAYS uses -5 offset."""
+    return datetime.utcnow() + _DEFAULT_OFFSET
 
 def _today_colombia(db=None) -> date:
     """Current date in the tenant's timezone."""
