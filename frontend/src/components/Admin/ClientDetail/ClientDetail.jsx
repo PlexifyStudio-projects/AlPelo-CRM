@@ -35,6 +35,8 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [loyalty, setLoyalty] = useState(null);
   const [loyaltyLoading, setLoyaltyLoading] = useState(false);
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [subsLoaded, setSubsLoaded] = useState(false);
   const statusBtnRef = useRef(null);
   const b = 'client-detail';
 
@@ -129,14 +131,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     } catch { /* silently fail */ }
   };
 
-  if (!client) return null;
-
-  const getInitials = (name) =>
-    name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
-
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [subsLoaded, setSubsLoaded] = useState(false);
-
   useEffect(() => {
     if (client?.id) {
       subscriptionService.list(client.id).then(setSubscriptions).catch(() => {}).finally(() => setSubsLoaded(true));
@@ -157,6 +151,11 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       setSubscriptions(prev => prev.map(s => s.id === subId ? updated : s));
     } catch (err) { alert(err.message); }
   };
+
+  if (!client) return null;
+
+  const getInitials = (name) =>
+    name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
   const tabs = [
     { id: 'overview', label: 'Resumen' },
