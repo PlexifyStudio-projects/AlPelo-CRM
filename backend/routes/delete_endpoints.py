@@ -23,9 +23,20 @@ def delete_staff(staff_id: int, db: Session = Depends(get_db), user: Admin = Dep
     if not staff:
         raise HTTPException(status_code=404, detail="Staff not found")
 
+    # Check for associated records — soft delete if has history, hard delete if clean
+    from database.models import VisitHistory, Appointment
+    has_visits = db.query(VisitHistory).filter(VisitHistory.staff_id == staff_id).first()
+    has_appts = db.query(Appointment).filter(Appointment.staff_id == staff_id).first()
+
+    if has_visits or has_appts:
+        # Soft delete — deactivate instead of removing (preserves history integrity)
+        staff.is_active = False
+        db.commit()
+        return {"success": True, "message": f"Staff '{staff.name}' desactivado (tiene historial asociado)"}
+
     db.delete(staff)
     db.commit()
-    return {"success": True, "message": f"Staff '{staff.name}' deleted"}
+    return {"success": True, "message": f"Staff '{staff.name}' eliminado"}
 
 
 # ============================================================================
