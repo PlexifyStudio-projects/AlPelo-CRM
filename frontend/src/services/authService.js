@@ -21,7 +21,12 @@ const authService = {
       }
       if (data.detail === 'staff_deactivated') {
         const err = new Error(data.message || 'Cuenta desactivada');
-        err.code = 'STAFF_DEACTIVATED';
+        err.code = 'SUSPENDED';
+        throw err;
+      }
+      if (data.detail === 'account_deactivated') {
+        const err = new Error(data.message || 'Su cuenta ha sido desactivada. Contacte a soporte.');
+        err.code = 'SUSPENDED';
         throw err;
       }
       throw new Error(data.detail || 'Usuario o contraseña incorrectos');

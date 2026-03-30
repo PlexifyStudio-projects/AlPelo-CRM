@@ -64,7 +64,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
         raise credentials_exception
 
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is deactivated")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="account_deactivated")
 
     # Single-device check: only reject if there IS a different active token stored
     stored_token = getattr(user, 'active_session_token', None) or None

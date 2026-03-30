@@ -197,7 +197,18 @@ def verify_credentials(login_data: LoginRequest, db: Session = Depends(get_db)):
             role="staff"
         )
 
-    # 4) Admin checks — tenant suspension (only for non-dev users)
+    # 4) Admin checks — deactivated account
+    if not user.is_active:
+        return JSONResponse(
+            status_code=403,
+            content={
+                "detail": "account_deactivated",
+                "message": "Su cuenta ha sido desactivada. Contacte a soporte para más información."
+            },
+            headers=CORS_HEADERS
+        )
+
+    # 5) Admin checks — tenant suspension (only for non-dev users)
     if user.role != "dev" and getattr(user, "tenant_id", None):
         tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id).first()
         if tenant and not tenant.is_active:
