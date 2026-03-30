@@ -917,48 +917,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         )}
       </div>
 
-      {/* ── PRECISION SCHEDULING: Optimal slots panel ── */}
-      {!isStaffMode && (
-        <div className={`${b}__optimal`}>
-          <button className={`${b}__optimal-toggle`} onClick={() => setShowOptimal(p => !p)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            Horarios sugeridos
-            <span className={`${b}__optimal-arrow ${showOptimal ? `${b}__optimal-arrow--open` : ''}`}><ChevronDown /></span>
-          </button>
-          {showOptimal && (
-            <div className={`${b}__optimal-grid`}>
-              {!optimalSlots ? (
-                <span style={{ padding: '0.75rem', color: '#94A3B8', fontSize: '0.85rem' }}>Cargando...</span>
-              ) : (!optimalSlots.staff || optimalSlots.staff.length === 0) ? (
-                <span style={{ padding: '0.75rem', color: '#94A3B8', fontSize: '0.85rem' }}>No hay profesionales activos</span>
-              ) : optimalSlots.staff?.map(s => (
-                <div key={s.staff_id} className={`${b}__optimal-staff`}>
-                  <div className={`${b}__optimal-staff-head`}>
-                    <span className={`${b}__optimal-staff-dot`} style={{ background: staffColorMap[s.staff_id] || '#6B6B63' }} />
-                    <strong>{s.staff_name}</strong>
-                    <span className={`${b}__optimal-util`}>{s.utilization_pct}% ocupado</span>
-                  </div>
-                  <div className={`${b}__optimal-slots`}>
-                    {s.free_slots.length === 0 ? (
-                      <span className={`${b}__optimal-full`}>Agenda llena</span>
-                    ) : s.free_slots.slice(0, 4).map((slot, i) => (
-                      <button
-                        key={i}
-                        className={`${b}__optimal-slot ${slot.type === 'gap' ? `${b}__optimal-slot--gap` : ''}`}
-                        onClick={() => openCreate(currentDate, slot.start)}
-                        title={slot.reason}
-                      >
-                        <span className={`${b}__optimal-slot-time`}>{slot.start}</span>
-                        <span className={`${b}__optimal-slot-info`}>{slot.duration_min}min {slot.type === 'gap' ? '· hueco' : ''}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Precision scheduling removed — was "Horarios sugeridos" */}
 
       {/* ── CALENDAR ── */}
       <div className={`${b}__calendar`}>

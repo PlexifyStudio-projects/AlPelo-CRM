@@ -1568,10 +1568,15 @@
   }
 
   &__search-results {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 50;
     border: 1.5px solid $color-gray-200;
     border-radius: $border-radius-xl;
     background: $color-white;
-    box-shadow: $shadow-lg;
+    box-shadow: $shadow-xl;
     max-height: 240px;
     overflow-y: auto;
     @include custom-scrollbar;
