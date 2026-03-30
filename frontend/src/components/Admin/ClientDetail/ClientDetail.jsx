@@ -4,6 +4,7 @@ import Button from '../../common/Button/Button';
 import { formatCurrency, formatDate, daysSince, formatPhone } from '../../../utils/formatters';
 import { STATUS_META } from '../../../utils/clientStatus';
 import clientService from '../../../services/clientService';
+import subscriptionService from '../../../services/subscriptionService';
 
 const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -133,8 +134,33 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const getInitials = (name) =>
     name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
+  const [subscriptions, setSubscriptions] = useState([]);
+  const [subsLoaded, setSubsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (client?.id) {
+      subscriptionService.list(client.id).then(setSubscriptions).catch(() => {}).finally(() => setSubsLoaded(true));
+    }
+  }, [client?.id]);
+
+  const handleUseSession = async (subId) => {
+    try {
+      const updated = await subscriptionService.useSession(subId);
+      setSubscriptions(prev => prev.map(s => s.id === subId ? updated : s));
+    } catch (err) { alert(err.message); }
+  };
+
+  const handleCancelSub = async (subId) => {
+    if (!window.confirm('¿Cancelar esta suscripción?')) return;
+    try {
+      const updated = await subscriptionService.update(subId, { status: 'cancelled' });
+      setSubscriptions(prev => prev.map(s => s.id === subId ? updated : s));
+    } catch (err) { alert(err.message); }
+  };
+
   const tabs = [
     { id: 'overview', label: 'Resumen' },
+    { id: 'subscriptions', label: `Planes${subscriptions.filter(s => s.status === 'active').length ? ` (${subscriptions.filter(s => s.status === 'active').length})` : ''}` },
     { id: 'history', label: 'Historial' },
     { id: 'notes', label: 'Notas' },
   ];
@@ -429,6 +455,95 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                       );
                     })}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'subscriptions' && (
+            <div className={`${b}__subscriptions`}>
+              {!subsLoaded ? (
+                <p style={{ color: '#94A3B8', fontSize: 13, padding: 16 }}>Cargando planes...</p>
+              ) : subscriptions.length === 0 ? (
+                <p style={{ color: '#94A3B8', fontSize: 13, padding: 16 }}>Este cliente no tiene planes o paquetes activos.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 0' }}>
+                  {subscriptions.map(sub => {
+                    const isActive = sub.status === 'active';
+                    const daysLeft = sub.expires_at ? Math.ceil((new Date(sub.expires_at) - new Date()) / 86400000) : null;
+                    const sessionPct = sub.sessions_total ? Math.round((sub.sessions_used / sub.sessions_total) * 100) : null;
+                    const isExpiringSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
+                    const isExpired = daysLeft !== null && daysLeft <= 0;
+
+                    return (
+                      <div key={sub.id} style={{
+                        padding: '14px 16px', borderRadius: 12,
+                        background: isActive ? '#fff' : '#f8fafc',
+                        border: `1px solid ${isExpiringSoon ? '#F59E0B' : isExpired ? '#EF4444' : isActive ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.04)'}`,
+                        opacity: isActive ? 1 : 0.6,
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                          <div>
+                            <span style={{ fontWeight: 700, fontSize: 14, color: '#0F172A' }}>{sub.service_name}</span>
+                            <span style={{
+                              marginLeft: 8, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase',
+                              background: sub.status === 'active' ? '#DCFCE7' : sub.status === 'completed' ? '#DBEAFE' : sub.status === 'cancelled' ? '#FEE2E2' : '#FEF3C7',
+                              color: sub.status === 'active' ? '#166534' : sub.status === 'completed' ? '#1E40AF' : sub.status === 'cancelled' ? '#991B1B' : '#92400E',
+                            }}>
+                              {sub.status === 'active' ? 'Activo' : sub.status === 'completed' ? 'Completado' : sub.status === 'cancelled' ? 'Cancelado' : sub.status === 'expired' ? 'Vencido' : sub.status}
+                            </span>
+                          </div>
+                          <span style={{ fontWeight: 700, fontSize: 14, color: '#3B82F6' }}>
+                            {formatCurrency(sub.amount_paid)}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#64748B', marginBottom: sub.sessions_total ? 10 : 0 }}>
+                          {sub.expires_at && (
+                            <span style={{ color: isExpired ? '#EF4444' : isExpiringSoon ? '#F59E0B' : '#64748B' }}>
+                              {isExpired ? `Venció hace ${Math.abs(daysLeft)} días` : `Vence en ${daysLeft} días`}
+                            </span>
+                          )}
+                          {sub.sessions_total && (
+                            <span>{sub.sessions_used}/{sub.sessions_total} sesiones</span>
+                          )}
+                          {sub.payment_method && <span>{sub.payment_method}</span>}
+                          {sub.purchased_at && <span>Comprado: {new Date(sub.purchased_at).toLocaleDateString('es-CO')}</span>}
+                        </div>
+
+                        {sub.sessions_total && (
+                          <div style={{ height: 6, background: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{
+                              height: '100%', borderRadius: 3, transition: 'width 0.3s ease',
+                              width: `${sessionPct}%`,
+                              background: sessionPct >= 90 ? '#EF4444' : sessionPct >= 70 ? '#F59E0B' : '#10B981',
+                            }} />
+                          </div>
+                        )}
+
+                        {isActive && (
+                          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                            {sub.sessions_total && sub.sessions_used < sub.sessions_total && (
+                              <button onClick={() => handleUseSession(sub.id)} style={{
+                                padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6,
+                                border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.06)',
+                                color: '#10B981', cursor: 'pointer',
+                              }}>
+                                + Registrar sesión
+                              </button>
+                            )}
+                            <button onClick={() => handleCancelSub(sub.id)} style={{
+                              padding: '5px 12px', fontSize: 11, fontWeight: 600, borderRadius: 6,
+                              border: '1px solid rgba(239,68,68,0.2)', background: 'transparent',
+                              color: '#EF4444', cursor: 'pointer',
+                            }}>
+                              Cancelar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

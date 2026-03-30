@@ -138,6 +138,26 @@ class Service(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class ClientSubscription(Base):
+    __tablename__ = "client_subscription"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False)
+    client_id = Column(Integer, nullable=False)
+    service_id = Column(Integer, nullable=True)  # El paquete/membresía comprada
+    service_name = Column(String, nullable=False)  # Nombre denormalizado para referencia rápida
+    status = Column(String(20), nullable=False, default='active')  # active, expired, cancelled, paused
+    purchased_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)  # null = sin vencimiento
+    sessions_total = Column(Integer, nullable=True)  # null = ilimitado (ej: gym mensual)
+    sessions_used = Column(Integer, nullable=False, default=0)
+    amount_paid = Column(Integer, nullable=False, default=0)  # COP
+    payment_method = Column(String(30), nullable=True)  # efectivo, nequi, tarjeta, transferencia
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class Appointment(Base):
     __tablename__ = "appointment"
 

@@ -298,6 +298,27 @@ class ServiceResponse(BaseModel):
         from_attributes = True
 
 
+# ── Client Subscriptions (paquetes, membresías) ──
+class SubscriptionCreate(BaseModel):
+    client_id: int
+    service_id: Optional[int] = None
+    service_name: str
+    expires_at: Optional[datetime] = None
+    sessions_total: Optional[int] = None
+    amount_paid: int = 0
+    payment_method: Optional[str] = None
+    notes: Optional[str] = None
+
+class SubscriptionUpdate(BaseModel):
+    status: Optional[str] = None
+    expires_at: Optional[datetime] = None
+    sessions_total: Optional[int] = None
+    sessions_used: Optional[int] = None
+    amount_paid: Optional[int] = None
+    payment_method: Optional[str] = None
+    notes: Optional[str] = None
+
+
 #========================= APPOINTMENTS =========================#
 
 class AppointmentCreate(BaseModel):

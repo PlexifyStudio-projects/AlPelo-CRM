@@ -2347,6 +2347,38 @@ REGLA SOBRE DATOS INTERNOS: No menciones IDs de cliente ni datos tecnicos. El te
                 if total_visits == 0:
                     hints.append("CLIENTE NUEVO: Primer contacto. Da la mejor primera impresion.")
 
+                # === SUSCRIPCIONES / PAQUETES ACTIVOS ===
+                try:
+                    from database.models import ClientSubscription
+                    active_subs = db.query(ClientSubscription).filter(
+                        ClientSubscription.client_id == client.id,
+                        ClientSubscription.tenant_id == _conv_tid,
+                        ClientSubscription.status.in_(['active', 'paused'])
+                    ).all()
+                    if active_subs:
+                        sub_lines = []
+                        for sub in active_subs:
+                            parts = [f"{sub.service_name}"]
+                            if sub.sessions_total:
+                                parts.append(f"{sub.sessions_used}/{sub.sessions_total} sesiones usadas")
+                            if sub.expires_at:
+                                from datetime import datetime as dt
+                                days_left = (sub.expires_at - dt.utcnow()).days
+                                if days_left > 0:
+                                    parts.append(f"vence en {days_left} dias")
+                                else:
+                                    parts.append("VENCIDO")
+                            if sub.status == 'paused':
+                                parts.append("PAUSADO")
+                            sub_lines.append(" — ".join(parts))
+                        client_section += f"\nPLANES/PAQUETES ACTIVOS:\n" + "\n".join(f"  • {l}" for l in sub_lines)
+                        if any(sub.expires_at and (sub.expires_at - dt.utcnow()).days <= 7 for sub in active_subs):
+                            hints.append("PAQUETE POR VENCER: El cliente tiene un plan que vence pronto. Ofrezca renovacion.")
+                    else:
+                        client_section += "\nPLANES/PAQUETES: Ninguno activo."
+                except Exception:
+                    pass
+
                 # === SENTIMENT ANALYSIS — adapt tone based on client mood ===
                 try:
                     _conv_sentiment = getattr(conv, 'last_sentiment', None) if conv else None

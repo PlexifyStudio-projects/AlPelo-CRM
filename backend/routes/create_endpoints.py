@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Admin, Staff, Client, VisitHistory, ClientNote, Service, Appointment
+from database.models import Admin, Staff, Client, VisitHistory, ClientNote, Service, Appointment, ClientSubscription
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
 from schemas import (
@@ -13,6 +13,7 @@ from schemas import (
     ClientNoteCreate, ClientNoteResponse,
     ServiceCreate, ServiceResponse,
     AppointmentCreate, AppointmentResponse,
+    SubscriptionCreate, SubscriptionUpdate,
 )
 
 router = APIRouter()
@@ -327,3 +328,102 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db), u
     apt_data["staff_name"] = staff.name
     apt_data["service_name"] = service.name
     return AppointmentResponse(**apt_data)
+
+
+# ============================================================================
+# CLIENT SUBSCRIPTIONS (paquetes, membresías, planes)
+# ============================================================================
+
+def _serialize_sub(s):
+    return {
+        "id": s.id, "tenant_id": s.tenant_id, "client_id": s.client_id,
+        "service_id": s.service_id, "service_name": s.service_name,
+        "status": s.status,
+        "purchased_at": s.purchased_at.isoformat() if s.purchased_at else None,
+        "expires_at": s.expires_at.isoformat() if s.expires_at else None,
+        "sessions_total": s.sessions_total, "sessions_used": s.sessions_used,
+        "amount_paid": s.amount_paid, "payment_method": s.payment_method,
+        "notes": s.notes,
+        "created_at": s.created_at.isoformat() if s.created_at else None,
+    }
+
+
+@router.get("/subscriptions/")
+def list_subscriptions(client_id: int = None, status: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """List subscriptions. Filter by client_id and/or status."""
+    tid = safe_tid(user, db)
+    q = db.query(ClientSubscription).filter(ClientSubscription.tenant_id == tid)
+    if client_id:
+        q = q.filter(ClientSubscription.client_id == client_id)
+    if status:
+        q = q.filter(ClientSubscription.status == status)
+    subs = q.order_by(ClientSubscription.created_at.desc()).all()
+    return [_serialize_sub(s) for s in subs]
+
+
+@router.post("/subscriptions/")
+def create_subscription(data: SubscriptionCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Create a new subscription for a client (paquete, membresía, plan)."""
+    tid = safe_tid(user, db)
+    client = db.query(Client).filter(Client.id == data.client_id, Client.tenant_id == tid).first()
+    if not client:
+        raise HTTPException(404, "Cliente no encontrado")
+
+    sub = ClientSubscription(
+        tenant_id=tid,
+        client_id=data.client_id,
+        service_id=data.service_id,
+        service_name=data.service_name,
+        status='active',
+        expires_at=data.expires_at,
+        sessions_total=data.sessions_total,
+        sessions_used=0,
+        amount_paid=data.amount_paid,
+        payment_method=data.payment_method,
+        notes=data.notes,
+    )
+    db.add(sub)
+    db.commit()
+    db.refresh(sub)
+    return _serialize_sub(sub)
+
+
+@router.put("/subscriptions/{sub_id}")
+def update_subscription(sub_id: int, data: SubscriptionUpdate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Update a subscription (change status, add sessions, extend, etc.)."""
+    tid = safe_tid(user, db)
+    sub = db.query(ClientSubscription).filter(ClientSubscription.id == sub_id, ClientSubscription.tenant_id == tid).first()
+    if not sub:
+        raise HTTPException(404, "Suscripción no encontrada")
+
+    for field in ['status', 'expires_at', 'sessions_total', 'sessions_used', 'amount_paid', 'payment_method', 'notes']:
+        val = getattr(data, field, None)
+        if val is not None:
+            setattr(sub, field, val)
+
+    db.commit()
+    db.refresh(sub)
+    return _serialize_sub(sub)
+
+
+@router.post("/subscriptions/{sub_id}/use-session")
+def use_session(sub_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Register one session used from a subscription."""
+    tid = safe_tid(user, db)
+    sub = db.query(ClientSubscription).filter(ClientSubscription.id == sub_id, ClientSubscription.tenant_id == tid).first()
+    if not sub:
+        raise HTTPException(404, "Suscripción no encontrada")
+    if sub.status != 'active':
+        raise HTTPException(400, "Esta suscripción no está activa")
+    if sub.sessions_total and sub.sessions_used >= sub.sessions_total:
+        raise HTTPException(400, "Se agotaron las sesiones de este paquete")
+
+    sub.sessions_used = (sub.sessions_used or 0) + 1
+
+    # Auto-expire if all sessions used
+    if sub.sessions_total and sub.sessions_used >= sub.sessions_total:
+        sub.status = 'completed'
+
+    db.commit()
+    db.refresh(sub)
+    return _serialize_sub(sub)
