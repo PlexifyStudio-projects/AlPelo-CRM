@@ -1,3 +1,38 @@
+# Plexify Studio — robots.txt
+
 User-agent: *
-Allow: /
-Sitemap: https://plexifystudio.com/sitemap.xml
+
+# Allow landing/marketing pages
+Allow: /AlPelo-CRM/
+Allow: /AlPelo-CRM/features
+Allow: /AlPelo-CRM/pricing
+Allow: /AlPelo-CRM/about
+Allow: /AlPelo-CRM/contact
+Allow: /AlPelo-CRM/demo
+Allow: /AlPelo-CRM/faq
+Allow: /AlPelo-CRM/lina-ia
+Allow: /AlPelo-CRM/finanzas
+Allow: /AlPelo-CRM/automatizaciones
+Allow: /AlPelo-CRM/producto/
+Allow: /AlPelo-CRM/legal
+
+# Block CRM/app routes (private, authenticated)
+Disallow: /AlPelo-CRM/login
+Disallow: /AlPelo-CRM/dashboard
+Disallow: /AlPelo-CRM/admin
+Disallow: /AlPelo-CRM/clients
+Disallow: /AlPelo-CRM/appointments
+Disallow: /AlPelo-CRM/messaging
+Disallow: /AlPelo-CRM/chat
+Disallow: /AlPelo-CRM/settings
+Disallow: /AlPelo-CRM/register
+Disallow: /AlPelo-CRM/dev-panel
+Disallow: /AlPelo-CRM/inventory
+Disallow: /AlPelo-CRM/finances
+Disallow: /AlPelo-CRM/campaigns
+Disallow: /AlPelo-CRM/automations
+Disallow: /AlPelo-CRM/staff
+Disallow: /AlPelo-CRM/inbox
+
+# Sitemap location
+Sitemap: https://plexifystudio-projects.github.io/AlPelo-CRM/sitemap.xml
