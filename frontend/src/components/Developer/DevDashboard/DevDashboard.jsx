@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const b = 'dev-dash';
@@ -19,6 +20,7 @@ const DevDashboard = ({ onNavigate }) => {
   const [waHealth, setWaHealth] = useState(null);
   const [alerts, setAlerts] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAlertModal, setShowAlertModal] = useState(false);
 
   const apiFetch = useCallback(async (path) => {
     const res = await fetch(`${API_URL}${path}`, {
@@ -104,10 +106,44 @@ const DevDashboard = ({ onNavigate }) => {
 
       {/* Alerts banner (if any critical) */}
       {al.critical > 0 && (
-        <div className={`${b}__alert-banner`} onClick={() => onNavigate && onNavigate('dev-alerts')}>
+        <div className={`${b}__alert-banner`} onClick={() => setShowAlertModal(true)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span>{al.critical} alerta{al.critical > 1 ? 's' : ''} critica{al.critical > 1 ? 's' : ''} — Click para ver detalles</span>
         </div>
+      )}
+
+      {showAlertModal && createPortal(
+        <div className={`${b}__alert-overlay`} onClick={() => setShowAlertModal(false)}>
+          <div className={`${b}__alert-modal`} onClick={e => e.stopPropagation()}>
+            <div className={`${b}__alert-modal-header`}>
+              <h3>Alertas de la plataforma</h3>
+              <button onClick={() => setShowAlertModal(false)} className={`${b}__alert-modal-close`}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            <div className={`${b}__alert-modal-body`}>
+              {(al.alerts || []).length === 0 ? (
+                <p style={{ color: '#94A3B8', textAlign: 'center', padding: 24 }}>Sin alertas</p>
+              ) : (
+                (al.alerts || []).map((a, i) => (
+                  <div key={i} className={`${b}__alert-item ${b}__alert-item--${a.severity}`}>
+                    <div className={`${b}__alert-item-icon`}>
+                      {a.severity === 'critical' ? '🔴' : a.severity === 'warning' ? '🟡' : '🔵'}
+                    </div>
+                    <div className={`${b}__alert-item-content`}>
+                      <span className={`${b}__alert-item-msg`}>{a.message}</span>
+                      <span className={`${b}__alert-item-meta`}>
+                        {a.tenant && <strong>{a.tenant}</strong>}
+                        {a.type && ` · ${a.type.replace(/_/g, ' ')}`}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* Main KPIs — 4 columns */}

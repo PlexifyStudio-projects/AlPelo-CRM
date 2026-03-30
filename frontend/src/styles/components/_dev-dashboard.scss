@@ -782,3 +782,104 @@ $_surface: #F8FAFC;
   0% { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
+
+// Alert modal
+.dev-dash__alert-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: devDashFadeIn 200ms ease;
+}
+
+.dev-dash__alert-modal {
+  background: white;
+  border-radius: 16px;
+  width: min(560px, 92vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.15);
+  animation: devDashSlideUp 250ms ease;
+}
+
+@keyframes devDashSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dev-dash__alert-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
+  }
+}
+
+.dev-dash__alert-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  transition: all 150ms;
+
+  &:hover { background: #F1F5F9; color: #0F172A; }
+}
+
+.dev-dash__alert-modal-body {
+  overflow-y: auto;
+  padding: 12px 24px 24px;
+}
+
+.dev-dash__alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+
+  &--critical { background: rgba(239, 68, 68, 0.04); border-color: rgba(239, 68, 68, 0.12); }
+  &--warning { background: rgba(245, 158, 11, 0.04); border-color: rgba(245, 158, 11, 0.12); }
+  &--info { background: rgba(59, 130, 246, 0.04); border-color: rgba(59, 130, 246, 0.12); }
+}
+
+.dev-dash__alert-item-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.dev-dash__alert-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dev-dash__alert-item-msg {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0F172A;
+}
+
+.dev-dash__alert-item-meta {
+  font-size: 11px;
+  color: #94A3B8;
+}
