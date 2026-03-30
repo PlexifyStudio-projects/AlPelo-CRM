@@ -150,6 +150,39 @@ def _store_outbound_message(db, conv_id: int, text: str, wa_sent: bool, tag: str
     db.commit()
 
 
+def _conv_rate_limited(db, conv_id: int, max_per_hour: int = 3, max_per_day: int = 6) -> bool:
+    """Global rate limiter: max N outbound messages per conversation per hour/day.
+    Prevents spam regardless of which system sends (scheduler, workflows, automations)."""
+    now = _now_colombia()
+    hour_ago = now - timedelta(hours=1)
+    today_start = datetime.combine(now.date(), datetime.min.time())
+
+    # Count ALL outbound messages in last hour (not just tagged ones)
+    hour_count = (
+        db.query(WhatsAppMessage)
+        .filter(
+            WhatsAppMessage.conversation_id == conv_id,
+            WhatsAppMessage.sent_by.like("lina_%"),
+            WhatsAppMessage.created_at >= hour_ago,
+        )
+        .count()
+    )
+    if hour_count >= max_per_hour:
+        return True
+
+    # Count ALL outbound messages today
+    day_count = (
+        db.query(WhatsAppMessage)
+        .filter(
+            WhatsAppMessage.conversation_id == conv_id,
+            WhatsAppMessage.sent_by.like("lina_%"),
+            WhatsAppMessage.created_at >= today_start,
+        )
+        .count()
+    )
+    return day_count >= max_per_day
+
+
 def _already_sent_today(db, conv_id: int, tag: str) -> bool:
     """Check if the scheduler already sent a message with this tag to this conversation today."""
     today_start = datetime.combine(_now_colombia().date(), datetime.min.time())
@@ -371,6 +404,11 @@ def _check_30min_reminders(db):
             if _already_sent_today(db, conv.id, f"reminder_30min_{appt.id}"):
                 continue
 
+            # GLOBAL RATE LIMIT: prevent spam (max 3/hour, 6/day per client)
+            if _conv_rate_limited(db, conv.id):
+                print(f"[SCHEDULER] Rate-limited: skipping 30min reminder for {appt.client_name} (too many messages)")
+                continue
+
             client_first, service_name, staff_first = _get_appt_details(db, appt)
 
             # Check if this is the first message ever to this client
@@ -581,6 +619,8 @@ def _check_custom_reminders(db):
 
         # DB-SAFE DEDUP — per appointment ID to avoid conflicts with multiple appointments
         dedup_tag = f"reminder_custom_{best_appt.id}"
+        if _conv_rate_limited(db, conv.id):
+            continue
         if _already_sent_today(db, conv.id, dedup_tag):
             note.content = _replace_note_prefix(note.content, "COMPLETADO:") + f" [Auto-resuelto {now.strftime('%H:%M')}]"
             db.commit()

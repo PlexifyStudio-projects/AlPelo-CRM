@@ -1029,6 +1029,16 @@ def run_automations(db):
                     ):
                         continue
 
+                    # Global rate limit per conversation (prevent spam)
+                    try:
+                        conv = _find_conv_by_phone(db, client.phone, tenant_id=rule.tenant_id)
+                        if conv:
+                            from scheduler import _conv_rate_limited
+                            if _conv_rate_limited(db, conv.id):
+                                continue
+                    except Exception:
+                        pass
+
                     # 4. Build variables and render message
                     action_config = rule.action_config or {}
                     message_template = action_config.get("message", "")

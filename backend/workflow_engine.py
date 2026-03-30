@@ -188,9 +188,13 @@ def _send_and_log(db, workflow, client, phone, message, appointment_id=None):
     """Send WhatsApp message and log the execution.
     Uses template if configured, otherwise text (only within 24h window).
     Auto-prepends intro if first contact with client."""
-    from scheduler import _send_whatsapp_sync, _store_outbound_message, _create_conversation_for_client
+    from scheduler import _send_whatsapp_sync, _store_outbound_message, _create_conversation_for_client, _conv_rate_limited
 
     conv = _find_conv_by_phone(db, phone, tenant_id=workflow.tenant_id)
+
+    # Global rate limit — prevent spam (max 3/hour, 6/day per conversation)
+    if conv and _conv_rate_limited(db, conv.id):
+        return False
 
     # Auto-introduce on first contact
     tenant = db.query(Tenant).filter(Tenant.id == workflow.tenant_id).first()
