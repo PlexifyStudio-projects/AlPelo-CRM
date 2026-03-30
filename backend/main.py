@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from middleware import setup_cors_middleware
 from auth import auth_router
-from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router, staff_router, settings_router, campaign_router, schedule_router, loyalty_router, review_router, pos_router, ai_strategy_router, push_router, dev_mega_router
+from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, automation_router, template_router, lina_router, staff_router, settings_router, campaign_router, schedule_router, loyalty_router, review_router, pos_router, ai_strategy_router, push_router
 from database.connection import engine, Base
 from database.migrations import run_migrations, ensure_vapid_keys
 
@@ -102,7 +102,7 @@ app.include_router(review_router, prefix="/api", tags=["Reviews"])
 app.include_router(pos_router, prefix="/api", tags=["POS"])
 app.include_router(ai_strategy_router, prefix="/api", tags=["AI Strategy"])
 app.include_router(push_router, prefix="/api", tags=["Push Notifications"])
-app.include_router(dev_mega_router, prefix="/api", tags=["Dev Panel MEGA"])
+# dev_mega_router merged into dev_router (Phase 4 refactor)
 
 from routes.notification_endpoints import router as notification_router
 app.include_router(notification_router, prefix="/api", tags=["Notifications"])

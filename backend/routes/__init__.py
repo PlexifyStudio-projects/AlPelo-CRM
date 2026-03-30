@@ -19,7 +19,7 @@ from .review_endpoints import router as review_router
 from .pos_endpoints import router as pos_router
 from .ai_strategy_endpoints import router as ai_strategy_router
 from .push_endpoints import router as push_router
-from .dev_mega_endpoints import router as dev_mega_router
+# dev_mega_endpoints merged into dev_endpoints (Phase 4 refactor)
 
 __all__ = [
     "create_router",
@@ -43,5 +43,4 @@ __all__ = [
     "pos_router",
     "ai_strategy_router",
     "push_router",
-    "dev_mega_router",
 ]
