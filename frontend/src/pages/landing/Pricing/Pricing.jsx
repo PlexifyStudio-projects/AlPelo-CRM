@@ -5,11 +5,12 @@ export default function PricingPage() {
   return (
     <>
       <SEO
-        title="Precios — PlexifyStudio CRM"
-        description="Planes transparentes para cada etapa de tu negocio. CRM completo con WhatsApp y Lina IA. Sin contratos, cancela cuando quieras."
+        title="Precios y Planes desde $190.000/mes"
+        description="Planes desde $190.000 COP/mes para tu peluqueria, salon o spa. Incluye agenda online, WhatsApp, CRM de clientes y Lina IA. Sin contratos, cancela cuando quieras."
         url="/pricing"
+        keywords="precio software peluqueria, cuanto cuesta un sistema para salon, planes CRM barberia, software de citas para spa precio, sistema de gestion economico"
       />
-      <Pricing />
+      <Pricing isPage />
     </>
   );
 }

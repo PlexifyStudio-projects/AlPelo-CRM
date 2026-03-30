@@ -41,7 +41,17 @@ export default function Campanas() {
 
   return (
     <>
-      <SEO title="Campañas WhatsApp" description="Envío masivo de WhatsApp, plantillas aprobadas por Meta, campañas de reactivación y métricas en tiempo real." url="/producto/campanas" />
+      <SEO
+        title="Campanas WhatsApp para tu Negocio"
+        description="Envia mensajes masivos por WhatsApp con plantillas aprobadas por Meta. Campanas de reactivacion y segmentacion para peluquerias, salones de belleza y spas."
+        url="/producto/campanas"
+        keywords="enviar mensajes masivos WhatsApp negocio, WhatsApp marketing peluqueria, campanas salon de belleza, software WhatsApp para negocios, promociones por WhatsApp"
+        breadcrumbs={[
+          { name: 'Inicio', url: '/' },
+          { name: 'Producto', url: '/features' },
+          { name: 'Campanas WhatsApp' },
+        ]}
+      />
 
       {/* ── HERO ── */}
       <section className="p-campanas" ref={ref}>
@@ -49,8 +59,8 @@ export default function Campanas() {
           <div className="p-campanas__hero-content">
             <span className="p-campanas__badge">💬 WhatsApp & Campañas</span>
             <h1 className="p-campanas__title">
-              WhatsApp que trabaja<br />
-              <span className="p-campanas__title--accent">mientras tú descansas</span>
+              WhatsApp Marketing y Campañas<br />
+              <span className="p-campanas__title--accent">para Negocios de Belleza</span>
             </h1>
             <p className="p-campanas__subtitle">
               Envía campañas masivas, reactivación de clientes inactivos,
@@ -68,7 +78,8 @@ export default function Campanas() {
           </div>
 
           <div className="p-campanas__preview">
-            <img src={campanaImg} alt="PlexifyStudio Campañas WhatsApp" className="p-campanas__preview-img" />
+            {/* TODO: Convertir a WebP para reducir ~40% el tamaño */}
+            <img src={campanaImg} alt="PlexifyStudio Campañas WhatsApp" className="p-campanas__preview-img" loading="lazy" />
           </div>
         </div>
       </section>

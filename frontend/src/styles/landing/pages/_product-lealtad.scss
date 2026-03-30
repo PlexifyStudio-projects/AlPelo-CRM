@@ -9,11 +9,6 @@ $au-bg: #f5f3ff;
   50% { transform: translateY(-8px); }
 }
 
-@keyframes p-au-card-in {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
 @keyframes p-au-bar-shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
@@ -169,6 +164,7 @@ $au-bg: #f5f3ff;
     background: #ffffff;
     position: relative;
     &--alt { background: linear-gradient(180deg, #ffffff 0%, $au-bg 40%, rgba(#ede9fe, 0.3) 60%, #ffffff 100%); }
+    @include respond-to('sm') { padding: 48px 0; }
   }
 
   &__section-container { @include container; }

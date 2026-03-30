@@ -1,9 +1,5 @@
 @use '../abstracts' as *;
 
-// ============================================
-// FEATURES GRID — VIBRANT DARK THEME
-// ============================================
-
 // Keyframes
 @keyframes features-fade-up {
   from {
@@ -16,34 +12,6 @@
   }
 }
 
-@keyframes features-card-in {
-  from {
-    opacity: 0;
-    transform: translateY(40px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes features-border-grow {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
-  }
-}
-
-@keyframes features-arrow-extend {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(5px);
-  }
-}
 
 .features {
   @include section-padding;
@@ -156,13 +124,15 @@
     @include respond-to('lg') {
       grid-template-columns: repeat(2, 1fr);
 
-      &-card--1, &-card--6 { grid-column: span 2; }
+      &-card--1, &-card--6, &-card--7, &-card--8 { grid-column: span 2; }
     }
 
     @include respond-to('sm') {
       grid-template-columns: 1fr;
+      gap: 12px;
 
-      &-card--1, &-card--6 { grid-column: span 1; }
+      &-card--1, &-card--2, &-card--3, &-card--4,
+      &-card--5, &-card--6, &-card--7, &-card--8 { grid-column: span 1; }
     }
   }
 
@@ -282,288 +252,8 @@
     flex-grow: 1;
   }
 
-  // ---- Grid ----
-  &__grid {
-    @include grid(4, $spacing-lg);
-
-    @include respond-to('lg') {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    @include respond-to('sm') {
-      grid-template-columns: 1fr;
-      gap: $spacing-md;
-    }
-
-    // === PSYCHOLOGICAL COLORS per card ===
-    // 1. Clientes — Azul confianza (trust, reliability)
-    // 2. Agenda — Verde esmeralda (organización, frescura)
-    // 3. Finanzas — Dorado (prosperidad, premium)
-    // 4. WhatsApp — Verde WhatsApp (comunicación directa)
-    // 5. Automatizaciones — Naranja energía (acción, velocidad)
-    // 6. Equipo — Cyan (colaboración, armonía)
-    // 7. Lealtad — Rosa/magenta (amor, fidelidad)
-    // 8. Servicios — Indigo profundo (profesionalismo)
-
-    // Icon gradients — psychological colors per feature card
-    & > :nth-child(1) .features__card-icon { background: linear-gradient(135deg, $color-corporate, $color-corporate-light); }
-    & > :nth-child(2) .features__card-icon { background: linear-gradient(135deg, $color-success, #34d399); }
-    & > :nth-child(3) .features__card-icon { background: linear-gradient(135deg, $color-warning, #fbbf24); }
-    & > :nth-child(4) .features__card-icon { background: linear-gradient(135deg, #25d366, #128c7e); } // WhatsApp
-    & > :nth-child(5) .features__card-icon { background: linear-gradient(135deg, $color-accent, $color-error); }
-    & > :nth-child(6) .features__card-icon { background: linear-gradient(135deg, #06b6d4, #22d3ee); } // Cyan
-    & > :nth-child(7) .features__card-icon { background: linear-gradient(135deg, $color-secondary, $color-secondary-light); }
-    & > :nth-child(8) .features__card-icon { background: linear-gradient(135deg, $color-corporate-light, $color-primary); }
-
-    // Per-card animated gradient border on hover + matching glow
-    // --card-color uses raw RGB triplets for rgba(var(--card-color), alpha) pattern
-    & > :nth-child(1) .features__card { --card-color: 79, 70, 229; --card-gradient: linear-gradient(135deg, #{$color-corporate}, #{$color-corporate-light}); }
-    & > :nth-child(2) .features__card { --card-color: 16, 185, 129; --card-gradient: linear-gradient(135deg, #{$color-success}, #34d399); }
-    & > :nth-child(3) .features__card { --card-color: 245, 158, 11; --card-gradient: linear-gradient(135deg, #{$color-warning}, #fbbf24); }
-    & > :nth-child(4) .features__card { --card-color: 37, 211, 102; --card-gradient: linear-gradient(135deg, #25d366, #128c7e); }
-    & > :nth-child(5) .features__card { --card-color: 249, 115, 22; --card-gradient: linear-gradient(135deg, #{$color-accent}, #{$color-error}); }
-    & > :nth-child(6) .features__card { --card-color: 6, 182, 212; --card-gradient: linear-gradient(135deg, #06b6d4, #22d3ee); }
-    & > :nth-child(7) .features__card { --card-color: 236, 72, 153; --card-gradient: linear-gradient(135deg, #{$color-secondary}, #{$color-secondary-light}); }
-    & > :nth-child(8) .features__card { --card-color: 99, 102, 241; --card-gradient: linear-gradient(135deg, #{$color-corporate-light}, #{$color-primary}); }
-  }
-
-  // ---- Card ----
-  &__card {
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.04) 0%, rgba(15, 23, 42, 0.01) 100%);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid $glass-border;
-    border-radius: 20px;
-    @include flex-column;
-    padding: 32px 28px 28px;
-    position: relative;
-    cursor: pointer;
-    opacity: 0;
-    overflow: hidden;
-
-    // Inner light effect at top — subtle gradient shine
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(var(--card-color, 79, 70, 229), 0.5) 50%,
-        transparent 100%
-      );
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      z-index: 1;
-    }
-
-    &:hover::before {
-      opacity: 1;
-    }
-
-    // Bottom gradient glow — color bleeds up from bottom
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 50%;
-      background: radial-gradient(
-        ellipse at center bottom,
-        rgba(var(--card-color, 79, 70, 229), 0.06) 0%,
-        transparent 70%
-      );
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    &:hover::after {
-      opacity: 1;
-    }
-
-    @include respond-to('sm') {
-      padding: 24px 20px 20px;
-      min-height: 44px;
-    }
-
-    // Staggered entrance animation
-    &--visible {
-      animation: features-card-in 0.6s ease forwards;
-      animation-delay: var(--card-delay, 0ms);
-    }
-
-    // Staggered entrance
-    @for $i from 1 through 8 {
-      &:nth-child(#{$i}) {
-        --card-delay: #{($i - 1) * 100}ms;
-      }
-    }
-
-    // Hover — 3D lift base
-    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                box-shadow 0.5s ease,
-                border-color 0.4s ease,
-                background 0.4s ease;
-
-    &:hover {
-      transform: translateY(-12px) scale(1.02);
-      border-color: var(--hover-color, rgba($color-corporate, 0.4));
-      background: linear-gradient(160deg, var(--hover-bg, rgba($color-corporate, 0.08)), rgba(15, 23, 42, 0.02));
-      box-shadow:
-        0 0 50px var(--hover-glow, rgba($color-corporate, 0.15)),
-        0 30px 60px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 var(--hover-inset, rgba($color-corporate, 0.1));
-    }
-
-    &:hover .features__card-link {
-      opacity: 1;
-      transform: translateX(0);
-      color: var(--hover-link, #3b82f6);
-    }
-
-    &:hover .features__card-icon {
-      transform: scale(1.15) translateY(-4px);
-      box-shadow: 0 12px 28px var(--hover-glow, rgba($color-corporate, 0.4));
-    }
-
-    &:hover .features__card-title {
-      color: $text-primary;
-    }
-
-    &:hover .features__card-description {
-      color: $text-secondary;
-    }
-
-    // Per-card psychological hover colors via CSS custom properties
-    &:nth-child(1) { --hover-color: rgba($color-corporate, 0.4); --hover-bg: rgba($color-corporate, 0.08); --hover-glow: rgba($color-corporate, 0.2); --hover-inset: rgba($color-corporate, 0.12); --hover-link: #3b82f6; }
-    &:nth-child(2) { --hover-color: rgba(16, 185, 129, 0.4); --hover-bg: rgba(16, 185, 129, 0.08); --hover-glow: rgba(16, 185, 129, 0.2); --hover-inset: rgba(16, 185, 129, 0.12); --hover-link: #34d399; }
-    &:nth-child(3) { --hover-color: rgba(245, 158, 11, 0.4); --hover-bg: rgba(245, 158, 11, 0.08); --hover-glow: rgba(245, 158, 11, 0.18); --hover-inset: rgba(245, 158, 11, 0.12); --hover-link: #fbbf24; }
-    &:nth-child(4) { --hover-color: rgba(37, 211, 102, 0.4); --hover-bg: rgba(37, 211, 102, 0.08); --hover-glow: rgba(37, 211, 102, 0.18); --hover-inset: rgba(37, 211, 102, 0.12); --hover-link: #25d366; }
-    &:nth-child(5) { --hover-color: rgba(249, 115, 22, 0.4); --hover-bg: rgba(249, 115, 22, 0.08); --hover-glow: rgba(249, 115, 22, 0.18); --hover-inset: rgba(249, 115, 22, 0.12); --hover-link: #fb923c; }
-    &:nth-child(6) { --hover-color: rgba(6, 182, 212, 0.4); --hover-bg: rgba(6, 182, 212, 0.08); --hover-glow: rgba(6, 182, 212, 0.18); --hover-inset: rgba(6, 182, 212, 0.12); --hover-link: #22d3ee; }
-    &:nth-child(7) { --hover-color: rgba(236, 72, 153, 0.4); --hover-bg: rgba(236, 72, 153, 0.08); --hover-glow: rgba(236, 72, 153, 0.18); --hover-inset: rgba(236, 72, 153, 0.12); --hover-link: #f472b6; }
-    &:nth-child(8) { --hover-color: rgba(37, 99, 235, 0.4); --hover-bg: rgba(37, 99, 235, 0.08); --hover-glow: rgba(37, 99, 235, 0.18); --hover-inset: rgba(37, 99, 235, 0.12); --hover-link: #3b82f6; }
-  }
-
-  &__card-icon {
-    @include flex-center;
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
-    margin-bottom: 24px;
-    flex-shrink: 0;
-    color: #fff;
-    position: relative;
-    z-index: 1;
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                box-shadow 0.4s ease;
-
-    // Subtle inner shine
-    &::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 50%);
-      pointer-events: none;
-    }
-
-    svg {
-      color: #fff;
-      stroke: #fff;
-      position: relative;
-      z-index: 1;
-    }
-
-    @include respond-to('sm') {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      margin-bottom: 18px;
-    }
-  }
-
-  &__card-title {
-    font-family: $font-family-heading;
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: $text-primary;
-    margin-bottom: 10px;
-    letter-spacing: -0.01em;
-    transition: color 0.3s ease;
-  }
-
-  &__card-highlight {
-    font-size: 0.8rem;
-    font-weight: $font-weight-bold;
-    margin-bottom: 8px;
-    letter-spacing: 0.01em;
-  }
-
-  &__card-description {
-    font-size: 0.84rem;
-    color: $text-secondary;
-    line-height: 1.65;
-    flex-grow: 1;
-    margin-bottom: 16px;
-    transition: color 0.3s ease;
-  }
-
-  &__card-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    text-decoration: none;
-    min-height: 44px;
-    min-width: 44px;
-    opacity: 0.8;
-    transition: all 0.3s ease;
-    letter-spacing: 0.01em;
-
-    &:hover {
-      opacity: 1;
-    }
-
-    svg {
-      transition: transform 0.3s ease;
-    }
-
-    &:hover svg {
-      transform: translateX(4px);
-    }
-  }
 
   // ========== Product Preview — Realistic Dashboard ==========
-  &__preview {
-    margin-top: $spacing-3xl;
-    position: relative;
-    opacity: 0;
-
-    .features--visible & {
-      animation: features-fade-up 0.8s ease forwards 0.5s;
-    }
-
-    @include respond-to('sm') {
-      margin-top: $spacing-2xl;
-    }
-  }
-
-  &__preview-glow {
-    position: absolute;
-    inset: -40px;
-    background: radial-gradient(ellipse at center, rgba($color-corporate, 0.12) 0%, transparent 70%);
-    filter: blur(40px);
-    pointer-events: none;
-    z-index: 0;
-  }
 
   &__preview-frame {
     position: relative;
@@ -649,26 +339,6 @@
     @include respond-to('sm') { width: 28px; height: 28px; font-size: 11px; margin-bottom: 12px; }
   }
 
-  &__preview-sidebar-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 16px;
-  }
-
-  &__preview-sidebar-item {
-    height: 28px;
-    border-radius: 6px;
-    background: transparent;
-
-    &--active {
-      background: rgba($color-corporate, 0.2);
-      border: 1px solid rgba($color-corporate, 0.3);
-    }
-
-    @include respond-to('sm') { height: 24px; }
-  }
-
   &__preview-sidebar-section {
     font-size: 8px;
     font-weight: 700;
@@ -714,202 +384,7 @@
     @include respond-to('sm') { display: none; }
   }
 
-  &__preview-badge {
-    font-size: 10px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    color: rgba(15, 23, 42, 0.4);
-    background: rgba(15, 23, 42, 0.04);
-    border: 1px solid rgba(15, 23, 42, 0.06);
-
-    &--active {
-      color: white;
-      background: rgba($color-corporate, 0.3);
-      border-color: rgba($color-corporate, 0.4);
-    }
-  }
-
-  // --- KPI Cards ---
-  &__preview-cards {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-
-    @include respond-to('sm') { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  }
-
-  &__preview-card {
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.03);
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    position: relative;
-    overflow: hidden;
-
-    // Top color bar
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-    }
-
-    &:nth-child(1)::before { background: linear-gradient(90deg, #2563eb, #3b82f6); }
-    &:nth-child(2)::before { background: linear-gradient(90deg, #0ea5e9, #06b6d4); }
-    &:nth-child(3)::before { background: linear-gradient(90deg, #10b981, #34d399); }
-    &:nth-child(4)::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-
-    @include respond-to('sm') { padding: 8px; }
-  }
-
-  &__preview-card-value {
-    font-size: 20px;
-    font-weight: 800;
-    color: #0f172a;
-    font-family: $font-family-heading;
-    letter-spacing: -0.02em;
-
-    @include respond-to('sm') { font-size: 14px; }
-  }
-
-  &__preview-card-label {
-    font-size: 10px;
-    color: rgba(15, 23, 42, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-
-    @include respond-to('sm') { font-size: 8px; }
-  }
-
-  &__preview-card-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 9px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 10px;
-
-    &--green {
-      color: #10b981;
-      background: rgba(#10b981, 0.15);
-    }
-    &--blue {
-      color: #0ea5e9;
-      background: rgba(#0ea5e9, 0.15);
-    }
-
-    @include respond-to('sm') { display: none; }
-  }
-
-  // --- Bottom: Chart + Ranking ---
-  &__preview-bottom {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: 10px;
-    flex: 1;
-
-    @include respond-to('sm') { grid-template-columns: 1fr; }
-  }
-
-  &__preview-chart {
-    border-radius: 10px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    padding: 14px;
-    display: flex;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-    flex-direction: column;
-    min-height: auto;
-  }
-
-  &__preview-chart-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(15, 23, 42, 0.5);
-    margin-bottom: 12px;
-  }
-
-  &__preview-chart-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    flex: 1;
-    padding-top: 8px;
-
-    @include respond-to('sm') { gap: 4px; }
-  }
-
-  &__preview-chart-bar {
-    flex: 1;
-    border-radius: 4px 4px 0 0;
-    background: linear-gradient(180deg, rgba($color-corporate, 0.5) 0%, rgba($color-corporate, 0.15) 100%);
-    min-height: 10px;
-    transition: background 0.3s ease;
-
-    .features__preview-frame:hover & {
-      background: linear-gradient(180deg, rgba($color-corporate, 0.7) 0%, rgba($color-corporate, 0.25) 100%);
-    }
-  }
-
-  &__preview-ranking {
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.02);
-    border: 1px solid rgba(15, 23, 42, 0.06);
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-
-    @include respond-to('sm') { display: none; }
-  }
-
-  &__preview-ranking-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.04);
-
-    &:last-child { border-bottom: none; }
-  }
-
-  &__preview-ranking-pos {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: rgba($color-corporate, 0.2);
-    color: #3b82f6;
-    font-size: 10px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  &__preview-ranking-name {
-    font-size: 11px;
-    color: rgba(15, 23, 42, 0.6);
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  &__preview-ranking-value {
-    font-size: 11px;
-    font-weight: 700;
-    color: #e2e8f0;
-    flex-shrink: 0;
-  }
-
-  // === NEW: Real CRM Interface Styles ===
+  // === CRM Interface Styles ===
 
   &__preview-sidebar-brand {
     font-size: 11px; font-weight: 700; color: #e2e8f0; margin-bottom: 16px;
@@ -990,6 +465,17 @@
   }
 
   // Chart + Agenda
+  &__preview-chart {
+    border-radius: 10px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    padding: 14px;
+    display: flex;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    flex-direction: column;
+    min-height: auto;
+  }
+
   &__preview-chart-header {
     display: flex; align-items: center; justify-content: space-between;
     font-size: 11px; font-weight: 600; color: #334155;

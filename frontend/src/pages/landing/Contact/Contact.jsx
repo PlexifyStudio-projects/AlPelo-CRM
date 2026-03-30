@@ -39,16 +39,17 @@ export default function Contact() {
   return (
     <>
       <SEO
-        title="Contacto"
-        description="Ponte en contacto con el equipo de PlexifyStudio CRM. Estamos aquí para ayudarte a transformar tu negocio."
+        title="Contacto — Habla con Nuestro Equipo"
+        description="Escribenos y resolvemos tus dudas sobre Plexify Studio. Soporte en español para peluquerias, salones de belleza, barberias y spas. Respuesta en menos de 24 horas."
         url="/contact"
+        keywords="contacto plexify studio, soporte software peluqueria, atencion al cliente CRM salon, ayuda sistema de citas"
       />
 
       <section className="page-hero" aria-label="Contáctanos">
         <div className="page-hero__container">
-          <h1 className="page-hero__title">Contáctanos</h1>
+          <h1 className="page-hero__title">Contacto — Soporte para Peluquerías y Salones</h1>
           <p className="page-hero__subtitle">
-            ¿Tienes preguntas o quieres saber más? Escríbenos y nuestro equipo te responderá lo antes posible.
+            ¿Tiene preguntas o quiere ver una demo personalizada? Escríbanos y le respondemos en menos de 24 horas.
           </p>
         </div>
       </section>

@@ -49,21 +49,6 @@ small {
   font-size: $font-size-sm;
 }
 
-// Gradient text utility
-.text-gradient {
-  background: $gradient-text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.text-gradient-hero {
-  background: $gradient-hero;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 // Responsive typography
 @include respond-to('md') {
   h1 { font-size: $font-size-5xl; }

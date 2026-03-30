@@ -37,6 +37,15 @@ $li-border: rgba(255, 255, 255, 0.06);
     align-items: center;
     overflow: hidden;
     padding: calc(#{$header-height} + 40px) 0 60px;
+
+    @include respond-to('md') {
+      min-height: auto;
+      padding: calc(#{$header-height} + 32px) 0 48px;
+    }
+
+    @include respond-to('sm') {
+      padding: calc(#{$header-height} + 24px) 0 32px;
+    }
   }
 
   &__hero-bg {
@@ -60,7 +69,8 @@ $li-border: rgba(255, 255, 255, 0.06);
     position: relative;
     z-index: 1;
 
-    @include respond-to('md') { grid-template-columns: 1fr; text-align: center; }
+    @include respond-to('md') { grid-template-columns: 1fr; text-align: center; gap: $spacing-xl; }
+    @include respond-to('sm') { padding: 0 $spacing-md; gap: $spacing-lg; }
   }
 
   &__hero-left {
@@ -71,6 +81,7 @@ $li-border: rgba(255, 255, 255, 0.06);
     justify-content: center;
 
     @include respond-to('md') { height: 300px; order: 2; }
+    @include respond-to('sm') { height: 220px; }
 
     canvas { width: 100% !important; height: 100% !important; }
   }
@@ -128,6 +139,7 @@ $li-border: rgba(255, 255, 255, 0.06);
 
     @include respond-to('md') { font-size: 3.5rem; }
     @include respond-to('sm') { font-size: 2.8rem; }
+    @include respond-to('xs') { font-size: 2.2rem; }
   }
 
   &__hero-sub {
@@ -192,8 +204,9 @@ $li-border: rgba(255, 255, 255, 0.06);
   &__hero-stats {
     display: flex;
     gap: $spacing-2xl;
+    flex-wrap: wrap;
 
-    div { display: flex; flex-direction: column; }
+    div { display: flex; flex-direction: column; align-items: center; }
 
     strong {
       font-family: $font-family-heading;
@@ -208,6 +221,22 @@ $li-border: rgba(255, 255, 255, 0.06);
       text-transform: uppercase;
       letter-spacing: 0.08em;
     }
+
+    @include respond-to('md') {
+      justify-content: center;
+    }
+
+    @include respond-to('sm') {
+      gap: $spacing-lg;
+    }
+
+    @include respond-to('xs') {
+      flex-direction: row;
+      justify-content: center;
+      gap: $spacing-lg;
+
+      strong { font-size: $font-size-xl; }
+    }
   }
 
   // ═══ SHARED ═══
@@ -219,7 +248,9 @@ $li-border: rgba(255, 255, 255, 0.06);
     letter-spacing: -0.03em;
     margin-bottom: $spacing-sm;
 
+    @include respond-to('md') { text-align: center; }
     @include respond-to('sm') { font-size: $font-size-2xl; }
+    @include respond-to('xs') { font-size: $font-size-xl; }
   }
 
   &__section-sub {
@@ -228,6 +259,9 @@ $li-border: rgba(255, 255, 255, 0.06);
     max-width: 500px;
     line-height: 1.7;
     margin-bottom: $spacing-2xl;
+
+    @include respond-to('md') { margin-inline: auto; text-align: center; }
+    @include respond-to('sm') { font-size: $font-size-sm; }
   }
 
   &__glow {
@@ -243,12 +277,20 @@ $li-border: rgba(255, 255, 255, 0.06);
     background: $li-surface;
     border-top: 1px solid $li-border;
     border-bottom: 1px solid $li-border;
+
+    @include respond-to('sm') {
+      padding: 48px 0;
+    }
   }
 
   &__actions-inner {
     max-width: 1100px;
     margin: 0 auto;
     padding: 0 $spacing-xl;
+
+    @include respond-to('sm') {
+      padding: 0 $spacing-md;
+    }
     display: grid;
     grid-template-columns: auto 1fr;
     gap: $spacing-2xl;
@@ -266,6 +308,8 @@ $li-border: rgba(255, 255, 255, 0.06);
       flex-direction: row;
       overflow-x: auto;
       scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: $spacing-sm;
       &::-webkit-scrollbar { display: none; }
     }
   }
@@ -317,6 +361,8 @@ $li-border: rgba(255, 255, 255, 0.06);
       font-weight: 700;
       color: #ffffff;
       margin-bottom: $spacing-sm;
+
+      @include respond-to('sm') { font-size: $font-size-xl; }
     }
 
     p {
@@ -324,6 +370,13 @@ $li-border: rgba(255, 255, 255, 0.06);
       color: #94a3b8;
       line-height: 1.7;
       max-width: 500px;
+
+      @include respond-to('sm') { font-size: $font-size-base; }
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-xl;
+      border-radius: 16px;
     }
   }
 
@@ -337,6 +390,10 @@ $li-border: rgba(255, 255, 255, 0.06);
   &__pipeline {
     padding: 80px 0;
     background: $li-dark;
+
+    @include respond-to('sm') {
+      padding: 48px 0;
+    }
   }
 
   &__pipeline-inner {
@@ -344,6 +401,10 @@ $li-border: rgba(255, 255, 255, 0.06);
     margin: 0 auto;
     padding: 0 $spacing-xl;
     text-align: center;
+
+    @include respond-to('sm') {
+      padding: 0 $spacing-md;
+    }
   }
 
   &__pipeline-track {
@@ -415,6 +476,10 @@ $li-border: rgba(255, 255, 255, 0.06);
     padding: 80px 0;
     background: $li-surface;
     border-top: 1px solid $li-border;
+
+    @include respond-to('sm') {
+      padding: 48px 0;
+    }
   }
 
   &__chat-inner {
@@ -427,6 +492,11 @@ $li-border: rgba(255, 255, 255, 0.06);
     align-items: center;
 
     @include respond-to('md') { grid-template-columns: 1fr; }
+
+    @include respond-to('sm') {
+      padding: 0 $spacing-md;
+      gap: $spacing-xl;
+    }
   }
 
   &__chat-points {
@@ -453,8 +523,14 @@ $li-border: rgba(255, 255, 255, 0.06);
       0 30px 80px rgba(0, 0, 0, 0.5),
       0 0 40px rgba($li, 0.08);
     max-width: 380px;
+    width: 100%;
     margin: 0 auto;
     animation: lina-float 6s ease-in-out infinite;
+
+    @include respond-to('sm') {
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    }
   }
 
   &__chat-phone-header {
@@ -493,6 +569,11 @@ $li-border: rgba(255, 255, 255, 0.06);
     min-height: 350px;
     background: #0b141a;
     background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M20 20v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4z'/%3E%3C/g%3E%3C/svg%3E");
+
+    @include respond-to('sm') {
+      min-height: 280px;
+      padding: $spacing-sm;
+    }
   }
 
   &__chat-msg {
@@ -543,12 +624,20 @@ $li-border: rgba(255, 255, 255, 0.06);
     padding: 60px 0;
     background: $li-dark;
     border-top: 1px solid $li-border;
+
+    @include respond-to('sm') {
+      padding: 40px 0;
+    }
   }
 
   &__trust-inner {
     max-width: 1100px;
     margin: 0 auto;
     padding: 0 $spacing-xl;
+
+    @include respond-to('sm') {
+      padding: 0 $spacing-md;
+    }
   }
 
   &__trust-grid {

@@ -22,7 +22,7 @@
   }
 
   &__ambient-blob {
-    position: absolute; border-radius: 50%; filter: blur(100px);
+    position: absolute; border-radius: 50%; filter: blur(70px); will-change: transform;
 
     &--1 {
       width: 600px; height: 600px;
@@ -173,8 +173,8 @@
     font-size: 0.8rem; color: $text-muted;
     opacity: 0;
     .hero--visible & { animation: hero-in 0.6s ease forwards 0.4s; }
-    @include respond-to('sm') { flex-wrap: wrap; justify-content: center; gap: 10px; }
-    @include respond-to('xs') { font-size: 0.7rem; gap: 8px; }
+    @include respond-to('sm') { flex-wrap: wrap; justify-content: center; gap: 10px; font-size: 0.75rem; }
+    @include respond-to('xs') { font-size: 0.7rem; gap: 8px; flex-direction: column; align-items: center; text-align: center; }
   }
 
   // ========== RIGHT — Dashboard Preview ==========
@@ -222,7 +222,7 @@
 
       &--2 {
         bottom: 15%;
-        left: -30px;
+        left: -10px;
         .hero--visible & { animation-delay: 1.6s; }
       }
 
@@ -281,6 +281,15 @@
       .features__preview-frame {
         transform: scale(0.45);
         width: 222%;
+      }
+    }
+
+    @include respond-to('xs') {
+      max-height: 260px;
+
+      .features__preview-frame {
+        transform: scale(0.38);
+        width: 263%;
       }
     }
   }

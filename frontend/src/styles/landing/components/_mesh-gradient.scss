@@ -9,8 +9,9 @@
   &__blob {
     position: absolute;
     border-radius: 50%;
-    filter: blur(120px);
+    filter: blur(80px);
     opacity: 0.12;
+    will-change: transform;
     animation: mesh-float 20s ease-in-out infinite;
 
     &--1 {
@@ -44,7 +45,7 @@
   // Reduce blob sizes on mobile to prevent overflow
   @media (max-width: 768px) {
     &__blob {
-      filter: blur(80px);
+      filter: blur(60px);
       opacity: 0.08;
 
       &--1 {

@@ -35,7 +35,17 @@ export default function Clientes() {
 
   return (
     <>
-      <SEO title="Gestión de Clientes" description="Base de datos inteligente con perfil 360°, estados automáticos y KPIs en tiempo real." url="/producto/clientes" />
+      <SEO
+        title="CRM y Gestion de Clientes"
+        description="Base de datos inteligente con perfil completo del cliente, historial de visitas y estados automaticos. Conoce mejor a los clientes de tu peluqueria, salon o spa."
+        url="/producto/clientes"
+        keywords="gestion de clientes peluqueria, base de datos clientes salon de belleza, CRM para barberia, historial de clientes spa, como organizar clientes de mi negocio"
+        breadcrumbs={[
+          { name: 'Inicio', url: '/' },
+          { name: 'Producto', url: '/features' },
+          { name: 'Gestion de Clientes' },
+        ]}
+      />
 
       {/* ── HERO ── */}
       <section className="p-clientes" ref={heroRef}>
@@ -43,8 +53,8 @@ export default function Clientes() {
           <div className="p-clientes__hero-content">
             <span className="p-clientes__badge">👤 Módulo CRM</span>
             <h1 className="p-clientes__title">
-              Conoce a cada cliente<br />
-              <span className="p-clientes__title--accent">como si fuera el único</span>
+              CRM y Gestión de Clientes para<br />
+              <span className="p-clientes__title--accent">Peluquerías y Salones</span>
             </h1>
             <p className="p-clientes__subtitle">
               Perfil 360°, estados inteligentes automáticos, KPIs en tiempo real

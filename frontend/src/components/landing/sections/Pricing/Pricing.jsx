@@ -6,20 +6,21 @@ const plans = [
     id: 'starter',
     name: 'Starter',
     price: '190.000',
-    description: 'Ideal para negocios que inician su transformación digital.',
-    messages: '1.500',
+    description: 'Todo lo que necesita para organizar y hacer crecer su negocio.',
+    messages: '1.000',
     features: [
       { text: 'CRM completo — clientes ilimitados', included: true },
       { text: 'Agenda y calendario visual', included: true },
       { text: 'Inbox WhatsApp en tiempo real', included: true },
-      { text: 'Lina IA — 1.500 mensajes/mes', included: true },
-      { text: '5 automatizaciones activas', included: true },
+      { text: 'Lina IA — 1.000 mensajes/mes', included: true },
+      { text: '10 automatizaciones activas', included: true },
       { text: 'Catálogo de servicios', included: true },
-      { text: 'Dashboard básico', included: true },
+      { text: 'Finanzas y reportes avanzados', included: true },
+      { text: 'Comisiones automáticas', included: true },
+      { text: 'Programa de lealtad', included: true },
+      { text: 'Campañas de WhatsApp', included: true },
+      { text: 'Google Reviews integrado', included: true },
       { text: 'Soporte por email', included: true },
-      { text: 'Finanzas y reportes avanzados', included: false },
-      { text: 'Comisiones automáticas', included: false },
-      { text: 'Programa de lealtad', included: false },
     ],
     highlighted: false,
   },
@@ -27,21 +28,16 @@ const plans = [
     id: 'pro',
     name: 'Pro',
     price: '390.000',
-    description: 'Para negocios que necesitan escalar su operación.',
+    description: 'Más mensajes de IA y automatizaciones para negocios en crecimiento.',
     badge: 'Recomendado',
-    messages: '4.000',
+    messages: '3.000',
     features: [
       { text: 'Todo lo del plan Starter', included: true },
-      { text: 'Lina IA — 4.000 mensajes/mes', included: true },
-      { text: '12 automatizaciones activas', included: true },
-      { text: 'Finanzas y reportes avanzados', included: true },
-      { text: 'Comisiones automáticas', included: true },
-      { text: 'Programa de lealtad completo', included: true },
-      { text: 'Campañas de WhatsApp masivas', included: true },
-      { text: 'Google Reviews integrado', included: true },
+      { text: 'Lina IA — 3.000 mensajes/mes', included: true },
+      { text: '25 automatizaciones activas', included: true },
+      { text: 'Campañas masivas ilimitadas', included: true },
       { text: 'Referidos y bonos', included: true },
       { text: 'Soporte prioritario', included: true },
-      { text: 'Soporte dedicado 24/7', included: false },
     ],
     highlighted: true,
   },
@@ -49,14 +45,12 @@ const plans = [
     id: 'business',
     name: 'Business',
     price: '590.000',
-    description: 'Operación completa para negocios con alto volumen.',
-    messages: '7.000',
+    description: 'Máxima capacidad de IA y soporte dedicado para su operación.',
+    messages: '5.000',
     features: [
       { text: 'Todo lo del plan Pro', included: true },
-      { text: 'Lina IA — 7.000 mensajes/mes', included: true },
-      { text: '20 automatizaciones activas', included: true },
-      { text: 'Campañas masivas ilimitadas', included: true },
-      { text: 'Reportes ejecutivos avanzados', included: true },
+      { text: 'Lina IA — 5.000 mensajes/mes', included: true },
+      { text: '50 automatizaciones activas', included: true },
       { text: 'Multi-profesionales ilimitados', included: true },
       { text: 'Soporte dedicado 24/7', included: true },
       { text: 'Onboarding personalizado', included: true },
@@ -67,15 +61,16 @@ const plans = [
 ];
 
 const FAQ = [
-  { q: '¿Puedo cambiar de plan en cualquier momento?', a: 'Sí. Puedes subir o bajar de plan cuando lo necesites. El cambio se aplica en tu próximo ciclo de facturación sin penalización.' },
-  { q: '¿Qué sucede si se agotan los mensajes de Lina IA?', a: 'Puedes adquirir paquetes adicionales: 1.000 mensajes por $80.000 COP o 3.000 mensajes por $200.000 COP. Se activan al instante.' },
-  { q: '¿Existe algún tipo de permanencia o contrato?', a: 'No. Todos los planes son mensuales sin permanencia. Puedes cancelar en cualquier momento sin costos adicionales.' },
+  { q: '¿Puedo cambiar de plan en cualquier momento?', a: 'Sí. Puede subir o bajar de plan cuando lo necesite. El cambio se aplica en el próximo ciclo de facturación sin penalización.' },
+  { q: '¿Qué sucede si se agotan los mensajes de Lina IA?', a: 'Puede adquirir paquetes adicionales: 500 mensajes por $50.000 COP o 1.500 mensajes por $120.000 COP. Se activan al instante.' },
+  { q: '¿Existe algún tipo de permanencia o contrato?', a: 'No. Todos los planes son mensuales sin permanencia. Puede cancelar en cualquier momento sin costos adicionales.' },
   { q: '¿La integración con WhatsApp Business está incluida?', a: 'Sí. Todos los planes incluyen conexión completa con la API oficial de WhatsApp Business a través de Meta.' },
-  { q: '¿Cómo funciona la demo personalizada?', a: 'Agendamos una sesión donde configuramos el sistema con los datos de tu negocio real. Ves todo funcionando antes de tomar una decisión.' },
-  { q: '¿Mis datos están seguros?', a: 'Absolutamente. Utilizamos encriptación de extremo a extremo, cumplimos con las políticas de Meta y nunca compartimos tu información con terceros.' },
+  { q: '¿Cómo funciona la demo personalizada?', a: 'Agendamos una sesión donde configuramos el sistema con los datos reales de su negocio. Ve todo funcionando antes de tomar una decisión.' },
+  { q: '¿Mis datos están seguros?', a: 'Absolutamente. Utilizamos encriptación de extremo a extremo, cumplimos con las políticas de Meta y nunca compartimos su información con terceros.' },
 ];
 
-export default function Pricing() {
+export default function Pricing({ isPage = false }) {
+  const HeadingTag = isPage ? 'h1' : 'h2';
   const [openFaq, setOpenFaq] = useState(null);
 
   return (
@@ -84,11 +79,11 @@ export default function Pricing() {
       <section className="pr__hero">
         <div className="pr__hero-inner">
           <p className="pr__hero-eyebrow">Precios</p>
-          <h1 className="pr__hero-title">
-            Planes diseñados para <span className="pr__hero-title--accent">crecer contigo</span>
-          </h1>
+          <HeadingTag className="pr__hero-title">
+            Precios y Planes para <span className="pr__hero-title--accent">Peluquerías y Salones</span>
+          </HeadingTag>
           <p className="pr__hero-sub">
-            Sin contratos. Sin costos ocultos. Cancela cuando quieras.
+            Sin contratos. Sin costos ocultos. Cancele cuando quiera.
           </p>
         </div>
       </section>
@@ -112,7 +107,7 @@ export default function Pricing() {
               </div>
 
               <Link to="/register" className={`pr__card-cta ${plan.highlighted ? 'pr__card-cta--primary' : 'pr__card-cta--outline'}`}>
-                Comenzar ahora
+                Empezar ahora
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
               </Link>
 
@@ -144,8 +139,8 @@ export default function Pricing() {
             </div>
           </div>
           <div className="pr__addon-right">
-            <div className="pr__addon-pill"><strong>1.000</strong> mensajes <span>$80.000 COP</span></div>
-            <div className="pr__addon-pill"><strong>3.000</strong> mensajes <span>$200.000 COP</span></div>
+            <div className="pr__addon-pill"><strong>500</strong> mensajes <span>$50.000 COP</span></div>
+            <div className="pr__addon-pill"><strong>1.500</strong> mensajes <span>$120.000 COP</span></div>
           </div>
         </div>
       </section>
@@ -157,7 +152,7 @@ export default function Pricing() {
             <h3 className="pr__payments-title">Pagos seguros y flexibles</h3>
             <p className="pr__payments-sub">
               Procesamos todos los pagos a través de pasarelas certificadas con encriptación bancaria.
-              Elige el método que prefieras.
+              Elija el método que prefiera.
             </p>
           </div>
 

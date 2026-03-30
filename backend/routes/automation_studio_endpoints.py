@@ -269,6 +269,17 @@ async def create_automation(body: dict, db: Session = Depends(get_db), user=Depe
     if not tid:
         raise HTTPException(400, "No tenant assigned")
 
+    # Enforce plan limit — count total rules (active or not)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    plan_limit = get_plan_limit(tenant) if tenant else 3
+    total_rules = db.query(AutomationRule).filter(AutomationRule.tenant_id == tid).count()
+    if total_rules >= plan_limit:
+        raise HTTPException(
+            403,
+            f"Límite de automatizaciones alcanzado ({total_rules}/{plan_limit}). "
+            f"Actualice su plan para crear más."
+        )
+
     trigger_type = body.get("trigger_type")
     if trigger_type not in TRIGGER_EVALUATORS:
         raise HTTPException(400, f"Trigger type '{trigger_type}' no válido")
@@ -342,7 +353,22 @@ async def update_automation(rule_id: int, body: dict, db: Session = Depends(get_
     if "is_enabled" in body:
         # Can only enable if Meta template is approved
         if body["is_enabled"] and rule.meta_template_status != "approved":
-            raise HTTPException(400, "No puedes activar sin aprobación de Meta. Envía la plantilla primero.")
+            raise HTTPException(400, "No puede activar sin aprobación de Meta. Envíe la plantilla primero.")
+        # Enforce plan limit on activation
+        if body["is_enabled"]:
+            tenant = db.query(Tenant).filter(Tenant.id == rule.tenant_id).first()
+            plan_limit = get_plan_limit(tenant) if tenant else 3
+            active_count = db.query(AutomationRule).filter(
+                AutomationRule.tenant_id == rule.tenant_id,
+                AutomationRule.is_enabled == True,
+                AutomationRule.id != rule.id
+            ).count()
+            if active_count >= plan_limit:
+                raise HTTPException(
+                    403,
+                    f"Límite de automatizaciones activas alcanzado ({active_count}/{plan_limit}). "
+                    f"Desactive una existente o actualice su plan."
+                )
         rule.is_enabled = body["is_enabled"]
 
     rule.updated_at = datetime.utcnow()

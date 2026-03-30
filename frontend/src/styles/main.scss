@@ -78,6 +78,5 @@
 @use 'pages/staff-finances';
 @use 'pages/team';
 
-// --- Landing / Marketing Pages ---
-// PlexifyStudio public-facing website (separate design system)
-@use 'landing/landing';
+// Landing styles are loaded separately in LandingRouter.jsx
+// via landing-entry.scss — NO se incluyen aquí para reducir bundle CSS del CRM

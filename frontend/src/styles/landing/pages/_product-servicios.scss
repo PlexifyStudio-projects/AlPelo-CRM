@@ -26,11 +26,6 @@ $sv-dark: #1d4ed8;
   100% { background-position: 200% 0; }
 }
 
-@keyframes p-sv-row-glow {
-  from { box-shadow: 0 0 0 rgba($sv, 0); }
-  to { box-shadow: 0 0 12px rgba($sv, 0.06); }
-}
-
 .p-servicios {
 
   // ═══════════════════════════════════════
@@ -193,6 +188,7 @@ $sv-dark: #1d4ed8;
     position: relative;
     overflow: hidden;
     &--alt { background: linear-gradient(180deg, #ffffff 0%, $sv-bg 50%, #ffffff 100%); }
+    @include respond-to('sm') { padding: 48px 0; }
 
     // Radial gradient blobs behind sections
     &::before {

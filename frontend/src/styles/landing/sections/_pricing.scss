@@ -22,11 +22,23 @@ $pr-light: #7c73ff;
     padding: calc(#{$header-height} + 80px) 0 48px;
     text-align: center;
     background: #ffffff;
+
+    @include respond-to('md') {
+      padding: calc(#{$header-height} + 48px) 0 32px;
+    }
+
+    @include respond-to('sm') {
+      padding: calc(#{$header-height} + 32px) 0 24px;
+    }
   }
 
   &__hero-inner {
     @include container;
     max-width: 600px;
+
+    @include respond-to('sm') {
+      padding-inline: $spacing-md;
+    }
   }
 
   &__hero-eyebrow {
@@ -66,20 +78,28 @@ $pr-light: #7c73ff;
   }
 
   &__cards-inner {
-    @include container;
+    width: 100%;
+    max-width: 1100px;
+    margin-inline: auto;
+    padding-inline: $container-padding;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 0;
     border: 1px solid rgba(15, 23, 42, 0.08);
     border-radius: 16px;
     overflow: hidden;
-    max-width: 1100px;
     background: #ffffff;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.02);
 
     @include respond-to('md') {
       grid-template-columns: 1fr;
-      max-width: 440px;
+      max-width: 520px;
+    }
+
+    @include respond-to('sm') {
+      max-width: 100%;
+      padding-inline: $spacing-md;
+      border-radius: 12px;
     }
   }
 
@@ -102,6 +122,10 @@ $pr-light: #7c73ff;
       border-bottom: 1px solid rgba(15, 23, 42, 0.06);
       padding: 32px 28px;
       &:last-child { border-bottom: none; }
+    }
+
+    @include respond-to('sm') {
+      padding: 28px 20px;
     }
 
     // Featured
@@ -178,6 +202,7 @@ $pr-light: #7c73ff;
     line-height: 1;
 
     @include respond-to('sm') { font-size: 2.2rem; }
+    @include respond-to('xs') { font-size: 1.9rem; }
   }
 
   &__card-period {
@@ -196,6 +221,7 @@ $pr-light: #7c73ff;
     gap: 6px;
     width: 100%;
     padding: 11px 20px;
+    min-height: 48px;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
@@ -271,9 +297,13 @@ $pr-light: #7c73ff;
 
   // ═══ ADDON ═══
   &__addon-section {
-    padding: 0 0 64px;
-    @include container;
+    padding: 0 $container-padding 64px;
     max-width: 860px;
+    margin-inline: auto;
+
+    @include respond-to('sm') {
+      padding: 0 $spacing-md 48px;
+    }
   }
 
   &__addon {
@@ -331,11 +361,19 @@ $pr-light: #7c73ff;
     padding: 64px 0;
     background: #ffffff;
     border-top: 1px solid rgba(15, 23, 42, 0.06);
+
+    @include respond-to('sm') {
+      padding: 48px 0;
+    }
   }
 
   &__payments-inner {
     @include container;
     max-width: 860px;
+
+    @include respond-to('sm') {
+      padding-inline: $spacing-md;
+    }
   }
 
   &__payments-header {
@@ -434,11 +472,19 @@ $pr-light: #7c73ff;
     padding: 64px 0 80px;
     background: #f8fafc;
     border-top: 1px solid rgba(15, 23, 42, 0.06);
+
+    @include respond-to('sm') {
+      padding: 48px 0 64px;
+    }
   }
 
   &__faq-inner {
     @include container;
     max-width: 640px;
+
+    @include respond-to('sm') {
+      padding-inline: $spacing-md;
+    }
   }
 
   &__faq-title {
@@ -471,8 +517,14 @@ $pr-light: #7c73ff;
     text-align: left;
     gap: $spacing-md;
     transition: color 0.2s ease;
+    min-height: 48px;
 
     &:hover { color: $pr; }
+
+    @include respond-to('sm') {
+      font-size: 14px;
+      padding: 14px 0;
+    }
   }
 
   &__faq-chevron {

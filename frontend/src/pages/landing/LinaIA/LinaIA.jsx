@@ -16,11 +16,11 @@ export default function LinaIA() {
 
   const ACTIONS = [
     { icon: '💬', label: 'Responde WhatsApp', desc: 'Atiende cada mensaje al instante. Agenda citas, confirma horarios y resuelve dudas — todo desde el chat.', color: '#25d366' },
-    { icon: '📅', label: 'Gestiona tu Agenda', desc: 'Crea, cancela o reprograma citas. Verifica disponibilidad del equipo en tiempo real antes de confirmar.', color: '#0ea5e9' },
-    { icon: '🧠', label: 'Analiza tu Negocio', desc: 'Diagnostica métricas, predice demanda, optimiza precios y genera planes de crecimiento con datos reales.', color: '#8b5cf6' },
-    { icon: '🎯', label: 'Rescata Clientes', desc: 'Detecta inactivos, genera ofertas personalizadas y envía campañas de reactivación automáticamente.', color: '#ef4444' },
-    { icon: '📊', label: 'Reportes Inteligentes', desc: 'KPIs, tendencias, comparativos y alertas — todo resumido y listo para tomar decisiones.', color: '#f59e0b' },
-    { icon: '🔒', label: 'Seguridad Total', desc: 'Pipeline de 4 fases: Lee → Verifica → Analiza → Ejecuta. Cada acción validada antes de responder.', color: '#10b981' },
+    { icon: '📅', label: 'Gestiona la Agenda', desc: 'Crea, cancela o reprograma citas. Verifica disponibilidad del equipo en tiempo real antes de confirmar.', color: '#0ea5e9' },
+    { icon: '🧠', label: 'Analiza el Negocio', desc: 'Revisa métricas, detecta tendencias y genera recomendaciones concretas con los datos reales de su operación.', color: '#8b5cf6' },
+    { icon: '🎯', label: 'Recupera Clientes', desc: 'Detecta quién dejó de venir, genera ofertas personalizadas y envía mensajes de reactivación automáticamente.', color: '#ef4444' },
+    { icon: '📊', label: 'Reportes Claros', desc: 'KPIs, tendencias, comparativos y alertas — todo resumido y listo para tomar decisiones.', color: '#f59e0b' },
+    { icon: '🔒', label: 'Verificación en 4 Pasos', desc: 'Cada mensaje pasa por 4 fases: Lee, Verifica, Analiza y Ejecuta. Nada se envía sin validación.', color: '#10b981' },
   ];
 
   const PIPELINE = [
@@ -41,9 +41,10 @@ export default function LinaIA() {
   return (
     <>
       <SEO
-        title="Lina IA — Asistente Ejecutiva con Inteligencia Artificial"
-        description="IA que responde WhatsApp, gestiona citas, analiza métricas y ejecuta 29+ acciones verificadas. 24/7. Para cualquier negocio con clientes."
+        title="Lina IA — Asistente Virtual para tu Negocio"
+        description="Lina responde WhatsApp, agenda citas y analiza tu negocio 24/7. Asistente con inteligencia artificial para peluquerias, salones de belleza, barberias y spas."
         url="/lina-ia"
+        keywords="asistente virtual para negocios, chatbot WhatsApp peluqueria, inteligencia artificial salon de belleza, bot de citas automatico, IA para barberia"
       />
 
       <div className="lina" ref={ref}>
@@ -66,12 +67,13 @@ export default function LinaIA() {
               </div>
 
               <h1 className="lina__hero-title">
-                Conoce a <span className="lina__hero-title--glow">Lina</span>
+                Asistente Virtual con IA para{' '}
+                <span className="lina__hero-title--glow">Peluquerías y Salones</span>
               </h1>
 
               <p className="lina__hero-sub">
-                La IA que opera tu negocio desde WhatsApp. Responde clientes, gestiona citas,
-                analiza métricas y ejecuta 29+ acciones — todo verificado, todo autónomo.
+                Lina atiende a sus clientes por WhatsApp mientras usted trabaja.
+                Agenda citas, responde preguntas, recupera inactivos y analiza su negocio — 24/7, sin descanso.
               </p>
 
               <div className="lina__hero-actions">
@@ -86,7 +88,7 @@ export default function LinaIA() {
                 <div><strong>29+</strong><span>Acciones</span></div>
                 <div><strong>4</strong><span>Fases</span></div>
                 <div><strong>24/7</strong><span>Activa</span></div>
-                <div><strong>0</strong><span>Errores</span></div>
+                <div><strong>4</strong><span>Validaciones</span></div>
               </div>
             </div>
           </div>
@@ -122,7 +124,7 @@ export default function LinaIA() {
             <h2 className="lina__section-title">
               Pipeline de verificación en <span className="lina__glow">4 fases</span>
             </h2>
-            <p className="lina__section-sub">Cada mensaje pasa por un proceso riguroso. Precisión absoluta.</p>
+            <p className="lina__section-sub">Cada mensaje pasa por un proceso riguroso antes de llegar a su cliente.</p>
 
             <div className="lina__pipeline-track">
               {PIPELINE.map((p, i) => (
@@ -146,8 +148,8 @@ export default function LinaIA() {
                 Así habla <span className="lina__glow">Lina</span> con tus clientes
               </h2>
               <p className="lina__section-sub">
-                Natural, precisa, verificada. Tus clientes no notan que es IA.
-                Cada respuesta está respaldada por datos reales de tu negocio.
+                Natural, precisa, verificada. Sus clientes no notan que es IA.
+                Cada respuesta está respaldada por datos reales de su negocio.
               </p>
               <ul className="lina__chat-points">
                 <li>✅ Verifica disponibilidad en tiempo real</li>
@@ -186,7 +188,7 @@ export default function LinaIA() {
               <div className="lina__trust-card">
                 <span>🔒</span>
                 <h3>Datos Encriptados</h3>
-                <p>Toda la comunicación cifrada de extremo a extremo</p>
+                <p>Comunicación cifrada de extremo a extremo</p>
               </div>
               <div className="lina__trust-card">
                 <span>✅</span>
@@ -196,7 +198,7 @@ export default function LinaIA() {
               <div className="lina__trust-card">
                 <span>🛡️</span>
                 <h3>Sin Compartir Datos</h3>
-                <p>Tu información nunca se comparte con terceros</p>
+                <p>Su información nunca se comparte con terceros</p>
               </div>
               <div className="lina__trust-card">
                 <span>📋</span>

@@ -9,7 +9,17 @@ export default function Equipo() {
 
   return (
     <>
-      <SEO title="Equipo y Comisiones" description="Gestiona profesionales, comisiones automáticas, ratings y rendimiento de tu equipo." url="/producto/equipo" />
+      <SEO
+        title="Gestion de Equipo y Comisiones"
+        description="Administra tu equipo, calcula comisiones automaticas y mide el rendimiento de cada profesional. Ideal para peluquerias, salones de belleza y spas con varios empleados."
+        url="/producto/equipo"
+        keywords="gestion de empleados peluqueria, comisiones barberos, rendimiento equipo salon de belleza, control de horarios spa, como pagar comisiones a mis empleados"
+        breadcrumbs={[
+          { name: 'Inicio', url: '/' },
+          { name: 'Producto', url: '/features' },
+          { name: 'Gestion de Equipo' },
+        ]}
+      />
 
       {/* ── HERO ── */}
       <section className="p-equipo" ref={ref}>
@@ -17,8 +27,8 @@ export default function Equipo() {
           <div className="p-equipo__hero-content">
             <span className="p-equipo__badge">👥 Módulo Equipo</span>
             <h1 className="p-equipo__title">
-              Tu equipo organizado<br />
-              <span className="p-equipo__title--accent">y motivado al máximo</span>
+              Gestión de Equipo, Comisiones<br />
+              <span className="p-equipo__title--accent">y Horarios del Personal</span>
             </h1>
             <p className="p-equipo__subtitle">
               Perfiles completos, comisiones automáticas, ratings de clientes
@@ -36,7 +46,8 @@ export default function Equipo() {
           </div>
 
           <div className="p-equipo__preview">
-            <img src={equipoImg} alt="PlexifyStudio Gestión de Equipo" className="p-equipo__preview-img" />
+            {/* TODO: Convertir a WebP para reducir ~40% el tamaño */}
+            <img src={equipoImg} alt="PlexifyStudio Gestión de Equipo" className="p-equipo__preview-img" loading="lazy" />
           </div>
         </div>
       </section>

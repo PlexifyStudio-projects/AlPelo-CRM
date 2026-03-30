@@ -6,15 +6,93 @@
     <meta name="theme-color" content="#1E3A5F" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Plexify" />
+    <meta name="apple-mobile-web-app-title" content="Plexify Studio" />
+
+    <!-- SEO: Default meta (overridden by react-helmet-async per page) -->
+    <meta name="description" content="Plexify Studio es el software CRM con inteligencia artificial para peluquerias, salones de belleza, barberias, spas y negocios de servicios. Agenda online, WhatsApp marketing y automatizaciones." />
+    <meta name="keywords" content="software para peluquerias, CRM para salones de belleza, sistema de gestion para barberias, software de citas para spa, gestion de clientes peluqueria, WhatsApp marketing para negocios, agenda online peluqueria, sistema de reservas online, software para negocios de servicios, CRM con inteligencia artificial" />
+    <link rel="canonical" href="https://plexifystudio-projects.github.io/AlPelo-CRM/" />
+
+    <!-- Open Graph (fallback) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Plexify Studio | Software de Gestion para Negocios de Servicios" />
+    <meta property="og:description" content="CRM con inteligencia artificial para peluquerias, salones de belleza, barberias, spas y negocios de servicios. Agenda online, WhatsApp marketing y automatizaciones." />
+    <meta property="og:image" content="https://plexifystudio-projects.github.io/AlPelo-CRM/icon-192.svg" />
+    <meta property="og:url" content="https://plexifystudio-projects.github.io/AlPelo-CRM/" />
+    <meta property="og:site_name" content="Plexify Studio" />
+    <meta property="og:locale" content="es_CO" />
+
+    <!-- Twitter Card (fallback) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@plexifystudio" />
+    <meta name="twitter:title" content="Plexify Studio | Software de Gestion para Negocios de Servicios" />
+    <meta name="twitter:description" content="CRM con inteligencia artificial para peluquerias, salones, barberias y spas. Agenda online, WhatsApp marketing y automatizaciones." />
+    <meta name="twitter:image" content="https://plexifystudio-projects.github.io/AlPelo-CRM/icon-192.svg" />
+
     <link rel="manifest" href="/AlPelo-CRM/manifest.json" />
     <link rel="apple-touch-icon" href="/AlPelo-CRM/icon-192.svg" />
-    <title>Plexify Studio | Gestion Inteligente</title>
+    <title>Plexify Studio | Software de Gestion para Negocios de Servicios</title>
+
+    <!-- Preconnect para Google Fonts (DNS + TLS anticipado) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- JSON-LD: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Plexify Studio",
+      "url": "https://plexifystudio-projects.github.io/AlPelo-CRM",
+      "logo": "https://plexifystudio-projects.github.io/AlPelo-CRM/icon-192.svg",
+      "description": "Software CRM con inteligencia artificial para negocios de servicios en Latinoamerica.",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "contact@plexifystudio.com",
+        "contactType": "customer service",
+        "availableLanguage": ["Spanish"]
+      },
+      "areaServed": {
+        "@type": "Place",
+        "name": "Latinoamerica"
+      }
+    }
+    </script>
+
+    <!-- JSON-LD: SoftwareApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Plexify Studio",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "description": "Plataforma CRM integral con inteligencia artificial para gestionar clientes, automatizar citas, campanas de WhatsApp y finanzas de negocios de servicios.",
+      "url": "https://plexifystudio-projects.github.io/AlPelo-CRM",
+      "inLanguage": "es",
+      "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": "190000",
+        "highPrice": "590000",
+        "priceCurrency": "COP",
+        "offerCount": "3"
+      }
+    }
+    </script>
   </head>
   <body>
+    <!-- SPA redirect handler: receives path from 404.html and restores the real URL -->
+    <script>
+      (function(){
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

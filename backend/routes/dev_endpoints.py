@@ -28,10 +28,10 @@ DEV_ROLES = ["dev", "super_admin"]
 # PLAN PACKAGES — Pricing & limits
 # ============================================================================
 PLANS = {
-    "starter": {"name": "Starter", "price": 190000, "messages": 1500},
-    "pro": {"name": "Pro", "price": 390000, "messages": 4000},
-    "business": {"name": "Business", "price": 590000, "messages": 7000},
-    "custom": {"name": "Custom", "price": 0, "messages": 0},
+    "starter": {"name": "Starter", "price": 190000, "messages": 1000, "automations": 10},
+    "pro": {"name": "Pro", "price": 390000, "messages": 3000, "automations": 25},
+    "business": {"name": "Business", "price": 590000, "messages": 5000, "automations": 50},
+    "custom": {"name": "Custom", "price": 0, "messages": 0, "automations": 999},
 }
 
 RECARGAS = [
@@ -94,7 +94,8 @@ def _safe_tenant_dict(t, db=None):
         "plan": getattr(t, 'plan', 'standard'),
         "monthly_price": getattr(t, 'monthly_price', 0),
         "messages_used": messages_used,
-        "messages_limit": getattr(t, 'messages_limit', 5000),
+        "messages_limit": getattr(t, 'messages_limit', 1000),
+        "max_automations": getattr(t, 'max_automations', 10),
         "ai_name": getattr(t, 'ai_name', 'Lina'),
         "ai_is_paused": getattr(t, 'ai_is_paused', False),
         "is_active": getattr(t, 'is_active', True),
@@ -214,6 +215,7 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
     plan_info = PLANS.get(plan_key, PLANS["starter"])
     monthly_price = plan_info["price"] if plan_key != "custom" else int(data.get("monthly_price", 0))
     messages_limit = plan_info["messages"] if plan_key != "custom" else int(data.get("messages_limit", 5000))
+    max_automations = plan_info["automations"] if plan_key != "custom" else int(data.get("max_automations", 999))
 
     tenant = Tenant(
         slug=slug,
@@ -226,6 +228,7 @@ def create_tenant(data: dict, db: Session = Depends(get_db), user: Admin = Depen
         plan=plan_key,
         monthly_price=monthly_price,
         messages_limit=messages_limit,
+        max_automations=max_automations,
         messages_used=0,
         paid_until=date.today() + timedelta(days=31),
         is_active=True,
@@ -316,14 +319,15 @@ def update_tenant(tenant_id: int, data: dict, db: Session = Depends(get_db), use
         "ai_name", "city", "country", "timezone", "currency", "booking_url",
         "wa_phone_number_id", "wa_business_account_id", "wa_access_token",
         "wa_webhook_token", "wa_phone_display",
-        "monthly_price", "messages_limit", "plan",
+        "monthly_price", "messages_limit", "max_automations", "plan",
     ]
 
-    # If plan changes, auto-resolve price + messages
+    # If plan changes, auto-resolve price + messages + automations
     if "plan" in data and data["plan"] in PLANS and data["plan"] != "custom":
         plan_info = PLANS[data["plan"]]
         data["monthly_price"] = plan_info["price"]
         data["messages_limit"] = plan_info["messages"]
+        data["max_automations"] = plan_info["automations"]
 
     for field in allowed_fields:
         if field in data:

@@ -270,7 +270,10 @@ class Tenant(Base):
 
     # Message metering
     messages_used = Column(Integer, nullable=False, default=0)
-    messages_limit = Column(Integer, nullable=False, default=5000)
+    messages_limit = Column(Integer, nullable=False, default=1000)
+
+    # Automation limit per plan
+    max_automations = Column(Integer, nullable=False, default=10)
 
     # Google Reviews
     google_review_url = Column(String(500), nullable=True)  # e.g. "https://g.page/r/xxx/review"

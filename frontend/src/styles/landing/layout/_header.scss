@@ -68,8 +68,9 @@
   &__nav-link {
     @include flex-center;
     gap: 5px;
-    font-size: $font-size-xs;
+    font-size: $font-size-sm;
     font-weight: $font-weight-medium;
+    min-height: 44px;
     color: $text-secondary;
     white-space: nowrap;
     @include transition(color);
@@ -206,6 +207,7 @@
     left: 50%;
     transform: translateX(-50%) translateY(8px);
     min-width: 280px;
+    max-width: calc(100vw - #{$spacing-xl});
     background-color: $color-bg-secondary;
     border: $border-width solid $glass-border;
     border-radius: $border-radius-lg;
@@ -322,90 +324,235 @@
     }
   }
 
-  // --- Mobile nav ---
-  &__mobile-nav {
+  // --- Mobile overlay ---
+  &__mobile-overlay {
     display: none;
-    position: absolute;
-    top: $header-height;
-    left: 0;
-    width: 100%;
-    background-color: rgba($color-bg-primary, 0.98);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: $border-width solid $border-color;
-    border-top: $border-width solid $border-color;
-    box-shadow: $shadow-lg;
-    padding: 0 $container-padding;
-    max-height: 0;
-    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    background: rgba($color-black, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: $z-modal - 2;
     opacity: 0;
-    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.3s ease,
-                padding 0.3s ease;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
 
     @include respond-to('lg') {
       display: block;
     }
 
-    &--open {
-      max-height: calc(100vh - #{$header-height});
+    &--visible {
       opacity: 1;
-      padding: $spacing-md $container-padding $spacing-xl;
-      overflow-y: auto;
+      pointer-events: auto;
     }
   }
 
+  // --- Mobile nav panel ---
+  &__mobile-nav {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(380px, 88vw);
+    height: 100vh;
+    height: 100dvh;
+    background: linear-gradient(
+      195deg,
+      rgba($color-bg-primary, 0.97) 0%,
+      rgba($color-bg-secondary, 0.98) 60%,
+      rgba($color-bg-primary, 0.99) 100%
+    );
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    border-left: $border-width solid $glass-border;
+    box-shadow: -8px 0 40px rgba($color-black, 0.12), -2px 0 8px rgba($color-black, 0.06);
+    z-index: $z-modal - 1;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    @include flex-column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    @include respond-to('lg') {
+      display: flex;
+    }
+
+    &--open {
+      transform: translateX(0);
+
+      // Stagger nav items when panel opens
+      .site-header__mobile-link,
+      .site-header__mobile-accordion {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  }
+
+  // --- Mobile header bar ---
+  &__mobile-header {
+    @include flex-between;
+    padding: $spacing-md $spacing-lg;
+    border-bottom: $border-width solid $glass-border;
+    flex-shrink: 0;
+    min-height: $header-height;
+
+    .site-header__logo {
+      font-size: $font-size-base;
+    }
+  }
+
+  &__mobile-close {
+    @include button-reset;
+    @include flex-center;
+    width: 44px;
+    height: 44px;
+    border-radius: $border-radius-full;
+    background: rgba($color-black, 0.04);
+    border: $border-width solid $glass-border;
+    transition: background 0.2s ease, transform 0.2s ease;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      color: $text-secondary;
+      transition: color 0.2s ease;
+    }
+
+    &:hover {
+      background: rgba($color-error, 0.08);
+      transform: rotate(90deg);
+
+      svg {
+        color: $color-error;
+      }
+    }
+  }
+
+  // --- Mobile links container ---
+  &__mobile-links {
+    flex: 1;
+    padding: $spacing-sm $spacing-md;
+    overflow-y: auto;
+  }
+
+  // --- Mobile nav link ---
   &__mobile-link {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     width: 100%;
-    min-height: 48px;
+    min-height: 56px;
     padding: $spacing-sm $spacing-md;
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     color: $text-secondary;
     text-decoration: none;
-    border-radius: $border-radius-md;
-    @include transition(background-color #{','} color, $transition-fast);
+    border-radius: $border-radius-lg;
+    border-left: 3px solid transparent;
+    transition: all 0.25s ease;
+    // Stagger entrance
+    opacity: 0;
+    transform: translateX(24px);
+    transition: opacity 0.35s ease, transform 0.35s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    transition-delay: calc(var(--item-index, 0) * 50ms + 100ms);
 
-    &:hover,
+    &:hover {
+      background-color: rgba($color-primary, 0.05);
+      color: $color-primary;
+      border-left-color: rgba($color-primary, 0.3);
+    }
+
     &--active {
-      background-color: rgba($color-primary, 0.06);
+      background-color: rgba($color-primary, 0.08);
+      color: $color-primary;
+      font-weight: $font-weight-semibold;
+      border-left-color: $color-primary;
+
+      .site-header__mobile-icon {
+        color: $color-primary;
+        background: rgba($color-primary, 0.1);
+      }
+    }
+  }
+
+  // --- Mobile icon ---
+  &__mobile-icon {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    border-radius: $border-radius-md;
+    background: rgba($color-black, 0.03);
+    color: $text-muted;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    &--animated {
+      animation: mobile-icon-glow 2.5s ease-in-out infinite;
+      background: rgba($color-primary, 0.08);
       color: $color-primary;
     }
   }
 
+  @keyframes mobile-icon-glow {
+    0%, 100% { box-shadow: 0 0 0 rgba($color-primary, 0); }
+    50% { box-shadow: 0 0 12px rgba($color-primary, 0.2); }
+  }
+
+  // --- Mobile label ---
+  &__mobile-label {
+    flex: 1;
+  }
+
   // --- Mobile accordion ---
   &__mobile-accordion {
-    border-bottom: $border-width solid $glass-border;
+    // Stagger entrance
+    opacity: 0;
+    transform: translateX(24px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    transition-delay: calc(var(--item-index, 0) * 50ms + 100ms);
   }
 
   &__mobile-accordion-trigger {
     @include button-reset;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     width: 100%;
-    min-height: 48px;
+    min-height: 56px;
     padding: $spacing-sm $spacing-md;
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     color: $text-secondary;
-    border-radius: $border-radius-md;
-    @include transition(background-color #{','} color, $transition-fast);
+    border-radius: $border-radius-lg;
+    border-left: 3px solid transparent;
+    transition: all 0.25s ease;
 
     .site-header__mobile-accordion-chevron {
       margin-left: auto;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     &:hover {
       color: $color-primary;
-      background-color: rgba($color-primary, 0.06);
+      background-color: rgba($color-primary, 0.05);
+      border-left-color: rgba($color-primary, 0.3);
     }
 
     &--open {
       color: $color-primary;
+      border-left-color: $color-primary;
+      background-color: rgba($color-primary, 0.04);
+
+      .site-header__mobile-icon {
+        color: $color-primary;
+        background: rgba($color-primary, 0.1);
+      }
 
       .site-header__mobile-accordion-chevron {
         transform: rotate(180deg);
@@ -414,25 +561,42 @@
   }
 
   &__mobile-accordion-chevron {
-    @include transition(transform, $transition-fast);
     flex-shrink: 0;
   }
 
   &__mobile-accordion-content {
-    padding: 0 0 $spacing-sm $spacing-md;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    opacity: 0;
+    padding-left: $spacing-lg;
+    margin-left: $spacing-md;
+    border-left: $border-width solid $glass-border;
+
+    &--open {
+      max-height: 600px;
+      opacity: 1;
+      padding-bottom: $spacing-sm;
+    }
   }
 
   &__mobile-accordion-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: $spacing-sm $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    min-height: 52px;
     border-radius: $border-radius-md;
     text-decoration: none;
-    @include transition(background-color, $transition-fast);
+    transition: background-color 0.2s ease, transform 0.2s ease;
 
     &:hover {
-      background-color: $glass-bg-hover;
+      background-color: rgba($color-primary, 0.04);
+      transform: translateX(4px);
+
+      .site-header__dropdown-icon {
+        transform: scale(1.08);
+      }
     }
   }
 
@@ -446,25 +610,32 @@
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     color: $text-primary;
+    line-height: $line-height-tight;
   }
 
   &__mobile-accordion-desc {
     font-size: $font-size-xs;
     color: $text-muted;
+    line-height: $line-height-base;
   }
 
+  // --- Mobile CTA actions ---
   &__mobile-actions {
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
-    margin-top: $spacing-md;
-    padding-top: $spacing-md;
-    border-top: $border-width solid $border-color;
+    padding: $spacing-lg;
+    margin-top: auto;
+    flex-shrink: 0;
+    border-top: $border-width solid $glass-border;
+    background: rgba($color-bg-secondary, 0.5);
 
     .button {
       width: 100%;
       justify-content: center;
-      min-height: 48px;
+      min-height: 52px;
+      font-size: $font-size-base;
+      border-radius: $border-radius-lg;
     }
   }
 

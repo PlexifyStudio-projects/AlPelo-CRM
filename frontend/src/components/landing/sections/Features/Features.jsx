@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 const features = [
@@ -124,7 +124,8 @@ const features = [
   },
 ];
 
-export default function Features() {
+// memo: contenido estático, evita re-renders innecesarios
+function Features() {
   const sectionRef = useRef(null);
   const cardsRef = useRef([]);
 
@@ -212,3 +213,5 @@ export default function Features() {
     </section>
   );
 }
+
+export default memo(Features);

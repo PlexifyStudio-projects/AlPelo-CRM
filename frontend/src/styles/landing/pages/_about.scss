@@ -29,6 +29,14 @@ $ab-dark: #0f172a;
     text-align: center;
     overflow: hidden;
     color: white;
+
+    @include respond-to('md') {
+      padding: calc(#{$header-height} + 80px) 0 64px;
+    }
+
+    @include respond-to('sm') {
+      padding: calc(#{$header-height} + 48px) 0 48px;
+    }
   }
 
   &__hero-bg {
@@ -172,6 +180,10 @@ $ab-dark: #0f172a;
   &__mission {
     padding: 80px 0;
     background: #ffffff;
+
+    @include respond-to('sm') {
+      padding: 48px 0;
+    }
   }
 
   &__mission-inner {
@@ -233,6 +245,10 @@ $ab-dark: #0f172a;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+
+    @include respond-to('xs') {
+      grid-template-columns: 1fr;
+    }
   }
 
   &__mission-feature {
@@ -336,6 +352,10 @@ $ab-dark: #0f172a;
   &__values {
     padding: 80px 0;
     background: #ffffff;
+
+    @include respond-to('sm') {
+      padding: 48px 0;
+    }
   }
 
   &__values-inner {
@@ -405,6 +425,10 @@ $ab-dark: #0f172a;
     padding: 80px 0;
     background: #f8fafc;
     border-top: 1px solid rgba(15, 23, 42, 0.06);
+
+    @include respond-to('sm') {
+      padding: 48px 0;
+    }
   }
 
   &__timeline-inner {
@@ -480,6 +504,10 @@ $ab-dark: #0f172a;
     padding: 80px 0;
     background: linear-gradient(180deg, #ffffff 0%, rgba($ab, 0.03) 100%);
     text-align: center;
+
+    @include respond-to('sm') {
+      padding: 48px 0;
+    }
   }
 
   &__cta-inner {

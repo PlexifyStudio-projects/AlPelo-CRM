@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 function Counter({ end, prefix = '', suffix = '', decimals = 0, delay = 0 }) {
@@ -73,7 +73,8 @@ const GAINS = [
   { icon: '🕐', text: '12 horas semanales recuperadas con automatización' },
 ];
 
-export default function Stats() {
+// memo: contenido estático, evita re-renders innecesarios
+function Stats() {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
 
@@ -145,3 +146,5 @@ export default function Stats() {
     </section>
   );
 }
+
+export default memo(Stats);

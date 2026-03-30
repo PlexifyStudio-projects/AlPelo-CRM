@@ -1,5 +1,4 @@
 import { Component, lazy, Suspense } from 'react';
-import './styles/main.scss';
 
 // ============================================
 // Plexify Studio — Unified App
@@ -10,7 +9,7 @@ import './styles/main.scss';
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, ''); // e.g. "/AlPelo-CRM"
 
 const LANDING_PATHS = [
-  '/', '/about', '/features', '/pricing', '/contact', '/demo',
+  '/', '/about', '/features', '/pricing', '/contact',
   '/faq', '/legal', '/register', '/lina-ia', '/finanzas',
   '/automatizaciones',
 ];

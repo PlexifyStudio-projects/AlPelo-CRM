@@ -92,6 +92,8 @@ def _run_migrations(engine):
         ("cash_register", "location_id", "INTEGER"),
         ("products", "location_id", "INTEGER"),
         ("inventory_movements", "location_id", "INTEGER"),
+        # Plan limits stored per tenant
+        ("tenant", "max_automations", "INTEGER NOT NULL DEFAULT 10"),
     ]
 
     for table, column, col_type in migrations:

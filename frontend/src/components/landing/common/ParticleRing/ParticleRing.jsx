@@ -1,11 +1,20 @@
 import { useEffect, useRef, useCallback } from 'react';
 
+// Detectar si el dispositivo es de bajo rendimiento (móvil o poca memoria)
+function getParticleCount() {
+  const isMobile = window.innerWidth < 768;
+  const isLowEnd = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
+  if (isMobile) return 400;    // Móvil: 400 partículas (ligero)
+  if (isLowEnd) return 700;   // Dispositivo bajo: 700
+  return 1200;                 // Desktop: visualmente idéntico a 2200
+}
+
 function createParticles(w, h) {
   const cx = w / 2;
   const cy = h / 2;
   const baseR = Math.min(w, h) * 0.36;
   const particles = [];
-  const count = 2200;
+  const count = getParticleCount();
 
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
@@ -93,6 +102,7 @@ export default function ParticleRing({ className = '' }) {
   const mouseRef = useRef({ x: -9999, y: -9999 });
   const frameRef = useRef(0);
   const timeRef = useRef(0);
+  const isVisibleRef = useRef(false); // Pausar animación cuando no está en viewport
 
   const handleMouseMove = useCallback((e) => {
     const canvas = canvasRef.current;
@@ -130,7 +140,19 @@ export default function ParticleRing({ className = '' }) {
     resize();
     window.addEventListener('resize', resize);
 
+    // IntersectionObserver — pausar cuando no es visible (ahorro de CPU/GPU)
+    const visObs = new IntersectionObserver(
+      ([entry]) => { isVisibleRef.current = entry.isIntersecting; },
+      { threshold: 0.05 }
+    );
+    visObs.observe(canvas);
+
     const animate = () => {
+      // No renderizar si el canvas no está en viewport
+      if (!isVisibleRef.current) {
+        frameRef.current = requestAnimationFrame(animate);
+        return;
+      }
       timeRef.current += 0.016;
       const t = timeRef.current;
       const { particles, cx, cy, baseR } = dataRef.current;
@@ -186,6 +208,7 @@ export default function ParticleRing({ className = '' }) {
     return () => {
       cancelAnimationFrame(frameRef.current);
       window.removeEventListener('resize', resize);
+      visObs.disconnect();
     };
   }, []);
 

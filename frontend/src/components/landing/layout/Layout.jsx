@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import '../../../styles/landing-entry.scss';
 import Header from './Header';
 import Footer from './Footer';
 import ScrollTop from '../common/ScrollTop';

@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:book.weibook.co)"
+      "WebSearch",
+      "WebFetch(*)",
+      "Bash(curl -s \"https://alpelo-crm-production.up.railway.app/api/message-templates/sync-all\" -X POST -H \"Content-Type: application/json\")",
+      "Bash(npm run:*)",
+      "Bash(Es \"Alpelo1*\" la clave y contraseña)"
     ]
   }
 }

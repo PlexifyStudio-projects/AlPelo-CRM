@@ -83,7 +83,17 @@ export default function Lealtad() {
 
   return (
     <>
-      <SEO title="Automatizaciones" description="Workflows inteligentes para citas, marketing, CRM y pagos. Configura una vez, funciona para siempre." url="/producto/automatizaciones" />
+      <SEO
+        title="Programa de Lealtad y Fidelizacion"
+        description="Fideliza a tus clientes con puntos, recompensas y niveles automaticos. Programa de lealtad para peluquerias, salones de belleza, barberias y spas."
+        url="/producto/lealtad"
+        keywords="programa de fidelizacion peluqueria, puntos de lealtad salon de belleza, como retener clientes barberia, recompensas para clientes spa"
+        breadcrumbs={[
+          { name: 'Inicio', url: '/' },
+          { name: 'Producto', url: '/features' },
+          { name: 'Programa de Lealtad' },
+        ]}
+      />
 
       {/* ── HERO ── */}
       <section className="p-auto" ref={ref}>
@@ -93,8 +103,8 @@ export default function Lealtad() {
             <div className="p-auto__hero-text">
               <span className="p-auto__badge">⚡ Automatizaciones</span>
               <h1 className="p-auto__title">
-                Configura una vez.<br />
-                <span className="p-auto__title--accent">Funciona para siempre.</span>
+                Programa de Lealtad y<br />
+                <span className="p-auto__title--accent">Fidelización de Clientes</span>
               </h1>
               <p className="p-auto__subtitle">
                 Recordatorios de citas, reactivación de inactivos, cumpleaños,
@@ -113,7 +123,8 @@ export default function Lealtad() {
                   <span /><span /><span />
                   <span className="p-auto__frame-url">app.plexifystudio.com/automatizaciones</span>
                 </div>
-                <img src={autoImg} alt="PlexifyStudio Automatizaciones" />
+                {/* TODO: Convertir a WebP para reducir ~40% el tamaño */}
+                <img src={autoImg} alt="PlexifyStudio Automatizaciones" loading="lazy" />
               </div>
             </div>
           </div>

@@ -37,6 +37,10 @@ $ft-white: #e2e8f0;
     border-top: 1px solid $ft-border;
     border-bottom: 1px solid $ft-border;
     margin-bottom: $spacing-3xl;
+
+    @include respond-to('sm') {
+      margin-bottom: $spacing-2xl;
+    }
   }
 
   &__cta-inner {
@@ -101,6 +105,11 @@ $ft-white: #e2e8f0;
 
     svg { transition: transform 0.3s ease; }
     &:hover svg { transform: translateX(4px); }
+
+    @include respond-to('sm') {
+      width: 100%;
+      justify-content: center;
+    }
   }
 
   // ── Container ──
@@ -180,8 +189,8 @@ $ft-white: #e2e8f0;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
     background: $ft-surface;
     border: 1px solid $ft-border;
@@ -246,6 +255,7 @@ $ft-white: #e2e8f0;
     border-radius: 14px;
     text-decoration: none;
     transition: all 0.3s ease;
+    min-width: 0; // allow flex children to shrink below content size
 
     &:hover {
       background: rgba(255, 255, 255, 0.04);
@@ -254,6 +264,8 @@ $ft-white: #e2e8f0;
     }
 
     svg { color: $color-primary-light; flex-shrink: 0; }
+
+    div { min-width: 0; } // allow text truncation
   }
 
   &__contact-label {
@@ -271,6 +283,8 @@ $ft-white: #e2e8f0;
     font-size: $font-size-sm;
     color: $ft-white;
     font-weight: 500;
+    word-break: break-all;
+    overflow-wrap: break-word;
   }
 
   // ── Bottom ──

@@ -35,15 +35,17 @@ WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 
 PLAN_LIMITS = {
     "trial": 3,
-    "starter": 5,
-    "pro": 12,
-    "business": 20,
-    "enterprise": 50,
+    "starter": 10,
+    "pro": 25,
+    "business": 50,
+    "enterprise": 999,
 }
 
 
 def get_plan_limit(tenant):
-    """Return max automations allowed for tenant's plan."""
+    """Return max automations allowed for tenant — from DB column first, fallback to plan dict."""
+    if tenant and getattr(tenant, 'max_automations', None):
+        return tenant.max_automations
     return PLAN_LIMITS.get(tenant.plan or "trial", 3)
 
 

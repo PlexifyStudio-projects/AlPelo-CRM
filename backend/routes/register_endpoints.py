@@ -64,20 +64,20 @@ class RegisterRequest(BaseModel):
 PLAN_CONFIG = {
     "starter": {
         "monthly_price": 190000,
-        "messages_limit": 1500,
-        "max_automations": 5,
+        "messages_limit": 1000,
+        "max_automations": 10,
         "label": "Starter",
     },
     "pro": {
         "monthly_price": 390000,
-        "messages_limit": 4000,
-        "max_automations": 12,
+        "messages_limit": 3000,
+        "max_automations": 25,
         "label": "Pro",
     },
     "business": {
         "monthly_price": 590000,
-        "messages_limit": 7000,
-        "max_automations": 20,
+        "messages_limit": 5000,
+        "max_automations": 50,
         "label": "Business",
     },
 }
@@ -176,6 +176,7 @@ def register_business(data: RegisterRequest, db: Session = Depends(get_db)):
         ai_is_paused=False,
         messages_used=0,
         messages_limit=plan_info["messages_limit"],
+        max_automations=plan_info["max_automations"],
         ai_name="Lina",
     )
     db.add(tenant)

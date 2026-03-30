@@ -87,7 +87,6 @@ export default function Demo() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Demo form submitted:', formData);
     alert('¡Gracias! Nos pondremos en contacto contigo pronto para agendar tu demo.');
   };
 

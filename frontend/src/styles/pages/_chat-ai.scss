@@ -21,6 +21,7 @@ $lina-assistant-bg: #F1F5F9;
   @include flex-column;
   height: calc(100vh - #{$header-height} - #{$spacing-2xl});
   max-height: calc(100vh - #{$header-height} - #{$spacing-2xl});
+  overflow: hidden;
 
   // HEADER — Purple gradient for AI identity
   &__header {
@@ -463,10 +464,13 @@ $lina-assistant-bg: #F1F5F9;
     resize: none;
     min-height: 32px;
     max-height: 120px;
-    outline: none;
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-appearance: none;
     line-height: $line-height-base;
     padding: $spacing-xs 0;
 
+    &:focus { outline: none !important; box-shadow: none !important; }
     &::placeholder { color: $color-gray-300; }
     &:disabled { opacity: 0.5; }
   }
@@ -724,6 +728,7 @@ $lina-assistant-bg: #F1F5F9;
   .chat-ai {
     height: calc(100vh - #{$header-height} - #{$spacing-md});
     max-height: calc(100vh - #{$header-height} - #{$spacing-md});
+    overflow: hidden;
 
     &__header {
       padding: $spacing-xs $spacing-md;
@@ -785,6 +790,11 @@ $lina-assistant-bg: #F1F5F9;
     @include flex-column;
     gap: $spacing-md;
     padding: $spacing-md 0;
+
+    @media (max-width: 1024px) {
+      gap: $spacing-xs;
+      padding: $spacing-xs 0;
+    }
   }
 
   &__strategy-header {
@@ -810,12 +820,15 @@ $lina-assistant-bg: #F1F5F9;
       grid-template-columns: repeat(3, 1fr);
     }
 
-    @media (max-width: 900px) {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    @media (max-width: 1024px) {
+      // Horizontal scroll on tablet/phone
+      display: flex;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 8px;
+      padding-bottom: 4px;
 
-    @media (max-width: $breakpoint-sm) {
-      grid-template-columns: 1fr;
+      &::-webkit-scrollbar { display: none; }
     }
   }
 
@@ -832,6 +845,13 @@ $lina-assistant-bg: #F1F5F9;
     font-family: $font-primary;
     transition: all 250ms $ease-out-quart;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+    @media (max-width: 1024px) {
+      flex-shrink: 0;
+      min-width: 160px;
+      padding: 10px 12px;
+      gap: 8px;
+    }
 
     &:hover:not(:disabled) {
       border-color: rgba($lina-purple, 0.4);

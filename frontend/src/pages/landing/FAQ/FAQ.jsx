@@ -6,9 +6,10 @@ export default function FAQPage() {
   return (
     <>
       <SEO
-        title="Preguntas Frecuentes"
-        description="Resuelve todas tus dudas sobre PlexifyStudio CRM. Preguntas frecuentes sobre funcionalidades, precios, Lina IA y más."
+        title="Preguntas Frecuentes — Dudas Resueltas"
+        description="Resuelve tus dudas sobre Plexify Studio: precios, WhatsApp Business, Lina IA, seguridad de datos y como funciona. Todo lo que necesitas saber antes de empezar."
         url="/faq"
+        keywords="preguntas frecuentes software peluqueria, dudas CRM salon de belleza, como funciona sistema de citas, es seguro plexify studio"
       />
 
       <section className="page-hero" aria-label="Preguntas Frecuentes">

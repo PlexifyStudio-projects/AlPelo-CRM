@@ -1,9 +1,5 @@
 @use '../abstracts' as *;
 
-// ============================================
-// CONTACT PAGE — Styles (VIBRANT DARK THEME)
-// ============================================
-
 .contact-hero {
   @include section-padding;
   background-color: $color-bg-primary;
@@ -11,34 +7,6 @@
 
   &__container {
     @include container;
-  }
-
-  &__title {
-    @include heading($font-size-3xl);
-    margin-bottom: $spacing-md;
-    letter-spacing: -0.02em;
-    color: $text-primary;
-
-    @include respond-to('md') {
-      font-size: $font-size-2xl;
-    }
-
-    @include respond-to('sm') {
-      font-size: $font-size-xl;
-    }
-  }
-
-  &__subtitle {
-    @include body-text($font-size-md);
-    color: $text-secondary;
-    max-width: 560px;
-    margin-inline: auto;
-    margin-bottom: $spacing-3xl;
-
-    @include respond-to('sm') {
-      font-size: $font-size-base;
-      margin-bottom: $spacing-2xl;
-    }
   }
 
   &__cards {
@@ -49,6 +17,11 @@
     @include respond-to('md') {
       grid-template-columns: 1fr;
       gap: $spacing-md;
+      max-width: 480px;
+    }
+
+    @include respond-to('sm') {
+      max-width: 100%;
     }
   }
 

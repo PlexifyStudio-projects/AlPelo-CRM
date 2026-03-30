@@ -77,21 +77,6 @@ const IconSparkle = () => (
   </svg>
 );
 
-const IconChart = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="20" x2="12" y2="10" />
-    <line x1="18" y1="20" x2="18" y2="4" />
-    <line x1="6" y1="20" x2="6" y2="16" />
-    <path d="M3 20h18" />
-  </svg>
-);
-
-const IconZap = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-
 const IconTag = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
@@ -119,12 +104,12 @@ const DROPDOWN_ICONS = {
 const NAV_ITEMS = [
   { label: 'Inicio', path: '/', icon: IconHome },
   { label: 'Producto', icon: IconGrid, children: [
-    { label: 'Gestión de Clientes', path: '/producto/clientes', desc: 'Historial, estados, seguimiento inteligente' },
-    { label: 'Agenda y Citas', path: '/producto/agenda', desc: 'Calendario, reservas y recordatorios' },
-    { label: 'Campañas WhatsApp', path: '/producto/campanas', desc: 'Plantillas y envío masivo' },
-    { label: 'Servicios y Catálogo', path: '/producto/servicios', desc: 'Precios y profesionales' },
-    { label: 'Equipo', path: '/producto/equipo', desc: 'Comisiones y rendimiento' },
-    { label: 'Automatizaciones', path: '/automatizaciones', desc: 'Flujos automáticos y recordatorios' },
+    { label: 'Gestión de Clientes', path: '/producto/clientes', desc: 'Perfil 360°, estados automáticos y alertas' },
+    { label: 'Agenda y Citas', path: '/producto/agenda', desc: 'Calendario visual y recordatorios por WhatsApp' },
+    { label: 'Campañas WhatsApp', path: '/producto/campanas', desc: 'Envío masivo y reactivación de inactivos' },
+    { label: 'Servicios y Catálogo', path: '/producto/servicios', desc: 'Precios, duración y reservas automáticas' },
+    { label: 'Gestión de Equipo', path: '/producto/equipo', desc: 'Comisiones, ratings y rendimiento' },
+    { label: 'Automatizaciones', path: '/automatizaciones', desc: 'Mensajes automáticos que trabajan por usted' },
   ]},
   { label: 'Lina IA', path: '/lina-ia', icon: IconSparkle, animated: true },
   { label: 'Precios', path: '/pricing', icon: IconTag },
@@ -173,6 +158,16 @@ export default function Header() {
     setMobileAccordion(null);
     setOpenDropdown(null);
   }, [location.pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileOpen]);
 
   const closeMobile = () => {
     setIsMobileOpen(false);
@@ -304,89 +299,128 @@ export default function Header() {
 
         <button
           className="site-header__menu-toggle"
-          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          onClick={() => setIsMobileOpen(true)}
           aria-expanded={isMobileOpen}
           aria-label="Abrir menú de navegación"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            {isMobileOpen ? (
-              <path d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            )}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
       </div>
 
-      {/* Mobile menu */}
-      {isMobileOpen && (
-        <nav className="site-header__mobile-nav" aria-label="Navegación móvil">
-          {NAV_ITEMS.map((item) =>
+      {/* Mobile menu — premium overlay */}
+      <div
+        className={`site-header__mobile-overlay${isMobileOpen ? ' site-header__mobile-overlay--visible' : ''}`}
+        onClick={closeMobile}
+        aria-hidden="true"
+      />
+      <nav
+        className={`site-header__mobile-nav${isMobileOpen ? ' site-header__mobile-nav--open' : ''}`}
+        aria-label="Navegación móvil"
+        aria-hidden={!isMobileOpen}
+      >
+        {/* Mobile header bar */}
+        <div className="site-header__mobile-header">
+          <Link to="/" className="site-header__logo" onClick={closeMobile} aria-label="PlexifyStudio CRM - Inicio">
+            <svg className="site-header__logo-mark" width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <rect width="32" height="32" rx="8" fill="url(#logo-gradient-mobile)"/>
+              <path d="M10 22V10h5.5c1.3 0 2.4.4 3.2 1.2.8.8 1.3 1.8 1.3 3 0 1.2-.4 2.2-1.3 3-.8.8-1.9 1.2-3.2 1.2H13.5V22H10z" fill="white"/>
+              <defs>
+                <linearGradient id="logo-gradient-mobile" x1="0" y1="0" x2="32" y2="32">
+                  <stop offset="0%" stopColor="#4f46e5"/>
+                  <stop offset="100%" stopColor="#6366f1"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <span>PlexifyStudio</span>
+          </Link>
+          <button
+            className="site-header__mobile-close"
+            onClick={closeMobile}
+            aria-label="Cerrar menú"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Navigation links */}
+        <div className="site-header__mobile-links">
+          {NAV_ITEMS.map((item, index) =>
             item.children ? (
-              <div key={item.label} className="site-header__mobile-accordion">
+              <div key={item.label} className="site-header__mobile-accordion" style={{ '--item-index': index }}>
                 <button
-                  className={`site-header__mobile-accordion-trigger${mobileAccordion === item.label ? ' header__mobile-accordion-trigger--open' : ''}`}
+                  className={`site-header__mobile-accordion-trigger${mobileAccordion === item.label ? ' site-header__mobile-accordion-trigger--open' : ''}`}
                   onClick={() => toggleMobileAccordion(item.label)}
                   aria-expanded={mobileAccordion === item.label}
                 >
                   {item.icon && (
-                    <span className="site-header__nav-icon">
+                    <span className="site-header__mobile-icon">
                       <item.icon />
                     </span>
                   )}
-                  {item.label}
+                  <span className="site-header__mobile-label">{item.label}</span>
                   <ChevronDown className="site-header__mobile-accordion-chevron" />
                 </button>
 
-                {mobileAccordion === item.label && (
-                  <div className="site-header__mobile-accordion-content">
-                    {item.children.map((child) => {
-                      const ChildIcon = DROPDOWN_ICONS[child.label];
-                      return (
-                        <Link
-                          key={child.path + child.label}
-                          to={child.path}
-                          className="site-header__mobile-accordion-item"
-                          onClick={closeMobile}
-                        >
-                          {ChildIcon && (
-                            <span className="site-header__dropdown-icon">
-                              <ChildIcon />
-                            </span>
-                          )}
-                          <div className="site-header__mobile-accordion-text">
-                            <span className="site-header__mobile-accordion-label">{child.label}</span>
-                            <span className="site-header__mobile-accordion-desc">{child.desc}</span>
-                          </div>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
+                <div className={`site-header__mobile-accordion-content${mobileAccordion === item.label ? ' site-header__mobile-accordion-content--open' : ''}`}>
+                  {item.children.map((child) => {
+                    const ChildIcon = DROPDOWN_ICONS[child.label];
+                    return (
+                      <Link
+                        key={child.path + child.label}
+                        to={child.path}
+                        className="site-header__mobile-accordion-item"
+                        onClick={closeMobile}
+                      >
+                        {ChildIcon && (
+                          <span className="site-header__dropdown-icon">
+                            <ChildIcon />
+                          </span>
+                        )}
+                        <div className="site-header__mobile-accordion-text">
+                          <span className="site-header__mobile-accordion-label">{child.label}</span>
+                          <span className="site-header__mobile-accordion-desc">{child.desc}</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             ) : (
               <NavLink
                 key={item.path}
                 to={item.path}
-                className="site-header__mobile-link"
+                className={({ isActive }) =>
+                  `site-header__mobile-link${isActive ? ' site-header__mobile-link--active' : ''}`
+                }
                 onClick={closeMobile}
+                style={{ '--item-index': index }}
               >
                 {item.icon && (
-                  <span className={`site-header__nav-icon${item.animated ? ' header__nav-icon--animated' : ''}`}>
+                  <span className={`site-header__mobile-icon${item.animated ? ' site-header__mobile-icon--animated' : ''}`}>
                     <item.icon />
                   </span>
                 )}
-                {item.label}
+                <span className="site-header__mobile-label">{item.label}</span>
               </NavLink>
             )
           )}
-          <div className="site-header__mobile-actions">
-            <Button variant="primary" size="md" full href="/login" onClick={(e) => { e.preventDefault(); closeMobile(); window.location.href = (import.meta.env.BASE_URL || '/') + 'login'; }}>
-              Iniciar Sesión
-            </Button>
-          </div>
-        </nav>
-      )}
+        </div>
+
+        {/* CTA buttons */}
+        <div className="site-header__mobile-actions">
+          <Button variant="secondary" size="md" full href="/login" onClick={(e) => { e.preventDefault(); closeMobile(); window.location.href = (import.meta.env.BASE_URL || '/') + 'login'; }}>
+            Iniciar Sesión
+          </Button>
+          <Button variant="primary" size="md" full href="/register" onClick={(e) => { e.preventDefault(); closeMobile(); window.location.href = (import.meta.env.BASE_URL || '/') + 'register'; }}>
+            Crear cuenta gratis
+          </Button>
+        </div>
+      </nav>
     </header>
   );
 }

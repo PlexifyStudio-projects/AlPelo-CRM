@@ -109,7 +109,17 @@ export default function Servicios() {
 
   return (
     <>
-      <SEO title="Servicios y Catálogo" description="Catálogo profesional para cualquier negocio: categorías, precios, duración y reservas por WhatsApp." url="/producto/servicios" />
+      <SEO
+        title="Catalogo de Servicios y Precios"
+        description="Organiza tu catalogo de servicios con categorias, precios en COP y duracion. Tus clientes reservan directo por WhatsApp. Para peluquerias, salones, spas y clinicas."
+        url="/producto/servicios"
+        keywords="catalogo de servicios peluqueria, lista de precios salon de belleza, como organizar servicios de mi spa, gestion de precios barberia"
+        breadcrumbs={[
+          { name: 'Inicio', url: '/' },
+          { name: 'Producto', url: '/features' },
+          { name: 'Catalogo de Servicios' },
+        ]}
+      />
 
       {/* ── HERO ── */}
       <section className="p-servicios" ref={ref}>
@@ -119,8 +129,8 @@ export default function Servicios() {
             <div className="p-servicios__hero-text">
               <span className="p-servicios__badge">📋 Catálogo de Servicios</span>
               <h1 className="p-servicios__title">
-                Tu catálogo profesional.<br />
-                <span className="p-servicios__title--accent">Para cualquier negocio.</span>
+                Catálogo de Servicios y Precios<br />
+                <span className="p-servicios__title--accent">para su Negocio</span>
               </h1>
               <p className="p-servicios__subtitle">
                 No importa si tienes una peluquería, clínica, restaurante, gimnasio o veterinaria.
@@ -138,7 +148,8 @@ export default function Servicios() {
                   <span /><span /><span />
                   <span className="p-servicios__frame-url">app.plexifystudio.com/servicios</span>
                 </div>
-                <img src={serviciosImg} alt="PlexifyStudio Catálogo de Servicios" />
+                {/* TODO: Convertir a WebP para reducir ~40% el tamaño */}
+                <img src={serviciosImg} alt="PlexifyStudio Catálogo de Servicios" loading="lazy" />
               </div>
             </div>
           </div>

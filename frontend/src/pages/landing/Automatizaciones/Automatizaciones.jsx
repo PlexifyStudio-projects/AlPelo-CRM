@@ -5,9 +5,10 @@ export default function Automatizaciones() {
   return (
     <>
       <SEO
-        title="Automatizaciones — Workflows WhatsApp Inteligentes"
-        description="Workflows automáticos con Meta API: recordatorios 24h y 1h, cumpleaños, reactivación, no-show, bienvenida y VIP. Toggle ON/OFF con aprobación Meta."
+        title="Automatizaciones WhatsApp para tu Negocio"
+        description="Envia recordatorios de citas, felicitaciones de cumpleanos y mensajes de reactivacion por WhatsApp automaticamente. Ideal para peluquerias, salones y spas."
         url="/automatizaciones"
+        keywords="recordatorios automaticos citas WhatsApp, automatizar mensajes peluqueria, mensajes automaticos salon de belleza, como recuperar clientes inactivos"
       />
 
       <main className="product-page">
@@ -16,7 +17,7 @@ export default function Automatizaciones() {
           <div className="product-hero__container">
             <span className="product-hero__badge">Automatizaciones</span>
             <h1 className="product-hero__title">
-              Workflows <span className="product-hero__title-accent">Inteligentes</span>
+              Automatizaciones WhatsApp para <span className="product-hero__title-accent">Negocios de Servicios</span>
             </h1>
             <p className="product-hero__subtitle">
               Motor de automatizaciones con integración directa a Meta API. Cada plantilla pasa por aprobación oficial de WhatsApp. Activa o desactiva cada workflow con un toggle.

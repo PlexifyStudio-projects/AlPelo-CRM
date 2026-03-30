@@ -10,23 +10,16 @@ $color-primary-dark: #1d4ed8;
 
 $color-secondary: #0ea5e9;
 $color-secondary-light: #38bdf8;
-$color-secondary-dark: #0284c7;
 
 $color-corporate: #1e40af;
 $color-corporate-light: #2563eb;
-$color-corporate-dark: #1e3a8a;
 
 $color-accent: #10b981;
-$color-accent-light: #34d399;
-
-$color-gold: #d4a853;
-$color-slate-blue: #475569;
 
 $color-success: #10b981;
 $color-warning: #f59e0b;
 $color-error: #ef4444;
 $color-info: #3b82f6;
-$color-sky: #0ea5e9;
 
 // Neutrals
 $color-white: #ffffff;
@@ -45,19 +38,13 @@ $color-gray-900: #0f172a;
 // Light backgrounds
 $color-bg-primary: #ffffff;
 $color-bg-secondary: #f0f7ff;
-$color-bg-tertiary: #e8f1fd;
-$color-bg-card: rgba(255, 255, 255, 0.85);
-
 // Background
 $bg-body: $color-bg-primary;
-$bg-card: $color-bg-card;
-$bg-dark: #f8fafc;
 
 // Text on light
 $text-primary: #0f172a;
 $text-secondary: #475569;
 $text-muted: #64748b;
-$text-inverse: #ffffff;
 
 // Borders
 $border-color: rgba(15, 23, 42, 0.08);
@@ -68,10 +55,7 @@ $glass-border: rgba(15, 23, 42, 0.08);
 $glass-bg-hover: rgba(255, 255, 255, 0.9);
 
 // Corporate gradients
-$gradient-hero: linear-gradient(135deg, #2563eb 0%, #0ea5e9 50%, #10b981 100%);
 $gradient-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-$gradient-warm: linear-gradient(135deg, #0ea5e9 0%, #10b981 100%);
-$gradient-accent: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #0ea5e9 100%);
 $gradient-text: linear-gradient(135deg, #1e40af, #2563eb, #0ea5e9);
 
 // ---------- Typography ----------
@@ -91,7 +75,6 @@ $font-size-4xl: 3rem;      // 48px
 $font-size-5xl: 3.75rem;   // 60px
 $font-size-6xl: 4.5rem;    // 72px
 
-$font-weight-light: 300;
 $font-weight-regular: 400;
 $font-weight-medium: 500;
 $font-weight-semibold: 600;
@@ -117,7 +100,6 @@ $border-radius-sm: 0.25rem;
 $border-radius-md: 0.5rem;
 $border-radius-lg: 0.75rem;
 $border-radius-xl: 1rem;
-$border-radius-2xl: 1.5rem;
 $border-radius-full: 9999px;
 
 $border-width: 1px;
@@ -152,7 +134,4 @@ $header-height: 72px;
 $z-dropdown: 100;
 $z-sticky: 200;
 $z-fixed: 300;
-$z-modal-backdrop: 400;
 $z-modal: 500;
-$z-popover: 600;
-$z-tooltip: 700;

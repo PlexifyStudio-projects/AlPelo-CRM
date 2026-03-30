@@ -7,9 +7,10 @@ export default function FeaturesPage() {
   return (
     <>
       <SEO
-        title="Características"
-        description="Descubre todas las funcionalidades que PlexifyStudio CRM ofrece para automatizar y optimizar tu negocio."
+        title="Funcionalidades — 14 Modulos en Una Plataforma"
+        description="Agenda online, CRM de clientes, WhatsApp marketing, finanzas, automatizaciones y Lina IA. 14 modulos para gestionar tu peluqueria, salon de belleza o spa."
         url="/features"
+        keywords="funcionalidades software peluqueria, que incluye un CRM para salon, modulos sistema de gestion barberia, herramientas para administrar spa"
       />
 
       <section className="page-hero" aria-label="Características de PlexifyStudio">

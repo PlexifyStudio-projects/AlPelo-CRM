@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
 const REVIEWS = [
   { name: 'María García', role: 'Cadena de Clínicas', initials: 'MG', text: 'Nuestros pacientes vuelven con más frecuencia. El programa de lealtad y los recordatorios automáticos cambiaron todo.', color: '#2563eb' },
@@ -24,7 +24,8 @@ function Stars() {
   );
 }
 
-export default function Testimonials() {
+// memo: contenido estático, evita re-renders innecesarios
+function Testimonials() {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -87,3 +88,5 @@ export default function Testimonials() {
     </section>
   );
 }
+
+export default memo(Testimonials);

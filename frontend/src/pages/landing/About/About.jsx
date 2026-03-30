@@ -1,12 +1,9 @@
 import { Link } from 'react-router-dom';
 import SEO from '../../../components/landing/common/SEO';
 import agendaImg from '../../../assets/images/landing/agenda.png';
-import equipoImg from '../../../assets/images/landing/equipo.png';
 
-// Unsplash free images (no attribution required)
 const IMG_HERO = 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=1200&q=80&auto=format';
 const IMG_BUSINESS = 'https://images.unsplash.com/photo-1521791136064-7986c2920216?w=800&q=80&auto=format';
-const IMG_TEAM = 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80&auto=format';
 
 const NUMBERS = [
   { value: '2026', label: 'Año de fundación' },
@@ -17,11 +14,11 @@ const NUMBERS = [
 
 const VALUES = [
   { icon: '🎯', title: 'Tecnología con Propósito', desc: 'Cada funcionalidad nace de un problema real. Si no resuelve algo concreto, no lo construimos.' },
-  { icon: '⚡', title: 'Simplicidad Real', desc: 'Si necesitas un manual para usar un CRM, algo está mal. Domina la plataforma desde el primer día.' },
-  { icon: '🤝', title: 'Crecemos Contigo', desc: 'No desaparecemos después de la venta. Escuchamos, mejoramos y nuestro soporte resuelve.' },
+  { icon: '⚡', title: 'Simplicidad Real', desc: 'Si necesita un manual para usar un CRM, algo está mal. Domine la plataforma desde el primer día.' },
+  { icon: '🤝', title: 'Crecemos con Usted', desc: 'No desaparecemos después de la venta. Escuchamos, mejoramos y nuestro soporte resuelve.' },
   { icon: '💎', title: 'Obsesión por el Detalle', desc: 'Desde la velocidad de carga hasta el último pixel. Los mismos estándares que esperaríamos como usuarios.' },
-  { icon: '🌍', title: 'Para Todo Negocio', desc: 'Peluquerías, clínicas, restaurantes, gimnasios, veterinarias — si tienes clientes, es para ti.' },
-  { icon: '🔒', title: 'Seguridad Primero', desc: 'Encriptación SSL, compliance con Meta, zero data sharing. Tu información es sagrada.' },
+  { icon: '🌍', title: 'Para Todo Negocio', desc: 'Peluquerías, clínicas, restaurantes, gimnasios, veterinarias — si tiene clientes, es para usted.' },
+  { icon: '🔒', title: 'Seguridad Primero', desc: 'Encriptación SSL, cumplimiento con Meta, datos nunca compartidos. Su información es sagrada.' },
 ];
 
 const TIMELINE = [
@@ -35,23 +32,25 @@ export default function About() {
   return (
     <>
       <SEO
-        title="Sobre PlexifyStudio — La historia detrás del CRM"
-        description="Construimos el CRM con IA que nos hubiera gustado tener. Para cualquier negocio con clientes, en cualquier país de habla hispana."
+        title="Sobre Nosotros — Tecnologia para tu Negocio"
+        description="Plexify Studio nacio para que peluquerias, salones y spas gestionen todo en un solo lugar. CRM con IA diseñado en Colombia para Latinoamerica."
         url="/about"
+        keywords="software colombiano para negocios, CRM hecho en latinoamerica, tecnologia para peluquerias, sistema de gestion para salones de belleza"
       />
 
       <div className="abt">
         {/* ═══ HERO ═══ */}
         <section className="abt__hero">
           <div className="abt__hero-bg" aria-hidden="true">
-            <img src={IMG_HERO} alt="" className="abt__hero-bg-img" />
+            {/* TODO: Convertir a WebP para reducir ~40% el tamaño */}
+            <img src={IMG_HERO} alt="" className="abt__hero-bg-img" loading="eager" fetchPriority="high" />
             <div className="abt__hero-overlay" />
           </div>
           <div className="abt__hero-inner">
             <span className="abt__hero-eyebrow">Sobre nosotros</span>
             <h1 className="abt__hero-title">
-              Construimos el CRM que<br />
-              <span className="abt__hero-title--accent">nos hubiera gustado tener</span>
+              Sobre Plexify Studio —{' '}
+              <span className="abt__hero-title--accent">Software para Negocios de Servicios</span>
             </h1>
             <p className="abt__hero-sub">
               Vimos negocios increíbles gestionando todo con libretas, hojas de cálculo
@@ -95,7 +94,8 @@ export default function About() {
             </div>
             <div className="abt__mission-visual">
               <div className="abt__mission-img">
-                <img src={agendaImg} alt="PlexifyStudio CRM — Agenda y Calendario" />
+                {/* TODO: Convertir a WebP para reducir ~40% el tamaño */}
+                <img src={agendaImg} alt="PlexifyStudio CRM — Agenda y Calendario" loading="lazy" />
               </div>
               <div className="abt__mission-features">
                 <div className="abt__mission-feature">
@@ -123,7 +123,7 @@ export default function About() {
         <section className="abt__image-break">
           <div className="abt__image-break-inner">
             <div className="abt__image-break-img">
-              <img src={IMG_BUSINESS} alt="Negocios reales usando PlexifyStudio" />
+              <img src={IMG_BUSINESS} alt="Negocios reales usando PlexifyStudio" loading="lazy" />
             </div>
             <div className="abt__image-break-text">
               <h2>Hecho para negocios reales</h2>
@@ -187,10 +187,10 @@ export default function About() {
         {/* ═══ CTA ═══ */}
         <section className="abt__cta">
           <div className="abt__cta-inner">
-            <h2>¿Quieres ser parte de esta historia?</h2>
-            <p>Únete a los negocios que ya están transformando su gestión con PlexifyStudio.</p>
+            <h2>Su negocio merece mejores herramientas</h2>
+            <p>Cree su cuenta en 5 minutos y vea todo funcionando con los datos de su negocio.</p>
             <div className="abt__cta-actions">
-              <Link to="/register" className="abt__btn abt__btn--primary">Registrar mi negocio →</Link>
+              <Link to="/register" className="abt__btn abt__btn--primary">Crear cuenta gratis →</Link>
               <Link to="/pricing" className="abt__btn abt__btn--outline">Ver planes</Link>
             </div>
           </div>

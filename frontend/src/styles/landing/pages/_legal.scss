@@ -1,9 +1,5 @@
 @use '../abstracts' as *;
 
-// ============================================
-// LEGAL PAGE — Privacy & Terms
-// ============================================
-
 .legal {
   @include section-padding;
   background-color: $color-bg-primary;

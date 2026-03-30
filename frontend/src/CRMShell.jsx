@@ -4,6 +4,7 @@
 // Loaded only when user is NOT on a landing page.
 // ============================================
 
+import './styles/main.scss';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { TenantProvider } from './context/TenantContext';

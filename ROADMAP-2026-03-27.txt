@@ -1,0 +1,145 @@
+============================================================================
+PLEXIFY STUDIO — ROADMAP DE FEATURES (27 Marzo 2026)
+============================================================================
+
+Orden de implementación acordado con Luis.
+Cada feature se hace completa (backend + frontend) antes de pasar a la siguiente.
+
+============================================================================
+FEATURE 1: INVENTARIO / PRODUCTOS ✅ COMPLETADO
+============================================================================
+- Modelo Product + InventoryMovement en DB
+- CRUD completo, stock adjustments (compra/ajuste/pérdida/devolución)
+- Costo promedio ponderado en compras
+- Alertas de stock bajo, reporte con top sellers/slow movers
+- Página frontend con tabla, filtros, modales de crear/editar/ajustar stock
+- KPIs: valor en stock, valor venta, ganancia potencial, stock bajo
+- Multi-tenant aislado via safe_tid()
+Estado: Backend + Frontend desplegado. Pendiente: pulir UI, integrar con POS/Checkout
+
+============================================================================
+FEATURE 2: DRAG-AND-DROP RESCHEDULING
+============================================================================
+Qué es: Mover citas en la agenda arrastrándolas con el mouse.
+- Agarrar una cita y soltarla en otro horario/día/staff
+- Validación de conflictos al soltar (staff ocupado, cliente duplicado)
+- Opción de enviar WhatsApp automático al cliente al reagendar
+- Funciona en vista semanal y diaria
+Archivos clave: frontend/src/pages/Agenda/Agenda.jsx, backend update_endpoints.py
+
+============================================================================
+FEATURE 3: REVENUE FORECASTING
+============================================================================
+Qué es: Proyección de ingresos basada en citas confirmadas + históricos.
+- Ingresos confirmados: suma de citas agendadas × precio servicio
+- Proyección histórica: promedio de los últimos 3 meses por día de semana
+- Walk-ins estimados: basado en promedio histórico
+- Gráfica real vs proyectado día por día
+- Alertas: "Este mes vas 20% abajo del anterior"
+- Lina puede explicar la proyección en el chat
+Archivos clave: backend finance_endpoints.py o nuevo forecast_endpoints.py, Dashboard
+
+============================================================================
+FEATURE 4: VISUAL WHATSAPP WORKFLOW BUILDER
+============================================================================
+Qué es: Editor visual drag-and-drop para crear automatizaciones sin código.
+- Bloques: Trigger → Condición → Acción → Espera → Fin
+- Triggers: "No visita en X días", "Cita mañana", "Post-visita", "Cumpleaños"
+- Condiciones: "Es VIP?", "Gastó más de $X", "No respondió"
+- Acciones: "Enviar template X", "Esperar X días", "Crear nota", "Alertar admin"
+- El admin arma el flujo visualmente, lo activa, el sistema lo ejecuta
+- Reemplaza los 40 workflows hardcodeados en workflow_engine.py
+Archivos clave: nuevo WorkflowBuilder component, workflow_engine.py refactor
+
+============================================================================
+FEATURE 5: SENTIMENT ANALYSIS
+============================================================================
+Qué es: Lina detecta el TONO emocional de los mensajes del cliente.
+- Cada mensaje inbound: evaluar positivo / neutral / negativo / urgente
+- Negativo: Lina cambia a tono empático + alerta al admin
+- Urgente/Enojado: Lina responde con disculpa + pausa IA + notifica admin
+- Dashboard: indicador de satisfacción general por período
+- El admin se entera de clientes molestos en TIEMPO REAL
+Archivos clave: whatsapp_endpoints.py (ai_auto_reply), nuevo campo sentiment en WhatsAppMessage
+
+============================================================================
+FEATURE 6: MULTI-LOCATION
+============================================================================
+Qué es: Un negocio con varias sedes bajo un mismo tenant.
+- Un tenant = un negocio = múltiples sedes (Location model)
+- Cada sede: su propia agenda, equipo, inventario, horario
+- Comparten: clientes, servicios, reportes consolidados
+- Selector de sede en el header
+- Dashboard consolidado o por sede
+- Lina sabe a qué sede pertenece cada conversación
+Archivos clave: nuevo Location model, refactor de Appointment/Staff/Product con location_id
+
+============================================================================
+LINA INTELLIGENCE — 5 FEATURES
+============================================================================
+
+FEATURE 7: PRECISION SCHEDULING
+----------------------------------------------------------------------
+Qué es: Lina sugiere el slot ÓPTIMO, no solo los disponibles.
+- Minimizar huecos entre citas (llenar gaps)
+- Preferir slot después de última cita si no hay gaps
+- Considerar preferencias del cliente (memoria: "siempre viene por la tarde")
+- Considerar duración del servicio vs tamaño del slot
+Archivos clave: ai_endpoints.py (_build_whatsapp_context), nuevo _find_optimal_slots()
+
+FEATURE 8: NO-SHOW PREDICTION
+----------------------------------------------------------------------
+Qué es: Score de riesgo (0-100) por cada cita.
+- Factores: historial no-shows (+30), día lunes/viernes (+10), hora extrema (+10),
+  sin confirmación (+20), primera visita (+15), VIP (-20)
+- Score < 30: recordatorio estándar 24h
+- Score 30-60: recordatorio extra 2h antes
+- Score > 60: Lina pide confirmación activa
+- Score > 80: icono rojo en agenda, admin puede llamar
+- Si no confirma, ofrecer slot a otro cliente en espera
+Archivos clave: scheduler.py, Agenda.jsx (visual), nuevo no_show_predictor.py
+
+FEATURE 9: STAFF PREPARATION AI
+----------------------------------------------------------------------
+Qué es: 30 min antes de cada cita, Lina envía briefing al staff.
+- Nombre + historial + servicio + preferencias + alergias + sugerencia upsell
+- Notificación en portal staff + WhatsApp si tiene número
+- Basado en ClientMemory + VisitHistory + ClientNote
+Archivos clave: scheduler.py (nuevo job), staff_endpoints.py, push notifications
+
+FEATURE 10: AI MARKETING INTELLIGENCE
+----------------------------------------------------------------------
+Qué es: Lina sugiere campañas proactivamente basadas en datos.
+- "23 clientes inactivos +30 días, quieres que les escriba?"
+- "4 cumpleaños mañana, los felicito?"
+- "Miércoles facturas 40% menos, promo de miércoles?"
+- El admin solo dice "sí" o "no", Lina ejecuta
+- Sugerencias en Dashboard y Chat AI
+Archivos clave: ai_endpoints.py (chat), Dashboard.jsx, scheduler.py (daily analysis)
+
+FEATURE 11: PROGRESSIVE LEARNING
+----------------------------------------------------------------------
+Qué es: Lina aprende de sus errores automáticamente.
+- Trackear resultado de cada conversación: ¿agendó? ¿admin intervino? ¿se fue?
+- Detectar patrones de fallo y extraer reglas automáticamente
+- Reglas se agregan a LinaLearning y aplican en futuras conversaciones
+- Dashboard de mejora: tasa resolución, tasa agendamiento, errores comunes
+Archivos clave: ai_endpoints.py, LinaLearning model, scheduler.py (análisis periódico)
+
+============================================================================
+EN REMOJO (hacer después)
+============================================================================
+- Onboarding Wizard — Self-service signup para nuevos negocios
+- Payment Gateway — Nequi/MercadoPago/Wompi integración
+- Booking Online — Widget público para que clientes agenden solos
+- Walk-in Queue — Cola de espera digital
+- Staff Performance Dashboard — Revenue por staff, leaderboard
+- DIAN Electronic Invoicing — Facturación electrónica Colombia
+- White-label Branding — Logo/colores/dominio personalizado por tenant
+
+============================================================================
+DESCARTADOS POR AHORA
+============================================================================
+- Content Studio (HIDDEN, no tocar)
+- Meta production mode
+- Gift Cards & Paquetes

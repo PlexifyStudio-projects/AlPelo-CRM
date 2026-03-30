@@ -1,11 +1,19 @@
 // ============================================
 // LANDING PAGE STYLES — PlexifyStudio Marketing
-// Scoped to avoid CRM conflicts
+// Sistema de diseño independiente del CRM
 // ============================================
 
-// Only import landing-specific component styles (NOT reset/base/typography)
-// The CRM already has its own reset and base styles.
+// Base: reset, tipografía, animaciones, estilos globales
+@use 'base';
+
+// Layout: header, footer
 @use 'layout';
+
+// Componentes reutilizables: buttons, effects, etc.
 @use 'components';
+
+// Secciones: hero, features, pricing, testimonials, etc.
 @use 'sections';
+
+// Páginas: about, contact, product sub-pages, etc.
 @use 'pages';

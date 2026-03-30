@@ -346,7 +346,7 @@ $_surface: #F8FAFC;
     transition: all 200ms $ease-out-quart;
 
     &:hover {
-      background: darken(#1E40AF, 4%);
+      background: #1a389e;
       box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
       transform: translateY(-1px);
     }
@@ -481,7 +481,7 @@ $_surface: #F8FAFC;
       border: none;
       color: white;
       box-shadow: 0 1px 3px rgba(30, 64, 175, 0.2);
-      &:hover { background: darken(#1E40AF, 4%); }
+      &:hover { background: #1a389e; }
       &:disabled { opacity: 0.5; cursor: not-allowed; }
     }
   }

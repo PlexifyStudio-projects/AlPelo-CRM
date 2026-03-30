@@ -42,6 +42,7 @@
 
     @include respond-to('md') { font-size: $font-size-3xl; }
     @include respond-to('sm') { font-size: $font-size-2xl; }
+    @include respond-to('xs') { font-size: $font-size-xl; }
   }
 
   &__subtitle {
@@ -99,6 +100,11 @@
     @include respond-to('sm') {
       width: 280px;
       padding: $spacing-lg;
+    }
+
+    @include respond-to('xs') {
+      width: 260px;
+      padding: $spacing-md;
     }
   }
 

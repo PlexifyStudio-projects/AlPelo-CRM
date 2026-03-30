@@ -310,8 +310,8 @@ $_surface: #F8FAFC;
       box-shadow: 0 2px 8px rgba(30, 64, 175, 0.25);
 
       &:hover {
-        background: darken(#1E40AF, 4%);
-        border-color: darken(#1E40AF, 4%);
+        background: #1a389e;
+        border-color: #1a389e;
         color: white;
       }
     }
@@ -1089,7 +1089,7 @@ $_surface: #F8FAFC;
     cursor: pointer;
     transition: all 200ms;
 
-    &:hover { background: darken(#1E40AF, 5%); }
+    &:hover { background: #17349a; }
     &:disabled { opacity: 0.6; cursor: not-allowed; }
   }
 

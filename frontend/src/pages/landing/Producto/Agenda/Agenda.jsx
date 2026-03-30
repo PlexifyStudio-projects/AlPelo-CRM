@@ -39,7 +39,17 @@ export default function Agenda() {
 
   return (
     <>
-      <SEO title="Agenda y Citas" description="Calendario visual, recordatorios automáticos por WhatsApp, gestión de no-shows y reservas con IA." url="/producto/agenda" />
+      <SEO
+        title="Agenda Online y Sistema de Citas"
+        description="Calendario visual con recordatorios automaticos por WhatsApp, gestion de no-shows y reservas con IA. Organiza las citas de tu peluqueria, salon o spa facilmente."
+        url="/producto/agenda"
+        keywords="sistema de citas para salon, agenda online barberia, como organizar citas de mi peluqueria, calendario de citas para spa, software de reservas online"
+        breadcrumbs={[
+          { name: 'Inicio', url: '/' },
+          { name: 'Producto', url: '/features' },
+          { name: 'Agenda Online' },
+        ]}
+      />
 
       {/* ── HERO ── */}
       <section className="p-agenda" ref={ref}>
@@ -47,8 +57,8 @@ export default function Agenda() {
           <div className="p-agenda__hero-content">
             <span className="p-agenda__badge">📅 Módulo Agenda</span>
             <h1 className="p-agenda__title">
-              Tu agenda siempre<br />
-              <span className="p-agenda__title--accent">bajo control</span>
+              Agenda Online y Sistema de Citas<br />
+              <span className="p-agenda__title--accent">para Peluquerías y Barberías</span>
             </h1>
             <p className="p-agenda__subtitle">
               Calendario visual semanal, recordatorios automáticos por WhatsApp,
@@ -67,7 +77,8 @@ export default function Agenda() {
 
           {/* Agenda Screenshot */}
           <div className="p-agenda__preview">
-            <img src={agendaImg} alt="PlexifyStudio Agenda - Calendario de citas" className="p-agenda__preview-img" />
+            {/* TODO: Convertir a WebP para reducir ~40% el tamaño */}
+            <img src={agendaImg} alt="PlexifyStudio Agenda - Calendario de citas" className="p-agenda__preview-img" loading="lazy" />
           </div>
         </div>
       </section>

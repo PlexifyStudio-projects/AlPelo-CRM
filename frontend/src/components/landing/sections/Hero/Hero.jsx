@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-// ParticleRing removed from hero
 
 function useAnimatedCounter(target, duration = 2000, delay = 800) {
   const [value, setValue] = useState(0);
@@ -22,7 +21,6 @@ function useAnimatedCounter(target, duration = 2000, delay = 800) {
 
 export default function Hero() {
   const heroRef = useRef(null);
-  const [live, setLive] = useState(false);
 
   // Animated KPI values
   const clientes = useAnimatedCounter(1247, 2200, 1000);
@@ -35,12 +33,6 @@ export default function Hero() {
   const chats = useAnimatedCounter(12, 1000, 1700);
   const noLeidos = useAnimatedCounter(3, 600, 1900);
   const disponibles = useAnimatedCounter(4153, 2800, 1400);
-
-  // Pulse the "EN VIVO" after load
-  useEffect(() => {
-    const t = setTimeout(() => setLive(true), 900);
-    return () => clearTimeout(t);
-  }, []);
 
   useEffect(() => {
     const el = heroRef.current;
@@ -74,20 +66,18 @@ export default function Hero() {
           </div>
 
           <h1 className="hero__title">
-            Gestión de clientes y{' '}
-            <span className="hero__title--highlight">automatización</span>
-            {' '}con IA para tu negocio
+            La plataforma que hace{' '}
+            <span className="hero__title--highlight">crecer su negocio</span>
           </h1>
 
           <p className="hero__subtitle">
-            Agenda, clientes, finanzas, WhatsApp y Lina IA — todo en una
-            sola plataforma. Para peluquerías, clínicas, restaurantes,
-            gimnasios y cualquier negocio con clientes.
+            Agenda, CRM, WhatsApp y una IA que atiende por usted 24/7
+            — todo en una sola plataforma.
           </p>
 
           <div className="hero__actions">
-            <Link to="/pricing" className="hero__cta hero__cta--primary">
-              Ver Planes
+            <Link to="/register" className="hero__cta hero__cta--primary">
+              Crear cuenta gratis
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </Link>
             <Link to="/lina-ia" className="hero__cta hero__cta--outline">
@@ -96,9 +86,9 @@ export default function Hero() {
           </div>
 
           <div className="hero__proof">
-            <span>✓ Demo personalizada</span>
-            <span>✓ Cuenta de prueba</span>
-            <span>✓ Setup en 5 min</span>
+            <span>✓ Sin tarjeta de crédito</span>
+            <span>✓ Listo en 5 minutos</span>
+            <span>✓ Cancele cuando quiera</span>
           </div>
         </div>
 

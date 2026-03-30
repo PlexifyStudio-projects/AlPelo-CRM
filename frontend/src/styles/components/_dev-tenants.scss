@@ -200,8 +200,8 @@ $_danger: #EF4444;
     border-radius: 4px;
     transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
 
-    &--warning { background: linear-gradient(90deg, $_warning, darken($_warning, 10%)); }
-    &--critical { background: linear-gradient(90deg, $_danger, darken($_danger, 10%)); }
+    &--warning { background: linear-gradient(90deg, $_warning, #d48a09); }
+    &--critical { background: linear-gradient(90deg, $_danger, #d63030); }
   }
 
   &__usage-footer {

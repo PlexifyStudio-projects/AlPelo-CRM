@@ -11,27 +11,27 @@ const BUSINESS_TYPES = [
 ];
 
 const COUNTRIES = [
-  { name: 'Colombia', code: '+57', flag: '🇨🇴' },
-  { name: 'México', code: '+52', flag: '🇲🇽' },
-  { name: 'Argentina', code: '+54', flag: '🇦🇷' },
-  { name: 'Chile', code: '+56', flag: '🇨🇱' },
-  { name: 'Perú', code: '+51', flag: '🇵🇪' },
-  { name: 'Ecuador', code: '+593', flag: '🇪🇨' },
-  { name: 'Venezuela', code: '+58', flag: '🇻🇪' },
-  { name: 'Panamá', code: '+507', flag: '🇵🇦' },
-  { name: 'Costa Rica', code: '+506', flag: '🇨🇷' },
-  { name: 'Guatemala', code: '+502', flag: '🇬🇹' },
-  { name: 'Honduras', code: '+504', flag: '🇭🇳' },
-  { name: 'El Salvador', code: '+503', flag: '🇸🇻' },
-  { name: 'Nicaragua', code: '+505', flag: '🇳🇮' },
-  { name: 'República Dominicana', code: '+1', flag: '🇩🇴' },
-  { name: 'Cuba', code: '+53', flag: '🇨🇺' },
-  { name: 'Puerto Rico', code: '+1', flag: '🇵🇷' },
-  { name: 'Uruguay', code: '+598', flag: '🇺🇾' },
-  { name: 'Paraguay', code: '+595', flag: '🇵🇾' },
-  { name: 'Bolivia', code: '+591', flag: '🇧🇴' },
-  { name: 'España', code: '+34', flag: '🇪🇸' },
-  { name: 'Estados Unidos', code: '+1', flag: '🇺🇸' },
+  { name: 'Colombia', code: '+57', flag: '\u{1F1E8}\u{1F1F4}' },
+  { name: 'México', code: '+52', flag: '\u{1F1F2}\u{1F1FD}' },
+  { name: 'Argentina', code: '+54', flag: '\u{1F1E6}\u{1F1F7}' },
+  { name: 'Chile', code: '+56', flag: '\u{1F1E8}\u{1F1F1}' },
+  { name: 'Perú', code: '+51', flag: '\u{1F1F5}\u{1F1EA}' },
+  { name: 'Ecuador', code: '+593', flag: '\u{1F1EA}\u{1F1E8}' },
+  { name: 'Venezuela', code: '+58', flag: '\u{1F1FB}\u{1F1EA}' },
+  { name: 'Panamá', code: '+507', flag: '\u{1F1F5}\u{1F1E6}' },
+  { name: 'Costa Rica', code: '+506', flag: '\u{1F1E8}\u{1F1F7}' },
+  { name: 'Guatemala', code: '+502', flag: '\u{1F1EC}\u{1F1F9}' },
+  { name: 'Honduras', code: '+504', flag: '\u{1F1ED}\u{1F1F3}' },
+  { name: 'El Salvador', code: '+503', flag: '\u{1F1F8}\u{1F1FB}' },
+  { name: 'Nicaragua', code: '+505', flag: '\u{1F1F3}\u{1F1EE}' },
+  { name: 'República Dominicana', code: '+1', flag: '\u{1F1E9}\u{1F1F4}' },
+  { name: 'Cuba', code: '+53', flag: '\u{1F1E8}\u{1F1FA}' },
+  { name: 'Puerto Rico', code: '+1', flag: '\u{1F1F5}\u{1F1F7}' },
+  { name: 'Uruguay', code: '+598', flag: '\u{1F1FA}\u{1F1FE}' },
+  { name: 'Paraguay', code: '+595', flag: '\u{1F1F5}\u{1F1FE}' },
+  { name: 'Bolivia', code: '+591', flag: '\u{1F1E7}\u{1F1F4}' },
+  { name: 'España', code: '+34', flag: '\u{1F1EA}\u{1F1F8}' },
+  { name: 'Estados Unidos', code: '+1', flag: '\u{1F1FA}\u{1F1F8}' },
 ];
 
 const SERVICE_TEMPLATES = {
@@ -55,56 +55,56 @@ const PLANS = [
     id: 'starter',
     name: 'Starter',
     price: 190000,
-    automations: 5,
-    features: ['CRM completo — clientes ilimitados', 'Agenda y calendario visual', 'Inbox WhatsApp en tiempo real', 'Lina IA — 1,500 mensajes/mes', '5 automatizaciones activas', 'Catálogo de servicios', 'Dashboard básico', 'Soporte por email'],
+    automations: 10,
+    features: ['CRM completo — clientes ilimitados', 'Agenda y calendario visual', 'Inbox WhatsApp en tiempo real', 'Lina IA — 1.000 mensajes/mes', '10 automatizaciones activas', 'Finanzas, comisiones y lealtad', 'Campañas WhatsApp', 'Soporte por email'],
   },
   {
     id: 'pro',
     name: 'Pro',
     price: 390000,
     popular: true,
-    automations: 12,
-    features: ['Todo lo del plan Starter', 'Lina IA — 4,000 mensajes/mes', '12 automatizaciones activas', 'Finanzas y reportes avanzados', 'Comisiones automáticas', 'Programa de lealtad completo', 'Campañas WhatsApp masivas', 'Google Reviews integrado', 'Soporte prioritario'],
+    automations: 25,
+    features: ['Todo lo del plan Starter', 'Lina IA — 3.000 mensajes/mes', '25 automatizaciones activas', 'Campañas masivas ilimitadas', 'Referidos y bonos', 'Soporte prioritario'],
   },
   {
     id: 'business',
     name: 'Business',
     price: 590000,
-    automations: 20,
-    features: ['Todo lo del plan Pro', 'Lina IA — 7,000 mensajes/mes', '20 automatizaciones activas', 'Campañas masivas ilimitadas', 'Reportes ejecutivos avanzados', 'Multi-profesionales ilimitados', 'Soporte dedicado 24/7', 'Onboarding personalizado'],
+    automations: 50,
+    features: ['Todo lo del plan Pro', 'Lina IA — 5.000 mensajes/mes', '50 automatizaciones activas', 'Multi-profesionales ilimitados', 'Soporte dedicado 24/7', 'Onboarding personalizado'],
   },
 ];
 
 const AUTOMATION_GROUPS = [
-  { label: 'Citas', icon: '📅', items: [
+  { label: 'Citas', icon: '\u{1F4C5}', items: [
     { id: 'confirmation', name: 'Confirmación de cita', desc: 'Pide confirmación al cliente al agendar' },
     { id: 'reminder_24h', name: 'Recordatorio 24h', desc: 'WhatsApp automático 24 horas antes' },
     { id: 'reminder_1h', name: 'Recordatorio 1h', desc: 'WhatsApp automático 1 hora antes' },
     { id: 'reschedule', name: 'Reagendamiento', desc: 'Notifica al cliente si se mueve su cita' },
     { id: 'cancellation', name: 'Cancelación', desc: 'Confirma cancelación y ofrece reagendar' },
   ]},
-  { label: 'Post-visita', icon: '⭐', items: [
+  { label: 'Post-visita', icon: '\u2B50', items: [
     { id: 'post_visit_thanks', name: 'Agradecimiento', desc: 'Mensaje de gracias 2h después del servicio' },
     { id: 'rating_request', name: 'Encuesta de satisfacción', desc: 'Pide calificación 1-5 estrellas' },
     { id: 'review_google', name: 'Reseña en Google', desc: 'Si califica 4-5, pide reseña en Google' },
     { id: 'post_care_tips', name: 'Tips de cuidado', desc: 'Consejos personalizados post-servicio' },
     { id: 'suggest_next_service', name: 'Sugerir próximo servicio', desc: 'Recomienda servicio complementario' },
   ]},
-  { label: 'Retención', icon: '🔄', items: [
+  { label: 'Retención', icon: '\u{1F504}', items: [
     { id: 'reactivation_30d', name: 'Reactivación 30 días', desc: 'Mensaje a clientes inactivos +30 días' },
     { id: 'reactivation_60d', name: 'Reactivación 60 días', desc: 'Mensaje más urgente a +60 días' },
     { id: 'no_show_followup', name: 'Seguimiento no-show', desc: 'Contacta al cliente que no asistió' },
     { id: 'rebooking_cycle', name: 'Ciclo de rebooking', desc: 'Recuerda agendar según su frecuencia' },
     { id: 'winback_discount', name: 'Descuento de recuperación', desc: 'Oferta especial para clientes perdidos' },
   ]},
-  { label: 'Fidelización', icon: '💎', items: [
+  { label: 'Fidelización', icon: '\u{1F48E}', items: [
     { id: 'welcome', name: 'Bienvenida', desc: 'Mensaje de bienvenida a clientes nuevos' },
     { id: 'birthday', name: 'Cumpleaños', desc: 'Felicitación automática + oferta especial' },
     { id: 'auto_vip', name: 'Reconocimiento VIP', desc: 'Notifica al cliente cuando sube a VIP' },
     { id: 'anniversary', name: 'Aniversario', desc: 'Celebra el aniversario como cliente' },
     { id: 'visit_milestone', name: 'Hito de visitas', desc: 'Celebra la visita #10, #25, #50...' },
   ]},
-  { label: 'Operativo', icon: '📊', items: [
+  { label: 'Operativo', icon: '\u{1F4CA}', items: [
     { id: 'daily_summary', name: 'Resumen diario', desc: 'Resumen del día al admin por WhatsApp' },
     { id: 'noshow_alert', name: 'Alerta de no-show', desc: 'Notifica al admin cuando alguien no asiste' },
     { id: 'new_client_alert', name: 'Nuevo cliente', desc: 'Alerta al admin cuando se registra alguien' },
@@ -113,19 +113,43 @@ const AUTOMATION_GROUPS = [
   ]},
 ];
 
-const ALL_AUTOMATIONS = AUTOMATION_GROUPS.flatMap(g => g.items);
-
 const STEPS = [
-  { num: 1, title: 'Tu negocio', icon: '🏪' },
-  { num: 2, title: 'Tu cuenta', icon: '👤' },
-  { num: 3, title: 'Equipo', icon: '👥' },
-  { num: 4, title: 'Plan', icon: '💎' },
-  { num: 5, title: 'Automatizaciones', icon: '⚡' },
-  { num: 6, title: 'Pago', icon: '💳' },
-  { num: 7, title: '¡Listo!', icon: '🚀' },
+  { num: 1, title: 'Negocio', icon: '\u{1F3EA}' },
+  { num: 2, title: 'Cuenta', icon: '\u{1F464}' },
+  { num: 3, title: 'Equipo', icon: '\u{1F465}' },
+  { num: 4, title: 'Plan', icon: '\u{1F48E}' },
+  { num: 5, title: 'Automatizaciones', icon: '\u26A1' },
+  { num: 6, title: 'Pago', icon: '\u{1F4B3}' },
+  { num: 7, title: 'Listo', icon: '\u{1F680}' },
 ];
 
+const STEP_SUBTITLES = {
+  1: 'Cuéntenos sobre su negocio',
+  2: 'Configure su cuenta de administrador',
+  3: 'Registre a su equipo de trabajo',
+  4: 'Seleccione el plan ideal para su negocio',
+  5: 'Active las automatizaciones que necesita',
+  6: 'Revise el resumen y confirme su suscripción',
+  7: 'Su negocio está siendo configurado',
+};
+
+const STEP_DESCRIPTIONS = {
+  1: 'Esta información configura su CRM personalizado y su página de reservas.',
+  2: 'Con estas credenciales podrá acceder a su panel de administración.',
+  3: 'Agregue al menos un profesional. Podrá agregar más después desde el CRM.',
+  4: 'Todos los planes incluyen CRM completo, Lina IA y WhatsApp integrado.',
+  5: '',
+  6: 'Resumen de su suscripción mensual.',
+  7: '',
+};
+
 const formatCOP = (n) => '$' + n.toLocaleString('es-CO');
+
+const CheckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
 
 export default function Register() {
   const [step, setStep] = useState(1);
@@ -196,14 +220,14 @@ export default function Register() {
       case 1: // Tu negocio
         if (!form.businessName.trim()) return 'El nombre del negocio es obligatorio';
         if (form.businessName.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres';
-        if (!form.businessType) return 'Selecciona el tipo de negocio';
+        if (!form.businessType) return 'Seleccione el tipo de negocio';
         if (!form.city.trim()) return 'La ciudad es obligatoria';
-        if (!form.phone || form.phone.replace(/\D/g, '').length < 7) return 'Ingresa un número de teléfono válido';
+        if (!form.phone || form.phone.replace(/\D/g, '').length < 7) return 'Ingrese un número de teléfono válido';
         return null;
       case 2: // Tu cuenta
-        if (!form.ownerName.trim()) return 'Tu nombre es obligatorio';
+        if (!form.ownerName.trim()) return 'Su nombre es obligatorio';
         if (form.ownerName.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres';
-        if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'Ingresa un correo electrónico válido';
+        if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'Ingrese un correo electrónico válido';
         if (!form.username.trim()) return 'El nombre de usuario es obligatorio';
         if (form.username.trim().length < 3) return 'El usuario debe tener al menos 3 caracteres';
         if (/\s/.test(form.username)) return 'El usuario no puede tener espacios';
@@ -214,13 +238,13 @@ export default function Register() {
         return null;
       case 3: // Equipo
         const validStaff = form.staff.filter(s => s.name.trim());
-        if (validStaff.length === 0) return 'Agrega al menos un profesional';
+        if (validStaff.length === 0) return 'Agregue al menos un profesional';
         for (const s of validStaff) {
           if (s.name.trim().length < 2) return `El nombre "${s.name}" es muy corto`;
         }
         return null;
       case 4: // Plan
-        if (!form.plan) return 'Selecciona un plan';
+        if (!form.plan) return 'Seleccione un plan';
         return null;
       case 5: // Automatizaciones
         return null; // opcional
@@ -295,22 +319,42 @@ export default function Register() {
 
       setResult(data);
     } catch (err) {
-      setError('Error de conexión. Intenta de nuevo.');
+      setError('Error de conexión. Intente de nuevo.');
       setResult(null);
     } finally {
       setLoading(false);
     }
   };
 
+  const progressPercent = Math.round(((step - 1) / 6) * 100);
+
   return (
     <>
-      <SEO title="Registrar mi negocio — PlexifyStudio" description="Registra tu negocio en PlexifyStudio CRM." url="/register" />
+      <SEO
+        title="Registrar mi Negocio — Cuenta Gratis"
+        description="Crea tu cuenta en Plexify Studio en minutos. Configura agenda online, WhatsApp y CRM para tu peluqueria, salon de belleza, barberia o spa. Sin tarjeta de credito."
+        url="/register"
+        keywords="registrar negocio software peluqueria, crear cuenta CRM salon, registro sistema de citas gratis"
+        noindex
+      />
 
       <div className="reg">
+        <h1 className="sr-only">Registre su negocio en Plexify Studio</h1>
         <div className="reg__container">
           {/* Left — Form */}
           <div className="reg__form-side">
-            {/* Progress */}
+            {/* Mobile progress — compact */}
+            <div className="reg__progress-mobile">
+              <div className="reg__progress-mobile-info">
+                <span className="reg__progress-mobile-step">Paso {step} de 7</span>
+                <span className="reg__progress-mobile-label">{STEPS[step - 1]?.title}</span>
+              </div>
+              <div className="reg__progress-mobile-bar">
+                <div className="reg__progress-mobile-fill" style={{ width: `${progressPercent}%` }} />
+              </div>
+            </div>
+
+            {/* Desktop progress */}
             <div className="reg__progress">
               {STEPS.map((s) => {
                 const completed = step > s.num;
@@ -321,349 +365,426 @@ export default function Register() {
                     className={`reg__progress-step ${step >= s.num ? 'reg__progress-step--active' : ''} ${step === s.num ? 'reg__progress-step--current' : ''} ${canClick ? 'reg__progress-step--clickable' : ''}`}
                     onClick={() => { if (canClick) { setError(''); setStep(s.num); } }}
                   >
-                    <span className="reg__progress-num">{completed ? '✓' : s.num}</span>
+                    <span className="reg__progress-num">
+                      {completed ? <CheckIcon /> : s.num}
+                    </span>
                     <span className="reg__progress-label">{s.title}</span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Step 1 — Business */}
-            {step === 1 && (
-              <div className="reg__step">
-                <h2 className="reg__step-title">Cuéntanos sobre tu negocio</h2>
-                <p className="reg__step-sub">Esta información se usará para configurar tu CRM.</p>
-                <div className="reg__field">
-                  <label>Nombre del negocio</label>
-                  <input type="text" placeholder="Ej: Studio Barber" value={form.businessName} onChange={e => updateForm('businessName', e.target.value)} />
-                  {form.businessName && <small className="reg__slug">plexify.studio/book/<strong>{slug}</strong></small>}
-                </div>
-                <div className="reg__field">
-                  <label>Tipo de negocio</label>
-                  <select value={form.businessType} onChange={e => updateForm('businessType', e.target.value)}>
-                    <option value="">Selecciona una categoría</option>
-                    {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div className="reg__row">
+            {/* Form card wrapper */}
+            <div className="reg__card">
+              {/* Step 1 — Business */}
+              {step === 1 && (
+                <div className="reg__step">
+                  <h2 className="reg__step-title">{STEP_SUBTITLES[1]}</h2>
+                  <p className="reg__step-sub">{STEP_DESCRIPTIONS[1]}</p>
                   <div className="reg__field">
-                    <label>País</label>
-                    <select value={form.country} onChange={handleCountry}>
-                      {COUNTRIES.map(c => <option key={c.name} value={c.name}>{c.flag} {c.name} ({c.code})</option>)}
+                    <label>Nombre del negocio</label>
+                    <input type="text" placeholder="Ej: Studio Barber" value={form.businessName} onChange={e => updateForm('businessName', e.target.value)} />
+                    {form.businessName && <small className="reg__slug">plexify.studio/book/<strong>{slug}</strong></small>}
+                  </div>
+                  <div className="reg__field">
+                    <label>Tipo de negocio</label>
+                    <select value={form.businessType} onChange={e => updateForm('businessType', e.target.value)}>
+                      <option value="">Seleccione una categoría</option>
+                      {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                  </div>
-                  <div className="reg__field">
-                    <label>Ciudad</label>
-                    <input type="text" placeholder="Ej: Bucaramanga" value={form.city} onChange={e => updateForm('city', e.target.value)} />
-                  </div>
-                </div>
-                <div className="reg__field">
-                  <label>Teléfono</label>
-                  <div className="reg__phone-wrap">
-                    <span className="reg__phone-prefix">{currentCountry.flag} {currentCountry.code}</span>
-                    <input type="tel" placeholder="(315) 157-3329" value={form.phone} onChange={handlePhone} />
-                  </div>
-                </div>
-                <div className="reg__field">
-                  <label>Dirección</label>
-                  <input type="text" placeholder="Ej: Cra 31 #50-21" value={form.address} onChange={e => updateForm('address', e.target.value)} />
-                </div>
-              </div>
-            )}
-
-            {/* Step 2 — Account */}
-            {step === 2 && (
-              <div className="reg__step">
-                <h2 className="reg__step-title">Crea tu cuenta de administrador</h2>
-                <p className="reg__step-sub">Con estas credenciales accederás a tu CRM.</p>
-                <div className="reg__field">
-                  <label>Tu nombre completo</label>
-                  <input type="text" placeholder="Ej: Jaime Pérez" value={form.ownerName} onChange={e => updateForm('ownerName', e.target.value)} />
-                </div>
-                <div className="reg__field">
-                  <label>Email</label>
-                  <input type="email" placeholder="Ej: jaime@tunegocio.com" value={form.email} onChange={e => updateForm('email', e.target.value)} />
-                </div>
-                <div className="reg__row">
-                  <div className="reg__field">
-                    <label>Usuario</label>
-                    <input type="text" placeholder="Ej: jaime" value={form.username} onChange={e => updateForm('username', e.target.value)} />
-                  </div>
-                  <div className="reg__field">
-                    <label>Contraseña</label>
-                    <input type="password" placeholder="Mínimo 6 caracteres" value={form.password} onChange={e => updateForm('password', e.target.value)} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3 — Team */}
-            {step === 3 && (
-              <div className="reg__step">
-                <h2 className="reg__step-title">Agrega a tu equipo</h2>
-                <p className="reg__step-sub">Mínimo 1 profesional. Puedes agregar más después.</p>
-                <div className="reg__staff-list">
-                  {form.staff.map((s, i) => (
-                    <div key={i} className="reg__staff-row">
-                      <input type="text" placeholder="Nombre completo" value={s.name} onChange={e => updateStaff(i, 'name', e.target.value)} />
-                      <input type="text" placeholder="Especialidad (Ej: Barbero)" value={s.specialty} onChange={e => updateStaff(i, 'specialty', e.target.value)} />
-                    </div>
-                  ))}
-                </div>
-                <button className="reg__add-staff" onClick={addStaff}>+ Agregar otro profesional</button>
-              </div>
-            )}
-
-            {/* Step 4 — Plan Selection */}
-            {step === 4 && (
-              <div className="reg__step">
-                <h2 className="reg__step-title">Elige tu plan</h2>
-                <p className="reg__step-sub">Todos incluyen CRM completo + Lina IA + WhatsApp.</p>
-                <div className="reg__plans">
-                  {PLANS.map(plan => (
-                    <div
-                      key={plan.id}
-                      className={`reg__plan ${form.plan === plan.id ? 'reg__plan--selected' : ''} ${plan.popular ? 'reg__plan--popular' : ''}`}
-                      onClick={() => { updateForm('plan', plan.id); updateForm('automationIds', []); }}
-                    >
-                      {plan.popular && <span className="reg__plan-badge">Popular</span>}
-                      <h3 className="reg__plan-name">{plan.name}</h3>
-                      <div className="reg__plan-price">
-                        <span className="reg__plan-amount">{formatCOP(plan.price)}</span>
-                        <span className="reg__plan-period">/mes</span>
-                      </div>
-                      <ul className="reg__plan-features">
-                        {plan.features.map((f, i) => <li key={i}>✓ {f}</li>)}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Step 5 — Automations */}
-            {step === 5 && (
-              <div className="reg__step">
-                <h2 className="reg__step-title">Elige tus automatizaciones</h2>
-                <p className="reg__step-sub">
-                  Tu plan <strong>{selectedPlan.name}</strong> incluye{' '}
-                  <strong>{maxAuto === 999 ? 'ilimitadas' : maxAuto}</strong> automatizaciones.
-                  {maxAuto !== 999 && ` (${form.automationIds.length}/${maxAuto} seleccionadas)`}
-                </p>
-
-                <div className="reg__auto-groups">
-                  {AUTOMATION_GROUPS.map(group => (
-                    <div key={group.label} className="reg__auto-group">
-                      <h3 className="reg__auto-group-title">{group.icon} {group.label}</h3>
-                      <div className="reg__auto-group-items">
-                        {group.items.map(auto => {
-                          const selected = form.automationIds.includes(auto.id);
-                          const disabled = !selected && maxAuto !== 999 && form.automationIds.length >= maxAuto;
-                          return (
-                            <div
-                              key={auto.id}
-                              className={`reg__auto-card ${selected ? 'reg__auto-card--selected' : ''} ${disabled ? 'reg__auto-card--disabled' : ''}`}
-                              onClick={() => !disabled && toggleAutomation(auto.id)}
-                            >
-                              <div className="reg__auto-card-toggle">
-                                <div className={`reg__auto-card-switch ${selected ? 'reg__auto-card-switch--on' : ''}`}>
-                                  <div className="reg__auto-card-knob" />
-                                </div>
-                              </div>
-                              <div className="reg__auto-card-text">
-                                <span className="reg__auto-card-name">{auto.name}</span>
-                                <span className="reg__auto-card-desc">{auto.desc}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {maxAuto !== 999 && form.automationIds.length >= maxAuto && (
-                  <p className="reg__note">Has alcanzado el límite de tu plan. ¿Necesitas más? <span className="reg__note-link" onClick={() => { setStep(4); }}>Cambia de plan</span></p>
-                )}
-              </div>
-            )}
-
-            {/* Step 6 — Payment (Simulated) */}
-            {step === 6 && (
-              <div className="reg__step">
-                <h2 className="reg__step-title">Confirmar y pagar</h2>
-                <p className="reg__step-sub">Resumen de tu suscripción</p>
-
-                <div className="reg__payment-summary">
-                  <div className="reg__summary-row">
-                    <span>Plan {selectedPlan.name}</span>
-                    <strong>{formatCOP(selectedPlan.price)}/mes</strong>
-                  </div>
-                  <div className="reg__summary-row">
-                    <span>Negocio</span>
-                    <span>{form.businessName}</span>
-                  </div>
-                  <div className="reg__summary-row">
-                    <span>Servicios</span>
-                    <span>{form.services.filter(s => s.active).length} activos</span>
-                  </div>
-                  <div className="reg__summary-row">
-                    <span>Equipo</span>
-                    <span>{form.staff.filter(s => s.name.trim()).length} profesionales</span>
-                  </div>
-                  <div className="reg__summary-row">
-                    <span>Automatizaciones</span>
-                    <span>{form.automationIds.length} seleccionadas</span>
-                  </div>
-                  <div className="reg__summary-row reg__summary-row--total">
-                    <span>Total primer mes</span>
-                    <strong>{formatCOP(selectedPlan.price)}</strong>
-                  </div>
-                </div>
-
-                <div className="reg__payment-card">
-                  <h3 className="reg__payment-card-title">Datos de pago</h3>
-                  <p className="reg__payment-card-note">Simulación — integración Wompi próximamente</p>
-                  <div className="reg__field">
-                    <label>Número de tarjeta</label>
-                    <input type="text" placeholder="4242 4242 4242 4242" maxLength={19} />
                   </div>
                   <div className="reg__row">
                     <div className="reg__field">
-                      <label>Vencimiento</label>
-                      <input type="text" placeholder="MM/AA" maxLength={5} />
+                      <label>País</label>
+                      <select value={form.country} onChange={handleCountry}>
+                        {COUNTRIES.map(c => <option key={c.name} value={c.name}>{c.flag} {c.name} ({c.code})</option>)}
+                      </select>
                     </div>
                     <div className="reg__field">
-                      <label>CVV</label>
-                      <input type="text" placeholder="123" maxLength={4} />
+                      <label>Ciudad</label>
+                      <input type="text" placeholder="Ej: Bucaramanga" value={form.city} onChange={e => updateForm('city', e.target.value)} />
                     </div>
                   </div>
                   <div className="reg__field">
-                    <label>Nombre en la tarjeta</label>
-                    <input type="text" placeholder={form.ownerName || 'Nombre completo'} />
+                    <label>Teléfono</label>
+                    <div className="reg__phone-wrap">
+                      <span className="reg__phone-prefix">{currentCountry.flag} {currentCountry.code}</span>
+                      <input type="tel" placeholder="(315) 157-3329" value={form.phone} onChange={handlePhone} />
+                    </div>
+                  </div>
+                  <div className="reg__field">
+                    <label>Dirección <span className="reg__field-optional">(opcional)</span></label>
+                    <input type="text" placeholder="Ej: Cra 31 #50-21" value={form.address} onChange={e => updateForm('address', e.target.value)} />
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Step 7 — Done */}
-            {step === 7 && (
-              <div className="reg__step reg__step--done">
-                {loading ? (
-                  <>
-                    <div className="reg__processing">
-                      <div className="reg__processing-spinner" />
-                      <h2 className="reg__step-title">Procesando pago...</h2>
-                      <p className="reg__step-sub">Estamos verificando tu pago y creando tu cuenta. No cierres esta ventana.</p>
+              {/* Step 2 — Account */}
+              {step === 2 && (
+                <div className="reg__step">
+                  <h2 className="reg__step-title">{STEP_SUBTITLES[2]}</h2>
+                  <p className="reg__step-sub">{STEP_DESCRIPTIONS[2]}</p>
+                  <div className="reg__field">
+                    <label>Nombre completo</label>
+                    <input type="text" placeholder="Ej: Jaime Pérez" value={form.ownerName} onChange={e => updateForm('ownerName', e.target.value)} />
+                  </div>
+                  <div className="reg__field">
+                    <label>Correo electrónico</label>
+                    <input type="email" placeholder="Ej: jaime@tunegocio.com" value={form.email} onChange={e => updateForm('email', e.target.value)} />
+                  </div>
+                  <div className="reg__row">
+                    <div className="reg__field">
+                      <label>Usuario</label>
+                      <input type="text" placeholder="Ej: jaime" value={form.username} onChange={e => updateForm('username', e.target.value)} />
                     </div>
-                  </>
-                ) : result ? (
-                  <>
-                    <span className="reg__done-icon">🎉</span>
-                    <h2 className="reg__step-title">¡Pago exitoso! Tu negocio está listo.</h2>
-                    <p className="reg__step-sub">Guarda tus credenciales de acceso. Las necesitarás para iniciar sesión.</p>
-
-                    <div className="reg__credentials">
-                      <div className="reg__credential-row">
-                        <span className="reg__credential-label">Negocio</span>
-                        <span className="reg__credential-value">{result.tenant?.name || form.businessName}</span>
-                      </div>
-                      <div className="reg__credential-row">
-                        <span className="reg__credential-label">Plan</span>
-                        <span className="reg__credential-value">{selectedPlan.name} — {formatCOP(selectedPlan.price)}/mes</span>
-                      </div>
-                      <div className="reg__credential-row">
-                        <span className="reg__credential-label">Usuario</span>
-                        <span className="reg__credential-value reg__credential-value--mono">{result.admin?.username || form.username}</span>
-                        <button className="reg__copy-btn" onClick={() => { navigator.clipboard.writeText(result.admin?.username || form.username); }}>Copiar</button>
-                      </div>
-                      <div className="reg__credential-row">
-                        <span className="reg__credential-label">Contraseña</span>
-                        <span className="reg__credential-value reg__credential-value--mono">{form.password}</span>
-                        <button className="reg__copy-btn" onClick={() => { navigator.clipboard.writeText(form.password); }}>Copiar</button>
-                      </div>
-                      <div className="reg__credential-row">
-                        <span className="reg__credential-label">Email</span>
-                        <span className="reg__credential-value">{form.email}</span>
-                      </div>
-                      <div className="reg__credential-row">
-                        <span className="reg__credential-label">Reservas</span>
-                        <span className="reg__credential-value reg__credential-value--mono">plexify.studio/book/{result.tenant?.slug || slug}</span>
-                        <button className="reg__copy-btn" onClick={() => { navigator.clipboard.writeText(`plexify.studio/book/${result.tenant?.slug || slug}`); }}>Copiar</button>
-                      </div>
+                    <div className="reg__field">
+                      <label>Contraseña</label>
+                      <input type="password" placeholder="Mín. 8 caracteres, 1 mayúscula, 1 número" value={form.password} onChange={e => updateForm('password', e.target.value)} />
                     </div>
+                  </div>
+                </div>
+              )}
 
-                    <div className="reg__done-actions">
-                      <button
-                        className="reg__btn reg__btn--ghost"
-                        onClick={() => {
-                          const text = `PlexifyStudio — Credenciales de acceso\n\nNegocio: ${result.tenant?.name || form.businessName}\nPlan: ${selectedPlan.name}\nUsuario: ${result.admin?.username || form.username}\nContraseña: ${form.password}\nEmail: ${form.email}\nReservas: plexify.studio/book/${result.tenant?.slug || slug}\n`;
-                          const blob = new Blob([text], { type: 'text/plain' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = 'plexify-credenciales.txt';
-                          a.click();
-                          URL.revokeObjectURL(url);
-                        }}
+              {/* Step 3 — Team */}
+              {step === 3 && (
+                <div className="reg__step">
+                  <h2 className="reg__step-title">{STEP_SUBTITLES[3]}</h2>
+                  <p className="reg__step-sub">{STEP_DESCRIPTIONS[3]}</p>
+                  <div className="reg__staff-list">
+                    {form.staff.map((s, i) => (
+                      <div key={i} className="reg__staff-row">
+                        <input type="text" placeholder="Nombre completo" value={s.name} onChange={e => updateStaff(i, 'name', e.target.value)} />
+                        <input type="text" placeholder="Especialidad (Ej: Barbero)" value={s.specialty} onChange={e => updateStaff(i, 'specialty', e.target.value)} />
+                      </div>
+                    ))}
+                  </div>
+                  <button className="reg__add-staff" onClick={addStaff}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Agregar otro profesional
+                  </button>
+                </div>
+              )}
+
+              {/* Step 4 — Plan Selection */}
+              {step === 4 && (
+                <div className="reg__step">
+                  <h2 className="reg__step-title">{STEP_SUBTITLES[4]}</h2>
+                  <p className="reg__step-sub">{STEP_DESCRIPTIONS[4]}</p>
+                  <div className="reg__plans">
+                    {PLANS.map(plan => (
+                      <div
+                        key={plan.id}
+                        className={`reg__plan ${form.plan === plan.id ? 'reg__plan--selected' : ''} ${plan.popular ? 'reg__plan--popular' : ''}`}
+                        onClick={() => { updateForm('plan', plan.id); updateForm('automationIds', []); }}
                       >
-                        Descargar credenciales
-                      </button>
-                      <button
-                        className="reg__btn reg__btn--primary"
-                        onClick={() => { window.location.href = (import.meta.env.BASE_URL || '/') + 'login'; }}
-                      >
-                        Iniciar sesión →
-                      </button>
+                        {plan.popular && <span className="reg__plan-badge">Recomendado</span>}
+                        <h3 className="reg__plan-name">{plan.name}</h3>
+                        <div className="reg__plan-price">
+                          <span className="reg__plan-amount">{formatCOP(plan.price)}</span>
+                          <span className="reg__plan-period">/mes</span>
+                        </div>
+                        <ul className="reg__plan-features">
+                          {plan.features.map((f, i) => (
+                            <li key={i}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 5 — Automations */}
+              {step === 5 && (
+                <div className="reg__step">
+                  <h2 className="reg__step-title">{STEP_SUBTITLES[5]}</h2>
+                  <p className="reg__step-sub">
+                    Su plan <strong>{selectedPlan.name}</strong> incluye{' '}
+                    <strong>{maxAuto === 999 ? 'ilimitadas' : maxAuto}</strong> automatizaciones.
+                    {maxAuto !== 999 && ` (${form.automationIds.length}/${maxAuto} seleccionadas)`}
+                  </p>
+
+                  <div className="reg__auto-groups">
+                    {AUTOMATION_GROUPS.map(group => (
+                      <div key={group.label} className="reg__auto-group">
+                        <h3 className="reg__auto-group-title">{group.icon} {group.label}</h3>
+                        <div className="reg__auto-group-items">
+                          {group.items.map(auto => {
+                            const selected = form.automationIds.includes(auto.id);
+                            const disabled = !selected && maxAuto !== 999 && form.automationIds.length >= maxAuto;
+                            return (
+                              <div
+                                key={auto.id}
+                                className={`reg__auto-card ${selected ? 'reg__auto-card--selected' : ''} ${disabled ? 'reg__auto-card--disabled' : ''}`}
+                                onClick={() => !disabled && toggleAutomation(auto.id)}
+                              >
+                                <div className="reg__auto-card-toggle">
+                                  <div className={`reg__auto-card-switch ${selected ? 'reg__auto-card-switch--on' : ''}`}>
+                                    <div className="reg__auto-card-knob" />
+                                  </div>
+                                </div>
+                                <div className="reg__auto-card-text">
+                                  <span className="reg__auto-card-name">{auto.name}</span>
+                                  <span className="reg__auto-card-desc">{auto.desc}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {maxAuto !== 999 && form.automationIds.length >= maxAuto && (
+                    <p className="reg__note">Ha alcanzado el límite de su plan. <span className="reg__note-link" onClick={() => { setStep(4); }}>Cambiar de plan</span></p>
+                  )}
+                </div>
+              )}
+
+              {/* Step 6 — Payment (Simulated) */}
+              {step === 6 && (
+                <div className="reg__step">
+                  <h2 className="reg__step-title">{STEP_SUBTITLES[6]}</h2>
+                  <p className="reg__step-sub">{STEP_DESCRIPTIONS[6]}</p>
+
+                  <div className="reg__payment-summary">
+                    <div className="reg__summary-row">
+                      <span>Plan {selectedPlan.name}</span>
+                      <strong>{formatCOP(selectedPlan.price)}/mes</strong>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <span className="reg__done-icon">❌</span>
-                    <h2 className="reg__step-title">Pago rechazado</h2>
-                    <p className="reg__step-sub">{error || 'No se pudo procesar el pago. Verifica los datos de tu tarjeta e intenta de nuevo.'}</p>
-                    <button className="reg__btn reg__btn--primary" onClick={() => setStep(6)}>
-                      ← Volver a intentar
+                    <div className="reg__summary-row">
+                      <span>Negocio</span>
+                      <span>{form.businessName}</span>
+                    </div>
+                    <div className="reg__summary-row">
+                      <span>Servicios</span>
+                      <span>{form.services.filter(s => s.active).length} activos</span>
+                    </div>
+                    <div className="reg__summary-row">
+                      <span>Equipo</span>
+                      <span>{form.staff.filter(s => s.name.trim()).length} profesionales</span>
+                    </div>
+                    <div className="reg__summary-row">
+                      <span>Automatizaciones</span>
+                      <span>{form.automationIds.length} seleccionadas</span>
+                    </div>
+                    <div className="reg__summary-row reg__summary-row--total">
+                      <span>Total primer mes</span>
+                      <strong>{formatCOP(selectedPlan.price)}</strong>
+                    </div>
+                  </div>
+
+                  <div className="reg__payment-card">
+                    <h3 className="reg__payment-card-title">Datos de pago</h3>
+                    <p className="reg__payment-card-note">Simulación — integración Wompi próximamente</p>
+                    <div className="reg__field">
+                      <label>Número de tarjeta</label>
+                      <input type="text" placeholder="4242 4242 4242 4242" maxLength={19} />
+                    </div>
+                    <div className="reg__row">
+                      <div className="reg__field">
+                        <label>Vencimiento</label>
+                        <input type="text" placeholder="MM/AA" maxLength={5} />
+                      </div>
+                      <div className="reg__field">
+                        <label>CVV</label>
+                        <input type="text" placeholder="123" maxLength={4} />
+                      </div>
+                    </div>
+                    <div className="reg__field">
+                      <label>Nombre en la tarjeta</label>
+                      <input type="text" placeholder={form.ownerName || 'Nombre completo'} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 7 — Done */}
+              {step === 7 && (
+                <div className="reg__step reg__step--done">
+                  {loading ? (
+                    <>
+                      <div className="reg__processing">
+                        <div className="reg__processing-spinner" />
+                        <h2 className="reg__step-title">Procesando pago...</h2>
+                        <p className="reg__step-sub">Estamos verificando su pago y creando su cuenta. No cierre esta ventana.</p>
+                      </div>
+                    </>
+                  ) : result ? (
+                    <>
+                      <div className="reg__done-success-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                          <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                      </div>
+                      <h2 className="reg__step-title">Su negocio está listo</h2>
+                      <p className="reg__step-sub">Guarde sus credenciales de acceso. Las necesitará para iniciar sesión.</p>
+
+                      <div className="reg__credentials">
+                        <div className="reg__credential-row">
+                          <span className="reg__credential-label">Negocio</span>
+                          <span className="reg__credential-value">{result.tenant?.name || form.businessName}</span>
+                        </div>
+                        <div className="reg__credential-row">
+                          <span className="reg__credential-label">Plan</span>
+                          <span className="reg__credential-value">{selectedPlan.name} — {formatCOP(selectedPlan.price)}/mes</span>
+                        </div>
+                        <div className="reg__credential-row">
+                          <span className="reg__credential-label">Usuario</span>
+                          <span className="reg__credential-value reg__credential-value--mono">{result.admin?.username || form.username}</span>
+                          <button className="reg__copy-btn" onClick={() => { navigator.clipboard.writeText(result.admin?.username || form.username); }}>Copiar</button>
+                        </div>
+                        <div className="reg__credential-row">
+                          <span className="reg__credential-label">Contraseña</span>
+                          <span className="reg__credential-value reg__credential-value--mono">{form.password}</span>
+                          <button className="reg__copy-btn" onClick={() => { navigator.clipboard.writeText(form.password); }}>Copiar</button>
+                        </div>
+                        <div className="reg__credential-row">
+                          <span className="reg__credential-label">Email</span>
+                          <span className="reg__credential-value">{form.email}</span>
+                        </div>
+                        <div className="reg__credential-row">
+                          <span className="reg__credential-label">Reservas</span>
+                          <span className="reg__credential-value reg__credential-value--mono">plexify.studio/book/{result.tenant?.slug || slug}</span>
+                          <button className="reg__copy-btn" onClick={() => { navigator.clipboard.writeText(`plexify.studio/book/${result.tenant?.slug || slug}`); }}>Copiar</button>
+                        </div>
+                      </div>
+
+                      <div className="reg__done-actions">
+                        <button
+                          className="reg__btn reg__btn--ghost"
+                          onClick={() => {
+                            const text = `PlexifyStudio — Credenciales de acceso\n\nNegocio: ${result.tenant?.name || form.businessName}\nPlan: ${selectedPlan.name}\nUsuario: ${result.admin?.username || form.username}\nContraseña: ${form.password}\nEmail: ${form.email}\nReservas: plexify.studio/book/${result.tenant?.slug || slug}\n`;
+                            const blob = new Blob([text], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'plexify-credenciales.txt';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                          Descargar credenciales
+                        </button>
+                        <button
+                          className="reg__btn reg__btn--primary"
+                          onClick={() => { window.location.href = (import.meta.env.BASE_URL || '/') + 'login'; }}
+                        >
+                          Iniciar sesión
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="reg__done-error-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                      </div>
+                      <h2 className="reg__step-title">Pago rechazado</h2>
+                      <p className="reg__step-sub">{error || 'No se pudo procesar el pago. Verifique los datos de su tarjeta e intente de nuevo.'}</p>
+                      <button className="reg__btn reg__btn--primary" onClick={() => setStep(6)}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                        Volver a intentar
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Error */}
+              {error && step < 7 && (
+                <div className="reg__error">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  {error}
+                </div>
+              )}
+
+              {/* Navigation */}
+              {step < 6 && (
+                <div className="reg__nav">
+                  {step > 1 ? (
+                    <button className="reg__btn reg__btn--ghost" onClick={back}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                      Atrás
                     </button>
-                  </>
-                )}
-              </div>
-            )}
+                  ) : <span />}
+                  <button className="reg__btn reg__btn--primary" onClick={next}>
+                    Continuar
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  </button>
+                </div>
+              )}
+              {step === 6 && (
+                <div className="reg__nav">
+                  <button className="reg__btn reg__btn--ghost" onClick={back}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                    Atrás
+                  </button>
+                  <button className="reg__btn reg__btn--primary" onClick={handlePayAndCreate} disabled={loading}>
+                    {loading ? 'Procesando...' : (
+                      <>
+                        Pagar {formatCOP(selectedPlan.price)} y crear negocio
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
 
-            {/* Error */}
-            {error && <div className="reg__error">{error}</div>}
-
-            {/* Navigation */}
-            {step < 6 && (
-              <div className="reg__nav">
-                {step > 1 && <button className="reg__btn reg__btn--ghost" onClick={back}>← Atrás</button>}
-                <button className="reg__btn reg__btn--primary" onClick={next}>
-                  Continuar →
-                </button>
-              </div>
-            )}
-            {step === 6 && (
-              <div className="reg__nav">
-                <button className="reg__btn reg__btn--ghost" onClick={back}>← Atrás</button>
-                <button className="reg__btn reg__btn--primary" onClick={handlePayAndCreate} disabled={loading}>
-                  {loading ? 'Procesando...' : `Pagar ${formatCOP(selectedPlan.price)} y crear negocio`}
-                </button>
-              </div>
-            )}
+              {/* Trust indicators */}
+              {step < 7 && (
+                <div className="reg__trust">
+                  <div className="reg__trust-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <span>Información segura</span>
+                  </div>
+                  <div className="reg__trust-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    <span>Sin permanencia</span>
+                  </div>
+                  <div className="reg__trust-item">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Activo en minutos</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right — Info */}
           <div className="reg__info-side">
             <div className="reg__info-content">
-              <h3 className="reg__info-title">Tu negocio<br />funcionando en minutos.</h3>
-              <p className="reg__info-desc">Configura tu CRM, tu página de reservas y Lina IA en un solo proceso.</p>
+              <div className="reg__info-badge">Plexify Studio</div>
+              <h3 className="reg__info-title">Su negocio<br />funcionando en minutos.</h3>
+              <p className="reg__info-desc">Configure su CRM, su página de reservas y Lina IA en un solo proceso de registro.</p>
               <div className="reg__info-features">
-                {['CRM completo desde el primer día', 'Página de reservas pública al instante', 'Lina IA responde WhatsApp automáticamente', 'Automatizaciones que trabajan por ti', 'Sin contratos ni permanencia'].map((f, i) => (
+                {['CRM completo desde el primer día', 'Página de reservas pública al instante', 'Lina IA responde WhatsApp automáticamente', 'Automatizaciones que trabajan por usted', 'Sin contratos ni permanencia'].map((f, i) => (
                   <div key={i} className="reg__info-feature">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     <span>{f}</span>
                   </div>
                 ))}
+              </div>
+              <div className="reg__info-stats">
+                <div className="reg__info-stat">
+                  <span className="reg__info-stat-num">500+</span>
+                  <span className="reg__info-stat-label">Negocios activos</span>
+                </div>
+                <div className="reg__info-stat">
+                  <span className="reg__info-stat-num">50K+</span>
+                  <span className="reg__info-stat-label">Citas gestionadas</span>
+                </div>
+                <div className="reg__info-stat">
+                  <span className="reg__info-stat-num">98%</span>
+                  <span className="reg__info-stat-label">Satisfacción</span>
+                </div>
               </div>
               <div className="reg__info-trust">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>

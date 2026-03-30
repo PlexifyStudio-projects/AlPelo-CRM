@@ -164,8 +164,10 @@
     background: rgba($color-primary, 0.04);
     border-radius: $border-radius-full;
     border: 1px solid rgba($color-primary, 0.1);
+    text-align: center;
 
     @include respond-to('sm') { font-size: $font-size-sm; padding: $spacing-xs $spacing-md; }
+    @include respond-to('xs') { font-size: $font-size-xs; white-space: normal; padding: $spacing-xs $spacing-sm; }
   }
 
   // ═══════════════════════════════
@@ -206,6 +208,10 @@
     &:hover {
       transform: translateY(-4px);
       background: rgba($color-primary, 0.06);
+    }
+
+    @include respond-to('sm') {
+      padding: $spacing-md;
     }
   }
 

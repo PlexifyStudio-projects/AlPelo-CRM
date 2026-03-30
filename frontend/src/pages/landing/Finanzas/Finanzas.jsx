@@ -5,9 +5,10 @@ export default function Finanzas() {
   return (
     <>
       <SEO
-        title="Finanzas — 5 Módulos Financieros Completos"
-        description="Control financiero total: Resumen con KPIs, Reportes comparativos, Gastos con P&L, Comisiones por profesional y Facturación. Todo en tiempo real."
+        title="Finanzas y Reportes para tu Negocio"
+        description="Controla ingresos, gastos, comisiones y facturacion de tu peluqueria o salon. Reportes en tiempo real, P&L automatico y KPIs financieros en una sola vista."
         url="/finanzas"
+        keywords="control financiero peluqueria, reportes de ventas salon de belleza, comisiones empleados barberia, facturacion spa, como controlar gastos de mi negocio"
       />
 
       <main className="product-page">
@@ -16,7 +17,7 @@ export default function Finanzas() {
           <div className="product-hero__container">
             <span className="product-hero__badge">Finanzas</span>
             <h1 className="product-hero__title">
-              Control Financiero <span className="product-hero__title-accent">Completo</span>
+              Finanzas y Reportes para <span className="product-hero__title-accent">Peluquerías y Salones</span>
             </h1>
             <p className="product-hero__subtitle">
               5 módulos financieros integrados: resumen ejecutivo, reportes comparativos, control de gastos con P&L automático, comisiones por profesional y facturación. Todo en tiempo real.
