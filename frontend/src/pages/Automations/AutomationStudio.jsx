@@ -193,6 +193,25 @@ export default function AutomationStudio() {
     } catch (e) { addNotification(e.message, 'error'); }
   };
 
+  const [checkingAll, setCheckingAll] = useState(false);
+  const handleCheckAllMeta = async () => {
+    const pending = automations.filter(a => a.meta_template_status === 'pending');
+    if (!pending.length) { addNotification('No hay plantillas pendientes de verificar', 'info'); return; }
+    setCheckingAll(true);
+    let approved = 0, still_pending = 0, rejected = 0;
+    for (const rule of pending) {
+      try {
+        const res = await svc.checkMetaStatus(rule.id);
+        if (res.meta_status === 'approved') approved++;
+        else if (res.meta_status === 'rejected') rejected++;
+        else still_pending++;
+      } catch { still_pending++; }
+    }
+    addNotification(`Verificadas ${pending.length}: ${approved} aprobadas, ${still_pending} pendientes${rejected ? `, ${rejected} rechazadas` : ''}`, approved > 0 ? 'success' : 'info');
+    load();
+    setCheckingAll(false);
+  };
+
   const openWizard = (rule = null) => { setEditingRule(rule); setView('wizard'); };
   const openHistory = (rule) => { setHistoryRule(rule); setView('history'); };
   const closeWizard = () => { setEditingRule(null); setView('list'); load(); };
@@ -218,6 +237,11 @@ export default function AutomationStudio() {
             <p>Flujos automáticos que trabajan por ti 24/7 — sin intervención humana</p>
           </div>
         </div>
+        {automations.some(a => a.meta_template_status === 'pending') && (
+          <button className={`${B}__btn-ghost`} onClick={handleCheckAllMeta} disabled={checkingAll} style={{ marginRight: 8 }}>
+            <RefreshIcon size={16} /><span>{checkingAll ? 'Verificando...' : 'Verificar todas en Meta'}</span>
+          </button>
+        )}
         <button className={`${B}__btn-primary`} onClick={() => openWizard()}>
           <PlusIcon size={18} /><span>Nueva automatización</span>
         </button>
