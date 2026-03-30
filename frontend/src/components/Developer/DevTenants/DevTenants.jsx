@@ -7,15 +7,15 @@ const b = 'dev-tenants';
 const formatCOP = (v) => `$${Number(v || 0).toLocaleString('es-CO')}`;
 
 const PLANS = {
-  starter: { name: 'Starter', price: 190000, messages: 1500, color: '#3B82F6' },
-  pro: { name: 'Pro', price: 390000, messages: 4000, color: '#8B5CF6' },
-  business: { name: 'Business', price: 590000, messages: 7000, color: '#F59E0B' },
-  custom: { name: 'Custom', price: 0, messages: 0, color: '#94A3B8' },
+  starter: { name: 'Starter', price: 190000, messages: 1000, automations: 10, color: '#3B82F6' },
+  pro: { name: 'Pro', price: 390000, messages: 3000, automations: 25, color: '#8B5CF6' },
+  business: { name: 'Business', price: 590000, messages: 5000, automations: 50, color: '#F59E0B' },
+  custom: { name: 'Custom', price: 0, messages: 0, automations: 999, color: '#94A3B8' },
 };
 
 const RECARGAS = [
-  { id: 'recarga_1000', name: '1,000 mensajes', messages: 1000, price: 80000 },
-  { id: 'recarga_3000', name: '3,000 mensajes', messages: 3000, price: 200000 },
+  { id: 'recarga_500', name: '500 mensajes', messages: 500, price: 50000 },
+  { id: 'recarga_1500', name: '1,500 mensajes', messages: 1500, price: 120000 },
 ];
 
 const COUNTRIES = [
@@ -85,6 +85,9 @@ const DevTenants = () => {
   const [newPassword, setNewPassword] = useState('');
   const [credMsg, setCredMsg] = useState(null);
   const [savingCreds, setSavingCreds] = useState(false);
+  const [tenantAdmins, setTenantAdmins] = useState([]);
+  const [resetPwId, setResetPwId] = useState(null);
+  const [resetPwValue, setResetPwValue] = useState('');
   const [showRecarga, setShowRecarga] = useState(null);
   const [customRecarga, setCustomRecarga] = useState('');
 
@@ -129,7 +132,10 @@ const DevTenants = () => {
       messages_limit: t.messages_limit || 5000,
     });
     setEditingId(t.id); setAdminUsername(t.admin_user?.username || '');
-    setNewPassword(''); setCredMsg(null); setShowForm(true);
+    setNewPassword(''); setCredMsg(null); setTenantAdmins([]); setResetPwId(null);
+    setShowForm(true);
+    // Load admins list
+    apiFetch(`/dev/tenants/${t.id}/admins`).then(d => setTenantAdmins(d.admins || [])).catch(() => {});
   };
 
   const handleSave = async () => {
@@ -158,6 +164,23 @@ const DevTenants = () => {
       setCredMsg({ type: 'success', text: 'Credenciales actualizadas' }); fetchTenants();
     } catch (err) { setCredMsg({ type: 'error', text: err.message }); }
     setSavingCreds(false);
+  };
+
+  const handleToggleAdmin = async (adminId) => {
+    try {
+      const res = await apiFetch(`/dev/tenants/${editingId}/admins/${adminId}/toggle`, { method: 'PUT' });
+      setTenantAdmins(prev => prev.map(a => a.id === adminId ? { ...a, is_active: res.is_active } : a));
+      setCredMsg({ type: 'success', text: res.is_active ? 'Admin activado' : 'Admin desactivado — sesión cerrada' });
+    } catch (err) { setCredMsg({ type: 'error', text: err.message }); }
+  };
+
+  const handleResetAdminPw = async (adminId) => {
+    if (!resetPwValue || resetPwValue.length < 6) { setCredMsg({ type: 'error', text: 'Mínimo 6 caracteres' }); return; }
+    try {
+      await apiFetch(`/dev/tenants/${editingId}/admins/${adminId}/password`, { method: 'PUT', body: JSON.stringify({ password: resetPwValue }) });
+      setCredMsg({ type: 'success', text: 'Contraseña actualizada — sesión cerrada' });
+      setResetPwId(null); setResetPwValue('');
+    } catch (err) { setCredMsg({ type: 'error', text: err.message }); }
   };
 
   const handleToggleAI = async (id, current) => {
@@ -415,19 +438,59 @@ const DevTenants = () => {
                       <div className={`${b}__plan-card-glow`} />
                       <span className={`${b}__plan-card-name`}>{plan.name}</span>
                       <span className={`${b}__plan-card-price`}>{formatCOP(plan.price)}<small>/mes</small></span>
-                      <span className={`${b}__plan-card-msgs`}>{plan.messages.toLocaleString('es-CO')} mensajes</span>
+                      <span className={`${b}__plan-card-msgs`}>{plan.messages.toLocaleString('es-CO')} msgs IA · {plan.automations} auto.</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className={`${b}__form-section`}>
-                <h3 className={`${b}__form-section-title`}>{editingId ? 'Credenciales del Admin' : 'Crear Admin'}</h3>
-                <div className={`${b}__form-grid`}>
-                  <div className={`${b}__field`}><label>Usuario admin</label><input value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} placeholder="admin_alpelo" /></div>
-                  <div className={`${b}__field`}><label>{editingId ? 'Nueva contraseña' : 'Contraseña'}</label><input type="password" value={editingId ? newPassword : adminPassword} onChange={(e) => editingId ? setNewPassword(e.target.value) : setAdminPassword(e.target.value)} placeholder={editingId ? 'Sin cambios' : 'Min 6 caracteres'} /></div>
-                </div>
-                {editingId && <button className={`${b}__cred-btn`} onClick={handleSaveCredentials} disabled={savingCreds}>{savingCreds ? 'Guardando...' : 'Actualizar credenciales'}</button>}
+                <h3 className={`${b}__form-section-title`}>{editingId ? 'Usuarios Admin' : 'Crear Admin'}</h3>
+
+                {!editingId ? (
+                  <div className={`${b}__form-grid`}>
+                    <div className={`${b}__field`}><label>Usuario admin</label><input value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} placeholder="admin_alpelo" /></div>
+                    <div className={`${b}__field`}><label>Contraseña</label><input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder="Min 6 caracteres" /></div>
+                  </div>
+                ) : (
+                  <div className={`${b}__admin-list`}>
+                    {tenantAdmins.length === 0 && <p style={{ color: '#94A3B8', fontSize: 13, padding: '8px 0' }}>Cargando admins...</p>}
+                    {tenantAdmins.map(a => (
+                      <div key={a.id} className={`${b}__admin-row ${!a.is_active ? `${b}__admin-row--inactive` : ''}`}>
+                        <div className={`${b}__admin-info`}>
+                          <div className={`${b}__admin-avatar`} style={{ background: a.is_active ? '#3B82F6' : '#94A3B8' }}>
+                            {a.username?.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <span className={`${b}__admin-username`}>{a.username}</span>
+                            <span className={`${b}__admin-meta`}>
+                              {a.name || 'Sin nombre'} · {a.email || 'Sin email'}
+                              {a.last_session && ` · Última sesión: ${new Date(a.last_session).toLocaleDateString('es-CO')}`}
+                            </span>
+                          </div>
+                        </div>
+                        <div className={`${b}__admin-actions`}>
+                          {resetPwId === a.id ? (
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <input type="password" value={resetPwValue} onChange={e => setResetPwValue(e.target.value)} placeholder="Nueva contraseña" style={{ height: 32, fontSize: 12, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', width: 150 }} />
+                              <button className={`${b}__cred-btn`} onClick={() => handleResetAdminPw(a.id)} style={{ padding: '4px 10px', fontSize: 11 }}>Guardar</button>
+                              <button className={`${b}__cred-btn`} onClick={() => { setResetPwId(null); setResetPwValue(''); }} style={{ padding: '4px 10px', fontSize: 11, background: 'transparent', color: '#94A3B8' }}>✕</button>
+                            </div>
+                          ) : (
+                            <button className={`${b}__cred-btn`} onClick={() => { setResetPwId(a.id); setResetPwValue(''); }} style={{ padding: '4px 10px', fontSize: 11 }}>Cambiar contraseña</button>
+                          )}
+                          <button
+                            className={`${b}__cred-btn`}
+                            onClick={() => handleToggleAdmin(a.id)}
+                            style={{ padding: '4px 10px', fontSize: 11, background: a.is_active ? 'rgba(239,68,68,0.08)' : 'rgba(16,185,129,0.08)', color: a.is_active ? '#EF4444' : '#10B981', border: `1px solid ${a.is_active ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}` }}
+                          >
+                            {a.is_active ? 'Desactivar' : 'Activar'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {credMsg && <div className={`${b}__msg ${b}__msg--${credMsg.type}`}>{credMsg.text}</div>}

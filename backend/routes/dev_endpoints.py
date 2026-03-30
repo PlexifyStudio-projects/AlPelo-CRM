@@ -425,6 +425,59 @@ def update_tenant_admin(tenant_id: int, data: dict, db: Session = Depends(get_db
     return {"ok": True, "admin_user": {"id": admin.id, "username": admin.username, "name": admin.name, "email": admin.email}}
 
 
+@router.get("/dev/tenants/{tenant_id}/admins")
+def list_tenant_admins(tenant_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """List all admin users for a tenant."""
+    _require_dev(user)
+    admins = db.query(Admin).filter(Admin.tenant_id == tenant_id).order_by(Admin.created_at).all()
+    return {
+        "admins": [
+            {
+                "id": a.id,
+                "username": a.username,
+                "name": a.name,
+                "email": a.email,
+                "role": a.role,
+                "is_active": a.is_active,
+                "created_at": a.created_at.isoformat() if a.created_at else None,
+                "last_session": a.session_started_at.isoformat() if a.session_started_at else None,
+            }
+            for a in admins
+        ]
+    }
+
+
+@router.put("/dev/tenants/{tenant_id}/admins/{admin_id}/toggle")
+def toggle_admin_active(tenant_id: int, admin_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Activate or deactivate an admin user."""
+    _require_dev(user)
+    admin = db.query(Admin).filter(Admin.id == admin_id, Admin.tenant_id == tenant_id).first()
+    if not admin:
+        raise HTTPException(404, "Admin no encontrado")
+    admin.is_active = not admin.is_active
+    # If deactivating, kill their active session
+    if not admin.is_active:
+        admin.active_session_token = None
+    db.commit()
+    return {"ok": True, "is_active": admin.is_active, "username": admin.username}
+
+
+@router.put("/dev/tenants/{tenant_id}/admins/{admin_id}/password")
+def reset_admin_password(tenant_id: int, admin_id: int, data: dict, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Reset password for a specific admin user."""
+    _require_dev(user)
+    admin = db.query(Admin).filter(Admin.id == admin_id, Admin.tenant_id == tenant_id).first()
+    if not admin:
+        raise HTTPException(404, "Admin no encontrado")
+    new_pw = data.get("password", "").strip()
+    if len(new_pw) < 6:
+        raise HTTPException(400, "Mínimo 6 caracteres")
+    admin.password = hash_password(new_pw)
+    admin.active_session_token = None  # Force re-login
+    db.commit()
+    return {"ok": True, "username": admin.username}
+
+
 # ============================================================================
 # USAGE & BILLING
 # ============================================================================

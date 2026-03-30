@@ -130,6 +130,8 @@ export default function AutomationStudio() {
   const [editingRule, setEditingRule] = useState(null);
   const [historyRule, setHistoryRule] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
+  const [planLimit, setPlanLimit] = useState(999);
+  const [limitModal, setLimitModal] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -137,6 +139,7 @@ export default function AutomationStudio() {
       svc.list(), svc.getStats(), svc.getTriggers(),
     ]);
     setAutomations(listData.automations || []);
+    setPlanLimit(listData.plan_limit || 999);
     setStats(statsData);
     setTriggers(triggerData);
     setLoading(false);
@@ -146,14 +149,25 @@ export default function AutomationStudio() {
 
   const handleToggle = async (rule) => {
     if (!rule.is_enabled && rule.meta_template_status !== 'approved') {
-      addNotification('Primero envía la plantilla a Meta para poder activar', 'warning');
+      addNotification('Primero envíe la plantilla a Meta para poder activar', 'warning');
       return;
+    }
+    // Check plan limit before activating
+    if (!rule.is_enabled) {
+      const activeCount = automations.filter(a => a.is_enabled).length;
+      if (activeCount >= planLimit) {
+        setLimitModal(true);
+        return;
+      }
     }
     try {
       await svc.update(rule.id, { is_enabled: !rule.is_enabled });
       addNotification(rule.is_enabled ? 'Automatización pausada' : 'Automatización activada', 'success');
       load();
-    } catch (e) { addNotification(e.message, 'error'); }
+    } catch (e) {
+      if (e.message?.includes('Límite')) setLimitModal(true);
+      else addNotification(e.message, 'error');
+    }
   };
 
   const handleDelete = async (rule) => {
@@ -242,7 +256,10 @@ export default function AutomationStudio() {
             <RefreshIcon size={16} /><span>{checkingAll ? 'Verificando...' : 'Verificar todas en Meta'}</span>
           </button>
         )}
-        <button className={`${B}__btn-primary`} onClick={() => openWizard()}>
+        <button className={`${B}__btn-primary`} onClick={() => {
+          if (automations.length >= planLimit) { setLimitModal(true); return; }
+          openWizard();
+        }}>
           <PlusIcon size={18} /><span>Nueva automatización</span>
         </button>
       </div>
@@ -326,6 +343,29 @@ export default function AutomationStudio() {
             <div className={`${B}__modal-btns`}>
               <button className={`${B}__btn-ghost`} onClick={() => setDeleteModal(null)}>Cancelar</button>
               <button className={`${B}__btn-danger`} onClick={() => handleDelete(deleteModal)}><TrashIcon size={14} /> Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {limitModal && (
+        <div className={`${B}__overlay`} onClick={() => setLimitModal(false)}>
+          <div className={`${B}__modal`} onClick={e => e.stopPropagation()}>
+            <div className={`${B}__modal-icon`} style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B' }}><AlertIcon size={24} /></div>
+            <h3>Límite de plan alcanzado</h3>
+            <p>Su plan actual permite un máximo de <strong>{planLimit} automatizaciones</strong>. Para crear o activar más, actualice su plan o desactive una existente.</p>
+            <div style={{ display: 'flex', gap: 8, padding: '12px 0 0', justifyContent: 'center', fontSize: 13, color: '#64748B' }}>
+              <span>Activas: <strong style={{ color: '#10B981' }}>{automations.filter(a => a.is_enabled).length}</strong></span>
+              <span>•</span>
+              <span>Total: <strong>{automations.length}</strong></span>
+              <span>•</span>
+              <span>Límite: <strong style={{ color: '#F59E0B' }}>{planLimit}</strong></span>
+            </div>
+            <div className={`${B}__modal-btns`}>
+              <button className={`${B}__btn-ghost`} onClick={() => setLimitModal(false)}>Entendido</button>
+              <button className={`${B}__btn-primary`} onClick={() => { setLimitModal(false); window.open('/AlPelo-CRM/pricing', '_blank'); }}>
+                <TrendingUpIcon size={14} /> Ver planes
+              </button>
             </div>
           </div>
         </div>
