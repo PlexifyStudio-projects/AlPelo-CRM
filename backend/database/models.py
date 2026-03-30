@@ -127,9 +127,10 @@ class Service(Base):
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=True)
     name = Column(String, nullable=False)
-    category = Column(String, nullable=False)  # Barbería, Manicure y Pedicure, Estilismo, Tratamientos Capilares, Facial y Pestañas
+    category = Column(String, nullable=False)
+    service_type = Column(String(20), nullable=False, default='cita')  # cita, paquete, reserva
     price = Column(Integer, nullable=False)  # COP sin decimales
-    duration_minutes = Column(Integer, nullable=True)
+    duration_minutes = Column(Integer, nullable=True)  # Para citas: duración en min. Para paquetes: días de vigencia
     description = Column(Text, nullable=True)
     staff_ids = Column(JSON, default=list)  # IDs of staff who can perform this service
     is_active = Column(Boolean, default=True)

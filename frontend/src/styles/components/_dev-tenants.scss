@@ -935,6 +935,44 @@ $_danger: #EF4444;
   &:hover { border-color: rgba(255,255,255,0.25); color: white; }
 }
 
+// Sort filters
+.dev-tenants__filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.dev-tenants__filter-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  color: #64748B;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms ease;
+
+  &:hover {
+    border-color: rgba(30, 64, 175, 0.2);
+    color: #1E40AF;
+    background: rgba(30, 64, 175, 0.04);
+  }
+
+  &--active {
+    background: #1E40AF;
+    color: white;
+    border-color: #1E40AF;
+
+    &:hover {
+      background: #1a389e;
+      color: white;
+      border-color: #1a389e;
+    }
+  }
+}
+
 // Admin list in tenant edit modal
 .dev-tenants__admin-list {
   display: flex;

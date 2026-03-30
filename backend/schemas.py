@@ -263,6 +263,7 @@ class DashboardKPIs(BaseModel):
 class ServiceCreate(BaseModel):
     name: str
     category: str
+    service_type: str = "cita"  # cita, paquete, reserva
     price: int
     duration_minutes: Optional[int] = None
     description: Optional[str] = None
@@ -272,6 +273,7 @@ class ServiceCreate(BaseModel):
 class ServiceUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
+    service_type: Optional[str] = None
     price: Optional[int] = None
     duration_minutes: Optional[int] = None
     description: Optional[str] = None
@@ -282,6 +284,7 @@ class ServiceResponse(BaseModel):
     id: int
     name: str
     category: str
+    service_type: str = "cita"
     price: int
     duration_minutes: Optional[int] = None
     description: Optional[str] = None

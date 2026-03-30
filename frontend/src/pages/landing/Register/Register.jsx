@@ -5,9 +5,14 @@ import SEO from '../../../components/landing/common/SEO';
 const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
 const BUSINESS_TYPES = [
-  'Peluquería / Barbería', 'Clínica / Consultorio', 'Spa / Centro de Bienestar',
-  'Restaurante / Cafetería', 'Gimnasio / Fitness', 'Academia / Educación',
-  'Veterinaria', 'Centro Estético', 'Hotel / Hospedaje', 'Otro',
+  'Peluquería / Barbería', 'Spa / Centro de Bienestar', 'Centro Estético',
+  'Clínica / Consultorio', 'Odontología', 'Fisioterapia / Rehabilitación',
+  'Psicología / Terapia', 'Veterinaria', 'Nutrición / Dietética',
+  'Gimnasio / Fitness', 'Academia / Educación', 'Estudio de Yoga / Pilates',
+  'Restaurante / Cafetería', 'Hotel / Hospedaje',
+  'Estudio de Tatuajes / Piercing', 'Estudio Fotográfico',
+  'Taller Mecánico / Automotriz', 'Lavandería / Tintorería',
+  'Consultoría / Asesoría', 'Otro',
 ];
 
 const COUNTRIES = [
@@ -34,19 +39,135 @@ const COUNTRIES = [
   { name: 'Estados Unidos', code: '+1', flag: '\u{1F1FA}\u{1F1F8}' },
 ];
 
+// service_type: 'cita' = sesión única, 'paquete' = membresía/plan, 'reserva' = espacio/mesa
 const SERVICE_TEMPLATES = {
   'Peluquería / Barbería': [
-    { name: 'Corte Clásico', price: 25000, duration: 40, category: 'Corte', active: true },
-    { name: 'Corte + Barba', price: 35000, duration: 50, category: 'Corte', active: true },
-    { name: 'Barba', price: 15000, duration: 20, category: 'Barba', active: true },
-    { name: 'Tinte', price: 45000, duration: 60, category: 'Color', active: true },
-    { name: 'Alisado Keratina', price: 80000, duration: 90, category: 'Tratamiento', active: false },
-    { name: 'Tratamiento Capilar', price: 50000, duration: 45, category: 'Tratamiento', active: false },
+    { name: 'Corte Clásico', price: 25000, duration: 40, category: 'Corte', service_type: 'cita', active: true },
+    { name: 'Corte + Barba', price: 35000, duration: 50, category: 'Corte', service_type: 'cita', active: true },
+    { name: 'Barba', price: 15000, duration: 20, category: 'Barba', service_type: 'cita', active: true },
+    { name: 'Tinte', price: 45000, duration: 60, category: 'Color', service_type: 'cita', active: true },
+    { name: 'Alisado Keratina', price: 80000, duration: 90, category: 'Tratamiento', service_type: 'cita', active: false },
+    { name: 'Tratamiento Capilar', price: 50000, duration: 45, category: 'Tratamiento', service_type: 'cita', active: false },
+  ],
+  'Spa / Centro de Bienestar': [
+    { name: 'Masaje Relajante', price: 80000, duration: 60, category: 'Masajes', service_type: 'cita', active: true },
+    { name: 'Masaje Descontracturante', price: 95000, duration: 60, category: 'Masajes', service_type: 'cita', active: true },
+    { name: 'Circuito de Aguas', price: 120000, duration: 90, category: 'Circuitos', service_type: 'cita', active: true },
+    { name: 'Facial Hidratante', price: 70000, duration: 45, category: 'Faciales', service_type: 'cita', active: true },
+    { name: 'Day Spa Completo', price: 250000, duration: 180, category: 'Paquetes', service_type: 'cita', active: false },
+  ],
+  'Centro Estético': [
+    { name: 'Limpieza Facial', price: 60000, duration: 50, category: 'Facial', service_type: 'cita', active: true },
+    { name: 'Microdermoabrasión', price: 90000, duration: 40, category: 'Facial', service_type: 'cita', active: true },
+    { name: 'Depilación Láser', price: 120000, duration: 30, category: 'Corporal', service_type: 'cita', active: true },
+    { name: 'Diseño de Cejas', price: 30000, duration: 20, category: 'Cejas', service_type: 'cita', active: true },
+    { name: 'Paquete 6 Sesiones Láser', price: 600000, duration: 180, category: 'Paquetes', service_type: 'paquete', active: false },
+  ],
+  'Clínica / Consultorio': [
+    { name: 'Consulta General', price: 80000, duration: 30, category: 'Consulta', service_type: 'cita', active: true },
+    { name: 'Consulta Especializada', price: 120000, duration: 45, category: 'Consulta', service_type: 'cita', active: true },
+    { name: 'Control / Seguimiento', price: 50000, duration: 20, category: 'Control', service_type: 'cita', active: true },
+    { name: 'Examen de Laboratorio', price: 40000, duration: 15, category: 'Exámenes', service_type: 'cita', active: false },
+  ],
+  'Odontología': [
+    { name: 'Limpieza Dental', price: 80000, duration: 40, category: 'Preventiva', service_type: 'cita', active: true },
+    { name: 'Blanqueamiento', price: 350000, duration: 60, category: 'Estética', service_type: 'cita', active: true },
+    { name: 'Consulta Valoración', price: 50000, duration: 30, category: 'Consulta', service_type: 'cita', active: true },
+    { name: 'Ortodoncia — Control Mensual', price: 100000, duration: 30, category: 'Ortodoncia', service_type: 'cita', active: true },
+    { name: 'Extracción Simple', price: 120000, duration: 45, category: 'Cirugía', service_type: 'cita', active: false },
+  ],
+  'Fisioterapia / Rehabilitación': [
+    { name: 'Sesión de Fisioterapia', price: 60000, duration: 45, category: 'Terapia', service_type: 'cita', active: true },
+    { name: 'Evaluación Inicial', price: 80000, duration: 60, category: 'Evaluación', service_type: 'cita', active: true },
+    { name: 'Paquete 10 Sesiones', price: 500000, duration: 30, category: 'Paquetes', service_type: 'paquete', active: true },
+    { name: 'Terapia Manual', price: 70000, duration: 50, category: 'Terapia', service_type: 'cita', active: true },
+  ],
+  'Psicología / Terapia': [
+    { name: 'Sesión Individual', price: 100000, duration: 50, category: 'Individual', service_type: 'cita', active: true },
+    { name: 'Sesión de Pareja', price: 150000, duration: 60, category: 'Pareja', service_type: 'cita', active: true },
+    { name: 'Primera Consulta', price: 80000, duration: 60, category: 'Evaluación', service_type: 'cita', active: true },
+    { name: 'Paquete 4 Sesiones', price: 360000, duration: 200, category: 'Paquetes', service_type: 'paquete', active: false },
+  ],
+  'Veterinaria': [
+    { name: 'Consulta General', price: 50000, duration: 30, category: 'Consulta', service_type: 'cita', active: true },
+    { name: 'Vacunación', price: 35000, duration: 15, category: 'Vacunas', service_type: 'cita', active: true },
+    { name: 'Baño y Peluquería', price: 40000, duration: 60, category: 'Estética', service_type: 'cita', active: true },
+    { name: 'Cirugía Menor', price: 200000, duration: 90, category: 'Cirugía', service_type: 'cita', active: false },
+    { name: 'Guardería — Día', price: 30000, duration: 480, category: 'Hospedaje', service_type: 'reserva', active: false },
+  ],
+  'Nutrición / Dietética': [
+    { name: 'Consulta Nutricional', price: 80000, duration: 45, category: 'Consulta', service_type: 'cita', active: true },
+    { name: 'Plan Alimenticio', price: 150000, duration: 60, category: 'Plan', service_type: 'cita', active: true },
+    { name: 'Control Mensual', price: 50000, duration: 30, category: 'Control', service_type: 'cita', active: true },
+    { name: 'Programa 3 Meses', price: 400000, duration: 90, category: 'Paquetes', service_type: 'paquete', active: false },
+  ],
+  'Gimnasio / Fitness': [
+    { name: 'Mensualidad', price: 80000, duration: 30, category: 'Membresía', service_type: 'paquete', active: true },
+    { name: 'Trimestral', price: 210000, duration: 90, category: 'Membresía', service_type: 'paquete', active: true },
+    { name: 'Semestral', price: 400000, duration: 180, category: 'Membresía', service_type: 'paquete', active: true },
+    { name: 'Anual', price: 700000, duration: 365, category: 'Membresía', service_type: 'paquete', active: true },
+    { name: 'Clase Personal (1 sesión)', price: 50000, duration: 60, category: 'Personal', service_type: 'cita', active: true },
+    { name: 'Paquete 10 Clases', price: 400000, duration: 60, category: 'Clases', service_type: 'paquete', active: false },
+  ],
+  'Academia / Educación': [
+    { name: 'Clase Individual', price: 50000, duration: 60, category: 'Clases', service_type: 'cita', active: true },
+    { name: 'Curso Mensual', price: 200000, duration: 30, category: 'Cursos', service_type: 'paquete', active: true },
+    { name: 'Taller Grupal', price: 80000, duration: 120, category: 'Talleres', service_type: 'cita', active: true },
+    { name: 'Semestre Completo', price: 1000000, duration: 180, category: 'Programa', service_type: 'paquete', active: false },
+  ],
+  'Estudio de Yoga / Pilates': [
+    { name: 'Clase Grupal', price: 25000, duration: 60, category: 'Grupal', service_type: 'cita', active: true },
+    { name: 'Clase Personal', price: 60000, duration: 60, category: 'Personal', service_type: 'cita', active: true },
+    { name: 'Plan Mensual Ilimitado', price: 150000, duration: 30, category: 'Membresía', service_type: 'paquete', active: true },
+    { name: 'Paquete 8 Clases', price: 160000, duration: 30, category: 'Paquetes', service_type: 'paquete', active: true },
+  ],
+  'Restaurante / Cafetería': [
+    { name: 'Mesa 2 personas', price: 0, duration: 90, category: 'Reserva', service_type: 'reserva', active: true },
+    { name: 'Mesa 4 personas', price: 0, duration: 90, category: 'Reserva', service_type: 'reserva', active: true },
+    { name: 'Mesa 6+ personas', price: 0, duration: 120, category: 'Reserva', service_type: 'reserva', active: true },
+    { name: 'Evento Privado', price: 500000, duration: 240, category: 'Eventos', service_type: 'reserva', active: false },
+  ],
+  'Hotel / Hospedaje': [
+    { name: 'Habitación Estándar', price: 120000, duration: 1440, category: 'Habitaciones', service_type: 'reserva', active: true },
+    { name: 'Habitación Doble', price: 180000, duration: 1440, category: 'Habitaciones', service_type: 'reserva', active: true },
+    { name: 'Suite', price: 300000, duration: 1440, category: 'Habitaciones', service_type: 'reserva', active: true },
+    { name: 'Day Pass — Piscina', price: 40000, duration: 480, category: 'Day Pass', service_type: 'reserva', active: false },
+  ],
+  'Estudio de Tatuajes / Piercing': [
+    { name: 'Tatuaje Pequeño', price: 100000, duration: 60, category: 'Tatuajes', service_type: 'cita', active: true },
+    { name: 'Tatuaje Mediano', price: 250000, duration: 120, category: 'Tatuajes', service_type: 'cita', active: true },
+    { name: 'Tatuaje Grande', price: 500000, duration: 240, category: 'Tatuajes', service_type: 'cita', active: true },
+    { name: 'Piercing', price: 50000, duration: 20, category: 'Piercing', service_type: 'cita', active: true },
+    { name: 'Consulta / Diseño', price: 0, duration: 30, category: 'Consulta', service_type: 'cita', active: true },
+  ],
+  'Estudio Fotográfico': [
+    { name: 'Sesión Individual', price: 150000, duration: 60, category: 'Sesión', service_type: 'cita', active: true },
+    { name: 'Sesión Pareja / Familia', price: 250000, duration: 90, category: 'Sesión', service_type: 'cita', active: true },
+    { name: 'Sesión Corporativa', price: 400000, duration: 120, category: 'Corporativo', service_type: 'cita', active: true },
+    { name: 'Cobertura Evento', price: 800000, duration: 300, category: 'Eventos', service_type: 'reserva', active: false },
+  ],
+  'Taller Mecánico / Automotriz': [
+    { name: 'Diagnóstico General', price: 50000, duration: 30, category: 'Diagnóstico', service_type: 'cita', active: true },
+    { name: 'Cambio de Aceite', price: 80000, duration: 30, category: 'Mantenimiento', service_type: 'cita', active: true },
+    { name: 'Revisión Frenos', price: 60000, duration: 45, category: 'Mantenimiento', service_type: 'cita', active: true },
+    { name: 'Alineación y Balanceo', price: 70000, duration: 45, category: 'Mantenimiento', service_type: 'cita', active: true },
+  ],
+  'Lavandería / Tintorería': [
+    { name: 'Lavado por Kilo', price: 8000, duration: 1440, category: 'Lavado', service_type: 'cita', active: true },
+    { name: 'Lavado en Seco', price: 15000, duration: 2880, category: 'Seco', service_type: 'cita', active: true },
+    { name: 'Planchado', price: 5000, duration: 1440, category: 'Planchado', service_type: 'cita', active: true },
+    { name: 'Edredón / Cobija', price: 25000, duration: 2880, category: 'Especial', service_type: 'cita', active: false },
+  ],
+  'Consultoría / Asesoría': [
+    { name: 'Sesión de Asesoría (1h)', price: 150000, duration: 60, category: 'Asesoría', service_type: 'cita', active: true },
+    { name: 'Consultoría Estratégica', price: 300000, duration: 120, category: 'Consultoría', service_type: 'cita', active: true },
+    { name: 'Plan Mensual', price: 800000, duration: 30, category: 'Planes', service_type: 'paquete', active: true },
+    { name: 'Auditoría', price: 500000, duration: 240, category: 'Auditoría', service_type: 'cita', active: false },
   ],
   'default': [
-    { name: 'Consulta General', price: 50000, duration: 30, category: 'General', active: true },
-    { name: 'Servicio Premium', price: 80000, duration: 60, category: 'Premium', active: true },
-    { name: 'Servicio Básico', price: 30000, duration: 30, category: 'General', active: true },
+    { name: 'Servicio General', price: 50000, duration: 30, category: 'General', service_type: 'cita', active: true },
+    { name: 'Servicio Premium', price: 80000, duration: 60, category: 'Premium', service_type: 'cita', active: true },
+    { name: 'Consulta Básica', price: 30000, duration: 30, category: 'General', service_type: 'cita', active: true },
   ],
 };
 

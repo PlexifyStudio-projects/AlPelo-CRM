@@ -24,6 +24,7 @@ class RegisterService(BaseModel):
     price: int  # COP sin decimales
     duration_minutes: int = 30
     category: str = "General"
+    service_type: str = "cita"  # cita, paquete, reserva
 
 class RegisterStaff(BaseModel):
     name: str
@@ -201,6 +202,7 @@ def register_business(data: RegisterRequest, db: Session = Depends(get_db)):
             tenant_id=tenant.id,
             name=svc.name,
             category=svc.category,
+            service_type=svc.service_type,
             price=svc.price,
             duration_minutes=svc.duration_minutes,
             is_active=True,

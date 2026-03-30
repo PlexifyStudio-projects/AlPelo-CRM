@@ -94,6 +94,8 @@ def _run_migrations(engine):
         ("inventory_movements", "location_id", "INTEGER"),
         # Plan limits stored per tenant
         ("tenant", "max_automations", "INTEGER NOT NULL DEFAULT 10"),
+        # Service type: cita, paquete, reserva
+        ("service", "service_type", "VARCHAR(20) NOT NULL DEFAULT 'cita'"),
     ]
 
     for table, column, col_type in migrations:

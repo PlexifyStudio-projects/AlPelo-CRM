@@ -140,6 +140,36 @@ def _build_business_context(db: Session, tenant_id: int = None, location_id: int
 
     sections = []
 
+    # --- Business type context — Lina adapts behavior per business type ---
+    if tenant_id:
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        if tenant:
+            btype = getattr(tenant, 'business_type', 'otro') or 'otro'
+            BUSINESS_CONTEXT = {
+                'peluqueria': 'PELUQUERIA/BARBERIA. Servicios: cortes, tintes, tratamientos capilares. Modelo: citas por sesion (20-90 min). Al agendar pregunte que servicio y con cual profesional.',
+                'barberia': 'BARBERIA. Servicios: cortes, barba, afeitado. Modelo: citas por sesion (15-50 min). Al agendar pregunte que corte desea.',
+                'spa': 'SPA/CENTRO DE BIENESTAR. Servicios: masajes, faciales, circuitos de aguas. Modelo: citas por sesion (45-180 min). Pregunte si tiene preferencia de terapeuta.',
+                'centro_estetico': 'CENTRO ESTETICO. Servicios: faciales, laser, depilacion, diseno de cejas. Modelo: citas por sesion + paquetes de sesiones. Pregunte si quiere sesion individual o paquete.',
+                'clinica': 'CLINICA/CONSULTORIO. Servicios: consultas, controles, examenes. Modelo: citas medicas (15-45 min). Pregunte motivo de consulta y especialidad.',
+                'odontologia': 'ODONTOLOGIA. Servicios: limpieza, blanqueamiento, ortodoncia, cirugia. Modelo: citas (30-60 min). Pregunte si es control o procedimiento nuevo.',
+                'fisioterapia': 'FISIOTERAPIA/REHABILITACION. Servicios: sesiones de terapia, evaluaciones. Modelo: citas + paquetes (ej: 10 sesiones). Pregunte si tiene sesiones pendientes del paquete.',
+                'psicologia': 'PSICOLOGIA/TERAPIA. Servicios: sesiones individuales, de pareja. Modelo: citas (50-60 min). Trate con maxima confidencialidad. Pregunte si es sesion de seguimiento o primera vez.',
+                'veterinaria': 'VETERINARIA. Servicios: consultas, vacunas, peluqueria canina, guarderia. Modelo: citas + reservas (guarderia). Pregunte nombre de la mascota y especie.',
+                'nutricion': 'NUTRICION/DIETETICA. Servicios: consultas, planes alimenticios, controles. Modelo: citas + programas de meses. Pregunte si es primera consulta o control.',
+                'gimnasio': 'GIMNASIO/FITNESS. Servicios: membresias (mensual/trimestral/anual), clases personales. Modelo: PAQUETES con vigencia en dias. NO agenda citas por sesion, vende membresias. Pregunte que plan le interesa.',
+                'academia': 'ACADEMIA/EDUCACION. Servicios: clases individuales, cursos, talleres. Modelo: citas + paquetes (cursos con duracion). Pregunte que curso le interesa.',
+                'yoga_pilates': 'YOGA/PILATES. Servicios: clases grupales, personales, planes ilimitados. Modelo: citas + paquetes. Pregunte si quiere clase suelta o plan mensual.',
+                'restaurante': 'RESTAURANTE/CAFETERIA. Servicios: mesas por capacidad. Modelo: RESERVAS de espacio. NO citas. Pregunte cuantas personas, fecha y hora.',
+                'hotel': 'HOTEL/HOSPEDAJE. Servicios: habitaciones, day pass. Modelo: RESERVAS por noches. Pregunte fechas de entrada y salida, tipo de habitacion.',
+                'tatuajes': 'ESTUDIO DE TATUAJES/PIERCING. Servicios: tatuajes (chico/mediano/grande), piercing. Modelo: citas (60-240 min). Pregunte tamano y ubicacion del tatuaje, si tiene diseno.',
+                'estudio_foto': 'ESTUDIO FOTOGRAFICO. Servicios: sesiones individuales, familiares, corporativas. Modelo: citas + reservas (eventos). Pregunte tipo de sesion y cuantas personas.',
+                'taller_mecanico': 'TALLER MECANICO. Servicios: diagnosticos, mantenimiento, reparaciones. Modelo: citas (30-45 min). Pregunte marca/modelo del vehiculo y que problema tiene.',
+                'lavanderia': 'LAVANDERIA/TINTORERIA. Servicios: lavado, planchado, lavado en seco. Modelo: entregas con tiempo de procesamiento. Pregunte que prendas necesita y para cuando las necesita.',
+                'consultoria': 'CONSULTORIA/ASESORIA. Servicios: sesiones de asesoria, planes mensuales. Modelo: citas + paquetes. Pregunte tema de la consulta.',
+            }
+            ctx = BUSINESS_CONTEXT.get(btype, f'Tipo de negocio: {btype}. Adapte las respuestas al contexto de este negocio.')
+            sections.append(f"=== TIPO DE NEGOCIO ===\n{ctx}\n")
+
     # --- Location header (if multi-location) ---
     if location_id:
         loc = db.query(Location).filter(Location.id == location_id).first()
@@ -241,8 +271,18 @@ Ingreso total registrado: ${total_revenue:,} COP""")
             if svc.category != current_cat:
                 current_cat = svc.category
                 catalog_lines.append(f"\n  [{current_cat}]")
-            duration = f" {svc.duration_minutes}min" if svc.duration_minutes else ""
-            catalog_lines.append(f"  - {svc.name}: ${svc.price:,}{duration}")
+            stype = getattr(svc, 'service_type', 'cita') or 'cita'
+            if stype == 'paquete':
+                dur = svc.duration_minutes
+                vigencia = f" vigencia {dur} dias" if dur else ""
+                catalog_lines.append(f"  - {svc.name} [PAQUETE]: ${svc.price:,}{vigencia}")
+            elif stype == 'reserva':
+                dur = svc.duration_minutes
+                duracion = f" {dur}min" if dur and dur < 1440 else f" {round(dur/1440)} noche(s)" if dur else ""
+                catalog_lines.append(f"  - {svc.name} [RESERVA]: ${svc.price:,}{duracion}")
+            else:
+                duration = f" {svc.duration_minutes}min" if svc.duration_minutes else ""
+                catalog_lines.append(f"  - {svc.name}: ${svc.price:,}{duration}")
         sections.append(f"=== SERVICIOS ({len(all_services)}) ===\n" + "\n".join(catalog_lines))
 
     # --- Upcoming appointments (today + next 3 days) ---

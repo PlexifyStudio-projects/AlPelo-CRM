@@ -111,14 +111,14 @@ const SVG_ICONS = {
 };
 
 const BUSINESS_TYPES = {
-  peluqueria: 'Peluqueria',
-  barberia: 'Barberia',
-  spa: 'Spa',
-  consultorio: 'Consultorio',
-  restaurante: 'Restaurante',
-  gimnasio: 'Gimnasio',
-  tienda: 'Tienda',
-  otro: 'Negocio',
+  peluqueria: 'Peluquería', barberia: 'Barbería', spa: 'Spa',
+  centro_estetico: 'Centro Estético', clinica: 'Clínica', odontologia: 'Odontología',
+  fisioterapia: 'Fisioterapia', psicologia: 'Psicología', veterinaria: 'Veterinaria',
+  nutricion: 'Nutrición', gimnasio: 'Gimnasio', academia: 'Academia',
+  yoga_pilates: 'Yoga / Pilates', restaurante: 'Restaurante', hotel: 'Hotel',
+  tatuajes: 'Estudio de Tatuajes', estudio_foto: 'Estudio Fotográfico',
+  taller_mecanico: 'Taller Mecánico', lavanderia: 'Lavandería',
+  consultoria: 'Consultoría', otro: 'Negocio',
 };
 
 const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout, isMobileOpen, onCloseMobile, badgeCounts = {} }) => {

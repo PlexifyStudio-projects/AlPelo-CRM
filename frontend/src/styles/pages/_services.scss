@@ -267,6 +267,56 @@
     font-weight: $font-weight-bold;
     color: $color-secondary;
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__card-type {
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+
+  // Type picker in modal
+  &__type-picker {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__type-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(0, 0, 0, 0.08);
+    background: white;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748B;
+    cursor: pointer;
+    transition: all 200ms ease;
+
+    &:hover {
+      border-color: rgba(0, 0, 0, 0.15);
+      background: #f8fafc;
+    }
+
+    &--active {
+      border-color: var(--type-color, #{$color-primary});
+      color: var(--type-color, #{$color-primary});
+      background: #f0f4ff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+    }
   }
 
   &__card-actions {

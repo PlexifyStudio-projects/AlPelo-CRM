@@ -62,8 +62,11 @@ const displayPhone = (raw, countryCode) => {
 };
 
 const BUSINESS_TYPES = [
-  'peluqueria', 'barberia', 'spa', 'clinica', 'restaurante', 'gimnasio',
-  'veterinaria', 'hotel', 'salon_belleza', 'odontologia', 'otro',
+  'peluqueria', 'barberia', 'spa', 'centro_estetico', 'clinica', 'odontologia',
+  'fisioterapia', 'psicologia', 'veterinaria', 'nutricion',
+  'gimnasio', 'academia', 'yoga_pilates',
+  'restaurante', 'hotel',
+  'tatuajes', 'estudio_foto', 'taller_mecanico', 'lavanderia', 'consultoria', 'otro',
 ];
 
 const EMPTY_TENANT = {
@@ -76,6 +79,7 @@ const DevTenants = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('active-first'); // active-first, name, plan, messages, newest, oldest
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ ...EMPTY_TENANT });
   const [editingId, setEditingId] = useState(null);
@@ -209,11 +213,35 @@ const DevTenants = () => {
     setActionLoading('');
   };
 
-  const filteredTenants = searchQuery.trim().length < 2 ? tenants : tenants.filter(t => {
-    const q = searchQuery.toLowerCase();
-    return [t.name, t.slug, t.owner_name, t.owner_phone, t.owner_email, t.city, t.plan, t.business_type]
-      .filter(Boolean).join(' ').toLowerCase().includes(q);
-  });
+  const filteredTenants = (() => {
+    let list = searchQuery.trim().length < 2 ? [...tenants] : tenants.filter(t => {
+      const q = searchQuery.toLowerCase();
+      return [t.name, t.slug, t.owner_name, t.owner_phone, t.owner_email, t.city, t.plan, t.business_type]
+        .filter(Boolean).join(' ').toLowerCase().includes(q);
+    });
+
+    const planOrder = { business: 0, pro: 1, starter: 2, trial: 3, custom: 4 };
+
+    list.sort((a, b) => {
+      switch (sortBy) {
+        case 'active-first': {
+          // Active + IA on first, then active + IA off, then inactive
+          const scoreA = (a.is_active ? 0 : 2) + (a.ai_is_paused ? 1 : 0);
+          const scoreB = (b.is_active ? 0 : 2) + (b.ai_is_paused ? 1 : 0);
+          if (scoreA !== scoreB) return scoreA - scoreB;
+          return (a.name || '').localeCompare(b.name || '');
+        }
+        case 'name': return (a.name || '').localeCompare(b.name || '');
+        case 'plan': return (planOrder[a.plan] ?? 9) - (planOrder[b.plan] ?? 9);
+        case 'messages': return (b.messages_used || 0) - (a.messages_used || 0);
+        case 'newest': return (b.id || 0) - (a.id || 0);
+        case 'oldest': return (a.id || 0) - (b.id || 0);
+        default: return 0;
+      }
+    });
+
+    return list;
+  })();
 
   if (loading) {
     return (
@@ -252,6 +280,24 @@ const DevTenants = () => {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
           </button>
         )}
+      </div>
+
+      {/* Sort Filters */}
+      <div className={`${b}__filters`}>
+        {[
+          { key: 'active-first', label: 'Activas primero' },
+          { key: 'plan', label: 'Por plan' },
+          { key: 'messages', label: 'Más uso IA' },
+          { key: 'name', label: 'Nombre A-Z' },
+          { key: 'newest', label: 'Más recientes' },
+          { key: 'oldest', label: 'Más antiguas' },
+        ].map(f => (
+          <button
+            key={f.key}
+            className={`${b}__filter-btn ${sortBy === f.key ? `${b}__filter-btn--active` : ''}`}
+            onClick={() => setSortBy(f.key)}
+          >{f.label}</button>
+        ))}
       </div>
 
       {/* Tenant Cards */}

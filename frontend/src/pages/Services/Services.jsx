@@ -105,12 +105,26 @@ const formatCurrency = (amount) => {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
 };
 
-const formatDuration = (mins) => {
+const formatDuration = (mins, serviceType) => {
   if (!mins) return '-';
+  if (serviceType === 'paquete') {
+    if (mins >= 365) return `${Math.round(mins / 365)} año${mins >= 730 ? 's' : ''}`;
+    if (mins >= 30) return `${Math.round(mins / 30)} mes${mins >= 60 ? 'es' : ''}`;
+    return `${mins} días`;
+  }
+  if (serviceType === 'reserva') {
+    if (mins >= 1440) return `${Math.round(mins / 1440)} noche${mins >= 2880 ? 's' : ''}`;
+  }
   if (mins < 60) return `${mins} min`;
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return m ? `${h}h ${m}min` : `${h}h`;
+};
+
+const SERVICE_TYPE_META = {
+  cita: { label: 'Cita', color: '#3B82F6', icon: '📅', durationLabel: 'Duración (min)' },
+  paquete: { label: 'Paquete', color: '#8B5CF6', icon: '📦', durationLabel: 'Vigencia (días)' },
+  reserva: { label: 'Reserva', color: '#F59E0B', icon: '🏷️', durationLabel: 'Duración (min)' },
 };
 
 const Services = () => {
@@ -123,7 +137,7 @@ const Services = () => {
   const [editingService, setEditingService] = useState(null);
   const { tenant } = useTenant();
   const [formData, setFormData] = useState({
-    name: '', category: '', price: '', duration_minutes: '', description: '', staff_ids: [],
+    name: '', category: '', service_type: 'cita', price: '', duration_minutes: '', description: '', staff_ids: [],
   });
   const [newCategoryMode, setNewCategoryMode] = useState(false);
   const { addNotification } = useNotification();
@@ -195,7 +209,7 @@ const Services = () => {
 
   const openCreateModal = () => {
     setEditingService(null);
-    setFormData({ name: '', category: '', price: '', duration_minutes: '', description: '', staff_ids: [] });
+    setFormData({ name: '', category: '', service_type: 'cita', price: '', duration_minutes: '', description: '', staff_ids: [] });
     setNewCategoryMode(false);
     setShowModal(true);
   };
@@ -205,6 +219,7 @@ const Services = () => {
     setFormData({
       name: svc.name,
       category: svc.category,
+      service_type: svc.service_type || 'cita',
       price: String(svc.price),
       duration_minutes: svc.duration_minutes ? String(svc.duration_minutes) : '',
       description: svc.description || '',
@@ -221,6 +236,7 @@ const Services = () => {
       price: parseInt(formData.price) || 0,
       duration_minutes: formData.duration_minutes ? parseInt(formData.duration_minutes) : null,
       description: formData.description || null,
+      service_type: formData.service_type || 'cita',
     };
     try {
       if (editingService) {
@@ -360,7 +376,14 @@ const Services = () => {
                   {items.map(svc => (
                     <div key={svc.id} className={`${b}__card`} style={{ '--card-accent': meta.color }}>
                       <div className={`${b}__card-top`}>
-                        <div className={`${b}__card-name`}>{svc.name}</div>
+                        <div className={`${b}__card-name`}>
+                          {svc.name}
+                          {svc.service_type && svc.service_type !== 'cita' && (
+                            <span className={`${b}__card-type`} style={{ background: SERVICE_TYPE_META[svc.service_type]?.color || '#64748B' }}>
+                              {SERVICE_TYPE_META[svc.service_type]?.label || svc.service_type}
+                            </span>
+                          )}
+                        </div>
                         <div className={`${b}__card-actions`}>
                           <button className={`${b}__card-edit`} onClick={() => openEditModal(svc)} title="Editar">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
@@ -381,7 +404,7 @@ const Services = () => {
                         </div>
                         <div className={`${b}__card-duration`}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                          {formatDuration(svc.duration_minutes)}
+                          {formatDuration(svc.duration_minutes, svc.service_type)}
                         </div>
                       </div>
 
@@ -418,6 +441,24 @@ const Services = () => {
               <div className={`${b}__form-group`}>
                 <label>Nombre del servicio</label>
                 <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required placeholder="Ej: Servicio Premium" />
+              </div>
+
+              <div className={`${b}__form-group`}>
+                <label>Tipo de servicio</label>
+                <div className={`${b}__type-picker`}>
+                  {Object.entries(SERVICE_TYPE_META).map(([key, meta]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className={`${b}__type-btn ${formData.service_type === key ? `${b}__type-btn--active` : ''}`}
+                      onClick={() => setFormData({ ...formData, service_type: key })}
+                      style={formData.service_type === key ? { '--type-color': meta.color } : {}}
+                    >
+                      <span>{meta.icon}</span>
+                      <span>{meta.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className={`${b}__form-row`}>
@@ -461,8 +502,8 @@ const Services = () => {
                   <input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} required placeholder="40000" />
                 </div>
                 <div className={`${b}__form-group`}>
-                  <label>Duración (min)</label>
-                  <input type="number" value={formData.duration_minutes} onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })} placeholder="40" />
+                  <label>{SERVICE_TYPE_META[formData.service_type]?.durationLabel || 'Duración (min)'}</label>
+                  <input type="number" value={formData.duration_minutes} onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })} placeholder={formData.service_type === 'paquete' ? '30' : '40'} />
                 </div>
               </div>
 
