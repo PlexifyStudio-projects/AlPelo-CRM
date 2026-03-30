@@ -127,23 +127,46 @@ VERIFICACIÓN: Docker backend arrancó sin errores. 0 imports rotos.
 
 ============================================================================
 FASE 2 — Separar schemas.py en módulos
-Fecha: pendiente
-Estado: PENDIENTE
+Fecha: 30 Marzo 2026
+Estado: COMPLETADO
 ============================================================================
 
-Plan:
-  schemas.py (811 líneas) → schemas/ (carpeta con 7+ archivos)
-  Se crea schemas/__init__.py que re-exporta todo para compatibilidad.
+  schemas.py (811 líneas) ELIMINADO → schemas/ (paquete con 10 archivos)
+
+  schemas/__init__.py    ← re-exporta todo (compatibilidad)
+  schemas/auth.py        ← Login, Token, Admin, ToggleAI
+  schemas/staff.py       ← Staff CRUD + Credentials
+  schemas/client.py      ← Client + Notes
+  schemas/service.py     ← Service + Subscription
+  schemas/appointment.py ← Appointment + Visit
+  schemas/dashboard.py   ← Dashboard KPIs + Stats
+  schemas/finance.py     ← Revenue, Expenses, Invoices, P&L, Commissions
+  schemas/ai.py          ← AI Config + Chat
+  schemas/whatsapp.py    ← Conversation + Message
+  schemas/campaign.py    ← Campaign + Import
+
+  VERIFICACIÓN: 8/8 endpoints CRUD testeados (create + read + update + delete).
 
 ============================================================================
 FASE 3 — Extraer migraciones de main.py
-Fecha: pendiente
-Estado: PENDIENTE
+Fecha: 30 Marzo 2026
+Estado: COMPLETADO
 ============================================================================
 
-Plan:
-  main.py → extraer _run_migrations() a database/migrations.py
-  main.py pasa de 763 a ~150 líneas
+  main.py (763 líneas) → main.py (285 líneas) + database/migrations.py (478 líneas)
+
+  EXTRAÍDO:
+    _run_migrations()   → database/migrations.py:run_migrations()     406 líneas
+    _ensure_vapid_keys() → database/migrations.py:ensure_vapid_keys()  72 líneas
+
+  main.py ahora solo tiene:
+    - imports + lifespan (startup/shutdown)
+    - router registration (22 routers)
+    - error logging middleware
+    - factory-reset + run-migrations endpoints
+    - health check
+
+  VERIFICACIÓN: Backend arrancó sin errores. Login + 4 endpoints OK.
 
 ============================================================================
 FASE 4 — Fusionar dev_endpoints + dev_mega_endpoints
