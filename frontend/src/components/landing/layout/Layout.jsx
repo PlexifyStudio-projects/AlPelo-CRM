@@ -8,11 +8,17 @@ import MeshGradient from '../common/MeshGradient';
 
 export default function Layout() {
   const { pathname } = useLocation();
+  const isBooking = pathname.includes('/book/');
 
   // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  // Booking pages render standalone (no header/footer/background)
+  if (isBooking) {
+    return <Outlet />;
+  }
 
   return (
     <>

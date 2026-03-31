@@ -66,12 +66,9 @@ const router = createBrowserRouter([
       { path: 'producto/servicios', element: <W><ProdServicios /></W> },
       { path: 'producto/equipo', element: <W><ProdEquipo /></W> },
       { path: 'producto/lealtad', element: <W><ProdLealtad /></W> },
+      // Booking page (inside LandingLayout for styles, but Layout hides Header/Footer for /book/ routes)
+      { path: 'book/:slug', element: <W><BookingPage /></W> },
     ],
-  },
-  // Booking page — standalone layout (tenant-branded, no landing chrome)
-  {
-    path: '/book/:slug',
-    element: <W><BookingPage /></W>,
   },
 ], { basename: BASE });
 

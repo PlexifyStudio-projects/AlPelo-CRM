@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import SEO from '../../../components/landing/common/SEO';
-import '../../../styles/landing/pages/booking.scss';
 
 const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
-const b = 'bk';
+const b = 'booking-page';
 
 const DAYS_ES = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
 const MONTHS_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
