@@ -1,6 +1,7 @@
 """Staff briefings, closed day checks, reconnect, daily summary.
 Extracted from scheduler.py Phase 8."""
 import os
+import time
 from datetime import datetime, timedelta, date
 from database.models import (
     Appointment, Client, Staff, Service, Tenant,

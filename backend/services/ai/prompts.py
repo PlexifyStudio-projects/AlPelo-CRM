@@ -31,6 +31,10 @@ def _fecha_colombia_str(db=None):
     from routes.ai_endpoints import _fecha_colombia_str as _orig
     return _orig(db)
 
+def compute_client_fields(client, db):
+    from routes._helpers import compute_client_fields as _orig
+    return _orig(client, db)
+
 
 # SYSTEM PROMPT BUILDER
 # ============================================================================
