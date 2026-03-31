@@ -4,6 +4,10 @@ Extracted from whatsapp_endpoints.py during Phase 7 refactor.
 """
 import os
 import json
+import random
+import re
+import asyncio
+import httpx
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -15,10 +19,13 @@ from database.models import (
 )
 from services.whatsapp.helpers import (
     _in_flight_convs, _pending_queue, _PENDING_QUEUE_MAX,
+    _AI_REPLY_MAX, _AI_REPLY_WINDOW,
     _is_off_hours, _off_hours_greeting, _wa_token_paused,
     _get_wa_config_cached, wa_headers, _get_wa_base_url,
     _transcribe_audio, _download_media_base64, _send_read_receipt,
 )
+from ai_security import detect_prompt_injection, validate_response, clean_response_for_whatsapp
+from sentiment_analyzer import analyze_sentiment
 from activity_log import log_event
 from routes._helpers import normalize_phone, safe_tid, now_colombia as _now_colombia
 
