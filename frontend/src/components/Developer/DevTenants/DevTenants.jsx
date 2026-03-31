@@ -73,6 +73,7 @@ const EMPTY_TENANT = {
   name: '', business_type: 'peluqueria', owner_name: '', owner_phone: '',
   owner_email: '', city: 'Bucaramanga', country: 'CO', plan: 'starter',
   monthly_price: 190000, messages_limit: 1500,
+  booking_enabled: false, booking_tagline: '',
 };
 
 const DevTenants = () => {
@@ -134,6 +135,8 @@ const DevTenants = () => {
       owner_email: t.owner_email || '', city: t.city || '', country: t.country || 'CO',
       plan: t.plan || 'starter', monthly_price: t.monthly_price || 0,
       messages_limit: t.messages_limit || 5000,
+      booking_enabled: !!t.booking_enabled, booking_tagline: t.booking_tagline || '',
+      slug: t.slug || '',
     });
     setEditingId(t.id); setAdminUsername(t.admin_user?.username || '');
     setNewPassword(''); setCredMsg(null); setTenantAdmins([]); setResetPwId(null);
@@ -487,6 +490,33 @@ const DevTenants = () => {
                       <span className={`${b}__plan-card-msgs`}>{plan.messages.toLocaleString('es-CO')} msgs IA · {plan.automations} auto.</span>
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* ── Booking Online ── */}
+              <div className={`${b}__form-section`}>
+                <h3 className={`${b}__form-section-title`}>Booking Online</h3>
+                <div className={`${b}__form-grid`}>
+                  <div className={`${b}__field`} style={{ gridColumn: '1 / -1' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={!!formData.booking_enabled} onChange={e => setFormData(f => ({ ...f, booking_enabled: e.target.checked }))} style={{ width: 18, height: 18, accentColor: '#10b981' }} />
+                      <span>Pagina publica de reservas habilitada</span>
+                    </label>
+                  </div>
+                  {formData.booking_enabled && (
+                    <div className={`${b}__field`} style={{ gridColumn: '1 / -1' }}>
+                      <label>Tagline (frase corta)</label>
+                      <input value={formData.booking_tagline || ''} onChange={e => setFormData(f => ({ ...f, booking_tagline: e.target.value }))} placeholder="Ej: Descubre la excelencia en AlPelo!" maxLength={300} />
+                    </div>
+                  )}
+                  {formData.booking_enabled && formData.slug && (
+                    <div className={`${b}__field`} style={{ gridColumn: '1 / -1' }}>
+                      <label>Link publico</label>
+                      <div style={{ padding: '8px 12px', background: '#f1f5f9', borderRadius: 8, fontSize: '0.85rem', color: '#475569', wordBreak: 'break-all' }}>
+                        {window.location.origin}{import.meta.env.BASE_URL || '/'}book/{formData.slug}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

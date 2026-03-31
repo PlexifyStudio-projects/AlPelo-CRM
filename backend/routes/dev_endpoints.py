@@ -110,6 +110,12 @@ def _safe_tenant_dict(t, db=None):
         "admin_user": admin_user,
         "paid_until": getattr(t, 'paid_until', None).isoformat() if getattr(t, 'paid_until', None) else None,
         "days_remaining": (getattr(t, 'paid_until', None) - date.today()).days if getattr(t, 'paid_until', None) else None,
+        # Booking Online
+        "booking_enabled": getattr(t, 'booking_enabled', False),
+        "booking_tagline": getattr(t, 'booking_tagline', None),
+        "booking_description": getattr(t, 'booking_description', None),
+        "gallery_images": getattr(t, 'gallery_images', []) or [],
+        "logo_url": getattr(t, 'logo_url', None),
     }
 
 
@@ -322,6 +328,7 @@ def update_tenant(tenant_id: int, data: dict, db: Session = Depends(get_db), use
         "wa_phone_number_id", "wa_business_account_id", "wa_access_token",
         "wa_webhook_token", "wa_phone_display",
         "monthly_price", "messages_limit", "max_automations", "plan",
+        "booking_enabled", "booking_tagline", "booking_description", "gallery_images", "logo_url",
     ]
 
     # If plan changes, auto-resolve price + messages + automations

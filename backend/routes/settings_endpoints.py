@@ -784,3 +784,53 @@ async def upload_logo(file: UploadFile = File(...), db: Session = Depends(get_db
     db.commit()
 
     return {"ok": True, "logo_url": data_uri}
+
+
+# ============================================================================
+# BOOKING ONLINE SETTINGS (Admin)
+# ============================================================================
+
+@router.get("/settings/booking")
+def get_booking_settings(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="Tenant no identificado")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+    return {
+        "booking_enabled": getattr(tenant, 'booking_enabled', False),
+        "booking_tagline": getattr(tenant, 'booking_tagline', ''),
+        "booking_description": getattr(tenant, 'booking_description', ''),
+        "gallery_images": getattr(tenant, 'gallery_images', []) or [],
+        "logo_url": getattr(tenant, 'logo_url', None),
+        "slug": tenant.slug,
+    }
+
+
+@router.put("/settings/booking")
+def update_booking_settings(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="Tenant no identificado")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+
+    allowed = ["booking_enabled", "booking_tagline", "booking_description", "gallery_images"]
+    for field in allowed:
+        if field in data:
+            setattr(tenant, field, data[field])
+
+    tenant.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(tenant)
+
+    return {
+        "ok": True,
+        "booking_enabled": tenant.booking_enabled,
+        "booking_tagline": tenant.booking_tagline,
+        "booking_description": tenant.booking_description,
+        "gallery_images": tenant.gallery_images or [],
+        "slug": tenant.slug,
+    }
