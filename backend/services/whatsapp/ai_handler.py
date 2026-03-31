@@ -13,6 +13,14 @@ from database.models import (
     Client, Staff, Service, Appointment, Tenant, AIConfig,
     WhatsAppConversation, WhatsAppMessage, ClientNote,
 )
+from services.whatsapp.helpers import (
+    _in_flight_convs, _pending_queue, _PENDING_QUEUE_MAX,
+    _is_off_hours, _off_hours_greeting, _wa_token_paused,
+    _get_wa_config_cached, wa_headers, _get_wa_base_url,
+    _transcribe_audio, _download_media_base64, _send_read_receipt,
+)
+from activity_log import log_event
+from routes._helpers import normalize_phone, safe_tid, now_colombia as _now_colombia
 
 
 async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_wa_msg_id: str = None, needs_transcription: bool = False, media_id: str = None, needs_vision: bool = False, media_mime: str = None, is_catchup: bool = False):
