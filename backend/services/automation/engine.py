@@ -23,7 +23,7 @@ from database.models import (
     Appointment, VisitHistory, Staff, Service,
     WhatsAppConversation, WhatsAppMessage,
 )
-from routes._helpers import normalize_phone, now_colombia as _now_colombia
+from routes._helpers import normalize_phone, now_colombia as _now_colombia, get_wa_token, get_wa_phone_id
 from activity_log import log_event
 
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")

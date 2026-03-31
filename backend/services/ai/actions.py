@@ -16,7 +16,10 @@ from database.models import (
     StaffSchedule, StaffDayOff, Expense, Location,
     LinaTask, MessageTemplate,
 )
-from routes._helpers import compute_client_fields, compute_client_list_item, normalize_phone, safe_tid, find_client
+from routes._helpers import (
+    compute_client_fields, compute_client_list_item, normalize_phone,
+    safe_tid, find_client, find_conversation, get_wa_token, get_wa_phone_id,
+)
 
 
 def _get_tenant_offset(db=None, tenant_id=None):

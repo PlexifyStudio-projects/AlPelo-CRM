@@ -9,7 +9,7 @@ from database.models import (
     WhatsAppConversation, WhatsAppMessage,
 )
 from activity_log import log_event
-from routes._helpers import now_colombia as _now_colombia
+from routes._helpers import now_colombia as _now_colombia, normalize_phone
 from services.automation.helpers import _send_whatsapp_sync, _DAYS_ES
 
 # ============================================================================
