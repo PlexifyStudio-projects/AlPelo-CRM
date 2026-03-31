@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import SEO from '../../../components/landing/common/SEO';
-import '../../../styles/landing/pages/_booking.scss';
 
 const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
