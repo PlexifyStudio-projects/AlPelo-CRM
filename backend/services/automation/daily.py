@@ -7,6 +7,12 @@ from database.models import (
     WhatsAppConversation, WhatsAppMessage,
 )
 from activity_log import log_event
+from routes._helpers import now_colombia as _now_colombia
+from services.automation.helpers import (
+    _send_whatsapp_sync, _store_outbound_message, _already_sent_today,
+    _match_phone_to_conversation, _create_conversation_for_client,
+    _replace_note_prefix, _conv_rate_limited,
+)
 
 def _is_business_hours():
     """True if current Colombia time is within business hours (7:30 AM - 8:30 PM)."""

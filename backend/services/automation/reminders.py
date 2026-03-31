@@ -3,6 +3,12 @@ Extracted from scheduler.py Phase 8."""
 from datetime import datetime, timedelta, date
 from database.models import Appointment, Client, Staff, Service, ClientNote, Tenant
 from activity_log import log_event
+from routes._helpers import now_colombia as _now_colombia
+from services.automation.helpers import (
+    _send_whatsapp_sync, _store_outbound_message, _already_sent_today,
+    _find_conversation, _create_conversation_for_client, _get_appt_details,
+    _conv_rate_limited, _replace_note_prefix,
+)
 
 # ============================================================================
 # 1. DEFAULT 30-MINUTE REMINDER — For ALL confirmed appointments

@@ -29,6 +29,7 @@ from services.whatsapp.helpers import (
     _is_token_error, _trigger_token_pause, _trigger_token_resume,
     _get_wa_config_cached, wa_headers, _get_wa_base_url,
     _transcribe_audio, _download_media_base64, _fetch_profile_photo,
+    _in_flight_convs,
 )
 
 # ============================================================================

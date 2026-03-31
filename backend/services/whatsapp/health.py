@@ -1,9 +1,10 @@
 """WhatsApp token health + Meta token auto-refresh.
 Extracted from scheduler.py Phase 8."""
-import os, httpx
+import os, time, httpx
 from datetime import datetime, timedelta
 from database.connection import SessionLocal
 from database.models import Tenant
+from routes._helpers import now_colombia as _now_colombia
 
 # TOKEN HEALTH CHECK — Auto-resume Lina when token is restored
 # ============================================================================

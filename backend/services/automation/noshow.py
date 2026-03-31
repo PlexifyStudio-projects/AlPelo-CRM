@@ -3,6 +3,7 @@ Extracted from scheduler.py Phase 8."""
 from datetime import datetime, timedelta, date
 from database.models import Appointment, Client, ClientNote
 from activity_log import log_event
+from routes._helpers import now_colombia as _now_colombia
 
 # ============================================================================
 # 3. NO-SHOW STATUS UPDATE — Mark missed appointments (NO unsolicited messages)

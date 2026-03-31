@@ -4,7 +4,7 @@ import os, httpx, json
 from datetime import datetime, timedelta, date
 from database.connection import SessionLocal
 from database.models import Tenant, WhatsAppConversation, WhatsAppMessage, Client
-from routes._helpers import normalize_phone
+from routes._helpers import normalize_phone, now_colombia as _now_colombia
 
 def _replace_note_prefix(content: str, new_prefix: str) -> str:
     """Replace PENDIENTE: or RECORDATORIO: prefix with a new one."""
