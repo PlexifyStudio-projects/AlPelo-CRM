@@ -35,6 +35,8 @@ def compute_client_fields(client, db):
     from routes._helpers import compute_client_fields as _orig
     return _orig(client, db)
 
+_DIAS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+
 
 # SYSTEM PROMPT BUILDER
 # ============================================================================

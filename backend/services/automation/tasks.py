@@ -9,7 +9,7 @@ from database.models import (
 )
 from activity_log import log_event
 from routes._helpers import now_colombia as _now_colombia
-from services.automation.helpers import _send_whatsapp_sync
+from services.automation.helpers import _send_whatsapp_sync, _DAYS_ES
 
 # ============================================================================
 # CLOSED-DAY APPOINTMENT CHECK — Proactive error correction

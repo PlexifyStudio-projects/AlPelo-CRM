@@ -6,6 +6,9 @@ from database.connection import SessionLocal
 from database.models import Tenant, WhatsAppConversation, WhatsAppMessage, Client
 from routes._helpers import normalize_phone, now_colombia as _now_colombia
 
+_DAYS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+_DIAS_ES = _DAYS_ES  # Alias
+
 def _replace_note_prefix(content: str, new_prefix: str) -> str:
     """Replace PENDIENTE: or RECORDATORIO: prefix with a new one."""
     for old in ("PENDIENTE:", "RECORDATORIO:"):
