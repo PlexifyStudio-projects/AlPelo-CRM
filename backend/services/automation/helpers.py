@@ -6,6 +6,7 @@ from database.connection import SessionLocal
 from database.models import Tenant, WhatsAppConversation, WhatsAppMessage, Client
 from routes._helpers import normalize_phone, now_colombia as _now_colombia
 
+WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 _DAYS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
 _DIAS_ES = _DAYS_ES  # Alias
 
