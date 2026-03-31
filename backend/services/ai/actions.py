@@ -14,6 +14,7 @@ from database.models import (
     Admin, Staff, Client, Service, Appointment, VisitHistory, ClientNote,
     WhatsAppConversation, WhatsAppMessage, Tenant, AIConfig,
     StaffSchedule, StaffDayOff, Expense, Location,
+    LinaTask, MessageTemplate,
 )
 from routes._helpers import compute_client_fields, compute_client_list_item, normalize_phone, safe_tid
 
