@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment, WhatsAppConversation, WhatsAppMessage, Admin
+from database.models import Staff, Client, VisitHistory, ClientNote, Service, Appointment, WhatsAppConversation, WhatsAppMessage, Admin, WorkflowExecution, AutomationExecution, Checkout
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
 
@@ -147,6 +147,10 @@ def delete_appointment(appointment_id: int, db: Session = Depends(get_db), user:
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found")
 
+    # Clear FK references before deleting to avoid ForeignKeyViolation
+    db.query(WorkflowExecution).filter(WorkflowExecution.appointment_id == appointment_id).update({WorkflowExecution.appointment_id: None})
+    db.query(AutomationExecution).filter(AutomationExecution.appointment_id == appointment_id).update({AutomationExecution.appointment_id: None})
+    db.query(Checkout).filter(Checkout.appointment_id == appointment_id).update({Checkout.appointment_id: None})
     db.delete(appointment)
     db.commit()
     return {"success": True, "message": "Appointment deleted"}

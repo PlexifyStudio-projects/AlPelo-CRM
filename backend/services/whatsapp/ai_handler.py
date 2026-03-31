@@ -449,16 +449,41 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
                     # Find which promises were made to give better retry instruction
                     found_promises = [w for w in _PROMISE_WORDS if w in response_lower]
-                    # Retry with explicit instruction
+                    # Build action mapping hints
+                    _action_map = {
+                        "te agend": "create_appointment", "te program": "create_appointment",
+                        "queda agendad": "create_appointment", "ya te agend": "create_appointment",
+                        "te agendo para": "create_appointment", "cita para": "create_appointment",
+                        "te registr": "create_client", "ya te registr": "create_client",
+                        "te creo": "create_client", "ya te cre": "create_client",
+                        "te cambio la cita": "update_appointment", "te movi la cita": "update_appointment",
+                        "te reagend": "update_appointment", "te cambio para": "update_appointment",
+                        "te aviso": "add_note", "te recuerdo": "add_note", "te notifico": "add_note",
+                        "te mando recordatorio": "add_note", "te confirmo": "add_note",
+                        "nota agregad": "add_note", "queda registrad": "add_note",
+                    }
+                    needed_actions = []
+                    for promise in found_promises:
+                        action_type = _action_map.get(promise)
+                        if action_type and action_type not in needed_actions:
+                            needed_actions.append(action_type)
+
+                    # Retry with explicit instruction including exact action format
                     retry_msg = (
-                        f"[SISTEMA CRITICO: Tu respuesta anterior dice: \"{ai_response[:200]}\" "
-                        f"pero NO incluiste NINGUN bloque ```action```. "
+                        f"[SISTEMA CRITICO: Tu respuesta anterior NO incluyo bloques ```action```. "
                         f"Promesas detectadas: {', '.join(found_promises[:5])}. "
-                        f"DEBES incluir UN bloque ```action``` por CADA promesa. "
-                        f"Si dijiste 'te cambio la cita' necesitas update_appointment. "
-                        f"Si dijiste 'te aviso antes' necesitas add_note PENDIENTE. "
-                        f"Responde IGUAL pero con TODOS los bloques ```action``` al final.]\n\n{inbound_text}"
+                        f"DEBES incluir estos bloques al final de tu respuesta:\n"
                     )
+                    for na in needed_actions:
+                        if na == "create_appointment":
+                            retry_msg += '```action\n{"action":"create_appointment","client_name":"...","staff_name":"...","service_name":"...","date":"YYYY-MM-DD","time":"HH:MM"}\n```\n'
+                        elif na == "update_appointment":
+                            retry_msg += '```action\n{"action":"update_appointment","appointment_id":...,"time":"HH:MM"}\n```\n'
+                        elif na == "create_client":
+                            retry_msg += '```action\n{"action":"create_client","name":"...","phone":"..."}\n```\n'
+                        elif na == "add_note":
+                            retry_msg += '```action\n{"action":"add_note","search_name":"...","content":"PENDIENTE: ..."}\n```\n'
+                    retry_msg += f"Rellena los datos reales del cliente y responde.]\n\n{inbound_text}"
                     retry_response = await _call_ai(system_prompt, history, retry_msg)
                     if retry_response:
                         # Re-parse actions from retry

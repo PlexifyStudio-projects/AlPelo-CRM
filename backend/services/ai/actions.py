@@ -15,6 +15,7 @@ from database.models import (
     WhatsAppConversation, WhatsAppMessage, Tenant, AIConfig,
     StaffSchedule, StaffDayOff, Expense, Location,
     LinaTask, MessageTemplate,
+    WorkflowExecution, AutomationExecution, Checkout,
 )
 from routes._helpers import (
     compute_client_fields, compute_client_list_item, normalize_phone,
@@ -1401,6 +1402,10 @@ def _execute_action(action: dict, db: Session) -> str:
         if not apt:
             return "ERROR: No encontre cita con ID {}.".format(apt_id)
         info = f"{apt.client_name} - {apt.date} {apt.time}"
+        # Clear FK references before deleting to avoid ForeignKeyViolation
+        db.query(WorkflowExecution).filter(WorkflowExecution.appointment_id == apt.id).update({WorkflowExecution.appointment_id: None})
+        db.query(AutomationExecution).filter(AutomationExecution.appointment_id == apt.id).update({AutomationExecution.appointment_id: None})
+        db.query(Checkout).filter(Checkout.appointment_id == apt.id).update({Checkout.appointment_id: None})
         db.delete(apt)
         db.commit()
         return f"Cita eliminada: {info}."
