@@ -9,19 +9,43 @@ from datetime import datetime
 
 from database.connection import SessionLocal
 from database.models import Tenant, WhatsAppConversation
-from routes._helpers import normalize_phone
+from routes._helpers import normalize_phone, now_colombia as _now_col
+from activity_log import log_event
+
+WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+_DAYS_ES = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+_DIAS_ES = _DAYS_ES
 
 
-def _is_off_hours() -> bool:
-    """True if current Colombia time is outside business hours (8:30 PM - 7:30 AM)."""
+def _is_off_hours(db=None, tenant_id=None) -> bool:
+    """True if current Colombia time is outside the tenant's business hours.
+    Reads from Location table, falls back to 8AM-7PM."""
     now = _now_col()
-    hour, minute = now.hour, now.minute
-    # Off hours: 20:30 (8:30 PM) to 07:30 (7:30 AM)
-    if hour > 20 or (hour == 20 and minute >= 30):
-        return True
-    if hour < 7 or (hour == 7 and minute < 30):
-        return True
-    return False
+    current_minutes = now.hour * 60 + now.minute
+
+    open_minutes = 8 * 60    # default 8:00 AM
+    close_minutes = 19 * 60  # default 7:00 PM
+
+    try:
+        _db = db or SessionLocal()
+        try:
+            from database.models import Location
+            q = _db.query(Location).filter(Location.is_active == True, Location.is_default == True)
+            if tenant_id:
+                q = q.filter(Location.tenant_id == tenant_id)
+            loc = q.first()
+            if loc and loc.opening_time and loc.closing_time:
+                oh, om = map(int, loc.opening_time.split(":"))
+                ch, cm = map(int, loc.closing_time.split(":"))
+                open_minutes = oh * 60 + om
+                close_minutes = ch * 60 + cm
+        finally:
+            if not db:
+                _db.close()
+    except Exception:
+        pass
+
+    return current_minutes < open_minutes or current_minutes >= close_minutes
 
 def _off_hours_greeting() -> str:
     """Return 'buenas noches' or 'buenos dias' depending on time."""
@@ -89,7 +113,6 @@ _PENDING_QUEUE_MAX = 3
 # ============================================================================
 # Config — reads from tenant DB first, falls back to env vars
 # ============================================================================
-WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")
 WA_WEBHOOK_VERIFY_TOKEN = os.getenv("WHATSAPP_WEBHOOK_VERIFY_TOKEN", "plexify_webhook_2026")
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
