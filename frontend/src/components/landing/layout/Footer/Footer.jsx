@@ -12,10 +12,10 @@ export default function Footer() {
             <h3 className="footer__cta-title">¿Listo para organizar su <span className="footer__cta-highlight">negocio</span>?</h3>
             <p className="footer__cta-desc">Cree su cuenta en 5 minutos y vea todo funcionando.</p>
           </div>
-          <a className="footer__cta-btn" href="/register">
+          <Link className="footer__cta-btn" to="/register">
             Crear cuenta gratis
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </a>
+          </Link>
         </div>
       </div>
 
