@@ -606,11 +606,37 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     print(f"[Lina IA] Action parse error: {action_err}")
                     log_event("error", "Error parseando accion", detail=str(action_err)[:200], conv_id=conv_id, status="error")
 
-            # CONFLICT/ERROR HANDLING: If any action failed, ask AI to generate a client-friendly response
-            # NEVER send raw error messages to the client — they contain internal data
+            # ACTION RESULTS HANDLING: Generate follow-up response with action results
             _all_results = getattr(ai_auto_reply, '_action_results', [])
             _conflicts = [r for r in _all_results if "CONFLICTO" in r]
             _errors = [r for r in _all_results if "ERROR" in r and "CONFLICTO" not in r]
+            _successes = [r for r in _all_results if "CONFLICTO" not in r and "ERROR" not in r]
+
+            # If actions executed successfully, make a SECOND AI call to generate the final response
+            if _successes and not _conflicts and not _errors:
+                try:
+                    results_summary = "\n".join(_successes)
+                    continuation_msg = (
+                        f"[SISTEMA: Ejecutaste estas acciones y obtuviste estos resultados:\n{results_summary}\n\n"
+                        f"Ahora RESPONDE al cliente con el resultado FINAL de forma natural y completa. "
+                        f"Si buscaste un cliente, confirma que lo encontraste y procede con lo que pidio. "
+                        f"Si agendaste una cita, confirma fecha, hora, profesional y servicio. "
+                        f"NO repitas 'dejame buscar' ni 'verificando'. Da la respuesta DIRECTA.]\n\n{inbound_text}"
+                    )
+                    from routes.ai_endpoints import _call_ai
+                    final_response = await _call_ai(system_prompt, history + [
+                        {"role": "assistant", "content": ai_response},
+                    ], continuation_msg, tenant_id=_conv_tid, max_tokens=800)
+                    if final_response and final_response.strip():
+                        # Strip action blocks from continuation
+                        final_response = re.sub(r'`{1,3}\s*action.*', '', final_response, flags=re.DOTALL | re.IGNORECASE)
+                        final_response = re.sub(r'\{[^}]*"action"\s*:.*?\}', '', final_response, flags=re.DOTALL).strip()
+                        if final_response:
+                            ai_response = final_response
+                            print(f"[Lina IA] Continuation response generated for conv {conv_id}")
+                except Exception as cont_err:
+                    print(f"[Lina IA] Continuation call failed: {cont_err}")
+
             if _conflicts or _errors:
                 all_issues = _conflicts + _errors
                 print(f"[Lina IA] ACTION ISSUES — {len(all_issues)} problem(s) detected, asking AI for client-friendly response")
