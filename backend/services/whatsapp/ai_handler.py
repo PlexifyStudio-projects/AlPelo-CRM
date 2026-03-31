@@ -540,9 +540,13 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             if not action_data.get("phone") or client_name == contact_name or contact_name.startswith(client_name.split()[0] if client_name else "???"):
                                 action_data["phone"] = conv.wa_contact_phone
 
-                        # For create_appointment, auto-fill client phone from conversation
+                        # For create_appointment, only auto-fill phone if the client name matches
+                        # the person writing (not when someone is booking for another person)
                         if action_type == "create_appointment" and not action_data.get("client_phone"):
-                            action_data["client_phone"] = conv.wa_contact_phone
+                            appt_client = (action_data.get("client_name") or "").lower().strip()
+                            contact = (conv.wa_contact_name or "").lower().strip()
+                            if appt_client and contact and (appt_client in contact or contact in appt_client):
+                                action_data["client_phone"] = conv.wa_contact_phone
 
                         # Route ALL actions through the unified executor
                         from routes.ai_endpoints import _execute_action
@@ -642,7 +646,10 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                                     # Inject tenant_id
                                     ca_data["tenant_id"] = _conv_tid
                                     if ca_type == "create_appointment" and not ca_data.get("client_phone"):
-                                        ca_data["client_phone"] = conv.wa_contact_phone
+                                        ca_client = (ca_data.get("client_name") or "").lower().strip()
+                                        ca_contact = (conv.wa_contact_name or "").lower().strip()
+                                        if ca_client and ca_contact and (ca_client in ca_contact or ca_contact in ca_client):
+                                            ca_data["client_phone"] = conv.wa_contact_phone
                                     ca_db = SessionLocal()
                                     try:
                                         ca_result = _execute_action(ca_data, ca_db)
