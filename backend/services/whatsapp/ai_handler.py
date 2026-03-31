@@ -391,7 +391,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     # Instead of staying silent, ask the AI to respond differently
                     retry_response = await _call_ai(
                         system_prompt + f"\n\nIMPORTANTE: Tu respuesta anterior fue: \"{last_ai_msg.content}\". NO repitas eso. Responde de forma diferente, abordando lo que el cliente acaba de decir.",
-                        history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type
+                        history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type, tenant_id=_conv_tid, max_tokens=400
                     )
                     if retry_response and retry_response.strip():
                         retry_sim = SequenceMatcher(None, prev, retry_response.lower().strip()).ratio()
@@ -484,7 +484,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         elif na == "add_note":
                             retry_msg += '```action\n{"action":"add_note","search_name":"...","content":"PENDIENTE: ..."}\n```\n'
                     retry_msg += f"Rellena los datos reales del cliente y responde.]\n\n{inbound_text}"
-                    retry_response = await _call_ai(system_prompt, history, retry_msg)
+                    retry_response = await _call_ai(system_prompt, history, retry_msg, tenant_id=_conv_tid, max_tokens=500)
                     if retry_response:
                         # Re-parse actions from retry
                         for ch in '\u201c\u201d\u00ab\u00bb\u201e\u201f':
@@ -656,7 +656,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     from routes.ai_endpoints import _call_ai, _execute_action
                     final_response = await _call_ai(system_prompt, history + [
                         {"role": "assistant", "content": ai_response},
-                    ], continuation_msg, tenant_id=_conv_tid, max_tokens=800)
+                    ], continuation_msg, tenant_id=_conv_tid, max_tokens=500)
                     if final_response and final_response.strip():
                         print(f"[Lina IA] Continuation RAW: {final_response[:200]}")
 
@@ -724,7 +724,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         f"Si hay conflicto de horario, sugiere horarios alternativos disponibles. "
                         f"Responde en maximo 2 oraciones, de forma natural y calida.]\n\n{inbound_text}"
                     )
-                    friendly_response = await _call_ai(system_prompt, history, friendly_msg, tenant_id=_conv_tid)
+                    friendly_response = await _call_ai(system_prompt, history, friendly_msg, tenant_id=_conv_tid, max_tokens=300)
                     if friendly_response and friendly_response.strip():
                         # Strip any action blocks from the friendly response
                         friendly_response = re.sub(r'`{1,3}\s*action.*', '', friendly_response, flags=re.DOTALL | re.IGNORECASE)
