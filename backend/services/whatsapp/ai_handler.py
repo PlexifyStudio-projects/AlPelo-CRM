@@ -19,8 +19,9 @@ from database.models import (
 )
 from services.whatsapp.helpers import (
     _in_flight_convs, _pending_queue, _PENDING_QUEUE_MAX,
-    _AI_REPLY_MAX, _AI_REPLY_WINDOW,
+    _ai_reply_timestamps, _AI_REPLY_MAX, _AI_REPLY_WINDOW,
     _is_off_hours, _off_hours_greeting, _wa_token_paused,
+    _is_token_error, _trigger_token_pause, _trigger_token_resume,
     _get_wa_config_cached, wa_headers, _get_wa_base_url,
     _transcribe_audio, _download_media_base64, _send_read_receipt,
 )
