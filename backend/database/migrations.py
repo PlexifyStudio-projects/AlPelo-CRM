@@ -87,6 +87,11 @@ def run_migrations(engine):
         ("tenant", "max_automations", "INTEGER NOT NULL DEFAULT 10"),
         # Service type: cita, paquete, reserva
         ("service", "service_type", "VARCHAR(20) NOT NULL DEFAULT 'cita'"),
+        # Public Booking Page
+        ("tenant", "booking_enabled", "BOOLEAN DEFAULT FALSE"),
+        ("tenant", "booking_tagline", "VARCHAR(300)"),
+        ("tenant", "booking_description", "TEXT"),
+        ("tenant", "gallery_images", "JSON DEFAULT '[]'"),
     ]
 
     for table, column, col_type in migrations:

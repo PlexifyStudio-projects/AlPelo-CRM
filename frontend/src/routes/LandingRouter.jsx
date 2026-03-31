@@ -36,6 +36,9 @@ const ProdServicios = lazy(() => import('../pages/landing/Producto/Servicios'));
 const ProdEquipo = lazy(() => import('../pages/landing/Producto/Equipo'));
 const ProdLealtad = lazy(() => import('../pages/landing/Producto/Lealtad'));
 
+// Public Booking (standalone — no landing header/footer, uses tenant branding)
+const BookingPage = lazy(() => import('../pages/landing/Booking/BookingPage'));
+
 const W = SuspenseWrapper;
 
 const BASE = import.meta.env.BASE_URL.replace(/\/$/, '') || '';
@@ -64,6 +67,11 @@ const router = createBrowserRouter([
       { path: 'producto/equipo', element: <W><ProdEquipo /></W> },
       { path: 'producto/lealtad', element: <W><ProdLealtad /></W> },
     ],
+  },
+  // Booking page — standalone layout (tenant-branded, no landing chrome)
+  {
+    path: '/book/:slug',
+    element: <W><BookingPage /></W>,
   },
 ], { basename: BASE });
 

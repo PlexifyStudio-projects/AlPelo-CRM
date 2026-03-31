@@ -306,6 +306,12 @@ class Tenant(Base):
     brand_color_accent = Column(String(20), nullable=True)  # Accent color
     brand_name = Column(String(200), nullable=True)  # Display name override (e.g. "AlPelo CRM")
 
+    # Public Booking Page
+    booking_enabled = Column(Boolean, default=False)  # Toggle public booking page
+    booking_tagline = Column(String(300), nullable=True)  # Short tagline for booking page
+    booking_description = Column(Text, nullable=True)  # About section for booking page
+    gallery_images = Column(JSON, default=[])  # List of image URLs for gallery
+
     # Meta
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -21,6 +21,7 @@ function isLandingRoute() {
 
   if (LANDING_PATHS.includes(path)) return true;
   if (path.startsWith('/producto/')) return true;
+  if (path.startsWith('/book/')) return true;
   return false;
 }
 

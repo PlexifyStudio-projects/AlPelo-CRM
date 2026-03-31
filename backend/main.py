@@ -113,6 +113,9 @@ app.include_router(inventory_router, prefix="/api", tags=["Inventory"])
 from routes.register_endpoints import router as register_router
 app.include_router(register_router, prefix="/api", tags=["Public Register"])
 
+from routes.booking_endpoints import router as booking_router
+app.include_router(booking_router, prefix="/api", tags=["Public Booking"])
+
 from routes.automation_studio_endpoints import router as automation_studio_router
 app.include_router(automation_studio_router, prefix="/api", tags=["Automation Studio"])
 
