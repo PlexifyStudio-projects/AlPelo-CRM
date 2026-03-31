@@ -1,11 +1,85 @@
 """
 AI Client — Functions to call Claude (Anthropic) API.
 Extracted from ai_endpoints.py during Phase 6 refactor.
+Includes smart model routing: Haiku for simple queries, Sonnet for complex ones.
 """
 import os
+import re
 import httpx
 from database.connection import SessionLocal
 from database.models import AIConfig, AIProvider
+
+
+# ── MODEL ROUTING: Classify message complexity ──────────────────────────
+# Simple messages go to Haiku (~10x cheaper), complex to Sonnet
+
+_COMPLEX_KEYWORDS = re.compile(
+    r"(agend|cancel|reagend|program|cambi.*(cita|hora)|mover?.*cita"
+    r"|crea.*client|registr|elimina|actualiz"
+    r"|para mi (primo|esposa|amigo|hermano|mama|papa)"
+    r"|quiero.*cita|necesito.*cita|me puedes.*agendar"
+    r"|cambiar.*hora|mover.*hora"
+    r"|PENDIENTE|APRENDIZAJE|FEEDBACK"
+    r"|queue_bulk_task"
+    r"|cuanto cuesta.*y.*agend"  # price + booking combined
+    r")",
+    re.IGNORECASE,
+)
+
+_SIMPLE_PATTERNS = re.compile(
+    r"^(hola|buenos?\s*(dias|tardes|noches)|hi|hey|gracias|ok|listo|dale|perfecto"
+    r"|si|no|bueno|vale|bien|genial|excelente"
+    r"|que tal|como estas|estas ahi"
+    r"|cuanto (cuesta|sale|vale|es)"
+    r"|que servicios|que horario|a que hora|cuando abren|cuando cierran"
+    r"|tienen.*disponib|hay.*espacio"
+    r"|mi cita|a que hora es|cuando es"
+    r"|chao|adios|hasta luego|nos vemos|bye)[\s?!.]*$",
+    re.IGNORECASE,
+)
+
+HAIKU_MODEL = "claude-haiku-4-5-20251001"
+
+
+def classify_message_complexity(user_message: str, history: list = None) -> str:
+    """Classify whether a message needs Sonnet (complex) or Haiku (simple).
+    Returns 'sonnet' or 'haiku'."""
+    if not user_message:
+        return "haiku"
+
+    msg = user_message.strip()
+
+    # Images always need Sonnet (vision)
+    if isinstance(msg, list):  # multimodal content
+        return "sonnet"
+
+    # If message contains action keywords → Sonnet
+    if _COMPLEX_KEYWORDS.search(msg):
+        return "sonnet"
+
+    # If history has recent action results or conflicts → Sonnet (continuation)
+    if history:
+        last_assistant = None
+        for entry in reversed(history):
+            if entry.get("role") == "assistant":
+                last_assistant = entry.get("content", "")
+                break
+        if last_assistant and ("```action" in last_assistant or "CONFLICTO" in last_assistant or "PENDIENTE" in last_assistant):
+            return "sonnet"
+
+    # Short simple messages → Haiku
+    if _SIMPLE_PATTERNS.match(msg):
+        return "haiku"
+
+    # Messages with multiple questions or long text → Sonnet
+    question_marks = msg.count("?")
+    if question_marks >= 3:
+        return "sonnet"
+    if len(msg) > 300:
+        return "sonnet"
+
+    # Default: Haiku for everything else (price checks, info, etc.)
+    return "haiku"
 
 
 async def call_anthropic(api_key: str, model: str, system_prompt: str, messages: list, temperature: float, max_tokens: int):
@@ -64,10 +138,21 @@ def _get_anthropic_credentials(model_override=None):
 
 
 async def call_ai(system_prompt: str, history: list, user_message: str, image_b64: str = None, image_mime: str = None, model_override: str = None, tenant_id: int = 1, max_tokens: int = 2048) -> str:
-    """Standalone AI call for WhatsApp auto-reply. Uses Claude only. Supports image vision."""
-    anthropic_key, model = _get_anthropic_credentials(model_override)
+    """Standalone AI call for WhatsApp auto-reply. Uses smart routing: Haiku for simple, Sonnet for complex."""
+    anthropic_key, sonnet_model = _get_anthropic_credentials(model_override)
     if not anthropic_key:
         return "Disculpa, no puedo responder en este momento. Intenta de nuevo mas tarde."
+
+    # Smart model routing — save tokens on simple queries
+    if model_override:
+        model = model_override  # Explicit override (retries, continuations)
+    elif image_b64:
+        model = sonnet_model  # Vision needs Sonnet
+    else:
+        complexity = classify_message_complexity(user_message, history)
+        model = HAIKU_MODEL if complexity == "haiku" else sonnet_model
+        if complexity == "haiku":
+            print(f"[AI Router] HAIKU — simple message: {(user_message or '')[:60]}")
 
     # Build the user message — with image if provided (Claude Vision)
     if image_b64 and image_mime:
@@ -90,6 +175,18 @@ async def call_ai(system_prompt: str, history: list, user_message: str, image_b6
             track_ai_usage(tokens, tenant_id=tenant_id)
         except Exception:
             pass
+
+        # SAFETY: If Haiku returned action blocks, that's fine — it can handle simple actions.
+        # But if Haiku response seems confused or empty, fallback to Sonnet.
+        if model == HAIKU_MODEL and text and ("no puedo" in text.lower() or "no tengo acceso" in text.lower()):
+            print(f"[AI Router] Haiku confused — escalating to Sonnet")
+            text, tokens = await call_anthropic(anthropic_key, sonnet_model, system_prompt, messages, 0.4, max_tokens)
+            try:
+                from routes._usage_tracker import track_ai_usage
+                track_ai_usage(tokens, tenant_id=tenant_id)
+            except Exception:
+                pass
+
         return text.strip()
     except Exception as e:
         error_str = str(e)[:200]
