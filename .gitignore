@@ -16,3 +16,11 @@ npm-debug.log*
 .env.*
 __pycache__/
 *.pyc
+
+# Claude Code
+CLAUDE.md
+.claude/
+
+# Internal docs & plans (keep local, not in repo)
+*.txt
+docker-compose.yml
