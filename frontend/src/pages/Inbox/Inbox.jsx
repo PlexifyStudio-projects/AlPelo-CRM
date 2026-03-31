@@ -2057,20 +2057,28 @@ const Inbox = () => {
                               <img src={resolveMediaUrl(msg.media_url)} alt="Sticker" className={`${b}__message-sticker`} loading="lazy" />
                             )}
                             {msg.media_url && (msg.message_type === 'image' || msg.media_mime_type?.startsWith('image/')) && msg.message_type !== 'sticker' && (
-                              <img src={resolveMediaUrl(msg.media_url)} alt="Imagen" className={`${b}__message-image`} loading="lazy" onClick={() => window.open(resolveMediaUrl(msg.media_url), '_blank')} />
+                              <>
+                                <img src={resolveMediaUrl(msg.media_url)} alt="Imagen" className={`${b}__message-image`} loading="lazy" onClick={() => window.open(resolveMediaUrl(msg.media_url), '_blank')}
+                                  onError={(e) => { e.target.style.display = 'none'; }}
+                                />
+                                {msg.content && <p className={`${b}__message-text`}>{msg.content}</p>}
+                              </>
                             )}
                             {msg.media_url && (msg.message_type === 'video' || msg.media_mime_type?.startsWith('video/')) && (
-                              <video src={resolveMediaUrl(msg.media_url)} controls className={`${b}__message-video`} />
+                              <>
+                                <video src={resolveMediaUrl(msg.media_url)} controls className={`${b}__message-video`} />
+                                {msg.content && <p className={`${b}__message-text`}>{msg.content}</p>}
+                              </>
                             )}
                             {msg.media_url && (msg.message_type === 'audio' || msg.media_mime_type?.startsWith('audio/')) && (
                               <>
                                 <AudioPlayer src={resolveMediaUrl(msg.media_url)} />
-                                {msg.content && msg.content.startsWith('🎤') && (
+                                {msg.content && (
                                   <p className={`${b}__message-transcript`}>{msg.content}</p>
                                 )}
                               </>
                             )}
-                            {(!msg.media_url || (msg.content && !['sticker', 'image', 'video', 'audio', 'document'].includes(msg.message_type))) && (
+                            {!msg.media_url && msg.content && (
                               <p className={`${b}__message-text`}>{msg.content || msg.text}</p>
                             )}
                             <div className={`${b}__message-meta`}>
