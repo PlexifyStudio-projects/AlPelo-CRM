@@ -612,25 +612,51 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             _errors = [r for r in _all_results if "ERROR" in r and "CONFLICTO" not in r]
             _successes = [r for r in _all_results if "CONFLICTO" not in r and "ERROR" not in r]
 
-            # If actions executed successfully, make a SECOND AI call to generate the final response
+            # If actions executed successfully, make a SECOND AI call with results
+            # This call CAN also execute actions (e.g., search → then create appointment)
             if _successes and not _conflicts and not _errors:
                 try:
                     results_summary = "\n".join(_successes)
                     continuation_msg = (
                         f"[SISTEMA: Ejecutaste estas acciones y obtuviste estos resultados:\n{results_summary}\n\n"
-                        f"Ahora RESPONDE al cliente con el resultado FINAL de forma natural y completa. "
-                        f"Si buscaste un cliente, confirma que lo encontraste y procede con lo que pidio. "
-                        f"Si agendaste una cita, confirma fecha, hora, profesional y servicio. "
-                        f"NO repitas 'dejame buscar' ni 'verificando'. Da la respuesta DIRECTA.]\n\n{inbound_text}"
+                        f"Ahora RESPONDE al cliente Y ejecuta las acciones que falten. "
+                        f"Si buscaste un cliente y el cliente pidio agendar, AGENDA LA CITA con un bloque action create_appointment. "
+                        f"Si ya agendaste, confirma fecha, hora, profesional y servicio. "
+                        f"NO repitas 'dejame buscar'. Haz todo lo que falta en UNA sola respuesta.]\n\n{inbound_text}"
                     )
-                    from routes.ai_endpoints import _call_ai
+                    from routes.ai_endpoints import _call_ai, _execute_action
                     final_response = await _call_ai(system_prompt, history + [
                         {"role": "assistant", "content": ai_response},
                     ], continuation_msg, tenant_id=_conv_tid, max_tokens=800)
                     if final_response and final_response.strip():
-                        # Strip action blocks from continuation
+                        print(f"[Lina IA] Continuation RAW: {final_response[:200]}")
+
+                        # Execute any actions in the continuation response
+                        cont_action_pattern = re.compile(r'```\s*action\s*\n(.*?)```', re.DOTALL | re.IGNORECASE)
+                        cont_actions = cont_action_pattern.findall(final_response)
+                        for ca_json in cont_actions:
+                            try:
+                                ca_data = json.loads(ca_json.strip())
+                                ca_type = ca_data.get("action")
+                                if ca_type:
+                                    # Inject tenant_id
+                                    ca_data["tenant_id"] = _conv_tid
+                                    if ca_type == "create_appointment" and not ca_data.get("client_phone"):
+                                        ca_data["client_phone"] = conv.wa_contact_phone
+                                    ca_db = SessionLocal()
+                                    try:
+                                        ca_result = _execute_action(ca_data, ca_db)
+                                        print(f"[Lina IA] Continuation action {ca_type}: {ca_result}")
+                                        log_event("accion", f"Continuacion: {ca_type}", detail=ca_result[:150], conv_id=conv_id, status="ok" if "ERROR" not in ca_result else "error")
+                                    finally:
+                                        ca_db.close()
+                            except Exception as ca_err:
+                                print(f"[Lina IA] Continuation action error: {ca_err}")
+
+                        # Strip action blocks from the text that goes to client
                         final_response = re.sub(r'`{1,3}\s*action.*', '', final_response, flags=re.DOTALL | re.IGNORECASE)
                         final_response = re.sub(r'\{[^}]*"action"\s*:.*?\}', '', final_response, flags=re.DOTALL).strip()
+                        final_response = re.sub(r'\n{3,}', '\n\n', final_response).strip()
                         if final_response:
                             ai_response = final_response
                             print(f"[Lina IA] Continuation response generated for conv {conv_id}")
