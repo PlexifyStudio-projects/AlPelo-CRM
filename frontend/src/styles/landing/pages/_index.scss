@@ -13,4 +13,4 @@
 @forward 'product-servicios';
 @forward 'product-equipo';
 @forward 'product-lealtad';
-@forward 'booking';
+// booking loaded directly by BookingPage component (standalone, outside LandingLayout)
