@@ -647,7 +647,22 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                                     try:
                                         ca_result = _execute_action(ca_data, ca_db)
                                         print(f"[Lina IA] Continuation action {ca_type}: {ca_result}")
-                                        log_event("accion", f"Continuacion: {ca_type}", detail=ca_result[:150], conv_id=conv_id, status="ok" if "ERROR" not in ca_result else "error")
+                                        ca_ok = "ERROR" not in ca_result and "CONFLICTO" not in ca_result
+                                        log_event("accion", f"Continuacion: {ca_type}", detail=ca_result[:150], conv_id=conv_id, status="ok" if ca_ok else "error")
+
+                                        # If continuation action FAILED, regenerate response with the error
+                                        if not ca_ok:
+                                            print(f"[Lina IA] Continuation action FAILED — regenerating response")
+                                            fix_msg = (
+                                                f"[SISTEMA: Intentaste agendar pero FALLO: {ca_result}\n"
+                                                f"GENERA una respuesta amigable explicando el conflicto y sugiriendo las alternativas que aparecen en el mensaje de error. "
+                                                f"NO digas que agendaste. Di que hay conflicto y ofrece opciones.]\n\n{inbound_text}"
+                                            )
+                                            fix_response = await _call_ai(system_prompt, history, fix_msg, tenant_id=_conv_tid, max_tokens=500)
+                                            if fix_response:
+                                                fix_response = re.sub(r'`{1,3}\s*action.*', '', fix_response, flags=re.DOTALL | re.IGNORECASE).strip()
+                                                if fix_response:
+                                                    final_response = fix_response
                                     finally:
                                         ca_db.close()
                             except Exception as ca_err:
