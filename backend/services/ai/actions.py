@@ -15,7 +15,7 @@ from database.models import (
     WhatsAppConversation, WhatsAppMessage, Tenant, AIConfig,
     StaffSchedule, StaffDayOff, Expense, Location,
 )
-from routes._helpers import compute_client_fields, normalize_phone, safe_tid
+from routes._helpers import compute_client_fields, compute_client_list_item, normalize_phone, safe_tid
 
 
 def _get_tenant_offset(db=None, tenant_id=None):

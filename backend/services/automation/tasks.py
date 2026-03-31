@@ -3,6 +3,7 @@ Extracted from scheduler.py Phase 8."""
 import os
 import time
 from datetime import datetime, timedelta, date
+from sqlalchemy import func
 from database.models import (
     Appointment, Client, Staff, Service, Tenant,
     WhatsAppConversation, WhatsAppMessage,
