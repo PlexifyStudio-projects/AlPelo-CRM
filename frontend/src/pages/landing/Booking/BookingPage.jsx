@@ -3,23 +3,54 @@ import { useParams } from 'react-router-dom';
 import SEO from '../../../components/landing/common/SEO';
 
 const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+const b = 'bk';
 
 const DAYS_ES = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
 const MONTHS_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-
 const COUNTRIES = [
   { name: 'Colombia', code: '+57', flag: '\u{1F1E8}\u{1F1F4}' },
   { name: 'Mexico', code: '+52', flag: '\u{1F1F2}\u{1F1FD}' },
-  { name: 'Argentina', code: '+54', flag: '\u{1F1E6}\u{1F1F7}' },
-  { name: 'Chile', code: '+56', flag: '\u{1F1E8}\u{1F1F1}' },
-  { name: 'Peru', code: '+51', flag: '\u{1F1F5}\u{1F1EA}' },
-  { name: 'Ecuador', code: '+593', flag: '\u{1F1EA}\u{1F1E8}' },
   { name: 'Venezuela', code: '+58', flag: '\u{1F1FB}\u{1F1EA}' },
+  { name: 'Ecuador', code: '+593', flag: '\u{1F1EA}\u{1F1E8}' },
+  { name: 'Peru', code: '+51', flag: '\u{1F1F5}\u{1F1EA}' },
   { name: 'Estados Unidos', code: '+1', flag: '\u{1F1FA}\u{1F1F8}' },
-  { name: 'Espana', code: '+34', flag: '\u{1F1EA}\u{1F1F8}' },
 ];
 
-const b = 'bk'; // BEM block prefix
+// ── AlPelo static data (reference implementation) ───────────────────────
+const ALPELO = {
+  name: 'ALPELO PELUQUERIA',
+  tagline: 'Descubre la excelencia en AlPelo!',
+  description: 'Nuestra peluqueria en Bucaramanga cuenta con expertos en peluqueria, manicure y barberia. Experimenta un servicio al cliente incomparable y la atencion de profesionales altamente capacitados en cada especialidad. Te invitamos a vivir la mejor experiencia de belleza en AlPelo!',
+  cover: 'https://s3.weibook.co/alpelo_peluqueria/portadas/1713022286667.jpeg',
+  address: 'Carrera 31 N 50-21, Bucaramanga',
+  phone: '317 660 8487',
+  hours: 'Lun-Sab 8:15am - 8:00pm | Dom 9:30am - 2:00pm',
+  hoursToday: '8:15 - 20:00',
+  tags: ['Barberia', 'Salon de belleza', 'Nail', 'Spa'],
+  instagram: 'https://www.instagram.com/alpelopeluqueria.co',
+  facebook: 'https://www.facebook.com/SomosAlpelo/',
+  gallery: [
+    'https://s3.weibook.co/alpelo_peluqueria/portadas/1713022286667.jpeg',
+    'https://s3.weibook.co/alpelo_peluqueria/services/CORTE%20HIPSTER.png',
+    'https://s3.weibook.co/alpelo_peluqueria/services/mani%20semi.jpeg',
+    'https://s3.weibook.co/alpelo_peluqueria/services/corte%20y%20barba.png',
+  ],
+  payment: ['Nequi', 'Bancolombia', 'Davivienda', 'Efectivo'],
+};
+
+const ALPELO_STAFF = [
+  { id: 1, name: 'Alexander Carballo', role: 'Barbero', rating: 4.9, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/c34facf4-5716-40ec-a139-bc3c0233e72e.webp' },
+  { id: 2, name: 'Victor Fernandez', role: 'Barbero', rating: 4.8, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/c550d3ed-9cd5-4a88-86c2-563c8d5d5f75.webp' },
+  { id: 3, name: 'Anderson Bohorquez', role: 'Barbero', rating: 4.5, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/465d86c3-530c-4bfc-81f6-f6704a76a2dc.webp' },
+  { id: 4, name: 'Yhon Estrada', role: 'Barbero', rating: 5.0, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/7bdf5545-b7ab-4b98-bfaf-4b1579be83c1.webp' },
+  { id: 5, name: 'Daniel Nunez', role: 'Barbero', rating: 4.7, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/2ee51b69-6e11-40b2-9d81-66941a6a1baf.webp' },
+  { id: 6, name: 'Angel Pabon', role: 'Barbero', rating: 4.8, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/4618975a-6401-4000-ae8d-4a0474e59608.webp' },
+  { id: 7, name: 'Maria Jose Bastos', role: 'Manicurista', rating: 5.0, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/eb5b2f5e-cf13-49a2-a653-f312974c748a.webp' },
+  { id: 8, name: 'Stefania Bustamante', role: 'Manicurista', rating: 4.5, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/29a9c36b-dcde-4328-a8f7-1239b3c65c75.webp' },
+  { id: 9, name: 'Josemith', role: 'Estilista', rating: 5.0, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/5aac79e5-7abd-4044-917b-8966e672fae3.webp' },
+  { id: 10, name: 'Liliana Romero', role: 'Estilista', rating: 4.6, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/68062947-a86f-49a2-b1fb-15f3a659607b.webp' },
+  { id: 11, name: 'Marcela Leal', role: 'Tricoterapia', rating: 4.7, photo: 'https://s3.weibook.co/alpelo_peluqueria/collaborators/822b9e68-7138-4be8-a085-aa620830b02b.webp' },
+];
 
 export default function BookingPage() {
   const { slug } = useParams();
@@ -30,295 +61,220 @@ export default function BookingPage() {
   const [activeCategory, setActiveCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Booking modal state
-  const [bookingModal, setBookingModal] = useState(false);
-  const [bookingStep, setBookingStep] = useState(1); // 1=staff, 2=date, 3=data
-  const [selectedService, setSelectedService] = useState(null);
-  const [selectedStaff, setSelectedStaff] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
+  // Booking modal
+  const [modal, setModal] = useState(false);
+  const [step, setStep] = useState(1);
+  const [selService, setSelService] = useState(null);
+  const [selStaff, setSelStaff] = useState(null);
+  const [selDate, setSelDate] = useState(null);
+  const [selTime, setSelTime] = useState(null);
   const [slots, setSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
-  const [clientName, setClientName] = useState('');
-  const [clientPhone, setClientPhone] = useState('');
-  const [clientEmail, setClientEmail] = useState('');
-  const [clientNotes, setClientNotes] = useState('');
-  const [countryCode, setCountryCode] = useState('+57');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [notes, setNotes] = useState('');
+  const [cc, setCc] = useState('+57');
   const [submitting, setSubmitting] = useState(false);
-  const [confirmation, setConfirmation] = useState(null);
+  const [conf, setConf] = useState(null);
 
   const svcRef = useRef(null);
   const teamRef = useRef(null);
 
-  // Fetch business data
   useEffect(() => {
     fetch(`${API}/public/book/${slug}`)
-      .then(r => {
-        if (!r.ok) throw new Error(r.status === 404 ? 'not_found' : r.status === 403 ? 'disabled' : 'error');
-        return r.json();
-      })
-      .then(d => {
-        setData(d);
-        const cats = Object.keys(d.services || {});
-        if (cats.length) setActiveCategory(null); // "Todos" by default
-        setLoading(false);
-      })
+      .then(r => { if (!r.ok) throw new Error(r.status === 404 ? 'not_found' : r.status === 403 ? 'disabled' : 'error'); return r.json(); })
+      .then(d => { setData(d); setLoading(false); })
       .catch(e => { setError(e.message); setLoading(false); });
   }, [slug]);
 
-  // Fetch availability
   useEffect(() => {
-    if (!selectedDate || !selectedStaff || !selectedService) return;
-    setSlotsLoading(true);
-    setSelectedTime(null);
-    const dateStr = selectedDate.toISOString().split('T')[0];
-    fetch(`${API}/public/book/${slug}/availability?date=${dateStr}&staff_id=${selectedStaff.id}&service_id=${selectedService.id}`)
-      .then(r => r.json())
-      .then(d => { setSlots(d.slots || []); setSlotsLoading(false); })
+    if (!selDate || !selStaff || !selService) return;
+    setSlotsLoading(true); setSelTime(null);
+    const ds = selDate.toISOString().split('T')[0];
+    fetch(`${API}/public/book/${slug}/availability?date=${ds}&staff_id=${selStaff.id}&service_id=${selService.id}`)
+      .then(r => r.json()).then(d => { setSlots(d.slots || []); setSlotsLoading(false); })
       .catch(() => { setSlots([]); setSlotsLoading(false); });
-  }, [selectedDate, selectedStaff, selectedService, slug]);
+  }, [selDate, selStaff, selService, slug]);
 
-  const brand = data?.business;
-  const style = brand ? {
-    '--bk-primary': brand.brand_color || '#2563eb',
-    '--bk-dark': brand.brand_color_dark || '#1e40af',
-    '--bk-accent': brand.brand_color_accent || '#6366f1',
-  } : {};
+  if (loading) return <div className={b}><div className={`${b}__loading`}><div className={`${b}__spin`} /></div></div>;
+  if (error === 'not_found') return <div className={b}><div className={`${b}__err`}><h1>Negocio no encontrado</h1><p>El enlace no corresponde a ningun negocio.</p></div></div>;
+  if (error === 'disabled') return <div className={b}><div className={`${b}__err`}><h1>Reservas no disponibles</h1><p>Este negocio no tiene reservas en linea.</p></div></div>;
+  if (error) return <div className={b}><div className={`${b}__err`}><h1>Error</h1><p>Intenta de nuevo.</p></div></div>;
 
-  // ── Loading ──
-  if (loading) return (
-    <div className={b} style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className={`${b}__spinner`} />
-    </div>
-  );
+  const { services = {}, staff: apiStaff = [] } = data || {};
+  const allSvc = Object.values(services).flat();
+  const cats = Object.keys(services);
+  const staffList = ALPELO_STAFF; // Use static data with real photos
+  let filtered = activeCategory ? (services[activeCategory] || []) : allSvc;
+  if (searchQuery.trim()) { const q = searchQuery.toLowerCase(); filtered = filtered.filter(s => s.name.toLowerCase().includes(q)); }
 
-  // ── Errors ──
-  if (error === 'not_found') return <div className={b}><div className={`${b}__error`}><h1>Negocio no encontrado</h1><p>El enlace no corresponde a ningun negocio registrado.</p></div></div>;
-  if (error === 'disabled') return <div className={b}><div className={`${b}__error`}><h1>Reservas no disponibles</h1><p>Este negocio aun no tiene habilitadas las reservas en linea.</p></div></div>;
-  if (error) return <div className={b}><div className={`${b}__error`}><h1>Error</h1><p>Hubo un problema. Intenta de nuevo.</p></div></div>;
-
-  const { services = {}, staff = [], location } = data || {};
-  const allServices = Object.values(services).flat();
-  const categories = Object.keys(services);
-
-  // Filter services
-  let filteredServices = activeCategory ? (services[activeCategory] || []) : allServices;
-  if (searchQuery.trim()) {
-    const q = searchQuery.toLowerCase();
-    filteredServices = filteredServices.filter(s => s.name.toLowerCase().includes(q) || (s.category || '').toLowerCase().includes(q));
-  }
-
-  // Calendar days (next 30)
-  const today = new Date();
-  const calendarDays = Array.from({ length: 30 }, (_, i) => { const d = new Date(today); d.setDate(today.getDate() + i); return d; });
+  const days = Array.from({ length: 30 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
 
   const openBooking = (svc) => {
-    setSelectedService(svc);
-    setSelectedStaff(null);
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setBookingStep(1);
-    setConfirmation(null);
-    setClientName('');
-    setClientPhone('');
-    setClientEmail('');
-    setClientNotes('');
-    setBookingModal(true);
+    setSelService(svc); setSelStaff(null); setSelDate(null); setSelTime(null);
+    setStep(1); setConf(null); setName(''); setPhone(''); setEmail(''); setNotes('');
+    setModal(true);
   };
 
-  const handleSubmit = async () => {
-    if (!clientName.trim() || !clientPhone.trim()) return;
+  const doSubmit = async () => {
+    if (!name.trim() || !phone.trim()) return;
     setSubmitting(true);
     try {
-      const dateStr = selectedDate.toISOString().split('T')[0];
       const res = await fetch(`${API}/public/book/${slug}/appointment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          service_id: selectedService.id,
-          staff_id: selectedStaff.id,
-          date: dateStr,
-          time: selectedTime,
-          client_name: clientName.trim(),
-          client_phone: countryCode + clientPhone.trim().replace(/\s/g, ''),
-          client_email: clientEmail.trim() || null,
-          notes: clientNotes.trim() || null,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ service_id: selService.id, staff_id: selStaff.id, date: selDate.toISOString().split('T')[0], time: selTime, client_name: name.trim(), client_phone: cc + phone.trim().replace(/\s/g, ''), client_email: email.trim() || null, notes: notes.trim() || null }),
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        alert(err.detail || 'Error al agendar. Intenta de nuevo.');
-        setSubmitting(false);
-        return;
-      }
-      const result = await res.json();
-      setConfirmation(result.appointment);
-      setBookingStep(4);
-    } catch {
-      alert('Error de conexion. Intenta de nuevo.');
-    }
+      if (!res.ok) { const e = await res.json().catch(() => ({})); alert(e.detail || 'Error. Intenta de nuevo.'); setSubmitting(false); return; }
+      const r = await res.json();
+      setConf(r.appointment); setStep(4);
+    } catch { alert('Error de conexion.'); }
     setSubmitting(false);
   };
 
-  const scrollTab = (id) => {
-    setActiveTab(id);
-    const el = id === 'servicios' ? svcRef.current : id === 'equipo' ? teamRef.current : null;
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const scrollTo = (id) => { setActiveTab(id); const el = id === 'servicios' ? svcRef.current : teamRef.current; el?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
   return (
-    <div className={b} style={style}>
-      <SEO title={`${brand?.name || 'Reservar'} — Agenda tu cita`} description={brand?.tagline || `Reserva tu cita en ${brand?.name}`} />
+    <div className={b}>
+      <SEO title={`${ALPELO.name} — Agenda tu cita`} description={ALPELO.tagline} />
 
-      {/* ═══ HERO ═══ */}
-      <div className={`${b}__hero`}>
-        {brand?.gallery_images?.length > 0 ? (
-          <img src={brand.gallery_images[0]} alt={brand.name} className={`${b}__hero-img`} />
-        ) : (
-          <div className={`${b}__hero-placeholder`} />
-        )}
-        <div className={`${b}__hero-overlay`}>
-          {brand?.gallery_images?.length > 0 && (
-            <div className={`${b}__hero-tags`}>
-              {categories.slice(0, 4).map(c => <span key={c} className={`${b}__hero-tag`}>{c}</span>)}
-            </div>
-          )}
-          <h1 className={`${b}__hero-name`}>{brand?.name}</h1>
-          <div className={`${b}__hero-meta`}>
-            {location?.address && <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {location.address}{location.city ? `, ${location.city}` : ''}</span>}
+      {/* ══════ HERO ══════ */}
+      <section className={`${b}__hero`}>
+        <img src={ALPELO.cover} alt={ALPELO.name} className={`${b}__hero-bg`} />
+        <div className={`${b}__hero-content`}>
+          <div className={`${b}__hero-tags`}>
+            {ALPELO.tags.map(t => <span key={t} className={`${b}__htag`}>{t}</span>)}
+          </div>
+          <h1 className={`${b}__hero-title`}>{ALPELO.name}</h1>
+          <div className={`${b}__hero-info`}>
+            <span className={`${b}__hero-rating`}><svg width="16" height="16" viewBox="0 0 24 24" fill="#FBBF24" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg> 5.0</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ALPELO.address}</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Abierto hoy {ALPELO.hoursToday}</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ═══ STICKY NAV ═══ */}
-      <div className={`${b}__nav`}>
-        <div className={`${b}__nav-inner`}>
-          <div className={`${b}__nav-left`}>
-            {brand?.logo_url && <img src={brand.logo_url} alt="" className={`${b}__nav-logo`} />}
-            <div>
-              <strong className={`${b}__nav-name`}>{brand?.name}</strong>
-              {brand?.tagline && <span className={`${b}__nav-tagline`}>{brand.tagline}</span>}
+      {/* ══════ STICKY NAV ══════ */}
+      <nav className={`${b}__nav`}>
+        <div className={`${b}__nav-wrap`}>
+          <div className={`${b}__nav-brand`}>
+            <strong>{ALPELO.name}</strong>
+            <div className={`${b}__nav-meta`}>
+              <span><svg width="12" height="12" viewBox="0 0 24 24" fill="#FBBF24" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg> 5.0</span>
+              <span>{ALPELO.address}</span>
+              <span>Abierto hoy {ALPELO.hoursToday}</span>
             </div>
           </div>
-          <div className={`${b}__nav-tabs`}>
+          <div className={`${b}__nav-right`}>
+            <div className={`${b}__nav-tags`}>{ALPELO.tags.map(t => <span key={t}>{t}</span>)}</div>
+          </div>
+        </div>
+        <div className={`${b}__nav-tabs`}>
+          <div className={`${b}__nav-wrap`}>
             {['servicios', 'equipo'].map(tab => (
-              <button key={tab} className={`${b}__nav-tab ${activeTab === tab ? `${b}__nav-tab--active` : ''}`} onClick={() => scrollTab(tab)}>
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
+              <button key={tab} className={`${b}__tab ${activeTab === tab ? `${b}__tab--on` : ''}`} onClick={() => scrollTo(tab)}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
             ))}
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* ═══ ABOUT + SIDEBAR ═══ */}
-      <div className={`${b}__body`}>
-        <div className={`${b}__main`}>
-          {brand?.booking_description && (
-            <section className={`${b}__about`}>
-              <h2>Sobre nosotros</h2>
-              <div className={`${b}__about-tags`}>
-                {categories.map(c => <span key={c} className={`${b}__tag`}>{c}</span>)}
-              </div>
-              <p>{brand.booking_description}</p>
-            </section>
-          )}
+      {/* ══════ ABOUT + SIDEBAR ══════ */}
+      <div className={`${b}__layout`}>
+        <main className={`${b}__main`}>
+          <section className={`${b}__about`}>
+            <h2>Sobre nosotros</h2>
+            <div className={`${b}__about-tags`}>{ALPELO.tags.map(t => <span key={t}>{t}</span>)}</div>
+            <p>{ALPELO.description}</p>
+          </section>
 
-          {/* ═══ SERVICES ═══ */}
-          <section className={`${b}__services`} ref={svcRef}>
+          {/* ══════ SERVICES ══════ */}
+          <section className={`${b}__services`} ref={svcRef} id="servicios">
             <h2>Servicios</h2>
             <div className={`${b}__search`}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               <input placeholder="Buscar servicios..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
             </div>
-
-            <div className={`${b}__cat-tabs`}>
-              <button className={`${b}__cat-tab ${!activeCategory ? `${b}__cat-tab--active` : ''}`} onClick={() => setActiveCategory(null)}>
-                Todos <span className={`${b}__cat-count`}>{allServices.length}</span>
-              </button>
-              {categories.map(c => (
-                <button key={c} className={`${b}__cat-tab ${activeCategory === c ? `${b}__cat-tab--active` : ''}`} onClick={() => setActiveCategory(c)}>
-                  {c.toUpperCase()}
-                </button>
-              ))}
+            <div className={`${b}__cats`}>
+              <button className={`${b}__cat ${!activeCategory ? `${b}__cat--on` : ''}`} onClick={() => setActiveCategory(null)}>Todos los servicios <span>{allSvc.length}</span></button>
+              {cats.map(c => <button key={c} className={`${b}__cat ${activeCategory === c ? `${b}__cat--on` : ''}`} onClick={() => setActiveCategory(c)}>{c.toUpperCase()}</button>)}
             </div>
-
-            <div className={`${b}__svc-grid`}>
-              {filteredServices.map(svc => (
-                <div key={svc.id} className={`${b}__svc-card`}>
-                  <div className={`${b}__svc-info`}>
-                    <div className={`${b}__svc-top`}>
-                      <h3 className={`${b}__svc-name`}>{svc.name}</h3>
-                      <span className={`${b}__svc-price`}>${svc.price?.toLocaleString('es-CO')}</span>
-                    </div>
+            <div className={`${b}__svc-list`}>
+              {filtered.map(svc => (
+                <div key={svc.id} className={`${b}__svc`}>
+                  <div className={`${b}__svc-body`}>
+                    <h3>{svc.name}</h3>
                     <span className={`${b}__svc-cat`}>{svc.category}</span>
                   </div>
-                  <div className={`${b}__svc-bottom`}>
-                    <span className={`${b}__svc-dur`}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      {svc.duration_minutes} min
-                    </span>
-                    <button className={`${b}__svc-book`} onClick={() => openBooking(svc)}>Reservar</button>
+                  <div className={`${b}__svc-right`}>
+                    <span className={`${b}__svc-price`}>${svc.price?.toLocaleString('es-CO')}</span>
+                  </div>
+                  <div className={`${b}__svc-foot`}>
+                    <span className={`${b}__svc-dur`}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {svc.duration_minutes} min</span>
+                    <button className={`${b}__svc-btn`} onClick={() => openBooking(svc)}>Reservar</button>
                   </div>
                 </div>
               ))}
             </div>
-            {filteredServices.length === 0 && <p className={`${b}__empty`}>No se encontraron servicios.</p>}
+            {filtered.length === 0 && <p className={`${b}__empty`}>No se encontraron servicios.</p>}
           </section>
 
-          {/* ═══ TEAM ═══ */}
-          <section className={`${b}__team`} ref={teamRef}>
+          {/* ══════ TEAM ══════ */}
+          <section className={`${b}__team`} ref={teamRef} id="equipo">
             <h2>Colaboradores</h2>
-            <div className={`${b}__team-grid`}>
-              {staff.map(s => (
-                <div key={s.id} className={`${b}__staff-card`}>
-                  <div className={`${b}__staff-avatar`}>
-                    {s.photo_url ? <img src={s.photo_url} alt={s.name} /> : <span>{s.name.charAt(0)}</span>}
-                  </div>
-                  <strong className={`${b}__staff-name`}>{s.name.toUpperCase()}</strong>
-                  <span className={`${b}__staff-role`}>{s.specialty}</span>
+            <div className={`${b}__team-scroll`}>
+              {staffList.map(s => (
+                <div key={s.id} className={`${b}__person`}>
+                  <div className={`${b}__person-photo`}><img src={s.photo} alt={s.name} /></div>
+                  <strong>{s.name.toUpperCase()}</strong>
+                  <span className={`${b}__person-role`}>{s.role}</span>
+                  <span className={`${b}__person-stars`}><svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg> {s.rating}</span>
                 </div>
               ))}
             </div>
           </section>
-        </div>
+        </main>
 
-        {/* ═══ SIDEBAR ═══ */}
-        <aside className={`${b}__sidebar`}>
-          {location?.address && (
-            <div className={`${b}__side-block`}>
-              <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Direccion</h4>
-              <p>{location.address}{location.city ? `, ${location.city}` : ''}</p>
+        {/* ══════ SIDEBAR ══════ */}
+        <aside className={`${b}__side`}>
+          <div className={`${b}__side-card`}>
+            <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Direccion</h4>
+            <p>{ALPELO.address}</p>
+            <a href={`https://maps.google.com/?q=${encodeURIComponent(ALPELO.address)}`} target="_blank" rel="noopener noreferrer" className={`${b}__side-link`}>Ver direccion</a>
+          </div>
+          <div className={`${b}__side-card`}>
+            <h4>Portafolio</h4>
+            <div className={`${b}__side-photos`}>
+              {ALPELO.gallery.slice(0, 3).map((img, i) => <img key={i} src={img} alt="" />)}
             </div>
-          )}
-          {brand?.gallery_images?.length > 1 && (
-            <div className={`${b}__side-block`}>
-              <h4>Portafolio</h4>
-              <div className={`${b}__side-gallery`}>
-                {brand.gallery_images.slice(1, 4).map((img, i) => (
-                  <img key={i} src={img} alt="" className={`${b}__side-thumb`} />
-                ))}
-              </div>
-            </div>
-          )}
+          </div>
+          <div className={`${b}__side-card`}>
+            <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Horario hoy</h4>
+            <p>{ALPELO.hoursToday}</p>
+          </div>
         </aside>
       </div>
 
-      {/* ═══ FOOTER ═══ */}
+      {/* ══════ FOOTER ══════ */}
       <footer className={`${b}__footer`}>
-        <div className={`${b}__footer-inner`}>
-          <div className={`${b}__footer-brand`}>
-            <strong>{brand?.name}</strong>
-            {brand?.tagline && <p>{brand.tagline}</p>}
+        <div className={`${b}__footer-grid`}>
+          <div>
+            <strong className={`${b}__footer-name`}>{ALPELO.name}</strong>
+            <p className={`${b}__footer-desc`}>{ALPELO.tagline} {ALPELO.description.slice(0, 150)}...</p>
+            <div className={`${b}__footer-social`}>
+              <a href={ALPELO.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+              <a href={ALPELO.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+            </div>
           </div>
-          <div className={`${b}__footer-nav`}>
+          <div>
             <strong>Navegacion</strong>
-            <button onClick={() => scrollTab('servicios')}>Servicios</button>
-            <button onClick={() => scrollTab('equipo')}>Colaboradores</button>
+            <button onClick={() => scrollTo('servicios')}>Servicios</button>
+            <button onClick={() => scrollTo('equipo')}>Colaboradores</button>
           </div>
-          <div className={`${b}__footer-info`}>
-            <strong>Informacion</strong>
-            {location?.address && <p><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {location.address}</p>}
-            {location?.phone && <p>{location.phone}</p>}
+          <div>
+            <strong>Mas informacion</strong>
+            <p><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> {ALPELO.address}</p>
+            <p><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {ALPELO.hours}</p>
+            <p><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> {ALPELO.phone}</p>
           </div>
         </div>
         <div className={`${b}__footer-bottom`}>
@@ -326,152 +282,86 @@ export default function BookingPage() {
         </div>
       </footer>
 
-      {/* ═══════════════════════════════════════════════════════
-           BOOKING MODAL — Opens when clicking "Reservar"
-         ═══════════════════════════════════════════════════════ */}
-      {bookingModal && (
-        <div className={`${b}__modal-overlay`} onClick={() => { if (!submitting) setBookingModal(false); }}>
+      {/* ══════════════════════════════════════════
+           BOOKING MODAL
+         ══════════════════════════════════════════ */}
+      {modal && (
+        <div className={`${b}__overlay`} onClick={() => !submitting && setModal(false)}>
           <div className={`${b}__modal`} onClick={e => e.stopPropagation()}>
-            <button className={`${b}__modal-close`} onClick={() => setBookingModal(false)}>&times;</button>
-
-            {/* Step indicator */}
-            <div className={`${b}__modal-steps`}>
-              {['Profesional', 'Fecha y Hora', 'Tus datos'].map((label, i) => (
-                <div key={i} className={`${b}__ms ${bookingStep > i + 1 ? `${b}__ms--done` : ''} ${bookingStep === i + 1 ? `${b}__ms--active` : ''}`}>
-                  <span className={`${b}__ms-num`}>{bookingStep > i + 1 ? '\u2713' : i + 1}</span>
-                  <span className={`${b}__ms-label`}>{label}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className={`${b}__modal-svc`}>
-              <strong>{selectedService?.name}</strong>
-              <span>${selectedService?.price?.toLocaleString('es-CO')} &middot; {selectedService?.duration_minutes} min</span>
-            </div>
-
-            {/* STEP 1: Staff */}
-            {bookingStep === 1 && (
-              <div className={`${b}__modal-body`}>
-                <h3>Elige tu profesional</h3>
-                <div className={`${b}__m-staff`}>
-                  <button className={`${b}__m-staff-card ${selectedStaff?.id === 'any' ? `${b}__m-staff-card--sel` : ''}`} onClick={() => { if (staff.length) setSelectedStaff({ id: staff[0].id, name: 'Disponible' }); }}>
-                    <div className={`${b}__m-avatar`}>?</div>
-                    <span>Sin preferencia</span>
-                  </button>
-                  {staff.map(s => (
-                    <button key={s.id} className={`${b}__m-staff-card ${selectedStaff?.id === s.id ? `${b}__m-staff-card--sel` : ''}`} onClick={() => setSelectedStaff(s)}>
-                      <div className={`${b}__m-avatar`}>{s.photo_url ? <img src={s.photo_url} alt={s.name} /> : s.name.charAt(0)}</div>
-                      <span>{s.name}</span>
-                      <small>{s.specialty}</small>
-                    </button>
-                  ))}
-                </div>
-                <div className={`${b}__modal-nav`}>
-                  <button className={`${b}__mbtn ${b}__mbtn--next`} disabled={!selectedStaff} onClick={() => setBookingStep(2)}>Siguiente</button>
-                </div>
-              </div>
-            )}
-
-            {/* STEP 2: Date & Time */}
-            {bookingStep === 2 && (
-              <div className={`${b}__modal-body`}>
-                <h3>Elige fecha y hora</h3>
-                <div className={`${b}__m-calendar`}>
-                  {calendarDays.map((d, i) => {
-                    const isSel = selectedDate && d.toDateString() === selectedDate.toDateString();
-                    return (
-                      <button key={i} className={`${b}__m-day ${isSel ? `${b}__m-day--sel` : ''}`} onClick={() => setSelectedDate(d)}>
-                        <span className={`${b}__m-day-label`}>{DAYS_ES[d.getDay()]}</span>
-                        <span className={`${b}__m-day-num`}>{d.getDate()}</span>
-                        <span className={`${b}__m-day-month`}>{MONTHS_ES[d.getMonth()].slice(0, 3)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {selectedDate && (
-                  <div className={`${b}__m-times`}>
-                    <h4>Horarios — {selectedDate.getDate()} de {MONTHS_ES[selectedDate.getMonth()]}</h4>
-                    {slotsLoading ? <p className={`${b}__m-loading`}>Consultando disponibilidad...</p> : slots.length === 0 ? (
-                      <p className={`${b}__m-empty`}>No hay horarios disponibles. Prueba otra fecha.</p>
-                    ) : (
-                      <div className={`${b}__m-slots`}>
-                        {slots.map(t => (
-                          <button key={t} className={`${b}__m-slot ${selectedTime === t ? `${b}__m-slot--sel` : ''}`} onClick={() => setSelectedTime(t)}>{t}</button>
-                        ))}
-                      </div>
-                    )}
+            <button className={`${b}__modal-x`} onClick={() => setModal(false)}>&times;</button>
+            <div className={`${b}__modal-head`}>
+              <div className={`${b}__modal-steps`}>
+                {['Profesional', 'Fecha y Hora', 'Tus datos'].map((l, i) => (
+                  <div key={i} className={`${b}__ms ${step > i + 1 ? `${b}__ms--done` : ''} ${step === i + 1 ? `${b}__ms--on` : ''}`}>
+                    <span className={`${b}__ms-n`}>{step > i + 1 ? '\u2713' : i + 1}</span>
+                    <span className={`${b}__ms-l`}>{l}</span>
                   </div>
+                ))}
+              </div>
+              <div className={`${b}__modal-svc`}><strong>{selService?.name}</strong><span>${selService?.price?.toLocaleString('es-CO')} &middot; {selService?.duration_minutes} min</span></div>
+            </div>
+
+            {step === 1 && (<div className={`${b}__modal-body`}>
+              <h3>Elige tu profesional</h3>
+              <div className={`${b}__mp-grid`}>
+                {apiStaff.map(s => (
+                  <button key={s.id} className={`${b}__mp ${selStaff?.id === s.id ? `${b}__mp--on` : ''}`} onClick={() => setSelStaff(s)}>
+                    <div className={`${b}__mp-av`}>{s.name.charAt(0)}</div>
+                    <span>{s.name}</span><small>{s.specialty}</small>
+                  </button>
+                ))}
+              </div>
+              <div className={`${b}__modal-nav`}><button className={`${b}__mbtn ${b}__mbtn--go`} disabled={!selStaff} onClick={() => setStep(2)}>Siguiente</button></div>
+            </div>)}
+
+            {step === 2 && (<div className={`${b}__modal-body`}>
+              <h3>Elige fecha y hora</h3>
+              <div className={`${b}__mcal`}>{days.map((d, i) => {
+                const on = selDate && d.toDateString() === selDate.toDateString();
+                return <button key={i} className={`${b}__mday ${on ? `${b}__mday--on` : ''}`} onClick={() => setSelDate(d)}><span>{DAYS_ES[d.getDay()]}</span><strong>{d.getDate()}</strong><span>{MONTHS_ES[d.getMonth()].slice(0,3)}</span></button>;
+              })}</div>
+              {selDate && (<div className={`${b}__mtime`}>
+                <h4>Horarios — {selDate.getDate()} de {MONTHS_ES[selDate.getMonth()]}</h4>
+                {slotsLoading ? <p className={`${b}__mwait`}>Consultando...</p> : slots.length === 0 ? <p className={`${b}__mwait`}>No hay horarios. Prueba otra fecha.</p> : (
+                  <div className={`${b}__mslots`}>{slots.map(t => <button key={t} className={`${b}__mslot ${selTime === t ? `${b}__mslot--on` : ''}`} onClick={() => setSelTime(t)}>{t}</button>)}</div>
                 )}
-                <div className={`${b}__modal-nav`}>
-                  <button className={`${b}__mbtn ${b}__mbtn--back`} onClick={() => setBookingStep(1)}>Atras</button>
-                  <button className={`${b}__mbtn ${b}__mbtn--next`} disabled={!selectedDate || !selectedTime} onClick={() => setBookingStep(3)}>Siguiente</button>
-                </div>
-              </div>
-            )}
+              </div>)}
+              <div className={`${b}__modal-nav`}><button className={`${b}__mbtn ${b}__mbtn--back`} onClick={() => setStep(1)}>Atras</button><button className={`${b}__mbtn ${b}__mbtn--go`} disabled={!selDate || !selTime} onClick={() => setStep(3)}>Siguiente</button></div>
+            </div>)}
 
-            {/* STEP 3: Client Data */}
-            {bookingStep === 3 && (
-              <div className={`${b}__modal-body`}>
-                <h3>Tus datos</h3>
-                <div className={`${b}__m-form`}>
-                  <div className={`${b}__m-field`}>
-                    <label>Nombre completo *</label>
-                    <input type="text" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Tu nombre completo" />
-                  </div>
-                  <div className={`${b}__m-field`}>
-                    <label>Telefono *</label>
-                    <div className={`${b}__m-phone`}>
-                      <select value={countryCode} onChange={e => setCountryCode(e.target.value)}>
-                        {COUNTRIES.map(c => <option key={c.code + c.name} value={c.code}>{c.flag} {c.code}</option>)}
-                      </select>
-                      <input type="tel" value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="300 123 4567" />
-                    </div>
-                  </div>
-                  <div className={`${b}__m-field`}>
-                    <label>Correo (opcional)</label>
-                    <input type="email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="tu@email.com" />
-                  </div>
-                  <div className={`${b}__m-field`}>
-                    <label>Notas (opcional)</label>
-                    <textarea value={clientNotes} onChange={e => setClientNotes(e.target.value)} placeholder="Alguna indicacion especial..." rows={2} />
-                  </div>
-                </div>
-                <div className={`${b}__m-summary`}>
-                  <div><span>Servicio:</span> <strong>{selectedService?.name}</strong></div>
-                  <div><span>Profesional:</span> <strong>{selectedStaff?.name}</strong></div>
-                  <div><span>Fecha:</span> <strong>{selectedDate ? `${selectedDate.getDate()} de ${MONTHS_ES[selectedDate.getMonth()]}` : ''}</strong></div>
-                  <div><span>Hora:</span> <strong>{selectedTime}</strong></div>
-                  <div><span>Precio:</span> <strong>${selectedService?.price?.toLocaleString('es-CO')} COP</strong></div>
-                </div>
-                <p className={`${b}__m-pay`}>El pago se realiza directamente en el establecimiento.</p>
-                <div className={`${b}__modal-nav`}>
-                  <button className={`${b}__mbtn ${b}__mbtn--back`} onClick={() => setBookingStep(2)}>Atras</button>
-                  <button className={`${b}__mbtn ${b}__mbtn--submit`} disabled={clientName.trim().length < 2 || clientPhone.trim().length < 7 || submitting} onClick={handleSubmit}>
-                    {submitting ? 'Agendando...' : 'Confirmar cita'}
-                  </button>
-                </div>
+            {step === 3 && (<div className={`${b}__modal-body`}>
+              <h3>Tus datos</h3>
+              <div className={`${b}__mform`}>
+                <div className={`${b}__mf`}><label>Nombre completo *</label><input value={name} onChange={e => setName(e.target.value)} placeholder="Tu nombre" /></div>
+                <div className={`${b}__mf`}><label>Telefono *</label><div className={`${b}__mph`}><select value={cc} onChange={e => setCc(e.target.value)}>{COUNTRIES.map(c => <option key={c.code+c.name} value={c.code}>{c.flag} {c.code}</option>)}</select><input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="300 123 4567" /></div></div>
+                <div className={`${b}__mf`}><label>Correo (opcional)</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com" /></div>
+                <div className={`${b}__mf`}><label>Notas (opcional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Indicaciones..." rows={2} /></div>
               </div>
-            )}
+              <div className={`${b}__msum`}>
+                <div><span>Servicio</span><strong>{selService?.name}</strong></div>
+                <div><span>Profesional</span><strong>{selStaff?.name}</strong></div>
+                <div><span>Fecha</span><strong>{selDate ? `${selDate.getDate()} ${MONTHS_ES[selDate.getMonth()]}` : ''}</strong></div>
+                <div><span>Hora</span><strong>{selTime}</strong></div>
+                <div><span>Precio</span><strong>${selService?.price?.toLocaleString('es-CO')}</strong></div>
+              </div>
+              <p className={`${b}__mpay`}>El pago se realiza en el establecimiento.</p>
+              <div className={`${b}__modal-nav`}><button className={`${b}__mbtn ${b}__mbtn--back`} onClick={() => setStep(2)}>Atras</button><button className={`${b}__mbtn ${b}__mbtn--go`} disabled={name.trim().length < 2 || phone.trim().length < 7 || submitting} onClick={doSubmit}>{submitting ? 'Agendando...' : 'Confirmar cita'}</button></div>
+            </div>)}
 
-            {/* STEP 4: Confirmation */}
-            {bookingStep === 4 && confirmation && (
-              <div className={`${b}__modal-body ${b}__modal-body--center`}>
-                <div className={`${b}__m-check`}>&#10003;</div>
-                <h3>Cita agendada</h3>
-                <p className={`${b}__m-conf-sub`}>Te esperamos!</p>
-                <div className={`${b}__m-summary`}>
-                  <div><span>Servicio:</span> <strong>{confirmation.service}</strong></div>
-                  <div><span>Profesional:</span> <strong>{confirmation.staff}</strong></div>
-                  <div><span>Fecha:</span> <strong>{confirmation.date}</strong></div>
-                  <div><span>Hora:</span> <strong>{confirmation.time}</strong></div>
-                  <div><span>Precio:</span> <strong>${confirmation.price?.toLocaleString('es-CO')} COP</strong></div>
-                </div>
-                <p className={`${b}__m-wa`}>Te enviaremos confirmacion por WhatsApp.</p>
-                <div className={`${b}__modal-nav`}>
-                  <button className={`${b}__mbtn ${b}__mbtn--next`} onClick={() => setBookingModal(false)}>Cerrar</button>
-                </div>
+            {step === 4 && conf && (<div className={`${b}__modal-body`} style={{textAlign:'center'}}>
+              <div className={`${b}__mok`}>&#10003;</div>
+              <h3>Cita agendada</h3>
+              <p style={{color:'#64748b',margin:'0 0 16px'}}>Te esperamos!</p>
+              <div className={`${b}__msum`}>
+                <div><span>Servicio</span><strong>{conf.service}</strong></div>
+                <div><span>Profesional</span><strong>{conf.staff}</strong></div>
+                <div><span>Fecha</span><strong>{conf.date}</strong></div>
+                <div><span>Hora</span><strong>{conf.time}</strong></div>
+                <div><span>Precio</span><strong>${conf.price?.toLocaleString('es-CO')}</strong></div>
               </div>
-            )}
+              <p style={{color:'#10b981',fontWeight:600,fontSize:'0.85rem',margin:'12px 0'}}>Te enviaremos confirmacion por WhatsApp.</p>
+              <div className={`${b}__modal-nav`}><button className={`${b}__mbtn ${b}__mbtn--go`} onClick={() => setModal(false)}>Cerrar</button></div>
+            </div>)}
           </div>
         </div>
       )}
