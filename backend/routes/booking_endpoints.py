@@ -413,6 +413,29 @@ def create_booking(slug: str, data: BookingRequest, request: Request, db: Sessio
         Client.tenant_id == tenant.id,
     ).first()
 
+    # ── CONFLICT CHECK: Client already has appointment at this time ──
+    if client:
+        client_appts = db.query(Appointment).filter(
+            Appointment.client_id == client.id,
+            Appointment.tenant_id == tenant.id,
+            Appointment.date == apt_date,
+            Appointment.status.in_(["confirmed", "completed"]),
+        ).all()
+        for ca in client_appts:
+            try:
+                ch, cm = int(ca.time.split(":")[0]), int(ca.time.split(":")[1])
+                ca_start = ch * 60 + cm
+                ca_end = ca_start + (ca.duration_minutes or 30)
+                if req_start < ca_end and req_end > ca_start:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"Ya tienes una cita agendada a las {ca.time} ese día. Por favor elige otro horario."
+                    )
+            except HTTPException:
+                raise
+            except Exception:
+                continue
+
     if not client:
         # Generate unique client_id (M + tenant_id + sequential)
         last_client = db.query(Client).filter(Client.tenant_id == tenant.id).order_by(Client.id.desc()).first()
