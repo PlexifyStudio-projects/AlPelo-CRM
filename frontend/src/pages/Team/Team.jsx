@@ -199,9 +199,10 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
     name: staff?.name || '', phone: staff?.phone || '', email: staff?.email || '',
     role: staff?.role || editableRoles[0] || 'Profesional', specialty: staff?.specialty || '', bio: staff?.bio || '',
     hire_date: staff?.hire_date || '', skills: staff?.skills?.join(', ') || '',
-    color: staff?.color || '',
+    color: staff?.color || '', photo_url: staff?.photo_url || null,
     username: staff?.username || '', password: '',
   });
+  const [photoFile, setPhotoFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -226,8 +227,12 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
       // Include credentials
       if (form.username.trim()) data.username = form.username.trim();
       if (form.password) data.password = form.password;
-      if (isEdit) await staffService.update(staff.id, data);
-      else await staffService.create(data);
+      let savedStaff;
+      if (isEdit) { savedStaff = await staffService.update(staff.id, data); }
+      else { savedStaff = await staffService.create(data); }
+      if (photoFile && savedStaff?.id) {
+        try { await staffService.uploadPhoto(savedStaff.id, photoFile); } catch {}
+      }
       onSaved();
     } catch (err) { setError(err.message); }
     finally { setSaving(false); }
@@ -287,6 +292,17 @@ const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
                   <div className={`${b}__form-field`}>
                     <label>Email</label>
                     <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="correo@ejemplo.com" />
+                  </div>
+                </div>
+                <div className={`${b}__form-row`}>
+                  <div className={`${b}__form-field`}>
+                    <label>Foto de perfil</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      {(photoFile || form.photo_url) && (
+                        <img src={photoFile ? URL.createObjectURL(photoFile) : form.photo_url} alt="preview" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #e5e7eb' }} />
+                      )}
+                      <input type="file" accept="image/*" onChange={e => { if (e.target.files[0]) setPhotoFile(e.target.files[0]); }} style={{ fontSize: '0.85rem' }} />
+                    </div>
                   </div>
                 </div>
               </div>

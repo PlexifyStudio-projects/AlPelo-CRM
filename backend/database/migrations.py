@@ -92,6 +92,20 @@ def run_migrations(engine):
         ("tenant", "booking_tagline", "VARCHAR(300)"),
         ("tenant", "booking_description", "TEXT"),
         ("tenant", "gallery_images", "JSON DEFAULT '[]'"),
+        # Booking Page — Extended fields
+        ("tenant", "booking_cover_url", "TEXT"),
+        ("tenant", "booking_phone", "VARCHAR(30)"),
+        ("tenant", "booking_whatsapp", "VARCHAR(30)"),
+        ("tenant", "booking_instagram", "VARCHAR(500)"),
+        ("tenant", "booking_facebook", "VARCHAR(500)"),
+        ("tenant", "booking_tags", "JSON DEFAULT '[]'"),
+        ("tenant", "booking_schedule", "JSON DEFAULT '[]'"),
+        ("tenant", "google_place_id", "VARCHAR(300)"),
+        ("tenant", "booking_google_rating", "FLOAT"),
+        ("tenant", "booking_google_total_reviews", "INTEGER"),
+        ("tenant", "booking_google_reviews", "JSON DEFAULT '[]'"),
+        # Staff photo
+        ("staff", "photo_url", "TEXT"),
     ]
 
     for table, column, col_type in migrations:

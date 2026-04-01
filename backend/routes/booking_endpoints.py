@@ -124,23 +124,40 @@ def get_booking_page(slug: str, db: Session = Depends(get_db)):
             "phone": location.phone,
         }
 
+    loc_address = location.address if location else None
+    loc_phone = location.phone if location else None
+
     return {
         "business": {
             "name": tenant.name,
             "slug": tenant.slug,
-            "tagline": tenant.booking_tagline,
-            "description": tenant.booking_description,
+            "tagline": getattr(tenant, 'booking_tagline', None),
+            "description": getattr(tenant, 'booking_description', None),
             "logo_url": tenant.logo_url,
+            "cover_url": getattr(tenant, 'booking_cover_url', None),
             "brand_color": tenant.brand_color,
             "brand_color_dark": tenant.brand_color_dark,
             "brand_color_accent": tenant.brand_color_accent,
-            "gallery_images": tenant.gallery_images or [],
+            "gallery_images": getattr(tenant, 'gallery_images', []) or [],
             "currency": getattr(tenant, "currency", "COP"),
             "timezone": getattr(tenant, "timezone", "America/Bogota"),
+            "phone": getattr(tenant, 'booking_phone', None) or loc_phone,
+            "whatsapp": getattr(tenant, 'booking_whatsapp', None),
+            "instagram": getattr(tenant, 'booking_instagram', None),
+            "facebook": getattr(tenant, 'booking_facebook', None),
+            "tags": getattr(tenant, 'booking_tags', []) or [],
+            "address": getattr(tenant, 'address', None) or loc_address,
+            "city": getattr(tenant, 'city', None),
         },
         "location": business_hours,
         "services": dict(categories),
         "staff": staff_list,
+        "schedule": getattr(tenant, 'booking_schedule', []) or [],
+        "reviews": {
+            "rating": getattr(tenant, 'booking_google_rating', None),
+            "total_reviews": getattr(tenant, 'booking_google_total_reviews', None),
+            "items": getattr(tenant, 'booking_google_reviews', []) or [],
+        },
     }
 
 

@@ -262,29 +262,103 @@ const Settings = () => {
   const [googleSaving, setGoogleSaving] = useState(false);
 
   // ── Booking Online ──
-  const [bookingConfig, setBookingConfig] = useState({ booking_enabled: false, booking_tagline: '', booking_description: '', gallery_images: [], slug: '' });
+  const EMPTY_SCHEDULE = [
+    { day: 'Lunes', hours: '' }, { day: 'Martes', hours: '' }, { day: 'Miercoles', hours: '' },
+    { day: 'Jueves', hours: '' }, { day: 'Viernes', hours: '' }, { day: 'Sabado', hours: '' }, { day: 'Domingo', hours: '' },
+  ];
+  const [bookingConfig, setBookingConfig] = useState({
+    booking_enabled: false, booking_tagline: '', booking_description: '', gallery_images: [],
+    booking_cover_url: null, booking_phone: '', booking_whatsapp: '',
+    booking_instagram: '', booking_facebook: '',
+    booking_tags: [], booking_schedule: EMPTY_SCHEDULE,
+    google_place_id: '', booking_google_rating: null, booking_google_total_reviews: null,
+    booking_google_reviews: [], slug: '', logo_url: null,
+  });
   const [bookingSaving, setBookingSaving] = useState(false);
   const [bookingLoaded, setBookingLoaded] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [syncingReviews, setSyncingReviews] = useState(false);
+  const [newTag, setNewTag] = useState('');
 
   const loadBookingConfig = useCallback(async () => {
     try {
-      const r = await fetch(`${API_URL}/settings/booking`, { credentials: 'include', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
-      if (r.ok) { const d = await r.json(); setBookingConfig(d); setBookingLoaded(true); }
+      const r = await fetch(`${API_URL}/settings/booking`, { credentials: 'include' });
+      if (r.ok) {
+        const d = await r.json();
+        if (!d.booking_schedule || d.booking_schedule.length === 0) d.booking_schedule = EMPTY_SCHEDULE;
+        setBookingConfig(d);
+        setBookingLoaded(true);
+      }
     } catch {}
   }, []);
 
   const handleSaveBooking = async () => {
     setBookingSaving(true);
     try {
+      const body = {};
+      ['booking_enabled', 'booking_tagline', 'booking_description', 'booking_phone', 'booking_whatsapp',
+       'booking_instagram', 'booking_facebook', 'booking_tags', 'booking_schedule', 'google_place_id',
+       'gallery_images'].forEach(k => { body[k] = bookingConfig[k]; });
       const r = await fetch(`${API_URL}/settings/booking`, {
         method: 'PUT', credentials: 'include',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-        body: JSON.stringify({ booking_enabled: bookingConfig.booking_enabled, booking_tagline: bookingConfig.booking_tagline, booking_description: bookingConfig.booking_description }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       if (r.ok) notify('Configuracion de reservas guardada', 'success');
       else notify('Error al guardar', 'error');
     } catch { notify('Error de conexion', 'error'); }
     setBookingSaving(false);
+  };
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { notify('Maximo 2MB', 'error'); return; }
+    setCoverUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const r = await fetch(`${API_URL}/settings/booking/cover`, { method: 'POST', credentials: 'include', body: form });
+      if (r.ok) { const d = await r.json(); setBookingConfig(c => ({ ...c, booking_cover_url: d.booking_cover_url })); notify('Portada actualizada', 'success'); }
+      else notify('Error al subir portada', 'error');
+    } catch { notify('Error de conexion', 'error'); }
+    setCoverUploading(false);
+  };
+
+  const handleGalleryUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { notify('Maximo 2MB por imagen', 'error'); return; }
+    setGalleryUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const r = await fetch(`${API_URL}/settings/booking/gallery`, { method: 'POST', credentials: 'include', body: form });
+      if (r.ok) { const d = await r.json(); setBookingConfig(c => ({ ...c, gallery_images: d.gallery_images })); notify('Imagen agregada', 'success'); }
+      else { const err = await r.json().catch(() => ({})); notify(err.detail || 'Error al subir', 'error'); }
+    } catch { notify('Error de conexion', 'error'); }
+    setGalleryUploading(false);
+  };
+
+  const handleGalleryRemove = (index) => {
+    const updated = bookingConfig.gallery_images.filter((_, i) => i !== index);
+    setBookingConfig(c => ({ ...c, gallery_images: updated }));
+  };
+
+  const handleSyncGoogleReviews = async () => {
+    if (!bookingConfig.google_place_id) { notify('Ingresa primero tu Google Place ID', 'error'); return; }
+    await handleSaveBooking();
+    setSyncingReviews(true);
+    try {
+      const r = await fetch(`${API_URL}/settings/booking/google-reviews`, { method: 'POST', credentials: 'include' });
+      if (r.ok) {
+        const d = await r.json();
+        setBookingConfig(c => ({ ...c, booking_google_rating: d.rating, booking_google_total_reviews: d.total_reviews, booking_google_reviews: d.reviews }));
+        notify(`Resenas sincronizadas: ${d.rating} estrellas (${d.total_reviews} opiniones)`, 'success');
+      } else { const err = await r.json().catch(() => ({})); notify(err.detail || 'Error al sincronizar', 'error'); }
+    } catch { notify('Error de conexion', 'error'); }
+    setSyncingReviews(false);
   };
 
   const handleDisconnect = async () => {
@@ -1172,6 +1246,8 @@ const Settings = () => {
               {!bookingLoaded ? (
                 <div style={{ textAlign: 'center', padding: 20, color: '#94a3b8' }} ref={() => loadBookingConfig()}>Cargando configuracion...</div>
               ) : (<>
+
+              {/* Enable toggle */}
               <div className={`${b}__meta-field`}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <input type="checkbox" checked={!!bookingConfig.booking_enabled} onChange={e => setBookingConfig(c => ({ ...c, booking_enabled: e.target.checked }))} style={{ width: 18, height: 18, accentColor: '#10b981' }} />
@@ -1179,6 +1255,8 @@ const Settings = () => {
                 </label>
                 <span className={`${b}__meta-hint`}>Cuando este activa, tus clientes podran agendar citas desde el link publico.</span>
               </div>
+
+              {/* Public link */}
               {bookingConfig.slug && (
                 <div className={`${b}__meta-field`}>
                   <label>Link publico de reservas</label>
@@ -1188,14 +1266,125 @@ const Settings = () => {
                   </div>
                 </div>
               )}
+
+              {/* Cover image */}
               <div className={`${b}__meta-field`}>
-                <label>Tagline (frase corta que aparece en la pagina)</label>
+                <label>Imagen de portada (hero)</label>
+                {bookingConfig.booking_cover_url && (
+                  <div style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', marginBottom: 8, maxHeight: 180 }}>
+                    <img src={bookingConfig.booking_cover_url} alt="Portada" style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+                    <button onClick={() => setBookingConfig(c => ({ ...c, booking_cover_url: null }))} style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', color: '#fff', cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&times;</button>
+                  </div>
+                )}
+                <input type="file" accept="image/*" onChange={handleCoverUpload} style={{ fontSize: '0.85rem' }} />
+                {coverUploading && <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Subiendo...</span>}
+              </div>
+
+              {/* Tagline & Description */}
+              <div className={`${b}__meta-field`}>
+                <label>Tagline</label>
                 <input value={bookingConfig.booking_tagline || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_tagline: e.target.value }))} placeholder="Ej: Descubre la excelencia en nuestro negocio!" maxLength={300} />
               </div>
               <div className={`${b}__meta-field`}>
                 <label>Descripcion (sobre nosotros)</label>
-                <textarea value={bookingConfig.booking_description || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_description: e.target.value }))} placeholder="Describe tu negocio, tu equipo y por que los clientes deberian elegirte..." rows={4} style={{ width: '100%', padding: '10px 14px', border: '2px solid #e2e8f0', borderRadius: 8, fontSize: '0.9rem', resize: 'vertical', fontFamily: 'inherit' }} />
+                <textarea value={bookingConfig.booking_description || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_description: e.target.value }))} placeholder="Describe tu negocio..." rows={3} style={{ width: '100%', padding: '10px 14px', border: '2px solid #e2e8f0', borderRadius: 8, fontSize: '0.9rem', resize: 'vertical', fontFamily: 'inherit' }} />
               </div>
+
+              {/* Gallery */}
+              <div className={`${b}__meta-field`}>
+                <label>Galeria / Portafolio ({(bookingConfig.gallery_images || []).length}/20 imagenes)</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 8, marginBottom: 8 }}>
+                  {(bookingConfig.gallery_images || []).map((img, i) => (
+                    <div key={i} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', aspectRatio: '1' }}>
+                      <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                      <button onClick={() => handleGalleryRemove(i)} style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&times;</button>
+                    </div>
+                  ))}
+                </div>
+                {(bookingConfig.gallery_images || []).length < 20 && (
+                  <input type="file" accept="image/*" onChange={handleGalleryUpload} style={{ fontSize: '0.85rem' }} />
+                )}
+                {galleryUploading && <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Subiendo imagen...</span>}
+              </div>
+
+              {/* Contact */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className={`${b}__meta-field`}>
+                  <label>Telefono de contacto</label>
+                  <input value={bookingConfig.booking_phone || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_phone: e.target.value }))} placeholder="317 660 8487" />
+                </div>
+                <div className={`${b}__meta-field`}>
+                  <label>WhatsApp (con codigo de pais)</label>
+                  <input value={bookingConfig.booking_whatsapp || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_whatsapp: e.target.value }))} placeholder="573176608487" />
+                </div>
+              </div>
+
+              {/* Social links */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className={`${b}__meta-field`}>
+                  <label>Instagram URL</label>
+                  <input value={bookingConfig.booking_instagram || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_instagram: e.target.value }))} placeholder="https://instagram.com/tu-negocio" />
+                </div>
+                <div className={`${b}__meta-field`}>
+                  <label>Facebook URL</label>
+                  <input value={bookingConfig.booking_facebook || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_facebook: e.target.value }))} placeholder="https://facebook.com/tu-negocio" />
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div className={`${b}__meta-field`}>
+                <label>Categorias / Tags</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {(bookingConfig.booking_tags || []).map((tag, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', background: '#f1f5f9', borderRadius: 20, fontSize: '0.82rem', fontWeight: 500, color: '#334155' }}>
+                      {tag}
+                      <button onClick={() => setBookingConfig(c => ({ ...c, booking_tags: c.booking_tags.filter((_, j) => j !== i) }))} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1rem', padding: 0, lineHeight: 1 }}>&times;</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input value={newTag} onChange={e => setNewTag(e.target.value)} placeholder="Ej: Barberia" style={{ flex: 1 }} onKeyDown={e => { if (e.key === 'Enter' && newTag.trim()) { setBookingConfig(c => ({ ...c, booking_tags: [...(c.booking_tags || []), newTag.trim()] })); setNewTag(''); } }} />
+                  <button onClick={() => { if (newTag.trim()) { setBookingConfig(c => ({ ...c, booking_tags: [...(c.booking_tags || []), newTag.trim()] })); setNewTag(''); } }} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Agregar</button>
+                </div>
+              </div>
+
+              {/* Schedule */}
+              <div className={`${b}__meta-field`}>
+                <label>Horarios semanales</label>
+                <span className={`${b}__meta-hint`}>Deja vacio si el dia esta cerrado.</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                  {(bookingConfig.booking_schedule || EMPTY_SCHEDULE).map((s, i) => (
+                    <div key={s.day} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ width: 100, fontSize: '0.88rem', fontWeight: 600, color: '#334155' }}>{s.day}</span>
+                      <input value={s.hours || ''} onChange={e => {
+                        const updated = [...(bookingConfig.booking_schedule || EMPTY_SCHEDULE)];
+                        updated[i] = { ...updated[i], hours: e.target.value };
+                        setBookingConfig(c => ({ ...c, booking_schedule: updated }));
+                      }} placeholder="8:15 AM - 8:00 PM" style={{ flex: 1 }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Google Reviews */}
+              <div className={`${b}__meta-field`} style={{ background: '#fafbfc', padding: 16, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                <label style={{ marginBottom: 4 }}>Google Reviews</label>
+                <span className={`${b}__meta-hint`}>Ingresa tu Google Place ID para sincronizar resenas reales.</span>
+                <input value={bookingConfig.google_place_id || ''} onChange={e => setBookingConfig(c => ({ ...c, google_place_id: e.target.value }))} placeholder="ChIJ... (Google Place ID)" style={{ marginTop: 8 }} />
+                <button onClick={handleSyncGoogleReviews} disabled={syncingReviews} style={{ marginTop: 8, padding: '8px 20px', borderRadius: 8, border: 'none', background: '#4285F4', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, opacity: syncingReviews ? 0.5 : 1 }}>
+                  {syncingReviews ? 'Sincronizando...' : 'Sincronizar resenas de Google'}
+                </button>
+                {bookingConfig.booking_google_rating && (
+                  <div style={{ marginTop: 12, padding: 12, background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+                    <strong style={{ fontSize: '1.1rem' }}>{bookingConfig.booking_google_rating}</strong> <span style={{ color: '#f59e0b' }}>{'★'.repeat(Math.round(bookingConfig.booking_google_rating))}</span> <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>({bookingConfig.booking_google_total_reviews} opiniones)</span>
+                    {(bookingConfig.booking_google_reviews || []).length > 0 && (
+                      <div style={{ marginTop: 8, fontSize: '0.82rem', color: '#64748b' }}>{bookingConfig.booking_google_reviews.length} resenas cacheadas</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Save */}
               <div className={`${b}__meta-actions`}>
                 <button className={`${b}__ai-save`} onClick={handleSaveBooking} disabled={bookingSaving}>
                   {bookingSaving ? 'Guardando...' : 'Guardar configuracion'}

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Tenant, PlatformConfig
+from database.models import Tenant, PlatformConfig, Staff
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
 
@@ -790,34 +790,53 @@ async def upload_logo(file: UploadFile = File(...), db: Session = Depends(get_db
 # BOOKING ONLINE SETTINGS (Admin)
 # ============================================================================
 
-@router.get("/settings/booking")
-def get_booking_settings(db: Session = Depends(get_db), user=Depends(get_current_user)):
+def _booking_tenant(db, user):
     tid = safe_tid(user, db)
     if not tid:
         raise HTTPException(status_code=400, detail="Tenant no identificado")
     tenant = db.query(Tenant).filter(Tenant.id == tid).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant no encontrado")
+    return tenant
+
+
+def _booking_response(tenant):
     return {
         "booking_enabled": getattr(tenant, 'booking_enabled', False),
         "booking_tagline": getattr(tenant, 'booking_tagline', ''),
         "booking_description": getattr(tenant, 'booking_description', ''),
         "gallery_images": getattr(tenant, 'gallery_images', []) or [],
+        "booking_cover_url": getattr(tenant, 'booking_cover_url', None),
+        "booking_phone": getattr(tenant, 'booking_phone', None),
+        "booking_whatsapp": getattr(tenant, 'booking_whatsapp', None),
+        "booking_instagram": getattr(tenant, 'booking_instagram', None),
+        "booking_facebook": getattr(tenant, 'booking_facebook', None),
+        "booking_tags": getattr(tenant, 'booking_tags', []) or [],
+        "booking_schedule": getattr(tenant, 'booking_schedule', []) or [],
+        "google_place_id": getattr(tenant, 'google_place_id', None),
+        "booking_google_rating": getattr(tenant, 'booking_google_rating', None),
+        "booking_google_total_reviews": getattr(tenant, 'booking_google_total_reviews', None),
+        "booking_google_reviews": getattr(tenant, 'booking_google_reviews', []) or [],
         "logo_url": getattr(tenant, 'logo_url', None),
         "slug": tenant.slug,
     }
 
 
+@router.get("/settings/booking")
+def get_booking_settings(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    return _booking_response(_booking_tenant(db, user))
+
+
 @router.put("/settings/booking")
 def update_booking_settings(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    tid = safe_tid(user, db)
-    if not tid:
-        raise HTTPException(status_code=400, detail="Tenant no identificado")
-    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+    tenant = _booking_tenant(db, user)
 
-    allowed = ["booking_enabled", "booking_tagline", "booking_description", "gallery_images"]
+    allowed = [
+        "booking_enabled", "booking_tagline", "booking_description", "gallery_images",
+        "booking_cover_url", "booking_phone", "booking_whatsapp",
+        "booking_instagram", "booking_facebook",
+        "booking_tags", "booking_schedule", "google_place_id",
+    ]
     for field in allowed:
         if field in data:
             setattr(tenant, field, data[field])
@@ -825,12 +844,103 @@ def update_booking_settings(data: dict, db: Session = Depends(get_db), user=Depe
     tenant.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(tenant)
+    return {"ok": True, **_booking_response(tenant)}
 
-    return {
-        "ok": True,
-        "booking_enabled": tenant.booking_enabled,
-        "booking_tagline": tenant.booking_tagline,
-        "booking_description": tenant.booking_description,
-        "gallery_images": tenant.gallery_images or [],
-        "slug": tenant.slug,
-    }
+
+@router.post("/settings/booking/cover")
+async def upload_booking_cover(file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(get_current_user)):
+    import base64
+    tenant = _booking_tenant(db, user)
+    content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(400, "Imagen demasiado grande (max 2MB)")
+    mime = file.content_type or "image/jpeg"
+    data_uri = f"data:{mime};base64,{base64.b64encode(content).decode('utf-8')}"
+    tenant.booking_cover_url = data_uri
+    tenant.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True, "booking_cover_url": data_uri}
+
+
+@router.post("/settings/booking/gallery")
+async def upload_gallery_image(file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(get_current_user)):
+    import base64
+    from sqlalchemy.orm.attributes import flag_modified
+    tenant = _booking_tenant(db, user)
+    gallery = list(tenant.gallery_images or [])
+    if len(gallery) >= 20:
+        raise HTTPException(400, "Maximo 20 imagenes en la galeria")
+    content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(400, "Imagen demasiado grande (max 2MB)")
+    mime = file.content_type or "image/jpeg"
+    data_uri = f"data:{mime};base64,{base64.b64encode(content).decode('utf-8')}"
+    gallery.append(data_uri)
+    tenant.gallery_images = gallery
+    flag_modified(tenant, "gallery_images")
+    tenant.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True, "gallery_images": tenant.gallery_images}
+
+
+@router.post("/settings/booking/google-reviews")
+def sync_google_reviews(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    import os
+    tenant = _booking_tenant(db, user)
+    place_id = getattr(tenant, 'google_place_id', None)
+    if not place_id:
+        raise HTTPException(400, "Configura primero tu Google Place ID")
+    api_key = os.environ.get("GOOGLE_PLACES_API_KEY")
+    if not api_key:
+        raise HTTPException(500, "GOOGLE_PLACES_API_KEY no configurada en el servidor")
+    try:
+        resp = httpx.get(
+            "https://maps.googleapis.com/maps/api/place/details/json",
+            params={"place_id": place_id, "fields": "rating,user_ratings_total,reviews", "language": "es", "key": api_key},
+            timeout=15,
+        )
+        data = resp.json()
+        if data.get("status") != "OK":
+            raise HTTPException(400, f"Google API: {data.get('status')} — {data.get('error_message', '')}")
+        result = data.get("result", {})
+        reviews = []
+        for r in result.get("reviews", [])[:5]:
+            reviews.append({
+                "name": r.get("author_name", ""),
+                "rating": r.get("rating", 5),
+                "date": r.get("relative_time_description", ""),
+                "text": r.get("text", ""),
+                "photo": r.get("profile_photo_url", None),
+            })
+        from sqlalchemy.orm.attributes import flag_modified
+        tenant.booking_google_rating = result.get("rating")
+        tenant.booking_google_total_reviews = result.get("user_ratings_total")
+        tenant.booking_google_reviews = reviews
+        flag_modified(tenant, "booking_google_reviews")
+        tenant.updated_at = datetime.utcnow()
+        db.commit()
+        return {"ok": True, "rating": tenant.booking_google_rating, "total_reviews": tenant.booking_google_total_reviews, "reviews": reviews}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Error al consultar Google: {str(e)}")
+
+
+@router.post("/staff/{staff_id}/photo")
+async def upload_staff_photo(staff_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(get_current_user)):
+    import base64
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    staff = db.query(Staff).filter(Staff.id == staff_id, Staff.tenant_id == tid).first()
+    if not staff:
+        raise HTTPException(404, "Staff no encontrado")
+    content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(400, "Imagen demasiado grande (max 2MB)")
+    mime = file.content_type or "image/jpeg"
+    data_uri = f"data:{mime};base64,{base64.b64encode(content).decode('utf-8')}"
+    staff.photo_url = data_uri
+    staff.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True, "photo_url": data_uri}

@@ -39,6 +39,7 @@ class Staff(Base):
     skills = Column(JSON, default=list)
     rating = Column(Float, nullable=True)
     color = Column(String, nullable=True)  # hex color for calendar, e.g. "#2D5A3D"
+    photo_url = Column(Text, nullable=True)  # Base64 data URI for staff photo
     username = Column(String, unique=True, index=True, nullable=True)  # login credential (nullable = no login)
     password = Column(String, nullable=True)  # hashed password
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -307,10 +308,21 @@ class Tenant(Base):
     brand_name = Column(String(200), nullable=True)  # Display name override (e.g. "AlPelo CRM")
 
     # Public Booking Page
-    booking_enabled = Column(Boolean, default=False)  # Toggle public booking page
-    booking_tagline = Column(String(300), nullable=True)  # Short tagline for booking page
-    booking_description = Column(Text, nullable=True)  # About section for booking page
-    gallery_images = Column(JSON, default=[])  # List of image URLs for gallery
+    booking_enabled = Column(Boolean, default=False)
+    booking_tagline = Column(String(300), nullable=True)
+    booking_description = Column(Text, nullable=True)
+    gallery_images = Column(JSON, default=[])
+    booking_cover_url = Column(Text, nullable=True)
+    booking_phone = Column(String(30), nullable=True)
+    booking_whatsapp = Column(String(30), nullable=True)
+    booking_instagram = Column(String(500), nullable=True)
+    booking_facebook = Column(String(500), nullable=True)
+    booking_tags = Column(JSON, default=[])
+    booking_schedule = Column(JSON, default=[])
+    google_place_id = Column(String(300), nullable=True)
+    booking_google_rating = Column(Float, nullable=True)
+    booking_google_total_reviews = Column(Integer, nullable=True)
+    booking_google_reviews = Column(JSON, default=[])
 
     # Meta
     created_at = Column(DateTime, default=datetime.utcnow)
