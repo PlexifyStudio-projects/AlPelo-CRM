@@ -414,7 +414,12 @@ def create_booking(slug: str, data: BookingRequest, request: Request, db: Sessio
     ).first()
 
     if not client:
+        # Generate unique client_id (M + tenant_id + sequential)
+        last_client = db.query(Client).filter(Client.tenant_id == tenant.id).order_by(Client.id.desc()).first()
+        seq = (last_client.id + 1) if last_client else 1
+        new_client_id = f"M{tenant.id}{seq:04d}"
         client = Client(
+            client_id=new_client_id,
             name=data.client_name.strip(),
             phone=phone_clean,
             email=data.client_email,
