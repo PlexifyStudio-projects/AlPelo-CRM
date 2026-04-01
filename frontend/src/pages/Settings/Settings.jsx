@@ -327,18 +327,29 @@ const Settings = () => {
   };
 
   const handleGalleryUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { notify('Maximo 2MB por imagen', 'error'); return; }
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const currentCount = (bookingConfig.gallery_images || []).length;
+    const maxNew = 20 - currentCount;
+    if (maxNew <= 0) { notify('Ya tienes 20 imagenes (maximo)', 'error'); return; }
+    const toUpload = files.slice(0, maxNew);
+    const skipped = files.length - toUpload.length;
     setGalleryUploading(true);
-    try {
-      const form = new FormData();
-      form.append('file', file);
-      const r = await fetch(`${API_URL}/settings/booking/gallery`, { method: 'POST', credentials: 'include', body: form });
-      if (r.ok) { const d = await r.json(); setBookingConfig(c => ({ ...c, gallery_images: d.gallery_images })); notify('Imagen agregada', 'success'); }
-      else { const err = await r.json().catch(() => ({})); notify(err.detail || 'Error al subir', 'error'); }
-    } catch { notify('Error de conexion', 'error'); }
+    let uploaded = 0;
+    for (const file of toUpload) {
+      if (file.size > 2 * 1024 * 1024) { notify(`${file.name} excede 2MB, omitida`, 'error'); continue; }
+      try {
+        const form = new FormData();
+        form.append('file', file);
+        const r = await fetch(`${API_URL}/settings/booking/gallery`, { method: 'POST', credentials: 'include', body: form });
+        if (r.ok) { const d = await r.json(); setBookingConfig(c => ({ ...c, gallery_images: d.gallery_images })); uploaded++; }
+        else { const err = await r.json().catch(() => ({})); notify(err.detail || `Error: ${file.name}`, 'error'); }
+      } catch { notify(`Error subiendo ${file.name}`, 'error'); }
+    }
+    if (uploaded > 0) notify(`${uploaded} imagen${uploaded > 1 ? 'es' : ''} agregada${uploaded > 1 ? 's' : ''}`, 'success');
+    if (skipped > 0) notify(`${skipped} imagen${skipped > 1 ? 'es' : ''} omitida${skipped > 1 ? 's' : ''} (limite 20)`, 'error');
     setGalleryUploading(false);
+    e.target.value = '';
   };
 
   const handleGalleryRemove = (index) => {
@@ -1302,7 +1313,7 @@ const Settings = () => {
                   ))}
                 </div>
                 {(bookingConfig.gallery_images || []).length < 20 && (
-                  <input type="file" accept="image/*" onChange={handleGalleryUpload} style={{ fontSize: '0.85rem' }} />
+                  <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} style={{ fontSize: '0.85rem' }} />
                 )}
                 {galleryUploading && <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Subiendo imagen...</span>}
               </div>
