@@ -357,19 +357,38 @@ const Settings = () => {
     setBookingConfig(c => ({ ...c, gallery_images: updated }));
   };
 
-  const handleSyncGoogleReviews = async () => {
-    if (!bookingConfig.google_place_id) { addNotification('Ingresa primero tu Google Place ID', 'error'); return; }
-    await handleSaveBooking();
+  const handleSaveReviews = async () => {
     setSyncingReviews(true);
     try {
-      const r = await fetch(`${API_URL}/settings/booking/google-reviews`, { method: 'POST', credentials: 'include' });
-      if (r.ok) {
-        const d = await r.json();
-        setBookingConfig(c => ({ ...c, booking_google_rating: d.rating, booking_google_total_reviews: d.total_reviews, booking_google_reviews: d.reviews }));
-        addNotification(`Resenas sincronizadas: ${d.rating} estrellas (${d.total_reviews} opiniones)`, 'success');
-      } else { const err = await r.json().catch(() => ({})); addNotification(err.detail || 'Error al sincronizar', 'error'); }
+      const r = await fetch(`${API_URL}/settings/booking/reviews`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rating: bookingConfig.booking_google_rating,
+          total_reviews: bookingConfig.booking_google_total_reviews,
+          reviews: bookingConfig.booking_google_reviews || [],
+        }),
+      });
+      if (r.ok) addNotification('Resenas guardadas', 'success');
+      else addNotification('Error al guardar resenas', 'error');
     } catch { addNotification('Error de conexion', 'error'); }
     setSyncingReviews(false);
+  };
+
+  const addReview = () => {
+    const reviews = [...(bookingConfig.booking_google_reviews || []), { name: '', rating: 5, date: '', text: '', photo: null }];
+    setBookingConfig(c => ({ ...c, booking_google_reviews: reviews }));
+  };
+
+  const updateReview = (idx, field, value) => {
+    const reviews = [...(bookingConfig.booking_google_reviews || [])];
+    reviews[idx] = { ...reviews[idx], [field]: value };
+    setBookingConfig(c => ({ ...c, booking_google_reviews: reviews }));
+  };
+
+  const removeReview = (idx) => {
+    const reviews = (bookingConfig.booking_google_reviews || []).filter((_, i) => i !== idx);
+    setBookingConfig(c => ({ ...c, booking_google_reviews: reviews }));
   };
 
   const handleDisconnect = async () => {
@@ -1377,22 +1396,46 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* Google Reviews */}
-              <div className={`${b}__meta-field`} style={{ background: '#fafbfc', padding: 16, borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                <label style={{ marginBottom: 4 }}>Google Reviews</label>
-                <span className={`${b}__meta-hint`}>Ingresa tu Google Place ID para sincronizar resenas reales.</span>
-                <input value={bookingConfig.google_place_id || ''} onChange={e => setBookingConfig(c => ({ ...c, google_place_id: e.target.value }))} placeholder="ChIJ... (Google Place ID)" style={{ marginTop: 8 }} />
-                <button onClick={handleSyncGoogleReviews} disabled={syncingReviews} style={{ marginTop: 8, padding: '8px 20px', borderRadius: 8, border: 'none', background: '#4285F4', color: '#fff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, opacity: syncingReviews ? 0.5 : 1 }}>
-                  {syncingReviews ? 'Sincronizando...' : 'Sincronizar resenas de Google'}
-                </button>
-                {bookingConfig.booking_google_rating && (
-                  <div style={{ marginTop: 12, padding: 12, background: '#fff', borderRadius: 8, border: '1px solid #e5e7eb' }}>
-                    <strong style={{ fontSize: '1.1rem' }}>{bookingConfig.booking_google_rating}</strong> <span style={{ color: '#f59e0b' }}>{'★'.repeat(Math.round(bookingConfig.booking_google_rating))}</span> <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>({bookingConfig.booking_google_total_reviews} opiniones)</span>
-                    {(bookingConfig.booking_google_reviews || []).length > 0 && (
-                      <div style={{ marginTop: 8, fontSize: '0.82rem', color: '#64748b' }}>{bookingConfig.booking_google_reviews.length} resenas cacheadas</div>
-                    )}
+              {/* Reviews Editor */}
+              <div className={`${b}__meta-field`} style={{ background: '#fafbfc', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+                <label style={{ marginBottom: 8, fontSize: '0.95rem' }}>Resenas de Google</label>
+                <span className={`${b}__meta-hint`}>Copia las resenas reales de tu pagina de Google Maps y pegalas aqui.</span>
+
+                {/* Rating + Total */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, margin: '12px 0' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b' }}>Rating general</label>
+                    <input type="number" step="0.1" min="1" max="5" value={bookingConfig.booking_google_rating || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_google_rating: parseFloat(e.target.value) || null }))} placeholder="4.7" />
                   </div>
-                )}
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b' }}>Total de opiniones</label>
+                    <input type="number" min="0" value={bookingConfig.booking_google_total_reviews || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_google_total_reviews: parseInt(e.target.value) || null }))} placeholder="742" />
+                  </div>
+                </div>
+
+                {/* Review list */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+                  {(bookingConfig.booking_google_reviews || []).map((rev, i) => (
+                    <div key={i} style={{ padding: 14, background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', position: 'relative' }}>
+                      <button onClick={() => removeReview(i)} style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: '50%', border: 'none', background: '#fee2e2', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>&times;</button>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 8, marginBottom: 8 }}>
+                        <input value={rev.name} onChange={e => updateReview(i, 'name', e.target.value)} placeholder="Nombre del cliente" style={{ fontSize: '0.85rem' }} />
+                        <select value={rev.rating} onChange={e => updateReview(i, 'rating', parseInt(e.target.value))} style={{ fontSize: '0.85rem' }}>
+                          {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} {'★'.repeat(n)}</option>)}
+                        </select>
+                      </div>
+                      <input value={rev.date || ''} onChange={e => updateReview(i, 'date', e.target.value)} placeholder="Hace 1 mes" style={{ fontSize: '0.82rem', marginBottom: 6, width: '100%' }} />
+                      <textarea value={rev.text} onChange={e => updateReview(i, 'text', e.target.value)} placeholder="Texto de la resena..." rows={2} style={{ width: '100%', fontSize: '0.82rem', border: '1.5px solid #e5e7eb', borderRadius: 8, padding: '8px 10px', fontFamily: 'inherit', resize: 'vertical' }} />
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button onClick={addReview} style={{ padding: '8px 20px', borderRadius: 8, border: '1.5px dashed #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, color: '#64748b' }}>+ Agregar resena</button>
+                  <button onClick={handleSaveReviews} disabled={syncingReviews} style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, opacity: syncingReviews ? 0.5 : 1 }}>
+                    {syncingReviews ? 'Guardando...' : 'Guardar resenas'}
+                  </button>
+                </div>
               </div>
 
               {/* Save */}

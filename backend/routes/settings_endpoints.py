@@ -883,56 +883,26 @@ async def upload_gallery_image(file: UploadFile = File(...), db: Session = Depen
     return {"ok": True, "gallery_images": tenant.gallery_images}
 
 
-@router.post("/settings/booking/google-reviews")
-def sync_google_reviews(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    import os
+@router.put("/settings/booking/reviews")
+def save_booking_reviews(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Save reviews manually — admin enters rating, total count, and review list."""
+    from sqlalchemy.orm.attributes import flag_modified
     tenant = _booking_tenant(db, user)
-    place_id = getattr(tenant, 'google_place_id', None)
-    if not place_id:
-        raise HTTPException(400, "Configura primero tu Google Place ID")
-    # Read key from PlatformConfig (DB) first, fallback to env var
-    pc = db.query(PlatformConfig).filter(PlatformConfig.key == "GOOGLE_PLACES_API_KEY").first()
-    api_key = (pc.value if pc and pc.value else None) or os.environ.get("GOOGLE_PLACES_API_KEY")
-    if not api_key:
-        raise HTTPException(500, "GOOGLE_PLACES_API_KEY no configurada. Pidele al developer que la agregue en el panel Dev > Platform Config.")
-    try:
-        # Use Places API (New) — REST endpoint
-        resp = httpx.get(
-            f"https://places.googleapis.com/v1/places/{place_id}",
-            headers={
-                "X-Goog-Api-Key": api_key,
-                "X-Goog-FieldMask": "rating,userRatingCount,reviews",
-                "Accept-Language": "es",
-            },
-            timeout=15,
-        )
-        if resp.status_code != 200:
-            err = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
-            msg = err.get("error", {}).get("message", resp.text[:200])
-            raise HTTPException(400, f"Google API ({resp.status_code}): {msg}")
-        data = resp.json()
-        reviews = []
-        for r in data.get("reviews", [])[:5]:
-            author = r.get("authorAttribution", {})
-            reviews.append({
-                "name": author.get("displayName", ""),
-                "rating": r.get("rating", 5),
-                "date": r.get("relativePublishTimeDescription", ""),
-                "text": r.get("text", {}).get("text", "") if isinstance(r.get("text"), dict) else r.get("text", ""),
-                "photo": author.get("photoUri", None),
-            })
-        from sqlalchemy.orm.attributes import flag_modified
-        tenant.booking_google_rating = data.get("rating")
-        tenant.booking_google_total_reviews = data.get("userRatingCount")
-        tenant.booking_google_reviews = reviews
+    if "rating" in data:
+        tenant.booking_google_rating = data["rating"]
+    if "total_reviews" in data:
+        tenant.booking_google_total_reviews = data["total_reviews"]
+    if "reviews" in data:
+        tenant.booking_google_reviews = data["reviews"][:20]  # max 20
         flag_modified(tenant, "booking_google_reviews")
-        tenant.updated_at = datetime.utcnow()
-        db.commit()
-        return {"ok": True, "rating": tenant.booking_google_rating, "total_reviews": tenant.booking_google_total_reviews, "reviews": reviews}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, f"Error al consultar Google: {str(e)}")
+    tenant.updated_at = datetime.utcnow()
+    db.commit()
+    return {
+        "ok": True,
+        "rating": tenant.booking_google_rating,
+        "total_reviews": tenant.booking_google_total_reviews,
+        "reviews": tenant.booking_google_reviews or [],
+    }
 
 
 @router.post("/staff/{staff_id}/photo")
