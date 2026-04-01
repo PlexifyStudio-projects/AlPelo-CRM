@@ -305,24 +305,24 @@ const Settings = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      if (r.ok) notify('Configuracion de reservas guardada', 'success');
-      else notify('Error al guardar', 'error');
-    } catch { notify('Error de conexion', 'error'); }
+      if (r.ok) addNotification('Configuracion de reservas guardada', 'success');
+      else addNotification('Error al guardar', 'error');
+    } catch { addNotification('Error de conexion', 'error'); }
     setBookingSaving(false);
   };
 
   const handleCoverUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { notify('Maximo 2MB', 'error'); return; }
+    if (file.size > 2 * 1024 * 1024) { addNotification('Maximo 2MB', 'error'); return; }
     setCoverUploading(true);
     try {
       const form = new FormData();
       form.append('file', file);
       const r = await fetch(`${API_URL}/settings/booking/cover`, { method: 'POST', credentials: 'include', body: form });
-      if (r.ok) { const d = await r.json(); setBookingConfig(c => ({ ...c, booking_cover_url: d.booking_cover_url })); notify('Portada actualizada', 'success'); }
-      else notify('Error al subir portada', 'error');
-    } catch { notify('Error de conexion', 'error'); }
+      if (r.ok) { const d = await r.json(); setBookingConfig(c => ({ ...c, booking_cover_url: d.booking_cover_url })); addNotification('Portada actualizada', 'success'); }
+      else addNotification('Error al subir portada', 'error');
+    } catch { addNotification('Error de conexion', 'error'); }
     setCoverUploading(false);
   };
 
@@ -331,23 +331,23 @@ const Settings = () => {
     if (!files.length) return;
     const currentCount = (bookingConfig.gallery_images || []).length;
     const maxNew = 20 - currentCount;
-    if (maxNew <= 0) { notify('Ya tienes 20 imagenes (maximo)', 'error'); return; }
+    if (maxNew <= 0) { addNotification('Ya tienes 20 imagenes (maximo)', 'error'); return; }
     const toUpload = files.slice(0, maxNew);
     const skipped = files.length - toUpload.length;
     setGalleryUploading(true);
     let uploaded = 0;
     for (const file of toUpload) {
-      if (file.size > 2 * 1024 * 1024) { notify(`${file.name} excede 2MB, omitida`, 'error'); continue; }
+      if (file.size > 2 * 1024 * 1024) { addNotification(`${file.name} excede 2MB, omitida`, 'error'); continue; }
       try {
         const form = new FormData();
         form.append('file', file);
         const r = await fetch(`${API_URL}/settings/booking/gallery`, { method: 'POST', credentials: 'include', body: form });
         if (r.ok) { const d = await r.json(); setBookingConfig(c => ({ ...c, gallery_images: d.gallery_images })); uploaded++; }
-        else { const err = await r.json().catch(() => ({})); notify(err.detail || `Error: ${file.name}`, 'error'); }
-      } catch { notify(`Error subiendo ${file.name}`, 'error'); }
+        else { const err = await r.json().catch(() => ({})); addNotification(err.detail || `Error: ${file.name}`, 'error'); }
+      } catch { addNotification(`Error subiendo ${file.name}`, 'error'); }
     }
-    if (uploaded > 0) notify(`${uploaded} imagen${uploaded > 1 ? 'es' : ''} agregada${uploaded > 1 ? 's' : ''}`, 'success');
-    if (skipped > 0) notify(`${skipped} imagen${skipped > 1 ? 'es' : ''} omitida${skipped > 1 ? 's' : ''} (limite 20)`, 'error');
+    if (uploaded > 0) addNotification(`${uploaded} imagen${uploaded > 1 ? 'es' : ''} agregada${uploaded > 1 ? 's' : ''}`, 'success');
+    if (skipped > 0) addNotification(`${skipped} imagen${skipped > 1 ? 'es' : ''} omitida${skipped > 1 ? 's' : ''} (limite 20)`, 'error');
     setGalleryUploading(false);
     e.target.value = '';
   };
@@ -358,7 +358,7 @@ const Settings = () => {
   };
 
   const handleSyncGoogleReviews = async () => {
-    if (!bookingConfig.google_place_id) { notify('Ingresa primero tu Google Place ID', 'error'); return; }
+    if (!bookingConfig.google_place_id) { addNotification('Ingresa primero tu Google Place ID', 'error'); return; }
     await handleSaveBooking();
     setSyncingReviews(true);
     try {
@@ -366,9 +366,9 @@ const Settings = () => {
       if (r.ok) {
         const d = await r.json();
         setBookingConfig(c => ({ ...c, booking_google_rating: d.rating, booking_google_total_reviews: d.total_reviews, booking_google_reviews: d.reviews }));
-        notify(`Resenas sincronizadas: ${d.rating} estrellas (${d.total_reviews} opiniones)`, 'success');
-      } else { const err = await r.json().catch(() => ({})); notify(err.detail || 'Error al sincronizar', 'error'); }
-    } catch { notify('Error de conexion', 'error'); }
+        addNotification(`Resenas sincronizadas: ${d.rating} estrellas (${d.total_reviews} opiniones)`, 'success');
+      } else { const err = await r.json().catch(() => ({})); addNotification(err.detail || 'Error al sincronizar', 'error'); }
+    } catch { addNotification('Error de conexion', 'error'); }
     setSyncingReviews(false);
   };
 
@@ -1273,7 +1273,7 @@ const Settings = () => {
                   <label>Link publico de reservas</label>
                   <div style={{ padding: '10px 14px', background: '#f1f5f9', borderRadius: 8, fontSize: '0.88rem', color: '#1e293b', wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ flex: 1 }}>{window.location.origin}{import.meta.env.BASE_URL || '/'}book/{bookingConfig.slug}</span>
-                    <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL || '/'}book/${bookingConfig.slug}`); notify('Link copiado', 'success'); }} style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}>Copiar</button>
+                    <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}${import.meta.env.BASE_URL || '/'}book/${bookingConfig.slug}`); addNotification('Link copiado', 'success'); }} style={{ padding: '4px 12px', borderRadius: 6, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}>Copiar</button>
                   </div>
                 </div>
               )}
