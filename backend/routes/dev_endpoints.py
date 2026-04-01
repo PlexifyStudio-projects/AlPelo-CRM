@@ -1284,7 +1284,7 @@ def update_platform_config(data: dict, db: Session = Depends(get_db), user: Admi
         raise HTTPException(status_code=400, detail="No se enviaron configuraciones")
 
     # Which keys are secrets
-    SECRET_KEYS = {"META_APP_SECRET"}
+    SECRET_KEYS = {"META_APP_SECRET", "GOOGLE_PLACES_API_KEY"}
 
     updated = []
     for key, value in items.items():

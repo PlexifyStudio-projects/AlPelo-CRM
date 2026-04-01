@@ -890,9 +890,11 @@ def sync_google_reviews(db: Session = Depends(get_db), user=Depends(get_current_
     place_id = getattr(tenant, 'google_place_id', None)
     if not place_id:
         raise HTTPException(400, "Configura primero tu Google Place ID")
-    api_key = os.environ.get("GOOGLE_PLACES_API_KEY")
+    # Read key from PlatformConfig (DB) first, fallback to env var
+    pc = db.query(PlatformConfig).filter(PlatformConfig.key == "GOOGLE_PLACES_API_KEY").first()
+    api_key = (pc.value if pc and pc.value else None) or os.environ.get("GOOGLE_PLACES_API_KEY")
     if not api_key:
-        raise HTTPException(500, "GOOGLE_PLACES_API_KEY no configurada en el servidor")
+        raise HTTPException(500, "GOOGLE_PLACES_API_KEY no configurada. Pidele al developer que la agregue en el panel Dev > Platform Config.")
     try:
         resp = httpx.get(
             "https://maps.googleapis.com/maps/api/place/details/json",

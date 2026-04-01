@@ -15,6 +15,7 @@ const META_KEYS = [
   { key: 'META_APP_ID', label: 'App ID', placeholder: 'Ej: 123456789012345', secret: false, help: 'Lo encuentras en developers.facebook.com > Tu App > Configuracion basica' },
   { key: 'META_APP_SECRET', label: 'App Secret', placeholder: 'Ej: abc123def456...', secret: true, help: 'Secreto de la app. NUNCA compartir. Se usa para OAuth server-side.' },
   { key: 'META_REDIRECT_URI', label: 'Redirect URI', placeholder: 'https://plexifystudio-projects.github.io/oauth-callback.html', secret: false, help: 'URL exacta que configuraste en Facebook Login > Configuracion > URIs de redireccionamiento validos' },
+  { key: 'GOOGLE_PLACES_API_KEY', label: 'Google Places API Key', placeholder: 'AIzaSy...', secret: true, help: 'Para sincronizar resenas de Google en las paginas de booking. Obtener en Google Cloud Console > APIs & Services > Credentials.' },
 ];
 
 const SECTIONS = [
