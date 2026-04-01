@@ -799,8 +799,8 @@ const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) =>
         {/* Header with photo */}
         <div className={`${b}__drawer-hero`}>
           <button className={`${b}__drawer-close`} onClick={onClose}><XIcon size={18} /></button>
-          <div className={`${b}__drawer-avatar`} style={{ background: getAvatarColor(member.name) }}>
-            <span>{getInitials(member.name)}</span>
+          <div className={`${b}__drawer-avatar`} style={{ background: member.photo_url ? 'transparent' : getAvatarColor(member.name) }}>
+            {member.photo_url ? <img src={member.photo_url} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : <span>{getInitials(member.name)}</span>}
             <span className={`${b}__drawer-dot ${member.is_active ? `${b}__drawer-dot--on` : `${b}__drawer-dot--off`}`} />
           </div>
           <h2 className={`${b}__drawer-name`}>{member.name}</h2>
@@ -1146,8 +1146,8 @@ const Team = () => {
               style={{ animationDelay: `${0.03 * (i + 1)}s` }}
               onClick={() => setSelectedId(isSelected ? null : member.id)}
             >
-              <div className={`${b}__card-photo`} style={{ background: getAvatarColor(member.name) }}>
-                <span className={`${b}__card-initials`}>{getInitials(member.name)}</span>
+              <div className={`${b}__card-photo`} style={{ background: member.photo_url ? 'transparent' : getAvatarColor(member.name) }}>
+                {member.photo_url ? <img src={member.photo_url} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : <span className={`${b}__card-initials`}>{getInitials(member.name)}</span>}
                 <span className={`${b}__card-status ${member.is_active ? `${b}__card-status--on` : `${b}__card-status--off`}`} />
               </div>
               <div className={`${b}__card-body`}>
