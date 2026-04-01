@@ -896,27 +896,34 @@ def sync_google_reviews(db: Session = Depends(get_db), user=Depends(get_current_
     if not api_key:
         raise HTTPException(500, "GOOGLE_PLACES_API_KEY no configurada. Pidele al developer que la agregue en el panel Dev > Platform Config.")
     try:
+        # Use Places API (New) — REST endpoint
         resp = httpx.get(
-            "https://maps.googleapis.com/maps/api/place/details/json",
-            params={"place_id": place_id, "fields": "rating,user_ratings_total,reviews", "language": "es", "key": api_key},
+            f"https://places.googleapis.com/v1/places/{place_id}",
+            headers={
+                "X-Goog-Api-Key": api_key,
+                "X-Goog-FieldMask": "rating,userRatingCount,reviews",
+                "Accept-Language": "es",
+            },
             timeout=15,
         )
+        if resp.status_code != 200:
+            err = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+            msg = err.get("error", {}).get("message", resp.text[:200])
+            raise HTTPException(400, f"Google API ({resp.status_code}): {msg}")
         data = resp.json()
-        if data.get("status") != "OK":
-            raise HTTPException(400, f"Google API: {data.get('status')} — {data.get('error_message', '')}")
-        result = data.get("result", {})
         reviews = []
-        for r in result.get("reviews", [])[:5]:
+        for r in data.get("reviews", [])[:5]:
+            author = r.get("authorAttribution", {})
             reviews.append({
-                "name": r.get("author_name", ""),
+                "name": author.get("displayName", ""),
                 "rating": r.get("rating", 5),
-                "date": r.get("relative_time_description", ""),
-                "text": r.get("text", ""),
-                "photo": r.get("profile_photo_url", None),
+                "date": r.get("relativePublishTimeDescription", ""),
+                "text": r.get("text", {}).get("text", "") if isinstance(r.get("text"), dict) else r.get("text", ""),
+                "photo": author.get("photoUri", None),
             })
         from sqlalchemy.orm.attributes import flag_modified
-        tenant.booking_google_rating = result.get("rating")
-        tenant.booking_google_total_reviews = result.get("user_ratings_total")
+        tenant.booking_google_rating = data.get("rating")
+        tenant.booking_google_total_reviews = data.get("userRatingCount")
         tenant.booking_google_reviews = reviews
         flag_modified(tenant, "booking_google_reviews")
         tenant.updated_at = datetime.utcnow()
