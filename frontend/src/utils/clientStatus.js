@@ -1,10 +1,5 @@
 import { daysSince } from './formatters';
 
-// ============================================
-// AlPelo - Client Status Engine
-// Automatic lifecycle management for clients
-// ============================================
-
 export const STATUS = {
   NUEVO: 'nuevo',
   ACTIVO: 'activo',
@@ -44,29 +39,18 @@ export const computeClientStatus = (client, allClients = [], visitHistory = []) 
   const days = daysSince(client.lastVisit);
   const daysSinceFirst = daysSince(client.firstVisit);
 
-  // 1. VIP: 8+ visits/year, top 20% spender, <=1 no-show
   const visitsYear = countVisitsLastYear(client, visitHistory);
   const threshold = computeTop20Threshold(allClients);
   if (visitsYear >= 8 && client.totalSpent >= threshold && (client.noShowCount ?? 0) <= 1 && days <= 45) {
     return STATUS.VIP;
   }
 
-  // 2. Nuevo: 1 visit, within 30 days of first visit
   if (client.totalVisits === 1 && daysSinceFirst <= 30) {
     return STATUS.NUEVO;
   }
 
-  // 3. Activo: last visit within 45 days
-  if (days <= 45) {
-    return STATUS.ACTIVO;
-  }
-
-  // 4. En Riesgo: 46-60 days
-  if (days > 45 && days <= 60) {
-    return STATUS.EN_RIESGO;
-  }
-
-  // 5. Inactivo: >60 days
+  if (days <= 45) return STATUS.ACTIVO;
+  if (days <= 60) return STATUS.EN_RIESGO;
   return STATUS.INACTIVO;
 };
 
@@ -90,15 +74,14 @@ const computeAvgInterval = (client, visitHistory) => {
   return null;
 };
 
-export const enrichClients = (clients, visitHistory = []) => {
-  return clients.map((client) => ({
+export const enrichClients = (clients, visitHistory = []) =>
+  clients.map((client) => ({
     ...client,
     status: computeClientStatus(client, clients, visitHistory),
     avgTicket: client.totalVisits > 0 ? Math.round(client.totalSpent / client.totalVisits) : 0,
     avgVisitInterval: computeAvgInterval(client, visitHistory),
     daysSinceLastVisit: daysSince(client.lastVisit),
   }));
-};
 
 export const computeKPIs = (enrichedClients) => {
   const total = enrichedClients.length;

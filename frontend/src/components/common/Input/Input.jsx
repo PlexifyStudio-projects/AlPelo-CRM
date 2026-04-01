@@ -1,4 +1,6 @@
-const Input = ({ label, type = 'text', name, value, onChange, onBlur, placeholder, error, required, className = '' }) => {
+import { memo } from 'react';
+
+const Input = memo(({ label, type = 'text', name, value, onChange, onBlur, placeholder, error, required, disabled, className = '' }) => {
   const baseClass = 'input';
 
   return (
@@ -13,12 +15,13 @@ const Input = ({ label, type = 'text', name, value, onChange, onBlur, placeholde
         onBlur={onBlur}
         placeholder={placeholder}
         required={required}
+        disabled={disabled}
         aria-required={required}
         aria-invalid={!!error}
       />
       {error && <span className={`${baseClass}__error-message`}>{error}</span>}
     </div>
   );
-};
+});
 
 export default Input;

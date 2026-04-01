@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const b = 'dev-clients';
@@ -36,13 +36,19 @@ const DevClients = () => {
     );
   }
 
-  const active = tenants.filter(t => t.is_active);
-  const inactive = tenants.filter(t => !t.is_active);
-  const totalMRR = active.reduce((s, t) => s + (t.monthly_price || 0), 0);
-  const totalMsgsUsed = tenants.reduce((s, t) => s + (t.messages_used || 0), 0);
-  const totalMsgsLimit = tenants.reduce((s, t) => s + (t.messages_limit || 0), 0);
-  const nearLimit = tenants.filter(t => t.messages_limit > 0 && (t.messages_used / t.messages_limit) >= 0.8);
-  const aiPaused = tenants.filter(t => t.ai_is_paused);
+  const { active, inactive, totalMRR, totalMsgsUsed, totalMsgsLimit, nearLimit, aiPaused } = useMemo(() => {
+    const act = tenants.filter(t => t.is_active);
+    const inact = tenants.filter(t => !t.is_active);
+    return {
+      active: act,
+      inactive: inact,
+      totalMRR: act.reduce((s, t) => s + (t.monthly_price || 0), 0),
+      totalMsgsUsed: tenants.reduce((s, t) => s + (t.messages_used || 0), 0),
+      totalMsgsLimit: tenants.reduce((s, t) => s + (t.messages_limit || 0), 0),
+      nearLimit: tenants.filter(t => t.messages_limit > 0 && (t.messages_used / t.messages_limit) >= 0.8),
+      aiPaused: tenants.filter(t => t.ai_is_paused),
+    };
+  }, [tenants]);
 
   return (
     <div className={b}>
@@ -53,7 +59,6 @@ const DevClients = () => {
         </div>
       </div>
 
-      {/* KPIs */}
       <div className={`${b}__kpis`}>
         <div className={`${b}__kpi`}>
           <span className={`${b}__kpi-value`}>{tenants.length}</span>
@@ -73,7 +78,6 @@ const DevClients = () => {
         </div>
       </div>
 
-      {/* Resumen de consumo */}
       <div className={`${b}__grid`}>
         <div className={`${b}__card`}>
           <h3 className={`${b}__card-title`}>Estado de agencias</h3>
@@ -124,7 +128,6 @@ const DevClients = () => {
         </div>
       </div>
 
-      {/* Tabla de agencias como clientes */}
       {tenants.length > 0 ? (
         <div className={`${b}__section`}>
           <h3 className={`${b}__section-title`}>Detalle por agencia</h3>

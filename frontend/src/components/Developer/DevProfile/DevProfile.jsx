@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const b = 'dev-profile';
@@ -132,7 +132,6 @@ const DevProfile = ({ user, onUpdate }) => {
         <p className={`${b}__subtitle`}>Gestiona tu informacion personal y credenciales</p>
       </div>
 
-      {/* Profile card */}
       <div className={`${b}__card`}>
         <div className={`${b}__card-header`}>
           <div className={`${b}__avatar`}>
@@ -202,7 +201,6 @@ const DevProfile = ({ user, onUpdate }) => {
         </div>
       </div>
 
-      {/* Password card */}
       <div className={`${b}__card`}>
         <div className={`${b}__form`}>
           <h4 className={`${b}__form-section`}>Cambiar contrasena</h4>

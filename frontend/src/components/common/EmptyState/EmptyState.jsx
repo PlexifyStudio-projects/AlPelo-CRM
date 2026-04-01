@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 const DefaultIcon = () => (
   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
@@ -5,7 +7,7 @@ const DefaultIcon = () => (
   </svg>
 );
 
-const EmptyState = ({ icon, title, description, actionLabel, onAction }) => (
+const EmptyState = memo(({ icon, title, description, actionLabel, onAction }) => (
   <div className="empty-state">
     <div className="empty-state__icon">
       {icon || <DefaultIcon />}
@@ -18,6 +20,6 @@ const EmptyState = ({ icon, title, description, actionLabel, onAction }) => (
       </button>
     )}
   </div>
-);
+));
 
 export default EmptyState;

@@ -2,7 +2,6 @@ const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.ra
 
 const headers = { 'Content-Type': 'application/json' };
 
-// Authenticated fetch — sends cookies for auth
 const authFetch = (url, opts = {}) => fetch(url, { ...opts, credentials: 'include' });
 
 const handleResponse = async (res) => {
@@ -14,7 +13,6 @@ const handleResponse = async (res) => {
 };
 
 const whatsappService = {
-  // ========================= CONVERSATIONS =========================
   getConversations: async () => {
     const res = await authFetch(`${API}/whatsapp/conversations`, { headers });
     return handleResponse(res);
@@ -25,7 +23,6 @@ const whatsappService = {
     return handleResponse(res);
   },
 
-  // ========================= MESSAGES =========================
   getMessages: async (conversationId) => {
     const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/messages`, { headers });
     return handleResponse(res);
@@ -40,7 +37,6 @@ const whatsappService = {
     return handleResponse(res);
   },
 
-  // ========================= TEMPLATES =========================
   getMetaTemplates: async () => {
     const res = await authFetch(`${API}/whatsapp/templates`, { headers });
     return handleResponse(res);
@@ -61,7 +57,6 @@ const whatsappService = {
     return handleResponse(res);
   },
 
-  // ========================= MARK AS READ =========================
   markAsRead: async (conversationId) => {
     const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/read`, {
       method: 'PUT',
@@ -70,19 +65,16 @@ const whatsappService = {
     return handleResponse(res);
   },
 
-  // ========================= UNREAD COUNT =========================
   getUnreadCount: async () => {
     const res = await authFetch(`${API}/whatsapp/unread-count`, { headers });
     return handleResponse(res);
   },
 
-  // ========================= SEARCH MESSAGES =========================
   searchMessages: async (query) => {
     const res = await authFetch(`${API}/whatsapp/messages/search?q=${encodeURIComponent(query)}`, { headers });
     return handleResponse(res);
   },
 
-  // ========================= DELETE =========================
   deleteConversation: async (id) => {
     const res = await authFetch(`${API}/whatsapp/conversations/${id}`, { method: 'DELETE', headers });
     return handleResponse(res);
@@ -93,7 +85,6 @@ const whatsappService = {
     return handleResponse(res);
   },
 
-  // ========================= CREATE CONVERSATION =========================
   createConversation: async (phone, name) => {
     const res = await authFetch(`${API}/whatsapp/conversations`, {
       method: 'POST',
@@ -103,13 +94,11 @@ const whatsappService = {
     return handleResponse(res);
   },
 
-  // ========================= STATS =========================
   getStats: async () => {
     const res = await authFetch(`${API}/whatsapp/stats`, { headers });
     return handleResponse(res);
   },
 
-  // ========================= TOGGLE AI =========================
   toggleAi: async (conversationId, isActive) => {
     const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/ai`, {
       method: 'PUT',
@@ -119,7 +108,6 @@ const whatsappService = {
     return handleResponse(res);
   },
 
-  // ========================= TAGS =========================
   updateTags: async (conversationId, tags) => {
     const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/tags`, {
       method: 'PUT',

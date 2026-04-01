@@ -60,7 +60,7 @@ const Inventory = () => {
     try {
       const data = await fetchApi('/inventory/categories');
       setCategories(data || []);
-    } catch { /* silent */ }
+    } catch {}
   }, []);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
@@ -132,7 +132,6 @@ const Inventory = () => {
         </button>
       </div>
 
-      {/* KPI Cards */}
       <div className={`${b}__kpis`}>
         <div className={`${b}__kpi`}>
           <span className={`${b}__kpi-value`}>{summary.total_products || 0}</span>
@@ -156,7 +155,6 @@ const Inventory = () => {
         </div>
       </div>
 
-      {/* Low stock alert banner */}
       {lowStockProducts.length > 0 && (
         <div className={`${b}__alert-banner`}>
           <span className={`${b}__alert-icon`}>!</span>
@@ -165,7 +163,6 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* Filters */}
       <div className={`${b}__filters`}>
         <input
           className={`${b}__search`}
@@ -190,7 +187,6 @@ const Inventory = () => {
         </label>
       </div>
 
-      {/* Product table */}
       {loading ? (
         <div className={`${b}__loading`}>Cargando...</div>
       ) : products.length === 0 ? (
@@ -259,7 +255,6 @@ const Inventory = () => {
         </div>
       )}
 
-      {/* Product Modal */}
       {showModal && createPortal(
         <ProductModal
           product={editProduct}
@@ -270,7 +265,6 @@ const Inventory = () => {
         document.body
       )}
 
-      {/* Stock Adjustment Modal */}
       {showStockModal && createPortal(
         <StockModal
           product={showStockModal}
@@ -282,11 +276,6 @@ const Inventory = () => {
     </div>
   );
 };
-
-
-// ============================================================================
-// PRODUCT MODAL — Create/Edit
-// ============================================================================
 
 const ProductModal = ({ product, categories, onSave, onClose }) => {
   const [form, setForm] = useState({
@@ -390,11 +379,6 @@ const ProductModal = ({ product, categories, onSave, onClose }) => {
     </div>
   );
 };
-
-
-// ============================================================================
-// STOCK ADJUSTMENT MODAL
-// ============================================================================
 
 const StockModal = ({ product, onSave, onClose }) => {
   const [type, setType] = useState('purchase');

@@ -8,18 +8,13 @@ import EmptyState from '../../components/common/EmptyState/EmptyState';
 
 const b = 'services';
 
-// Generic service icon used as fallback for unknown categories
 const GenericServiceIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 8v8" /><path d="M8 12h8" />
   </svg>
 );
 
-// Predefined category styles — these cover common categories across different business types.
-// Categories not listed here will get a generic fallback style.
-// The actual categories come from the backend/tenant config.
 const CATEGORY_META = {
-  // Salon / barbershop
   'Barbería': {
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -66,7 +61,6 @@ const CATEGORY_META = {
     color: '#A78BFA',
     gradient: 'linear-gradient(135deg, #A78BFA 0%, #C4B5FD 100%)',
   },
-  // Generic categories for any business type
   'Consulta': {
     icon: <GenericServiceIcon />,
     color: '#3B82F6',
@@ -84,7 +78,6 @@ const CATEGORY_META = {
   },
 };
 
-// Generate a vibrant color from any category name (deterministic hash → HSL)
 const generateCategoryColor = (name) => {
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -159,7 +152,6 @@ const Services = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Categories come from real data only — no hardcoded list
   const existingCategories = useMemo(() => [...new Set(services.map(s => s.category).filter(Boolean))], [services]);
   const categories = useMemo(() => ['Todos', ...existingCategories], [existingCategories]);
 

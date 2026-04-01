@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const b = 'dev-billing';
@@ -46,7 +46,7 @@ const DevBilling = () => {
       ]);
       if (billingRes.ok) setRecords(await billingRes.json());
       if (tenantsRes.ok) setTenants(await tenantsRes.json());
-    } catch { /* silent */ }
+    } catch {}
     setLoading(false);
   }, []);
 
@@ -95,7 +95,7 @@ const DevBilling = () => {
         setShowForm(false);
         fetchBilling();
       }
-    } catch { /* silent */ }
+    } catch {}
     setSaving(false);
   };
 
@@ -109,7 +109,7 @@ const DevBilling = () => {
         body: JSON.stringify({ status: 'paid' }),
       });
       fetchBilling();
-    } catch { /* silent */ }
+    } catch {}
     setActionLoading(null);
   };
 
@@ -123,7 +123,7 @@ const DevBilling = () => {
         body: JSON.stringify({ status: 'overdue' }),
       });
       fetchBilling();
-    } catch { /* silent */ }
+    } catch {}
     setActionLoading(null);
   };
 
@@ -136,12 +136,14 @@ const DevBilling = () => {
         credentials: 'include',
       });
       fetchBilling();
-    } catch { /* silent */ }
+    } catch {}
     setActionLoading(null);
   };
 
-  const totalPaid = records.filter(r => r.status === 'paid').reduce((sum, r) => sum + r.amount, 0);
-  const totalPending = records.filter(r => r.status === 'pending' || r.status === 'overdue').reduce((sum, r) => sum + r.amount, 0);
+  const { totalPaid, totalPending } = useMemo(() => ({
+    totalPaid: records.filter(r => r.status === 'paid').reduce((sum, r) => sum + r.amount, 0),
+    totalPending: records.filter(r => r.status !== 'paid').reduce((sum, r) => sum + r.amount, 0),
+  }), [records]);
 
   if (loading) {
     return (
@@ -165,7 +167,6 @@ const DevBilling = () => {
         </button>
       </div>
 
-      {/* Summary */}
       <div className={`${b}__summary`}>
         <div className={`${b}__summary-card ${b}__summary-card--success`}>
           <span className={`${b}__summary-value`}>{formatCOP(totalPaid)}</span>
@@ -181,7 +182,6 @@ const DevBilling = () => {
         </div>
       </div>
 
-      {/* Tenant billing status */}
       {tenants.length > 0 && (
         <div className={`${b}__section`}>
           <h2 className={`${b}__section-title`}>Estado de agencias</h2>
@@ -214,7 +214,6 @@ const DevBilling = () => {
         </div>
       )}
 
-      {/* Records table */}
       <div className={`${b}__section`}>
         <h2 className={`${b}__section-title`}>Historial de pagos</h2>
         <div className={`${b}__table-wrap`}>
@@ -296,7 +295,6 @@ const DevBilling = () => {
         </div>
       </div>
 
-      {/* Create Invoice Modal */}
       {showForm && (
         <div className={`${b}__modal-overlay`} onClick={() => setShowForm(false)}>
           <div className={`${b}__modal`} onClick={(e) => e.stopPropagation()}>

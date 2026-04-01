@@ -195,7 +195,6 @@ const AdminProfile = ({ user, onUpdate }) => {
     </svg>
   );
 
-  // Skeleton loader
   const SkeletonLine = ({ width = '100%' }) => (
     <div className={`${b}__skeleton`} style={{ width }} />
   );

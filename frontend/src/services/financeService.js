@@ -10,10 +10,8 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-// Authenticated fetch — sends cookies for auth
 const authFetch = (url, opts = {}) => fetch(url, { ...opts, credentials: 'include' });
 
-// Helper to build query string with optional date range
 const buildQuery = (params = {}) => {
   const query = new URLSearchParams();
   if (params.period) query.set('period', params.period);
@@ -26,7 +24,6 @@ const buildQuery = (params = {}) => {
 };
 
 const financeService = {
-  // ========================= EXPENSES =========================
   listExpenses: async (params = {}) => {
     const qs = buildQuery(params);
     const res = await authFetch(`${API}/expenses/${qs ? `?${qs}` : ''}`, { headers });
@@ -65,7 +62,6 @@ const financeService = {
     return handleResponse(res);
   },
 
-  // ========================= COMMISSIONS =========================
   listCommissions: async () => {
     const res = await authFetch(`${API}/finances/commissions/config`, { headers });
     return handleResponse(res);
@@ -86,7 +82,6 @@ const financeService = {
     return handleResponse(res);
   },
 
-  // ========================= INVOICES =========================
   listInvoices: async (params = {}) => {
     const qs = buildQuery(params);
     const res = await authFetch(`${API}/invoices/${qs ? `?${qs}` : ''}`, { headers });
@@ -124,35 +119,30 @@ const financeService = {
     return handleResponse(res);
   },
 
-  // ========================= UNINVOICED VISITS =========================
   getUninvoicedVisits: async (params = {}) => {
     const qs = buildQuery(params);
     const res = await authFetch(`${API}/finances/uninvoiced-visits${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
-  // ========================= P&L =========================
   getPnL: async (params = {}) => {
     const qs = buildQuery(params);
     const res = await authFetch(`${API}/finances/pnl${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
-  // ========================= PAYMENT METHODS =========================
   paymentMethods: async (params = {}) => {
     const qs = buildQuery(params);
     const res = await authFetch(`${API}/finances/payment-methods${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
-  // ========================= ANALYTICS =========================
   getAnalytics: async (params = {}) => {
     const qs = buildQuery(params);
     const res = await authFetch(`${API}/finances/analytics${qs ? `?${qs}` : ''}`, { headers });
     return handleResponse(res);
   },
 
-  // ========================= EXPORT TRANSACTIONS =========================
   exportTransactions: async (params = {}) => {
     const qs = buildQuery(params);
     const res = await authFetch(`${API}/finances/export${qs ? `?${qs}` : ''}`, { headers: {} });
@@ -160,7 +150,6 @@ const financeService = {
     return res.blob();
   },
 
-  // ========================= EXPORT / IMPORT =========================
   exportClients: async () => {
     const res = await authFetch(`${API}/clients/export`, { headers: {} });
     if (!res.ok) throw new Error('Error al exportar');

@@ -1,15 +1,13 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-
 import { formatPhone } from '../../../utils/formatters';
+
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
 const b = 'checkout-modal';
 
-// ─── Helpers ──────────────────────────────────────
 const fmt = (n) => `$${(n || 0).toLocaleString('es-CO')}`;
 
-// ─── Icons ────────────────────────────────────────
 const CloseIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -41,7 +39,6 @@ const CheckIcon = () => (
   </svg>
 );
 
-// Payment method icons
 const CashIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
     <rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="3" /><line x1="6" y1="12" x2="6.01" y2="12" /><line x1="18" y1="12" x2="18.01" y2="12" />
@@ -62,21 +59,9 @@ const MixedIcon = () => (
     <circle cx="8" cy="12" r="6" /><circle cx="16" cy="12" r="6" />
   </svg>
 );
-const WhatsAppIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-  </svg>
-);
 
-// ─── Step labels ──────────────────────────────────
-const STEPS = [
-  'Servicios',
-  'Descuento y propina',
-  'Pago',
-  'Confirmar',
-];
+const STEPS = ['Servicios', 'Descuento y propina', 'Pago', 'Confirmar'];
 
-// ─── Payment methods ─────────────────────────────
 const PAYMENT_METHODS = [
   { id: 'efectivo', label: 'Efectivo', icon: CashIcon, color: '#10B981' },
   { id: 'nequi', label: 'Nequi', icon: null, color: '#6B21A8' },
@@ -89,10 +74,8 @@ const PAYMENT_METHODS = [
 const DISCOUNT_PERCENTAGES = [5, 10, 15, 20];
 
 const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
-  // ─── Step state ─────────────────────────────────
   const [step, setStep] = useState(0);
 
-  // ─── Step 1: Services + Client ──────────────────
   const [items, setItems] = useState([]);
   const [allServices, setAllServices] = useState([]);
   const [loadingServices, setLoadingServices] = useState(false);
@@ -104,22 +87,18 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const [showClientSearch, setShowClientSearch] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState(null);
 
-  // ─── Step 2: Discount & Tip ─────────────────────
-  const [discountType, setDiscountType] = useState('none'); // none | percent | fixed
+  const [discountType, setDiscountType] = useState('none');
   const [discountPercent, setDiscountPercent] = useState(0);
   const [discountFixed, setDiscountFixed] = useState('');
   const [tipAmount, setTipAmount] = useState('');
 
-  // ─── Step 3: Payment ───────────────────────────
   const [paymentMethod, setPaymentMethod] = useState('');
   const [cashReceived, setCashReceived] = useState('');
   const [mixedRows, setMixedRows] = useState([{ method: '', amount: '' }]);
 
-  // ─── Step 4: Confirm ───────────────────────────
   const [sendWhatsApp, setSendWhatsApp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ─── Load services on mount ────────────────────
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -139,7 +118,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     }]);
   }, [appointment]);
 
-  // Client search
   useEffect(() => {
     if (clientSearch.length < 2) { setClientResults([]); return; }
     const timer = setTimeout(async () => {
@@ -156,22 +134,15 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       setLoadingServices(true);
       try {
         const res = await fetch(`${API_URL}/services/?active=true`, { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          setAllServices(data);
-        }
-      } catch { /* silent */ }
+        if (res.ok) setAllServices(await res.json());
+      } catch {}
       setLoadingServices(false);
     };
     fetchServices();
   }, []);
 
-  // ─── Computed values ───────────────────────────
   const subtotal = useMemo(() => items.reduce((s, i) => s + (i.price || 0), 0), [items]);
-
-  // Commission estimate (50% default)
-  const commissionRate = 0.5;
-  const commissionAmount = useMemo(() => Math.round(subtotal * commissionRate), [subtotal]);
+  const commissionAmount = useMemo(() => Math.round(subtotal * 0.5), [subtotal]);
 
   const discountAmount = useMemo(() => {
     if (discountType === 'percent') return Math.round(subtotal * (discountPercent / 100));
@@ -180,7 +151,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   }, [discountType, discountPercent, discountFixed, subtotal]);
 
   const tip = useMemo(() => parseInt(tipAmount, 10) || 0, [tipAmount]);
-
   const total = useMemo(() => Math.max(0, subtotal - discountAmount + tip), [subtotal, discountAmount, tip]);
 
   const cashChange = useMemo(() => {
@@ -199,7 +169,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     return allServices.filter(s => s.name.toLowerCase().includes(q) || (s.category || '').toLowerCase().includes(q));
   }, [allServices, serviceSearch]);
 
-  // ─── Can proceed? ─────────────────────────────
   const canProceed = useMemo(() => {
     if (step === 0) return items.length > 0;
     if (step === 1) return true;
@@ -212,7 +181,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     return true;
   }, [step, items, paymentMethod, cashReceived, total, mixedTotal, mixedRows]);
 
-  // ─── Handlers ─────────────────────────────────
   const addServiceItem = useCallback((svc) => {
     setItems(prev => [...prev, {
       id: crypto.randomUUID(),
@@ -295,28 +263,14 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       alert(msg || 'Error al procesar el cobro');
     }
     setSubmitting(false);
-  }, [appointment, items, subtotal, discountType, discountPercent, discountFixed, discountAmount, tip, total, paymentMethod, cashReceived, cashChange, mixedRows, sendWhatsApp, onCompleted]);
+  }, [appointment, selectedClientId, clientName, items, subtotal, discountType, discountPercent, discountFixed, discountAmount, tip, total, paymentMethod, cashReceived, cashChange, mixedRows, sendWhatsApp, onCompleted]);
 
   if (!appointment) return null;
 
-  // ─── Payment method label for receipt ─────────
   const getPaymentLabel = (id) => PAYMENT_METHODS.find(p => p.id === id)?.label || id;
 
-  // ─── Render Steps ─────────────────────────────
-  const renderStep = () => {
-    switch (step) {
-      case 0: return renderServices();
-      case 1: return renderDiscount();
-      case 2: return renderPayment();
-      case 3: return renderConfirm();
-      default: return null;
-    }
-  };
-
-  // ── Step 1: Services ──────────────────────────
   const renderServices = () => (
     <div className={`${b}__step`}>
-      {/* Client selector */}
       <div className={`${b}__client-row`}>
         <span className={`${b}__client-label`}>Cliente:</span>
         {showClientSearch ? (
@@ -354,7 +308,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       </div>
 
       <div className={`${b}__items`}>
-        {items.map((item, idx) => (
+        {items.map((item) => (
           <div key={item.id} className={`${b}__item`}>
             <div className={`${b}__item-info`}>
               <span className={`${b}__item-name`}>{item.service_name}</span>
@@ -413,7 +367,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     </div>
   );
 
-  // ── Step 2: Discount & Tip ────────────────────
   const renderDiscount = () => (
     <div className={`${b}__step`}>
       <div className={`${b}__section`}>
@@ -521,7 +474,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     </div>
   );
 
-  // ── Step 3: Payment Method ────────────────────
   const renderPayment = () => (
     <div className={`${b}__step`}>
       <div className={`${b}__payment-grid`}>
@@ -620,7 +572,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     </div>
   );
 
-  // ── Step 4: Confirm ───────────────────────────
   const renderConfirm = () => (
     <div className={`${b}__step`}>
       <div className={`${b}__receipt`}>
@@ -672,7 +623,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           </div>
         )}
 
-        {/* Staff + commission */}
         <div className={`${b}__receipt-staff`} style={{ borderTop: '1px dashed #E2E8F0', marginTop: '12px', paddingTop: '12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748B' }}>
             <span>Profesional:</span>
@@ -696,10 +646,19 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     </div>
   );
 
+  const renderStep = () => {
+    switch (step) {
+      case 0: return renderServices();
+      case 1: return renderDiscount();
+      case 2: return renderPayment();
+      case 3: return renderConfirm();
+      default: return null;
+    }
+  };
+
   return createPortal(
     <div className={`${b}__overlay`} onClick={onClose}>
       <div className={`${b}`} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
         <div className={`${b}__header`}>
           <h2 className={`${b}__title`}>Cobrar</h2>
           <button className={`${b}__close`} onClick={onClose} type="button" aria-label="Cerrar">
@@ -707,7 +666,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           </button>
         </div>
 
-        {/* Step indicator */}
         <div className={`${b}__steps`}>
           {STEPS.map((label, idx) => (
             <div
@@ -721,12 +679,10 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           ))}
         </div>
 
-        {/* Step content */}
         <div className={`${b}__body`}>
           {renderStep()}
         </div>
 
-        {/* Footer navigation */}
         {step < 3 && (
           <div className={`${b}__footer`}>
             {step > 0 && (

@@ -1,13 +1,14 @@
 const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
+const handleError = async (res, fallbackMsg) => {
+  const err = await res.json().catch(() => ({}));
+  throw new Error(err.detail || fallbackMsg);
+};
+
 const settingsService = {
-  // --- OAuth flow ---
   getMetaAuthUrl: async () => {
     const res = await fetch(`${_API}/settings/meta/auth-url`, { credentials: 'include' });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al obtener URL de autorizacion');
-    }
+    if (!res.ok) await handleError(res, 'Error al obtener URL de autorizacion');
     return res.json();
   },
 
@@ -18,10 +19,7 @@ const settingsService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al intercambiar token');
-    }
+    if (!res.ok) await handleError(res, 'Error al intercambiar token');
     return res.json();
   },
 
@@ -31,14 +29,10 @@ const settingsService = {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al renovar token');
-    }
+    if (!res.ok) await handleError(res, 'Error al renovar token');
     return res.json();
   },
 
-  // --- Manual token management ---
   updateMetaToken: async (data) => {
     const res = await fetch(`${_API}/settings/meta-token`, {
       method: 'PUT',
@@ -46,10 +40,7 @@ const settingsService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al actualizar token');
-    }
+    if (!res.ok) await handleError(res, 'Error al actualizar token');
     return res.json();
   },
 
@@ -65,10 +56,7 @@ const settingsService = {
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al desconectar');
-    }
+    if (!res.ok) await handleError(res, 'Error al desconectar');
     return res.json();
   },
 
@@ -78,7 +66,6 @@ const settingsService = {
     return res.json();
   },
 
-  // --- WhatsApp Business Profile ---
   getWhatsAppProfile: async () => {
     const res = await fetch(`${_API}/settings/whatsapp-profile`, { credentials: 'include' });
     if (!res.ok) return { profile: null };
@@ -92,10 +79,7 @@ const settingsService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al actualizar perfil');
-    }
+    if (!res.ok) await handleError(res, 'Error al actualizar perfil');
     return res.json();
   },
 
@@ -107,10 +91,7 @@ const settingsService = {
       credentials: 'include',
       body: formData,
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Error al actualizar foto');
-    }
+    if (!res.ok) await handleError(res, 'Error al actualizar foto');
     return res.json();
   },
 };

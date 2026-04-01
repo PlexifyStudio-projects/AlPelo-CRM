@@ -1,12 +1,6 @@
 import { Component, lazy, Suspense } from 'react';
 
-// ============================================
-// Plexify Studio — Unified App
-// Public routes → Landing (marketing site)
-// Everything else → CRM app (auth required)
-// ============================================
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, ''); // e.g. "/AlPelo-CRM"
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const LANDING_PATHS = [
   '/', '/about', '/features', '/pricing', '/contact',
@@ -15,7 +9,6 @@ const LANDING_PATHS = [
 ];
 
 function isLandingRoute() {
-  // Strip the base prefix to get the clean path
   const raw = window.location.pathname;
   const path = raw.startsWith(BASE) ? raw.slice(BASE.length) || '/' : raw;
 
@@ -25,7 +18,6 @@ function isLandingRoute() {
   return false;
 }
 
-// Lazy load both apps — only one loads at a time
 const LandingRouter = lazy(() => import('./routes/LandingRouter'));
 const CRMShell = lazy(() => import('./CRMShell'));
 
@@ -39,7 +31,6 @@ class ErrorBoundary extends Component {
   }
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
-    console.error('ErrorBoundary caught:', error, errorInfo);
   }
   render() {
     if (this.state.hasError) {

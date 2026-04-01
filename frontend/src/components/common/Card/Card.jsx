@@ -1,4 +1,6 @@
-const Card = ({ title, children, className = '', actions }) => {
+import { memo } from 'react';
+
+const Card = memo(({ title, children, className = '', actions }) => {
   const baseClass = 'card';
 
   return (
@@ -14,6 +16,6 @@ const Card = ({ title, children, className = '', actions }) => {
       </div>
     </div>
   );
-};
+});
 
 export default Card;

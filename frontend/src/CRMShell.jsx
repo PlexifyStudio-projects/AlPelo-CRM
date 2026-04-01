@@ -1,9 +1,3 @@
-// ============================================
-// CRM Shell — The authenticated CRM application
-// This is the original AlPelo CRM, untouched.
-// Loaded only when user is NOT on a landing page.
-// ============================================
-
 import './styles/main.scss';
 import { AuthProvider } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';

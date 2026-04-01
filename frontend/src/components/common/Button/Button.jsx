@@ -1,4 +1,6 @@
-const Button = ({ children, variant = 'primary', size = 'md', onClick, disabled = false, type = 'button', className = '' }) => {
+import { memo } from 'react';
+
+const Button = memo(({ children, variant = 'primary', size = 'md', onClick, disabled = false, type = 'button', className = '' }) => {
   const baseClass = 'button';
   const classes = `${baseClass} ${baseClass}--${variant} ${baseClass}--${size} ${className}`.trim();
 
@@ -7,6 +9,6 @@ const Button = ({ children, variant = 'primary', size = 'md', onClick, disabled 
       {children}
     </button>
   );
-};
+});
 
 export default Button;

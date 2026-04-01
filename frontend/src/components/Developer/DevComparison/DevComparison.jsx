@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const b = 'dev-comparison';
@@ -57,8 +57,10 @@ const DevComparison = () => {
 
   const tenants = data?.tenants || [];
   const activeMetric = METRICS.find((m) => m.key === metric) || METRICS[0];
-  const sorted = [...tenants].sort((a, b2) => (b2[metric] || 0) - (a[metric] || 0));
-  const maxVal = sorted.length ? (sorted[0][metric] || 1) : 1;
+  const { sorted, maxVal } = useMemo(() => {
+    const s = [...tenants].sort((a, b2) => (b2[metric] || 0) - (a[metric] || 0));
+    return { sorted: s, maxVal: s.length ? (s[0][metric] || 1) : 1 };
+  }, [tenants, metric]);
 
   return (
     <div className={b}>
@@ -72,7 +74,6 @@ const DevComparison = () => {
         </button>
       </div>
 
-      {/* Metric selector */}
       <div className={`${b}__metrics`}>
         {METRICS.map((m) => (
           <button
@@ -86,7 +87,6 @@ const DevComparison = () => {
         ))}
       </div>
 
-      {/* SVG Bar Chart */}
       <div className={`${b}__chart`}>
         <svg viewBox={`0 0 800 ${Math.max(sorted.length * 48, 100)}`} className={`${b}__svg`}>
           {sorted.map((t, i) => {
@@ -107,7 +107,6 @@ const DevComparison = () => {
         </svg>
       </div>
 
-      {/* Rankings Table */}
       <div className={`${b}__table-wrap`}>
         <table className={`${b}__table`}>
           <thead>

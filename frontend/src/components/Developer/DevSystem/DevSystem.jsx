@@ -67,14 +67,12 @@ const DevSystem = () => {
   const [loading, setLoading] = useState(true);
   const [openSection, setOpenSection] = useState(null);
 
-  // Meta
   const [metaConfig, setMetaConfig] = useState({});
   const [metaEditing, setMetaEditing] = useState(false);
   const [metaForm, setMetaForm] = useState({});
   const [metaSaving, setMetaSaving] = useState(false);
   const [metaMsg, setMetaMsg] = useState('');
 
-  // AI Providers
   const [providers, setProviders] = useState([]);
   const [providerTypes, setProviderTypes] = useState([]);
   const [addingProvider, setAddingProvider] = useState(false);
@@ -82,12 +80,10 @@ const DevSystem = () => {
   const [providerSaving, setProviderSaving] = useState(false);
   const [editingProvider, setEditingProvider] = useState(null);
   const [editForm, setEditForm] = useState({});
-  const [toast, setToast] = useState(null); // { type: 'success'|'error', title, message }
+  const [toast, setToast] = useState(null);
 
-  // Costs
   const [costs, setCosts] = useState(null);
 
-  // Origins
   const [origins, setOrigins] = useState([]);
   const [newOrigin, setNewOrigin] = useState('');
   const [originsSaving, setOriginsSaving] = useState(false);
@@ -112,20 +108,18 @@ const DevSystem = () => {
       if (prov.status === 'fulfilled') { setProviders(prov.value.providers || []); setProviderTypes(prov.value.available_types || []); }
       if (cost.status === 'fulfilled') setCosts(cost.value);
       if (orig.status === 'fulfilled') setOrigins(orig.value.origins || []);
-    } catch { /* partial ok */ }
+    } catch {}
     setLoading(false);
   }, [apiFetch]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Auto-dismiss toast
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 6000);
     return () => clearTimeout(timer);
   }, [toast]);
 
-  // Meta save
   const handleMetaSave = async () => {
     setMetaSaving(true); setMetaMsg('');
     try {
@@ -137,7 +131,6 @@ const DevSystem = () => {
     setMetaSaving(false);
   };
 
-  // AI Provider save
   const handleAddProvider = async () => {
     setProviderSaving(true);
     try {
@@ -145,7 +138,7 @@ const DevSystem = () => {
       setAddingProvider(false);
       setNewProvider({ name: '', provider_type: 'anthropic', api_key: '', model: 'claude-sonnet-4-20250514' });
       fetchAll();
-    } catch { /* */ }
+    } catch {}
     setProviderSaving(false);
   };
 
@@ -153,13 +146,12 @@ const DevSystem = () => {
     try {
       const result = await apiFetch(`/dev/ai-providers/${id}/health-check`, { method: 'POST' });
       if (result.status === 'down') {
-        // Parse the error to extract the actual message
         let errorMsg = result.error || 'Error desconocido';
         try {
           const parsed = JSON.parse(errorMsg.replace(/^HTTP \d+: /, ''));
           if (parsed.error?.message) errorMsg = parsed.error.message;
           else if (parsed.message) errorMsg = parsed.message;
-        } catch { /* use raw */ }
+        } catch {}
         setToast({ type: 'error', title: 'Health check fallido', message: errorMsg });
       } else {
         setToast({ type: 'success', title: 'Proveedor saludable', message: 'La conexion con la API funciona correctamente.' });
@@ -176,34 +168,33 @@ const DevSystem = () => {
       await apiFetch(`/dev/ai-providers/${id}`, { method: 'PUT', body: JSON.stringify(editForm) });
       setEditingProvider(null);
       fetchAll();
-    } catch { /* */ }
+    } catch {}
     setProviderSaving(false);
   };
 
   const handleSetPrimary = async (id) => {
-    try { await apiFetch(`/dev/ai-providers/${id}`, { method: 'PUT', body: JSON.stringify({ is_primary: true }) }); fetchAll(); } catch { /* */ }
+    try { await apiFetch(`/dev/ai-providers/${id}`, { method: 'PUT', body: JSON.stringify({ is_primary: true }) }); fetchAll(); } catch {}
   };
 
   const handleDeleteProvider = async (id) => {
-    try { await apiFetch(`/dev/ai-providers/${id}`, { method: 'DELETE' }); fetchAll(); } catch { /* */ }
+    try { await apiFetch(`/dev/ai-providers/${id}`, { method: 'DELETE' }); fetchAll(); } catch {}
   };
 
   const handleToggleProvider = async (id, active) => {
-    try { await apiFetch(`/dev/ai-providers/${id}`, { method: 'PUT', body: JSON.stringify({ is_active: !active }) }); fetchAll(); } catch { /* */ }
+    try { await apiFetch(`/dev/ai-providers/${id}`, { method: 'PUT', body: JSON.stringify({ is_active: !active }) }); fetchAll(); } catch {}
   };
 
-  // Origins
   const handleAddOrigin = async () => {
     if (!newOrigin.trim()) return;
     const updated = [...origins, newOrigin.trim()];
     setOriginsSaving(true);
-    try { await apiFetch('/dev/allowed-origins', { method: 'PUT', body: JSON.stringify({ origins: updated }) }); setOrigins(updated); setNewOrigin(''); } catch { /* */ }
+    try { await apiFetch('/dev/allowed-origins', { method: 'PUT', body: JSON.stringify({ origins: updated }) }); setOrigins(updated); setNewOrigin(''); } catch {}
     setOriginsSaving(false);
   };
 
   const handleRemoveOrigin = async (idx) => {
     const updated = origins.filter((_, i) => i !== idx);
-    try { await apiFetch('/dev/allowed-origins', { method: 'PUT', body: JSON.stringify({ origins: updated }) }); setOrigins(updated); } catch { /* */ }
+    try { await apiFetch('/dev/allowed-origins', { method: 'PUT', body: JSON.stringify({ origins: updated }) }); setOrigins(updated); } catch {}
   };
 
   const toggleSection = (id) => setOpenSection((prev) => (prev === id ? null : id));
@@ -217,8 +208,6 @@ const DevSystem = () => {
     );
   }
 
-  const d = data || {};
-  const envVars = d.environment_vars || {};
   const selectedType = providerTypes.find((t) => t.id === newProvider.provider_type);
   const STATUS_COLORS = { healthy: '#10B981', degraded: '#F59E0B', down: '#EF4444', unknown: '#94A3B8' };
 
@@ -231,7 +220,6 @@ const DevSystem = () => {
         </div>
       </div>
 
-      {/* Cards Grid */}
       <div className={`${b}__grid`}>
         {SECTIONS.map((s) => (
           <button key={s.id} className={`${b}__card ${openSection === s.id ? `${b}__card--active` : ''}`} onClick={() => toggleSection(s.id)} style={{ '--c1': s.color1, '--c2': s.color2 }}>
@@ -246,12 +234,10 @@ const DevSystem = () => {
         ))}
       </div>
 
-      {/* Panel */}
       {openSection && (
         <div className={`${b}__panel`} key={openSection}>
           <div className={`${b}__panel-content`}>
 
-            {/* ─── META ─── */}
             {openSection === 'meta' && (
               <>
                 <div className={`${b}__panel-header`}>
@@ -293,7 +279,6 @@ const DevSystem = () => {
               </>
             )}
 
-            {/* ─── AI PROVIDERS ─── */}
             {openSection === 'ai' && (
               <>
                 <div className={`${b}__panel-header`}>
@@ -301,7 +286,6 @@ const DevSystem = () => {
                   <p>Configura multiples proveedores de IA. El <strong>primario</strong> se usa para todo (Lina, estrategia, prospector). Si falla, el sistema puede usar el <strong>fallback</strong> automaticamente. Las API keys se guardan en la base de datos, no en Railway.</p>
                 </div>
 
-                {/* Provider List */}
                 {providers.length === 0 ? (
                   <div className={`${b}__empty-msg`}>Sin proveedores configurados. Agrega Claude como primario.</div>
                 ) : (
@@ -309,7 +293,6 @@ const DevSystem = () => {
                     {providers.map((p) => (
                       <div key={p.id} className={`${b}__provider ${p.is_primary ? `${b}__provider--primary` : ''} ${!p.is_active ? `${b}__provider--inactive` : ''}`}>
                         {editingProvider === p.id ? (
-                          /* ─── Edit Mode ─── */
                           <div className={`${b}__provider-edit`}>
                             <div className={`${b}__provider-edit-grid`}>
                               <div className={`${b}__field`}>
@@ -339,7 +322,6 @@ const DevSystem = () => {
                             </div>
                           </div>
                         ) : (
-                          /* ─── Display Mode ─── */
                           <>
                             <div className={`${b}__provider-left`}>
                               <span className={`${b}__provider-status`} style={{ background: STATUS_COLORS[p.status] || '#94A3B8' }} title={p.status} />
@@ -383,7 +365,6 @@ const DevSystem = () => {
                   </div>
                 )}
 
-                {/* Add Provider Form */}
                 {addingProvider ? (
                   <div className={`${b}__form`} style={{ marginTop: 20 }}>
                     <div className={`${b}__field`}>
@@ -417,7 +398,6 @@ const DevSystem = () => {
               </>
             )}
 
-            {/* ─── COSTS ─── */}
             {openSection === 'costs' && costs && (
               <>
                 <div className={`${b}__panel-header`}>
@@ -425,7 +405,6 @@ const DevSystem = () => {
                   <p>Proveedor: <strong>{costs.provider?.name}</strong> ({costs.provider?.model}) — Blended rate: ${costs.provider?.blended_rate}/MTok — TRM: ${costs.trm?.toLocaleString('es-CO')} COP</p>
                 </div>
 
-                {/* This month summary */}
                 <div className={`${b}__cost-summary`}>
                   <div className={`${b}__cost-card`}>
                     <span className={`${b}__cost-card-value`}>{formatCOP(costs.this_month?.cost_cop)}</span>
@@ -444,7 +423,6 @@ const DevSystem = () => {
                   </div>
                 </div>
 
-                {/* By tenant */}
                 <h4 className={`${b}__cost-section-title`}>Por agencia este mes</h4>
                 <div className={`${b}__info-list`}>
                   {(costs.this_month?.by_tenant || []).map((t) => (
@@ -457,7 +435,6 @@ const DevSystem = () => {
                   ))}
                 </div>
 
-                {/* By action */}
                 <h4 className={`${b}__cost-section-title`}>Estimado por tipo de accion</h4>
                 <div className={`${b}__info-list`}>
                   <div className={`${b}__info-row`}>
@@ -474,7 +451,6 @@ const DevSystem = () => {
                   </div>
                 </div>
 
-                {/* History */}
                 {(costs.history || []).filter((h) => h.tokens > 0).length > 0 && (
                   <>
                     <h4 className={`${b}__cost-section-title`}>Historial mensual</h4>
@@ -491,7 +467,6 @@ const DevSystem = () => {
               </>
             )}
 
-            {/* ─── ORIGINS ─── */}
             {openSection === 'origins' && (
               <>
                 <div className={`${b}__panel-header`}>
@@ -515,7 +490,6 @@ const DevSystem = () => {
               </>
             )}
 
-            {/* ─── SECURITY ─── */}
             {openSection === 'security' && (
               <>
                 <div className={`${b}__panel-header`}>
@@ -556,7 +530,6 @@ const DevSystem = () => {
         </div>
       )}
 
-      {/* Toast notification */}
       {toast && (
         <div className={`${b}__toast ${b}__toast--${toast.type}`} onClick={() => setToast(null)}>
           <div className={`${b}__toast-icon`}>

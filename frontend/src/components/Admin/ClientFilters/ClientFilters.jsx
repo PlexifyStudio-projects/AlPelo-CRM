@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 
-const ClientFilters = ({ onSearch, onFilterStatus, activeStatus, counts }) => {
+const ClientFilters = memo(({ onSearch, onFilterStatus, activeStatus, counts }) => {
   const [searchValue, setSearchValue] = useState('');
   const b = 'client-filters';
 
-  const handleSearch = (e) => {
+  const handleSearch = useCallback((e) => {
     setSearchValue(e.target.value);
     onSearch(e.target.value);
-  };
+  }, [onSearch]);
+
+  const handleClear = useCallback(() => {
+    setSearchValue('');
+    onSearch('');
+  }, [onSearch]);
 
   const statuses = [
     { id: 'all', label: 'Todos', count: counts?.total },
@@ -33,7 +38,7 @@ const ClientFilters = ({ onSearch, onFilterStatus, activeStatus, counts }) => {
           onChange={handleSearch}
         />
         {searchValue && (
-          <button className={`${b}__search-clear`} onClick={() => { setSearchValue(''); onSearch(''); }}>
+          <button className={`${b}__search-clear`} onClick={handleClear}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -77,6 +82,6 @@ const ClientFilters = ({ onSearch, onFilterStatus, activeStatus, counts }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ClientFilters;

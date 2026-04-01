@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useNotification } from '../../../context/NotificationContext';
 
 const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
@@ -17,21 +17,15 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
     unreadCount,
   } = useNotification();
 
-  // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) {
-        setIsProfileOpen(false);
-      }
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setIsNotificationsOpen(false);
-      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) setIsProfileOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setIsNotificationsOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close on Escape
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -49,8 +43,7 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
   };
 
   const formatTimeAgo = (timestamp) => {
-    const now = new Date();
-    const diff = Math.floor((now - new Date(timestamp)) / 1000);
+    const diff = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
     if (diff < 60) return 'Ahora';
     if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
     if (diff < 86400) return `Hace ${Math.floor(diff / 3600)}h`;
@@ -93,30 +86,24 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
     }
   };
 
-  const handleToggleNotifications = () => {
-    setIsNotificationsOpen(!isNotificationsOpen);
+  const handleToggleNotifications = useCallback(() => {
+    setIsNotificationsOpen(prev => !prev);
     setIsProfileOpen(false);
-  };
+  }, []);
 
-  const handleToggleProfile = () => {
-    setIsProfileOpen(!isProfileOpen);
+  const handleToggleProfile = useCallback(() => {
+    setIsProfileOpen(prev => !prev);
     setIsNotificationsOpen(false);
-  };
+  }, []);
 
-  const handleNotificationClick = (notif) => {
-    if (!notif.read) {
-      markAsRead(notif.id);
-    }
-  };
+  const handleNotificationClick = useCallback((notif) => {
+    if (!notif.read) markAsRead(notif.id);
+  }, [markAsRead]);
 
   return (
     <header className={b}>
       {isMobile && (
-        <button
-          className={`${b}__hamburger`}
-          onClick={onOpenMobileMenu}
-          aria-label="Abrir menu"
-        >
+        <button className={`${b}__hamburger`} onClick={onOpenMobileMenu} aria-label="Abrir menu">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <line x1="3" y1="6" x2="21" y2="6" />
             <line x1="3" y1="12" x2="21" y2="12" />
@@ -125,7 +112,6 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
         </button>
       )}
       <div className={`${b}__actions`}>
-        {/* Notification Bell */}
         <div className={`${b}__notification`} ref={notifRef}>
           <button
             className={`${b}__notification-btn ${isNotificationsOpen ? `${b}__notification-btn--active` : ''}`}
@@ -152,10 +138,7 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
                 </div>
                 <div className={`${b}__notif-actions`}>
                   {unreadCount > 0 && (
-                    <button
-                      className={`${b}__notif-mark-read`}
-                      onClick={markAllAsRead}
-                    >
+                    <button className={`${b}__notif-mark-read`} onClick={markAllAsRead}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
@@ -163,10 +146,7 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
                     </button>
                   )}
                   {notifications.length > 0 && (
-                    <button
-                      className={`${b}__notif-clear`}
-                      onClick={clearAll}
-                    >
+                    <button className={`${b}__notif-clear`} onClick={clearAll}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="3 6 5 6 21 6" />
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -196,10 +176,7 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
                       </div>
                       <button
                         className={`${b}__notif-dismiss`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeNotification(notif.id);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); removeNotification(notif.id); }}
                         aria-label="Descartar notificacion"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -229,10 +206,7 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
         <div className={`${b}__divider`} />
 
         <div className={`${b}__profile`} ref={profileRef}>
-          <button
-            className={`${b}__profile-trigger`}
-            onClick={handleToggleProfile}
-          >
+          <button className={`${b}__profile-trigger`} onClick={handleToggleProfile}>
             <div className={`${b}__avatar`}>
               {getInitials(user?.name)}
             </div>
@@ -308,4 +282,4 @@ const Header = ({ user, onLogout, onNavigate, isMobile, onOpenMobileMenu }) => {
   );
 };
 
-export default Header;
+export default memo(Header);

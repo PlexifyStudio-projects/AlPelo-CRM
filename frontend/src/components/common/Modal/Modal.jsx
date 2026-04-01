@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 
-const Modal = ({ isOpen, onClose, title, children, className = '' }) => {
+const Modal = memo(({ isOpen, onClose, title, children, className = '' }) => {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -47,6 +47,6 @@ const Modal = ({ isOpen, onClose, title, children, className = '' }) => {
     </div>,
     document.body
   );
-};
+});
 
 export default Modal;

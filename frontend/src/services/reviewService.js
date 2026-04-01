@@ -1,7 +1,6 @@
 const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
 const STORAGE_KEY = 'plexify_reviews_config';
-const REVIEWS_KEY = 'plexify_reviews_data';
 
 const DEFAULT_CONFIG = {
   googleReviewsUrl: '',
@@ -14,7 +13,6 @@ const DEFAULT_CONFIG = {
   ownerNotification: 'Cliente {{nombre}} califico {{rating}}/5 despues de su visita. Motivo: {{feedback}}. Contactar: {{phone}}',
 };
 
-// Mock recent reviews for display
 const MOCK_REVIEWS = [
   { id: 'rv_1', clientName: 'Carlos Ramirez', phone: '+57 310 555 1234', date: '2026-03-15T14:30:00', rating: 5, feedback: 'Excelente servicio, muy profesional el corte.', status: 'sent_to_google' },
   { id: 'rv_2', clientName: 'Andres Gomez', phone: '+57 315 555 5678', date: '2026-03-15T11:00:00', rating: 2, feedback: 'Tuve que esperar mucho tiempo.', status: 'escalated' },
@@ -34,13 +32,7 @@ const MOCK_STATS = {
   averageRating: 4.2,
   positiveRedirected: 94,
   issuesEscalated: 18,
-  distribution: {
-    1: 5,
-    2: 8,
-    3: 15,
-    4: 38,
-    5: 61,
-  },
+  distribution: { 1: 5, 2: 8, 3: 15, 4: 38, 5: 61 },
 };
 
 const reviewService = {
@@ -48,7 +40,7 @@ const reviewService = {
     try {
       const res = await fetch(`${API}/reviews/config`, { credentials: 'include' });
       if (res.ok) return await res.json();
-    } catch (e) { /* fallback below */ }
+    } catch { /* fallback below */ }
     const stored = localStorage.getItem(STORAGE_KEY);
     return stored ? JSON.parse(stored) : { ...DEFAULT_CONFIG };
   },
@@ -62,7 +54,7 @@ const reviewService = {
         body: JSON.stringify(config),
       });
       if (res.ok) return await res.json();
-    } catch (e) { /* fallback below */ }
+    } catch { /* fallback below */ }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
     return config;
   },
@@ -71,7 +63,7 @@ const reviewService = {
     try {
       const res = await fetch(`${API}/reviews/stats?period=${period}`, { credentials: 'include' });
       if (res.ok) return await res.json();
-    } catch (e) { /* fallback below */ }
+    } catch { /* fallback below */ }
     return { ...MOCK_STATS };
   },
 
@@ -79,7 +71,7 @@ const reviewService = {
     try {
       const res = await fetch(`${API}/reviews/recent?limit=${limit}`, { credentials: 'include' });
       if (res.ok) return await res.json();
-    } catch (e) { /* fallback below */ }
+    } catch { /* fallback below */ }
     return MOCK_REVIEWS.slice(0, limit);
   },
 };

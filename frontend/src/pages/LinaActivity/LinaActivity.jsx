@@ -3,7 +3,6 @@ import EmptyState from '../../components/common/EmptyState/EmptyState';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
-// ===== ICONS =====
 const Icons = {
   pulse: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -103,7 +102,6 @@ const LinaActivity = () => {
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState(null);
   const [filter, setFilter] = useState('all');
-  const isLive = true; // Always live — status indicator only
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [tokenStatus, setTokenStatus] = useState(null);
@@ -130,8 +128,7 @@ const LinaActivity = () => {
         feedRef.current.scrollTop = 0;
       }
       prevCountRef.current = data.events?.length || 0;
-    } catch (err) {
-      console.error('Activity fetch error:', err);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -148,7 +145,7 @@ const LinaActivity = () => {
     try {
       const resp = await fetch(`${API_URL}/lina/memory`, { credentials: 'include' });
       if (resp.ok) setMemory(await resp.json());
-    } catch { /* silent */ }
+    } catch {}
   }, []);
 
   const saveNewRule = useCallback(async () => {
@@ -165,7 +162,7 @@ const LinaActivity = () => {
         setNewRule('');
         fetchMemory(); // refresh
       }
-    } catch { /* silent */ }
+    } catch {}
     finally { setSavingRule(false); }
   }, [newRule, newRuleCategory, savingRule, fetchMemory]);
 
@@ -179,7 +176,7 @@ const LinaActivity = () => {
         await fetch(`${API_URL}/client-notes/${strId.slice(1)}`, { method: 'DELETE', credentials: 'include' });
       }
       fetchMemory();
-    } catch { /* silent */ }
+    } catch {}
   }, [fetchMemory]);
 
   useEffect(() => {
@@ -205,7 +202,6 @@ const LinaActivity = () => {
 
   return (
     <div className="lina-activity">
-      {/* Header */}
       <div className="lina-activity__header">
         <div className="lina-activity__header-left">
           <div className="lina-activity__title-row">
@@ -227,7 +223,6 @@ const LinaActivity = () => {
         </div>
       </div>
 
-      {/* Token Status */}
       {tokenStatus && (
         <div className={`lina-activity__token-bar lina-activity__token-bar--${tokenStatus.status}`}>
           <span className={`lina-activity__token-dot lina-activity__token-dot--${tokenStatus.status}`} />
@@ -237,7 +232,6 @@ const LinaActivity = () => {
         </div>
       )}
 
-      {/* Stats */}
       {stats && (
         <div className="lina-activity__stats">
           {statCards.map((card, i) => (
@@ -252,7 +246,6 @@ const LinaActivity = () => {
         </div>
       )}
 
-      {/* Aprendizaje de Lina — Always visible */}
       <div className="lina-activity__memory">
         <button
           className="lina-activity__memory-toggle"
@@ -275,7 +268,6 @@ const LinaActivity = () => {
 
         {showMemory && (
           <div className="lina-activity__memory-body">
-            {/* Input field — admin teaches Lina */}
             <div className="lina-activity__memory-input">
               <div className="lina-activity__memory-input-row">
                 <select
@@ -312,7 +304,6 @@ const LinaActivity = () => {
               <span className="lina-activity__memory-hint">Lina procesará tu instrucción, la mejorará y la guardará como regla permanente</span>
             </div>
 
-            {/* Items list */}
             {!memory || memory.total === 0 ? (
               <div className="lina-activity__memory-empty">
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -357,7 +348,6 @@ const LinaActivity = () => {
         )}
       </div>
 
-      {/* Filter bar */}
       <div className="lina-activity__filters">
         <div className="lina-activity__filter-pills">
           {FILTER_OPTIONS.map(opt => (
@@ -375,7 +365,6 @@ const LinaActivity = () => {
         </span>
       </div>
 
-      {/* Event feed */}
       <div className="lina-activity__feed" ref={feedRef}>
         {loading ? (
           <div className="lina-activity__loading">

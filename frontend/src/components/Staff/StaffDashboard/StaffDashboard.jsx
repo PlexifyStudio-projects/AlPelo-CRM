@@ -34,9 +34,7 @@ const StaffDashboard = ({ user, onNavigate }) => {
         ]);
         setStats(s);
         setNotifications(n);
-      } catch (err) {
-        console.error('Error loading staff dashboard:', err);
-      } finally {
+      } catch { /* silent */ } finally {
         setLoading(false);
       }
     };
@@ -50,13 +48,11 @@ const StaffDashboard = ({ user, onNavigate }) => {
 
   return (
     <div className={b}>
-      {/* Greeting */}
       <div className={`${b}__greeting`}>
         <h1>{getGreeting()}, {(user?.name || stats.staff_name || '').split(' ')[0]}</h1>
         <p>{stats.staff_role} &middot; {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
       </div>
 
-      {/* KPI Cards */}
       <div className={`${b}__kpis`}>
         <div className={`${b}__kpi`}>
           <div className={`${b}__kpi-icon ${b}__kpi-icon--blue`}><CalendarIcon /></div>
@@ -88,7 +84,6 @@ const StaffDashboard = ({ user, onNavigate }) => {
         </div>
       </div>
 
-      {/* Next appointment highlight */}
       {stats.next_appointment && (
         <div className={`${b}__next-appt`}>
           <div className={`${b}__next-appt-label`}>Proxima cita</div>
@@ -102,7 +97,6 @@ const StaffDashboard = ({ user, onNavigate }) => {
         </div>
       )}
 
-      {/* Notifications stack */}
       <div className={`${b}__notifications`}>
         <div className={`${b}__section-header`}>
           <BellIcon />
@@ -126,7 +120,6 @@ const StaffDashboard = ({ user, onNavigate }) => {
         )}
       </div>
 
-      {/* Quick actions */}
       <div className={`${b}__actions`}>
         <button className={`${b}__action-btn`} onClick={() => onNavigate('staff-agenda')}>
           <CalendarIcon /> Ver mi agenda completa <ArrowRight />

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
@@ -41,7 +41,7 @@ const DevDashboard = ({ onNavigate }) => {
       if (s.status === 'fulfilled') setStats(s.value);
       if (wa.status === 'fulfilled') setWaHealth(wa.value);
       if (al.status === 'fulfilled') setAlerts(al.value);
-    } catch { /* partial data ok */ }
+    } catch {}
     setLoading(false);
   }, [apiFetch]);
 
@@ -74,23 +74,22 @@ const DevDashboard = ({ onNavigate }) => {
   const wa = waHealth || {};
   const al = alerts || {};
 
-  // Cost from backend (already calculated with provider rate)
   const tokensMonth = s.total_ai_tokens || 0;
   const costUSD = s.cost_estimate_usd || 0;
   const costCOP = Math.round(costUSD * TRM);
 
-  // Dynamic period label
-  const period = s.period || '';
-  const monthNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-  const periodLabel = period ? `${monthNames[parseInt(period.split('-')[1])]} ${period.split('-')[0]}` : '';
+  const periodLabel = useMemo(() => {
+    const period = s.period || '';
+    if (!period) return '';
+    const monthNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return `${monthNames[parseInt(period.split('-')[1])]} ${period.split('-')[0]}`;
+  }, [s.period]);
 
-  // Real counts from DB
   const linaTotal = s.lina_total || 0;
-  const totalWAMessages = s.total_messages_sent || 0; // persistent counter (sum of tenant.messages_used)
+  const totalWAMessages = s.total_messages_sent || 0;
 
   return (
     <div className={b}>
-      {/* Header */}
       <div className={`${b}__header`}>
         <div>
           <h1 className={`${b}__title`}>Panel Ejecutivo</h1>
@@ -104,7 +103,6 @@ const DevDashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Alerts banner (if any critical) */}
       {al.critical > 0 && (
         <div className={`${b}__alert-banner`} onClick={() => setShowAlertModal(true)}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -146,7 +144,6 @@ const DevDashboard = ({ onNavigate }) => {
         document.body
       )}
 
-      {/* Main KPIs — 4 columns */}
       <div className={`${b}__kpis`}>
         <div className={`${b}__kpi`}>
           <div className={`${b}__kpi-icon ${b}__kpi-icon--primary`}>
@@ -193,7 +190,6 @@ const DevDashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Operations KPIs — 4 columns */}
       <div className={`${b}__kpi-section`}>
         <h3 className={`${b}__kpi-section-title`}>Operaciones del mes</h3>
         <div className={`${b}__kpis`}>
@@ -243,7 +239,6 @@ const DevDashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* WhatsApp section — full width, clean */}
       <div className={`${b}__section`}>
         <div className={`${b}__section-header`}>
           <h2 className={`${b}__section-title`}>WhatsApp</h2>
@@ -292,7 +287,6 @@ const DevDashboard = ({ onNavigate }) => {
         )}
       </div>
 
-      {/* Quick nav cards */}
       <div className={`${b}__quick-nav`}>
         {[
           { id: 'dev-prospector', label: 'Tendencias', desc: 'Prospector de negocios IA', icon: '🔍' },

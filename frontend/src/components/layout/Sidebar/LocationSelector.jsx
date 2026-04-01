@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { useLocation } from '../../../context/LocationContext';
 
 const b = 'sidebar';
 
-export default function LocationSelector() {
+const LocationSelector = () => {
   const { locations, selectedLocationId, selectLocation, currentLocation, hasMultipleLocations, isStaffMode } = useLocation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -14,7 +14,6 @@ export default function LocationSelector() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Don't render if single location or no locations
   if (!hasMultipleLocations) return null;
 
   const label = currentLocation ? currentLocation.name : 'Todas las sedes';
@@ -43,7 +42,7 @@ export default function LocationSelector() {
               <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
             </svg>
             <span>Todas las sedes</span>
-            {!selectedLocationId && <span className={`${b}__location-check`}>✓</span>}
+            {!selectedLocationId && <span className={`${b}__location-check`}>&#10003;</span>}
           </button>
           {locations.map(loc => (
             <button key={loc.id}
@@ -55,11 +54,13 @@ export default function LocationSelector() {
               </svg>
               <span>{loc.name}</span>
               {loc.is_default && <span className={`${b}__location-badge`}>Principal</span>}
-              {selectedLocationId === loc.id && <span className={`${b}__location-check`}>✓</span>}
+              {selectedLocationId === loc.id && <span className={`${b}__location-check`}>&#10003;</span>}
             </button>
           ))}
         </div>
       )}
     </div>
   );
-}
+};
+
+export default memo(LocationSelector);

@@ -10,7 +10,6 @@ import { formatPhone } from '../../utils/formatters';
 
 const b = 'agenda';
 
-// ─── Constants ───────────────────────────────────────
 const DAYS_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DAYS_FULL = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -18,10 +17,10 @@ const HOURS_START = 7;
 const HOURS_END = 21;
 const TOTAL_HOURS = HOURS_END - HOURS_START;
 const HOURS = Array.from({ length: TOTAL_HOURS }, (_, i) => HOURS_START + i);
-const SLOT_MIN = 15; // each slot = 15 minutes
+const SLOT_MIN = 15;
 const SLOTS_PER_HOUR = 60 / SLOT_MIN;
 const TOTAL_SLOTS = TOTAL_HOURS * SLOTS_PER_HOUR;
-const CARD_H = 30; // px per event card (including gap)
+const CARD_H = 30;
 const STAFF_COLORS = ['#2D5A3D', '#3B82F6', '#E05292', '#C9A84C', '#8B5CF6', '#F97316', '#14B8A6', '#EC4899', '#06B6D4', '#EF4444'];
 
 const STATUS_META = {
@@ -32,7 +31,6 @@ const STATUS_META = {
   no_show: { label: 'No asistió', color: '#D4A017', icon: 'alert' },
 };
 
-// ─── Helpers ─────────────────────────────────────────
 const pad2 = (n) => String(n).padStart(2, '0');
 const toISO = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
@@ -80,13 +78,11 @@ const getMonday = (date) => {
 const getWeekDays = (monday) =>
   Array.from({ length: 7 }, (_, i) => { const d = new Date(monday); d.setDate(d.getDate() + i); return d; });
 
-// ─── Slot index: which 15-min slot does this time fall in? ──
 const getSlotIndex = (time) => {
   const m = timeToMin(time);
   return Math.max(0, Math.min(Math.floor((m - HOURS_START * 60) / SLOT_MIN), TOTAL_SLOTS - 1));
 };
 
-// ─── Icons ───────────────────────────────────────────
 const ChevronLeft = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>;
 const ChevronRight = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 6 15 12 9 18" /></svg>;
 const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
@@ -103,21 +99,19 @@ const ScissorsIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill=
 const ChevronDown = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>;
 const EmptyCalIcon = () => <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="9" y1="14" x2="15" y2="14" /><line x1="12" y1="11" x2="12" y2="17" /></svg>;
 
-// ─── Error boundary wrapper ──────────────────────────
 class AgendaErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { error: null }; }
   static getDerivedStateFromError(error) { return { error }; }
-  componentDidCatch(error, info) { console.error('Agenda crash:', error, info); }
+  componentDidCatch() {}
   render() {
     if (this.state.error) return <div style={{ padding: 40, color: 'red' }}><h2>Error en Agenda</h2><pre>{this.state.error.message}{'\n'}{this.state.error.stack}</pre></div>;
     return this.props.children;
   }
 }
 
-// ═════════════════════════════════════════════════════
 const AgendaInner = ({ staffOnlyId = null }) => {
   const isStaffMode = !!staffOnlyId;
-  // ── Calendar states ──
+
   const [view, setView] = useState(() => window.innerWidth < 576 ? 'day' : 'week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
@@ -128,13 +122,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [showStaffDrop, setShowStaffDrop] = useState(false);
   const staffDropRef = useRef(null);
 
-  // ── Modal states ──
+
   const [showModal, setShowModal] = useState(false);
   const [editingApt, setEditingApt] = useState(null);
   const [formData, setFormData] = useState({ date: toISO(new Date()), notes: '', status: 'confirmed' });
   const [submitting, setSubmitting] = useState(false);
 
-  // ── Modal: client ──
+
   const [clientSearch, setClientSearch] = useState('');
   const [clientResults, setClientResults] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
@@ -158,11 +152,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [staffPaymentCode, setStaffPaymentCode] = useState('');
   const [staffCompleting, setStaffCompleting] = useState(false);
 
-  // ── Precision Scheduling: optimal slots ──
-  const [optimalSlots, setOptimalSlots] = useState(null);
-  const [showOptimal, setShowOptimal] = useState(false);
-
-  // ── Smart Search ──
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
@@ -174,27 +163,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const loadOptimalSlots = useCallback(async () => {
-    try {
-      const dateStr = toISO(new Date());
-      const url = `${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/schedule/optimal-slots?target=${dateStr}`;
-      const resp = await fetch(url, { credentials: 'include' });
-      const data = await resp.json();
-      if (resp.ok) {
-        setOptimalSlots(data);
-      } else {
-        console.error('[OptimalSlots] Error:', data);
-        setOptimalSlots({ staff: [] });
-      }
-    } catch (e) {
-      console.error('[OptimalSlots] Fetch error:', e);
-      setOptimalSlots({ staff: [] });
-    }
-  }, []);
-
-  useEffect(() => { if (showOptimal) loadOptimalSlots(); }, [showOptimal, loadOptimalSlots]);
-
-  // ── Drag-and-drop rescheduling ──
   const [draggingApt, setDraggingApt] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);  // { date, time }
 
@@ -245,8 +213,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   // ─── Calendar derived ──────────────────────────────
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
-  const columns = view === 'week' ? weekDays : [currentDate];
-  const baseSlotH = view === 'week' ? 28 : 32; // height per 15-min slot (taller for visibility)
+  const columns = useMemo(() => view === 'week' ? weekDays : [currentDate], [view, weekDays, currentDate]);
+  const baseSlotH = view === 'week' ? 28 : 32;
   const gridCols = view === 'week' ? '56px repeat(7, 1fr)' : '56px 1fr';
 
   const staffColorMap = useMemo(() => {
@@ -262,7 +230,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   }, [services]);
 
   // ─── Modal derived ─────────────────────────────────
-  const selectedServiceIds = serviceAssignments.map(a => a.serviceId);
+  const selectedServiceIds = useMemo(() => serviceAssignments.map(a => a.serviceId), [serviceAssignments]);
 
   const totalDuration = useMemo(() =>
     serviceAssignments.reduce((sum, a) => sum + (serviceMap[a.serviceId]?.duration_minutes || 0), 0),

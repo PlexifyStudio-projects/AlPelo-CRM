@@ -78,9 +78,7 @@ const DevHealth = () => {
         </div>
       </div>
 
-      {/* Health Cards Grid */}
       <div className={`${b}__grid`}>
-        {/* Database */}
         <div className={`${b}__card ${b}__card--${dbInfo?.status === 'healthy' ? 'ok' : 'warn'}`}>
           <div className={`${b}__card-header`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
@@ -107,7 +105,6 @@ const DevHealth = () => {
           </div>
         </div>
 
-        {/* WhatsApp */}
         <div className={`${b}__card ${whatsapp?.disconnected > 0 ? `${b}__card--warn` : `${b}__card--ok`}`}>
           <div className={`${b}__card-header`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
@@ -147,7 +144,6 @@ const DevHealth = () => {
           )}
         </div>
 
-        {/* AI */}
         <div className={`${b}__card ${ai?.status === 'operational' ? `${b}__card--ok` : `${b}__card--crit`}`}>
           <div className={`${b}__card-header`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2h0a2 2 0 01-2 2v3a2 2 0 01-4 0v-3a2 2 0 01-2-2h0a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/></svg>
@@ -166,7 +162,6 @@ const DevHealth = () => {
           </div>
         </div>
 
-        {/* Errors */}
         <div className={`${b}__card ${errors?.last_hour >= 5 ? `${b}__card--crit` : errors?.last_hour > 0 ? `${b}__card--warn` : `${b}__card--ok`}`}>
           <div className={`${b}__card-header`}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -188,7 +183,6 @@ const DevHealth = () => {
         </div>
       </div>
 
-      {/* System Info */}
       <div className={`${b}__system`}>
         <h3 className={`${b}__section-title`}>Informacion del Sistema</h3>
         <div className={`${b}__sys-grid`}>

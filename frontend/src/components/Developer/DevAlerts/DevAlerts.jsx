@@ -87,7 +87,6 @@ const DevAlerts = () => {
         </button>
       </div>
 
-      {/* Filters */}
       <div className={`${b}__filters`}>
         {[
           { key: 'all', label: `Todas (${alerts.length})` },
@@ -105,7 +104,6 @@ const DevAlerts = () => {
         ))}
       </div>
 
-      {/* Alert Cards */}
       {filtered.length === 0 ? (
         <div className={`${b}__empty`}>
           <div className={`${b}__empty-icon`}>

@@ -5,9 +5,6 @@ import contentGeneratorService from '../../services/contentGeneratorService';
 
 const B = 'content-studio';
 
-// =============================================
-// SVG Icons
-// =============================================
 const ImageIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -205,9 +202,6 @@ const BarChartIcon = () => (
   </svg>
 );
 
-// =============================================
-// Constants
-// =============================================
 const CONTENT_TYPES = [
   {
     id: 'image',
@@ -335,9 +329,6 @@ const STATUS_META = {
   failed: { label: 'Fallido', className: 'failed' },
 };
 
-// =============================================
-// Mock Data
-// =============================================
 const MOCK_STATS = {
   generated: 24,
   published: 18,
@@ -511,9 +502,6 @@ const TYPE_COLORS = {
   story: '#8B5CF6',
 };
 
-// =============================================
-// Main Component
-// =============================================
 const ContentStudio = () => {
   const { addNotification } = useNotification();
   const workspaceRef = useRef(null);
@@ -543,7 +531,6 @@ const ContentStudio = () => {
   const [overlayColor, setOverlayColor] = useState('#FFFFFF');
   const [overlayBgOpacity, setOverlayBgOpacity] = useState(0.5);
   const [overlayFontSize, setOverlayFontSize] = useState(48);
-  const canvasRef = useRef(null);
 
   // Brand Kit
   const [brandKit, setBrandKit] = useState({
@@ -644,7 +631,6 @@ const ContentStudio = () => {
     };
   }, [history]);
 
-  // ─── Generators ──────────────────────────────────
   // Render image with text overlay using Canvas API and download
   const renderAndDownload = useCallback(() => {
     const imgSrc = generatedContent?.url || generatedContent?.media_url;
@@ -1011,7 +997,6 @@ const ContentStudio = () => {
     setGenerating(false);
   };
 
-  // ─── Publish from preview ──────────────────────────
   const handlePublishFromPreview = async () => {
     if (!generatedContent) return;
     setGenerating(true);
@@ -1041,7 +1026,6 @@ const ContentStudio = () => {
     setGenerating(false);
   };
 
-  // ─── Brand Kit save ────────────────────────────────
   const handleSaveBrandKit = async () => {
     try {
       await contentGeneratorService.saveBrandKit(brandKit);
@@ -1051,14 +1035,12 @@ const ContentStudio = () => {
     }
   };
 
-  // ─── Delete history item ───────────────────────────
   const handleDeleteHistoryItem = (id) => {
     contentGeneratorService.deleteFromHistory(id);
     setHistory((prev) => prev.filter((item) => item.id !== id));
     addNotification('Elemento eliminado del historial', 'info');
   };
 
-  // ─── Platform toggle ──────────────────────────────
   const togglePlatform = (platform, setter, current) => {
     if (current.includes(platform)) {
       if (current.length > 1) setter(current.filter((p) => p !== platform));
@@ -1067,7 +1049,6 @@ const ContentStudio = () => {
     }
   };
 
-  // ─── AI Suggestion click ──────────────────────────
   const handleSuggestionClick = (suggestion) => {
     setSelectedType(suggestion.type);
     if (suggestion.type === 'quick' && suggestion.fill?.topic) {
@@ -1102,9 +1083,6 @@ const ContentStudio = () => {
 
   return (
     <div className={B}>
-      {/* ════════════════════════════════════════════
-          HERO HEADER
-         ════════════════════════════════════════════ */}
       <div className={`${B}__hero`}>
         <div className={`${B}__hero-content`}>
           <div className={`${B}__hero-text`}>
@@ -1150,9 +1128,6 @@ const ContentStudio = () => {
         </div>
       </div>
 
-      {/* ════════════════════════════════════════════
-          CONTENT TYPE SELECTOR
-         ════════════════════════════════════════════ */}
       <div className={`${B}__types`}>
         <div className={`${B}__types-grid`}>
           {CONTENT_TYPES.map((type, idx) => {
@@ -1191,9 +1166,6 @@ const ContentStudio = () => {
         </div>
       </div>
 
-      {/* ════════════════════════════════════════════
-          WORKSPACE — Split Panel (Config + Preview)
-         ════════════════════════════════════════════ */}
       {selectedType && (
         <div className={`${B}__workspace`} ref={workspaceRef}>
           <div className={`${B}__workspace-panels`}>
@@ -1749,9 +1721,6 @@ const ContentStudio = () => {
         </div>
       )}
 
-      {/* ════════════════════════════════════════════
-          CONTENT CALENDAR (Weekly)
-         ════════════════════════════════════════════ */}
       <div className={`${B}__calendar`}>
         <div className={`${B}__calendar-header`}>
           <h3 className={`${B}__calendar-title`}>
@@ -1823,9 +1792,6 @@ const ContentStudio = () => {
         )}
       </div>
 
-      {/* ════════════════════════════════════════════
-          BRAND KIT (Collapsible)
-         ════════════════════════════════════════════ */}
       <div className={`${B}__brand-kit`}>
         <button
           className={`${B}__brand-kit-toggle`}
@@ -1918,9 +1884,6 @@ const ContentStudio = () => {
         )}
       </div>
 
-      {/* ════════════════════════════════════════════
-          HISTORY GRID (Improved)
-         ════════════════════════════════════════════ */}
       <div className={`${B}__history`}>
         <div className={`${B}__history-header`}>
           <h3 className={`${B}__history-title`}>
@@ -2015,9 +1978,6 @@ const ContentStudio = () => {
         )}
       </div>
 
-      {/* ════════════════════════════════════════════
-          AI SUGGESTIONS — Floating Button + Panel
-         ════════════════════════════════════════════ */}
       <button
         className={`${B}__ai-fab`}
         onClick={() => setShowAiPanel(!showAiPanel)}
@@ -2055,12 +2015,6 @@ const ContentStudio = () => {
         </div>
       )}
 
-      {/* ════════════════════════════════════════════
-          PREVIEW / PUBLISH MODAL
-         ════════════════════════════════════════════ */}
-      {/* ════════════════════════════════════════════
-         GENERATION PROGRESS MODAL
-         ════════════════════════════════════════════ */}
       {generating && createPortal(
         <div className={`${B}__overlay ${B}__overlay--progress`}>
           <div className={`${B}__progress-modal`} onClick={(e) => e.stopPropagation()}>

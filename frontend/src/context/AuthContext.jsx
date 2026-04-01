@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import authService from '../services/authService';
 import { registerPush } from '../services/pushService';
 
@@ -39,7 +39,6 @@ export const AuthProvider = ({ children }) => {
         setUser(restoredUser);
         setIsAuthenticated(true);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(restoredUser));
-        // Register push notifications silently
         registerPush().catch(() => {});
       } else {
         localStorage.removeItem(STORAGE_KEY);
@@ -51,24 +50,21 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, []);
 
-  // Listen for session-replaced events (another device logged in with this account)
   useEffect(() => {
     const handleSessionReplaced = () => {
       setUser(null);
       setIsAuthenticated(false);
       setLoading(false);
       localStorage.removeItem(STORAGE_KEY);
-      // Flag so Login page shows the message (no reload needed, React re-renders to Login)
       sessionStorage.setItem('session_replaced', '1');
     };
     window.addEventListener('session-replaced', handleSessionReplaced);
     return () => window.removeEventListener('session-replaced', handleSessionReplaced);
   }, []);
 
-  const login = async (username, password, forceSession = false) => {
+  const login = useCallback(async (username, password, forceSession = false) => {
     const credentials = await authService.verifyCredentials(username, password);
 
-    // Single-device session enforcement
     if (credentials.has_active_session && !forceSession) {
       const err = new Error('Hay otra sesion activa con esta cuenta. ¿Deseas cerrarla e iniciar aqui?');
       err.code = 'ACTIVE_SESSION';
@@ -76,7 +72,6 @@ export const AuthProvider = ({ children }) => {
       throw err;
     }
 
-    // If forcing, close the other session first
     if (forceSession && credentials.has_active_session) {
       await authService.forceLogout(credentials.user_id, credentials.role);
     }
@@ -102,27 +97,30 @@ export const AuthProvider = ({ children }) => {
     setUser(loggedUser);
     setIsAuthenticated(true);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedUser));
-    // Register push notifications
     registerPush().catch(() => {});
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem(STORAGE_KEY);
-  };
+  }, []);
 
-  const updateProfile = (updates) => {
+  const updateProfile = useCallback((updates) => {
     setUser((prev) => {
       const updated = { ...prev, ...updates };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       return updated;
     });
-  };
+  }, []);
+
+  const value = useMemo(() => ({
+    user, isAuthenticated, loading, login, logout, updateProfile,
+  }), [user, isAuthenticated, loading, login, logout, updateProfile]);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, loading, login, logout, updateProfile }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

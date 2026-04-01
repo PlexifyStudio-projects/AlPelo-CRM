@@ -11,10 +11,9 @@ const handleResponse = async (res) => {
 };
 
 const contentGeneratorService = {
-  // ========================= IMAGE GENERATION =========================
   generateImage: async ({ prompt, style, dimensions, brandColors }) => {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+    const timeout = setTimeout(() => controller.abort(), 120000);
     try {
       const res = await fetch(`${API}/content-studio/generate-image`, {
         method: 'POST',
@@ -29,7 +28,6 @@ const contentGeneratorService = {
     }
   },
 
-  // ========================= VIDEO GENERATION =========================
   generateVideo: async ({ script, avatarStyle, language, duration, background }) => {
     try {
       const res = await fetch(`${API}/content-studio/generate-video`, {
@@ -55,7 +53,6 @@ const contentGeneratorService = {
     }
   },
 
-  // ========================= CAPTION GENERATION =========================
   generateCaption: async ({ topic, tone, platform, language }) => {
     try {
       const res = await fetch(`${API}/content-studio/generate-caption`, {
@@ -84,10 +81,8 @@ const contentGeneratorService = {
     }
   },
 
-  // ========================= PUBLISH TO META =========================
   publishToMeta: async ({ contentId, mediaUrl, caption, platforms, scheduledTime }) => {
     try {
-      // If we have a real content ID, use the publish endpoint
       if (contentId && typeof contentId === 'number') {
         const res = await fetch(`${API}/content-studio/publish/${contentId}`, {
           method: 'POST',
@@ -97,7 +92,6 @@ const contentGeneratorService = {
         });
         return handleResponse(res);
       }
-      // Fallback: create content first, then publish
       const createRes = await fetch(`${API}/content-studio/content`, {
         method: 'POST',
         headers,
@@ -125,17 +119,12 @@ const contentGeneratorService = {
     }
   },
 
-  // ========================= META STATUS =========================
-  getMetaStatus: async () => {
-    // TODO: add real Meta status endpoint later
-    return {
-      connected: false,
-      facebook: { connected: false, page_name: null },
-      instagram: { connected: false, account_name: null },
-    };
-  },
+  getMetaStatus: async () => ({
+    connected: false,
+    facebook: { connected: false, page_name: null },
+    instagram: { connected: false, account_name: null },
+  }),
 
-  // ========================= BRAND KIT =========================
   getBrandKit: async () => {
     try {
       const res = await fetch(`${API}/content-studio/brand-kit`, {
@@ -144,7 +133,6 @@ const contentGeneratorService = {
       });
       return handleResponse(res);
     } catch {
-      // Load from localStorage as fallback
       try {
         const saved = localStorage.getItem('plexify_brand_kit');
         if (saved) return JSON.parse(saved);
@@ -171,17 +159,14 @@ const contentGeneratorService = {
         body: JSON.stringify(brandKit),
       });
       const result = await handleResponse(res);
-      // Also cache in localStorage
       localStorage.setItem('plexify_brand_kit', JSON.stringify(result));
       return result;
     } catch {
-      // Save to localStorage as fallback
       localStorage.setItem('plexify_brand_kit', JSON.stringify(brandKit));
       return brandKit;
     }
   },
 
-  // ========================= HISTORY (Content List) =========================
   getHistory: async (page = 1, limit = 20) => {
     try {
       const res = await fetch(`${API}/content-studio/content?page=${page}&limit=${limit}`, {
@@ -190,7 +175,6 @@ const contentGeneratorService = {
       });
       return handleResponse(res);
     } catch {
-      // Load from localStorage fallback
       try {
         const saved = localStorage.getItem('plexify_content_history');
         if (saved) return { items: JSON.parse(saved), total: JSON.parse(saved).length };
@@ -200,7 +184,6 @@ const contentGeneratorService = {
   },
 
   saveToHistory: async (item) => {
-    // Try to save to backend
     try {
       const res = await fetch(`${API}/content-studio/content`, {
         method: 'POST',
@@ -221,7 +204,6 @@ const contentGeneratorService = {
       });
       return handleResponse(res);
     } catch {
-      // Fallback to localStorage
       try {
         const saved = JSON.parse(localStorage.getItem('plexify_content_history') || '[]');
         saved.unshift(item);
@@ -233,7 +215,6 @@ const contentGeneratorService = {
   },
 
   deleteFromHistory: async (id) => {
-    // Try backend first
     try {
       if (typeof id === 'number') {
         const res = await fetch(`${API}/content-studio/content/${id}`, {
@@ -244,7 +225,6 @@ const contentGeneratorService = {
         return handleResponse(res);
       }
     } catch { /* fallback below */ }
-    // Fallback to localStorage
     try {
       const saved = JSON.parse(localStorage.getItem('plexify_content_history') || '[]');
       const filtered = saved.filter((item) => item.id !== id);
@@ -252,7 +232,6 @@ const contentGeneratorService = {
     } catch { /* ignore */ }
   },
 
-  // ========================= STATS =========================
   getStats: async () => {
     try {
       const res = await fetch(`${API}/content-studio/stats`, {
@@ -265,7 +244,6 @@ const contentGeneratorService = {
     }
   },
 
-  // ========================= AI SUGGESTIONS =========================
   getSuggestions: async () => {
     try {
       const res = await fetch(`${API}/content-studio/suggestions`, {

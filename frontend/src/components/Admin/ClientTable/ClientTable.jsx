@@ -1,7 +1,8 @@
+import { memo, useCallback } from 'react';
 import { daysSince, formatCurrency, formatDate, formatPhone } from '../../../utils/formatters';
 import { STATUS_META } from '../../../utils/clientStatus';
 
-const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
+const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
   const b = 'client-table';
 
   const getStatusLabel = (status) => STATUS_META[status]?.label || status;
@@ -39,7 +40,6 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
 
   return (
     <div className={b}>
-      {/* Desktop: Table view */}
       <div className={`${b}__wrapper`}>
         <table className={`${b}__table`}>
           <thead className={`${b}__head`}>
@@ -138,7 +138,6 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
         </table>
       </div>
 
-      {/* Mobile: Card view */}
       <div className={`${b}__cards`}>
         {clients.map((client, index) => (
           <div
@@ -189,6 +188,6 @@ const ClientTable = ({ clients, onClientClick, sortConfig, onSort }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ClientTable;

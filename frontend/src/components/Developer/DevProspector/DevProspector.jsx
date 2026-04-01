@@ -31,12 +31,10 @@ const DevProspector = () => {
   const [editingNotes, setEditingNotes] = useState(null);
   const [notesText, setNotesText] = useState('');
 
-  // Generator state
   const [city, setCity] = useState('Bucaramanga');
   const [selectedCats, setSelectedCats] = useState(['Peluquerias', 'Barberias', 'Restaurantes']);
   const [count, setCount] = useState(10);
 
-  // Filter state
   const [filterStatus, setFilterStatus] = useState('');
   const [filterSearch, setFilterSearch] = useState('');
 
@@ -75,9 +73,7 @@ const DevProspector = () => {
       if (!res.ok) throw new Error('Failed');
       await res.json();
       fetchProspects();
-    } catch {
-      // silently fail
-    }
+    } catch {}
     setGenerating(false);
   };
 
@@ -90,7 +86,7 @@ const DevProspector = () => {
         body: JSON.stringify({ status: newStatus }),
       });
       fetchProspects();
-    } catch { /* */ }
+    } catch {}
   };
 
   const handleSaveNotes = async (id) => {
@@ -103,7 +99,7 @@ const DevProspector = () => {
       });
       setEditingNotes(null);
       fetchProspects();
-    } catch { /* */ }
+    } catch {}
   };
 
   const handleDelete = async (id) => {
@@ -114,7 +110,7 @@ const DevProspector = () => {
         headers: { 'Content-Type': 'application/json' },
       });
       fetchProspects();
-    } catch { /* */ }
+    } catch {}
   };
 
   const toggleCategory = (cat) => {
@@ -141,7 +137,6 @@ const DevProspector = () => {
         </div>
       </div>
 
-      {/* Stats Bar */}
       <div className={`${b}__stats`}>
         {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
           <div key={key} className={`${b}__stat-item`}>
@@ -152,7 +147,6 @@ const DevProspector = () => {
         ))}
       </div>
 
-      {/* Generator Panel */}
       <div className={`${b}__generator`}>
         <h3 className={`${b}__gen-title`}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2a4 4 0 014 4v1a2 2 0 012 2v1a2 2 0 01-2 2h0a2 2 0 01-2 2v3a2 2 0 01-4 0v-3a2 2 0 01-2-2h0a2 2 0 01-2-2V9a2 2 0 012-2V6a4 4 0 014-4z"/></svg>
@@ -220,7 +214,6 @@ const DevProspector = () => {
         </button>
       </div>
 
-      {/* Filters */}
       <div className={`${b}__filters`}>
         <select
           className={`${b}__select`}
@@ -241,7 +234,6 @@ const DevProspector = () => {
         />
       </div>
 
-      {/* Prospects List */}
       {prospects.length === 0 ? (
         <div className={`${b}__empty`}>
           <div className={`${b}__empty-icon`}>
@@ -314,7 +306,6 @@ const DevProspector = () => {
                       </div>
                     )}
 
-                    {/* Notes */}
                     <div className={`${b}__detail-section`}>
                       <strong>Notas:</strong>
                       {editingNotes === p.id ? (

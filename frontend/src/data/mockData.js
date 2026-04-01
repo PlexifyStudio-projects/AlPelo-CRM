@@ -1,48 +1,3 @@
-// ============================================
-// Plexify CRM - Mock Data v5.0
-// EXAMPLE DATA from AlPelo tenant (for development/demo only)
-// This is tenant-specific sample data, NOT hardcoded business logic.
-// In production, all data comes from the backend per-tenant.
-// 30 clients, 20 staff, 45+ services, ~217 visit history entries
-// totalSpent = sum of completed visit amounts
-// totalVisits = count of completed + no_show entries
-// loyaltyPoints = Math.round(totalSpent / 1000)
-// ============================================
-
-// ============================================
-// Business info — example data (AlPelo tenant)
-// In production, this comes from the /api/tenant/me endpoint
-// ============================================
-export const mockBusinessInfo = {
-  name: 'ALPELO PELUQUERÍA',
-  address: 'Carrera 31 N 50-21, Bucaramanga, Colombia',
-  phone: '3176608487',
-  rating: 5.0,
-  description: 'Descubre la excelencia en AlPelo! Nuestra peluquería en Bucaramanga cuenta con expertos en peluquería, manicure y barbería.',
-  bookingUrl: 'https://book.weibook.co/alpelo-peluqueria',
-  hours: {
-    weekdays: { open: '8:15 AM', close: '8:00 PM' },
-    saturday: { open: '8:15 AM', close: '8:00 PM' },
-    sunday: { open: '9:30 AM', close: '2:00 PM' },
-  },
-  categories: ['Barbería', 'Salón de Belleza', 'Uñas', 'Spa'],
-  payment: {
-    nequi: '3163249763',
-    breve: '13741241',
-    bancolombia: '912-289228-17',
-    davivienda: '0478-7003-0302',
-  },
-};
-
-// ============================================
-// Status distribution (computed at runtime by clientStatus.js):
-//   VIP: IDs 1, 3, 5, 13, 15 (high visits/year, top spenders)
-//   Activo: IDs 6, 7, 9, 10, 12, 16, 26, 27, 28, 29, 30
-//   Nuevo: IDs 17, 18
-//   En Riesgo: IDs 2, 11, 19, 20, 21 (46-60 days since last visit)
-//   Inactivo: IDs 4, 8, 14, 22, 23, 24, 25 (>60 days)
-// ============================================
-
 export const mockClients = [
   {
     id: 1,
@@ -444,11 +399,7 @@ export const mockClients = [
     loyaltyPoints: 350,
     acceptsWhatsApp: true,
   },
-  // ==========================================
-  // NEW CLIENTS (IDs 17-30)
-  // ==========================================
   {
-    // Nuevo - 1 visit, firstVisit 2026-02-20
     id: 17,
     clientId: 'M20217',
     name: 'Brayan Stiven Cáceres',
@@ -474,7 +425,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // Nuevo - 1 visit, firstVisit 2026-02-15
     id: 18,
     clientId: 'M20218',
     name: 'Laura Valentina Pico Rangel',
@@ -500,7 +450,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // En Riesgo - lastVisit ~50 days ago (2026-01-08)
     id: 19,
     clientId: 'M20219',
     name: 'Fabián Andrés Capacho Rincón',
@@ -526,7 +475,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // En Riesgo - lastVisit ~52 days ago (2026-01-06)
     id: 20,
     clientId: 'M20220',
     name: 'Jhon Fredy Blanco Duarte',
@@ -552,7 +500,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // En Riesgo - lastVisit ~55 days ago (2026-01-03)
     id: 21,
     clientId: 'M20221',
     name: 'Edwin Gerardo Toloza',
@@ -578,7 +525,6 @@ export const mockClients = [
     acceptsWhatsApp: false,
   },
   {
-    // Inactivo - lastVisit 2025-12-15 (>60 days)
     id: 22,
     clientId: 'M20222',
     name: 'Oscar Mauricio Jaimes Carvajal',
@@ -604,7 +550,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // Inactivo - lastVisit 2025-12-01 (>60 days)
     id: 23,
     clientId: 'M20223',
     name: 'Karen Lizeth Amaya Soto',
@@ -630,7 +575,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // Inactivo - lastVisit 2025-11-20 (>60 days)
     id: 24,
     clientId: 'M20224',
     name: 'Wilmer Arley Quintero Prada',
@@ -656,7 +600,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // Inactivo - lastVisit 2025-12-25 (>60 days)
     id: 25,
     clientId: 'M20225',
     name: 'Robinson Ferney Patiño',
@@ -682,7 +625,6 @@ export const mockClients = [
     acceptsWhatsApp: false,
   },
   {
-    // Activo - lastVisit 2026-02-22
     id: 26,
     clientId: 'M20226',
     name: 'Yesid Orlando Mantilla Gómez',
@@ -708,7 +650,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // Activo - lastVisit 2026-02-18
     id: 27,
     clientId: 'M20227',
     name: 'Daniela Fernanda Rueda Parra',
@@ -734,7 +675,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // Activo - lastVisit 2026-02-25
     id: 28,
     clientId: 'M20228',
     name: 'Harold Steven Pineda Solano',
@@ -760,7 +700,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // Activo - lastVisit 2026-02-12
     id: 29,
     clientId: 'M20229',
     name: 'Luis Fernando Guarín Acevedo',
@@ -786,7 +725,6 @@ export const mockClients = [
     acceptsWhatsApp: true,
   },
   {
-    // Activo - lastVisit 2026-02-19
     id: 30,
     clientId: 'M20230',
     name: 'Cristian Camilo Ordóñez Vega',
@@ -813,11 +751,7 @@ export const mockClients = [
   },
 ];
 
-// ============================================
-// Staff — example data (AlPelo tenant, ratings from booking platform)
-// ============================================
 export const mockBarbers = [
-  // Barberos
   { id: 1, name: 'Victor Fernández', specialty: 'Barbero', available: true, rating: 4.85, totalClients: 120, phone: '+57 316 452 8901', email: 'victor.fernandez@alpelo.co', hireDate: '2022-03-15', bio: 'Barbero senior con más de 8 años de experiencia. Especialista en cortes clásicos y modernos con acabados impecables.' },
   { id: 2, name: 'Alexander Carballo', specialty: 'Barbero', available: true, rating: 4.9, totalClients: 95, phone: '+57 310 789 3456', email: 'alexander.carballo@alpelo.co', hireDate: '2022-06-01', bio: 'Apasionado por las tendencias urbanas y los degradados. Siempre buscando la perfección en cada detalle.' },
   { id: 3, name: 'Daniel Núñez', specialty: 'Barbero', available: false, rating: 4.71, totalClients: 78, phone: '+57 315 234 6789', email: 'daniel.nunez@alpelo.co', hireDate: '2023-01-10', bio: 'Creativo y detallista, experto en diseños personalizados y cortes de tendencia internacional.' },
@@ -827,13 +761,11 @@ export const mockBarbers = [
   { id: 7, name: 'Yhon Estrada', specialty: 'Barbero', available: true, rating: 5.0, totalClients: 60, phone: '+57 314 456 2345', email: 'yhon.estrada@alpelo.co', hireDate: '2023-06-10', bio: 'Perfeccionista nato con un ojo artístico para los degradados y acabados limpios.' },
   { id: 8, name: 'Astrid Carolina León', specialty: 'Barbera', available: true, rating: null, totalClients: 45, phone: '+57 311 678 5678', email: 'astrid.leon@alpelo.co', hireDate: '2024-01-15', bio: 'Pionera en barbería femenina en la región. Combina técnica y sensibilidad artística.' },
   { id: 9, name: 'Tatiana', specialty: 'Barbera', available: true, rating: null, totalClients: 40, phone: '+57 319 901 8901', email: 'tatiana@alpelo.co', hireDate: '2024-03-01', bio: 'Especialista en cortes unisex con enfoque en la comodidad y estilo del cliente.' },
-  // Estilistas
   { id: 10, name: 'Josemith', specialty: 'Estilista - Especialista en color', available: true, rating: 5.0, totalClients: 110, phone: '+57 316 234 1234', email: 'josemith@alpelo.co', hireDate: '2022-01-10', bio: 'Más de 10 años de experiencia en técnicas innovadoras de color. Transforma el cabello con técnicas de vanguardia.' },
   { id: 11, name: 'Liliana Gisella Romero', specialty: 'Estilista', available: true, rating: 4.57, totalClients: 80, phone: '+57 313 567 4567', email: 'liliana.romero@alpelo.co', hireDate: '2022-09-01', bio: 'Estilista integral con pasión por los cambios de look y la asesoría de imagen.' },
   { id: 12, name: 'Marcela Leal', specialty: 'Estilista - Tricoterapeuta', available: true, rating: 4.66, totalClients: 85, phone: '+57 310 890 7890', email: 'marcela.leal@alpelo.co', hireDate: '2022-07-15', bio: 'Tricoterapeuta especialista en recuperación capilar. Devuelve la vida al cabello dañado.' },
   { id: 19, name: 'Dulce Araque', specialty: 'Estilista', available: true, rating: 4.66, totalClients: 50, phone: '+57 315 901 3456', email: 'dulce.araque@alpelo.co', hireDate: '2023-10-01', bio: 'Estilista versátil con excelente ojo para el detalle y la armonía del look.' },
   { id: 20, name: 'Fanny Lizarazo', specialty: 'Estilista', available: true, rating: null, totalClients: 30, phone: '+57 318 234 6789', email: 'fanny.lizarazo@alpelo.co', hireDate: '2024-06-01', bio: 'Nueva integrante del equipo con formación en las últimas tendencias de estilismo.' },
-  // Manicuristas
   { id: 13, name: 'Jazmín Aponte Montaño', specialty: 'Manicurista', available: true, rating: 4.92, totalClients: 90, phone: '+57 318 123 2345', email: 'jazmin.aponte@alpelo.co', hireDate: '2022-05-20', bio: 'Artista del nail art con técnicas avanzadas. Sus diseños son reconocidos en toda la ciudad.' },
   { id: 14, name: 'María José Bastos', specialty: 'Manicurista', available: true, rating: 5.0, totalClients: 75, phone: '+57 315 456 5678', email: 'mariajose.bastos@alpelo.co', hireDate: '2023-03-10', bio: 'Detallista y profesional. Especialista en técnicas de gel y acrílico de alta duración.' },
   { id: 15, name: 'Carolina Banderas', specialty: 'Manicurista', available: true, rating: 4.8, totalClients: 70, phone: '+57 312 789 8901', email: 'carolina.banderas@alpelo.co', hireDate: '2023-05-01', bio: 'Creativa y tendencia. Siempre actualizada con las últimas técnicas de manicure y pedicure.' },
@@ -842,89 +774,7 @@ export const mockBarbers = [
   { id: 18, name: 'Stefanía Bustamante', specialty: 'Manicurista', available: true, rating: 4.5, totalClients: 40, phone: '+57 311 678 7890', email: 'stefania.bustamante@alpelo.co', hireDate: '2024-04-15', bio: 'Joven profesional con gran talento natural y pasión por la belleza de las manos.' },
 ];
 
-// ============================================
-// Services — example data (AlPelo tenant, from booking platform)
-// ============================================
-export const mockServices = [
-  // Barbería
-  { id: 1, name: 'Corte Hipster', duration: 40, price: 40000, category: 'Barbería' },
-  { id: 2, name: 'Corte y Cejas', duration: 40, price: 45000, category: 'Barbería' },
-  { id: 3, name: 'Corte Dama', duration: 30, price: 45000, category: 'Barbería' },
-  { id: 4, name: 'Corte y Barba', duration: 60, price: 55000, category: 'Barbería' },
-  { id: 5, name: 'Corte Barba y Cejas', duration: 60, price: 60000, category: 'Barbería' },
-  { id: 6, name: 'Barba Premium', duration: 35, price: 25000, category: 'Barbería' },
-  { id: 7, name: 'Corte y Blower Combo', duration: 60, price: 90000, category: 'Barbería' },
-  // Uñas - Tradicional
-  { id: 10, name: 'Limpieza Manicure', duration: 15, price: 20000, category: 'Uñas' },
-  { id: 11, name: 'Manicure Secado Rápido', duration: 30, price: 30000, category: 'Uñas' },
-  { id: 12, name: 'Pedicure Trad. Secado Rápido', duration: 40, price: 30000, category: 'Uñas' },
-  { id: 13, name: 'Manicure o Pedicure con Polichada', duration: 45, price: 30000, category: 'Uñas' },
-  { id: 14, name: 'Combo Manicure + Pedicure Tradicional', duration: 80, price: 55000, category: 'Uñas' },
-  // Uñas - Semipermanente
-  { id: 20, name: 'Manicure Semipermanente', duration: 40, price: 50000, category: 'Uñas Semipermanente' },
-  { id: 21, name: 'Pedicure Semipermanente', duration: 40, price: 50000, category: 'Uñas Semipermanente' },
-  { id: 22, name: 'Manicure Semipermanente con Base Rubber', duration: 50, price: 60000, category: 'Uñas Semipermanente' },
-  { id: 23, name: 'Combo Mani Semi + Pedi Tradicional', duration: 90, price: 75000, category: 'Uñas Semipermanente' },
-  { id: 24, name: 'Combo Mani y Pedi Semipermanente', duration: 90, price: 95000, category: 'Uñas Semipermanente' },
-  // Uñas - Spa
-  { id: 30, name: 'Spa Manicure Tradicional', duration: 60, price: 50000, category: 'Uñas Spa' },
-  { id: 31, name: 'Pedi Spa Tradicional', duration: 60, price: 65000, category: 'Uñas Spa' },
-  { id: 32, name: 'Spa Manicure Semi Permanente', duration: 70, price: 70000, category: 'Uñas Spa' },
-  { id: 33, name: 'Pedi Spa Semi Permanente', duration: 60, price: 85000, category: 'Uñas Spa' },
-  // Uñas - Otros
-  { id: 35, name: 'Reparación de Uña Press On', duration: 10, price: 12000, category: 'Uñas' },
-  { id: 36, name: 'Retiro Higiene de Press On Insumos', duration: 15, price: 15000, category: 'Uñas' },
-  // Tratamientos Capilares
-  { id: 40, name: 'Cepillado Básico', duration: 15, price: 20000, category: 'Tratamientos' },
-  { id: 41, name: 'Tratamiento Alta Frecuencia', duration: 20, price: 25000, category: 'Tratamientos' },
-  { id: 42, name: 'Aplicación Matizante (Cliente Trae Producto)', duration: 20, price: 25000, category: 'Tratamientos' },
-  { id: 43, name: 'Crioterapia Solo Plancha', duration: 60, price: 40000, category: 'Tratamientos' },
-  { id: 44, name: 'Blower Medio', duration: 50, price: 55000, category: 'Tratamientos' },
-  { id: 45, name: 'Tratamiento Express', duration: 30, price: 60000, category: 'Tratamientos' },
-  { id: 46, name: 'Tratamiento Masocapiloterapia', duration: 30, price: 60000, category: 'Tratamientos' },
-  { id: 47, name: 'Tratamiento de Nutrición o Reconstrucción', duration: 30, price: 70000, category: 'Tratamientos' },
-  { id: 48, name: 'Tratamiento Scalp Protector', duration: 25, price: 70000, category: 'Tratamientos' },
-  { id: 49, name: 'Crioterapia con Tratamiento', duration: 25, price: 100000, category: 'Tratamientos' },
-  { id: 50, name: 'Tratamiento Capilar Fango Detox con Cepillado', duration: 60, price: 120000, category: 'Tratamientos' },
-  { id: 51, name: 'Tratamiento Spa Coreano Revitalizante', duration: 40, price: 120000, category: 'Tratamientos' },
-  { id: 52, name: 'Tratamiento Post Color', duration: 15, price: 0, category: 'Tratamientos' },
-  // Facial / Belleza
-  { id: 60, name: 'Limpieza Facial', duration: 20, price: 15000, category: 'Facial' },
-  { id: 61, name: 'Pestañas de Punto', duration: 20, price: 40000, category: 'Facial' },
-  { id: 62, name: 'Lifting de Pestañas', duration: 45, price: 60000, category: 'Facial' },
-  { id: 63, name: 'Lifting de Pestañas con Pigmento', duration: 60, price: 75000, category: 'Facial' },
-  { id: 64, name: 'Laminado de Cejas con Pigmento', duration: 45, price: 75000, category: 'Facial' },
-  // Otro
-  { id: 70, name: 'Abono Servicio', duration: 0, price: 50000, category: 'Otro' },
-];
-
-export const mockAppointments = [
-  { id: 1, clientId: 1, barberId: 1, service: 'Corte + Barba', date: '2026-02-27', time: '10:00', status: 'confirmed' },
-  { id: 2, clientId: 3, barberId: 2, service: 'Corte + Barba + Cejas', date: '2026-02-27', time: '11:00', status: 'pending' },
-  { id: 3, clientId: 5, barberId: 10, service: 'Spa Manicure', date: '2026-02-27', time: '14:00', status: 'confirmed' },
-  { id: 4, clientId: 6, barberId: 4, service: 'Corte + Barba', date: '2026-02-27', time: '09:00', status: 'confirmed' },
-  { id: 5, clientId: 9, barberId: 4, service: 'Corte + Cejas', date: '2026-02-27', time: '15:30', status: 'pending' },
-  { id: 6, clientId: 10, barberId: 5, service: 'Corte + Barba', date: '2026-03-01', time: '10:00', status: 'confirmed' },
-  { id: 7, clientId: 12, barberId: 13, service: 'Manicure + Pedicure Tradicional', date: '2026-03-01', time: '11:30', status: 'confirmed' },
-  { id: 8, clientId: 13, barberId: 1, service: 'Corte + Barba', date: '2026-03-01', time: '09:00', status: 'pending' },
-  { id: 9, clientId: 15, barberId: 5, service: 'Corte + Barba', date: '2026-03-01', time: '14:00', status: 'confirmed' },
-  { id: 10, clientId: 7, barberId: 1, service: 'Corte + Barba', date: '2026-03-02', time: '12:00', status: 'pending' },
-  { id: 11, clientId: 16, barberId: 10, service: 'Lifting de Pestañas', date: '2026-03-02', time: '10:00', status: 'confirmed' },
-  { id: 12, clientId: 2, barberId: 2, service: 'Corte Hipster', date: '2026-03-03', time: '16:00', status: 'pending' },
-  { id: 13, clientId: 6, barberId: 4, service: 'Corte + Barba', date: '2026-03-02', time: '09:00', status: 'confirmed' },
-  { id: 14, clientId: 9, barberId: 2, service: 'Corte + Cejas', date: '2026-03-02', time: '11:00', status: 'confirmed' },
-  { id: 15, clientId: 15, barberId: 13, service: 'Semipermanente Manicure', date: '2026-03-02', time: '10:30', status: 'pending' },
-  { id: 16, clientId: 3, barberId: 1, service: 'Corte + Barba + Cejas', date: '2026-03-02', time: '14:00', status: 'confirmed' },
-  { id: 17, clientId: 12, barberId: 6, service: 'Corte Hipster', date: '2026-03-02', time: '15:00', status: 'pending' },
-  { id: 18, clientId: 5, barberId: 14, service: 'Spa Manicure', date: '2026-03-02', time: '16:00', status: 'confirmed' },
-];
-
 export const mockVisitHistory = [
-  // ==========================================
-  // Carlos Mendoza (id: 1) - VIP
-  // 10 completed + 0 no_show + 1 cancelled = 11 entries (10 count as visits)
-  // Sum completed: 55+55+40+55+55+60+55+55+60+55 = 545,000
-  // ==========================================
   { id: 1, clientId: 1, barberId: 1, service: 'Corte + Barba', date: '2026-02-25', amount: 55000, rating: 5, notes: 'Excelente como siempre', status: 'completed' },
   { id: 2, clientId: 1, barberId: 1, service: 'Corte + Barba', date: '2026-02-10', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 3, clientId: 1, barberId: 1, service: 'Corte Hipster', date: '2026-01-28', amount: 40000, rating: 4, notes: 'Quiso probar algo diferente', status: 'completed' },
@@ -937,11 +787,9 @@ export const mockVisitHistory = [
   { id: 131, clientId: 1, barberId: 1, service: 'Corte + Barba', date: '2025-10-15', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 218, clientId: 1, barberId: 1, service: 'Corte + Barba', date: '2025-09-28', amount: 55000, rating: null, notes: 'Canceló por compromiso familiar', status: 'cancelled' },
 
-  // ==========================================
-  // Andrés Ruiz Parra (id: 2) - En Riesgo
-  // 7 completed + 1 no_show = 8 entries
-  // Sum completed: 40+40+40+40+40+40+40 = 280,000
-  // ==========================================
+
+
+
   { id: 33, clientId: 2, barberId: 2, service: 'Corte Hipster', date: '2026-01-08', amount: 40000, rating: 3, notes: 'Tuvo que esperar mucho', status: 'completed' },
   { id: 34, clientId: 2, barberId: 2, service: 'Corte Hipster', date: '2025-12-15', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 39, clientId: 2, barberId: 2, service: 'Corte Hipster', date: '2025-11-10', amount: 40000, rating: 4, notes: '', status: 'completed' },
@@ -951,11 +799,9 @@ export const mockVisitHistory = [
   { id: 134, clientId: 2, barberId: 2, service: 'Corte Hipster', date: '2025-05-20', amount: 40000, rating: 5, notes: '', status: 'completed' },
   { id: 135, clientId: 2, barberId: 2, service: 'Corte Hipster', date: '2025-03-20', amount: 40000, rating: 4, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Miguel Torres (id: 3) - VIP
-  // 10 completed + 0 no_show = 10 entries
-  // Sum completed: 60+60+55+60+60+55+60+55+60+55 = 580,000
-  // ==========================================
+
+
+
   { id: 5, clientId: 3, barberId: 1, service: 'Corte + Barba + Cejas', date: '2026-02-26', amount: 60000, rating: 5, notes: '', status: 'completed' },
   { id: 6, clientId: 3, barberId: 2, service: 'Corte + Barba + Cejas', date: '2026-02-12', amount: 60000, rating: 4, notes: '', status: 'completed' },
   { id: 7, clientId: 3, barberId: 1, service: 'Corte + Barba', date: '2026-01-30', amount: 55000, rating: 5, notes: 'Corte especial para evento', status: 'completed' },
@@ -967,21 +813,17 @@ export const mockVisitHistory = [
   { id: 138, clientId: 3, barberId: 1, service: 'Corte + Barba + Cejas', date: '2025-11-06', amount: 60000, rating: 4, notes: '', status: 'completed' },
   { id: 139, clientId: 3, barberId: 1, service: 'Corte + Barba', date: '2025-10-22', amount: 55000, rating: 5, notes: '', status: 'completed' },
 
-  // ==========================================
-  // Juan Pablo Pérez (id: 4) - Inactivo
-  // 3 completed + 1 no_show = 4 entries (matches adjusted totalVisits)
-  // Sum completed: 40+40+40 = 120,000
-  // ==========================================
+
+
+
   { id: 43, clientId: 4, barberId: 3, service: 'Corte Hipster', date: '2025-12-10', amount: 40000, rating: 3, notes: '', status: 'completed' },
   { id: 44, clientId: 4, barberId: 3, service: 'Corte Hipster', date: '2025-10-25', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 45, clientId: 4, barberId: 3, service: 'Corte Hipster', date: '2025-09-05', amount: 40000, rating: 4, notes: 'Primera visita', status: 'completed' },
   { id: 46, clientId: 4, barberId: 3, service: 'Corte + Cejas', date: '2025-11-15', amount: 45000, rating: null, notes: '', status: 'no_show' },
 
-  // ==========================================
-  // David López (id: 5) - VIP
-  // 10 completed + 0 no_show + 1 cancelled = 11 entries (10 count as visits)
-  // Sum completed: 50+50+55+40+50+65+50+55+50+40 = 505,000
-  // ==========================================
+
+
+
   { id: 9, clientId: 5, barberId: 10, service: 'Spa Manicure', date: '2026-02-27', amount: 50000, rating: 5, notes: 'Quedó perfecto', status: 'completed' },
   { id: 10, clientId: 5, barberId: 10, service: 'Spa Manicure', date: '2026-02-13', amount: 50000, rating: 5, notes: '', status: 'completed' },
   { id: 11, clientId: 5, barberId: 10, service: 'Corte + Barba', date: '2026-01-30', amount: 55000, rating: 4, notes: '', status: 'completed' },
@@ -994,11 +836,9 @@ export const mockVisitHistory = [
   { id: 143, clientId: 5, barberId: 1, service: 'Corte Hipster', date: '2025-10-10', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 219, clientId: 5, barberId: 10, service: 'Spa Manicure', date: '2025-09-20', amount: 50000, rating: null, notes: 'Canceló por viaje de negocios', status: 'cancelled' },
 
-  // ==========================================
-  // Santiago Reyes (id: 6) - Activo
-  // 8 completed + 0 no_show = 8 entries
-  // Sum completed: 55+55+55+40+55+55+40+55 = 410,000
-  // ==========================================
+
+
+
   { id: 13, clientId: 6, barberId: 4, service: 'Corte + Barba', date: '2026-02-20', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 14, clientId: 6, barberId: 4, service: 'Corte + Barba', date: '2026-01-22', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 49, clientId: 6, barberId: 4, service: 'Corte + Barba', date: '2025-12-18', amount: 55000, rating: 4, notes: '', status: 'completed' },
@@ -1008,11 +848,9 @@ export const mockVisitHistory = [
   { id: 146, clientId: 6, barberId: 4, service: 'Corte Hipster', date: '2025-08-05', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 147, clientId: 6, barberId: 4, service: 'Corte + Barba', date: '2025-07-01', amount: 55000, rating: 4, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Camilo Hernández (id: 7) - Activo
-  // 8 completed + 1 no_show = 9 entries
-  // Sum completed: 55+55+55+55+55+55+55+55 = 440,000
-  // ==========================================
+
+
+
   { id: 15, clientId: 7, barberId: 1, service: 'Corte + Barba', date: '2026-02-15', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 16, clientId: 7, barberId: 1, service: 'Corte + Barba', date: '2026-01-18', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 51, clientId: 7, barberId: 1, service: 'Corte + Barba', date: '2025-12-20', amount: 55000, rating: 4, notes: '', status: 'completed' },
@@ -1023,22 +861,18 @@ export const mockVisitHistory = [
   { id: 150, clientId: 7, barberId: 1, service: 'Corte + Barba', date: '2025-08-16', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 151, clientId: 7, barberId: 1, service: 'Corte + Barba', date: '2025-08-12', amount: 55000, rating: 4, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Felipe Ardila (id: 8) - Inactivo
-  // 5 completed + 0 no_show = 5 entries
-  // Sum completed: 40+40+40+40+40 = 200,000
-  // ==========================================
+
+
+
   { id: 54, clientId: 8, barberId: 2, service: 'Corte Hipster', date: '2025-11-28', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 55, clientId: 8, barberId: 2, service: 'Corte Hipster', date: '2025-10-15', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 56, clientId: 8, barberId: 2, service: 'Corte Hipster', date: '2025-08-30', amount: 40000, rating: 3, notes: 'Quería otro barbero pero no había', status: 'completed' },
   { id: 152, clientId: 8, barberId: 2, service: 'Corte Hipster', date: '2025-07-10', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 153, clientId: 8, barberId: 2, service: 'Corte Hipster', date: '2025-05-15', amount: 40000, rating: 4, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Nicolás Pabón (id: 9) - Activo
-  // 9 completed + 0 no_show = 9 entries
-  // Sum completed: 45+45+55+45+45+45+55+45+45 = 425,000
-  // ==========================================
+
+
+
   { id: 17, clientId: 9, barberId: 4, service: 'Corte + Cejas', date: '2026-02-24', amount: 45000, rating: 5, notes: 'Diseño geométrico lateral', status: 'completed' },
   { id: 18, clientId: 9, barberId: 4, service: 'Corte + Cejas', date: '2026-02-10', amount: 45000, rating: 5, notes: '', status: 'completed' },
   { id: 19, clientId: 9, barberId: 4, service: 'Corte + Barba', date: '2026-01-27', amount: 55000, rating: 4, notes: '', status: 'completed' },
@@ -1049,11 +883,9 @@ export const mockVisitHistory = [
   { id: 156, clientId: 9, barberId: 4, service: 'Corte + Cejas', date: '2025-11-08', amount: 45000, rating: 5, notes: '', status: 'completed' },
   { id: 157, clientId: 9, barberId: 4, service: 'Corte + Cejas', date: '2025-10-22', amount: 45000, rating: 4, notes: '', status: 'completed' },
 
-  // ==========================================
-  // Sebastián Cárdenas (id: 10) - Activo
-  // 8 completed + 0 no_show = 8 entries
-  // Sum completed: 55+55+55+40+55+55+40+55 = 410,000
-  // ==========================================
+
+
+
   { id: 20, clientId: 10, barberId: 5, service: 'Corte + Barba', date: '2026-02-22', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 21, clientId: 10, barberId: 5, service: 'Corte + Barba', date: '2026-01-25', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 59, clientId: 10, barberId: 5, service: 'Corte + Barba', date: '2025-12-28', amount: 55000, rating: 5, notes: '', status: 'completed' },
@@ -1063,11 +895,9 @@ export const mockVisitHistory = [
   { id: 160, clientId: 10, barberId: 5, service: 'Corte Hipster', date: '2025-08-20', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 161, clientId: 10, barberId: 5, service: 'Corte + Barba', date: '2025-07-15', amount: 55000, rating: 5, notes: '', status: 'completed' },
 
-  // ==========================================
-  // Diego Suárez (id: 11) - En Riesgo
-  // 5 completed + 1 no_show = 6 entries
-  // Sum completed: 60+60+55+60+55 = 290,000
-  // ==========================================
+
+
+
   { id: 35, clientId: 11, barberId: 7, service: 'Corte + Barba + Cejas', date: '2026-01-05', amount: 60000, rating: 4, notes: '', status: 'completed' },
   { id: 36, clientId: 11, barberId: 7, service: 'Corte + Barba + Cejas', date: '2025-12-10', amount: 60000, rating: 3, notes: 'Dijo que la espera fue larga', status: 'completed' },
   { id: 61, clientId: 11, barberId: 7, service: 'Corte + Barba', date: '2025-11-05', amount: 55000, rating: 4, notes: '', status: 'completed' },
@@ -1075,11 +905,9 @@ export const mockVisitHistory = [
   { id: 162, clientId: 11, barberId: 7, service: 'Corte + Barba + Cejas', date: '2025-09-05', amount: 60000, rating: 4, notes: '', status: 'completed' },
   { id: 163, clientId: 11, barberId: 7, service: 'Corte + Barba', date: '2025-07-22', amount: 55000, rating: 5, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Julián Ortiz (id: 12) - Activo
-  // 9 completed + 0 no_show = 9 entries
-  // Sum completed: 55+20+55+20+55+55+20+55+20 = 355,000
-  // ==========================================
+
+
+
   { id: 22, clientId: 12, barberId: 13, service: 'Manicure + Pedicure Tradicional', date: '2026-02-18', amount: 55000, rating: 5, notes: 'Servicio completo', status: 'completed' },
   { id: 23, clientId: 12, barberId: 13, service: 'Manicure Limpieza', date: '2026-02-04', amount: 20000, rating: 4, notes: '', status: 'completed' },
   { id: 24, clientId: 12, barberId: 13, service: 'Manicure + Pedicure Tradicional', date: '2026-01-18', amount: 55000, rating: 5, notes: '', status: 'completed' },
@@ -1090,11 +918,9 @@ export const mockVisitHistory = [
   { id: 166, clientId: 12, barberId: 13, service: 'Manicure + Pedicure Tradicional', date: '2025-10-05', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 167, clientId: 12, barberId: 13, service: 'Manicure Limpieza', date: '2025-09-15', amount: 20000, rating: 4, notes: '', status: 'completed' },
 
-  // ==========================================
-  // Alejandro Villamizar (id: 13) - VIP
-  // 10 completed + 0 no_show = 10 entries
-  // Sum completed: 55+55+55+55+60+55+55+60+55+55 = 560,000
-  // ==========================================
+
+
+
   { id: 25, clientId: 13, barberId: 1, service: 'Corte + Barba', date: '2026-02-26', amount: 55000, rating: 5, notes: 'Trajo 2 empleados también', status: 'completed' },
   { id: 26, clientId: 13, barberId: 1, service: 'Corte + Barba', date: '2026-02-12', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 27, clientId: 13, barberId: 1, service: 'Corte + Barba', date: '2026-01-28', amount: 55000, rating: 4, notes: '', status: 'completed' },
@@ -1106,21 +932,17 @@ export const mockVisitHistory = [
   { id: 171, clientId: 13, barberId: 1, service: 'Corte + Barba', date: '2025-10-30', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 172, clientId: 13, barberId: 1, service: 'Corte + Barba', date: '2025-10-15', amount: 55000, rating: 5, notes: '', status: 'completed' },
 
-  // ==========================================
-  // Mateo Gómez Plata (id: 14) - Inactivo
-  // 3 completed + 0 no_show + 1 cancelled = 4 entries (only 3 count as visits)
-  // Sum completed: 45+45+40 = 130,000
-  // ==========================================
+
+
+
   { id: 67, clientId: 14, barberId: 3, service: 'Corte + Cejas', date: '2025-12-20', amount: 45000, rating: 4, notes: '', status: 'completed' },
   { id: 68, clientId: 14, barberId: 3, service: 'Corte + Cejas', date: '2025-11-18', amount: 45000, rating: 4, notes: '', status: 'completed' },
   { id: 69, clientId: 14, barberId: 3, service: 'Corte + Cejas', date: '2025-10-20', amount: 45000, rating: null, notes: '', status: 'cancelled' },
   { id: 70, clientId: 14, barberId: 3, service: 'Corte Hipster', date: '2025-10-01', amount: 40000, rating: 5, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Ricardo Uribe (id: 15) - VIP
-  // 10 completed + 0 no_show = 10 entries
-  // Sum completed: 55+55+60+55+55+55+55+60+55+55 = 560,000
-  // ==========================================
+
+
+
   { id: 28, clientId: 15, barberId: 5, service: 'Corte + Barba', date: '2026-02-23', amount: 55000, rating: 5, notes: 'Mismo estilo de siempre', status: 'completed' },
   { id: 29, clientId: 15, barberId: 5, service: 'Corte + Barba', date: '2026-02-09', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 30, clientId: 15, barberId: 5, service: 'Corte + Barba + Cejas', date: '2026-01-26', amount: 60000, rating: 4, notes: '', status: 'completed' },
@@ -1132,11 +954,9 @@ export const mockVisitHistory = [
   { id: 176, clientId: 15, barberId: 5, service: 'Corte + Barba', date: '2025-10-30', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 177, clientId: 15, barberId: 5, service: 'Corte + Barba', date: '2025-10-15', amount: 55000, rating: 5, notes: '', status: 'completed' },
 
-  // ==========================================
-  // Esteban Capacho (id: 16) - Activo
-  // 8 completed + 0 no_show = 8 entries
-  // Sum completed: 60+15+60+40+60+15+60+40 = 350,000
-  // ==========================================
+
+
+
   { id: 31, clientId: 16, barberId: 10, service: 'Lifting de Pestañas', date: '2026-02-10', amount: 60000, rating: 5, notes: 'Mechas cobrizas', status: 'completed' },
   { id: 32, clientId: 16, barberId: 10, service: 'Limpieza Facial', date: '2026-01-20', amount: 15000, rating: 4, notes: '', status: 'completed' },
   { id: 73, clientId: 16, barberId: 10, service: 'Lifting de Pestañas', date: '2025-12-15', amount: 60000, rating: 5, notes: '', status: 'completed' },
@@ -1146,23 +966,19 @@ export const mockVisitHistory = [
   { id: 180, clientId: 16, barberId: 10, service: 'Lifting de Pestañas', date: '2025-08-05', amount: 60000, rating: 5, notes: '', status: 'completed' },
   { id: 181, clientId: 16, barberId: 10, service: 'Crioterapia', date: '2025-06-28', amount: 40000, rating: 4, notes: '', status: 'completed' },
 
-  // ==========================================
-  // Brayan Cáceres (id: 17) - Nuevo, 1 visit
-  // 1 completed = 1 entry. Sum: 40,000
-  // ==========================================
+
+
+
   { id: 75, clientId: 17, barberId: 6, service: 'Corte Hipster', date: '2026-02-20', amount: 40000, rating: 4, notes: 'Primera visita, lo trajo un amigo', status: 'completed' },
 
-  // ==========================================
-  // Laura Valentina Pico (id: 18) - Nuevo, 1 visit
-  // 1 completed = 1 entry. Sum: 75,000
-  // ==========================================
+
+
+
   { id: 76, clientId: 18, barberId: 10, service: 'Lifting de Pestañas con Pigmento', date: '2026-02-15', amount: 75000, rating: 5, notes: 'Encantada con el resultado', status: 'completed' },
 
-  // ==========================================
-  // Fabián Capacho (id: 19) - En Riesgo
-  // 8 completed + 2 no_show = 10 entries
-  // Sum completed: 55+55+55+40+55+40+45+55 = 400,000
-  // ==========================================
+
+
+
   { id: 77, clientId: 19, barberId: 7, service: 'Corte + Barba', date: '2026-01-08', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 78, clientId: 19, barberId: 7, service: 'Corte + Barba', date: '2025-12-05', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 79, clientId: 19, barberId: 7, service: 'Corte + Barba', date: '2025-11-01', amount: 55000, rating: 3, notes: '', status: 'completed' },
@@ -1174,11 +990,9 @@ export const mockVisitHistory = [
   { id: 185, clientId: 19, barberId: 7, service: 'Corte + Cejas', date: '2025-10-15', amount: 45000, rating: 4, notes: '', status: 'completed' },
   { id: 220, clientId: 19, barberId: 7, service: 'Corte + Barba', date: '2025-07-01', amount: 55000, rating: 4, notes: 'Aprovechó día libre', status: 'completed' },
 
-  // ==========================================
-  // Jhon Fredy Blanco (id: 20) - En Riesgo
-  // 10 completed + 1 no_show + 1 cancelled = 12 entries (11 count as visits)
-  // Sum completed: 55+55+55+40+55+55+40+55+40+55 = 505,000
-  // ==========================================
+
+
+
   { id: 82, clientId: 20, barberId: 2, service: 'Corte + Barba', date: '2026-01-06', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 83, clientId: 20, barberId: 2, service: 'Corte + Barba', date: '2025-12-02', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 84, clientId: 20, barberId: 2, service: 'Corte + Barba', date: '2025-10-28', amount: 55000, rating: 5, notes: '', status: 'completed' },
@@ -1192,11 +1006,9 @@ export const mockVisitHistory = [
   { id: 191, clientId: 20, barberId: 2, service: 'Corte + Barba', date: '2025-08-25', amount: 55000, rating: null, notes: 'No vino', status: 'no_show' },
   { id: 221, clientId: 20, barberId: 2, service: 'Corte + Barba', date: '2025-09-01', amount: 55000, rating: 4, notes: '', status: 'completed' },
 
-  // ==========================================
-  // Edwin Toloza (id: 21) - En Riesgo
-  // 7 completed + 0 no_show = 7 entries
-  // Sum completed: 45+45+45+40+45+45+40 = 305,000
-  // ==========================================
+
+
+
   { id: 87, clientId: 21, barberId: 4, service: 'Corte + Cejas', date: '2026-01-03', amount: 45000, rating: 4, notes: '', status: 'completed' },
   { id: 88, clientId: 21, barberId: 4, service: 'Corte + Cejas', date: '2025-12-01', amount: 45000, rating: 5, notes: '', status: 'completed' },
   { id: 89, clientId: 21, barberId: 4, service: 'Corte + Cejas', date: '2025-10-25', amount: 45000, rating: 4, notes: '', status: 'completed' },
@@ -1205,11 +1017,9 @@ export const mockVisitHistory = [
   { id: 193, clientId: 21, barberId: 4, service: 'Corte + Cejas', date: '2025-10-08', amount: 45000, rating: 4, notes: '', status: 'completed' },
   { id: 194, clientId: 21, barberId: 4, service: 'Corte Hipster', date: '2025-08-20', amount: 40000, rating: 4, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Oscar Jaimes (id: 22) - Inactivo
-  // 6 completed + 1 no_show = 7 entries (reduced from 8)
-  // Sum completed: 40+40+40+40+40+40 = 240,000
-  // ==========================================
+
+
+
   { id: 91, clientId: 22, barberId: 6, service: 'Corte Hipster', date: '2025-12-15', amount: 40000, rating: 4, notes: 'Vino con el hijo', status: 'completed' },
   { id: 92, clientId: 22, barberId: 6, service: 'Corte Hipster', date: '2025-11-10', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 93, clientId: 22, barberId: 6, service: 'Corte Hipster', date: '2025-10-05', amount: 40000, rating: null, notes: '', status: 'no_show' },
@@ -1218,11 +1028,9 @@ export const mockVisitHistory = [
   { id: 196, clientId: 22, barberId: 6, service: 'Corte Hipster', date: '2025-05-28', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 197, clientId: 22, barberId: 6, service: 'Corte Hipster', date: '2025-03-10', amount: 40000, rating: 5, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Karen Amaya (id: 23) - Inactivo
-  // 5 completed + 0 no_show + 1 cancelled = 6 entries (5 count as visits)
-  // Sum completed: 50+50+75+50+50 = 275,000
-  // ==========================================
+
+
+
   { id: 95, clientId: 23, barberId: 14, service: 'Semipermanente Manicure', date: '2025-12-01', amount: 50000, rating: 5, notes: 'Tonos pastel navideños', status: 'completed' },
   { id: 96, clientId: 23, barberId: 14, service: 'Semipermanente Manicure', date: '2025-10-28', amount: 50000, rating: 5, notes: '', status: 'completed' },
   { id: 97, clientId: 23, barberId: 14, service: 'Semi Mani + Pedi Tradicional', date: '2025-09-20', amount: 75000, rating: 4, notes: '', status: 'completed' },
@@ -1230,33 +1038,27 @@ export const mockVisitHistory = [
   { id: 198, clientId: 23, barberId: 14, service: 'Semipermanente Manicure', date: '2025-08-10', amount: 50000, rating: 5, notes: '', status: 'completed' },
   { id: 199, clientId: 23, barberId: 14, service: 'Semipermanente Manicure', date: '2025-07-05', amount: 50000, rating: 4, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Wilmer Quintero (id: 24) - Inactivo
-  // 3 completed + 2 no_show = 5 entries
-  // Sum completed: 40+40+40 = 120,000
-  // ==========================================
+
+
+
   { id: 99, clientId: 24, barberId: 3, service: 'Corte Hipster', date: '2025-11-20', amount: 40000, rating: 3, notes: '', status: 'completed' },
   { id: 100, clientId: 24, barberId: 3, service: 'Corte Hipster', date: '2025-09-15', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 101, clientId: 24, barberId: 3, service: 'Corte Hipster', date: '2025-07-22', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 200, clientId: 24, barberId: 3, service: 'Corte Hipster', date: '2025-10-18', amount: 40000, rating: null, notes: 'No contestó confirmar', status: 'no_show' },
   { id: 201, clientId: 24, barberId: 3, service: 'Corte Hipster', date: '2025-06-10', amount: 40000, rating: null, notes: '', status: 'no_show' },
 
-  // ==========================================
-  // Robinson Patiño (id: 25) - Inactivo
-  // 3 completed + 1 no_show + 1 cancelled = 5 entries (4 count as visits)
-  // Sum completed: 55+55+40 = 150,000
-  // ==========================================
+
+
+
   { id: 102, clientId: 25, barberId: 8, service: 'Corte + Barba', date: '2025-12-25', amount: 55000, rating: 4, notes: 'Aprovechó vacaciones', status: 'completed' },
   { id: 103, clientId: 25, barberId: 8, service: 'Corte + Barba', date: '2025-11-08', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 104, clientId: 25, barberId: 8, service: 'Corte + Barba', date: '2025-10-01', amount: 55000, rating: null, notes: 'Canceló por viaje de trabajo', status: 'cancelled' },
   { id: 105, clientId: 25, barberId: 8, service: 'Corte Hipster', date: '2025-09-01', amount: 40000, rating: 5, notes: 'Primera visita', status: 'completed' },
   { id: 202, clientId: 25, barberId: 8, service: 'Corte + Barba', date: '2025-10-20', amount: 55000, rating: null, notes: 'No vino', status: 'no_show' },
 
-  // ==========================================
-  // Yesid Mantilla (id: 26) - Activo
-  // 8 completed + 0 no_show = 8 entries
-  // Sum completed: 45+45+45+55+45+45+55+45 = 380,000
-  // ==========================================
+
+
+
   { id: 106, clientId: 26, barberId: 4, service: 'Corte + Cejas', date: '2026-02-22', amount: 45000, rating: 5, notes: '', status: 'completed' },
   { id: 107, clientId: 26, barberId: 4, service: 'Corte + Cejas', date: '2026-01-19', amount: 45000, rating: 4, notes: '', status: 'completed' },
   { id: 108, clientId: 26, barberId: 4, service: 'Corte + Cejas', date: '2025-12-15', amount: 45000, rating: 5, notes: '', status: 'completed' },
@@ -1266,11 +1068,9 @@ export const mockVisitHistory = [
   { id: 205, clientId: 26, barberId: 4, service: 'Corte + Barba', date: '2025-08-01', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 206, clientId: 26, barberId: 4, service: 'Corte + Cejas', date: '2025-07-01', amount: 45000, rating: 5, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Daniela Rueda (id: 27) - Activo
-  // 7 completed + 0 no_show = 7 entries
-  // Sum completed: 75+50+75+50+75+50+50 = 425,000
-  // ==========================================
+
+
+
   { id: 110, clientId: 27, barberId: 13, service: 'Semi Mani + Pedi Tradicional', date: '2026-02-18', amount: 75000, rating: 5, notes: 'Vino con la amiga', status: 'completed' },
   { id: 111, clientId: 27, barberId: 13, service: 'Semipermanente Manicure', date: '2026-01-22', amount: 50000, rating: 5, notes: '', status: 'completed' },
   { id: 112, clientId: 27, barberId: 13, service: 'Semi Mani + Pedi Tradicional', date: '2025-12-18', amount: 75000, rating: 4, notes: 'Diseño navideño', status: 'completed' },
@@ -1279,11 +1079,9 @@ export const mockVisitHistory = [
   { id: 208, clientId: 27, barberId: 13, service: 'Semipermanente Manicure', date: '2025-10-01', amount: 50000, rating: 4, notes: '', status: 'completed' },
   { id: 209, clientId: 27, barberId: 13, service: 'Semipermanente Manicure', date: '2025-09-15', amount: 50000, rating: 5, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Harold Pineda (id: 28) - Activo
-  // 7 completed + 0 no_show = 7 entries
-  // Sum completed: 55+55+55+40+55+55+55 = 370,000
-  // ==========================================
+
+
+
   { id: 114, clientId: 28, barberId: 1, service: 'Corte + Barba', date: '2026-02-25', amount: 55000, rating: 5, notes: 'Corte reglamentario', status: 'completed' },
   { id: 115, clientId: 28, barberId: 1, service: 'Corte + Barba', date: '2026-02-10', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 116, clientId: 28, barberId: 1, service: 'Corte + Barba', date: '2026-01-25', amount: 55000, rating: 4, notes: '', status: 'completed' },
@@ -1292,11 +1090,9 @@ export const mockVisitHistory = [
   { id: 211, clientId: 28, barberId: 1, service: 'Corte + Barba', date: '2025-11-18', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 212, clientId: 28, barberId: 1, service: 'Corte + Barba', date: '2025-10-10', amount: 55000, rating: 5, notes: 'Primera visita', status: 'completed' },
 
-  // ==========================================
-  // Luis Fernando Guarín (id: 29) - Activo
-  // 9 completed + 0 no_show = 9 entries
-  // Sum completed: 55+55+55+60+55+55+55+55+55 = 500,000
-  // ==========================================
+
+
+
   { id: 118, clientId: 29, barberId: 7, service: 'Corte + Barba', date: '2026-02-12', amount: 55000, rating: 5, notes: 'Puntual como siempre', status: 'completed' },
   { id: 119, clientId: 29, barberId: 7, service: 'Corte + Barba', date: '2026-01-28', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 120, clientId: 29, barberId: 7, service: 'Corte + Barba', date: '2026-01-14', amount: 55000, rating: 4, notes: '', status: 'completed' },
@@ -1307,20 +1103,18 @@ export const mockVisitHistory = [
   { id: 215, clientId: 29, barberId: 7, service: 'Corte + Barba', date: '2025-10-22', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 216, clientId: 29, barberId: 7, service: 'Corte + Barba', date: '2025-10-05', amount: 55000, rating: 5, notes: '', status: 'completed' },
 
-  // ==========================================
-  // Cristian Ordóñez (id: 30) - Activo
-  // 5 completed + 1 no_show = 6 entries
-  // Sum completed: 55+55+55+40+45 = 250,000
-  // ==========================================
+
+
+
   { id: 123, clientId: 30, barberId: 6, service: 'Corte + Barba', date: '2026-02-19', amount: 55000, rating: 5, notes: 'Diseño tribal nuevo', status: 'completed' },
   { id: 124, clientId: 30, barberId: 6, service: 'Corte + Barba', date: '2026-01-22', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 125, clientId: 30, barberId: 6, service: 'Corte + Barba', date: '2025-12-18', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 126, clientId: 30, barberId: 6, service: 'Corte Hipster', date: '2025-11-20', amount: 40000, rating: 4, notes: '', status: 'completed' },
   { id: 127, clientId: 30, barberId: 6, service: 'Corte + Cejas', date: '2025-11-05', amount: 45000, rating: 4, notes: 'Primera visita', status: 'completed' },
   { id: 217, clientId: 30, barberId: 6, service: 'Corte + Barba', date: '2026-01-02', amount: 55000, rating: null, notes: 'No vino, resaca de año nuevo', status: 'no_show' },
-  // ==========================================
-  // Marzo 2026 — Servicios completados
-  // ==========================================
+
+
+
   { id: 219, clientId: 10, barberId: 5, service: 'Corte + Barba', date: '2026-03-01', amount: 55000, rating: 5, notes: '', status: 'completed' },
   { id: 220, clientId: 12, barberId: 13, service: 'Manicure + Pedicure Tradicional', date: '2026-03-01', amount: 55000, rating: 4, notes: '', status: 'completed' },
   { id: 221, clientId: 13, barberId: 1, service: 'Corte + Barba', date: '2026-03-01', amount: 55000, rating: 5, notes: 'Gran servicio', status: 'completed' },
@@ -1335,261 +1129,7 @@ export const mockVisitHistory = [
   { id: 230, clientId: 28, barberId: 14, service: 'Spa Manicure', date: '2026-03-01', amount: 50000, rating: 5, notes: 'Excelente atención', status: 'completed' },
   { id: 231, clientId: 27, barberId: 15, service: 'Semipermanente Manicure', date: '2026-03-01', amount: 50000, rating: 5, notes: '', status: 'completed' },
 ];
-
-export const mockNotifications = [
-  { id: 1, message: 'Carlos Mendoza confirmó su cita con Victor Fernández para mañana a las 10:00', type: 'success', time: 'Hace 5 min' },
-  { id: 2, message: '3 clientes llevan más de 30 días sin visitar', type: 'warning', time: 'Hace 1 hora' },
-  { id: 3, message: 'Campaña de WhatsApp enviada a 248 clientes', type: 'info', time: 'Hace 3 horas' },
-  { id: 4, message: 'David López agendó Spa Manicure con Josemith para el viernes', type: 'success', time: 'Hace 4 horas' },
-  { id: 5, message: 'Nuevo cliente registrado: Esteban Capacho León', type: 'info', time: 'Ayer' },
-  { id: 6, message: 'Felipe Ardila no ha vuelto en 90 días', type: 'warning', time: 'Ayer' },
-  { id: 7, message: 'Meta mensual alcanzada: $4.200.000 en ingresos', type: 'success', time: 'Hace 2 días' },
-];
-
-// ============================================
-// WhatsApp Conversations
-// ============================================
-export const mockWhatsAppConversations = [
-  // 1. ESTRELLA — Miguel Ángel (VIP): conversación completa mostrando a Lina en acción
-  { id: 'conv-1', clientId: 3, clientName: 'Miguel Ángel Torres', phone: '+573005551234', lastMessage: 'Eres la mejor Lina, muchas gracias! 🙌', lastMessageTime: '2026-03-04T10:18:00', unreadCount: 0, status: 'active', lastMessageFrom: 'client' },
-  // 2. Carlos Mendoza — Recordatorio + confirmación de cita
-  { id: 'conv-2', clientId: 1, clientName: 'Carlos Mendoza', phone: '+573001234567', lastMessage: 'Listo, nos vemos mañana a las 10!', lastMessageTime: '2026-03-04T09:15:00', unreadCount: 0, status: 'active', lastMessageFrom: 'client' },
-  // 3. Andrés Ruiz — Quiere reagendar, aún sin responder
-  { id: 'conv-3', clientId: 2, clientName: 'Andrés Ruiz Parra', phone: '+573009876543', lastMessage: 'Ay, se me cruzó algo del trabajo. ¿Puedo pasar mejor el viernes?', lastMessageTime: '2026-03-04T08:50:00', unreadCount: 1, status: 'active', lastMessageFrom: 'client' },
-  // 4. Emmanuel Rojas — Cliente nuevo preguntando precios
-  { id: 'conv-4', clientId: 12, clientName: 'Emmanuel Rojas Díaz', phone: '+573009988776', lastMessage: 'Buenísimo, entonces agendo para el sábado!', lastMessageTime: '2026-03-04T08:30:00', unreadCount: 1, status: 'active', lastMessageFrom: 'client' },
-  // 5. Nicolás Pabón — Feedback post-visita
-  { id: 'conv-5', clientId: 9, clientName: 'Nicolás Pabón Serrano', phone: '+573002233445', lastMessage: 'Quedó brutal hermano, 10/10 🔥', lastMessageTime: '2026-03-03T16:20:00', unreadCount: 0, status: 'active', lastMessageFrom: 'client' },
-  // 6. David López — Confirmó cita
-  { id: 'conv-6', clientId: 5, clientName: 'David López Vargas', phone: '+573007778899', lastMessage: 'Listo, ahí estaré sin falta!', lastMessageTime: '2026-03-03T14:30:00', unreadCount: 0, status: 'active', lastMessageFrom: 'client' },
-  // 7. Valentina Morales — Post lifting de pestañas
-  { id: 'conv-7', clientId: 16, clientName: 'Valentina Morales Cruz', phone: '+573005566778', lastMessage: 'Me encantó! Quedaron divinas 😍', lastMessageTime: '2026-03-02T19:20:00', unreadCount: 0, status: 'active', lastMessageFrom: 'client' },
-  // 8. Esteban Capacho — Cliente nuevo recomendado
-  { id: 'conv-8', clientId: 17, clientName: 'Esteban Capacho León', phone: '+573007788990', lastMessage: 'Dale, perfecto. Nos vemos el jueves entonces!', lastMessageTime: '2026-03-02T15:10:00', unreadCount: 0, status: 'active', lastMessageFrom: 'client' },
-  // 9. Juan Pablo Pérez — Recordatorio + confirmación
-  {
-    id: 'conv-9',
-    clientId: 4,
-    clientName: 'Juan Pablo Pérez',
-    phone: '+573004443322',
-    lastMessage: 'Listo, muchas gracias!',
-    lastMessageTime: '2026-03-04T07:45:00',
-    unreadCount: 0,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 10. Santiago Reyes — Seguimiento
-  {
-    id: 'conv-10',
-    clientId: 6,
-    clientName: 'Santiago Reyes Duarte',
-    phone: '+573006112233',
-    lastMessage: 'Bueno, ahí miro entonces',
-    lastMessageTime: '2026-03-04T07:20:00',
-    unreadCount: 0,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 11. Camilo Hernández — No-show seguimiento
-  {
-    id: 'conv-11',
-    clientId: 7,
-    clientName: 'Camilo Hernández Ríos',
-    phone: '+573003344556',
-    lastMessage: 'Hola Camilo! Vimos que no pudiste asistir a tu cita del martes...',
-    lastMessageTime: '2026-03-04T06:50:00',
-    unreadCount: 0,
-    status: 'active',
-    lastMessageFrom: 'business',
-  },
-  // 12. Sebastián Cárdenas — Agendar cita
-  {
-    id: 'conv-12',
-    clientId: 10,
-    clientName: 'Sebastián Cárdenas Leal',
-    phone: '+573005566778',
-    lastMessage: 'Gracias Lina, nos vemos!',
-    lastMessageTime: '2026-03-03T18:40:00',
-    unreadCount: 0,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 13. Mateo Gómez — Recordatorio de cita
-  {
-    id: 'conv-13',
-    clientId: 14,
-    clientName: 'Mateo Gómez Plata',
-    phone: '+573006677889',
-    lastMessage: 'Hola Mateo! Te recuerdo que mañana tienes cita a las 11:00 AM',
-    lastMessageTime: '2026-03-03T17:00:00',
-    unreadCount: 0,
-    status: 'active',
-    lastMessageFrom: 'business',
-  },
-  // 14. Fabián Andrés Capacho — Cita urgente
-  {
-    id: 'conv-14',
-    clientId: 19,
-    clientName: 'Fabián Andrés Capacho Rincón',
-    phone: '+573036789012',
-    lastMessage: 'Nos vemos hermano!',
-    lastMessageTime: '2026-03-03T15:30:00',
-    unreadCount: 1,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 15. Karen Lizeth Amaya — Semipermanente
-  {
-    id: 'conv-15',
-    clientId: 23,
-    clientName: 'Karen Lizeth Amaya Soto',
-    phone: '+573070123456',
-    lastMessage: 'Perfecto Karen! Te esperamos el sábado.',
-    lastMessageTime: '2026-03-03T14:10:00',
-    unreadCount: 0,
-    status: 'active',
-    lastMessageFrom: 'business',
-  },
-  // 16. Robinson Ferney Patiño — Reactivación
-  {
-    id: 'conv-16',
-    clientId: 25,
-    clientName: 'Robinson Ferney Patiño',
-    phone: '+573092345678',
-    lastMessage: 'Hola Robinson! Hace 45 días que no te vemos por Al Pelo...',
-    lastMessageTime: '2026-03-03T12:00:00',
-    unreadCount: 0,
-    status: 'active',
-    lastMessageFrom: 'business',
-  },
-  // 17. Harold Steven Pineda — Promo
-  {
-    id: 'conv-17',
-    clientId: 28,
-    clientName: 'Harold Steven Pineda Solano',
-    phone: '+573125678901',
-    lastMessage: 'Sí claro, cuánto sale?',
-    lastMessageTime: '2026-03-02T20:30:00',
-    unreadCount: 1,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 18. Cristian Camilo Ordóñez — Cambio de look
-  {
-    id: 'conv-18',
-    clientId: 30,
-    clientName: 'Cristian Camilo Ordóñez Vega',
-    phone: '+573147890123',
-    lastMessage: 'Buenas, es que quiero un cambio de look total',
-    lastMessageTime: '2026-03-02T19:00:00',
-    unreadCount: 1,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 19. Jhon Fredy Blanco — Cita para hoy (inbound)
-  {
-    id: 'conv-19',
-    clientId: 20,
-    clientName: 'Jhon Fredy Blanco Duarte',
-    phone: '+573047890123',
-    lastMessage: 'Buenas tardes, necesito una cita para hoy si hay',
-    lastMessageTime: '2026-03-04T11:30:00',
-    unreadCount: 1,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 20. Oscar Mauricio Jaimes — Precio corte hipster (inbound)
-  {
-    id: 'conv-20',
-    clientId: 22,
-    clientName: 'Oscar Mauricio Jaimes Carvajal',
-    phone: '+573069012345',
-    lastMessage: 'Hola, cuánto sale el corte hipster?',
-    lastMessageTime: '2026-03-04T11:00:00',
-    unreadCount: 1,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 21. Daniela Fernanda Rueda — Disponibilidad mañana (inbound)
-  {
-    id: 'conv-21',
-    clientId: 27,
-    clientName: 'Daniela Fernanda Rueda Parra',
-    phone: '+573114567890',
-    lastMessage: 'Hola! Quiero saber si tienen disponibilidad para mañana',
-    lastMessageTime: '2026-03-04T10:45:00',
-    unreadCount: 1,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 22. Yesid Orlando Mantilla — Reagendar cita (inbound)
-  {
-    id: 'conv-22',
-    clientId: 26,
-    clientName: 'Yesid Orlando Mantilla Gómez',
-    phone: '+573103456789',
-    lastMessage: 'Necesito reagendar mi cita del jueves',
-    lastMessageTime: '2026-03-04T10:20:00',
-    unreadCount: 1,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-  // 23. Luis García — Nuevo cliente potencial (inbound)
-  {
-    id: 'conv-23',
-    clientId: null,
-    clientName: 'Luis García',
-    phone: '+573159876543',
-    lastMessage: 'Hola buenas, me recomendaron esta barbería. Cómo hago para agendar?',
-    lastMessageTime: '2026-03-04T10:00:00',
-    unreadCount: 1,
-    status: 'active',
-    lastMessageFrom: 'client',
-  },
-];
-
-// ============================================
-// WhatsApp Messages
-// ============================================
-export const mockWhatsAppMessages = {
-  // ★ CONVERSACIÓN ESTRELLA — Miguel Ángel (VIP): muestra a Lina gestionando todo
-  'conv-1': [
-    { id: 'ms-1', from: 'business', text: 'Hola Miguel Ángel! Soy Lina de Al Pelo. Como eres de nuestros clientes más especiales, te quería avisar que ya abrimos agenda para esta semana. ¿Te gustaría reservar tu horario favorito antes de que se llene?', time: '2026-03-03T09:00:00', status: 'read' },
-    { id: 'ms-2', from: 'client', text: 'Hola Lina! Sí, necesito un corte urgente jaja. ¿Qué tienen para el sábado?', time: '2026-03-03T09:22:00', status: 'read' },
-    { id: 'ms-3', from: 'business', text: 'Jaja tranquilo que te dejamos como nuevo. Para el sábado con Victor tenemos disponible a las 9:00 AM, 11:00 AM y 3:00 PM. ¿Cuál te queda mejor?', time: '2026-03-03T09:25:00', status: 'read' },
-    { id: 'ms-4', from: 'client', text: 'La de las 11 está perfecta', time: '2026-03-03T09:28:00', status: 'read' },
-    { id: 'ms-5', from: 'business', text: 'Listo! Te agendé el sábado 8 de marzo a las 11:00 AM con Victor.\n\nCorte + barba como siempre, ¿verdad? O quieres agregar algo más esta vez?', time: '2026-03-03T09:30:00', status: 'read' },
-    { id: 'ms-6', from: 'client', text: 'Sí, lo de siempre. Pero sabes qué? Agrégame también la ceja, que la tengo un desastre', time: '2026-03-03T09:33:00', status: 'read' },
-    { id: 'ms-7', from: 'business', text: 'Jaja ya te la agrego, quedan $45.000 en total (corte $25.000 + barba $12.000 + ceja $8.000). Como cliente VIP ya sabes que tienes prioridad, así que Victor te atiende puntualito.', time: '2026-03-03T09:35:00', status: 'read' },
-    { id: 'ms-8', from: 'client', text: 'Perfecto, gracias Lina!', time: '2026-03-03T09:37:00', status: 'read' },
-    { id: 'ms-9', from: 'business', text: 'A ti Miguel Ángel! Nos vemos el sábado.', time: '2026-03-03T09:38:00', status: 'read' },
-    // Día siguiente - recordatorio
-    { id: 'ms-10', from: 'business', text: 'Hola Miguel Ángel! Te recuerdo que mañana sábado tienes cita a las 11:00 AM con Victor. Te esperamos con todo listo. ¿Nos confirmas que vas?', time: '2026-03-04T09:00:00', status: 'read' },
-    { id: 'ms-11', from: 'client', text: 'Confirmado! Ahí estaré sin falta', time: '2026-03-04T09:15:00', status: 'read' },
-    { id: 'ms-12', from: 'business', text: 'Perfecto, te esperamos! Recuerda llegar unos 5 minuticos antes para que Victor arranque puntual contigo.', time: '2026-03-04T09:17:00', status: 'read' },
-    { id: 'ms-13', from: 'client', text: 'Dale, siempre tan atenta. Oye una pregunta, ¿tienen algún producto para el cabello? Es que el mío está un poco reseco', time: '2026-03-04T10:05:00', status: 'read' },
-    { id: 'ms-14', from: 'business', text: 'Claro que sí! Tenemos una cera mate y un aceite para barba que son muy buenos. Le digo a Victor que te los muestre mañana y te asesore según tu tipo de cabello. Él es el que más sabe de eso.', time: '2026-03-04T10:10:00', status: 'read' },
-    { id: 'ms-15', from: 'client', text: 'Eres la mejor Lina, muchas gracias! 🙌', time: '2026-03-04T10:18:00', status: 'read' },
-  ],
-
-  // Conv 2 — Carlos Mendoza: Recordatorio + confirmación
-  'conv-2': [
-    { id: 'mc-1', from: 'business', text: 'Hola Carlos! Soy Lina de Al Pelo. Te cuento que tienes cita mañana miércoles con Victor a las 10:00 AM. ¿Todo bien para esa hora?', time: '2026-03-03T15:00:00', status: 'read' },
-    { id: 'mc-2', from: 'client', text: 'Hola Lina! Sí claro, ahí voy sin falta', time: '2026-03-03T15:12:00', status: 'read' },
-    { id: 'mc-3', from: 'business', text: 'Genial Carlos! Te esperamos mañana. Intenta llegar unos minuticos antes para que Victor te atienda puntual.', time: '2026-03-03T15:15:00', status: 'read' },
-    { id: 'mc-4', from: 'client', text: 'Listo, nos vemos mañana a las 10!', time: '2026-03-04T09:15:00', status: 'read' },
-  ],
-
-  // Conv 3 — Andrés Ruiz: Reagendar cita (último mensaje sin responder)
-  'conv-3': [
-    { id: 'ma-1', from: 'business', text: 'Hola Andrés! Soy Lina de Al Pelo. Te extrañamos por acá, ya van varias semanas sin verte. ¿Qué tal si agendamos un corte esta semana?', time: '2026-03-02T10:00:00', status: 'read' },
-    { id: 'ma-2', from: 'client', text: 'Hola! Sí, he andado a mil. Pero quiero ir esta semana sin falta', time: '2026-03-02T14:20:00', status: 'read' },
-    { id: 'ma-3', from: 'business', text: 'Qué bien que te animas! Mira, tenemos espacio el miércoles a las 10 AM o el jueves a las 4 PM. ¿Cuál te acomoda mejor?', time: '2026-03-02T14:25:00', status: 'read' },
-    { id: 'ma-4', from: 'client', text: 'El jueves a las 4 me queda perfecto', time: '2026-03-02T16:00:00', status: 'read' },
-    { id: 'ma-5', from: 'business', text: 'Listo, quedaste agendado! Jueves 6 de marzo a las 4:00 PM con Julián. Te va a encantar, es muy bueno. Te esperamos!', time: '2026-03-02T16:05:00', status: 'read' },
-    { id: 'ma-6', from: 'client', text: 'Gracias Lina!', time: '2026-03-02T16:08:00', status: 'read' },
-    { id: 'ma-7', from: 'client', text: 'Ay, se me cruzó algo del trabajo. ¿Puedo pasar mejor el viernes?', time: '2026-03-04T08:50:00', status: 'delivered' },
-  ],
+__CUT_START__
 
   // Conv 4 — Emmanuel Rojas: Cliente nuevo preguntando precios
   'conv-4': [
@@ -1815,3 +1355,4 @@ export const mockLinaResponses = {
     'Procesando tu solicitud...',
   ],
 };
+__CUT_END__

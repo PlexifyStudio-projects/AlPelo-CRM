@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { useTenant } from '../../../context/TenantContext';
 import LocationSelector from './LocationSelector';
 
@@ -133,9 +133,9 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
     return acc;
   }, {});
 
-  const toggleSection = (section) => {
+  const toggleSection = useCallback((section) => {
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
-  };
+  }, []);
 
   const isSectionOpen = (section) => openSections[section] !== false;
 
@@ -145,7 +145,6 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
 
   return (
     <aside className={`${b} ${isCollapsed ? `${b}--collapsed` : ''} ${isMobileOpen ? `${b}--mobile-open` : ''}`}>
-      {/* Brand */}
       <div className={`${b}__brand`}>
         <div className={`${b}__brand-inner`}>
           <div className={`${b}__logo-icon`}>
@@ -163,22 +162,14 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
           )}
         </div>
         {isMobileOpen ? (
-          <button
-            className={`${b}__close-mobile`}
-            onClick={onCloseMobile}
-            aria-label="Cerrar menu"
-          >
+          <button className={`${b}__close-mobile`} onClick={onCloseMobile} aria-label="Cerrar menu">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         ) : !isCollapsed && (
-          <button
-            className={`${b}__toggle`}
-            onClick={onToggleCollapse}
-            aria-label="Colapsar sidebar"
-          >
+          <button className={`${b}__toggle`} onClick={onToggleCollapse} aria-label="Colapsar sidebar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
@@ -188,18 +179,13 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
 
       <div className={`${b}__brand-divider`} />
 
-      {/* Location Selector (multi-location) */}
       <LocationSelector />
 
-      {/* Navigation */}
       <nav className={`${b}__nav`}>
         {Object.entries(sections).map(([sectionName, items]) => (
           <div key={sectionName} className={`${b}__section`}>
             {!isCollapsed && (
-              <button
-                className={`${b}__section-header`}
-                onClick={() => toggleSection(sectionName)}
-              >
+              <button className={`${b}__section-header`} onClick={() => toggleSection(sectionName)}>
                 <span className={`${b}__section-title`}>{sectionName}</span>
                 <svg
                   className={`${b}__section-chevron ${isSectionOpen(sectionName) ? '' : `${b}__section-chevron--closed`}`}
@@ -209,9 +195,7 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
                 </svg>
               </button>
             )}
-            {isCollapsed && (
-              <div className={`${b}__section-dot`} />
-            )}
+            {isCollapsed && <div className={`${b}__section-dot`} />}
             {(isCollapsed || isSectionOpen(sectionName)) && (
               <ul className={`${b}__menu`}>
                 {items.map((item, index) => (
@@ -256,11 +240,9 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
         ))}
       </nav>
 
-      {/* Footer */}
       <div className={`${b}__footer`}>
         <div className={`${b}__footer-divider`} />
 
-        {/* User profile card */}
         <div className={`${b}__user`}>
           <div className={`${b}__user-avatar`}>
             {userInitials}
@@ -273,15 +255,10 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
           )}
         </div>
 
-        {/* Action buttons */}
         {!isCollapsed && (
           <div className={`${b}__footer-actions`}>
             {onLogout && (
-              <button
-                className={`${b}__logout`}
-                onClick={onLogout}
-                aria-label="Cerrar sesion"
-              >
+              <button className={`${b}__logout`} onClick={onLogout} aria-label="Cerrar sesion">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />
@@ -293,13 +270,8 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
           </div>
         )}
 
-        {/* Collapsed: toggle expand button */}
         {isCollapsed && (
-          <button
-            className={`${b}__toggle ${b}__toggle--collapsed`}
-            onClick={onToggleCollapse}
-            aria-label="Expandir sidebar"
-          >
+          <button className={`${b}__toggle ${b}__toggle--collapsed`} onClick={onToggleCollapse} aria-label="Expandir sidebar">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
@@ -310,4 +282,4 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
   );
 };
 
-export default Sidebar;
+export default memo(Sidebar);

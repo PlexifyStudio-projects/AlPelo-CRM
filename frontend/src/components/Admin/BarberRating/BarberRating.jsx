@@ -1,11 +1,9 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { mockBarbers, mockClients, mockVisitHistory } from '../../../data/mockData';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { useNotification } from '../../../context/NotificationContext';
 import { useTenant } from '../../../context/TenantContext';
 import Modal from '../../common/Modal/Modal';
-
-// ===== ICONS =====
 
 const StarIcon = ({ filled, half }) => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? '#C9A84C' : half ? 'url(#halfGrad)' : 'none'} stroke="#C9A84C" strokeWidth="1.5">
@@ -21,7 +19,7 @@ const StarIcon = ({ filled, half }) => (
   </svg>
 );
 
-const StarRating = ({ rating, size = 14 }) => {
+const StarRating = memo(({ rating }) => {
   const fullStars = Math.floor(rating);
   const hasHalf = rating - fullStars >= 0.25 && rating - fullStars < 0.75;
   const roundUp = rating - fullStars >= 0.75;
@@ -35,7 +33,7 @@ const StarRating = ({ rating, size = 14 }) => {
       <span className="barber-rating__stars-value">{rating.toFixed(1)}</span>
     </div>
   );
-};
+});
 
 const ChevronDownIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -122,8 +120,6 @@ const ClipboardIcon = () => (
   </svg>
 );
 
-// ===== HELPERS =====
-
 const getInitials = (name) => {
   const parts = name.split(' ');
   return parts.length >= 2
@@ -145,9 +141,7 @@ const loadBarberPhotos = () => {
 const saveBarberPhotos = (photos) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(photos));
-  } catch {
-    // localStorage full or unavailable
-  }
+  } catch {}
 };
 
 const computeBarberStats = () => {
@@ -170,7 +164,6 @@ const computeBarberStats = () => {
       ? Math.round(totalRevenue / barberVisits.length)
       : 0;
 
-    // Compute top services
     const serviceCount = {};
     barberVisits.forEach((v) => {
       serviceCount[v.service] = (serviceCount[v.service] || 0) + 1;
@@ -180,10 +173,9 @@ const computeBarberStats = () => {
       .slice(0, 3)
       .map(([name, count]) => ({ name, count }));
 
-    // Compute best month
     const monthRevenue = {};
     barberVisits.forEach((v) => {
-      const monthKey = v.date.substring(0, 7); // YYYY-MM
+      const monthKey = v.date.substring(0, 7);
       monthRevenue[monthKey] = (monthRevenue[monthKey] || 0) + v.amount;
     });
     const bestMonth = Object.entries(monthRevenue)
@@ -243,7 +235,6 @@ const computeBarberClients = (barberId) => {
   }));
 };
 
-// ===== SORT OPTIONS =====
 const SORT_OPTIONS = [
   { value: 'visits', label: 'Mas visitas' },
   { value: 'rating', label: 'Mejor calificacion' },
@@ -257,12 +248,58 @@ const formatMonthLabel = (monthStr) => {
   return `${months[parseInt(month, 10) - 1]} ${year}`;
 };
 
-// ===== MAIN COMPONENT =====
+const ClientSelectionList = memo(({ barberClients, selectedClientIds, toggleClientSelection, toggleAllClients, b }) => (
+  <div className={`${b}__client-selection`}>
+    <div className={`${b}__client-selection-header`}>
+      <label className={`${b}__checkbox-wrapper`}>
+        <input
+          type="checkbox"
+          className={`${b}__checkbox`}
+          checked={selectedClientIds.size === barberClients.length && barberClients.length > 0}
+          onChange={toggleAllClients}
+        />
+        <span className={`${b}__checkbox-custom`}>
+          {selectedClientIds.size === barberClients.length && barberClients.length > 0 && <CheckIcon />}
+        </span>
+        <span className={`${b}__checkbox-label`}>
+          Seleccionar todos ({barberClients.length})
+        </span>
+      </label>
+      <span className={`${b}__selected-count`}>
+        {selectedClientIds.size} seleccionados
+      </span>
+    </div>
+    <div className={`${b}__client-check-list`}>
+      {barberClients.map((client) => (
+        <label
+          key={client.id}
+          className={`${b}__client-check-item ${selectedClientIds.has(client.id) ? `${b}__client-check-item--selected` : ''}`}
+        >
+          <input
+            type="checkbox"
+            className={`${b}__checkbox`}
+            checked={selectedClientIds.has(client.id)}
+            onChange={() => toggleClientSelection(client.id)}
+          />
+          <span className={`${b}__checkbox-custom`}>
+            {selectedClientIds.has(client.id) && <CheckIcon />}
+          </span>
+          <div className={`${b}__client-check-info`}>
+            <span className={`${b}__client-check-name`}>{client.name}</span>
+            <span className={`${b}__client-check-phone`}>{client.phone}</span>
+          </div>
+          {!client.acceptsWhatsApp && (
+            <span className={`${b}__client-check-badge`}>Sin WhatsApp</span>
+          )}
+        </label>
+      ))}
+    </div>
+  </div>
+));
 
 const BarberRating = () => {
   const { addNotification } = useNotification();
   const { tenant } = useTenant();
-  const [selectedBarberId, setSelectedBarberId] = useState(null);
   const [expandedBarberId, setExpandedBarberId] = useState(null);
   const [sortBy, setSortBy] = useState('visits');
   const [clientFilter, setClientFilter] = useState('');
@@ -277,7 +314,6 @@ const BarberRating = () => {
 
   const b = 'barber-rating';
 
-  // Load photos from localStorage on mount
   useEffect(() => {
     setBarberPhotos(loadBarberPhotos());
   }, []);
@@ -285,15 +321,11 @@ const BarberRating = () => {
   const barberStats = useMemo(() => computeBarberStats(), []);
 
   const barberStatsWithVisits = useMemo(() => {
-    return barberStats.filter((b) => b.totalVisits > 0);
+    return barberStats.filter((bs) => bs.totalVisits > 0);
   }, [barberStats]);
 
-  const selectedBarber = useMemo(() => {
-    return barberStatsWithVisits.find((b) => b.id === selectedBarberId) || null;
-  }, [barberStatsWithVisits, selectedBarberId]);
-
   const expandedBarber = useMemo(() => {
-    return barberStatsWithVisits.find((b) => b.id === expandedBarberId) || null;
+    return barberStatsWithVisits.find((bs) => bs.id === expandedBarberId) || null;
   }, [barberStatsWithVisits, expandedBarberId]);
 
   const barberClients = useMemo(() => {
@@ -311,13 +343,13 @@ const BarberRating = () => {
 
     switch (sortBy) {
       case 'visits':
-        clients.sort((a, b) => b.visits - a.visits);
+        clients.sort((a, cb) => cb.visits - a.visits);
         break;
       case 'rating':
-        clients.sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
+        clients.sort((a, cb) => (cb.avgRating || 0) - (a.avgRating || 0));
         break;
       case 'recent':
-        clients.sort((a, b) => new Date(b.lastVisit) - new Date(a.lastVisit));
+        clients.sort((a, cb) => new Date(cb.lastVisit) - new Date(a.lastVisit));
         break;
       default:
         break;
@@ -325,17 +357,15 @@ const BarberRating = () => {
     return clients;
   }, [barberClients, clientFilter, sortBy]);
 
-  const handleBarberClick = (barberId) => {
+  const handleBarberClick = useCallback((barberId) => {
     if (expandedBarberId === barberId) {
       setExpandedBarberId(null);
-      setSelectedBarberId(null);
     } else {
       setExpandedBarberId(barberId);
-      setSelectedBarberId(barberId);
       setClientFilter('');
       setSortBy('visits');
     }
-  };
+  }, [expandedBarberId]);
 
   const handlePhotoUpload = useCallback((barberId, event) => {
     event.stopPropagation();
@@ -364,7 +394,6 @@ const BarberRating = () => {
     };
     reader.readAsDataURL(file);
 
-    // Reset file input
     event.target.value = '';
   }, [addNotification]);
 
@@ -374,22 +403,22 @@ const BarberRating = () => {
     if (input) input.click();
   }, []);
 
-  const handleOpenFeedback = (event) => {
+  const handleOpenFeedback = useCallback((event) => {
     event.stopPropagation();
     const whatsappClients = barberClients.filter((c) => c.acceptsWhatsApp);
     setSelectedClientIds(new Set(whatsappClients.map((c) => c.id)));
     setShowFeedbackModal(true);
-  };
+  }, [barberClients]);
 
-  const handleOpenRetention = (event) => {
+  const handleOpenRetention = useCallback((event) => {
     event.stopPropagation();
     const whatsappClients = barberClients.filter((c) => c.acceptsWhatsApp);
     setSelectedClientIds(new Set(whatsappClients.map((c) => c.id)));
     setRetentionOffer('20% de descuento en tu próximo servicio');
     setShowRetentionModal(true);
-  };
+  }, [barberClients]);
 
-  const handleSendRetention = () => {
+  const handleSendRetention = useCallback(() => {
     setIsSending(true);
     setTimeout(() => {
       setIsSending(false);
@@ -399,9 +428,9 @@ const BarberRating = () => {
         'success'
       );
     }, 1500);
-  };
+  }, [selectedClientIds.size, expandedBarber?.name, addNotification]);
 
-  const toggleClientSelection = (clientId) => {
+  const toggleClientSelection = useCallback((clientId) => {
     setSelectedClientIds((prev) => {
       const next = new Set(prev);
       if (next.has(clientId)) {
@@ -411,17 +440,17 @@ const BarberRating = () => {
       }
       return next;
     });
-  };
+  }, []);
 
-  const toggleAllClients = () => {
+  const toggleAllClients = useCallback(() => {
     if (selectedClientIds.size === barberClients.length) {
       setSelectedClientIds(new Set());
     } else {
       setSelectedClientIds(new Set(barberClients.map((c) => c.id)));
     }
-  };
+  }, [selectedClientIds.size, barberClients]);
 
-  const handleSendFeedback = () => {
+  const handleSendFeedback = useCallback(() => {
     setIsSending(true);
     setTimeout(() => {
       setIsSending(false);
@@ -431,27 +460,30 @@ const BarberRating = () => {
         'success'
       );
     }, 1500);
-  };
+  }, [selectedClientIds.size, expandedBarber?.name, addNotification]);
 
-  const messageTemplate = expandedBarber
-    ? `Hola {nombre}! Que tal tu experiencia con ${expandedBarber.name} en ${tenant.name}? Tu opinion nos ayuda a mejorar. Responde del 1 al 5`
-    : '';
+  const messageTemplate = useMemo(() => {
+    return expandedBarber
+      ? `Hola {nombre}! Que tal tu experiencia con ${expandedBarber.name} en ${tenant.name}? Tu opinion nos ayuda a mejorar. Responde del 1 al 5`
+      : '';
+  }, [expandedBarber, tenant.name]);
 
-  const getMessagePreview = (clientName) => {
+  const getMessagePreview = useCallback((clientName) => {
     return messageTemplate.replace('{nombre}', clientName);
-  };
+  }, [messageTemplate]);
 
-  const retentionTemplate = expandedBarber
-    ? `Hola {nombre}, soy Lina de ${tenant.name}. Queremos invitarte esta semana con un ${retentionOffer}. Te esperamos!${tenant.booking_url ? ` Agenda aqui: ${tenant.booking_url}` : ''}`
-    : '';
+  const retentionTemplate = useMemo(() => {
+    return expandedBarber
+      ? `Hola {nombre}, soy Lina de ${tenant.name}. Queremos invitarte esta semana con un ${retentionOffer}. Te esperamos!${tenant.booking_url ? ` Agenda aqui: ${tenant.booking_url}` : ''}`
+      : '';
+  }, [expandedBarber, tenant.name, tenant.booking_url, retentionOffer]);
 
-  const getRetentionPreview = (clientName) => {
+  const getRetentionPreview = useCallback((clientName) => {
     return retentionTemplate.replace('{nombre}', clientName);
-  };
+  }, [retentionTemplate]);
 
   return (
     <div className={b}>
-      {/* Header */}
       <div className={`${b}__header`}>
         <div className={`${b}__header-left`}>
           <h2 className={`${b}__title`}>Rendimiento del Equipo</h2>
@@ -461,7 +493,6 @@ const BarberRating = () => {
         </div>
       </div>
 
-      {/* Barber Cards Grid */}
       <div className={`${b}__grid`}>
         {barberStatsWithVisits.map((barber, index) => {
           const isExpanded = expandedBarberId === barber.id;
@@ -477,7 +508,6 @@ const BarberRating = () => {
               onKeyDown={(e) => e.key === 'Enter' && handleBarberClick(barber.id)}
               style={{ animationDelay: `${0.04 * (index + 1)}s` }}
             >
-              {/* Card Header */}
               <div className={`${b}__card-top`}>
                 <div className={`${b}__card-avatar`}>
                   {photo ? (
@@ -544,11 +574,9 @@ const BarberRating = () => {
                 </div>
               </div>
 
-              {/* Expandable Detail Section */}
               <div className={`${b}__detail ${isExpanded ? `${b}__detail--open` : ''}`}>
                 {isExpanded && (
                   <>
-                    {/* Section 1: Professional Info */}
                     <div className={`${b}__detail-section`}>
                       <h4 className={`${b}__detail-section-title`}>Informacion del Profesional</h4>
                       <div className={`${b}__info-grid`}>
@@ -579,7 +607,6 @@ const BarberRating = () => {
                       )}
                     </div>
 
-                    {/* Section 2: Performance Metrics */}
                     <div className={`${b}__detail-section`}>
                       <h4 className={`${b}__detail-section-title`}>Metricas de Rendimiento</h4>
                       <div className={`${b}__metrics-grid`}>
@@ -627,7 +654,6 @@ const BarberRating = () => {
                       )}
                     </div>
 
-                    {/* Section 3: Clients List */}
                     <div className={`${b}__detail-section`}>
                       <div className={`${b}__detail-header`}>
                         <div className={`${b}__detail-header-left`}>
@@ -640,7 +666,6 @@ const BarberRating = () => {
                         </div>
                       </div>
 
-                      {/* Filters bar */}
                       <div className={`${b}__detail-filters`} onClick={(e) => e.stopPropagation()}>
                         <div className={`${b}__search`}>
                           <SearchIcon />
@@ -669,7 +694,6 @@ const BarberRating = () => {
                         </div>
                       </div>
 
-                      {/* Client List */}
                       <div className={`${b}__clients-list`}>
                         {filteredClients.length > 0 ? (
                           filteredClients.map((client, clientIndex) => (
@@ -718,7 +742,6 @@ const BarberRating = () => {
                       </div>
                     </div>
 
-                    {/* Section 4: Action Buttons */}
                     <div className={`${b}__actions`}>
                       <button
                         className={`${b}__feedback-btn`}
@@ -753,7 +776,6 @@ const BarberRating = () => {
         })}
       </div>
 
-      {/* Feedback Modal */}
       <Modal
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
@@ -761,7 +783,6 @@ const BarberRating = () => {
         className={`${b}__modal`}
       >
         <div className={`${b}__modal-content`}>
-          {/* Message Preview */}
           <div className={`${b}__message-preview`}>
             <span className={`${b}__message-preview-label`}>Vista previa del mensaje</span>
             <div className={`${b}__message-bubble`}>
@@ -769,55 +790,14 @@ const BarberRating = () => {
             </div>
           </div>
 
-          {/* Client Selection */}
-          <div className={`${b}__client-selection`}>
-            <div className={`${b}__client-selection-header`}>
-              <label className={`${b}__checkbox-wrapper`}>
-                <input
-                  type="checkbox"
-                  className={`${b}__checkbox`}
-                  checked={selectedClientIds.size === barberClients.length && barberClients.length > 0}
-                  onChange={toggleAllClients}
-                />
-                <span className={`${b}__checkbox-custom`}>
-                  {selectedClientIds.size === barberClients.length && barberClients.length > 0 && <CheckIcon />}
-                </span>
-                <span className={`${b}__checkbox-label`}>
-                  Seleccionar todos ({barberClients.length})
-                </span>
-              </label>
-              <span className={`${b}__selected-count`}>
-                {selectedClientIds.size} seleccionados
-              </span>
-            </div>
-            <div className={`${b}__client-check-list`}>
-              {barberClients.map((client) => (
-                <label
-                  key={client.id}
-                  className={`${b}__client-check-item ${selectedClientIds.has(client.id) ? `${b}__client-check-item--selected` : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    className={`${b}__checkbox`}
-                    checked={selectedClientIds.has(client.id)}
-                    onChange={() => toggleClientSelection(client.id)}
-                  />
-                  <span className={`${b}__checkbox-custom`}>
-                    {selectedClientIds.has(client.id) && <CheckIcon />}
-                  </span>
-                  <div className={`${b}__client-check-info`}>
-                    <span className={`${b}__client-check-name`}>{client.name}</span>
-                    <span className={`${b}__client-check-phone`}>{client.phone}</span>
-                  </div>
-                  {!client.acceptsWhatsApp && (
-                    <span className={`${b}__client-check-badge`}>Sin WhatsApp</span>
-                  )}
-                </label>
-              ))}
-            </div>
-          </div>
+          <ClientSelectionList
+            barberClients={barberClients}
+            selectedClientIds={selectedClientIds}
+            toggleClientSelection={toggleClientSelection}
+            toggleAllClients={toggleAllClients}
+            b={b}
+          />
 
-          {/* Send Button */}
           <div className={`${b}__modal-footer`}>
             <button
               className={`${b}__cancel-btn`}
@@ -846,7 +826,6 @@ const BarberRating = () => {
         </div>
       </Modal>
 
-      {/* Retention Campaign Modal */}
       <Modal
         isOpen={showRetentionModal}
         onClose={() => setShowRetentionModal(false)}
@@ -854,7 +833,6 @@ const BarberRating = () => {
         className={`${b}__modal`}
       >
         <div className={`${b}__modal-content`}>
-          {/* Offer Input */}
           <div className={`${b}__retention-offer`}>
             <label className={`${b}__retention-offer-label`}>Oferta personalizada</label>
             <input
@@ -866,7 +844,6 @@ const BarberRating = () => {
             />
           </div>
 
-          {/* Message Preview */}
           <div className={`${b}__message-preview`}>
             <span className={`${b}__message-preview-label`}>Vista previa del mensaje</span>
             <div className={`${b}__message-bubble ${b}__message-bubble--retention`}>
@@ -874,55 +851,14 @@ const BarberRating = () => {
             </div>
           </div>
 
-          {/* Client Selection */}
-          <div className={`${b}__client-selection`}>
-            <div className={`${b}__client-selection-header`}>
-              <label className={`${b}__checkbox-wrapper`}>
-                <input
-                  type="checkbox"
-                  className={`${b}__checkbox`}
-                  checked={selectedClientIds.size === barberClients.length && barberClients.length > 0}
-                  onChange={toggleAllClients}
-                />
-                <span className={`${b}__checkbox-custom`}>
-                  {selectedClientIds.size === barberClients.length && barberClients.length > 0 && <CheckIcon />}
-                </span>
-                <span className={`${b}__checkbox-label`}>
-                  Seleccionar todos ({barberClients.length})
-                </span>
-              </label>
-              <span className={`${b}__selected-count`}>
-                {selectedClientIds.size} seleccionados
-              </span>
-            </div>
-            <div className={`${b}__client-check-list`}>
-              {barberClients.map((client) => (
-                <label
-                  key={client.id}
-                  className={`${b}__client-check-item ${selectedClientIds.has(client.id) ? `${b}__client-check-item--selected` : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    className={`${b}__checkbox`}
-                    checked={selectedClientIds.has(client.id)}
-                    onChange={() => toggleClientSelection(client.id)}
-                  />
-                  <span className={`${b}__checkbox-custom`}>
-                    {selectedClientIds.has(client.id) && <CheckIcon />}
-                  </span>
-                  <div className={`${b}__client-check-info`}>
-                    <span className={`${b}__client-check-name`}>{client.name}</span>
-                    <span className={`${b}__client-check-phone`}>{client.phone}</span>
-                  </div>
-                  {!client.acceptsWhatsApp && (
-                    <span className={`${b}__client-check-badge`}>Sin WhatsApp</span>
-                  )}
-                </label>
-              ))}
-            </div>
-          </div>
+          <ClientSelectionList
+            barberClients={barberClients}
+            selectedClientIds={selectedClientIds}
+            toggleClientSelection={toggleClientSelection}
+            toggleAllClients={toggleAllClients}
+            b={b}
+          />
 
-          {/* Send Button */}
           <div className={`${b}__modal-footer`}>
             <button
               className={`${b}__cancel-btn`}

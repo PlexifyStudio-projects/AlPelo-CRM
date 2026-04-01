@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const b = 'dev-mrr';
@@ -36,29 +36,29 @@ const DevMRR = () => {
 
   const months = data?.months || [];
   const projection = data?.projection_next_3 || [0, 0, 0];
-  const allValues = [...months.map((m) => m.mrr), ...projection];
-  const maxMRR = Math.max(...allValues, 1);
 
-  // SVG line chart calculations
-  const W = 800, H = 300, PAD = 50;
-  const chartW = W - PAD * 2;
-  const chartH = H - PAD * 2;
-  const totalPoints = months.length + projection.length;
-
-  const getX = (i) => PAD + (i / Math.max(totalPoints - 1, 1)) * chartW;
-  const getY = (v) => PAD + chartH - (v / maxMRR) * chartH;
-
-  const actualLine = months.map((m, i) => `${getX(i)},${getY(m.mrr)}`).join(' ');
-  const projLine = [
-    `${getX(months.length - 1)},${getY(months[months.length - 1]?.mrr || 0)}`,
-    ...projection.map((v, i) => `${getX(months.length + i)},${getY(v)}`),
-  ].join(' ');
-
-  // Grid lines
-  const gridLines = [0, 0.25, 0.5, 0.75, 1].map((pct) => ({
-    y: PAD + chartH * (1 - pct),
-    label: formatCOP(maxMRR * pct),
-  }));
+  const { actualLine, projLine, gridLines, W, H, PAD, getX, getY } = useMemo(() => {
+    const allValues = [...months.map((m) => m.mrr), ...projection];
+    const max = Math.max(...allValues, 1);
+    const w = 800, h = 300, pad = 50;
+    const chartW = w - pad * 2;
+    const chartH = h - pad * 2;
+    const tp = months.length + projection.length;
+    const gx = (i) => pad + (i / Math.max(tp - 1, 1)) * chartW;
+    const gy = (v) => pad + chartH - (v / max) * chartH;
+    return {
+      W: w, H: h, PAD: pad, getX: gx, getY: gy,
+      actualLine: months.map((m, i) => `${gx(i)},${gy(m.mrr)}`).join(' '),
+      projLine: [
+        `${gx(months.length - 1)},${gy(months[months.length - 1]?.mrr || 0)}`,
+        ...projection.map((v, i) => `${gx(months.length + i)},${gy(v)}`),
+      ].join(' '),
+      gridLines: [0, 0.25, 0.5, 0.75, 1].map((pct) => ({
+        y: pad + chartH * (1 - pct),
+        label: formatCOP(max * pct),
+      })),
+    };
+  }, [months, projection]);
 
   return (
     <div className={b}>
@@ -72,7 +72,6 @@ const DevMRR = () => {
         </button>
       </div>
 
-      {/* KPIs */}
       <div className={`${b}__kpis`}>
         <div className={`${b}__kpi`}>
           <div className={`${b}__kpi-icon ${b}__kpi-icon--primary`}>
@@ -112,10 +111,8 @@ const DevMRR = () => {
         </div>
       </div>
 
-      {/* SVG Line Chart */}
       <div className={`${b}__chart`}>
         <svg viewBox={`0 0 ${W} ${H}`} className={`${b}__svg`}>
-          {/* Grid */}
           {gridLines.map((g, i) => (
             <g key={i}>
               <line x1={PAD} y1={g.y} x2={W - PAD} y2={g.y} stroke="#E2E8F0" strokeWidth="1" />
@@ -123,7 +120,6 @@ const DevMRR = () => {
             </g>
           ))}
 
-          {/* X axis labels */}
           {months.map((m, i) => (
             <text key={i} x={getX(i)} y={H - 10} textAnchor="middle" fill="#94A3B8" fontSize="9">
               {m.period.slice(5)}
@@ -135,17 +131,14 @@ const DevMRR = () => {
             </text>
           ))}
 
-          {/* Actual line */}
           {months.length > 1 && (
             <polyline points={actualLine} fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           )}
 
-          {/* Projection line (dashed) */}
           {projection.length > 0 && months.length > 0 && (
             <polyline points={projLine} fill="none" stroke="#3B82F6" strokeWidth="1.5" strokeDasharray="6 4" opacity="0.5" />
           )}
 
-          {/* Dots */}
           {months.map((m, i) => (
             <circle key={i} cx={getX(i)} cy={getY(m.mrr)} r="4" fill="#3B82F6" stroke="#fff" strokeWidth="2" />
           ))}
@@ -159,7 +152,6 @@ const DevMRR = () => {
         </div>
       </div>
 
-      {/* Monthly Table */}
       <div className={`${b}__table-wrap`}>
         <table className={`${b}__table`}>
           <thead>

@@ -4,9 +4,6 @@ import svc from '../../services/automationStudioService';
 
 const B = 'auto-studio';
 
-// ═══════════════════════════════════════════════════════════════════════
-// SVG ICONS — Professional, consistent 24x24 stroked icons
-// ═══════════════════════════════════════════════════════════════════════
 const Icon = ({ d, size = 20, stroke = 'currentColor', fill = 'none', ...p }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" {...p}>{typeof d === 'string' ? <path d={d} /> : d}</svg>
 );
@@ -41,7 +38,6 @@ const LayersIcon = (p) => <Icon {...p} d={<><polygon points="12 2 2 7 12 12 22 7
 const RefreshIcon = (p) => <Icon {...p} d={<><polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></>} />;
 const WhatsAppIcon = (p) => <Icon {...p} size={16} fill="#25D366" stroke="none" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />;
 
-// Additional icons for new triggers
 const HeartIcon = (p) => <Icon {...p} d={<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />} />;
 const TrendingUpIcon = (p) => <Icon {...p} d={<><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></>} />;
 const RepeatIcon = (p) => <Icon {...p} d={<><polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" /></>} />;
@@ -57,47 +53,35 @@ const CrownIcon = (p) => <Icon {...p} d={<><path d="M2 4l3 12h14l3-12-5 4-5-4-5 
 const SettingsIcon = (p) => <Icon {...p} d={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>} />;
 
 const TRIGGER_ICONS = {
-  // Citas
   hours_before_appt: ClockIcon, hours_after_complete: CheckIcon, appointment_created: CalendarIcon,
   appointment_cancelled: XIcon, appointment_rescheduled: RepeatIcon, no_show: AlertIcon,
   rebooking_reminder: RefreshIcon,
-  // Clientes
   new_client: UserPlusIcon, days_since_visit: HistoryIcon, birthday: GiftIcon,
   visit_milestone: StarIcon, client_anniversary: AwardIcon, vip_reached: CrownIcon,
   client_at_risk: ShieldIcon,
-  // Marketing
   satisfaction_survey: ThumbsUpIcon, review_request: StarIcon, referral_program: UsersIcon,
   seasonal_promo: MegaphoneIcon, winback_offer: PercentIcon, upsell_suggestion: TrendingUpIcon,
-  // Fidelización
   loyalty_welcome: HeartIcon, loyalty_points: StarIcon, loyalty_reward: GiftIcon,
   first_visit_thanks: HeartIcon, vip_exclusive: CrownIcon,
-  // Pagos
   payment_received: DollarIcon, payment_pending: DollarIcon, digital_receipt: ClipboardIcon,
   membership_expiring: ClockIcon,
-  // Operaciones
   daily_summary: BarChartIcon, staff_briefing: ClipboardIcon, low_stock_alert: PackageIcon,
   new_booking_alert: BellIcon,
 };
 
 const TRIGGER_COLORS = {
-  // Citas — Blues
   hours_before_appt: '#3B82F6', hours_after_complete: '#10B981', appointment_created: '#6366F1',
   appointment_cancelled: '#EF4444', appointment_rescheduled: '#F59E0B', no_show: '#DC2626',
   rebooking_reminder: '#0EA5E9',
-  // Clientes — Purples/Pinks
   new_client: '#06B6D4', days_since_visit: '#8B5CF6', birthday: '#EC4899',
   visit_milestone: '#F97316', client_anniversary: '#14B8A6', vip_reached: '#D97706',
   client_at_risk: '#EF4444',
-  // Marketing — Warm tones
   satisfaction_survey: '#10B981', review_request: '#F59E0B', referral_program: '#8B5CF6',
   seasonal_promo: '#EC4899', winback_offer: '#EF4444', upsell_suggestion: '#F97316',
-  // Fidelización — Gold/Warm
   loyalty_welcome: '#EC4899', loyalty_points: '#D97706', loyalty_reward: '#10B981',
   first_visit_thanks: '#06B6D4', vip_exclusive: '#D97706',
-  // Pagos — Greens
   payment_received: '#10B981', payment_pending: '#F59E0B', digital_receipt: '#3B82F6',
   membership_expiring: '#EF4444',
-  // Operaciones — Neutrals
   daily_summary: '#6366F1', staff_briefing: '#3B82F6', low_stock_alert: '#EF4444',
   new_booking_alert: '#F59E0B',
 };
@@ -117,9 +101,6 @@ const META_STATUS = {
   rejected: { label: 'Rechazada por Meta', color: '#EF4444', bg: 'rgba(239,68,68,0.08)', icon: XIcon },
 };
 
-// ═══════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════
 export default function AutomationStudio() {
   const { addNotification } = useNotification();
   const [view, setView] = useState('list');

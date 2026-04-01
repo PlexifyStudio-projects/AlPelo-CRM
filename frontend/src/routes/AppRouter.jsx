@@ -16,10 +16,9 @@ import LinaActivity from '../pages/LinaActivity/LinaActivity';
 import Campaigns from '../pages/Campaigns/Campaigns';
 import ContentStudio from '../pages/ContentStudio/ContentStudio';
 import Automations from '../pages/Automations/AutomationStudio';
-import Profile from '../pages/Profile/Profile';
 import AdminProfile from '../pages/AdminProfile/AdminProfile';
 import Settings from '../pages/Settings/Settings';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNotification } from '../context/NotificationContext';
 
 const DEV_ROLES = ['dev', 'super_admin'];
@@ -30,7 +29,6 @@ const AppRouter = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const prevUserId = useRef(null);
 
-  // Clear notifications when user changes (login/logout/switch)
   useEffect(() => {
     const currentId = user?.id || null;
     if (prevUserId.current !== null && prevUserId.current !== currentId) {
@@ -39,26 +37,7 @@ const AppRouter = () => {
     prevUserId.current = currentId;
   }, [user?.id, clearAll]);
 
-  if (loading) {
-    return null;
-  }
-
-  if (!isAuthenticated) {
-    return <Login onLogin={login} />;
-  }
-
-  // Dev/Super Admin → Plexify Studio panel
-  if (DEV_ROLES.includes(user?.role)) {
-    return <DevRouter user={user} onLogout={logout} />;
-  }
-
-  // Staff → Staff portal
-  if (user?.role === 'staff') {
-    return <StaffRouter user={user} onLogout={logout} />;
-  }
-
-  // Regular tenant user → CRM
-  const renderSection = () => {
+  const renderSection = useCallback(() => {
     switch (activeSection) {
       case 'dashboard': return <Dashboard onNavigate={setActiveSection} />;
       case 'agenda': return <Agenda />;
@@ -71,14 +50,19 @@ const AppRouter = () => {
       case 'finances': return <Finances />;
       case 'lina-activity': return <LinaActivity />;
       case 'inbox': return <Inbox />;
-      case 'messaging': return null; // Removed — templates now in Campañas
+      case 'messaging': return null;
       case 'chat-ai': return <ChatAI />;
       case 'team': return <Team />;
       case 'profile': return <AdminProfile user={user} onUpdate={updateProfile} />;
       case 'settings': return <Settings />;
       default: return <Dashboard />;
     }
-  };
+  }, [activeSection, user, updateProfile]);
+
+  if (loading) return null;
+  if (!isAuthenticated) return <Login onLogin={login} />;
+  if (DEV_ROLES.includes(user?.role)) return <DevRouter user={user} onLogout={logout} />;
+  if (user?.role === 'staff') return <StaffRouter user={user} onLogout={logout} />;
 
   return (
     <MainLayout

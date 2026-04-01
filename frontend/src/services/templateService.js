@@ -6,13 +6,11 @@ const templateService = {
       const url = status ? `${API}/message-templates?status=${status}` : `${API}/message-templates`;
       const res = await fetch(url, { credentials: 'include' });
       if (res.ok) return await res.json();
-    } catch (e) { /* API not deployed */ }
+    } catch { /* silent */ }
     return [];
   },
 
-  getApprovedTemplates: async () => {
-    return templateService.getTemplates('approved');
-  },
+  getApprovedTemplates: async () => templateService.getTemplates('approved'),
 
   createTemplate: async (data) => {
     const res = await fetch(`${API}/message-templates`, {

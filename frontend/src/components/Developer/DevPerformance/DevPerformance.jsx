@@ -54,7 +54,6 @@ const DevPerformance = () => {
         </div>
       </div>
 
-      {/* AI KPIs */}
       <div className={`${b}__kpis`}>
         <div className={`${b}__kpi`}>
           <span className={`${b}__kpi-value`}>{(d.total_lina_messages || 0).toLocaleString('es-CO')}</span>
@@ -74,7 +73,6 @@ const DevPerformance = () => {
         </div>
       </div>
 
-      {/* Cards Grid */}
       <div className={`${b}__grid`}>
         <div className={`${b}__card`}>
           <h3 className={`${b}__card-title`}>Citas</h3>

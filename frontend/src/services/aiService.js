@@ -2,7 +2,6 @@ const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.ra
 
 const headers = { 'Content-Type': 'application/json' };
 
-// Authenticated fetch — sends cookies for auth
 const authFetch = (url, opts = {}) => fetch(url, { ...opts, credentials: 'include' });
 
 const handleResponse = async (res) => {
@@ -14,7 +13,6 @@ const handleResponse = async (res) => {
 };
 
 const aiService = {
-  // ========================= CONFIG =========================
   getConfig: async () => {
     const res = await authFetch(`${API}/ai/config`, { headers });
     return handleResponse(res);
@@ -38,7 +36,6 @@ const aiService = {
     return handleResponse(res);
   },
 
-  // ========================= CHAT =========================
   chat: async (message, conversationHistory = [], imageBase64 = null, imageMime = null) => {
     const body = { message, conversation_history: conversationHistory };
     if (imageBase64 && imageMime) {

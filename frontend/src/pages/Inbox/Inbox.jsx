@@ -5,15 +5,10 @@ import { formatCurrency } from '../../utils/formatters';
 import UsageMeter from '../../components/common/UsageMeter/UsageMeter';
 import { useTenant } from '../../context/TenantContext';
 
-// ============================================
-// Plexify - Inbox WhatsApp Business v3.0
-// Full WhatsApp Web Clone — All features
-// ============================================
 
 const b = 'inbox';
 const API_BASE = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
-// Resolve media URLs: relative /api/... paths need the full backend domain
 const resolveMediaUrl = (url) => {
   if (!url) return null;
   if (url.startsWith('http')) return url;
@@ -21,7 +16,6 @@ const resolveMediaUrl = (url) => {
   return API_BASE + '/' + url;
 };
 
-// ===== QUICK REPLIES =====
 const QUICK_REPLIES = [
   { id: 1, label: 'Saludo', text: '¡Hola! Gracias por escribirnos. ¿En qué podemos ayudarte?' },
   { id: 2, label: 'Horario', text: 'Nuestro horario es de lunes a sábado, 8:00 AM a 7:00 PM.' },
@@ -31,7 +25,6 @@ const QUICK_REPLIES = [
   { id: 6, label: 'Despedida', text: '¡Gracias por contactarnos! Que tengas un excelente día.' },
 ];
 
-// ===== CONVERSATION STATUS =====
 const CONV_STATUSES = [
   { id: 'nuevo', label: 'Nuevo', color: '#2563EB' },
   { id: 'pendiente', label: 'Pendiente', color: '#F59E0B' },
@@ -39,7 +32,6 @@ const CONV_STATUSES = [
   { id: 'urgente', label: 'Urgente', color: '#EF4444' },
 ];
 
-// ===== LOCAL STORAGE KEYS =====
 const LS_PINNED = 'alpelo_wa_pinned';
 const LS_STARRED = 'alpelo_wa_starred';
 const LS_LABELS = 'alpelo_wa_labels';
@@ -53,7 +45,6 @@ const loadJson = (key, fallback) => {
   catch { return fallback; }
 };
 
-// ===== ICONS =====
 const Icons = {
   search: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -261,7 +252,6 @@ const Icons = {
   ),
 };
 
-// ===== EMOJI DATA =====
 const EMOJI_CATEGORIES = [
   { id: 'recent', label: 'Recientes', icon: '🕐', emojis: ['👍', '❤️', '😂', '😊', '🙏', '🔥', '👏', '😍'] },
   { id: 'smileys', label: 'Caras', icon: '😊', emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '😮‍💨', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '🥸', '😎', '🤓', '🧐'] },
@@ -271,7 +261,6 @@ const EMOJI_CATEGORIES = [
   { id: 'symbols', label: 'Simbolos', icon: '✅', emojis: ['✅', '❌', '⭕', '❗', '❓', '‼️', '⁉️', '💯', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🔶', '🔷', '🔸', '🔹', '▪️', '▫️', '🔺', '🔻'] },
 ];
 
-// ===== LABEL COLORS =====
 const LABEL_COLORS = [
   { id: 'green', color: '#25D366', label: 'Nuevo pedido' },
   { id: 'blue', color: '#53BDEB', label: 'Seguimiento' },
@@ -281,8 +270,6 @@ const LABEL_COLORS = [
   { id: 'orange', color: '#FF9800', label: 'Reagendar' },
 ];
 
-// ===== TEMPLATES =====
-// Templates are built dynamically with tenant name and booking URL
 const buildTemplates = (tenantName, bookingUrl) => {
   const name = tenantName || 'nuestro negocio';
   const bookLink = bookingUrl ? ` ${bookingUrl}` : '';
@@ -298,7 +285,6 @@ const buildTemplates = (tenantName, bookingUrl) => {
   ];
 };
 
-// ===== HELPERS =====
 const getInitials = (name = '') => {
   const parts = name.trim().split(' ');
   return parts.length >= 2
@@ -323,7 +309,6 @@ const getAvatarColor = (name = '') => {
 
 const parseUTC = (dateStr) => {
   if (!dateStr) return null;
-  // Ensure UTC timestamps from backend are parsed as UTC
   const s = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z';
   return new Date(s);
 };
@@ -366,7 +351,6 @@ const STATUS_LABELS = {
   vip: 'VIP', activo: 'Activo', nuevo: 'Nuevo', en_riesgo: 'En riesgo', inactivo: 'Inactivo',
 };
 
-// ===== MESSAGE STATUS COMPONENT =====
 const MessageStatus = ({ status }) => {
   if (status === 'sent') return <span className={`${b}__check ${b}__check--sent`}>{Icons.checkSingle}</span>;
   if (status === 'delivered') return <span className={`${b}__check ${b}__check--delivered`}>{Icons.checkDouble}</span>;
@@ -374,7 +358,6 @@ const MessageStatus = ({ status }) => {
   return null;
 };
 
-// ===== EMOJI PICKER =====
 const EmojiPicker = ({ onSelect, onClose }) => {
   const [activeCategory, setActiveCategory] = useState('recent');
   const pickerRef = useRef(null);
@@ -414,7 +397,6 @@ const EmojiPicker = ({ onSelect, onClose }) => {
   );
 };
 
-// ===== ATTACHMENT MENU =====
 const AttachmentMenu = ({ onClose }) => {
   const menuRef = useRef(null);
 
@@ -447,7 +429,6 @@ const AttachmentMenu = ({ onClose }) => {
   );
 };
 
-// ===== MESSAGE CONTEXT MENU =====
 const MessageContextMenu = ({ msg, position, onAction, onClose, isStarred }) => {
   const menuRef = useRef(null);
 
@@ -489,10 +470,8 @@ const MessageContextMenu = ({ msg, position, onAction, onClose, isStarred }) => 
   );
 };
 
-// ===== QUICK REACTION BAR =====
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
-// ===== CLIENT PROFILE SIDEBAR =====
 const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNotes, onAddNote, onDeleteNote }) => {
   const [activeMediaTab, setActiveMediaTab] = useState('media');
   const [noteInput, setNoteInput] = useState('');
@@ -709,7 +688,6 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
   );
 };
 
-// ===== LINA THINKING INDICATOR — Sequential pipeline steps =====
 const LINA_PIPELINE = [
   { icon: '💬', text: 'Leyendo mensajes del chat...', duration: 3000 },
   { icon: '👤', text: 'Verificando cliente en el sistema...', duration: 3000 },
@@ -771,7 +749,6 @@ const LinaThinking = () => {
   );
 };
 
-// ===== AUDIO PLAYER — WhatsApp-style voice message player =====
 const AudioPlayer = ({ src }) => {
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
@@ -817,11 +794,9 @@ const AudioPlayer = ({ src }) => {
   );
 };
 
-// ===== MAIN INBOX COMPONENT =====
 const Inbox = () => {
   const { tenant } = useTenant();
   const TEMPLATES = useMemo(() => buildTemplates(tenant.name, tenant.booking_url), [tenant.name, tenant.booking_url]);
-  // --- Core state ---
   const [conversations, setConversations] = useState([]);
   const [selectedConvId, setSelectedConvId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -837,7 +812,6 @@ const Inbox = () => {
   const [error, setError] = useState(null);
   const [sendingMessage, setSendingMessage] = useState(false);
 
-  // --- New chat state ---
   const [showNewChat, setShowNewChat] = useState(false);
   const [newChatPhone, setNewChatPhone] = useState('');
   const [newChatName, setNewChatName] = useState('');
@@ -849,7 +823,6 @@ const Inbox = () => {
   const [clientSearchLoading, setClientSearchLoading] = useState(false);
   const clientSearchTimer = useRef(null);
 
-  // --- Enhanced features state ---
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [pinnedConvIds, setPinnedConvIds] = useState(() => loadJson(LS_PINNED, []));
@@ -868,16 +841,13 @@ const Inbox = () => {
   const [convStatuses, setConvStatuses] = useState(() => loadJson(LS_CONV_STATUSES, {}));
   const [showStatusPicker, setShowStatusPicker] = useState(null);
 
-  // --- Internal notes state ---
-  const [noteInput, setNoteInput] = useState('');
 
-  // --- Global search state ---
+
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
   const [globalSearchResults, setGlobalSearchResults] = useState([]);
   const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
 
-  // --- Refs ---
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const searchInChatRef = useRef(null);
@@ -886,7 +856,6 @@ const Inbox = () => {
   const initialLoadDoneRef = useRef(false);
   const globalSearchRef = useRef(null);
 
-  // --- Persist to localStorage ---
   useEffect(() => { localStorage.setItem(LS_PINNED, JSON.stringify(pinnedConvIds)); }, [pinnedConvIds]);
   useEffect(() => { localStorage.setItem(LS_STARRED, JSON.stringify(starredMsgIds)); }, [starredMsgIds]);
   useEffect(() => { localStorage.setItem(LS_LABELS, JSON.stringify(labels)); }, [labels]);
@@ -894,7 +863,6 @@ const Inbox = () => {
   useEffect(() => { localStorage.setItem(LS_MUTED, JSON.stringify(mutedConvIds)); }, [mutedConvIds]);
   useEffect(() => { localStorage.setItem(LS_CONV_STATUSES, JSON.stringify(convStatuses)); }, [convStatuses]);
 
-  // --- Internal notes helpers ---
   const getNotesForConv = useCallback((convId) => {
     return loadJson(`${LS_NOTES_PREFIX}${convId}`, []);
   }, []);
@@ -920,7 +888,6 @@ const Inbox = () => {
     return updated;
   }, []);
 
-  // --- Notification sound ---
   const playNotificationSound = useCallback(() => {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -937,7 +904,6 @@ const Inbox = () => {
     } catch { /* silent */ }
   }, []);
 
-  // --- Global search handler ---
   const handleGlobalSearch = useCallback(async (query) => {
     if (!query.trim()) {
       setGlobalSearchResults([]);
@@ -954,7 +920,6 @@ const Inbox = () => {
     }
   }, []);
 
-  // --- Load conversations ---
   const loadConversations = useCallback(async () => {
     try {
       setLoading(true);
@@ -974,12 +939,10 @@ const Inbox = () => {
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
-  // --- Polling: refresh conversations every 5s ---
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
         const data = await whatsappService.getConversations();
-        // Detect new inbound messages by comparing unread counts
         if (initialLoadDoneRef.current) {
           data.forEach((conv) => {
             const prevUnread = lastKnownMsgCountRef.current[conv.id] || 0;
@@ -989,7 +952,6 @@ const Inbox = () => {
             }
           });
         }
-        // Track unread counts
         const counts = {};
         data.forEach((c) => { counts[c.id] = c.unread_count || 0; });
         lastKnownMsgCountRef.current = counts;
@@ -1000,7 +962,6 @@ const Inbox = () => {
     return () => clearInterval(interval);
   }, [playNotificationSound]);
 
-  // --- Load messages ---
   const loadMessages = useCallback(async (convId) => {
     if (!convId) return;
     try {
@@ -1024,14 +985,12 @@ const Inbox = () => {
     }
   }, [selectedConvId, loadMessages]);
 
-  // --- Polling: refresh messages every 3s for active conversation ---
   const lastMsgIdRef = useRef(null);
   useEffect(() => {
     if (!selectedConvId) return;
     const interval = setInterval(async () => {
       try {
         const data = await whatsappService.getMessages(selectedConvId);
-        // Detect new inbound message
         if (data.length > 0) {
           const lastMsg = data[data.length - 1];
           if (lastMsgIdRef.current && lastMsg.id !== lastMsgIdRef.current) {
@@ -1050,7 +1009,6 @@ const Inbox = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  // Close menus on click outside
   useEffect(() => {
     const handler = (e) => {
       if (showConvMenu && convMenuRef.current && !convMenuRef.current.contains(e.target)) {
@@ -1061,11 +1019,9 @@ const Inbox = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, [showConvMenu]);
 
-  // --- Filter & search ---
   const filteredConversations = useMemo(() => {
     let list = [...conversations];
 
-    // Exclude archived (unless filter is 'archived')
     if (filter !== 'archived') {
       list = list.filter((c) => !archivedConvIds.includes(c.id));
     } else {
@@ -1085,7 +1041,6 @@ const Inbox = () => {
       );
     }
 
-    // Sort: pinned first, then by last message
     return list.sort((a, bConv) => {
       const aPinned = pinnedConvIds.includes(a.id) ? 1 : 0;
       const bPinned = pinnedConvIds.includes(bConv.id) ? 1 : 0;
@@ -1099,14 +1054,12 @@ const Inbox = () => {
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
   const archivedCount = conversations.filter((c) => archivedConvIds.includes(c.id)).length;
 
-  // --- Search in chat ---
   const searchInChatResults = useMemo(() => {
     if (!searchInChatQuery.trim()) return [];
     const q = searchInChatQuery.toLowerCase();
     return messages.filter((m) => (m.content || '').toLowerCase().includes(q));
   }, [messages, searchInChatQuery]);
 
-  // --- Send message ---
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !selectedConvId || sendingMessage) return;
     const text = messageInput.trim();
@@ -1151,7 +1104,6 @@ const Inbox = () => {
     try {
       await whatsappService.toggleAi(selectedConvId, newState);
     } catch (err) {
-      console.error('[Inbox] Error toggling AI:', err);
       setAiMode((prev) => ({ ...prev, [selectedConvId]: !newState }));
     }
   };
@@ -1165,7 +1117,6 @@ const Inbox = () => {
     setReplyingTo(null);
     setMsgContextMenu(null);
 
-    // Mark conversation as read — update local state immediately, then API
     const conv = conversations.find((c) => c.id === convId);
     if (conv && conv.unread_count > 0) {
       setConversations((prev) =>
@@ -1174,40 +1125,34 @@ const Inbox = () => {
       try {
         await whatsappService.markAsRead(convId);
       } catch (err) {
-        console.error('[Inbox] Error marking as read:', err);
       }
     }
   };
 
-  // --- Pin/Unpin ---
   const togglePin = (convId) => {
     setPinnedConvIds((prev) =>
       prev.includes(convId) ? prev.filter((id) => id !== convId) : [...prev, convId]
     );
   };
 
-  // --- Star/Unstar message ---
   const toggleStar = (msgId) => {
     setStarredMsgIds((prev) =>
       prev.includes(msgId) ? prev.filter((id) => id !== msgId) : [...prev, msgId]
     );
   };
 
-  // --- Archive ---
   const toggleArchive = (convId) => {
     setArchivedConvIds((prev) =>
       prev.includes(convId) ? prev.filter((id) => id !== convId) : [...prev, convId]
     );
   };
 
-  // --- Mute ---
   const toggleMute = (convId) => {
     setMutedConvIds((prev) =>
       prev.includes(convId) ? prev.filter((id) => id !== convId) : [...prev, convId]
     );
   };
 
-  // --- Label ---
   const setLabel = async (convId, labelId) => {
     setLabels((prev) => {
       const next = { ...prev };
@@ -1216,11 +1161,9 @@ const Inbox = () => {
       return next;
     });
     setShowLabelPicker(null);
-    // Persist label to backend tags
     const labelObj = LABEL_COLORS.find((l) => l.id === labelId);
     const conv = conversations.find((c) => c.id === convId);
     const currentTags = conv?.tags || [];
-    // Remove any existing label-color tags, then add the new one
     const labelIds = LABEL_COLORS.map((l) => l.id);
     const filtered = currentTags.filter((t) => !labelIds.includes(t));
     const newTags = labelId ? [...filtered, labelId] : filtered;
@@ -1230,11 +1173,9 @@ const Inbox = () => {
         prev.map((c) => (c.id === convId ? { ...c, tags: newTags } : c))
       );
     } catch (err) {
-      console.error('[Inbox] Error updating tags:', err);
     }
   };
 
-  // --- Message context menu actions ---
   const handleMsgAction = (action, msg) => {
     switch (action) {
       case 'reply': setReplyingTo(msg); inputRef.current?.focus(); break;
@@ -1247,13 +1188,11 @@ const Inbox = () => {
     setMsgContextMenu(null);
   };
 
-  // --- Emoji select ---
   const handleEmojiSelect = (emoji) => {
     setMessageInput((prev) => prev + emoji);
     inputRef.current?.focus();
   };
 
-  // --- Template select ---
   const handleTemplateSelect = (tpl) => {
     const name = selectedConv?.wa_contact_name || selectedConv?.client?.name || '';
     const nameTag = name ? ` ${name.split(' ')[0]}` : '';
@@ -1262,14 +1201,12 @@ const Inbox = () => {
     inputRef.current?.focus();
   };
 
-  // --- Quick reply select ---
   const handleQuickReplySelect = (reply) => {
     setMessageInput(reply.text);
     setShowQuickReplies(false);
     inputRef.current?.focus();
   };
 
-  // --- Conversation status ---
   const setConvStatus = (convId, statusId) => {
     setConvStatuses((prev) => {
       const next = { ...prev };
@@ -1280,7 +1217,6 @@ const Inbox = () => {
     setShowStatusPicker(null);
   };
 
-  // --- Client search for new chat ---
   const handleClientSearch = (query) => {
     setClientSearchQuery(query);
     if (clientSearchTimer.current) clearTimeout(clientSearchTimer.current);
@@ -1305,7 +1241,6 @@ const Inbox = () => {
     setClientSearchResults([]);
   };
 
-  // --- Meta templates (for outbound to new contacts) ---
   const [metaTemplates, setMetaTemplates] = useState([]);
   const [metaTemplatesLoaded, setMetaTemplatesLoaded] = useState(false);
 
@@ -1315,18 +1250,15 @@ const Inbox = () => {
       const tpls = await whatsappService.getMetaTemplates();
       setMetaTemplates(Array.isArray(tpls) ? tpls.filter((t) => t.status === 'APPROVED') : []);
     } catch (err) {
-      console.error('[Inbox] Error loading Meta templates:', err);
     }
     setMetaTemplatesLoaded(true);
   }, [metaTemplatesLoaded]);
 
-  // --- New chat ---
   const handleNewChatNext = () => {
     if (!newChatPhone.trim()) return;
     setNewChatError('');
     loadMetaTemplates();
 
-    // Check if this phone already has an active conversation (24h window open)
     const existingConv = conversations.find((c) => {
       const convPhone = (c.wa_contact_phone || '').replace(/[+\s-]/g, '');
       const inputPhone = newChatPhone.trim().replace(/[+\s-]/g, '');
@@ -1334,7 +1266,6 @@ const Inbox = () => {
     });
 
     if (existingConv) {
-      // Existing conversation — can send free text, just open it
       setSelectedConvId(existingConv.id);
       setShowNewChat(false);
       setNewChatPhone('');
@@ -1346,7 +1277,6 @@ const Inbox = () => {
     setNewChatStep('template');
   };
 
-  // Send via Meta template (for new outbound conversations)
   const handleSendTemplate = async (tpl) => {
     const phone = newChatPhone.trim();
     const name = newChatName.trim();
@@ -1386,7 +1316,6 @@ const Inbox = () => {
     }
   };
 
-  // Send free-text to existing conversation (within 24h window)
   const handleCreateNewChat = async (templateText) => {
     const phone = newChatPhone.trim();
     const name = newChatName.trim() || phone;
@@ -1421,7 +1350,6 @@ const Inbox = () => {
     }
   };
 
-  // --- Group messages by date ---
   const groupedMessages = useMemo(() => {
     const groups = [];
     let lastDate = '';
@@ -1439,7 +1367,6 @@ const Inbox = () => {
   const getConvName = (conv) => conv.wa_contact_name || conv.client?.name || conv.wa_contact_phone || 'Contacto';
   const getConvPreview = (conv) => conv.last_message_preview || 'Sin mensajes';
 
-  // ===== RENDER =====
   return (
     <div className={`${b} ${selectedConvId ? `${b}--chat-open` : ''}`}>
       {/* ===== LIST PANEL ===== */}
@@ -1838,7 +1765,7 @@ const Inbox = () => {
                 await whatsappService.deleteConversation(convId);
                 setConversations((prev) => prev.filter((c) => c.id !== convId));
                 if (selectedConvId === convId) { setSelectedConvId(null); setMessages([]); }
-              } catch (err) { console.error('[Inbox] Delete error:', err); }
+              } catch { }
             }}>
               {Icons.trash} Eliminar chat
             </button>
@@ -2022,7 +1949,6 @@ const Inbox = () => {
                                 const menuH = 220;
                                 let left = isSent ? rect.left - menuW : rect.right - 20;
                                 let top = rect.bottom + 4;
-                                // Keep menu inside viewport
                                 if (left + menuW > window.innerWidth - 16) left = window.innerWidth - menuW - 16;
                                 if (left < 16) left = 16;
                                 if (top + menuH > window.innerHeight - 16) top = rect.top - menuH - 4;
@@ -2154,7 +2080,7 @@ const Inbox = () => {
                       setSelectedConvId(null);
                       setMessages([]);
                       setShowClientInfo(false);
-                    } catch (err) { console.error('[Inbox] Delete error:', err); }
+                    } catch { }
                   }}
                 />
               )}

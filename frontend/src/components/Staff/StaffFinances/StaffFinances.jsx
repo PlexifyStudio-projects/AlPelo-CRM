@@ -15,7 +15,7 @@ const PERIODS = [
   { id: 'month', label: 'Este mes' },
 ];
 
-const StaffFinances = ({ user }) => {
+const StaffFinances = () => {
   const [period, setPeriod] = useState('today');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -26,9 +26,7 @@ const StaffFinances = ({ user }) => {
       try {
         const d = await staffMeService.getCommissions({ period });
         setData(d);
-      } catch (err) {
-        console.error('Error loading commissions:', err);
-      } finally {
+      } catch { /* silent */ } finally {
         setLoading(false);
       }
     };
@@ -37,13 +35,11 @@ const StaffFinances = ({ user }) => {
 
   return (
     <div className={b}>
-      {/* Header */}
       <div className={`${b}__header`}>
         <h2>Mis Ingresos</h2>
         <p>Comisiones y ganancias por servicios completados</p>
       </div>
 
-      {/* Period tabs */}
       <div className={`${b}__tabs`}>
         {PERIODS.map((p) => (
           <button
@@ -60,7 +56,6 @@ const StaffFinances = ({ user }) => {
         <p className={`${b}__loading`}>Cargando datos...</p>
       ) : data ? (
         <>
-          {/* Summary cards */}
           <div className={`${b}__summary`}>
             <div className={`${b}__card ${b}__card--highlight`}>
               <div className={`${b}__card-icon`}><DollarIcon /></div>
@@ -89,7 +84,6 @@ const StaffFinances = ({ user }) => {
             </div>
           </div>
 
-          {/* Commission bar */}
           <div className={`${b}__bar-container`}>
             <div className={`${b}__bar`}>
               <div
@@ -103,7 +97,6 @@ const StaffFinances = ({ user }) => {
             </div>
           </div>
 
-          {/* Detail list */}
           {data.items.length > 0 ? (
             <div className={`${b}__detail`}>
               <h3 className={`${b}__detail-title`}>

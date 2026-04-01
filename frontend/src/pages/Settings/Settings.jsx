@@ -8,8 +8,6 @@ import settingsService from '../../services/settingsService';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
-// Model is managed by Plexify (dev), not by the agency admin
-
 const DEFAULT_PROMPT = `=== DATOS DEL NEGOCIO ===
 Nombre:
 Ubicacion:
@@ -114,7 +112,6 @@ const Settings = () => {
     });
   };
 
-  // Meta token management
   const [metaToken, setMetaToken] = useState('');
   const [metaPhoneId, setMetaPhoneId] = useState('');
   const [metaBizId, setMetaBizId] = useState('');
@@ -139,7 +136,6 @@ const Settings = () => {
     settingsService.getMetaTokenStatus().then(setMetaStatus).catch(() => {});
   }, []);
 
-  // OAuth popup flow — uses postMessage from callback page (works cross-origin)
   const handleFacebookLogin = async () => {
     setOauthLoading(true);
     try {
@@ -227,7 +223,6 @@ const Settings = () => {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
-  // Loyalty Program state
   const [loyaltyConfig, setLoyaltyConfig] = useState({
     is_active: false,
     points_per_currency: 1,
@@ -243,7 +238,6 @@ const Settings = () => {
   });
   const [loyaltySaving, setLoyaltySaving] = useState(false);
 
-  // WhatsApp Business Profile state
   const [waProfile, setWaProfile] = useState(null);
   const [waAbout, setWaAbout] = useState('');
   const [waDescription, setWaDescription] = useState('');
@@ -257,11 +251,9 @@ const Settings = () => {
   const [waProfileLoaded, setWaProfileLoaded] = useState(false);
   const waPhotoInputRef = useRef(null);
 
-  // Google Reviews state
   const [googleReviewUrl, setGoogleReviewUrl] = useState('');
   const [googleSaving, setGoogleSaving] = useState(false);
 
-  // ── Booking Online ──
   const EMPTY_SCHEDULE = [
     { day: 'Lunes', hours: '' }, { day: 'Martes', hours: '' }, { day: 'Miercoles', hours: '' },
     { day: 'Jueves', hours: '' }, { day: 'Viernes', hours: '' }, { day: 'Sabado', hours: '' }, { day: 'Domingo', hours: '' },
@@ -409,7 +401,6 @@ const Settings = () => {
     }
   };
 
-  // Cleanup popup polling on unmount
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -458,7 +449,6 @@ const Settings = () => {
 
   useEffect(() => { loadMetaTemplates(); }, []);
 
-  // Load WhatsApp Business Profile
   const loadWaProfile = useCallback(async () => {
     try {
       const { profile } = await settingsService.getWhatsAppProfile();
@@ -469,7 +459,6 @@ const Settings = () => {
         setWaAddress(profile.address || '');
         setWaEmail(profile.email || '');
         setWaWebsite(profile.websites?.[0] || '');
-        setWaPhotoUrl(profile.profile_picture_url || '');
       }
       setWaProfileLoaded(true);
     } catch { setWaProfileLoaded(true); }
@@ -538,7 +527,6 @@ const Settings = () => {
 
   const isTokenExpiringSoon = metaStatus?.days_until_expiry != null && metaStatus.days_until_expiry <= 7;
 
-  // Load loyalty config on mount
   useEffect(() => {
     const loadLoyaltyConfig = async () => {
       try {
@@ -552,7 +540,6 @@ const Settings = () => {
     loadLoyaltyConfig();
   }, []);
 
-  // Load Google Review URL from tenant data
   useEffect(() => {
     if (tenant?.google_review_url) {
       setGoogleReviewUrl(tenant.google_review_url);
@@ -610,9 +597,9 @@ const Settings = () => {
     { id: 'loyalty', title: 'Programa de Lealtad', desc: 'Creditos, niveles, referidos y bonificaciones', color1: '#10B981', color2: '#34D399' },
     { id: 'google', title: 'Google Reviews', desc: 'Redirige clientes satisfechos a dejar resenas', color1: '#FBBC05', color2: '#EA4335' },
     { id: 'booking', title: 'Reservas Online', desc: 'Pagina publica para que tus clientes agenden citas', color1: '#F59E0B', color2: '#FBBF24' },
+    { id: 'brand', title: 'Marca y Logo', desc: 'Logo, nombre y colores de tu negocio', color1: '#8B5CF6', color2: '#A78BFA' },
   ];
 
-  // Usage stats for bottom panel
   const [usageStats, setUsageStats] = useState(null);
   useEffect(() => {
     (async () => {
@@ -671,7 +658,6 @@ const Settings = () => {
       {openSection && (
         <div className={`${b}__panel`} key={openSection}>
 
-          {/* ========== LINA IA CONFIG ========== */}
           {openSection === 'lina' && (
             <div className={`${b}__panel-content`}>
           <div className={`${b}__ai-field`}>
@@ -721,7 +707,6 @@ const Settings = () => {
             </div>
           )}
 
-          {/* ========== NOTIFICATIONS ========== */}
           {openSection === 'notif' && (
             <div className={`${b}__panel-content`}>
           <div className={`${b}__option`}>
@@ -821,7 +806,6 @@ const Settings = () => {
             </div>
           )}
 
-          {/* ========== META / WHATSAPP ========== */}
           {openSection === 'meta' && (
             <div className={`${b}__panel-content`}>
           {/* Token expiry warning banner */}
@@ -1137,7 +1121,6 @@ const Settings = () => {
             </div>
           )}
 
-          {/* ========== LOYALTY PROGRAM ========== */}
           {openSection === 'loyalty' && (
             <div className={`${b}__panel-content`}>
           <div className={`${b}__option`}>
@@ -1270,7 +1253,6 @@ const Settings = () => {
             </div>
           )}
 
-          {/* ========== BOOKING ONLINE ========== */}
           {openSection === 'booking' && (
             <div className={`${b}__panel-content`}>
               {!bookingLoaded ? (
@@ -1448,7 +1430,6 @@ const Settings = () => {
             </div>
           )}
 
-          {/* ========== GOOGLE REVIEWS ========== */}
           {openSection === 'google' && (
             <div className={`${b}__panel-content`}>
           <div className={`${b}__meta-field`}>
@@ -1473,6 +1454,10 @@ const Settings = () => {
             </button>
           </div>
             </div>
+          )}
+
+          {openSection === 'brand' && (
+            <BrandingPanel addNotification={addNotification} />
           )}
 
         </div>
@@ -1602,10 +1587,6 @@ const Settings = () => {
     </div>
   );
 };
-
-// ════════════════════════════════════════════════════
-// BRANDING PANEL — White-label settings
-// ════════════════════════════════════════════════════
 
 const PRESET_COLORS = [
   { name: 'Azul Corporativo', color: '#1E40AF' },
@@ -1742,52 +1723,6 @@ function BrandingPanel({ addNotification }) {
         <p className={`${bb}__brand-hint`}>Se muestra en el sidebar, título de la página y recibos.</p>
         <input className={`${bb}__brand-input`} value={brandName} onChange={e => setBrandName(e.target.value)}
           placeholder="Ej: AlPelo CRM, Mi Barbería, etc." />
-      </div>
-
-      {/* Primary Color */}
-      <div className={`${bb}__brand-section`}>
-        <label className={`${bb}__brand-label`}>Color principal</label>
-        <p className={`${bb}__brand-hint`}>Define el color del sidebar, botones y acentos en toda la plataforma.</p>
-        <div className={`${bb}__brand-colors`}>
-          {PRESET_COLORS.map(p => (
-            <button key={p.color} className={`${bb}__brand-color-btn ${brandColor === p.color ? `${bb}__brand-color-btn--active` : ''}`}
-              style={{ '--bc': p.color }} onClick={() => setBrandColor(p.color)} title={p.name}>
-              <span className={`${bb}__brand-color-swatch`} />
-              {brandColor === p.color && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>}
-            </button>
-          ))}
-          <div className={`${bb}__brand-color-custom`}>
-            <input type="color" value={brandColor} onChange={e => setBrandColor(e.target.value)} />
-            <span>Personalizado</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Accent Color */}
-      <div className={`${bb}__brand-section`}>
-        <label className={`${bb}__brand-label`}>Color de acento <span className={`${bb}__brand-optional`}>Opcional</span></label>
-        <p className={`${bb}__brand-hint`}>Color secundario para badges, highlights y detalles.</p>
-        <div className={`${bb}__brand-color-custom`}>
-          <input type="color" value={accentColor || '#6366F1'} onChange={e => setAccentColor(e.target.value)} />
-          <span>{accentColor || 'No definido (se usa el por defecto)'}</span>
-          {accentColor && <button className={`${bb}__brand-btn--small`} onClick={() => setAccentColor('')}>Quitar</button>}
-        </div>
-      </div>
-
-      {/* Preview */}
-      <div className={`${bb}__brand-section`}>
-        <label className={`${bb}__brand-label`}>Vista previa</label>
-        <div className={`${bb}__brand-preview`} style={{ '--bp': brandColor }}>
-          <div className={`${bb}__brand-preview-sidebar`}>
-            {logoUrl ? <img src={logoUrl} alt="" className={`${bb}__brand-preview-logo`} /> :
-              <div className={`${bb}__brand-preview-logo-placeholder`} />}
-            <span>{brandName || 'Mi Negocio'}</span>
-          </div>
-          <div className={`${bb}__brand-preview-content`}>
-            <div className={`${bb}__brand-preview-header`}>Dashboard</div>
-            <div className={`${bb}__brand-preview-btn`}>Botón principal</div>
-          </div>
-        </div>
       </div>
 
       {/* Save */}

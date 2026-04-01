@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Modal from '../../common/Modal/Modal';
 import Button from '../../common/Button/Button';
 import financeService from '../../../services/financeService';
@@ -13,21 +13,21 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
   const fileRef = useRef(null);
   const b = 'import-modal';
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setFile(null);
     setPreview(null);
     setImporting(false);
     setProgress(0);
     setResult(null);
     setError('');
-  };
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     reset();
     onClose();
-  };
+  }, [reset, onClose]);
 
-  const handleFile = (f) => {
+  const handleFile = useCallback((f) => {
     if (!f) return;
     const ext = f.name.split('.').pop().toLowerCase();
     if (!['csv', 'xlsx', 'xls'].includes(ext)) {
@@ -38,7 +38,6 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
     setError('');
     setResult(null);
 
-    // Preview CSV
     if (ext === 'csv') {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -52,23 +51,21 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
       };
       reader.readAsText(f);
     } else {
-      setPreview(null); // Excel preview not supported client-side
+      setPreview(null);
     }
-  };
+  }, []);
 
-  const handleDrop = (e) => {
+  const handleDrop = useCallback((e) => {
     e.preventDefault();
-    const f = e.dataTransfer.files[0];
-    handleFile(f);
-  };
+    handleFile(e.dataTransfer.files[0]);
+  }, [handleFile]);
 
-  const handleImport = async () => {
+  const handleImport = useCallback(async () => {
     if (!file) return;
     setImporting(true);
     setProgress(10);
     setError('');
 
-    // Animate progress
     const progressInterval = setInterval(() => {
       setProgress((prev) => Math.min(prev + Math.random() * 15, 85));
     }, 300);
@@ -86,7 +83,7 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
     } finally {
       setImporting(false);
     }
-  };
+  }, [file, onImported]);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Importar Clientes" className="modal--md">
@@ -100,7 +97,6 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
           </div>
         )}
 
-        {/* Result */}
         {result && (
           <div className={`${b}__result`}>
             <div className={`${b}__result-icon`}>
@@ -133,7 +129,6 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
           </div>
         )}
 
-        {/* Dropzone + Preview */}
         {!result && (
           <>
             <div
@@ -168,7 +163,6 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
               )}
             </div>
 
-            {/* Preview */}
             {preview && (
               <div className={`${b}__preview`}>
                 <p className={`${b}__preview-label`}>Vista previa (primeras filas)</p>
@@ -187,7 +181,6 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
               </div>
             )}
 
-            {/* Progress */}
             {importing && (
               <div className={`${b}__progress`}>
                 <div className={`${b}__progress-bar`}>
@@ -197,7 +190,6 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
               </div>
             )}
 
-            {/* Actions */}
             <div className={`${b}__actions`}>
               <Button variant="ghost" size="md" onClick={handleClose}>Cancelar</Button>
               <Button variant="primary" size="md" onClick={handleImport} disabled={!file || importing}>

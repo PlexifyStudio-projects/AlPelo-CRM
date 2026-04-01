@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import Sidebar from '../Sidebar/Sidebar';
 import Header from '../Header/Header';
 import { useTenant } from '../../../context/TenantContext';
@@ -15,15 +15,13 @@ const MENU_ITEMS = [
   { id: 'lina-activity', label: 'Actividad Lina', description: 'MONITOREO EN TIEMPO REAL', section: 'GESTION PRINCIPAL' },
   { id: 'team', label: 'Equipo', description: 'RENDIMIENTO Y FEEDBACK', section: 'GESTION PRINCIPAL' },
   { id: 'automations', label: 'Automatizaciones', description: 'WORKFLOWS INTELIGENTES', section: 'MARKETING' },
-  // { id: 'content-studio', label: 'Estudio IA', description: 'CONTENIDO CON INTELIGENCIA ARTIFICIAL', section: 'MARKETING' }, // En mantenimiento
   { id: 'inbox', label: 'Inbox', description: 'CONVERSACIONES WHATSAPP', section: 'WHATSAPP' },
-  // Plantillas moved to Campañas page
   { id: 'chat-ai', label: 'Lina IA', description: 'ASISTENTE INTELIGENTE', section: 'WHATSAPP' },
 ];
 
 const MOBILE_BREAKPOINT = 1024;
 
-const AIPauseBanner = () => {
+const AIPauseBanner = memo(() => {
   const { tenant } = useTenant();
   if (!tenant.ai_is_paused) return null;
 
@@ -42,7 +40,7 @@ const AIPauseBanner = () => {
       </div>
     </div>
   );
-};
+});
 
 const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -60,7 +58,6 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Fetch inbox unread count on mount and poll every 10s
   useEffect(() => {
     const fetchUnread = async () => {
       try {
@@ -78,13 +75,9 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
     if (isMobile) setIsMobileMenuOpen(false);
   }, [onNavigate, isMobile]);
 
-  const handleOpenMobileMenu = useCallback(() => {
-    setIsMobileMenuOpen(true);
-  }, []);
-
-  const handleCloseMobileMenu = useCallback(() => {
-    setIsMobileMenuOpen(false);
-  }, []);
+  const handleOpenMobileMenu = useCallback(() => setIsMobileMenuOpen(true), []);
+  const handleCloseMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
+  const handleToggleCollapse = useCallback(() => setIsSidebarCollapsed(prev => !prev), []);
 
   return (
     <div className={`main-layout ${isSidebarCollapsed ? 'main-layout--collapsed' : ''} ${isMobile ? 'main-layout--mobile' : ''}`}>
@@ -97,7 +90,7 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
         onItemClick={handleNavigate}
         user={user}
         isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        onToggleCollapse={handleToggleCollapse}
         onLogout={onLogout}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={handleCloseMobileMenu}

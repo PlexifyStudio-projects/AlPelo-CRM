@@ -1,13 +1,4 @@
-/**
- * API Token Manager + Global Fetch Interceptor
- *
- * Automatically adds Bearer token to ALL fetch requests to the API.
- * This makes auth work on mobile (where cross-origin cookies are blocked).
- * Desktop still works via cookies as fallback.
- */
-
 const TOKEN_KEY = 'plexify_token';
-const API_HOST = (import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api').replace('/api', '');
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -21,14 +12,11 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-// ── Global fetch interceptor ──
-// Patches window.fetch to add Authorization header to API requests
 const _originalFetch = window.fetch;
 
 window.fetch = function (url, options = {}) {
   const urlStr = typeof url === 'string' ? url : url?.url || '';
 
-  // Only intercept requests to our API
   if (urlStr.includes('alpelo-crm-production.up.railway.app') || urlStr.includes('/api/')) {
     const token = getToken();
     if (token) {
@@ -38,12 +26,10 @@ window.fetch = function (url, options = {}) {
       }
       options = { ...options, headers };
     }
-    // Always include credentials for cookie fallback
     if (!options.credentials) {
       options.credentials = 'include';
     }
 
-    // Multi-location: inject location_id on GET requests
     const locationId = localStorage.getItem('plexify_location');
     if (locationId && locationId !== 'all' && options.method !== 'POST' && options.method !== 'PUT' && options.method !== 'DELETE') {
       try {
@@ -52,13 +38,11 @@ window.fetch = function (url, options = {}) {
           u.searchParams.set('location_id', locationId);
           url = u.toString();
         }
-      } catch { /* URL parse error, skip */ }
+      } catch { /* skip */ }
     }
   }
 
   return _originalFetch.call(window, url, options).then((response) => {
-    // Detect session replaced (another device logged in)
-    // Guard: only trigger once to prevent reload loops
     if (response.status === 401 && urlStr.includes('/api/') && !urlStr.includes('/auth/') && !window.__sessionReplacedTriggered) {
       const cloned = response.clone();
       cloned.json().then((data) => {

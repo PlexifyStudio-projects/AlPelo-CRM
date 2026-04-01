@@ -14,7 +14,6 @@ import {
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
-// ===== ICONS =====
 const Icons = {
   dollar: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -145,11 +144,9 @@ const Icons = {
   ),
 };
 
-// Recharts color palette
 const CHART_COLORS = ['#2D5A3D', '#C9A84C', '#3B82F6', '#EF4444', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
 const PM_COLORS = { 'efectivo': '#2D5A3D', 'transferencia': '#3B82F6', 'tarjeta': '#C9A84C', 'nequi': '#8B5CF6', 'daviplata': '#EF4444', 'Sin registrar': '#8E8E85' };
 
-// ===== HELPERS =====
 const formatCOP = (value) => {
   if (!value && value !== 0) return '$0';
   return `$${Number(value).toLocaleString('es-CO')}`;
@@ -224,7 +221,6 @@ const TAB_OPTIONS = [
   { value: 'facturas', label: 'Facturas' },
 ];
 
-// ===== ANIMATED NUMBER =====
 const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
   const [displayValue, setDisplayValue] = useState(0);
 
@@ -249,7 +245,6 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
   return <span>{prefix}{displayValue.toLocaleString('es-CO')}{suffix}</span>;
 };
 
-// ===== GROWTH BADGE =====
 const GrowthBadge = ({ value }) => {
   if (value === null || value === undefined) return null;
   const isPositive = value >= 0;
@@ -261,7 +256,6 @@ const GrowthBadge = ({ value }) => {
   );
 };
 
-// ===== RECHARTS CUSTOM TOOLTIP =====
 const RechartsTooltip = ({ active, payload, label, formatter }) => {
   if (!active || !payload || !payload.length) return null;
   return (
@@ -277,7 +271,6 @@ const RechartsTooltip = ({ active, payload, label, formatter }) => {
   );
 };
 
-// ===== REVENUE AREA CHART (Recharts) =====
 const RevenueAreaChart = ({ data }) => {
   if (!data || data.length === 0) return <div className="finances__empty">Sin datos de ingresos para este periodo</div>;
 
@@ -307,7 +300,6 @@ const RevenueAreaChart = ({ data }) => {
   );
 };
 
-// ===== PAYMENT DONUT CHART (Recharts) =====
 const PaymentDonutChart = ({ data }) => {
   if (!data || !data.items || data.items.length === 0) return null;
   const total = data.items.reduce((s, i) => s + i.total, 0);
@@ -349,7 +341,6 @@ const PaymentDonutChart = ({ data }) => {
   );
 };
 
-// ===== STAFF BAR CHART (Recharts) =====
 const StaffBarChart = ({ data }) => {
   if (!data || data.length === 0) return null;
   const chartData = data.map(s => ({ ...s, initials: s.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2) }));
@@ -371,7 +362,6 @@ const StaffBarChart = ({ data }) => {
   );
 };
 
-// ===== CATEGORY BREAKDOWN =====
 const CategoryBreakdown = ({ categories }) => {
   if (!categories || categories.length === 0) return <div className="finances__empty">Sin datos por categoria</div>;
   const total = categories.reduce((s, c) => s + c.revenue, 0) || 1;
@@ -405,12 +395,10 @@ const CategoryBreakdown = ({ categories }) => {
   );
 };
 
-// ===== SKELETON =====
 const SkeletonBlock = ({ width = '100%', height = '14px' }) => (
   <div className="finances__skeleton" style={{ width, height }} />
 );
 
-// ===== INSIGHTS PANEL =====
 const InsightsPanel = ({ data }) => {
   if (!data) return null;
   const insights = [];
@@ -457,7 +445,6 @@ const InsightsPanel = ({ data }) => {
   );
 };
 
-// ===== PAYMENT METHODS CARD (now uses Donut) =====
 const PaymentMethodsCard = ({ period, dateFrom, dateTo }) => {
   const [data, setData] = useState(null);
 
@@ -475,9 +462,6 @@ const PaymentMethodsCard = ({ period, dateFrom, dateTo }) => {
   return <PaymentDonutChart data={data} />;
 };
 
-// ================================================================
-// TAB: RESUMEN (existing content)
-// ================================================================
 const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
   const hasData = data && data.total_visits > 0;
 
@@ -643,7 +627,6 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
   );
 };
 
-// ===== OWNER PROFIT PANEL (Fase 2) =====
 const OwnerProfitPanel = ({ period, dateFrom, dateTo }) => {
   const [pnl, setPnl] = useState(null);
 
@@ -658,7 +641,6 @@ const OwnerProfitPanel = ({ period, dateFrom, dateTo }) => {
 
   if (!pnl) return null;
 
-  // Fase 6: IVA estimado from localStorage preference
   const ivaDefault = localStorage.getItem('alpelo_iva_default') === 'true';
   const estimatedIva = ivaDefault ? Math.round(pnl.total_revenue * 0.19) : 0;
   const isProfit = pnl.net_profit >= 0;
@@ -727,7 +709,6 @@ const OwnerProfitPanel = ({ period, dateFrom, dateTo }) => {
   );
 };
 
-// ===== FINANCE AI WIDGET (Fase 5) =====
 const FinanceAIWidget = ({ period, dateFrom, dateTo }) => {
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
@@ -811,9 +792,7 @@ const FinanceAIWidget = ({ period, dateFrom, dateTo }) => {
   );
 };
 
-// ================================================================
-// TAB: REPORTES — Analytics + Period Comparison + Export
-// ================================================================
+
 const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
 
 const TabReportes = ({ period, dateFrom, dateTo }) => {
@@ -1063,9 +1042,7 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
   );
 };
 
-// ================================================================
-// TAB: GASTOS
-// ================================================================
+
 const TabGastos = ({ period, dateFrom, dateTo }) => {
   const { addNotification } = useNotification();
   const [expenses, setExpenses] = useState([]);
@@ -1321,9 +1298,7 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
   );
 };
 
-// ================================================================
-// TAB: COMISIONES — Rich staff cards
-// ================================================================
+
 const STAFF_COLORS = ['#2D5A3D', '#8B6914', '#3B82F6', '#EF4444', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
 
 const TabComisiones = ({ period, dateFrom, dateTo }) => {
@@ -1393,23 +1368,24 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
     );
   }
 
-  const totalCommissions = payouts.reduce((s, p) => s + p.commission_amount, 0);
-  const totalRevenue = payouts.reduce((s, p) => s + p.total_revenue, 0);
-  const totalServices = payouts.reduce((s, p) => s + p.services_count, 0);
-  const avgRate = configs.length > 0 ? configs.reduce((s, c) => s + c.default_rate, 0) / configs.length : 0.40;
-  const maxPayout = Math.max(...payouts.map(p => p.commission_amount), 1);
-
-  // Merge configs with payouts for full picture
-  const staffData = configs.map((cfg, i) => {
-    const payout = payouts.find(p => p.staff_id === cfg.staff_id);
-    return {
-      ...cfg,
-      revenue: payout?.total_revenue || 0,
-      commission: payout?.commission_amount || 0,
-      services: payout?.services_count || 0,
-      color: STAFF_COLORS[i % STAFF_COLORS.length],
-    };
-  });
+  const { totalCommissions, totalServices, avgRate, maxPayout, staffData } = useMemo(() => {
+    const tc = payouts.reduce((s, p) => s + p.commission_amount, 0);
+    const tr = payouts.reduce((s, p) => s + p.total_revenue, 0);
+    const ts = payouts.reduce((s, p) => s + p.services_count, 0);
+    const ar = configs.length > 0 ? configs.reduce((s, c) => s + c.default_rate, 0) / configs.length : 0.40;
+    const mp = Math.max(...payouts.map(p => p.commission_amount), 1);
+    const sd = configs.map((cfg, i) => {
+      const payout = payouts.find(p => p.staff_id === cfg.staff_id);
+      return {
+        ...cfg,
+        revenue: payout?.total_revenue || 0,
+        commission: payout?.commission_amount || 0,
+        services: payout?.services_count || 0,
+        color: STAFF_COLORS[i % STAFF_COLORS.length],
+      };
+    });
+    return { totalCommissions: tc, totalRevenue: tr, totalServices: ts, avgRate: ar, maxPayout: mp, staffData: sd };
+  }, [configs, payouts]);
 
   return (
     <>
@@ -1567,9 +1543,7 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
   );
 };
 
-// ================================================================
-// TAB: FACTURAS — Rich with KPIs, empty state, and invoice cards
-// ================================================================
+
 const STATUS_COLORS = { draft: '#8E8E85', sent: '#3B82F6', paid: '#10B981', cancelled: '#EF4444' };
 const STATUS_LABELS = { draft: 'Borrador', sent: 'Enviada', paid: 'Pagada', cancelled: 'Anulada' };
 const STATUS_ICONS = {
@@ -1586,7 +1560,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
 
-  // Real data from the system
   const [allClients, setAllClients] = useState([]);
   const [allServices, setAllServices] = useState([]);
   const [allStaff, setAllStaff] = useState([]);
@@ -1597,11 +1570,9 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   const searchTimer = useRef(null);
   const clientSearchRef = useRef(null);
 
-  // Uninvoiced visits (Fase 4)
   const [uninvoicedVisits, setUninvoicedVisits] = useState([]);
   const [showVisitImport, setShowVisitImport] = useState(false);
 
-  // Fase 6: IVA default from localStorage
   const savedIvaDefault = localStorage.getItem('alpelo_iva_default') === 'true';
 
   const [form, setForm] = useState({
@@ -1610,7 +1581,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
     items: [{ service_name: '', quantity: 1, unit_price: '', staff_name: '', visit_id: null }],
   });
 
-  // Load invoices + reference data
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -1625,14 +1595,12 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
 
   useEffect(() => { load(); }, [load]);
 
-  // Load clients, services, staff once for dropdowns
   useEffect(() => {
     clientService.list({ sort_by: 'name' }).then(setAllClients).catch(() => {});
     servicesService.list({ active: true }).then(setAllServices).catch(() => {});
     staffService.list({ active: true }).then(setAllStaff).catch(() => {});
   }, []);
 
-  // Client search
   const handleClientSearch = (value) => {
     setClientSearch(value);
     setShowClientDropdown(true);
@@ -1659,7 +1627,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
       client_phone: client.phone || '',
       client_document: '',
     }));
-    // Load uninvoiced visits for this client
     financeService.getUninvoicedVisits({ client_id: client.id }).then(setUninvoicedVisits).catch(() => setUninvoicedVisits([]));
   };
 
@@ -1677,7 +1644,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
     setUninvoicedVisits(prev => prev.filter(v => v.id !== visit.id));
   };
 
-  // Service selection — auto-fill price
   const handleServiceSelect = (idx, serviceName) => {
     const svc = allServices.find(s => s.name === serviceName);
     setForm(prev => ({
@@ -1690,7 +1656,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
     }));
   };
 
-  // Staff selection for line item
   const handleStaffSelect = (idx, staffName) => {
     setForm(prev => ({
       ...prev,
@@ -1739,7 +1704,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
       return;
     }
     try {
-      // Fase 6: save IVA preference
       localStorage.setItem('alpelo_iva_default', form.tax_rate > 0 ? 'true' : 'false');
       await financeService.createInvoice({
         ...form,
@@ -1764,19 +1728,22 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
     }
   };
 
-  // Compute KPIs
-  const totalFacturado = invoices.filter(i => i.status !== 'cancelled').reduce((s, i) => s + i.total, 0);
-  const paidCount = invoices.filter(i => i.status === 'paid').length;
-  const pendingCount = invoices.filter(i => i.status === 'draft' || i.status === 'sent').length;
-  const pendingAmount = invoices.filter(i => i.status === 'draft' || i.status === 'sent').reduce((s, i) => s + i.total, 0);
+  const { totalFacturado, paidCount, pendingCount, pendingAmount } = useMemo(() => {
+    let total = 0, paid = 0, pending = 0, pendingAmt = 0;
+    for (const inv of invoices) {
+      if (inv.status !== 'cancelled') total += inv.total;
+      if (inv.status === 'paid') paid++;
+      if (inv.status === 'draft' || inv.status === 'sent') { pending++; pendingAmt += inv.total; }
+    }
+    return { totalFacturado: total, paidCount: paid, pendingCount: pending, pendingAmount: pendingAmt };
+  }, [invoices]);
 
-  // Group services by category for dropdown
-  const servicesByCategory = allServices.reduce((acc, svc) => {
+  const servicesByCategory = useMemo(() => allServices.reduce((acc, svc) => {
     const cat = svc.category || 'Otros';
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(svc);
     return acc;
-  }, {});
+  }, {}), [allServices]);
 
   if (loading) {
     return (
@@ -2194,7 +2161,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   );
 };
 
-// ===== TAB: CAJA (CASH REGISTER) =====
 const TabCaja = () => {
   const { addNotification } = useNotification();
   const [register, setRegister] = useState(null);
@@ -2207,11 +2173,6 @@ const TabCaja = () => {
   const [countedCash, setCountedCash] = useState('');
   const [closeNotes, setCloseNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  const formatCOP = (val) => {
-    const n = Number(val) || 0;
-    return `$${n.toLocaleString('es-CO')}`;
-  };
 
   const fetchRegister = useCallback(async () => {
     setLoading(true);
@@ -2334,7 +2295,6 @@ const TabCaja = () => {
 
   const isOpen = register && register.status === 'open';
 
-  // Compute summaries from transactions
   const totalSales = transactions.reduce((s, t) => s + (Number(t.total || t.amount || 0)), 0);
   const totalCash = transactions.filter(t => t.payment_method === 'efectivo').reduce((s, t) => s + (Number(t.total || t.amount || 0)), 0);
   const totalDigital = transactions.filter(t => ['nequi', 'daviplata', 'transferencia', 'tarjeta'].includes(t.payment_method)).reduce((s, t) => s + (Number(t.total || t.amount || 0)), 0);
@@ -2614,7 +2574,6 @@ const TabCaja = () => {
   );
 };
 
-// ===== TAB: FORECAST / PROYECCIÓN =====
 const TabForecast = () => {
   const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2757,7 +2716,6 @@ const TabForecast = () => {
 };
 
 
-// ===== MAIN COMPONENT =====
 const Finances = () => {
   const { tenant } = useTenant();
   const [data, setData] = useState(null);
@@ -2767,7 +2725,6 @@ const Finances = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('resumen');
 
-  // Fase 1: Custom date range
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [showCustomRange, setShowCustomRange] = useState(false);

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// ─── Interactive Smoke/Cloud Canvas ───
 const SmokeCanvas = () => {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: -1000, y: -1000 });
@@ -62,7 +61,6 @@ const SmokeCanvas = () => {
     resize();
     window.addEventListener('resize', resize);
 
-    // Seed ambient particles
     const ambient = [];
     for (let i = 0; i < 12; i++) {
       ambient.push(createParticle(
@@ -83,7 +81,6 @@ const SmokeCanvas = () => {
       const my = mouseRef.current.y;
       const particles = particlesRef.current;
 
-      // Spawn new particles near mouse every few frames
       if (mx > 0 && my > 0 && frameCount % 3 === 0) {
         particles.push(createParticle(mx, my, false));
       }
@@ -101,13 +98,11 @@ const SmokeCanvas = () => {
           p.alpha = p.maxAlpha * lifeRatio;
           p.size = p.maxSize * (0.5 + lifeRatio * 0.5);
         } else {
-          // Ambient pulse
           const pulse = Math.sin(frameCount * p.pulseSpeed + p.pulseOffset);
           p.alpha = p.maxAlpha * (0.7 + pulse * 0.3);
           p.size = p.maxSize * (0.95 + pulse * 0.05);
         }
 
-        // Mouse repulsion
         if (mx > 0 && my > 0) {
           const dx = p.x - mx;
           const dy = p.y - my;
@@ -120,18 +115,15 @@ const SmokeCanvas = () => {
           }
         }
 
-        // Drift
         p.vx += p.driftX;
         p.vy += p.driftY;
 
-        // Damping
         p.vx *= 0.96;
         p.vy *= 0.96;
 
         p.x += p.vx;
         p.y += p.vy;
 
-        // Wrap ambient particles
         if (p.isAmbient) {
           if (p.x < -p.size) p.x = width + p.size;
           if (p.x > width + p.size) p.x = -p.size;
@@ -139,7 +131,6 @@ const SmokeCanvas = () => {
           if (p.y > height + p.size) p.y = -p.size;
         }
 
-        // Draw
         const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
         gradient.addColorStop(0, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${p.alpha})`);
         gradient.addColorStop(0.4, `rgba(${p.color.r}, ${p.color.g}, ${p.color.b}, ${p.alpha * 0.5})`);
@@ -151,7 +142,6 @@ const SmokeCanvas = () => {
         ctx.fill();
       }
 
-      // Cap particle count
       if (particles.length > 80) {
         const removeCount = particles.length - 80;
         let removed = 0;
@@ -197,7 +187,6 @@ const SmokeCanvas = () => {
   );
 };
 
-// ─── Login Component ───
 const Login = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [error, setError] = useState('');
@@ -217,7 +206,6 @@ const Login = ({ onLogin }) => {
       setCredentials((prev) => ({ ...prev, username: saved }));
       setRememberMe(true);
     }
-    // Check if session was replaced
     if (sessionStorage.getItem('session_replaced')) {
       sessionStorage.removeItem('session_replaced');
       setError('Tu sesion fue cerrada porque alguien inicio sesion desde otro dispositivo.');

@@ -14,36 +14,30 @@ export const daysSince = (date) => {
   return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
 };
 
-/**
- * Format phone number for display: +57 (317) 521-1170
- * Detects country by prefix or defaults to Colombia (+57).
- * Always stores raw digits, only formats for display.
- */
 const PHONE_PREFIXES = [
-  { prefix: '57', code: 'CO', len: 10 },
-  { prefix: '58', code: 'VE', len: 10 },
-  { prefix: '51', code: 'PE', len: 9 },
-  { prefix: '593', code: 'EC', len: 9 },
-  { prefix: '56', code: 'CL', len: 9 },
-  { prefix: '54', code: 'AR', len: 10 },
-  { prefix: '55', code: 'BR', len: 11 },
-  { prefix: '1', code: 'US', len: 10 },
-  { prefix: '52', code: 'MX', len: 10 },
-  { prefix: '507', code: 'PA', len: 8 },
-  { prefix: '506', code: 'CR', len: 8 },
-  { prefix: '502', code: 'GT', len: 8 },
-  { prefix: '591', code: 'BO', len: 8 },
-  { prefix: '595', code: 'PY', len: 9 },
-  { prefix: '598', code: 'UY', len: 8 },
-  { prefix: '34', code: 'ES', len: 9 },
+  { prefix: '57', len: 10 },
+  { prefix: '58', len: 10 },
+  { prefix: '51', len: 9 },
+  { prefix: '593', len: 9 },
+  { prefix: '56', len: 9 },
+  { prefix: '54', len: 10 },
+  { prefix: '55', len: 11 },
+  { prefix: '1', len: 10 },
+  { prefix: '52', len: 10 },
+  { prefix: '507', len: 8 },
+  { prefix: '506', len: 8 },
+  { prefix: '502', len: 8 },
+  { prefix: '591', len: 8 },
+  { prefix: '595', len: 9 },
+  { prefix: '598', len: 8 },
+  { prefix: '34', len: 9 },
 ];
 
 export const formatPhone = (raw) => {
   if (!raw) return '';
   const digits = String(raw).replace(/\D/g, '');
-  if (digits.length < 7) return raw; // too short, return as-is
+  if (digits.length < 7) return raw;
 
-  // Try to detect country prefix
   let prefix = '57';
   let local = digits;
 
@@ -55,26 +49,15 @@ export const formatPhone = (raw) => {
     }
   }
 
-  // If no prefix matched and length is 10 (Colombian mobile), assume +57
   if (local === digits && digits.length === 10) {
     prefix = '57';
     local = digits;
   }
 
-  // Format local number as (XXX) XXX-XXXX or similar
-  if (local.length === 10) {
-    return `+${prefix} (${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
-  }
-  if (local.length === 9) {
-    return `+${prefix} (${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
-  }
-  if (local.length === 8) {
-    return `+${prefix} (${local.slice(0, 4)}) ${local.slice(4)}`;
-  }
-  if (local.length === 11) {
-    return `+${prefix} (${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
-  }
+  if (local.length === 10) return `+${prefix} (${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
+  if (local.length === 9) return `+${prefix} (${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`;
+  if (local.length === 8) return `+${prefix} (${local.slice(0, 4)}) ${local.slice(4)}`;
+  if (local.length === 11) return `+${prefix} (${local.slice(0, 2)}) ${local.slice(2, 7)}-${local.slice(7)}`;
 
-  // Fallback: just add prefix
   return `+${prefix} ${local}`;
 };

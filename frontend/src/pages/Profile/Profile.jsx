@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useNotification } from '../../context/NotificationContext';
-import authService from '../../services/authService';
 
 const Profile = ({ user, onUpdate }) => {
   const b = 'profile';
   const { addNotification } = useNotification();
 
-  // Profile form
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -15,7 +13,6 @@ const Profile = ({ user, onUpdate }) => {
   });
   const [saving, setSaving] = useState(false);
 
-  // Password form
   const [pwForm, setPwForm] = useState({
     new_password: '',
     confirm_password: '',
@@ -23,7 +20,6 @@ const Profile = ({ user, onUpdate }) => {
   const [changingPw, setChangingPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
 
-  // Active tab
   const [activeTab, setActiveTab] = useState('info');
 
   const initials = user?.name
@@ -124,14 +120,12 @@ const Profile = ({ user, onUpdate }) => {
 
   return (
     <div className={b}>
-      {/* Header */}
       <div className={`${b}__header`}>
         <h2 className={`${b}__title`}>Mi Perfil</h2>
         <p className={`${b}__subtitle`}>Gestiona tu cuenta y seguridad</p>
       </div>
 
       <div className={`${b}__layout`}>
-        {/* Sidebar card with avatar */}
         <div className={`${b}__sidebar`}>
           <div className={`${b}__avatar-card`}>
             <div className={`${b}__avatar`}>
@@ -167,9 +161,7 @@ const Profile = ({ user, onUpdate }) => {
           </div>
         </div>
 
-        {/* Main content */}
         <div className={`${b}__main`}>
-          {/* Tabs */}
           <div className={`${b}__tabs`}>
             <button
               className={`${b}__tab ${activeTab === 'info' ? `${b}__tab--active` : ''}`}
@@ -193,7 +185,6 @@ const Profile = ({ user, onUpdate }) => {
             </button>
           </div>
 
-          {/* Info tab */}
           {activeTab === 'info' && (
             <div className={`${b}__panel`}>
               <div className={`${b}__panel-header`}>
@@ -279,7 +270,6 @@ const Profile = ({ user, onUpdate }) => {
             </div>
           )}
 
-          {/* Security tab */}
           {activeTab === 'security' && (
             <div className={`${b}__panel`}>
               <div className={`${b}__panel-header`}>

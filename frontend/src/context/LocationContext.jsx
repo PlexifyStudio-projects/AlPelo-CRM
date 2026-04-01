@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
-import { useTenant } from './TenantContext';
 
 const LocationContext = createContext(null);
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
@@ -8,7 +7,6 @@ const STORAGE_KEY = 'plexify_location';
 
 export const LocationProvider = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
-  const { tenant } = useTenant();
   const [locations, setLocations] = useState([]);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,29 +17,23 @@ export const LocationProvider = ({ children }) => {
       if (res.ok) {
         const data = await res.json();
         setLocations(data);
-        // If staff, use their locations endpoint
         if (user?.role === 'staff' || user?._auth_role === 'staff') {
           const meRes = await fetch(`${API_URL}/locations/me`, { credentials: 'include' });
           if (meRes.ok) {
             const meData = await meRes.json();
             if (meData.length === 1) {
-              // Staff at single location → auto-scope
               setSelectedLocationId(meData[0].id);
               localStorage.setItem(STORAGE_KEY, String(meData[0].id));
             }
           }
         } else {
-          // Admin: restore from localStorage or default to "all"
           const saved = localStorage.getItem(STORAGE_KEY);
           if (saved && saved !== 'all' && data.some(l => l.id === parseInt(saved))) {
             setSelectedLocationId(parseInt(saved));
           }
-          // else null = "all locations"
         }
       }
-    } catch {
-      // No locations endpoint yet — single-location mode
-    } finally {
+    } catch { /* silent */ } finally {
       setLoading(false);
     }
   }, [user]);

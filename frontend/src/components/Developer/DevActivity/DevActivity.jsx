@@ -59,7 +59,6 @@ const DevActivity = () => {
         <button className={`${b}__refresh`} onClick={fetchActivity}>Actualizar</button>
       </div>
 
-      {/* Daily Stats */}
       <div className={`${b}__stats`}>
         <div className={`${b}__stat`}>
           <span className={`${b}__stat-value`}>{daily.messages_sent || 0}</span>
@@ -87,7 +86,6 @@ const DevActivity = () => {
         </div>
       </div>
 
-      {/* Filters */}
       <div className={`${b}__filters`}>
         {['all', ...Object.keys(TYPE_ICONS)].map(f => (
           <button key={f} className={`${b}__filter ${filter === f ? `${b}__filter--active` : ''}`}
@@ -97,7 +95,6 @@ const DevActivity = () => {
         ))}
       </div>
 
-      {/* Event List */}
       <div className={`${b}__list`}>
         {events.length === 0 ? (
           <div className={`${b}__empty`}>Sin eventos registrados. Los eventos se generan cuando Lina responde mensajes.</div>

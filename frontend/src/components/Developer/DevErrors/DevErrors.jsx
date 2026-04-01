@@ -61,7 +61,6 @@ const DevErrors = () => {
         </button>
       </div>
 
-      {/* Filters */}
       <div className={`${b}__controls`}>
         <div className={`${b}__range`}>
           {[1, 7, 14, 30].map((d) => (
@@ -83,7 +82,6 @@ const DevErrors = () => {
         />
       </div>
 
-      {/* Error type summary */}
       {Object.keys(byType).length > 0 && (
         <div className={`${b}__summary`}>
           {Object.entries(byType).map(([type, count]) => (
@@ -94,7 +92,6 @@ const DevErrors = () => {
         </div>
       )}
 
-      {/* Error List */}
       {filtered.length === 0 ? (
         <div className={`${b}__empty`}>
           <div className={`${b}__empty-icon`}>

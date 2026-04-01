@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
@@ -80,7 +80,7 @@ const DevTenants = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('active-first'); // active-first, name, plan, messages, newest, oldest
+  const [sortBy, setSortBy] = useState('active-first');
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ ...EMPTY_TENANT });
   const [editingId, setEditingId] = useState(null);
@@ -141,7 +141,6 @@ const DevTenants = () => {
     setEditingId(t.id); setAdminUsername(t.admin_user?.username || '');
     setNewPassword(''); setCredMsg(null); setTenantAdmins([]); setResetPwId(null);
     setShowForm(true);
-    // Load admins list
     apiFetch(`/dev/tenants/${t.id}/admins`).then(d => setTenantAdmins(d.admins || [])).catch(() => {});
   };
 
@@ -192,13 +191,13 @@ const DevTenants = () => {
 
   const handleToggleAI = async (id, current) => {
     setActionLoading(`ai-${id}`);
-    try { await apiFetch(`/dev/tenants/${id}/toggle-ai`, { method: 'POST', body: JSON.stringify({ paused: !current }) }); fetchTenants(); } catch { /* */ }
+    try { await apiFetch(`/dev/tenants/${id}/toggle-ai`, { method: 'POST', body: JSON.stringify({ paused: !current }) }); fetchTenants(); } catch {}
     setActionLoading('');
   };
 
   const handleRecarga = async (tenantId, recarga) => {
     setActionLoading(`recarga-${tenantId}`);
-    try { await apiFetch(`/dev/tenants/${tenantId}/add-messages`, { method: 'POST', body: JSON.stringify({ amount: recarga.messages }) }); setShowRecarga(null); setCustomRecarga(''); fetchTenants(); } catch { /* */ }
+    try { await apiFetch(`/dev/tenants/${tenantId}/add-messages`, { method: 'POST', body: JSON.stringify({ amount: recarga.messages }) }); setShowRecarga(null); setCustomRecarga(''); fetchTenants(); } catch {}
     setActionLoading('');
   };
 
@@ -206,17 +205,17 @@ const DevTenants = () => {
     const amount = parseInt(customRecarga);
     if (!amount || amount <= 0) return;
     setActionLoading(`recarga-${tenantId}`);
-    try { await apiFetch(`/dev/tenants/${tenantId}/add-messages`, { method: 'POST', body: JSON.stringify({ amount }) }); setShowRecarga(null); setCustomRecarga(''); fetchTenants(); } catch { /* */ }
+    try { await apiFetch(`/dev/tenants/${tenantId}/add-messages`, { method: 'POST', body: JSON.stringify({ amount }) }); setShowRecarga(null); setCustomRecarga(''); fetchTenants(); } catch {}
     setActionLoading('');
   };
 
   const handleToggleActive = async (id, current) => {
     setActionLoading(`active-${id}`);
-    try { await apiFetch(`/dev/tenants/${id}/toggle-active`, { method: 'POST', body: JSON.stringify({ active: !current }) }); fetchTenants(); } catch { /* */ }
+    try { await apiFetch(`/dev/tenants/${id}/toggle-active`, { method: 'POST', body: JSON.stringify({ active: !current }) }); fetchTenants(); } catch {}
     setActionLoading('');
   };
 
-  const filteredTenants = (() => {
+  const filteredTenants = useMemo(() => {
     let list = searchQuery.trim().length < 2 ? [...tenants] : tenants.filter(t => {
       const q = searchQuery.toLowerCase();
       return [t.name, t.slug, t.owner_name, t.owner_phone, t.owner_email, t.city, t.plan, t.business_type]
@@ -225,26 +224,25 @@ const DevTenants = () => {
 
     const planOrder = { business: 0, pro: 1, starter: 2, trial: 3, custom: 4 };
 
-    list.sort((a, b) => {
+    list.sort((a, b2) => {
       switch (sortBy) {
         case 'active-first': {
-          // Active + IA on first, then active + IA off, then inactive
           const scoreA = (a.is_active ? 0 : 2) + (a.ai_is_paused ? 1 : 0);
-          const scoreB = (b.is_active ? 0 : 2) + (b.ai_is_paused ? 1 : 0);
+          const scoreB = (b2.is_active ? 0 : 2) + (b2.ai_is_paused ? 1 : 0);
           if (scoreA !== scoreB) return scoreA - scoreB;
-          return (a.name || '').localeCompare(b.name || '');
+          return (a.name || '').localeCompare(b2.name || '');
         }
-        case 'name': return (a.name || '').localeCompare(b.name || '');
-        case 'plan': return (planOrder[a.plan] ?? 9) - (planOrder[b.plan] ?? 9);
-        case 'messages': return (b.messages_used || 0) - (a.messages_used || 0);
-        case 'newest': return (b.id || 0) - (a.id || 0);
-        case 'oldest': return (a.id || 0) - (b.id || 0);
+        case 'name': return (a.name || '').localeCompare(b2.name || '');
+        case 'plan': return (planOrder[a.plan] ?? 9) - (planOrder[b2.plan] ?? 9);
+        case 'messages': return (b2.messages_used || 0) - (a.messages_used || 0);
+        case 'newest': return (b2.id || 0) - (a.id || 0);
+        case 'oldest': return (a.id || 0) - (b2.id || 0);
         default: return 0;
       }
     });
 
     return list;
-  })();
+  }, [tenants, searchQuery, sortBy]);
 
   if (loading) {
     return (
@@ -268,7 +266,6 @@ const DevTenants = () => {
         </button>
       </div>
 
-      {/* Search Bar */}
       <div className={`${b}__search`}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
         <input
@@ -285,7 +282,6 @@ const DevTenants = () => {
         )}
       </div>
 
-      {/* Sort Filters */}
       <div className={`${b}__filters`}>
         {[
           { key: 'active-first', label: 'Activas primero' },
@@ -303,7 +299,6 @@ const DevTenants = () => {
         ))}
       </div>
 
-      {/* Tenant Cards */}
       <div className={`${b}__grid`}>
         {filteredTenants.map((t) => {
           const planInfo = PLANS[t.plan] || PLANS.custom;
@@ -405,7 +400,6 @@ const DevTenants = () => {
                 </button>
               </div>
 
-              {/* Sedes / Locations */}
               <LocationsPanel tenantId={t.id} />
 
               <div className={`${b}__status-row`}>
@@ -421,7 +415,6 @@ const DevTenants = () => {
         })}
       </div>
 
-      {/* Modal Form — Portal to body to escape overflow constraints */}
       {showForm && createPortal(
         <div className={`${b}__overlay`} onClick={() => setShowForm(false)}>
           <div className={`${b}__modal`} onClick={(e) => e.stopPropagation()}>
@@ -493,7 +486,6 @@ const DevTenants = () => {
                 </div>
               </div>
 
-              {/* ── Booking Online ── */}
               <div className={`${b}__form-section`}>
                 <h3 className={`${b}__form-section-title`}>Booking Online</h3>
                 <div className={`${b}__form-grid`}>
@@ -584,9 +576,6 @@ const DevTenants = () => {
   );
 };
 
-// ════════════════════════════════════════════
-// LOCATIONS PANEL — Manage sedes per tenant
-// ════════════════════════════════════════════
 function LocationsPanel({ tenantId }) {
   const [locations, setLocations] = useState([]);
   const [open, setOpen] = useState(false);
@@ -648,7 +637,6 @@ function LocationsPanel({ tenantId }) {
 
       {open && (
         <div className={`${b}__locations-body`}>
-          {/* Existing locations */}
           {locations.length === 0 && !adding && (
             <div className={`${b}__locations-empty`}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.4">
@@ -699,7 +687,6 @@ function LocationsPanel({ tenantId }) {
             </div>
           ))}
 
-          {/* Create form */}
           {adding && (
             <div className={`${b}__location-create`}>
               <h4 className={`${b}__location-create-title`}>

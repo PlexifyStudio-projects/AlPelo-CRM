@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Modal from '../../common/Modal/Modal';
 import Input from '../../common/Input/Input';
 import Button from '../../common/Button/Button';
 import { useTenant } from '../../../context/TenantContext';
 
-// Country code prefixes
 const COUNTRY_PREFIXES = {
   CO: '+57', CL: '+56', AR: '+54', PE: '+51', VE: '+58', EC: '+593',
   US: '+1', BR: '+55', MX: '+52', PA: '+507', CR: '+506', GT: '+502',
@@ -48,9 +47,7 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
     setTouched({});
   }, [editingClient, isOpen, countryPrefix]);
 
-  // Format phone: +XX (XXX) XXX-XXXX
-  const formatPhone = (raw) => {
-    // Extract prefix and digits
+  const formatPhone = useCallback((raw) => {
     const prefixMatch = raw.match(/^(\+\d{1,3})\s*/);
     const prefix = prefixMatch ? prefixMatch[1] : countryPrefix;
     const afterPrefix = prefixMatch ? raw.slice(prefixMatch[0].length) : raw.replace(/^\+?\d{0,3}\s*/, '');
@@ -60,27 +57,22 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
     if (digits.length <= 3) return `${prefix} (${digits}`;
     if (digits.length <= 6) return `${prefix} (${digits.slice(0, 3)}) ${digits.slice(3)}`;
     return `${prefix} (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
-  };
+  }, [countryPrefix]);
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     if (name === 'phone') {
       setForm((f) => ({ ...f, phone: formatPhone(value) }));
     } else {
       setForm((f) => ({ ...f, [name]: value }));
     }
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
-    }
-  };
+    setErrors((prev) => {
+      if (prev[name]) return { ...prev, [name]: '' };
+      return prev;
+    });
+  }, [formatPhone]);
 
-  const handleBlur = (e) => {
-    setTouched((prev) => ({ ...prev, [e.target.name]: true }));
-    const fieldErrors = validateField(e.target.name, e.target.value);
-    setErrors((prev) => ({ ...prev, ...fieldErrors }));
-  };
-
-  const validateField = (name, value) => {
+  const validateField = useCallback((name, value) => {
     const fieldErrors = {};
     if (name === 'name' && !value.trim()) fieldErrors.name = 'El nombre es obligatorio';
     if (name === 'phone' && !value.trim()) fieldErrors.phone = 'El telefono es obligatorio';
@@ -88,9 +80,15 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       fieldErrors.email = 'Email invalido';
     }
     return fieldErrors;
-  };
+  }, []);
 
-  const validate = () => {
+  const handleBlur = useCallback((e) => {
+    setTouched((prev) => ({ ...prev, [e.target.name]: true }));
+    const fieldErrors = validateField(e.target.name, e.target.value);
+    setErrors((prev) => ({ ...prev, ...fieldErrors }));
+  }, [validateField]);
+
+  const validate = useCallback(() => {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = 'El nombre es obligatorio';
     if (!form.phone.trim() || form.phone.trim() === countryPrefix) newErrors.phone = 'El telefono es obligatorio';
@@ -98,9 +96,9 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       newErrors.email = 'Email invalido';
     }
     return newErrors;
-  };
+  }, [form, countryPrefix]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = useCallback((e) => {
     e.preventDefault();
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
@@ -116,14 +114,13 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       client_id: form.client_id || null,
     };
 
-    // When editing, don't send client_id (it's immutable)
     if (editingClient) {
       delete payload.client_id;
     }
 
     onSave(payload);
     onClose();
-  };
+  }, [validate, form, editingClient, onSave, onClose]);
 
   const isFormValid = form.name.trim() && form.phone.trim() && form.phone.trim() !== countryPrefix;
 
@@ -135,7 +132,6 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       className="modal--lg"
     >
       <form className={b} onSubmit={handleSubmit} noValidate>
-        {/* Section 1: Personal data */}
         <div className={`${b}__section`}>
           <h4 className={`${b}__section-label`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -194,7 +190,6 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
           </div>
         </div>
 
-        {/* Section 2: Consent */}
         <div className={`${b}__section`}>
           <div className={`${b}__toggle-row`}>
             <label className={`${b}__toggle-label`}>

@@ -26,7 +26,7 @@ const Clients = () => {
   const [editingClient, setEditingClient] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [rfmData, setRfmData] = useState(null);
-  const [rfmFilter, setRfmFilter] = useState(null); // null = no RFM filter
+  const [rfmFilter, setRfmFilter] = useState(null);
   const { addNotification } = useNotification();
   const b = 'clients';
 
@@ -75,7 +75,6 @@ const Clients = () => {
       result = result.filter((c) => c.status === statusFilter);
     }
 
-    // RFM filter — match by client ID from rfmData
     if (rfmFilter && rfmData?.clients) {
       const rfmClientIds = new Set(
         rfmData.clients.filter((r) => r.segment === rfmFilter).map((r) => r.client_id)
@@ -265,7 +264,6 @@ const Clients = () => {
           </div>
         </div>
 
-        {/* RFM Segments */}
         {rfmData?.summary && Object.keys(rfmData.summary).length > 0 && (
           <div className={`${b}__rfm-bar`}>
             <span className={`${b}__rfm-title`}>Segmentacion RFM</span>

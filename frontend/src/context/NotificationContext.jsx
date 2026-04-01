@@ -3,14 +3,12 @@ import { createContext, useContext, useState, useCallback, useMemo, useEffect, u
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const NotificationContext = createContext(null);
 
-// Request notification permission proactively
 function requestNotificationPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
 }
 
-// Show native browser notification — uses Service Worker on mobile, Notification API on desktop
 async function showBrowserNotification(title, body, link, type) {
   if (!('Notification' in window)) return;
 
@@ -20,7 +18,6 @@ async function showBrowserNotification(title, body, link, type) {
   }
   if (Notification.permission !== 'granted') return;
 
-  // Don't show if tab/window is focused
   if (document.hasFocus()) return;
 
   const options = {
@@ -32,8 +29,6 @@ async function showBrowserNotification(title, body, link, type) {
     data: { url: link },
   };
 
-  // Mobile: must use Service Worker's showNotification()
-  // Desktop: can use new Notification() directly
   try {
     if ('serviceWorker' in navigator) {
       const reg = await navigator.serviceWorker.getRegistration('/AlPelo-CRM/');
@@ -42,7 +37,6 @@ async function showBrowserNotification(title, body, link, type) {
         return;
       }
     }
-    // Fallback: desktop Notification constructor
     const n = new Notification(title || 'Plexify Studio', options);
     if (link) {
       n.onclick = () => {
@@ -52,9 +46,7 @@ async function showBrowserNotification(title, body, link, type) {
       };
     }
     setTimeout(() => n.close(), 10000);
-  } catch {
-    // Silent fail
-  }
+  } catch { /* silent */ }
 }
 
 export const NotificationProvider = ({ children }) => {
@@ -63,7 +55,6 @@ export const NotificationProvider = ({ children }) => {
   const lastSeenIdRef = useRef(0);
   const initialLoadRef = useRef(true);
 
-  // Fetch persistent notifications from DB every 10 seconds
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/notifications?limit=30`, { credentials: 'include' });
@@ -71,11 +62,9 @@ export const NotificationProvider = ({ children }) => {
       const data = await res.json();
       const items = data.notifications || [];
 
-      // Detect NEW notifications and show browser notification
       if (!initialLoadRef.current && items.length > 0) {
         const maxId = Math.max(...items.map(n => n.id));
         if (maxId > lastSeenIdRef.current) {
-          // Find new unread notifications
           const newOnes = items.filter(n => n.id > lastSeenIdRef.current && !n.is_read);
           for (const n of newOnes) {
             showBrowserNotification(n.title, n.detail, n.link, n.type);
@@ -83,15 +72,12 @@ export const NotificationProvider = ({ children }) => {
         }
         lastSeenIdRef.current = maxId;
       } else if (items.length > 0) {
-        // First load — set the baseline without showing notifications
         lastSeenIdRef.current = Math.max(...items.map(n => n.id));
         initialLoadRef.current = false;
       }
 
       setDbNotifications(items);
-    } catch {
-      // Silent fail — not critical
-    }
+    } catch { /* silent */ }
   }, []);
 
   useEffect(() => {
@@ -101,7 +87,6 @@ export const NotificationProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  // Add local notification (toasts — ephemeral, for UI feedback like "template enviada")
   const addNotification = useCallback((message, type = 'info') => {
     const id = `local-${Date.now()}`;
     setNotifications((prev) => [
@@ -115,7 +100,6 @@ export const NotificationProvider = ({ children }) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
-  // Combine: DB notifications (persistent) + local toasts (ephemeral)
   const allNotifications = useMemo(() => {
     const dbMapped = dbNotifications.map(n => ({
       id: `db-${n.id}`,
@@ -165,19 +149,19 @@ export const NotificationProvider = ({ children }) => {
     [allNotifications]
   );
 
+  const value = useMemo(() => ({
+    notifications: allNotifications,
+    addNotification,
+    removeNotification,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+    unreadCount,
+    fetchNotifications,
+  }), [allNotifications, addNotification, removeNotification, markAsRead, markAllAsRead, clearAll, unreadCount, fetchNotifications]);
+
   return (
-    <NotificationContext.Provider
-      value={{
-        notifications: allNotifications,
-        addNotification,
-        removeNotification,
-        markAsRead,
-        markAllAsRead,
-        clearAll,
-        unreadCount,
-        fetchNotifications,
-      }}
-    >
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   );

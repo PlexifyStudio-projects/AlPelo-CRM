@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Modal from '../../common/Modal/Modal';
 import Input from '../../common/Input/Input';
-import { formatPhone } from '../../../utils/formatters';
+import { formatPhone, formatCurrency } from '../../../utils/formatters';
 import Button from '../../common/Button/Button';
-import { formatCurrency } from '../../../utils/formatters';
 import clientService from '../../../services/clientService';
 import servicesService from '../../../services/servicesService';
 import staffService from '../../../services/staffService';
@@ -46,7 +45,6 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
       clientService.list({ sort_by: 'created_at' }).then((data) => {
         setRecentClients(data.slice(0, 20));
       }).catch(() => {});
-      // Load real services and staff from API
       servicesService.list({ active: true }).then(setServices).catch(() => {});
       staffService.list({ active: true }).then(setStaff).catch(() => {});
     } else {
@@ -61,8 +59,7 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
     }
   }, [isOpen]);
 
-  // --- Search ---
-  const handleSearch = (value) => {
+  const handleSearch = useCallback((value) => {
     setSearchQuery(value);
     setError('');
     if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -75,40 +72,40 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
       } catch { setSearchResults([]); }
       finally { setSearching(false); }
     }, 300);
-  };
+  }, []);
 
-  const handleSelectClient = (client) => {
+  const handleSelectClient = useCallback((client) => {
     setSelectedClient(client);
     setStep('form');
     setSearchQuery('');
     setSearchResults([]);
-  };
+  }, []);
 
-  // --- Items ---
-  const updateItem = (index, field, value) => {
+  const updateItem = useCallback((index, field, value) => {
     setItems((prev) => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
-  };
+  }, []);
 
-  const handleServiceSelect = (index, serviceName) => {
+  const handleServiceSelect = useCallback((index, serviceName) => {
     const service = services.find((s) => s.name === serviceName);
     setItems((prev) => prev.map((item, i) =>
       i === index
         ? { ...item, service_name: serviceName, amount: service ? service.price.toString() : item.amount }
         : item
     ));
-  };
+  }, [services]);
 
-  const addItem = () => {
+  const addItem = useCallback(() => {
     setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
-  };
+  }, []);
 
-  const removeItem = (index) => {
-    if (items.length === 1) return;
-    setItems((prev) => prev.filter((_, i) => i !== index));
-  };
+  const removeItem = useCallback((index) => {
+    setItems((prev) => {
+      if (prev.length === 1) return prev;
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
 
-  // --- Submit ---
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     const valid = items.every((it) => it.service_name && it.amount && it.staff_id);
     if (!selectedClient || !visitDate || !valid) {
@@ -138,13 +135,13 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [items, selectedClient, visitDate, onSaved, onClose]);
 
-  const getInitials = (name) =>
-    name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  const getInitials = useCallback((name) =>
+    name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase(), []);
 
-  const activeStaff = staff.filter((s) => s.is_active !== false);
-  const total = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+  const activeStaff = useMemo(() => staff.filter((s) => s.is_active !== false), [staff]);
+  const total = useMemo(() => items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0), [items]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Registrar Visita" className="modal--lg">
@@ -160,7 +157,6 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
           </div>
         )}
 
-        {/* =================== SEARCH STEP =================== */}
         {step === 'search' && (
           <div className={`${b}__search-step`}>
             <p className={`${b}__instruction`}>Busca al cliente por nombre, telefono o ID</p>
@@ -224,10 +220,8 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
           </div>
         )}
 
-        {/* =================== FORM STEP =================== */}
         {step === 'form' && selectedClient && (
           <form className={`${b}__form-step`} onSubmit={handleSubmit}>
-            {/* Client card */}
             <div className={`${b}__selected-client`}>
               <div className={`${b}__result-avatar`}>{getInitials(selectedClient.name)}</div>
               <div className={`${b}__result-info`}>
@@ -237,12 +231,10 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
               <Button variant="ghost" size="sm" onClick={() => setStep('search')} type="button">Cambiar</Button>
             </div>
 
-            {/* Shared date */}
             <div className={`${b}__date-row`}>
               <Input label="Fecha de visita *" name="visit_date" type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} required />
             </div>
 
-            {/* Services list */}
             <div className={`${b}__items`}>
               {items.map((item, idx) => (
                 <div key={idx} className={`${b}__item`}>
@@ -305,7 +297,6 @@ const AddVisitModal = ({ isOpen, onClose, onSaved, onNewClient }) => {
               </button>
             </div>
 
-            {/* Total + Actions */}
             <div className={`${b}__actions`}>
               <div className={`${b}__total`}>
                 <span>Total</span>

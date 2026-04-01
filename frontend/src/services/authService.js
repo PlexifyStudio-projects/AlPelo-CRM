@@ -14,18 +14,8 @@ const authService = {
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      if (data.detail === 'suspended') {
-        const err = new Error(data.message || 'Cuenta suspendida');
-        err.code = 'SUSPENDED';
-        throw err;
-      }
-      if (data.detail === 'staff_deactivated') {
-        const err = new Error(data.message || 'Cuenta desactivada');
-        err.code = 'SUSPENDED';
-        throw err;
-      }
-      if (data.detail === 'account_deactivated') {
-        const err = new Error(data.message || 'Su cuenta ha sido desactivada. Contacte a soporte.');
+      if (data.detail === 'suspended' || data.detail === 'staff_deactivated' || data.detail === 'account_deactivated') {
+        const err = new Error(data.message || 'Cuenta suspendida o desactivada');
         err.code = 'SUSPENDED';
         throw err;
       }
@@ -50,10 +40,7 @@ const authService = {
     if (!res.ok) throw new Error('Error al crear la sesión');
 
     const data = await res.json();
-    // Save token for Bearer auth (mobile compatibility)
-    if (data.access_token) {
-      setToken(data.access_token);
-    }
+    if (data.access_token) setToken(data.access_token);
     return data;
   },
 
@@ -66,10 +53,7 @@ const authService = {
     if (!res.ok) return null;
 
     const data = await res.json();
-    // Update stored token
-    if (data.access_token) {
-      setToken(data.access_token);
-    }
+    if (data.access_token) setToken(data.access_token);
     return data;
   },
 
@@ -80,7 +64,6 @@ const authService = {
     });
 
     if (!res.ok) return null;
-
     return res.json();
   },
 

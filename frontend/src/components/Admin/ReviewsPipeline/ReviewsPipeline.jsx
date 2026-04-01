@@ -1,12 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNotification } from '../../../context/NotificationContext';
 import reviewService from '../../../services/reviewService';
 
 const B = 'reviews';
 
-// ═══════════════════════════════════════════════
-// SVG Icons
-// ═══════════════════════════════════════════════
 const StarIcon = ({ filled }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? '#F59E0B' : 'none'} stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
@@ -22,9 +19,6 @@ const TrendUpIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="
 const MessageIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>;
 const ExternalLinkIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>;
 
-// ═══════════════════════════════════════════════
-// Stars Display
-// ═══════════════════════════════════════════════
 const Stars = ({ rating, size = 16 }) => (
   <div className={`${B}__stars`}>
     {[1, 2, 3, 4, 5].map(i => (
@@ -38,29 +32,22 @@ const Stars = ({ rating, size = 16 }) => (
   </div>
 );
 
-// ═══════════════════════════════════════════════
-// Status helpers
-// ═══════════════════════════════════════════════
 const STATUS_MAP = {
   sent_to_google: { label: 'Enviado a Google', color: '#34D399', icon: <GoogleIcon /> },
   escalated: { label: 'Escalado al dueno', color: '#F87171', icon: <AlertIcon /> },
   no_response: { label: 'Sin respuesta', color: '#8E8E85', icon: <ClockIcon /> },
 };
 
-// ═══════════════════════════════════════════════
-// Main Component
-// ═══════════════════════════════════════════════
 const ReviewsPipeline = () => {
   const { addNotification } = useNotification();
 
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard | config
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [config, setConfig] = useState(null);
   const [stats, setStats] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Form state for config
   const [formConfig, setFormConfig] = useState(null);
 
   useEffect(() => {
@@ -75,8 +62,7 @@ const ReviewsPipeline = () => {
         setFormConfig({ ...cfg });
         setStats(st);
         setReviews(rv);
-      } catch (e) {
-        console.error('Failed to load reviews data:', e);
+      } catch {
       } finally {
         setLoading(false);
       }
@@ -84,25 +70,24 @@ const ReviewsPipeline = () => {
     load();
   }, []);
 
-  const handleSaveConfig = async () => {
+  const handleSaveConfig = useCallback(async () => {
     setSaving(true);
     try {
       const saved = await reviewService.saveConfig(formConfig);
       setConfig(saved);
       addNotification('Configuracion de resenas guardada', 'success');
       setActiveTab('dashboard');
-    } catch (e) {
+    } catch {
       addNotification('Error al guardar configuracion', 'error');
     } finally {
       setSaving(false);
     }
-  };
+  }, [formConfig, addNotification]);
 
-  const updateForm = (key, value) => {
+  const updateForm = useCallback((key, value) => {
     setFormConfig(prev => ({ ...prev, [key]: value }));
-  };
+  }, []);
 
-  // Distribution bar max
   const distMax = useMemo(() => {
     if (!stats?.distribution) return 1;
     return Math.max(...Object.values(stats.distribution), 1);
@@ -118,7 +103,6 @@ const ReviewsPipeline = () => {
 
   return (
     <div className={`${B}`}>
-      {/* Header */}
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
           <div className={`${B}__header-icon`}>
@@ -145,7 +129,6 @@ const ReviewsPipeline = () => {
 
       {activeTab === 'dashboard' ? (
         <>
-          {/* Stats KPI Cards */}
           <div className={`${B}__kpis`}>
             <div className={`${B}__kpi`}>
               <div className={`${B}__kpi-icon ${B}__kpi-icon--sent`}><MessageIcon /></div>
@@ -186,9 +169,7 @@ const ReviewsPipeline = () => {
             </div>
           </div>
 
-          {/* Distribution + Recent Reviews */}
           <div className={`${B}__body`}>
-            {/* Rating Distribution */}
             <div className={`${B}__distribution`}>
               <h3 className={`${B}__section-title`}>Distribucion de calificaciones</h3>
               <div className={`${B}__dist-bars`}>
@@ -214,7 +195,6 @@ const ReviewsPipeline = () => {
                 })}
               </div>
 
-              {/* Pipeline summary */}
               <div className={`${B}__pipeline-summary`}>
                 <div className={`${B}__pipeline-item ${B}__pipeline-item--positive`}>
                   <CheckCircleIcon />
@@ -227,7 +207,6 @@ const ReviewsPipeline = () => {
               </div>
             </div>
 
-            {/* Recent Reviews Feed */}
             <div className={`${B}__feed`}>
               <h3 className={`${B}__section-title`}>Resenas recientes</h3>
               <div className={`${B}__feed-list`}>
@@ -265,7 +244,6 @@ const ReviewsPipeline = () => {
           </div>
         </>
       ) : (
-        /* Configuration Panel */
         <div className={`${B}__config`}>
           <div className={`${B}__config-section`}>
             <h3 className={`${B}__section-title`}>Enlace de Google Reviews</h3>

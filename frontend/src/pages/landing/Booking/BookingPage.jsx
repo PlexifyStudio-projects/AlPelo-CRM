@@ -103,6 +103,7 @@ export default function BookingPage() {
   const [cc, setCc] = useState('+57');
   const [submitting, setSubmitting] = useState(false);
   const [conf, setConf] = useState(null);
+  const [bkError, setBkError] = useState(null);
 
   const teamScroll = useHScroll(data?.staff?.length || 0, 4);
 
@@ -256,7 +257,7 @@ export default function BookingPage() {
     setTimeout(() => document.getElementById('bp-services')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
-  const resetBooking = () => { setBkStep(0); setSelSvc(null); setSelStaff(null); setSelDate(null); setSelTime(null); setConf(null); };
+  const resetBooking = () => { setBkStep(0); setSelSvc(null); setSelStaff(null); setSelDate(null); setSelTime(null); setConf(null); setBkError(null); };
 
   const doSubmit = async () => {
     if (!cName.trim() || !cPhone.trim()) return;
@@ -266,9 +267,9 @@ export default function BookingPage() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ service_id: selSvc.id, staff_id: selStaff.id, date: selDate.toISOString().split('T')[0], time: selTime, client_name: cName.trim(), client_phone: cc + cPhone.trim().replace(/\s/g, ''), client_email: cEmail.trim() || null, notes: cNotes.trim() || null }),
       });
-      if (!res.ok) { const e = await res.json().catch(() => ({})); alert(e.detail || 'Horario no disponible. Intenta otro.'); setSubmitting(false); return; }
-      setConf((await res.json()).appointment); setBkStep(4);
-    } catch { alert('Error de conexión.'); }
+      if (!res.ok) { const e = await res.json().catch(() => ({})); setBkError(e.detail || 'Horario no disponible. Intenta otro.'); setSubmitting(false); return; }
+      setBkError(null); setConf((await res.json()).appointment); setBkStep(4);
+    } catch { setBkError('Error de conexión. Verifica tu internet e intenta de nuevo.'); }
     setSubmitting(false);
   };
 
@@ -553,6 +554,13 @@ export default function BookingPage() {
                     <div><span>Precio</span><strong>${selSvc?.price?.toLocaleString('es-CO')}</strong></div>
                   </div>
                   <p className={`${b}__bk-note`}>El pago se realiza directamente en el establecimiento.</p>
+                  {bkError && (
+                    <div className={`${b}__bk-error`}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                      <span>{bkError}</span>
+                      <button onClick={() => setBkError(null)}><IconX /></button>
+                    </div>
+                  )}
                   <div className={`${b}__bk-actions`}>
                     <button className={`${b}__btn`} onClick={() => setBkStep(2)}><IconArrowLeft /> Atrás</button>
                     <button className={`${b}__btn ${b}__btn--primary`} disabled={cName.trim().length < 2 || cPhone.trim().length < 7 || submitting} onClick={doSubmit}>{submitting ? 'Agendando...' : 'Confirmar cita'}</button>
@@ -663,13 +671,20 @@ export default function BookingPage() {
 
       {/* ═══ FOOTER ═══ */}
       <footer className={`${b}__footer`}>
-        <div className={`${b}__ft-grid`}>
+        <div className={`${b}__ft-top`}>
           <div className={`${b}__ft-brand`}>
-            <h3>{biz.name}</h3>
-            {biz.description && <p>{biz.description}</p>}
+            <div className={`${b}__ft-logo-row`}>
+              {(biz.logo_url || biz.cover_url) && <img src={biz.logo_url || biz.cover_url} alt={biz.name} className={`${b}__ft-logo`} />}
+              <div>
+                <h3>{biz.name}</h3>
+                {tags.length > 0 && <span className={`${b}__ft-tags`}>{tags.join(' · ')}</span>}
+              </div>
+            </div>
+            {biz.description && <p className={`${b}__ft-desc`}>{biz.description}</p>}
             <div className={`${b}__ft-social`}>
-              {biz.instagram && <a href={biz.instagram} target="_blank" rel="noopener noreferrer"><IconIG /></a>}
-              {biz.facebook && <a href={biz.facebook} target="_blank" rel="noopener noreferrer"><IconFB /></a>}
+              {biz.instagram && <a href={biz.instagram} target="_blank" rel="noopener noreferrer" title="Instagram"><IconIG /></a>}
+              {biz.facebook && <a href={biz.facebook} target="_blank" rel="noopener noreferrer" title="Facebook"><IconFB /></a>}
+              {biz.whatsapp && <a href={`https://wa.me/${biz.whatsapp}`} target="_blank" rel="noopener noreferrer" title="WhatsApp"><IconWA /></a>}
             </div>
           </div>
           <div className={`${b}__ft-col`}>
@@ -679,14 +694,23 @@ export default function BookingPage() {
             <button onClick={() => scrollToSection('resenas')}>Reseñas</button>
           </div>
           <div className={`${b}__ft-col`}>
-            <h4>Más información</h4>
+            <h4>Contacto</h4>
             {biz.address && <div className={`${b}__ft-item`}><IconPin s={14} /><span>{biz.address}</span></div>}
-            {todayHours && <div className={`${b}__ft-item`}><IconClock s={14} /><span>{todayHours}</span></div>}
             {biz.phone && <div className={`${b}__ft-item`}><IconPhone /><span>{biz.phone}</span></div>}
+            {todayHours && <div className={`${b}__ft-item`}><IconClock s={14} /><span>{todayHours}</span></div>}
+          </div>
+          <div className={`${b}__ft-col`}>
+            <h4>Reserva ahora</h4>
+            <p className={`${b}__ft-cta-text`}>Agenda tu cita en línea de forma rápida y segura.</p>
+            <button className={`${b}__ft-cta`} onClick={() => scrollToSection('servicios')}>Reservar cita</button>
           </div>
         </div>
+        <div className={`${b}__ft-divider`} />
         <div className={`${b}__ft-bottom`}>
-          <div className={`${b}__ft-powered`}><span>Powered by</span><a href="https://plexifystudio.com" target="_blank" rel="noopener noreferrer"><img src={PLEXIFY_LOGO} alt="Plexify Studio" /></a></div>
+          <div className={`${b}__ft-powered`}>
+            <span>Powered by</span>
+            <a href="https://plexifystudio.com" target="_blank" rel="noopener noreferrer"><img src={PLEXIFY_LOGO} alt="Plexify Studio" /></a>
+          </div>
           <span>&copy; {new Date().getFullYear()} <a href="https://plexifystudio.com" target="_blank" rel="noopener noreferrer">Plexify Studio</a>. Todos los derechos reservados.</span>
         </div>
       </footer>

@@ -14,12 +14,6 @@ const STRATEGY_BUTTONS = [
   { id: 'staff-retention', icon: '🛡️', label: 'Retención por Staff', desc: 'Plan de retención si un profesional se va', endpoint: '/ai/strategy/staff-retention', needsStaff: true },
 ];
 
-// ============================================
-// Plexify - Lina IA v6.0
-// Admin assistant — persistent chat
-// ============================================
-
-// Storage keys are tenant-scoped so each agency has its own chat history
 const getStorageKey = (tenantId) => `plexify_lina_chat_${tenantId || 0}`;
 const getTokensKey = (tenantId) => `plexify_lina_tokens_${tenantId || 0}`;
 const getHistoryKey = (tenantId) => `plexify_lina_queries_${tenantId || 0}`;
@@ -46,21 +40,14 @@ const QUICK_ACTIONS = [
 
 const generateId = () => `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
-/**
- * Parse AI response — strip action blocks and separate text from action results.
- * Action results come after the text as "-> result" lines from the backend.
- */
 const parseAIResponse = (text) => {
   if (!text) return { message: '', actions: [] };
 
-  // The backend already strips ```action blocks and appends results as "-> ..."
-  // But sometimes the AI model leaks action blocks — strip them on frontend too
   let clean = text
     .replace(/[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}\s*action[\s\S]*?[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}/gi, '')
     .replace(/[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}\s*action[\s\S]*/gi, '') // unclosed blocks
     .trim();
 
-  // Separate action results (lines starting with "->") from the message
   const lines = clean.split('\n');
   const messageLines = [];
   const actionLines = [];
@@ -79,7 +66,6 @@ const parseAIResponse = (text) => {
   };
 };
 
-// Load from localStorage (tenant-scoped)
 const loadFromStorage = (key) => {
   try {
     const raw = localStorage.getItem(key);
@@ -98,8 +84,8 @@ const ChatAI = () => {
   const [queryHistory, setQueryHistory] = useState(() => loadFromStorage(getHistoryKey(tid)) || []);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [tokenCount, setTokenCount] = useState(() => parseInt(localStorage.getItem(getTokensKey(tid)) || '0', 10));
-  const [pendingImage, setPendingImage] = useState(null); // { base64, mime, preview }
-  const [strategyLoading, setStrategyLoading] = useState(null); // id of loading button
+  const [pendingImage, setPendingImage] = useState(null);
+  const [strategyLoading, setStrategyLoading] = useState(null);
   const [authorizingCampaign, setAuthorizingCampaign] = useState(false);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
   const [staffList, setStaffList] = useState([]);
@@ -110,7 +96,6 @@ const ChatAI = () => {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  // Persist messages (tenant-scoped)
   useEffect(() => {
     localStorage.setItem(getStorageKey(tid), JSON.stringify(messages));
   }, [messages, tid]);
@@ -172,7 +157,6 @@ const ChatAI = () => {
     const imageData = pendingImage;
     setPendingImage(null);
 
-    // Send conversation history (exclude error messages to save tokens)
     const allMsgs = [...messages, userMsg];
     const history = allMsgs
       .filter((m) => !m.isError)
@@ -374,7 +358,6 @@ const ChatAI = () => {
 
   const clearChat = () => {
     setMessages([]);
-    // Keep token count — never reset accumulated tokens
     localStorage.removeItem(getStorageKey(tid));
   };
 

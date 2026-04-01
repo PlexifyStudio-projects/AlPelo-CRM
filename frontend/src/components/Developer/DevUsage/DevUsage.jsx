@@ -65,7 +65,6 @@ const DevUsage = () => {
         </div>
       </div>
 
-      {/* Summary KPIs */}
       <div className={`${b}__summary`}>
         <div className={`${b}__summary-card`}>
           <span className={`${b}__summary-value`}>{(d.total_messages || 0).toLocaleString('es-CO')}</span>
@@ -81,7 +80,6 @@ const DevUsage = () => {
         </div>
       </div>
 
-      {/* Per-tenant table */}
       <div className={`${b}__section`}>
         <h2 className={`${b}__section-title`}>Detalle por agencia</h2>
         <div className={`${b}__table-wrap`}>

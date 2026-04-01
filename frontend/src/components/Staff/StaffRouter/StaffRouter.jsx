@@ -23,7 +23,6 @@ const StaffRouter = ({ user, onLogout }) => {
   const { addNotification } = useNotification();
   const knownApptIds = useRef(new Set());
 
-  // Poll for new appointments and create notifications
   useEffect(() => {
     let firstLoad = true;
 
@@ -63,11 +62,15 @@ const StaffRouter = ({ user, onLogout }) => {
     if (isMobile) setIsMobileMenuOpen(false);
   }, [isMobile]);
 
+  const handleToggleCollapse = useCallback(() => setIsSidebarCollapsed(prev => !prev), []);
+  const handleCloseMobile = useCallback(() => setIsMobileMenuOpen(false), []);
+  const handleOpenMobile = useCallback(() => setIsMobileMenuOpen(true), []);
+
   const renderSection = () => {
     switch (activeSection) {
       case 'staff-dashboard': return <StaffDashboard user={user} onNavigate={setActiveSection} />;
       case 'staff-agenda': return <StaffAgenda user={user} />;
-      case 'staff-finances': return <StaffFinances user={user} />;
+      case 'staff-finances': return <StaffFinances />;
       default: return <StaffDashboard user={user} onNavigate={setActiveSection} />;
     }
   };
@@ -75,7 +78,7 @@ const StaffRouter = ({ user, onLogout }) => {
   return (
     <div className={`main-layout ${isSidebarCollapsed ? 'main-layout--collapsed' : ''} ${isMobile ? 'main-layout--mobile' : ''}`}>
       {isMobile && isMobileMenuOpen && (
-        <div className="main-layout__backdrop" onClick={() => setIsMobileMenuOpen(false)} />
+        <div className="main-layout__backdrop" onClick={handleCloseMobile} />
       )}
       <Sidebar
         menuItems={MENU_ITEMS}
@@ -83,10 +86,10 @@ const StaffRouter = ({ user, onLogout }) => {
         onItemClick={handleNavigate}
         user={user}
         isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        onToggleCollapse={handleToggleCollapse}
         onLogout={onLogout}
         isMobileOpen={isMobileMenuOpen}
-        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        onCloseMobile={handleCloseMobile}
         badgeCounts={{}}
       />
       <div className="main-layout__content">
@@ -95,7 +98,7 @@ const StaffRouter = ({ user, onLogout }) => {
           onLogout={onLogout}
           onNavigate={handleNavigate}
           isMobile={isMobile}
-          onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          onOpenMobileMenu={handleOpenMobile}
         />
         <main className="main-layout__main">
           {renderSection()}

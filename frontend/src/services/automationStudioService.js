@@ -8,8 +8,6 @@ const _err = async (r, fallback) => {
 };
 
 const automationStudioService = {
-  // ── CRUD ──
-
   list: async () => {
     const r = await fetch(BASE);
     return r.ok ? _json(r) : { automations: [], plan: 'trial', plan_limit: 3, active_count: 0, total_count: 0 };
@@ -47,8 +45,6 @@ const automationStudioService = {
     return _json(r);
   },
 
-  // ── Preview ──
-
   previewAudience: async (triggerType, triggerConfig, filterConfig) => {
     const r = await fetch(`${BASE}/preview-audience`, {
       method: 'POST',
@@ -61,8 +57,6 @@ const automationStudioService = {
     });
     return r.ok ? _json(r) : { total_clients: 0, matching: 0, sample_names: [] };
   },
-
-  // ── Meta ──
 
   submitToMeta: async (id) => {
     const r = await fetch(`${BASE}/${id}/submit-to-meta`, {
@@ -82,8 +76,6 @@ const automationStudioService = {
     return _json(r);
   },
 
-  // ── History & Stats ──
-
   getExecutions: async (limit = 50) => {
     const r = await fetch(`${BASE}/executions?limit=${limit}`);
     return r.ok ? _json(r) : [];
@@ -98,8 +90,6 @@ const automationStudioService = {
     const r = await fetch(`${BASE}/stats`);
     return r.ok ? _json(r) : { active_count: 0, total_count: 0, sent_this_month: 0, sent_total: 0, response_rate: 0 };
   },
-
-  // ── Wizard helpers ──
 
   getTriggers: async () => {
     const r = await fetch(`${BASE}/triggers`);

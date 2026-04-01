@@ -11,9 +11,7 @@ import { formatPhone } from '../../utils/formatters';
 
 const B = 'campaigns';
 
-// ═══════════════════════════════════════════════
-// SVG Icons
-// ═══════════════════════════════════════════════
+
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
 const SendIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
@@ -37,7 +35,7 @@ const CheckCircleIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fi
 const ClockIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
 const AlertIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>;
 
-// Template categories
+
 const TEMPLATE_CATEGORIES = [
   { id: 'all', name: 'Todas' },
   { id: 'recordatorio', name: 'Recordatorio' },
@@ -55,7 +53,7 @@ const STATUS_CONFIG = {
   rejected: { label: 'Rechazada', color: '#EF4444', bg: 'rgba(239,68,68,0.08)', icon: XCircleIcon },
 };
 
-// ── Filter group SVG icons ──
+
 const FilterGroupIcons = {
   status: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M8 12l2 2 4-4" /></svg>,
   activity: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
@@ -66,7 +64,7 @@ const FilterGroupIcons = {
   payment: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>,
 };
 
-// ── Filter definitions for audience builder ──
+
 const FILTER_GROUPS = [
   {
     id: 'status',
@@ -190,9 +188,7 @@ const formatCOP = (n) => {
   return '$' + Number(n).toLocaleString('es-CO');
 };
 
-// ═══════════════════════════════════════════════
-// Main Component
-// ═══════════════════════════════════════════════
+
 const Campaigns = () => {
   const { addNotification } = useNotification();
 
@@ -253,8 +249,7 @@ const Campaigns = () => {
         setCampaigns(Array.isArray(camps) ? camps : []);
         setStaffList(Array.isArray(staff) ? staff : []);
         setServicesList(Array.isArray(svcs) ? svcs : []);
-      } catch (e) {
-        console.error('Error loading campaign data:', e);
+      } catch {
       } finally {
         setLoading(false);
       }

@@ -81,7 +81,6 @@ const DevWhatsApp = () => {
         </div>
       )}
 
-      {/* KPIs */}
       <div className={`${b}__kpis`}>
         <div className={`${b}__kpi`}>
           <span className={`${b}__kpi-value`}>{(d.total_conversations || 0).toLocaleString('es-CO')}</span>
@@ -101,7 +100,6 @@ const DevWhatsApp = () => {
         </div>
       </div>
 
-      {/* Detailed Stats */}
       <div className={`${b}__grid`}>
         <div className={`${b}__card`}>
           <h3 className={`${b}__card-title`}>Mensajes hoy</h3>
@@ -158,7 +156,6 @@ const DevWhatsApp = () => {
         </div>
       </div>
 
-      {/* Daily Chart */}
       {dailyMsgs.length > 0 && (
         <div className={`${b}__chart-section`}>
           <h3 className={`${b}__chart-title`}>Mensajes ultimos 7 dias</h3>

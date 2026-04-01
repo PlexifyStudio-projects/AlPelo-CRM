@@ -12,7 +12,6 @@ const handleResponse = async (res) => {
 };
 
 const clientService = {
-  // ========================= CLIENTS =========================
   list: async (params = {}) => {
     const query = new URLSearchParams();
     if (params.search) query.set('search', params.search);
@@ -52,7 +51,6 @@ const clientService = {
     return handleResponse(res);
   },
 
-  // ========================= VISITS =========================
   listVisits: async (clientId) => {
     const res = await fetch(`${API}/clients/${clientId}/visits/`, opts);
     return handleResponse(res);
@@ -66,7 +64,6 @@ const clientService = {
     return handleResponse(res);
   },
 
-  // ========================= NOTES =========================
   listNotes: async (clientId) => {
     const res = await fetch(`${API}/clients/${clientId}/notes/`, opts);
     return handleResponse(res);
@@ -87,13 +84,11 @@ const clientService = {
     return handleResponse(res);
   },
 
-  // ========================= DASHBOARD =========================
   kpis: async () => {
     const res = await fetch(`${API}/dashboard/kpis`, opts);
     return handleResponse(res);
   },
 
-  // ========================= RFM SEGMENTATION =========================
   rfm: async () => {
     const res = await fetch(`${API}/clients/rfm`, opts);
     return handleResponse(res);

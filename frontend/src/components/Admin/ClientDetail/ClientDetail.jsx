@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Button from '../../common/Button/Button';
-import { formatCurrency, formatDate, daysSince, formatPhone } from '../../../utils/formatters';
+import { formatCurrency, formatDate, formatPhone } from '../../../utils/formatters';
 import { STATUS_META } from '../../../utils/clientStatus';
 import clientService from '../../../services/clientService';
 import subscriptionService from '../../../services/subscriptionService';
@@ -34,19 +34,16 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const [loyalty, setLoyalty] = useState(null);
-  const [loyaltyLoading, setLoyaltyLoading] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
   const [subsLoaded, setSubsLoaded] = useState(false);
   const statusBtnRef = useRef(null);
   const b = 'client-detail';
 
-  // Sync when parent prop changes
   useEffect(() => { setLocalClient(clientProp); }, [clientProp]);
 
   const client = localClient;
 
-  const loadLoyalty = async (clientId) => {
-    setLoyaltyLoading(true);
+  const loadLoyalty = useCallback(async (clientId) => {
     try {
       const res = await fetch(`${_API}/loyalty/client/${clientId}`, { credentials: 'include' });
       if (res.ok) {
@@ -56,10 +53,22 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       }
     } catch {
       setLoyalty(null);
-    } finally {
-      setLoyaltyLoading(false);
     }
-  };
+  }, []);
+
+  const loadVisits = useCallback(async () => {
+    try {
+      const data = await clientService.listVisits(client.id);
+      setVisits(data);
+    } catch { setVisits([]); }
+  }, [client?.id]);
+
+  const loadNotes = useCallback(async () => {
+    try {
+      const data = await clientService.listNotes(client.id);
+      setNotes(data);
+    } catch { setNotes([]); }
+  }, [client?.id]);
 
   useEffect(() => {
     if (client) {
@@ -71,7 +80,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       loadNotes();
       loadLoyalty(client.id);
     }
-  }, [client]);
+  }, [client, loadVisits, loadNotes, loadLoyalty]);
 
   useEffect(() => {
     if (!client) return;
@@ -88,20 +97,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     return () => { document.body.style.overflow = ''; };
   }, [client]);
 
-  const loadVisits = async () => {
-    try {
-      const data = await clientService.listVisits(client.id);
-      setVisits(data);
-    } catch { setVisits([]); }
-  };
-
-  const loadNotes = async () => {
-    try {
-      const data = await clientService.listNotes(client.id);
-      setNotes(data);
-    } catch { setNotes([]); }
-  };
-
   const toggleStatusMenu = useCallback(() => {
     if (!showStatusMenu && statusBtnRef.current) {
       const rect = statusBtnRef.current.getBoundingClientRect();
@@ -110,7 +105,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     setShowStatusMenu(v => !v);
   }, [showStatusMenu]);
 
-  // Close status menu on outside click
   useEffect(() => {
     if (!showStatusMenu) return;
     const handler = (e) => {
@@ -122,14 +116,14 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, [showStatusMenu]);
 
-  const handleStatusChange = async (newStatus) => {
+  const handleStatusChange = useCallback(async (newStatus) => {
     setShowStatusMenu(false);
     try {
       const updated = await clientService.update(client.id, { status_override: newStatus });
       setLocalClient(updated);
       if (onRefresh) onRefresh();
-    } catch { /* silently fail */ }
-  };
+    } catch {}
+  }, [client?.id, onRefresh]);
 
   useEffect(() => {
     if (client?.id) {
@@ -137,29 +131,51 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     }
   }, [client?.id]);
 
-  const handleUseSession = async (subId) => {
+  const handleUseSession = useCallback(async (subId) => {
     try {
       const updated = await subscriptionService.useSession(subId);
       setSubscriptions(prev => prev.map(s => s.id === subId ? updated : s));
     } catch (err) { alert(err.message); }
-  };
+  }, []);
 
-  const handleCancelSub = async (subId) => {
+  const handleCancelSub = useCallback(async (subId) => {
     if (!window.confirm('¿Cancelar esta suscripción?')) return;
     try {
       const updated = await subscriptionService.update(subId, { status: 'cancelled' });
       setSubscriptions(prev => prev.map(s => s.id === subId ? updated : s));
     } catch (err) { alert(err.message); }
-  };
+  }, []);
+
+  const handleSaveNote = useCallback(async () => {
+    if (!newNote.trim()) return;
+    try {
+      await clientService.createNote({
+        client_id: client.id,
+        content: newNote.trim(),
+        created_by: 'Admin',
+      });
+      setNewNote('');
+      setAddingNote(false);
+      loadNotes();
+    } catch {}
+  }, [newNote, client?.id, loadNotes]);
+
+  const handleDeleteNote = useCallback(async (noteId) => {
+    try {
+      await clientService.deleteNote(noteId);
+      loadNotes();
+    } catch {}
+  }, [loadNotes]);
 
   if (!client) return null;
 
   const getInitials = (name) =>
     name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
+  const activeSubCount = subscriptions.filter(s => s.status === 'active').length;
   const tabs = [
     { id: 'overview', label: 'Resumen' },
-    { id: 'subscriptions', label: `Planes${subscriptions.filter(s => s.status === 'active').length ? ` (${subscriptions.filter(s => s.status === 'active').length})` : ''}` },
+    { id: 'subscriptions', label: `Planes${activeSubCount ? ` (${activeSubCount})` : ''}` },
     { id: 'history', label: 'Historial' },
     { id: 'notes', label: 'Notas' },
   ];
@@ -216,27 +232,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     },
   ];
 
-  const handleSaveNote = async () => {
-    if (!newNote.trim()) return;
-    try {
-      await clientService.createNote({
-        client_id: client.id,
-        content: newNote.trim(),
-        created_by: 'Admin',
-      });
-      setNewNote('');
-      setAddingNote(false);
-      loadNotes();
-    } catch { /* silently fail */ }
-  };
-
-  const handleDeleteNote = async (noteId) => {
-    try {
-      await clientService.deleteNote(noteId);
-      loadNotes();
-    } catch { /* silently fail */ }
-  };
-
   const visitStatusLabels = { completed: 'Completada', no_show: 'No asistió', cancelled: 'Cancelada' };
 
   return createPortal(
@@ -246,7 +241,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       <div className={b}>
         <div className={`${b}__accent-bar ${b}__accent-bar--${client.status}`} />
 
-        {/* Header */}
         <div className={`${b}__header`}>
           <div className={`${b}__header-left`}>
             <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
@@ -301,7 +295,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
           </button>
         </div>
 
-        {/* Tabs */}
         <div className={`${b}__tabs`}>
           {tabs.map((tab) => (
             <button
@@ -314,11 +307,9 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
           ))}
         </div>
 
-        {/* Scrollable content */}
         <div className={`${b}__content`}>
           {activeTab === 'overview' && (
             <div className={`${b}__overview`}>
-              {/* Stats grid */}
               <div className={`${b}__stats-grid`}>
                 {statItems.map((stat) => (
                   <div key={stat.label} className={`${b}__stat ${b}__stat--${stat.accent}`}>
@@ -329,7 +320,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                 ))}
               </div>
 
-              {/* Loyalty program */}
               {loyalty?.account && (
                 <div className={`${b}__info-section`}>
                   <h4 className={`${b}__section-title`}>
@@ -369,7 +359,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                       </div>
                     </div>
 
-                    {/* Recent transactions */}
                     {loyalty.transactions?.length > 0 && (
                       <div className={`${b}__loyalty-txns`}>
                         <span className={`${b}__loyalty-txns-title`}>Últimas transacciones</span>
@@ -393,7 +382,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                 </div>
               )}
 
-              {/* Contact info */}
               <div className={`${b}__info-section`}>
                 <h4 className={`${b}__section-title`}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -415,7 +403,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                 </div>
               </div>
 
-              {/* Service preferences — only show if data exists (calculated from 3+ visits) */}
               {(client.favorite_service || client.preferred_barber_name) && (
                 <div className={`${b}__info-section`}>
                   <h4 className={`${b}__section-title`}>
@@ -441,7 +428,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                 </div>
               )}
 
-              {/* Tags */}
               {client.tags?.length > 0 && (
                 <div className={`${b}__info-section`}>
                   <div className={`${b}__tags`}>
@@ -602,7 +588,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
 
           {activeTab === 'notes' && (
             <div className={`${b}__notes`}>
-              {/* Add note */}
               {addingNote ? (
                 <div className={`${b}__notes-edit`}>
                   <textarea
@@ -632,7 +617,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                 </div>
               )}
 
-              {/* Notes list */}
               {notes.length === 0 && !addingNote ? (
                 <div className={`${b}__empty`}>
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -668,7 +652,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
           )}
         </div>
 
-        {/* Footer */}
         <div className={`${b}__footer`}>
           <Button variant="ghost" size="md" onClick={onClose}>Cerrar</Button>
           {client.accepts_whatsapp && client.phone && (
