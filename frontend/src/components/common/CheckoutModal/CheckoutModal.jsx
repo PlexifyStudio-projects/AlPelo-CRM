@@ -151,10 +151,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     return () => clearTimeout(timer);
   }, [clientSearch]);
 
-  // Commission estimate (50% default)
-  const commissionRate = 0.5;
-  const commissionAmount = useMemo(() => Math.round(subtotal * commissionRate), [subtotal]);
-
   useEffect(() => {
     const fetchServices = async () => {
       setLoadingServices(true);
@@ -172,6 +168,10 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
 
   // ─── Computed values ───────────────────────────
   const subtotal = useMemo(() => items.reduce((s, i) => s + (i.price || 0), 0), [items]);
+
+  // Commission estimate (50% default)
+  const commissionRate = 0.5;
+  const commissionAmount = useMemo(() => Math.round(subtotal * commissionRate), [subtotal]);
 
   const discountAmount = useMemo(() => {
     if (discountType === 'percent') return Math.round(subtotal * (discountPercent / 100));

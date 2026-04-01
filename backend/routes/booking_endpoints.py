@@ -10,6 +10,7 @@ from datetime import date, datetime, timedelta
 from pydantic import BaseModel, Field
 from typing import Optional
 from collections import defaultdict
+import re
 
 from database.connection import get_db
 from database.models import (
@@ -84,6 +85,8 @@ def get_booking_page(slug: str, db: Session = Depends(get_db)):
             "price": s.price,
             "duration_minutes": s.duration_minutes or 30,
             "category": s.category or "General",
+            "description": s.description,
+            "staff_ids": s.staff_ids or [],
         })
 
     # Active staff
@@ -107,6 +110,8 @@ def get_booking_page(slug: str, db: Session = Depends(get_db)):
             "name": st.name,
             "specialty": st.specialty or st.role,
             "photo_url": getattr(st, "photo_url", None),
+            "rating": st.rating,
+            "bio": getattr(st, "bio", None),
             "days_working": days_working,
         })
 
@@ -211,22 +216,39 @@ def get_availability(
     duration = service.duration_minutes or 30
     day_of_week = target_date.weekday()
 
-    # Check schedule
+    # Check staff-specific schedule
     schedule = db.query(StaffSchedule).filter(
         StaffSchedule.staff_id == staff_id,
         StaffSchedule.tenant_id == tenant.id,
         StaffSchedule.day_of_week == day_of_week,
     ).first()
 
-    if not schedule or not schedule.is_working:
-        return {
-            "staff_id": staff_id,
-            "staff_name": staff.name,
-            "date": target_date.isoformat(),
-            "is_available": False,
-            "reason": "No trabaja este dia",
-            "slots": [],
-        }
+    has_staff_schedule = schedule and schedule.is_working and schedule.start_time and schedule.end_time
+
+    # Fallback to business hours if no staff schedule
+    if not has_staff_schedule:
+        DAYS_MAP = {'Lunes': 0, 'Martes': 1, 'Miercoles': 2, 'Miércoles': 2, 'Jueves': 3, 'Viernes': 4, 'Sabado': 5, 'Sábado': 5, 'Domingo': 6}
+        biz_schedule = getattr(tenant, 'booking_schedule', []) or []
+        fallback = None
+        for entry in biz_schedule:
+            if DAYS_MAP.get(entry.get('day', '')) == day_of_week and entry.get('hours'):
+                m = re.match(r'(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)', entry['hours'], re.IGNORECASE)
+                if m:
+                    sh = int(m.group(1)) % 12 + (12 if m.group(3).upper() == 'PM' else 0)
+                    sm = int(m.group(2))
+                    eh = int(m.group(4)) % 12 + (12 if m.group(6).upper() == 'PM' else 0)
+                    em = int(m.group(5))
+                    fallback = (f"{sh:02d}:{sm:02d}", f"{eh:02d}:{em:02d}")
+                break
+        if not fallback:
+            return {"staff_id": staff_id, "staff_name": staff.name, "date": target_date.isoformat(), "is_available": False, "reason": "No trabaja este dia", "slots": []}
+        # Create fake schedule for slot calculation
+        class _FallbackSched:
+            is_working = True
+            break_start = None
+            break_end = None
+        schedule = _FallbackSched()
+        schedule.start_time, schedule.end_time = fallback
 
     # Check day off
     is_day_off = db.query(StaffDayOff).filter(
@@ -236,14 +258,7 @@ def get_availability(
     ).first()
 
     if is_day_off:
-        return {
-            "staff_id": staff_id,
-            "staff_name": staff.name,
-            "date": target_date.isoformat(),
-            "is_available": False,
-            "reason": "Dia libre",
-            "slots": [],
-        }
+        return {"staff_id": staff_id, "staff_name": staff.name, "date": target_date.isoformat(), "is_available": False, "reason": "Dia libre", "slots": []}
 
     # Get existing appointments
     appointments = db.query(Appointment).filter(
@@ -256,12 +271,25 @@ def get_availability(
     # Calculate free slots using service duration
     slots = _calculate_slots(schedule, appointments, duration)
 
+    # Build busy blocks (no client info) for visual timeline
+    busy_blocks = []
+    for appt in appointments:
+        try:
+            busy_blocks.append({
+                "start": appt.time,
+                "end": _minutes_to_time(_time_to_minutes(appt.time) + (appt.duration_minutes or 30)),
+                "label": "Ocupado",
+            })
+        except Exception:
+            continue
+
     return {
         "staff_id": staff_id,
         "staff_name": staff.name,
         "date": target_date.isoformat(),
         "is_available": len(slots) > 0,
         "slots": slots,
+        "busy": busy_blocks,
         "working_hours": {
             "start": schedule.start_time,
             "end": schedule.end_time,
@@ -430,4 +458,148 @@ def create_booking(slug: str, data: BookingRequest, request: Request, db: Sessio
             "client_name": data.client_name,
         },
         "message": "Cita agendada exitosamente. Te esperamos!",
+    }
+
+
+# ============================================================================
+# 4. GET /public/book/{slug}/weekly — Weekly schedule for a staff member
+# ============================================================================
+
+@router.get("/public/book/{slug}/weekly")
+def get_weekly_schedule(
+    slug: str,
+    staff_id: int = Query(...),
+    service_id: int = Query(...),
+    week_start: str = Query(..., description="YYYY-MM-DD, Monday of the week"),
+    db: Session = Depends(get_db),
+):
+    """Return a full weekly view: working hours, busy blocks (no client info), free slots."""
+    tenant = _get_tenant_by_slug(slug, db)
+
+    staff = db.query(Staff).filter(Staff.id == staff_id, Staff.tenant_id == tenant.id, Staff.is_active == True).first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Profesional no encontrado")
+
+    service = db.query(Service).filter(Service.id == service_id, Service.tenant_id == tenant.id, Service.is_active == True).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+
+    try:
+        start_date = date.fromisoformat(week_start)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido")
+
+    duration = service.duration_minutes or 30
+    today = date.today()
+    days = []
+
+    # Parse business schedule as fallback (booking_schedule is list of {day, hours})
+    biz_hours = {}
+    biz_schedule = getattr(tenant, 'booking_schedule', []) or []
+    DAYS_MAP = {'Lunes': 0, 'Martes': 1, 'Miercoles': 2, 'Miércoles': 2, 'Jueves': 3, 'Viernes': 4, 'Sabado': 5, 'Sábado': 5, 'Domingo': 6}
+    for entry in biz_schedule:
+        day_name = entry.get('day', '')
+        hours_str = entry.get('hours', '')
+        dow = DAYS_MAP.get(day_name)
+        if dow is not None and hours_str:
+            # Parse "7:30AM - 8:00PM" format
+            m = re.match(r'(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)', hours_str, re.IGNORECASE)
+            if m:
+                sh = int(m.group(1)) % 12 + (12 if m.group(3).upper() == 'PM' else 0)
+                sm = int(m.group(2))
+                eh = int(m.group(4)) % 12 + (12 if m.group(6).upper() == 'PM' else 0)
+                em = int(m.group(5))
+                biz_hours[dow] = (f"{sh:02d}:{sm:02d}", f"{eh:02d}:{em:02d}")
+
+    for i in range(7):
+        day_date = start_date + timedelta(days=i)
+        day_str = day_date.isoformat()
+        day_of_week = day_date.weekday()  # 0=Monday
+
+        # Skip past dates
+        if day_date < today:
+            days.append({"date": day_str, "working": False, "slots": [], "busy": [], "hours": None})
+            continue
+
+        # Get staff-specific schedule
+        schedule = db.query(StaffSchedule).filter(
+            StaffSchedule.staff_id == staff_id,
+            StaffSchedule.tenant_id == tenant.id,
+            StaffSchedule.day_of_week == day_of_week,
+        ).first()
+
+        # Check day off
+        is_day_off = db.query(StaffDayOff).filter(
+            StaffDayOff.staff_id == staff_id,
+            StaffDayOff.tenant_id == tenant.id,
+            StaffDayOff.date == day_date,
+        ).first()
+
+        # If no staff schedule, use business hours as fallback
+        has_schedule = schedule and schedule.is_working and schedule.start_time and schedule.end_time
+        fallback_hours = biz_hours.get(day_of_week)
+
+        if is_day_off or (not has_schedule and not fallback_hours):
+            days.append({"date": day_str, "working": False, "slots": [], "busy": [], "hours": None})
+            continue
+
+        # Determine working hours (staff schedule or business fallback)
+        if has_schedule:
+            work_start = schedule.start_time
+            work_end = schedule.end_time
+            break_info = {"start": schedule.break_start, "end": schedule.break_end} if schedule.break_start else None
+        else:
+            work_start, work_end = fallback_hours
+            break_info = None
+
+        # Get appointments for this day (for this specific staff)
+        appointments = db.query(Appointment).filter(
+            Appointment.staff_id == staff_id,
+            Appointment.tenant_id == tenant.id,
+            Appointment.date == day_date,
+            Appointment.status.in_(["confirmed", "completed"]),
+        ).order_by(Appointment.time).all()
+
+        # Build busy blocks (NO client info — privacy)
+        busy = []
+        for appt in appointments:
+            try:
+                start_min = _time_to_minutes(appt.time)
+                end_min = start_min + (appt.duration_minutes or 30)
+                busy.append({
+                    "start": appt.time,
+                    "end": _minutes_to_time(end_min),
+                    "duration": appt.duration_minutes or 30,
+                })
+            except Exception:
+                continue
+
+        # Calculate free slots — use a fake schedule object if using fallback
+        if has_schedule:
+            slots = _calculate_slots(schedule, appointments, duration)
+        else:
+            # Create a simple schedule-like object for _calculate_slots
+            class FakeSchedule:
+                is_working = True
+                break_start = None
+                break_end = None
+            fake = FakeSchedule()
+            fake.start_time = work_start
+            fake.end_time = work_end
+            slots = _calculate_slots(fake, appointments, duration)
+
+        days.append({
+            "date": day_str,
+            "working": True,
+            "hours": {"start": work_start, "end": work_end},
+            "break": break_info,
+            "busy": busy,
+            "slots": slots,
+        })
+
+    return {
+        "staff_id": staff_id,
+        "staff_name": staff.name,
+        "service_duration": duration,
+        "days": days,
     }

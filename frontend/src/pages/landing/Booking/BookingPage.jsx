@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import SEO from '../../../components/landing/common/SEO';
 
@@ -6,7 +6,7 @@ const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.ra
 const b = 'booking-page';
 
 const DAYS_FULL = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-const DAYS_SHORT = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+const DAYS_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const COUNTRIES = [
   { name: 'Colombia', code: '+57', flag: '\u{1F1E8}\u{1F1F4}' },
@@ -17,76 +17,59 @@ const COUNTRIES = [
   { name: 'USA', code: '+1', flag: '\u{1F1FA}\u{1F1F8}' },
 ];
 
-const SVC_PER_PAGE = 8;
+const SVC_PER_PAGE = 6;
+const REVIEWS_PER_PAGE = 9;
 const PLEXIFY_LOGO = 'https://plexifystudio.com/assets/logo-BgzeKFL7.webp';
 
-// ── SVG Icons ──
+// ── Icons ──
 const IconStar = ({ size = 14, filled = true }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? '#f59e0b' : 'none'} stroke={filled ? 'none' : '#d1d5db'} strokeWidth="2">
-    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" />
-  </svg>
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? '#f59e0b' : 'none'} stroke={filled ? '#f59e0b' : '#cbd5e1'} strokeWidth="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" /></svg>
 );
-const IconClock = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
-const IconPin = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>;
-const IconPhone = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>;
-const IconWhatsApp = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>;
-const IconInstagram = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>;
-const IconFacebook = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>;
-const IconArrow = ({ dir = 'right' }) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: dir === 'left' ? 'rotate(180deg)' : 'none' }}><polyline points="9 18 15 12 9 6" /></svg>;
-const IconClose = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
-const IconGoogle = () => <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" /><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" /><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" /><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" /></svg>;
-const IconCalendar = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
+const IconClock = ({ s = 15 }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
+const IconPin = ({ s = 16 }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>;
+const IconPhone = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" /></svg>;
+const IconWA = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>;
+const IconIG = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" /></svg>;
+const IconFB = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>;
+const IconChev = ({ dir = 'right', s = 16 }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: dir === 'left' ? 'rotate(180deg)' : 'none' }}><polyline points="9 18 15 12 9 6" /></svg>;
+const IconX = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
 const IconSearch = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
-const IconMail = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2" /><polyline points="22,7 12,13 2,7" /></svg>;
+const IconHeart = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" /></svg>;
+const IconShare = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>;
+const IconCalendar = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
+const IconUser = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
+const IconCheck = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>;
+const IconArrowLeft = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></svg>;
+const IconScissors = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line x1="14.47" y1="14.48" x2="20" y2="20" /><line x1="8.12" y1="8.12" x2="12" y2="12" /></svg>;
 
 const Stars = ({ rating, size = 14 }) => (
-  <span className={`${b}__stars`}>
-    {[1, 2, 3, 4, 5].map(i => <IconStar key={i} size={size} filled={i <= Math.round(rating)} />)}
-  </span>
+  <span className={`${b}__stars`}>{[1,2,3,4,5].map(i => <IconStar key={i} size={size} filled={i <= Math.round(rating)} />)}</span>
 );
 
-function useReveal() {
+function useHScroll(count, visible) {
   const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.1 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return [ref, visible];
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(count > visible);
+  const check = () => { const el = ref.current; if (!el) return; setCanL(el.scrollLeft > 10); setCanR(el.scrollLeft < el.scrollWidth - el.clientWidth - 10); };
+  useEffect(() => { check(); }, [count]);
+  const scroll = (dir) => { const el = ref.current; if (!el) return; el.scrollBy({ left: dir * (el.firstElementChild?.offsetWidth || 200) * visible, behavior: 'smooth' }); setTimeout(check, 400); };
+  return { ref, canL, canR, scroll, check };
 }
 
-function Section({ children, className = '', delay = 0 }) {
-  const [ref, visible] = useReveal();
-  return (
-    <section ref={ref} className={`${b}__section ${className} ${visible ? `${b}__section--visible` : ''}`} style={{ transitionDelay: `${delay}ms` }}>
-      {children}
-    </section>
-  );
-}
-
-// ── Horizontal scroll helper ──
-function useHScroll(itemsCount, visibleCount) {
-  const ref = useRef(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(itemsCount > visibleCount);
-  const check = () => {
-    const el = ref.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 10);
-    setCanRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
-  };
-  useEffect(() => { check(); }, [itemsCount]);
-  const scroll = (dir) => {
-    const el = ref.current;
-    if (!el) return;
-    const cardW = el.firstElementChild?.offsetWidth || 200;
-    el.scrollBy({ left: dir * cardW * visibleCount, behavior: 'smooth' });
-    setTimeout(check, 400);
-  };
-  return { ref, canLeft, canRight, scroll, check };
+// Check if business is currently open
+function isOpenNow(schedule) {
+  const now = new Date();
+  const todayName = DAYS_FULL[now.getDay()];
+  const entry = schedule.find(s => s.day === todayName);
+  if (!entry?.hours) return { open: false, text: 'Cerrado hoy' };
+  const match = entry.hours.match(/(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return { open: true, text: `Abierto hoy ${entry.hours}` };
+  const toMin = (h, m, p) => ((h % 12) + (p.toUpperCase() === 'PM' ? 12 : 0)) * 60 + parseInt(m);
+  const openMin = toMin(parseInt(match[1]), match[2], match[3]);
+  const closeMin = toMin(parseInt(match[4]), match[5], match[6]);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  if (nowMin >= openMin && nowMin < closeMin) return { open: true, text: `Abierto · Cierra ${match[4]}:${match[5]}${match[6]}` };
+  return { open: false, text: `Cerrado · Abre ${match[1]}:${match[2]}${match[3]}` };
 }
 
 export default function BookingPage() {
@@ -98,19 +81,21 @@ export default function BookingPage() {
   const [svcPage, setSvcPage] = useState(0);
   const [svcSearch, setSvcSearch] = useState('');
   const [lightbox, setLightbox] = useState(null);
+  const [expandedDescs, setExpandedDescs] = useState(new Set());
+  const [stickyVisible, setStickyVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('servicios');
+  const [reviewPage, setReviewPage] = useState(0);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
 
-  // Gallery carousel
-  const [galIdx, setGalIdx] = useState(0);
-
-  // Modal state
-  const [modal, setModal] = useState(false);
-  const [step, setStep] = useState(1);
+  // ── Inline booking flow (no modal) ──
+  const [bkStep, setBkStep] = useState(0); // 0=browse, 1=staff, 2=datetime, 3=form, 4=done
   const [selSvc, setSelSvc] = useState(null);
   const [selStaff, setSelStaff] = useState(null);
   const [selDate, setSelDate] = useState(null);
   const [selTime, setSelTime] = useState(null);
-  const [slots, setSlots] = useState([]);
-  const [slotsLoad, setSlotsLoad] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [weekData, setWeekData] = useState({});
+  const [weekLoading, setWeekLoading] = useState(false);
   const [cName, setCName] = useState('');
   const [cPhone, setCPhone] = useState('');
   const [cEmail, setCEmail] = useState('');
@@ -119,8 +104,24 @@ export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [conf, setConf] = useState(null);
 
-  // Team horizontal scroll — initialized with 0, recalculated after data loads
-  const teamScroll = useHScroll(data?.staff?.length || 0, 6);
+  const teamScroll = useHScroll(data?.staff?.length || 0, 4);
+
+  useEffect(() => {
+    const fn = () => setStickyVisible(window.scrollY > 380);
+    window.addEventListener('scroll', fn, { passive: true });
+    return () => window.removeEventListener('scroll', fn);
+  }, []);
+
+  useEffect(() => {
+    if (!data) return;
+    const ids = ['bp-reviews', 'bp-team', 'bp-services'];
+    const tabs = ['resenas', 'equipo', 'servicios'];
+    const obs = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { const i = ids.indexOf(e.target.id); if (i >= 0) setActiveTab(tabs[i]); }
+    }, { threshold: 0.15, rootMargin: '-60px 0px 0px 0px' });
+    ids.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, [data]);
 
   useEffect(() => {
     fetch(`${API}/public/book/${slug}`)
@@ -129,20 +130,43 @@ export default function BookingPage() {
       .catch(e => { setError(e.message); setLoading(false); });
   }, [slug]);
 
+  // Compute the Monday of the current week offset
+  const weekStart = useMemo(() => {
+    const d = new Date();
+    const day = d.getDay(); // 0=Sun
+    const diff = day === 0 ? -6 : 1 - day; // adjust to Monday
+    d.setDate(d.getDate() + diff + weekOffset * 7);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [weekOffset]);
+
+  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + i);
+    return d;
+  }), [weekStart]);
+
+  // Fetch weekly schedule (single call for 7 days)
   useEffect(() => {
-    if (!selDate || !selStaff || !selSvc) return;
-    setSlotsLoad(true); setSelTime(null);
-    fetch(`${API}/public/book/${slug}/availability?date=${selDate.toISOString().split('T')[0]}&staff_id=${selStaff.id}&service_id=${selSvc.id}`)
-      .then(r => r.json()).then(d => { setSlots(d.slots || []); setSlotsLoad(false); })
-      .catch(() => { setSlots([]); setSlotsLoad(false); });
-  }, [selDate, selStaff, selSvc, slug]);
+    if (bkStep !== 2 || !selStaff || !selSvc) return;
+    setWeekLoading(true);
+    const ws = weekStart.toISOString().split('T')[0];
+    fetch(`${API}/public/book/${slug}/weekly?staff_id=${selStaff.id}&service_id=${selSvc.id}&week_start=${ws}`)
+      .then(r => r.json())
+      .then(data => {
+        const map = {};
+        (data.days || []).forEach(d => { map[d.date] = d; });
+        setWeekData(map);
+        setWeekLoading(false);
+      })
+      .catch(() => { setWeekData({}); setWeekLoading(false); });
+  }, [bkStep, selStaff, selSvc, weekOffset, slug]);
 
   useEffect(() => {
-    document.body.style.overflow = (modal || lightbox !== null) ? 'hidden' : '';
+    document.body.style.overflow = lightbox !== null ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [modal, lightbox]);
+  }, [lightbox]);
 
-  // Derived data from API
   const biz = data?.business || {};
   const schedule = data?.schedule || [];
   const reviewsData = data?.reviews || {};
@@ -151,34 +175,88 @@ export default function BookingPage() {
   const tags = biz.tags || [];
   const { services: svcData = {}, staff: apiStaff = [] } = data || {};
 
-  // Auto-advance gallery carousel
-  useEffect(() => {
-    if (gallery.length === 0) return;
-    const t = setInterval(() => setGalIdx(i => (i + 1) % gallery.length), 4000);
-    return () => clearInterval(t);
-  }, [gallery.length]);
+  const openStatus = useMemo(() => isOpenNow(schedule), [schedule]);
 
-  if (loading) return <div className={b}><div className={`${b}__loading`}><div className={`${b}__loading-pulse`} /><span>Cargando...</span></div></div>;
+  // Staff filtered by service — uses staff_ids if populated, otherwise matches category→specialty
+  const eligibleStaff = useMemo(() => {
+    if (!selSvc) return apiStaff;
+    // If staff_ids explicitly set, use those
+    const ids = selSvc.staff_ids || [];
+    if (ids.length > 0) return apiStaff.filter(s => ids.includes(s.id));
+    // Smart match: category keywords → specialty keywords
+    const CAT_KEYWORDS = {
+      'arte en uñas': ['manicure', 'pedicure', 'uñas', 'nail', 'unas'],
+      'barbería': ['cortes', 'barba', 'grooming', 'barbero', 'facial'],
+      'barberia': ['cortes', 'barba', 'grooming', 'barbero', 'facial'],
+      'peluquería': ['cortes', 'styling', 'color', 'peinado', 'blower', 'alisado', 'keratina'],
+      'peluqueria': ['cortes', 'styling', 'color', 'peinado', 'blower', 'alisado', 'keratina'],
+      'tratamientos capilares': ['tratamiento', 'capilar', 'tricoterapeuta', 'recuperación', 'recuperacion', 'botox'],
+    };
+    const cat = (selSvc.category || '').toLowerCase();
+    const keywords = CAT_KEYWORDS[cat];
+    if (!keywords) return apiStaff; // unknown category, show all
+    const matched = apiStaff.filter(s => {
+      const spec = (s.specialty || '').toLowerCase();
+      // Exclude admin/support/dev staff
+      if (/soporte|administrativo|developer|admin/i.test(spec)) return false;
+      return keywords.some(kw => spec.includes(kw));
+    });
+    return matched.length > 0 ? matched : apiStaff; // fallback to all if no match
+  }, [selSvc, apiStaff]);
+
+  // Build time rows for weekly grid (30-min increments)
+  const timeRows = useMemo(() => {
+    let minH = 7, maxH = 20;
+    Object.values(weekData).forEach(d => {
+      if (d.hours?.start) {
+        const [h] = d.hours.start.split(':').map(Number);
+        if (h < minH) minH = h;
+      }
+      if (d.hours?.end) {
+        const [h] = d.hours.end.split(':').map(Number);
+        if (h + 1 > maxH) maxH = h + 1;
+      }
+    });
+    const rows = [];
+    for (let h = minH; h < maxH; h++) {
+      rows.push(`${String(h).padStart(2, '0')}:00`);
+      rows.push(`${String(h).padStart(2, '0')}:30`);
+    }
+    return rows;
+  }, [weekData]);
+
+  const scrollToSection = useCallback((tab) => {
+    setActiveTab(tab);
+    const el = document.getElementById({ servicios: 'bp-services', equipo: 'bp-team', resenas: 'bp-reviews' }[tab]);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 56, behavior: 'smooth' });
+  }, []);
+
+  if (loading) return <div className={b}><div className={`${b}__loading`}><div className={`${b}__spinner`} /><span>Cargando...</span></div></div>;
   if (error) return <div className={b}><div className={`${b}__error`}><div className={`${b}__error-icon`}>!</div><h1>{error === 'not_found' ? 'Negocio no encontrado' : error === 'disabled' ? 'Reservas no disponibles' : 'Error'}</h1><p>Verifica el enlace e intenta de nuevo.</p></div></div>;
+
+  const starDist = [5,4,3,2,1].map(n => ({ stars: n, count: reviewItems.filter(r => Math.round(r.rating) === n).length }));
+  const maxStarCount = Math.max(...starDist.map(d => d.count), 1);
+  const totalReviewPages = Math.ceil(reviewItems.length / REVIEWS_PER_PAGE);
+  const pagedReviews = reviewItems.slice(reviewPage * REVIEWS_PER_PAGE, (reviewPage + 1) * REVIEWS_PER_PAGE);
+  const toggleDesc = (id) => setExpandedDescs(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const allSvc = Object.values(svcData).flat();
   const cats = Object.keys(svcData);
   let filtered = activeCat ? (svcData[activeCat] || []) : allSvc;
-  if (svcSearch.trim()) {
-    const q = svcSearch.toLowerCase().trim();
-    filtered = filtered.filter(s => s.name.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q));
-  }
+  if (svcSearch.trim()) { const q = svcSearch.toLowerCase().trim(); filtered = filtered.filter(s => s.name.toLowerCase().includes(q) || s.category?.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q)); }
   const totalPages = Math.ceil(filtered.length / SVC_PER_PAGE);
   const pagedSvc = filtered.slice(svcPage * SVC_PER_PAGE, (svcPage + 1) * SVC_PER_PAGE);
-  const days30 = Array.from({ length: 30 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
   const todayName = DAYS_FULL[new Date().getDay()];
   const todayHours = schedule.find(s => s.day === todayName)?.hours || '';
 
-  const openBooking = (svc) => {
+  const startBooking = (svc) => {
     setSelSvc(svc); setSelStaff(null); setSelDate(null); setSelTime(null);
-    setStep(1); setConf(null); setCName(''); setCPhone(''); setCEmail(''); setCNotes('');
-    setModal(true);
+    setConf(null); setCName(''); setCPhone(''); setCEmail(''); setCNotes('');
+    setBkStep(1);
+    setTimeout(() => document.getElementById('bp-services')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
+
+  const resetBooking = () => { setBkStep(0); setSelSvc(null); setSelStaff(null); setSelDate(null); setSelTime(null); setConf(null); };
 
   const doSubmit = async () => {
     if (!cName.trim() || !cPhone.trim()) return;
@@ -189,337 +267,438 @@ export default function BookingPage() {
         body: JSON.stringify({ service_id: selSvc.id, staff_id: selStaff.id, date: selDate.toISOString().split('T')[0], time: selTime, client_name: cName.trim(), client_phone: cc + cPhone.trim().replace(/\s/g, ''), client_email: cEmail.trim() || null, notes: cNotes.trim() || null }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); alert(e.detail || 'Horario no disponible. Intenta otro.'); setSubmitting(false); return; }
-      setConf((await res.json()).appointment); setStep(4);
-    } catch { alert('Error de conexion.'); }
+      setConf((await res.json()).appointment); setBkStep(4);
+    } catch { alert('Error de conexión.'); }
     setSubmitting(false);
   };
+
+  const STEP_LABELS = ['Servicio', 'Profesional', 'Fecha y hora', 'Datos'];
 
   return (
     <div className={b}>
       <SEO title={`${biz.name || 'Reservas'} — Agenda tu cita online`} description={biz.tagline || ''} />
-      <div className={`${b}__ambient`}>
-        <div className={`${b}__ambient-blob ${b}__ambient-blob--1`} />
-        <div className={`${b}__ambient-blob ${b}__ambient-blob--2`} />
-        <div className={`${b}__ambient-blob ${b}__ambient-blob--3`} />
-      </div>
 
-      {/* ═══ 1. HERO ═══ */}
-      <section className={`${b}__hero`}>
-        {(biz.cover_url || biz.logo_url) && <img src={biz.cover_url || biz.logo_url} alt={biz.name} className={`${b}__hero-img`} loading="eager" />}
-        <div className={`${b}__hero-overlay`} />
-        <div className={`${b}__hero-content`}>
-          {reviewsData.rating && <div className={`${b}__hero-rating`}><Stars rating={reviewsData.rating} size={16} /><span>{reviewsData.rating}</span><span className={`${b}__hero-review-count`}>({reviewsData.total_reviews} opiniones)</span></div>}
-          <h1 className={`${b}__hero-title`}>{biz.name}</h1>
-          {biz.tagline && <p className={`${b}__hero-tagline`}>{biz.tagline}</p>}
-          {tags.length > 0 && <div className={`${b}__hero-tags`}>{tags.map(t => <span key={t} className={`${b}__tag`}>{t}</span>)}</div>}
-          <div className={`${b}__hero-meta`}>
-            {todayHours && <div className={`${b}__hero-meta-item`}><IconClock /><span>Abierto hoy {todayHours}</span></div>}
-            {biz.address && <div className={`${b}__hero-meta-item`}><IconPin /><span>{biz.address.split(',')[0]}</span></div>}
+      {/* ═══ STICKY ═══ */}
+      <header className={`${b}__sticky ${stickyVisible ? `${b}__sticky--on` : ''}`}>
+        <div className={`${b}__sticky-wrap`}>
+          <strong className={`${b}__sticky-name`}>{biz.name}</strong>
+          <div className={`${b}__sticky-meta`}>
+            {reviewsData.rating && <span className={`${b}__sticky-rat`}><IconStar size={11} /> {reviewsData.rating}</span>}
+            {biz.address && <span><IconPin s={12} /> {biz.address.split(',')[0]}</span>}
+            {todayHours && <span className={openStatus.open ? `${b}__sticky-open` : `${b}__sticky-closed`}><span className={`${b}__dot`} /> {openStatus.open ? 'Abierto' : 'Cerrado'}</span>}
           </div>
-          <button className={`${b}__hero-cta`} onClick={() => document.getElementById('bp-services')?.scrollIntoView({ behavior: 'smooth' })}><IconCalendar /> Reservar ahora</button>
+          <nav className={`${b}__sticky-tabs`}>
+            {[['servicios','Servicios'],['equipo','Equipo'],['resenas','Reseñas']].map(([k,l]) => (
+              <button key={k} className={`${b}__stab ${activeTab===k?`${b}__stab--on`:''}`} onClick={() => scrollToSection(k)}>{l}</button>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      {/* ═══ HERO ═══ */}
+      <section className={`${b}__hero`}>
+        {(biz.cover_url || biz.logo_url) && <img src={biz.cover_url || biz.logo_url} alt={biz.name} className={`${b}__hero-bg`} />}
+        <div className={`${b}__hero-grad`} />
+        <div className={`${b}__hero-body`}>
+          {tags.length > 0 && <div className={`${b}__hero-tags`}>{tags.map(t => <span key={t}>{t}</span>)}</div>}
+          <h1 className={`${b}__hero-name`}>{biz.name}</h1>
+          <div className={`${b}__hero-row`}>
+            {reviewsData.rating && <span className={`${b}__hero-badge`}><IconStar size={15} /> <strong>{reviewsData.rating}</strong> ({reviewsData.total_reviews} reseñas)</span>}
+            {biz.address && <span className={`${b}__hero-item`}><IconPin s={15} /> {biz.address}</span>}
+            <span className={`${b}__hero-status ${openStatus.open ? `${b}__hero-status--open` : `${b}__hero-status--closed`}`}>
+              <span className={`${b}__dot`} /> {openStatus.text}
+            </span>
+          </div>
         </div>
       </section>
 
-      <div className={`${b}__body`}>
-        {/* ═══ 2+3. ABOUT + LOCATION (merged row) ═══ */}
-        <Section>
-          <div className={`${b}__intro`}>
-            <div className={`${b}__intro-main`}>
-              {biz.description && <p className={`${b}__intro-text`}>{biz.description}</p>}
-              <div className={`${b}__intro-stats`}>
-                <div className={`${b}__intro-stat`}><strong>{apiStaff.length}</strong><span>Profesionales</span></div>
-                <div className={`${b}__intro-stat`}><strong>{allSvc.length}+</strong><span>Servicios</span></div>
-                {reviewsData.rating && <div className={`${b}__intro-stat`}><strong>{reviewsData.rating}</strong><span>Rating</span></div>}
-              </div>
-            </div>
+      {/* ═══ NAV ═══ */}
+      <nav className={`${b}__nav`}>
+        <div className={`${b}__nav-wrap`}>
+          <div className={`${b}__nav-tabs`}>
+            {[['servicios','Servicios'],['equipo','Equipo'],['resenas','Reseñas']].map(([k,l]) => (
+              <button key={k} className={`${b}__ntab ${activeTab===k?`${b}__ntab--on`:''}`} onClick={() => scrollToSection(k)}>{l}</button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      <div className={`${b}__content`}>
+        {/* ═══ INFO BAR ═══ */}
+        <div className={`${b}__info`}>
+          <div className={`${b}__info-main`}>
+            <h2>Sobre nosotros</h2>
+            {tags.length > 0 && <div className={`${b}__info-tags`}>{tags.map(t => <span key={t}>{t}</span>)}</div>}
+            {biz.description && <p className={`${b}__info-desc`}>{biz.description}</p>}
+          </div>
+          <div className={`${b}__info-side`}>
             {biz.address && (
-              <div className={`${b}__intro-location`}>
-                <div className={`${b}__intro-loc-icon`}><IconPin /></div>
-                <strong>{biz.address}</strong>
-                <div className={`${b}__intro-loc-links`}>
-                  <a href={`https://maps.google.com/?q=${encodeURIComponent(biz.address)}`} target="_blank" rel="noopener noreferrer" className={`${b}__location-link`}>Google Maps <IconArrow /></a>
-                  {biz.whatsapp && <a href={`https://wa.me/${biz.whatsapp}`} target="_blank" rel="noopener noreferrer" className={`${b}__location-wa`}><IconWhatsApp /> WhatsApp</a>}
-                </div>
+              <div className={`${b}__icard`}>
+                <div className={`${b}__icard-h`}><IconPin s={16} /><strong>Dirección</strong></div>
+                <span>{biz.address}</span>
+                <a href={`https://maps.google.com/?q=${encodeURIComponent(biz.address)}`} target="_blank" rel="noopener noreferrer">Ver dirección</a>
+              </div>
+            )}
+            {gallery.length > 0 && (
+              <div className={`${b}__icard`}>
+                <div className={`${b}__icard-h`}><IconScissors /><strong>Portafolio</strong>{gallery.length > 3 && <button onClick={() => setLightbox(0)}>Ver {gallery.length} fotos</button>}</div>
+                <div className={`${b}__icard-thumbs`}>{gallery.slice(0, 3).map((img, i) => <img key={i} src={img} alt="" onClick={() => setLightbox(i)} loading="lazy" />)}</div>
+              </div>
+            )}
+            {todayHours && (
+              <div className={`${b}__icard`}>
+                <div className={`${b}__icard-h`}><IconClock s={16} /><strong>Horario hoy</strong></div>
+                <span>{todayHours}</span>
+                {schedule.length > 1 && (
+                  <>
+                    <button className={`${b}__icard-toggle`} onClick={() => setScheduleOpen(v => !v)}>{scheduleOpen ? 'Ocultar' : 'Ver todos'}</button>
+                    {scheduleOpen && <div className={`${b}__icard-sched`}>{schedule.filter(s => s.hours).map(s => <div key={s.day} className={s.day === todayName ? `${b}__icard-sched-today` : ''}><span>{s.day}</span><span>{s.hours}</span></div>)}</div>}
+                  </>
+                )}
               </div>
             )}
           </div>
-        </Section>
+        </div>
 
-        {/* ═══ 4. PORTAFOLIO CAROUSEL ═══ */}
-        {gallery.length > 0 && (
-        <Section delay={100}>
-          <h2 className={`${b}__title`}><span className={`${b}__title-accent`} />Portafolio</h2>
-          <div className={`${b}__carousel`}>
-            <button className={`${b}__carousel-btn ${b}__carousel-btn--prev`} onClick={() => setGalIdx(i => (i - 1 + gallery.length) % gallery.length)}><IconArrow dir="left" /></button>
-            <div className={`${b}__carousel-track`}>
-              <div className={`${b}__carousel-slides`} style={{ transform: `translateX(-${galIdx * 100}%)` }}>
-                {gallery.map((img, i) => (
-                  <div key={i} className={`${b}__carousel-slide`} onClick={() => setLightbox(i)}>
-                    <img src={img} alt={`${biz.name} ${i + 1}`} loading="lazy" />
+        {/* ═══ SERVICES / INLINE BOOKING ═══ */}
+        <section className={`${b}__services`} id="bp-services">
+          {bkStep === 0 ? (
+            <>
+              <h2 className={`${b}__heading`}>Servicios</h2>
+              <div className={`${b}__svc-search`}><IconSearch /><input placeholder="Buscar servicios..." value={svcSearch} onChange={e => { setSvcSearch(e.target.value); setSvcPage(0); }} /></div>
+              <div className={`${b}__cats`}>
+                <button className={`${b}__cat ${!activeCat?`${b}__cat--on`:''}`} onClick={() => { setActiveCat(null); setSvcPage(0); }}>Todos los servicios <span>{allSvc.length}</span></button>
+                {cats.map(c => <button key={c} className={`${b}__cat ${activeCat===c?`${b}__cat--on`:''}`} onClick={() => { setActiveCat(c); setSvcPage(0); }}>{c}</button>)}
+              </div>
+              <div className={`${b}__svc-grid`}>
+                {pagedSvc.map((svc, i) => {
+                  const pop = i < 3 && svcPage === 0 && !activeCat && !svcSearch;
+                  const exp = expandedDescs.has(svc.id);
+                  return (
+                    <div key={svc.id} className={`${b}__svc`} style={{ animationDelay: `${i*40}ms` }}>
+                      <div className={`${b}__svc-top`}>
+                        <div className={`${b}__svc-info`}>
+                          <h3>{svc.name}</h3>
+                          <span className={`${b}__svc-cat`}>{svc.category}</span>
+                          {svc.description && <><p className={`${b}__svc-desc ${exp?`${b}__svc-desc--open`:''}`}>{svc.description}</p>{svc.description.length > 90 && <button className={`${b}__svc-more`} onClick={() => toggleDesc(svc.id)}>{exp ? 'Ver menos' : 'Ver más'}</button>}</>}
+                        </div>
+                        <div className={`${b}__svc-price`}>
+                          {pop && <div className={`${b}__svc-pop`}><IconStar size={10} /> Popular</div>}
+                          <strong>${svc.price?.toLocaleString('es-CO')}</strong>
+                        </div>
+                      </div>
+                      <div className={`${b}__svc-bot`}>
+                        <span><IconClock s={14} /> {svc.duration_minutes} min</span>
+                        <button onClick={() => startBooking(svc)}>Reservar</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {filtered.length === 0 && svcSearch && <p className={`${b}__empty`}>No se encontraron servicios para &ldquo;{svcSearch}&rdquo;</p>}
+              {totalPages > 1 && (
+                <div className={`${b}__pager`}>
+                  <button disabled={svcPage===0} onClick={() => setSvcPage(0)}><IconChev dir="left" /><IconChev dir="left" /></button>
+                  <button disabled={svcPage===0} onClick={() => setSvcPage(p=>p-1)}><IconChev dir="left" /></button>
+                  <span>{svcPage+1} de {totalPages}</span>
+                  <button disabled={svcPage>=totalPages-1} onClick={() => setSvcPage(p=>p+1)}><IconChev /></button>
+                  <button disabled={svcPage>=totalPages-1} onClick={() => setSvcPage(totalPages-1)}><IconChev /><IconChev /></button>
+                </div>
+              )}
+            </>
+          ) : (
+            /* ═══ INLINE BOOKING FLOW ═══ */
+            <div className={`${b}__booking`}>
+              {/* Progress */}
+              <div className={`${b}__bk-progress`}>
+                {STEP_LABELS.map((label, i) => (
+                  <div key={i} className={`${b}__bk-step ${bkStep > i + 1 ? `${b}__bk-step--done` : ''} ${bkStep === i + 1 ? `${b}__bk-step--on` : ''}`}>
+                    <div className={`${b}__bk-dot`}>{bkStep > i + 1 ? <IconCheck /> : i + 1}</div>
+                    <span>{label}</span>
                   </div>
                 ))}
               </div>
-            </div>
-            <button className={`${b}__carousel-btn ${b}__carousel-btn--next`} onClick={() => setGalIdx(i => (i + 1) % gallery.length)}><IconArrow /></button>
-          </div>
-          <div className={`${b}__carousel-dots`}>
-            {gallery.map((_, i) => (
-              <button key={i} className={`${b}__carousel-dot ${i === galIdx ? `${b}__carousel-dot--on` : ''}`} onClick={() => setGalIdx(i)} />
-            ))}
-          </div>
-        </Section>
-        )}
 
-        {/* ═══ 5. SERVICIOS (4 cols, search) ═══ */}
-        <Section delay={100} className={`${b}__section--services`}>
-          <div id="bp-services">
-            <h2 className={`${b}__title`}><span className={`${b}__title-accent`} />Servicios</h2>
-          </div>
-          <div className={`${b}__svc-search`}>
-            <IconSearch />
-            <input placeholder="Buscar servicio..." value={svcSearch} onChange={e => { setSvcSearch(e.target.value); setSvcPage(0); }} />
-          </div>
-          <div className={`${b}__cats`}>
-            <button className={`${b}__cat ${!activeCat ? `${b}__cat--active` : ''}`} onClick={() => { setActiveCat(null); setSvcPage(0); }}>
-              Todos <span className={`${b}__cat-badge`}>{allSvc.length}</span>
-            </button>
-            {cats.map(c => (
-              <button key={c} className={`${b}__cat ${activeCat === c ? `${b}__cat--active` : ''}`} onClick={() => { setActiveCat(c); setSvcPage(0); }}>
-                {c} <span className={`${b}__cat-badge`}>{(svcData[c] || []).length}</span>
-              </button>
-            ))}
-          </div>
-          <div className={`${b}__svc-grid`}>
-            {pagedSvc.map((svc, i) => (
-              <div key={svc.id} className={`${b}__svc`} style={{ animationDelay: `${i * 50}ms` }}>
-                <div className={`${b}__svc-header`}>
-                  <div><h3 className={`${b}__svc-name`}>{svc.name}</h3><span className={`${b}__svc-cat-label`}>{svc.category}</span></div>
-                  <div className={`${b}__svc-price`}>${svc.price?.toLocaleString('es-CO')}</div>
+              {/* Selected service summary */}
+              <div className={`${b}__bk-svc`}>
+                <div>
+                  <strong>{selSvc?.name}</strong>
+                  <span>{selSvc?.category}</span>
                 </div>
-                <div className={`${b}__svc-footer`}>
-                  <span className={`${b}__svc-dur`}><IconClock /> {svc.duration_minutes} min</span>
-                  <button className={`${b}__svc-book`} onClick={() => openBooking(svc)}>Reservar</button>
+                <div className={`${b}__bk-svc-right`}>
+                  <strong>${selSvc?.price?.toLocaleString('es-CO')}</strong>
+                  <span>{selSvc?.duration_minutes} min</span>
                 </div>
+                <button className={`${b}__bk-change`} onClick={resetBooking}>Cambiar</button>
               </div>
-            ))}
-          </div>
-          {filtered.length === 0 && svcSearch && <p className={`${b}__svc-empty`}>No se encontraron servicios para "{svcSearch}"</p>}
-          {totalPages > 1 && (
-            <div className={`${b}__pagination`}>
-              <button disabled={svcPage === 0} onClick={() => setSvcPage(p => p - 1)} className={`${b}__page-btn`}><IconArrow dir="left" /></button>
-              <span className={`${b}__page-info`}>{svcPage + 1} / {totalPages}</span>
-              <button disabled={svcPage >= totalPages - 1} onClick={() => setSvcPage(p => p + 1)} className={`${b}__page-btn`}><IconArrow /></button>
+
+              {/* Step 1: Pick Staff */}
+              {bkStep === 1 && (
+                <div className={`${b}__bk-body`}>
+                  <h3><IconUser /> Elige tu profesional</h3>
+                  {eligibleStaff.length === 0 && <p className={`${b}__bk-empty`}>No hay profesionales disponibles para este servicio.</p>}
+                  <div className={`${b}__bk-staff`}>
+                    {eligibleStaff.map(s => (
+                      <button key={s.id} className={`${b}__bk-pick ${selStaff?.id===s.id?`${b}__bk-pick--on`:''}`} onClick={() => setSelStaff(s)}>
+                        <div className={`${b}__bk-avatar`}>{s.photo_url ? <img src={s.photo_url} alt={s.name} /> : <span>{s.name.charAt(0)}</span>}</div>
+                        <strong>{s.name}</strong>
+                        <em>{s.specialty}</em>
+                        {s.rating && <div className={`${b}__bk-rating`}><IconStar size={11} /> {s.rating}</div>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className={`${b}__bk-actions`}>
+                    <button className={`${b}__btn`} onClick={resetBooking}><IconArrowLeft /> Volver a servicios</button>
+                    <button className={`${b}__btn ${b}__btn--primary`} disabled={!selStaff} onClick={() => setBkStep(2)}>Siguiente</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Pick Day → Pick Time */}
+              {bkStep === 2 && (() => {
+                const selDs = selDate ? selDate.toISOString().split('T')[0] : null;
+                const selDayData = selDs ? (weekData[selDs] || {}) : null;
+                const selSlots = selDayData?.slots || [];
+                return (
+                <div className={`${b}__bk-body`}>
+                  <h3><IconCalendar /> Elige fecha y hora</h3>
+                  {/* Week nav */}
+                  <div className={`${b}__dt-nav`}>
+                    <button disabled={weekOffset === 0} onClick={() => { setWeekOffset(w => w - 1); setSelDate(null); setSelTime(null); }}><IconChev dir="left" /></button>
+                    <span>{weekDays[0].getDate()} {MONTHS[weekDays[0].getMonth()].slice(0,3)} — {weekDays[6].getDate()} {MONTHS[weekDays[6].getMonth()].slice(0,3)}</span>
+                    <button disabled={weekOffset >= 3} onClick={() => { setWeekOffset(w => w + 1); setSelDate(null); setSelTime(null); }}><IconChev /></button>
+                  </div>
+                  {/* Day cards */}
+                  {weekLoading ? (
+                    <div className={`${b}__dt-loading`}><div className={`${b}__spinner`} /> <span>Cargando disponibilidad...</span></div>
+                  ) : (
+                    <>
+                      <div className={`${b}__dt-days`}>
+                        {weekDays.map((d, i) => {
+                          const ds = d.toISOString().split('T')[0];
+                          const dd = weekData[ds] || {};
+                          const nSlots = dd.slots?.length || 0;
+                          const isToday = d.toDateString() === new Date().toDateString();
+                          const isOn = selDate?.toDateString() === d.toDateString();
+                          const isPast = d < new Date() && !isToday;
+                          const hasSlots = nSlots > 0;
+                          return (
+                            <button
+                              key={i}
+                              className={`${b}__dt-day ${isOn ? `${b}__dt-day--on` : ''} ${isToday ? `${b}__dt-day--today` : ''} ${!hasSlots || isPast ? `${b}__dt-day--off` : ''}`}
+                              onClick={() => { if (hasSlots && !isPast) { setSelDate(d); setSelTime(null); } }}
+                              disabled={!hasSlots || isPast}
+                            >
+                              <small>{DAYS_SHORT[d.getDay()]}</small>
+                              <strong>{d.getDate()}</strong>
+                              <small>{MONTHS[d.getMonth()].slice(0,3)}</small>
+                              {hasSlots && !isPast && <span className={`${b}__dt-day-avail`}>{nSlots} disponibles</span>}
+                              {(!hasSlots || isPast) && <span className={`${b}__dt-day-na`}>No disponible</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/* Time slots for selected day */}
+                      {selDate && (
+                        <div className={`${b}__dt-times`}>
+                          <h4>Horarios disponibles — {DAYS_SHORT[selDate.getDay()]} {selDate.getDate()} de {MONTHS[selDate.getMonth()]}</h4>
+                          {selSlots.length === 0 ? (
+                            <p className={`${b}__dt-empty`}>No hay horarios disponibles para este día.</p>
+                          ) : (
+                            <div className={`${b}__dt-grid`}>
+                              {selSlots.map(t => {
+                                const h = parseInt(t);
+                                const label = h < 12 ? 'AM' : 'PM';
+                                return (
+                                  <button key={t} className={`${b}__dt-slot ${selTime === t ? `${b}__dt-slot--on` : ''}`} onClick={() => setSelTime(t)}>
+                                    <strong>{t}</strong>
+                                    <small>{label}</small>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {selDate && selTime && (
+                    <div className={`${b}__dt-confirm`}>
+                      <IconCheck /> <span>Seleccionado: <strong>{DAYS_SHORT[selDate.getDay()]} {selDate.getDate()} de {MONTHS[selDate.getMonth()]} a las {selTime}</strong></span>
+                    </div>
+                  )}
+                  <div className={`${b}__bk-actions`}>
+                    <button className={`${b}__btn`} onClick={() => setBkStep(1)}><IconArrowLeft /> Atrás</button>
+                    <button className={`${b}__btn ${b}__btn--primary`} disabled={!selDate || !selTime} onClick={() => setBkStep(3)}>Siguiente</button>
+                  </div>
+                </div>
+                );
+              })()}
+
+              {/* Step 3: Client Data */}
+              {bkStep === 3 && (
+                <div className={`${b}__bk-body`}>
+                  <h3><IconUser /> Tus datos</h3>
+                  <div className={`${b}__bk-form`}>
+                    <label><span>Nombre completo *</span><input value={cName} onChange={e => setCName(e.target.value)} placeholder="Tu nombre completo" /></label>
+                    <label><span>Teléfono *</span><div className={`${b}__bk-tel`}><select value={cc} onChange={e => setCc(e.target.value)}>{COUNTRIES.map(c => <option key={c.code+c.name} value={c.code}>{c.flag} {c.code}</option>)}</select><input type="tel" value={cPhone} onChange={e => setCPhone(e.target.value)} placeholder="300 123 4567" /></div></label>
+                    <label><span>Correo (opcional)</span><input type="email" value={cEmail} onChange={e => setCEmail(e.target.value)} placeholder="tu@email.com" /></label>
+                    <label><span>Notas (opcional)</span><textarea value={cNotes} onChange={e => setCNotes(e.target.value)} placeholder="Alguna indicación especial..." rows={2} /></label>
+                  </div>
+                  <div className={`${b}__bk-receipt`}>
+                    <div><span>Servicio</span><strong>{selSvc?.name}</strong></div>
+                    <div><span>Profesional</span><strong>{selStaff?.name}</strong></div>
+                    <div><span>Fecha</span><strong>{selDate ? `${selDate.getDate()} de ${MONTHS[selDate.getMonth()]}` : ''}</strong></div>
+                    <div><span>Hora</span><strong>{selTime}</strong></div>
+                    <div><span>Precio</span><strong>${selSvc?.price?.toLocaleString('es-CO')}</strong></div>
+                  </div>
+                  <p className={`${b}__bk-note`}>El pago se realiza directamente en el establecimiento.</p>
+                  <div className={`${b}__bk-actions`}>
+                    <button className={`${b}__btn`} onClick={() => setBkStep(2)}><IconArrowLeft /> Atrás</button>
+                    <button className={`${b}__btn ${b}__btn--primary`} disabled={cName.trim().length < 2 || cPhone.trim().length < 7 || submitting} onClick={doSubmit}>{submitting ? 'Agendando...' : 'Confirmar cita'}</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Confirmation */}
+              {bkStep === 4 && conf && (
+                <div className={`${b}__bk-body ${b}__bk-body--center`}>
+                  <div className={`${b}__bk-success`}><IconCheck /></div>
+                  <h3>Cita agendada exitosamente</h3>
+                  <p className={`${b}__bk-sub`}>¡Te esperamos!</p>
+                  <div className={`${b}__bk-receipt`}>
+                    <div><span>Servicio</span><strong>{conf.service}</strong></div>
+                    <div><span>Profesional</span><strong>{conf.staff}</strong></div>
+                    <div><span>Fecha</span><strong>{conf.date}</strong></div>
+                    <div><span>Hora</span><strong>{conf.time}</strong></div>
+                    <div><span>Precio</span><strong>${conf.price?.toLocaleString('es-CO')}</strong></div>
+                  </div>
+                  <p className={`${b}__bk-wa`}>Te enviaremos confirmación por WhatsApp.</p>
+                  <div className={`${b}__bk-actions ${b}__bk-actions--center`}>
+                    <button className={`${b}__btn ${b}__btn--primary`} onClick={resetBooking}>Reservar otro servicio</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
-        </Section>
+        </section>
 
-        {/* ═══ 6. HORARIOS ═══ */}
-        {schedule.length > 0 && (
-        <Section delay={50}>
-          <h2 className={`${b}__title`}><span className={`${b}__title-accent`} />Horarios</h2>
-          <div className={`${b}__card`}>
-            <div className={`${b}__schedule`}>
-              {schedule.filter(s => s.hours).map(s => {
-                const isToday = s.day === todayName;
-                return (
-                  <div key={s.day} className={`${b}__schedule-row ${isToday ? `${b}__schedule-row--today` : ''}`}>
-                    <span className={`${b}__schedule-day`}>{s.day}</span>
-                    <span className={`${b}__schedule-hours`}>{s.hours}</span>
-                    {isToday && <span className={`${b}__schedule-now`}>Hoy</span>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </Section>
-        )}
+        <hr className={`${b}__divider`} />
 
-        {/* ═══ 7. EQUIPO (horizontal scroll, 6 per row) ═══ */}
+        {/* ═══ TEAM ═══ */}
         {apiStaff.length > 0 && (
-        <Section delay={100}>
-          <div className={`${b}__section-head`}>
-            <h2 className={`${b}__title`}><span className={`${b}__title-accent`} />Nuestro equipo</h2>
-            <div className={`${b}__hscroll-nav`}>
-              <button className={`${b}__hscroll-btn`} disabled={!teamScroll.canLeft} onClick={() => teamScroll.scroll(-1)}><IconArrow dir="left" /></button>
-              <button className={`${b}__hscroll-btn`} disabled={!teamScroll.canRight} onClick={() => teamScroll.scroll(1)}><IconArrow /></button>
-            </div>
+        <section className={`${b}__team-section`} id="bp-team">
+          <div className={`${b}__section-row`}>
+            <h2 className={`${b}__heading`}>Nuestro equipo</h2>
+            {apiStaff.length > 4 && (
+              <div className={`${b}__scroll-nav`}>
+                <button disabled={!teamScroll.canL} onClick={() => teamScroll.scroll(-1)}><IconChev dir="left" /></button>
+                <button disabled={!teamScroll.canR} onClick={() => teamScroll.scroll(1)}><IconChev /></button>
+              </div>
+            )}
           </div>
           <div className={`${b}__team`} ref={teamScroll.ref} onScroll={teamScroll.check}>
             {apiStaff.map(s => (
               <div key={s.id} className={`${b}__member`}>
-                {s.photo_url && <div className={`${b}__member-photo`}><img src={s.photo_url} alt={s.name} loading="lazy" /></div>}
-                {!s.photo_url && <div className={`${b}__member-photo`}><div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0ebe4', fontSize: '1.5rem', fontWeight: 700, color: '#a0a8c0' }}>{s.name?.charAt(0)}</div></div>}
+                <div className={`${b}__member-photo`}>
+                  {s.photo_url ? <img src={s.photo_url} alt={s.name} loading="lazy" /> : <span>{s.name?.charAt(0)}</span>}
+                </div>
                 <div className={`${b}__member-info`}>
-                  <strong className={`${b}__member-name`}>{s.name}</strong>
-                  <span className={`${b}__member-role`}>{s.specialty || ''}</span>
+                  <strong>{s.name}</strong>
+                  <em>{s.specialty || ''}</em>
+                  {s.rating && <div className={`${b}__member-score`}><IconStar size={13} /> {s.rating}</div>}
                 </div>
               </div>
             ))}
           </div>
-        </Section>
+        </section>
         )}
 
-        {/* ═══ 8. GOOGLE REVIEWS ═══ */}
+        <hr className={`${b}__divider`} />
+
+        {/* ═══ REVIEWS ═══ */}
         {reviewItems.length > 0 && (
-        <Section delay={100}>
-          <div className={`${b}__section-head`}>
-            <h2 className={`${b}__title`}><span className={`${b}__title-accent`} />Reseñas de Google</h2>
-            <div className={`${b}__review-summary`}>
-              <IconGoogle /><strong>{reviewsData.rating}</strong><Stars rating={reviewsData.rating} size={14} /><span>({reviewsData.total_reviews} opiniones)</span>
+        <section className={`${b}__reviews`} id="bp-reviews">
+          <h2 className={`${b}__heading`}>Reseñas</h2>
+          <div className={`${b}__rev-top`}>
+            <div className={`${b}__rev-score`}>
+              <span className={`${b}__rev-num`}>{reviewsData.rating}</span>
+              <div><Stars rating={reviewsData.rating} size={16} /><p>{reviewsData.total_reviews} reseñas</p></div>
+            </div>
+            <div className={`${b}__rev-bars`}>
+              {starDist.map(d => (
+                <div key={d.stars} className={`${b}__bar`}>
+                  <span>{d.stars}</span><IconStar size={11} />
+                  <div className={`${b}__bar-track`}><div className={`${b}__bar-fill`} style={{ width: `${(d.count/maxStarCount)*100}%` }} /></div>
+                  <span className={`${b}__bar-n`}>{d.count}</span>
+                </div>
+              ))}
             </div>
           </div>
-          <div className={`${b}__reviews`}>
-            {reviewItems.map((r, i) => (
-              <div key={i} className={`${b}__review`}>
-                <div className={`${b}__review-head`}>
-                  {r.photo ? (
-                    <img src={r.photo} alt={r.name} className={`${b}__review-photo`} onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
-                  ) : null}
-                  <div className={`${b}__review-avatar`} style={r.photo ? { display: 'none' } : {}}>{r.name?.charAt(0)}</div>
-                  <div>
-                    <strong className={`${b}__review-name`}>{r.name}</strong>
-                    <span className={`${b}__review-date`}>{r.date}</span>
-                  </div>
+          <div className={`${b}__rev-grid`}>
+            {pagedReviews.map((r, i) => (
+              <div key={i} className={`${b}__rev`}>
+                <div className={`${b}__rev-head`}>
+                  {r.photo ? <img src={r.photo} alt={r.name} className={`${b}__rev-img`} onError={e => { e.target.style.display='none'; if(e.target.nextSibling) e.target.nextSibling.style.display='flex'; }} /> : null}
+                  <div className={`${b}__rev-init`} style={r.photo ? {display:'none'} : {}}>{r.name?.charAt(0)}</div>
+                  <div><strong>{r.name}</strong><span>{r.date}</span></div>
                 </div>
-                <div className={`${b}__review-stars`}><Stars rating={r.rating} size={13} /></div>
-                <p className={`${b}__review-text`}>{r.text}</p>
+                <Stars rating={r.rating} size={13} />
+                {r.text && <p>{r.text}</p>}
               </div>
             ))}
           </div>
-        </Section>
+          {totalReviewPages > 1 && (
+            <div className={`${b}__pager`}>
+              <button disabled={reviewPage===0} onClick={() => setReviewPage(0)}><IconChev dir="left" /><IconChev dir="left" /></button>
+              <button disabled={reviewPage===0} onClick={() => setReviewPage(p=>p-1)}><IconChev dir="left" /></button>
+              <span>{reviewPage+1} de {totalReviewPages}</span>
+              <button disabled={reviewPage>=totalReviewPages-1} onClick={() => setReviewPage(p=>p+1)}><IconChev /></button>
+              <button disabled={reviewPage>=totalReviewPages-1} onClick={() => setReviewPage(totalReviewPages-1)}><IconChev /><IconChev /></button>
+            </div>
+          )}
+        </section>
         )}
       </div>
 
-      {/* ═══ 9. FOOTER (premium) ═══ */}
+      {/* ═══ FOOTER ═══ */}
       <footer className={`${b}__footer`}>
-        <div className={`${b}__footer-glow`} />
-        <div className={`${b}__footer-top`}>
-          <div className={`${b}__footer-brand`}>
-            <div className={`${b}__footer-logo-row`}>
-              {(biz.logo_url || biz.cover_url) && <img src={biz.logo_url || biz.cover_url} alt={biz.name} className={`${b}__footer-biz-logo`} />}
-              <h3>{biz.name}</h3>
-            </div>
+        <div className={`${b}__ft-grid`}>
+          <div className={`${b}__ft-brand`}>
+            <h3>{biz.name}</h3>
             {biz.description && <p>{biz.description}</p>}
-            <div className={`${b}__footer-social`}>
-              {biz.instagram && <a href={biz.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={`${b}__footer-social-link ${b}__footer-social-link--ig`}><IconInstagram /></a>}
-              {biz.facebook && <a href={biz.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={`${b}__footer-social-link ${b}__footer-social-link--fb`}><IconFacebook /></a>}
-              {biz.whatsapp && <a href={`https://wa.me/${biz.whatsapp}`} target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className={`${b}__footer-social-link ${b}__footer-social-link--wa`}><IconWhatsApp /></a>}
+            <div className={`${b}__ft-social`}>
+              {biz.instagram && <a href={biz.instagram} target="_blank" rel="noopener noreferrer"><IconIG /></a>}
+              {biz.facebook && <a href={biz.facebook} target="_blank" rel="noopener noreferrer"><IconFB /></a>}
             </div>
           </div>
-          <div className={`${b}__footer-col`}>
-            <h4>Contacto</h4>
-            {biz.address && <div className={`${b}__footer-item`}><IconPin /><span>{biz.address}</span></div>}
-            {biz.phone && <div className={`${b}__footer-item`}><IconPhone /><span>{biz.phone}</span></div>}
+          <div className={`${b}__ft-col`}>
+            <h4>Navegación</h4>
+            <button onClick={() => scrollToSection('servicios')}>Servicios</button>
+            <button onClick={() => scrollToSection('equipo')}>Nuestro equipo</button>
+            <button onClick={() => scrollToSection('resenas')}>Reseñas</button>
           </div>
-          <div className={`${b}__footer-col`}>
-            <h4>Horario</h4>
-            {schedule.filter(s => s.hours).slice(0, 3).map(s => (
-              <div key={s.day} className={`${b}__footer-item`}><span>{s.day}: <strong>{s.hours}</strong></span></div>
-            ))}
-            {schedule.filter(s => s.hours).length > 3 && <div className={`${b}__footer-item`}><span>...</span></div>}
-          </div>
-          <div className={`${b}__footer-col`}>
-            <h4>Reserva ahora</h4>
-            <p className={`${b}__footer-cta-text`}>Agenda tu cita en linea de forma rapida y segura.</p>
-            <button className={`${b}__footer-cta-btn`} onClick={() => document.getElementById('bp-services')?.scrollIntoView({ behavior: 'smooth' })}>
-              <IconCalendar /> Reservar
-            </button>
+          <div className={`${b}__ft-col`}>
+            <h4>Más información</h4>
+            {biz.address && <div className={`${b}__ft-item`}><IconPin s={14} /><span>{biz.address}</span></div>}
+            {todayHours && <div className={`${b}__ft-item`}><IconClock s={14} /><span>{todayHours}</span></div>}
+            {biz.phone && <div className={`${b}__ft-item`}><IconPhone /><span>{biz.phone}</span></div>}
           </div>
         </div>
-        <div className={`${b}__footer-divider`} />
-        <div className={`${b}__footer-bottom`}>
-          <div className={`${b}__footer-powered`}>
-            <span>Powered by</span>
-            <a href="https://plexifystudio.com" target="_blank" rel="noopener noreferrer">
-              <img src={PLEXIFY_LOGO} alt="Plexify Studio" className={`${b}__footer-plexify-logo`} />
-            </a>
-          </div>
+        <div className={`${b}__ft-bottom`}>
+          <div className={`${b}__ft-powered`}><span>Powered by</span><a href="https://plexifystudio.com" target="_blank" rel="noopener noreferrer"><img src={PLEXIFY_LOGO} alt="Plexify Studio" /></a></div>
           <span>&copy; {new Date().getFullYear()} <a href="https://plexifystudio.com" target="_blank" rel="noopener noreferrer">Plexify Studio</a>. Todos los derechos reservados.</span>
         </div>
       </footer>
 
       {/* ═══ LIGHTBOX ═══ */}
       {lightbox !== null && (
-        <div className={`${b}__lightbox`} onClick={() => setLightbox(null)}>
-          <button className={`${b}__lightbox-close`} onClick={() => setLightbox(null)}><IconClose /></button>
-          <button className={`${b}__lightbox-nav ${b}__lightbox-nav--prev`} onClick={e => { e.stopPropagation(); setLightbox(i => (i - 1 + gallery.length) % gallery.length); }}><IconArrow dir="left" /></button>
-          <img src={gallery[lightbox]} alt="" className={`${b}__lightbox-img`} onClick={e => e.stopPropagation()} />
-          <button className={`${b}__lightbox-nav ${b}__lightbox-nav--next`} onClick={e => { e.stopPropagation(); setLightbox(i => (i + 1) % gallery.length); }}><IconArrow /></button>
-          <span className={`${b}__lightbox-counter`}>{lightbox + 1} / {gallery.length}</span>
-        </div>
-      )}
-
-      {/* ═══ BOOKING MODAL ═══ */}
-      {modal && (
-        <div className={`${b}__overlay`} onClick={() => !submitting && setModal(false)}>
-          <div className={`${b}__modal`} onClick={e => e.stopPropagation()}>
-            <button className={`${b}__modal-x`} onClick={() => setModal(false)}><IconClose /></button>
-            <div className={`${b}__steps`}>
-              {['Profesional', 'Fecha y Hora', 'Tus datos'].map((l, i) => (
-                <div key={i} className={`${b}__step ${step > i + 1 ? `${b}__step--done` : ''} ${step === i + 1 ? `${b}__step--active` : ''}`}>
-                  <span className={`${b}__step-dot`}>{step > i + 1 ? '\u2713' : i + 1}</span>
-                  <span className={`${b}__step-label`}>{l}</span>
-                </div>
-              ))}
-            </div>
-            <div className={`${b}__modal-svc`}><strong>{selSvc?.name}</strong><span>${selSvc?.price?.toLocaleString('es-CO')} &middot; {selSvc?.duration_minutes} min</span></div>
-
-            {step === 1 && (<div className={`${b}__modal-body`}><h3>Elige tu profesional</h3>
-              <div className={`${b}__staff-pick`}>{apiStaff.map(s => (
-                <button key={s.id} className={`${b}__staff-opt ${selStaff?.id === s.id ? `${b}__staff-opt--on` : ''}`} onClick={() => setSelStaff(s)}>
-                  <div className={`${b}__staff-opt-avatar`}>{s.name.charAt(0)}</div>
-                  <span className={`${b}__staff-opt-name`}>{s.name}</span><small>{s.specialty}</small>
-                </button>
-              ))}</div>
-              <div className={`${b}__modal-actions`}><button className={`${b}__btn ${b}__btn--accent`} disabled={!selStaff} onClick={() => setStep(2)}>Siguiente</button></div>
-            </div>)}
-
-            {step === 2 && (<div className={`${b}__modal-body`}><h3>Elige fecha y hora</h3>
-              <div className={`${b}__cal-strip`}>{days30.map((d, i) => {
-                const on = selDate && d.toDateString() === selDate.toDateString();
-                return <button key={i} className={`${b}__cal-day ${on ? `${b}__cal-day--on` : ''}`} onClick={() => setSelDate(d)}><span className={`${b}__cal-day-name`}>{DAYS_SHORT[d.getDay()]}</span><strong>{d.getDate()}</strong><span className={`${b}__cal-day-month`}>{MONTHS[d.getMonth()].slice(0, 3)}</span></button>;
-              })}</div>
-              {selDate && (<div className={`${b}__time-section`}><h4>Horarios — {selDate.getDate()} de {MONTHS[selDate.getMonth()]}</h4>
-                {slotsLoad ? <p className={`${b}__time-msg`}>Consultando disponibilidad...</p> : slots.length === 0 ? <p className={`${b}__time-msg`}>No hay horarios disponibles. Prueba otra fecha.</p> : (
-                  <div className={`${b}__time-grid`}>{slots.map(t => <button key={t} className={`${b}__time-slot ${selTime === t ? `${b}__time-slot--on` : ''}`} onClick={() => setSelTime(t)}>{t}</button>)}</div>
-                )}
-              </div>)}
-              <div className={`${b}__modal-actions`}><button className={`${b}__btn`} onClick={() => setStep(1)}>Atras</button><button className={`${b}__btn ${b}__btn--accent`} disabled={!selDate || !selTime} onClick={() => setStep(3)}>Siguiente</button></div>
-            </div>)}
-
-            {step === 3 && (<div className={`${b}__modal-body`}><h3>Tus datos</h3>
-              <div className={`${b}__form`}>
-                <label className={`${b}__field`}><span>Nombre completo *</span><input value={cName} onChange={e => setCName(e.target.value)} placeholder="Tu nombre completo" /></label>
-                <label className={`${b}__field`}><span>Telefono *</span><div className={`${b}__phone-row`}><select value={cc} onChange={e => setCc(e.target.value)}>{COUNTRIES.map(c => <option key={c.code + c.name} value={c.code}>{c.flag} {c.code}</option>)}</select><input type="tel" value={cPhone} onChange={e => setCPhone(e.target.value)} placeholder="300 123 4567" /></div></label>
-                <label className={`${b}__field`}><span>Correo (opcional)</span><input type="email" value={cEmail} onChange={e => setCEmail(e.target.value)} placeholder="tu@email.com" /></label>
-                <label className={`${b}__field`}><span>Notas (opcional)</span><textarea value={cNotes} onChange={e => setCNotes(e.target.value)} placeholder="Alguna indicacion especial..." rows={2} /></label>
-              </div>
-              <div className={`${b}__summary`}>
-                <div><span>Servicio</span><strong>{selSvc?.name}</strong></div>
-                <div><span>Profesional</span><strong>{selStaff?.name}</strong></div>
-                <div><span>Fecha</span><strong>{selDate ? `${selDate.getDate()} de ${MONTHS[selDate.getMonth()]}` : ''}</strong></div>
-                <div><span>Hora</span><strong>{selTime}</strong></div>
-                <div><span>Precio</span><strong>${selSvc?.price?.toLocaleString('es-CO')}</strong></div>
-              </div>
-              <p className={`${b}__pay-note`}>El pago se realiza directamente en el establecimiento.</p>
-              <div className={`${b}__modal-actions`}><button className={`${b}__btn`} onClick={() => setStep(2)}>Atras</button><button className={`${b}__btn ${b}__btn--accent`} disabled={cName.trim().length < 2 || cPhone.trim().length < 7 || submitting} onClick={doSubmit}>{submitting ? 'Agendando...' : 'Confirmar cita'}</button></div>
-            </div>)}
-
-            {step === 4 && conf && (<div className={`${b}__modal-body ${b}__modal-body--center`}>
-              <div className={`${b}__confirm-check`}>&#10003;</div>
-              <h3>Cita agendada exitosamente</h3>
-              <p className={`${b}__confirm-sub`}>Te esperamos!</p>
-              <div className={`${b}__summary`}>
-                <div><span>Servicio</span><strong>{conf.service}</strong></div>
-                <div><span>Profesional</span><strong>{conf.staff}</strong></div>
-                <div><span>Fecha</span><strong>{conf.date}</strong></div>
-                <div><span>Hora</span><strong>{conf.time}</strong></div>
-                <div><span>Precio</span><strong>${conf.price?.toLocaleString('es-CO')}</strong></div>
-              </div>
-              <p className={`${b}__confirm-wa`}>Te enviaremos confirmacion por WhatsApp.</p>
-              <div className={`${b}__modal-actions`}><button className={`${b}__btn ${b}__btn--accent`} onClick={() => setModal(false)}>Cerrar</button></div>
-            </div>)}
-          </div>
+        <div className={`${b}__lb`} onClick={() => setLightbox(null)}>
+          <button className={`${b}__lb-x`} onClick={() => setLightbox(null)}><IconX /></button>
+          <button className={`${b}__lb-prev`} onClick={e => { e.stopPropagation(); setLightbox(i => (i-1+gallery.length)%gallery.length); }}><IconChev dir="left" s={20} /></button>
+          <img src={gallery[lightbox]} alt="" className={`${b}__lb-img`} onClick={e => e.stopPropagation()} />
+          <button className={`${b}__lb-next`} onClick={e => { e.stopPropagation(); setLightbox(i => (i+1)%gallery.length); }}><IconChev s={20} /></button>
+          <span className={`${b}__lb-count`}>{lightbox+1} / {gallery.length}</span>
         </div>
       )}
     </div>
