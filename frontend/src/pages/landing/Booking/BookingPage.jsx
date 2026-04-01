@@ -208,7 +208,7 @@ export default function BookingPage() {
         {(biz.cover_url || biz.logo_url) && <img src={biz.cover_url || biz.logo_url} alt={biz.name} className={`${b}__hero-img`} loading="eager" />}
         <div className={`${b}__hero-overlay`} />
         <div className={`${b}__hero-content`}>
-          {reviewsData.rating && <div className={`${b}__hero-rating`}><Stars rating={reviewsData.rating} size={16} /><span>{reviewsData.rating}</span><span className={`${b}__hero-review-count`}>({reviewsData.total_reviews} opiniones en Google)</span></div>}
+          {reviewsData.rating && <div className={`${b}__hero-rating`}><Stars rating={reviewsData.rating} size={16} /><span>{reviewsData.rating}</span><span className={`${b}__hero-review-count`}>({reviewsData.total_reviews} opiniones)</span></div>}
           <h1 className={`${b}__hero-title`}>{biz.name}</h1>
           {biz.tagline && <p className={`${b}__hero-tagline`}>{biz.tagline}</p>}
           {tags.length > 0 && <div className={`${b}__hero-tags`}>{tags.map(t => <span key={t} className={`${b}__tag`}>{t}</span>)}</div>}
@@ -363,7 +363,7 @@ export default function BookingPage() {
         {reviewItems.length > 0 && (
         <Section delay={100}>
           <div className={`${b}__section-head`}>
-            <h2 className={`${b}__title`}><span className={`${b}__title-accent`} />Resenas de Google</h2>
+            <h2 className={`${b}__title`}><span className={`${b}__title-accent`} />Reseñas de Google</h2>
             <div className={`${b}__review-summary`}>
               <IconGoogle /><strong>{reviewsData.rating}</strong><Stars rating={reviewsData.rating} size={14} /><span>({reviewsData.total_reviews} opiniones)</span>
             </div>
