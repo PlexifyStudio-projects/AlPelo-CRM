@@ -425,7 +425,6 @@ def create_booking(slug: str, data: BookingRequest, request: Request, db: Sessio
             email=data.client_email,
             tenant_id=tenant.id,
             is_active=True,
-            status="active",
         )
         db.add(client)
         db.flush()
