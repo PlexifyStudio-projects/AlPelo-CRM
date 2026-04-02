@@ -1,5 +1,6 @@
-import { useState, useCallback, memo } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useTenant } from '../../../context/TenantContext';
+import { useNotification } from '../../../context/NotificationContext';
 import LocationSelector from './LocationSelector';
 
 const SVG_ICONS = {
@@ -96,20 +97,76 @@ const SVG_ICONS = {
 };
 
 const BUSINESS_TYPES = {
-  peluqueria: 'Peluquería', barberia: 'Barbería', spa: 'Spa',
-  centro_estetico: 'Centro Estético', clinica: 'Clínica', odontologia: 'Odontología',
-  fisioterapia: 'Fisioterapia', psicologia: 'Psicología', veterinaria: 'Veterinaria',
-  nutricion: 'Nutrición', gimnasio: 'Gimnasio', academia: 'Academia',
+  peluqueria: 'Peluqueria', barberia: 'Barberia', spa: 'Spa',
+  centro_estetico: 'Centro Estetico', clinica: 'Clinica', odontologia: 'Odontologia',
+  fisioterapia: 'Fisioterapia', psicologia: 'Psicologia', veterinaria: 'Veterinaria',
+  nutricion: 'Nutricion', gimnasio: 'Gimnasio', academia: 'Academia',
   yoga_pilates: 'Yoga / Pilates', restaurante: 'Restaurante', hotel: 'Hotel',
-  tatuajes: 'Estudio de Tatuajes', estudio_foto: 'Estudio Fotográfico',
-  taller_mecanico: 'Taller Mecánico', lavanderia: 'Lavandería',
-  consultoria: 'Consultoría', otro: 'Negocio',
+  tatuajes: 'Estudio de Tatuajes', estudio_foto: 'Estudio Fotografico',
+  taller_mecanico: 'Taller Mecanico', lavanderia: 'Lavanderia',
+  consultoria: 'Consultoria', otro: 'Negocio',
 };
 
-const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout, isMobileOpen, onCloseMobile, badgeCounts = {} }) => {
+const formatTimeAgo = (timestamp) => {
+  const diff = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
+  if (diff < 60) return 'Ahora';
+  if (diff < 3600) return `Hace ${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `Hace ${Math.floor(diff / 3600)}h`;
+  return `Hace ${Math.floor(diff / 86400)}d`;
+};
+
+const getNotificationIcon = (type) => {
+  switch (type) {
+    case 'success':
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      );
+    case 'warning':
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      );
+    case 'error':
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
+        </svg>
+      );
+    default:
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="16" x2="12" y2="12" />
+          <line x1="12" y1="8" x2="12.01" y2="8" />
+        </svg>
+      );
+  }
+};
+
+const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout, isMobileOpen, onCloseMobile, badgeCounts = {}, onNavigate }) => {
   const [openSections, setOpenSections] = useState({});
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { tenant } = useTenant();
+  const {
+    notifications,
+    removeNotification,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+    unreadCount,
+  } = useNotification();
   const b = 'sidebar';
+  const userDropdownRef = useRef(null);
+  const notifRef = useRef(null);
 
   const sections = menuItems.reduce((acc, item) => {
     const section = item.section || 'General';
@@ -127,6 +184,42 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
   const userInitials = user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'AP';
   const userFirstName = user?.name?.split(' ')[0] || 'Admin';
   const userRole = user?.role === 'admin' ? 'Administrador' : user?.role === 'dev' ? 'Desarrollador' : 'Profesional';
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target)) setIsUserDropdownOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setIsNotificationsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Escape key closes dropdowns
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        setIsUserDropdownOpen(false);
+        setIsNotificationsOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  const handleToggleNotifications = useCallback(() => {
+    setIsNotificationsOpen((prev) => !prev);
+    setIsUserDropdownOpen(false);
+  }, []);
+
+  const handleToggleUserDropdown = useCallback(() => {
+    setIsUserDropdownOpen((prev) => !prev);
+    setIsNotificationsOpen(false);
+  }, []);
+
+  const handleNotificationClick = useCallback((notif) => {
+    if (!notif.read) markAsRead(notif.id);
+  }, [markAsRead]);
 
   return (
     <aside className={`${b} ${isCollapsed ? `${b}--collapsed` : ''} ${isMobileOpen ? `${b}--mobile-open` : ''}`}>
@@ -228,32 +321,150 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
       <div className={`${b}__footer`}>
         <div className={`${b}__footer-divider`} />
 
-        <div className={`${b}__user`}>
-          <div className={`${b}__user-avatar`}>
-            {userInitials}
+        {!isCollapsed && (
+          <div className={`${b}__footer-icons`}>
+            <div className={`${b}__footer-notif`} ref={notifRef}>
+              <button
+                className={`${b}__footer-btn ${isNotificationsOpen ? `${b}__footer-btn--active` : ''}`}
+                onClick={handleToggleNotifications}
+                aria-label="Notificaciones"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                  <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className={`${b}__footer-btn-badge`}>{unreadCount > 9 ? '9+' : unreadCount}</span>
+                )}
+              </button>
+
+              {isNotificationsOpen && (
+                <div className={`${b}__notif-panel`}>
+                  <div className={`${b}__notif-header`}>
+                    <div className={`${b}__notif-title-row`}>
+                      <h4 className={`${b}__notif-title`}>Notificaciones</h4>
+                      {unreadCount > 0 && (
+                        <span className={`${b}__notif-unread-badge`}>{unreadCount}</span>
+                      )}
+                    </div>
+                    <div className={`${b}__notif-actions`}>
+                      {unreadCount > 0 && (
+                        <button className={`${b}__notif-mark-read`} onClick={markAllAsRead}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Marcar todas
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button className={`${b}__notif-clear`} onClick={clearAll}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                          Limpiar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={`${b}__notif-list`}>
+                    {notifications.length > 0 ? (
+                      notifications.map((notif, index) => (
+                        <div
+                          key={notif.id}
+                          className={`${b}__notif-item ${!notif.read ? `${b}__notif-item--unread` : ''}`}
+                          onClick={() => handleNotificationClick(notif)}
+                          style={{ animationDelay: `${0.04 * (index + 1)}s` }}
+                        >
+                          <div className={`${b}__notif-border ${b}__notif-border--${notif.type}`} />
+                          <div className={`${b}__notif-icon ${b}__notif-icon--${notif.type}`}>
+                            {getNotificationIcon(notif.type)}
+                          </div>
+                          <div className={`${b}__notif-content`}>
+                            <p className={`${b}__notif-message`}>{notif.message}</p>
+                            <span className={`${b}__notif-time`}>{formatTimeAgo(notif.timestamp)}</span>
+                          </div>
+                          <button
+                            className={`${b}__notif-dismiss`}
+                            onClick={(e) => { e.stopPropagation(); removeNotification(notif.id); }}
+                            aria-label="Descartar notificacion"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="18" y1="6" x2="6" y2="18" />
+                              <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={`${b}__notif-empty`}>
+                        <div className={`${b}__notif-empty-icon`}>
+                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                          </svg>
+                        </div>
+                        <p className={`${b}__notif-empty-title`}>Todo al dia</p>
+                        <p className={`${b}__notif-empty-desc`}>No tienes notificaciones pendientes</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              className={`${b}__footer-btn`}
+              onClick={() => onItemClick('settings')}
+              aria-label="Configuracion"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
           </div>
-          {!isCollapsed && (
-            <div className={`${b}__user-info`}>
-              <span className={`${b}__user-name`}>{userFirstName}</span>
-              <span className={`${b}__user-role`}>{userRole}</span>
+        )}
+
+        <div className={`${b}__user-section`} ref={userDropdownRef}>
+          <div className={`${b}__user`} onClick={handleToggleUserDropdown}>
+            <div className={`${b}__user-avatar`}>
+              {userInitials}
+            </div>
+            {!isCollapsed && (
+              <>
+                <div className={`${b}__user-info`}>
+                  <span className={`${b}__user-name`}>{userFirstName}</span>
+                  <span className={`${b}__user-role`}>{userRole}</span>
+                </div>
+                <span className={`${b}__user-chevron ${isUserDropdownOpen ? `${b}__user-chevron--open` : ''}`}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </span>
+              </>
+            )}
+          </div>
+
+          {isUserDropdownOpen && !isCollapsed && (
+            <div className={`${b}__user-dropdown`}>
+              {onLogout && (
+                <button
+                  className={`${b}__user-dropdown-item ${b}__user-dropdown-item--danger`}
+                  onClick={onLogout}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  <span>Cerrar Sesion</span>
+                </button>
+              )}
             </div>
           )}
         </div>
-
-        {!isCollapsed && (
-          <div className={`${b}__footer-actions`}>
-            {onLogout && (
-              <button className={`${b}__logout`} onClick={onLogout} aria-label="Cerrar sesion">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                <span>Cerrar sesion</span>
-              </button>
-            )}
-          </div>
-        )}
 
         {isCollapsed && (
           <button className={`${b}__toggle ${b}__toggle--collapsed`} onClick={onToggleCollapse} aria-label="Expandir sidebar">

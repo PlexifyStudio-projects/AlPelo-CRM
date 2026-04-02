@@ -62,6 +62,31 @@
     margin-left: 0;
   }
 
+  &__mobile-trigger {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    color: $color-gray-600;
+    transition: background 150ms ease, transform 150ms ease;
+
+    &:hover {
+      background: $color-gray-100;
+    }
+
+    &:active {
+      transform: scale(0.92);
+    }
+  }
+
   &__backdrop {
     position: fixed;
     inset: 0;

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, memo } from 'react';
 import Sidebar from '../Sidebar/Sidebar';
-import Header from '../Header/Header';
 import { useTenant } from '../../../context/TenantContext';
 import whatsappService from '../../../services/whatsappService';
 
@@ -86,6 +85,7 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
         menuItems={MENU_ITEMS}
         activeItem={activeSection}
         onItemClick={handleNavigate}
+        onNavigate={handleNavigate}
         user={user}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={handleToggleCollapse}
@@ -95,13 +95,15 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
         badgeCounts={{ inbox: inboxUnread || null }}
       />
       <div className="main-layout__content">
-        <Header
-          user={user}
-          onLogout={onLogout}
-          onNavigate={handleNavigate}
-          isMobile={isMobile}
-          onOpenMobileMenu={handleOpenMobileMenu}
-        />
+        {isMobile && (
+          <button className="main-layout__mobile-trigger" onClick={handleOpenMobileMenu} aria-label="Abrir menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        )}
         <AIPauseBanner />
         <main className="main-layout__main">
           {children}
