@@ -325,12 +325,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         appointmentService.list({ date_from: toISO(monday), date_to: toISO(sunday) }),
         staffService.list(),
         servicesService.list(),
-        fetch(`${API}/inventory/products`, { credentials: 'include' }).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`${API}/inventory/products`, { credentials: 'include' }).then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] })),
       ]);
       setAppointments(aptList);
       setStaff(staffList.filter(s => s.is_active !== false));
       setServices(svcList.filter(s => s.is_active));
-      if (Array.isArray(invData)) setInventory(invData);
+      setInventory(invData?.products || []);
     } catch (err) {
       addNotification('Error al cargar agenda: ' + err.message, 'error');
     } finally {
@@ -1349,10 +1349,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                       onFocus={() => setShowProductDropdown(true)}
                       placeholder="Buscar producto del inventario..." />
                   </div>
-                  {showProductDropdown && productSearch.length >= 1 && (
+                  {showProductDropdown && (
                     <div className={`${b}__svc-results`}>
-                      {inventory.filter(p => p.name?.toLowerCase().includes(productSearch.toLowerCase())).length > 0 ? (
-                        inventory.filter(p => p.name?.toLowerCase().includes(productSearch.toLowerCase())).map(p => (
+                      {(() => {
+                        const q = productSearch.toLowerCase().trim();
+                        const list = q ? inventory.filter(p => p.name?.toLowerCase().includes(q)) : inventory;
+                        if (list.length === 0) return <div className={`${b}__search-empty`}>{q ? `Sin productos para "${productSearch}"` : 'No hay productos en inventario'}</div>;
+                        return list.map(p => (
                           <button key={p.id} type="button" className={`${b}__svc-item`}
                             onClick={() => {
                               setProductItems(prev => [...prev, {
@@ -1370,10 +1373,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                             <span className={`${b}__svc-item-name`}>{p.name}</span>
                             <span className={`${b}__svc-item-detail`}>Stock: {p.stock || 0} · {formatCOP(p.sale_price || p.price || 0)}</span>
                           </button>
-                        ))
-                      ) : (
-                        <div className={`${b}__search-empty`}>Sin productos para &ldquo;{productSearch}&rdquo;</div>
-                      )}
+                        ));
+                      })()}
                     </div>
                   )}
                 </div>
