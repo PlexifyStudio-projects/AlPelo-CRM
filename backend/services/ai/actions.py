@@ -1029,11 +1029,13 @@ def _execute_action(action: dict, db: Session) -> str:
         svc_ai_mode = getattr(svc_obj, 'ai_mode', 'auto') or 'auto'
         if svc_ai_mode == 'manual':
             from activity_log import log_event as _log_manual
-            _log_manual("alerta", f"⚠️ Servicio MANUAL solicitado: {svc_obj.name}", detail=f"Cliente: {client_name} ({client_phone}) quiere {svc_obj.name}. Este servicio requiere atencion personalizada del admin.", contact_name=client_name, status="warning")
-            # Pause AI for this conversation
+            _log_manual("alerta", f"⚠️ Servicio MANUAL solicitado: {svc_obj.name}", detail=f"Cliente: {client_name} ({client_phone}) quiere {svc_obj.name}. Este servicio requiere atencion personalizada del admin.", contact_name=client_name, status="warning", tenant_id=_tid)
             try:
                 from database.models import WhatsAppConversation
-                conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone.contains(client_phone[-10:])).first()
+                conv_q = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone.contains(client_phone[-10:]))
+                if _tid:
+                    conv_q = conv_q.filter(WhatsAppConversation.tenant_id == _tid)
+                conv = conv_q.first()
                 if conv:
                     conv.is_ai_active = False
                     db.commit()
