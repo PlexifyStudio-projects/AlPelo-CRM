@@ -1030,6 +1030,25 @@ def _execute_action(action: dict, db: Session) -> str:
         if svc_ai_mode == 'manual':
             from activity_log import log_event as _log_manual
             _log_manual("alerta", f"⚠️ Servicio MANUAL solicitado: {svc_obj.name}", detail=f"Cliente: {client_name} ({client_phone}) quiere {svc_obj.name}. Este servicio requiere atencion personalizada del admin.", contact_name=client_name, status="warning", tenant_id=_tid)
+
+            # Send pause message to client BEFORE disabling AI
+            try:
+                import httpx as _httpx
+                pause_msg = f"Con gusto le ayudo con {svc_obj.name}. Permitame un momento en lo que verificamos disponibilidad para usted. Un asesor le atendera en breve."
+                _wa_token = get_wa_token(db, _tid)
+                _wa_phone_id = get_wa_phone_id(db, _tid)
+                if _wa_token and _wa_phone_id and client_phone:
+                    _wa_ver = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+                    _httpx.post(
+                        f"https://graph.facebook.com/{_wa_ver}/{_wa_phone_id}/messages",
+                        headers={"Authorization": f"Bearer {_wa_token}", "Content-Type": "application/json"},
+                        json={"messaging_product": "whatsapp", "to": normalize_phone(client_phone), "type": "text", "text": {"body": pause_msg}},
+                        timeout=10,
+                    )
+            except Exception:
+                pass
+
+            # Now pause AI for this conversation
             try:
                 from database.models import WhatsAppConversation
                 conv_q = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone.contains(client_phone[-10:]))
@@ -1041,7 +1060,7 @@ def _execute_action(action: dict, db: Session) -> str:
                     db.commit()
             except Exception:
                 pass
-            return f"MANUAL_PAUSE: El servicio '{svc_obj.name}' requiere atencion personalizada. Le he dicho al cliente que un momento mientras verificamos disponibilidad. La conversacion queda en modo MANUAL para que un administrador la atienda."
+            return f"MANUAL_PAUSE: El servicio '{svc_obj.name}' requiere atencion personalizada. Ya le envie un mensaje al cliente diciendo que un asesor lo atendera. La conversacion queda en modo MANUAL."
 
         apt_date = action.get("date")
         apt_time = action.get("time")

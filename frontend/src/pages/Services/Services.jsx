@@ -124,6 +124,7 @@ const Services = () => {
   const [services, setServices] = useState([]);
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [togglingAiMode, setTogglingAiMode] = useState(null);
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -388,14 +389,27 @@ const Services = () => {
                       )}
                       <button
                         type="button"
-                        className={`${b}__row-ai ${(svc.ai_mode || 'auto') === 'manual' ? `${b}__row-ai--manual` : ''}`}
+                        className={`${b}__row-ai ${(svc.ai_mode || 'auto') === 'manual' ? `${b}__row-ai--manual` : ''} ${togglingAiMode === svc.id ? `${b}__row-ai--loading` : ''}`}
+                        disabled={togglingAiMode === svc.id}
                         onClick={async (e) => {
                           e.stopPropagation();
                           const newMode = (svc.ai_mode || 'auto') === 'auto' ? 'manual' : 'auto';
-                          try { await servicesService.update(svc.id, { ai_mode: newMode }); loadData(); } catch {}
+                          setTogglingAiMode(svc.id);
+                          try {
+                            await servicesService.update(svc.id, { ai_mode: newMode });
+                            await loadData();
+                          } catch (err) {
+                            addNotification('Error al cambiar modo IA: ' + (err.message || 'Error'), 'error');
+                          } finally {
+                            setTogglingAiMode(null);
+                          }
                         }}>
-                        <span className={`${b}__row-ai-dot`} />
-                        {(svc.ai_mode || 'auto') === 'auto' ? 'Auto' : 'Manual'}
+                        {togglingAiMode === svc.id ? (
+                          <span className={`${b}__row-ai-spinner`} />
+                        ) : (
+                          <span className={`${b}__row-ai-dot`} />
+                        )}
+                        {togglingAiMode === svc.id ? 'Cambiando...' : (svc.ai_mode || 'auto') === 'auto' ? 'Auto' : 'Manual'}
                       </button>
                       <button className={`${b}__row-delete`} onClick={(e) => { e.stopPropagation(); handleDelete(svc); }} title="Eliminar">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
