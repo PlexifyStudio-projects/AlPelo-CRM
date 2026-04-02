@@ -1969,6 +1969,38 @@
     font-weight: $font-weight-medium;
   }
 
+  &__svc-chip-price {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+
+    label {
+      font-size: 9px;
+      font-weight: 600;
+      color: rgba(0, 0, 0, 0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input {
+      width: 90px;
+      padding: 4px 8px;
+      border: 1px solid $color-gray-200;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: $color-primary;
+      text-align: right;
+      background: $color-white;
+
+      &:focus {
+        outline: none;
+        border-color: $color-primary;
+      }
+    }
+  }
+
   &__svc-chip-x {
     @include flex-center;
     width: 28px;

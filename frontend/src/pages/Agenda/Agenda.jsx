@@ -284,7 +284,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   );
 
   const totalPrice = useMemo(() =>
-    serviceAssignments.reduce((sum, a) => sum + (serviceMap[a.serviceId]?.price || 0), 0),
+    serviceAssignments.reduce((sum, a) => sum + (a.clientPrice ?? serviceMap[a.serviceId]?.price ?? 0), 0),
     [serviceAssignments, serviceMap]
   );
 
@@ -582,7 +582,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setEditingApt(apt);
     resetModal();
     setSelectedClient({ id: apt.client_id, name: apt.client_name, phone: apt.client_phone });
-    setServiceAssignments([{ serviceId: apt.service_id, staffId: String(apt.staff_id), time: apt.time }]);
+    setServiceAssignments([{ serviceId: apt.service_id, staffId: String(apt.staff_id), time: apt.time, clientPrice: apt.price || serviceMap[apt.service_id]?.price || 0 }]);
     setFormData({ date: apt.date, notes: apt.notes || '', status: apt.status });
     setShowModal(true);
   };
@@ -643,6 +643,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         if (first.time !== editingApt.time) updateData.time = first.time;
         if ((formData.notes || null) !== (editingApt.notes || null)) updateData.notes = formData.notes || null;
         if (formData.status !== editingApt.status) updateData.status = formData.status;
+        const firstPrice = first.clientPrice ?? serviceMap[first.serviceId]?.price;
+        if (firstPrice && firstPrice !== editingApt.price) updateData.price = firstPrice;
         if (Object.keys(updateData).length > 0) {
           await appointmentService.update(editingApt.id, updateData);
         }
@@ -658,10 +660,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         addNotification('Cita actualizada', 'success');
       } else {
         for (const a of serviceAssignments) {
+          const svcPrice = a.clientPrice ?? serviceMap[a.serviceId]?.price;
           await appointmentService.create({
             client_name: clientName, client_phone: clientPhone, client_id: clientId || null,
             staff_id: parseInt(a.staffId), service_id: a.serviceId,
             date: formData.date, time: a.time,
+            price: svcPrice || null,
             notes: formData.notes || null, status: formData.status, created_by: 'admin',
           });
         }
@@ -674,6 +678,25 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           addNotification(msg, 'success');
         }
       }
+      if (productItems.length > 0) {
+        const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+        for (const item of productItems) {
+          try {
+            await fetch(`${API}/inventory/products/${item.productId}/stock`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'sale',
+                quantity: item.qty,
+                notes: `Venta en cita — ${clientName} — ${formatCOP(item.salePrice)} x${item.qty}${item.commission ? ` (comision: ${formatCOP(item.commission)})` : ''}`,
+              }),
+            });
+          } catch {}
+        }
+        addNotification(`${productItems.length} producto(s) descontados del inventario`, 'info');
+      }
+
       setShowModal(false);
       loadData();
     } catch (err) {
@@ -1248,7 +1271,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                           <span className={`${b}__svc-chip-num`}>{i + 1}</span>
                           <div className={`${b}__svc-chip-info`}>
                             <span className={`${b}__svc-chip-name`}>{svc.name}</span>
-                            <span className={`${b}__svc-chip-meta`}>{svc.category} &middot; {formatDur(svc.duration_minutes)} &middot; {formatCOP(svc.price)}</span>
+                            <span className={`${b}__svc-chip-meta`}>{svc.category} &middot; {formatDur(svc.duration_minutes)} &middot; Base: {formatCOP(svc.price)}</span>
+                          </div>
+                          <div className={`${b}__svc-chip-price`}>
+                            <label>Precio cliente</label>
+                            <input type="number" value={a.clientPrice ?? svc.price}
+                              onChange={e => updateAssignment(i, { clientPrice: Number(e.target.value) })} />
                           </div>
                           <button type="button" className={`${b}__svc-chip-x`} onClick={() => setServiceAssignments(prev => prev.filter((_, j) => j !== i))}>
                             <CloseIcon />
@@ -1280,7 +1308,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                               return (
                                 <button key={s.id} type="button" className={`${b}__svc-item ${added ? `${b}__svc-item--added` : ''}`} disabled={added}
                                   onClick={() => {
-                                    setServiceAssignments(prev => [...prev, { serviceId: s.id, staffId: '', time: '' }]);
+                                    setServiceAssignments(prev => [...prev, { serviceId: s.id, staffId: '', time: '', clientPrice: s.price }]);
                                     setServiceSearch('');
                                     setShowServiceDropdown(false);
                                   }}>
