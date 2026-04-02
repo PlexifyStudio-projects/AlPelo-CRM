@@ -62,11 +62,21 @@ def _build_business_context(db: Session, tenant_id: int = None, location_id: int
             ctx = BUSINESS_CONTEXT.get(btype, f'Tipo de negocio: {btype}. Adapte las respuestas al contexto de este negocio.')
             sections.append(f"=== TIPO DE NEGOCIO ===\n{ctx}\n")
 
-    # --- Location header (if multi-location) ---
+    # --- Location + schedule ---
+    opening = '08:00'
+    closing = '19:00'
     if location_id:
         loc = db.query(Location).filter(Location.id == location_id).first()
         if loc:
-            sections.append(f"=== UBICACION ACTIVA ===\nSede: {loc.name}\nDireccion: {loc.address or 'No definida'}\nHorario: {loc.opening_time or '08:00'} - {loc.closing_time or '19:00'}\nIMPORTANTE: La informacion que ves es EXCLUSIVAMENTE de esta sede.\n")
+            opening = loc.opening_time or '08:00'
+            closing = loc.closing_time or '19:00'
+            sections.append(f"=== UBICACION ACTIVA ===\nSede: {loc.name}\nDireccion: {loc.address or 'No definida'}\nHorario: {opening} - {closing}\nIMPORTANTE: La informacion que ves es EXCLUSIVAMENTE de esta sede.\n")
+    elif tenant_id:
+        first_loc = db.query(Location).filter(Location.tenant_id == tenant_id).first()
+        if first_loc:
+            opening = first_loc.opening_time or '08:00'
+            closing = first_loc.closing_time or '19:00'
+    sections.append(f"=== HORARIO DEL NEGOCIO ===\nAbre: {opening} | Cierra: {closing}\nSi faltan 15 min o menos para {closing}, informa que estan cerrando y ofrece cita para manana.")
 
     # --- KPIs ---
     clients_q = db.query(Client).filter(Client.is_active == True)
