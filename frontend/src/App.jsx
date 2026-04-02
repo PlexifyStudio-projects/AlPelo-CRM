@@ -54,7 +54,7 @@ class ErrorBoundary extends Component {
 }
 
 function App() {
-  const hasToken = !!localStorage.getItem('token');
+  const hasToken = !!localStorage.getItem('plexify_token');
   const showLanding = isLandingRoute() && !hasToken;
 
   return (

@@ -54,7 +54,6 @@ const Settings = () => {
       setAiConfig(config);
       setBusinessContext(config.system_prompt || DEFAULT_PROMPT);
     } catch {
-      // No config yet
     }
   };
 
@@ -141,7 +140,6 @@ const Settings = () => {
     try {
       const { url } = await settingsService.getMetaAuthUrl();
 
-      // Open popup
       const width = 600;
       const height = 700;
       const left = window.screenX + (window.outerWidth - width) / 2;
@@ -153,7 +151,6 @@ const Settings = () => {
       );
       popupRef.current = popup;
 
-      // Listen for postMessage from the callback page
       const messageHandler = (event) => {
         if (event.data && event.data.type === 'META_OAUTH_CODE' && event.data.code) {
           window.removeEventListener('message', messageHandler);
@@ -163,7 +160,6 @@ const Settings = () => {
       };
       window.addEventListener('message', messageHandler);
 
-      // Fallback: detect if popup was closed without completing
       pollRef.current = setInterval(() => {
         if (!popup || popup.closed) {
           clearInterval(pollRef.current);
@@ -631,8 +627,6 @@ const Settings = () => {
         <h2 className={`${b}__title`}>Configuracion</h2>
         <p className={`${b}__subtitle`}>Personaliza tu negocio y sus integraciones</p>
       </div>
-
-      {/* ═══ SECTION CARDS GRID ═══ */}
       <div className={`${b}__grid`}>
         {sections.map(s => (
           <button
@@ -653,8 +647,6 @@ const Settings = () => {
           </button>
         ))}
       </div>
-
-      {/* ═══ EXPANDED CONTENT ═══ */}
       {openSection && (
         <div className={`${b}__panel`} key={openSection}>
 
@@ -736,8 +728,6 @@ const Settings = () => {
               <span className={`${b}__toggle-knob`} />
             </button>
           </div>
-
-          {/* Push notification debug */}
           <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '16px', marginTop: '12px' }}>
             <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Notificaciones Push</h4>
             <div id="push-debug" style={{ fontSize: '12px', color: '#64748B', marginBottom: '10px', lineHeight: 1.6 }}>
@@ -749,12 +739,10 @@ const Settings = () => {
                 const dbg = document.getElementById('push-debug');
                 const lines = [];
 
-                // 1. Check API support
                 lines.push(`Notification API: ${'Notification' in window ? 'SI' : 'NO'}`);
                 lines.push(`Service Worker: ${'serviceWorker' in navigator ? 'SI' : 'NO'}`);
                 lines.push(`PushManager: ${'PushManager' in window ? 'SI' : 'NO'}`);
 
-                // 2. Check permission
                 if ('Notification' in window) {
                   lines.push(`Permiso actual: ${Notification.permission}`);
                   if (Notification.permission === 'default') {
@@ -763,7 +751,6 @@ const Settings = () => {
                   }
                 }
 
-                // 3. Check SW registration
                 if ('serviceWorker' in navigator) {
                   const reg = await navigator.serviceWorker.getRegistration('/AlPelo-CRM/');
                   lines.push(`SW registrado: ${reg ? 'SI' : 'NO'}`);
@@ -773,7 +760,6 @@ const Settings = () => {
                   }
                 }
 
-                // 4. Try to show notification
                 if ('Notification' in window && Notification.permission === 'granted') {
                   try {
                     const reg = await navigator.serviceWorker?.getRegistration('/AlPelo-CRM/');
@@ -808,7 +794,6 @@ const Settings = () => {
 
           {openSection === 'meta' && (
             <div className={`${b}__panel-content`}>
-          {/* Token expiry warning banner */}
           {metaStatus?.connected && isTokenExpiringSoon && (
             <div className={`${b}__meta-expiry-warning`}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -822,8 +807,6 @@ const Settings = () => {
               </button>
             </div>
           )}
-
-          {/* Status indicator */}
           <div className={`${b}__meta-status`}>
             <div className={`${b}__meta-status-dot ${metaStatus?.connected ? `${b}__meta-status-dot--on` : `${b}__meta-status-dot--off`}`} />
             <div className={`${b}__meta-status-info`}>
@@ -849,8 +832,6 @@ const Settings = () => {
               </button>
             )}
           </div>
-
-          {/* Token expiration info */}
           {metaStatus?.connected && metaStatus.expires_at && (
             <div className={`${b}__meta-token-info`}>
               <div className={`${b}__meta-token-info-row`}>
@@ -873,8 +854,6 @@ const Settings = () => {
               </button>
             </div>
           )}
-
-          {/* Facebook OAuth button — always visible */}
           <div className={`${b}__meta-oauth`}>
             <button
               className={`${b}__meta-fb-btn`}
@@ -892,8 +871,6 @@ const Settings = () => {
                 : 'Conecta tu cuenta de Facebook para configurar WhatsApp Business automaticamente'}
             </p>
           </div>
-
-          {/* Manual config accordion */}
           <div className={`${b}__meta-manual`}>
             <button
               className={`${b}__meta-manual-toggle`}
@@ -911,7 +888,6 @@ const Settings = () => {
 
             {showManualConfig && (
               <div className={`${b}__meta-manual-content`}>
-                {/* Token input */}
                 <div className={`${b}__meta-field`}>
                   <label>Token de acceso (Meta Business)</label>
                   <span className={`${b}__meta-hint`}>
@@ -929,8 +905,6 @@ const Settings = () => {
                     </button>
                   </div>
                 </div>
-
-                {/* Phone Number ID + Business Account ID */}
                 <div className={`${b}__meta-row`}>
                   <div className={`${b}__meta-field`}>
                     <label>Phone Number ID</label>
@@ -964,16 +938,12 @@ const Settings = () => {
               </div>
             )}
           </div>
-
-          {/* ── WhatsApp Business Profile ── */}
           {metaStatus?.connected && (
             <div className={`${b}__wa-profile`}>
               <h4 className={`${b}__wa-profile-title`}>Perfil de WhatsApp Business</h4>
               <p className={`${b}__wa-profile-hint`}>
                 Esto es lo que ven tus clientes en WhatsApp: nombre, foto, descripcion y datos del negocio.
               </p>
-
-              {/* Current photo preview + upload */}
               <div className={`${b}__wa-profile-photo-section`}>
                 <div
                   className={`${b}__wa-profile-photo-preview`}
@@ -1019,8 +989,6 @@ const Settings = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Profile fields */}
               <div className={`${b}__wa-profile-fields`}>
                 <div className={`${b}__meta-field`}>
                   <label>Descripcion corta (About)</label>
@@ -1089,8 +1057,6 @@ const Settings = () => {
               </button>
             </div>
           )}
-
-          {/* Approved templates from Meta */}
           {metaTemplates && metaTemplates.templates && metaTemplates.templates.length > 0 && (
             <div className={`${b}__meta-templates`}>
               <div className={`${b}__meta-templates-header`}>
@@ -1135,8 +1101,6 @@ const Settings = () => {
               <span className={`${b}__toggle-knob`} />
             </button>
           </div>
-
-          {/* ACUMULACION */}
           <div style={{ padding: '20px 0', borderBottom: '1px solid #E2E8F0' }}>
             <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#1E293B', marginBottom: '16px' }}>Acumulacion de credito</h4>
             <div className={`${b}__meta-row`}>
@@ -1160,8 +1124,6 @@ const Settings = () => {
               </span>
             </div>
           </div>
-
-          {/* NIVELES */}
           <div style={{ padding: '20px 0', borderBottom: '1px solid #E2E8F0' }}>
             <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>Niveles de cliente (por numero de visitas)</h4>
             <span className={`${b}__meta-hint`} style={{ marginBottom: '16px', display: 'block' }}>Los clientes suben de nivel segun cuantas veces han venido. Cada nivel puede tener un descuento permanente.</span>
@@ -1210,8 +1172,6 @@ const Settings = () => {
               </div>
             </div>
           </div>
-
-          {/* BONIFICACIONES */}
           <div style={{ padding: '20px 0' }}>
             <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>Bonificaciones por referidos y cumpleanos</h4>
             <span className={`${b}__meta-hint`} style={{ marginBottom: '16px', display: 'block' }}>Credito en pesos que se da automaticamente. El cliente o Lina registran "vengo por parte de X".</span>
@@ -1258,8 +1218,6 @@ const Settings = () => {
               {!bookingLoaded ? (
                 <div style={{ textAlign: 'center', padding: 20, color: '#94a3b8' }} ref={() => loadBookingConfig()}>Cargando configuracion...</div>
               ) : (<>
-
-              {/* Enable toggle */}
               <div className={`${b}__meta-field`}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <input type="checkbox" checked={!!bookingConfig.booking_enabled} onChange={e => setBookingConfig(c => ({ ...c, booking_enabled: e.target.checked }))} style={{ width: 18, height: 18, accentColor: '#10b981' }} />
@@ -1267,8 +1225,6 @@ const Settings = () => {
                 </label>
                 <span className={`${b}__meta-hint`}>Cuando este activa, tus clientes podran agendar citas desde el link publico.</span>
               </div>
-
-              {/* Public link */}
               {bookingConfig.slug && (
                 <div className={`${b}__meta-field`}>
                   <label>Link publico de reservas</label>
@@ -1278,8 +1234,6 @@ const Settings = () => {
                   </div>
                 </div>
               )}
-
-              {/* Cover image */}
               <div className={`${b}__meta-field`}>
                 <label>Imagen de portada (hero)</label>
                 {bookingConfig.booking_cover_url && (
@@ -1291,8 +1245,6 @@ const Settings = () => {
                 <input type="file" accept="image/*" onChange={handleCoverUpload} style={{ fontSize: '0.85rem' }} />
                 {coverUploading && <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Subiendo...</span>}
               </div>
-
-              {/* Tagline & Description */}
               <div className={`${b}__meta-field`}>
                 <label>Tagline</label>
                 <input value={bookingConfig.booking_tagline || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_tagline: e.target.value }))} placeholder="Ej: Descubre la excelencia en nuestro negocio!" maxLength={300} />
@@ -1301,8 +1253,6 @@ const Settings = () => {
                 <label>Descripcion (sobre nosotros)</label>
                 <textarea value={bookingConfig.booking_description || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_description: e.target.value }))} placeholder="Describe tu negocio..." rows={3} style={{ width: '100%', padding: '10px 14px', border: '2px solid #e2e8f0', borderRadius: 8, fontSize: '0.9rem', resize: 'vertical', fontFamily: 'inherit' }} />
               </div>
-
-              {/* Gallery */}
               <div className={`${b}__meta-field`}>
                 <label>Galeria / Portafolio ({(bookingConfig.gallery_images || []).length}/20 imagenes)</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: 8, marginBottom: 8 }}>
@@ -1318,8 +1268,6 @@ const Settings = () => {
                 )}
                 {galleryUploading && <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Subiendo imagen...</span>}
               </div>
-
-              {/* Contact */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className={`${b}__meta-field`}>
                   <label>Telefono de contacto</label>
@@ -1330,8 +1278,6 @@ const Settings = () => {
                   <input value={bookingConfig.booking_whatsapp || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_whatsapp: e.target.value }))} placeholder="573176608487" />
                 </div>
               </div>
-
-              {/* Social links */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className={`${b}__meta-field`}>
                   <label>Instagram URL</label>
@@ -1342,8 +1288,6 @@ const Settings = () => {
                   <input value={bookingConfig.booking_facebook || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_facebook: e.target.value }))} placeholder="https://facebook.com/tu-negocio" />
                 </div>
               </div>
-
-              {/* Tags */}
               <div className={`${b}__meta-field`}>
                 <label>Categorias / Tags</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
@@ -1359,8 +1303,6 @@ const Settings = () => {
                   <button onClick={() => { if (newTag.trim()) { setBookingConfig(c => ({ ...c, booking_tags: [...(c.booking_tags || []), newTag.trim()] })); setNewTag(''); } }} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}>Agregar</button>
                 </div>
               </div>
-
-              {/* Schedule */}
               <div className={`${b}__meta-field`}>
                 <label>Horarios semanales</label>
                 <span className={`${b}__meta-hint`}>Deja vacio si el dia esta cerrado.</span>
@@ -1377,13 +1319,9 @@ const Settings = () => {
                   ))}
                 </div>
               </div>
-
-              {/* Reviews Editor */}
               <div className={`${b}__meta-field`} style={{ background: '#fafbfc', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0' }}>
                 <label style={{ marginBottom: 8, fontSize: '0.95rem' }}>Resenas de Google</label>
                 <span className={`${b}__meta-hint`}>Copia las resenas reales de tu pagina de Google Maps y pegalas aqui.</span>
-
-                {/* Rating + Total */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, margin: '12px 0' }}>
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#64748b' }}>Rating general</label>
@@ -1394,8 +1332,6 @@ const Settings = () => {
                     <input type="number" min="0" value={bookingConfig.booking_google_total_reviews || ''} onChange={e => setBookingConfig(c => ({ ...c, booking_google_total_reviews: parseInt(e.target.value) || null }))} placeholder="742" />
                   </div>
                 </div>
-
-                {/* Review list */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
                   {(bookingConfig.booking_google_reviews || []).map((rev, i) => (
                     <div key={i} style={{ padding: 14, background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', position: 'relative' }}>
@@ -1419,8 +1355,6 @@ const Settings = () => {
                   </button>
                 </div>
               </div>
-
-              {/* Save */}
               <div className={`${b}__meta-actions`}>
                 <button className={`${b}__ai-save`} onClick={handleSaveBooking} disabled={bookingSaving}>
                   {bookingSaving ? 'Guardando...' : 'Guardar configuracion'}
@@ -1462,13 +1396,10 @@ const Settings = () => {
 
         </div>
       )}
-
-      {/* ═══ USAGE OVERVIEW PANEL ═══ */}
       {!openSection && (
         <div className={`${b}__usage`}>
           <h3 className={`${b}__usage-title`}>Resumen del mes</h3>
           <div className={`${b}__usage-grid`}>
-            {/* Messages */}
             <div className={`${b}__usage-card`}>
               <div className={`${b}__usage-card-header`}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -1482,8 +1413,6 @@ const Settings = () => {
                 <div className={`${b}__usage-bar-fill`} style={{ width: `${Math.min(100, ((tenant?.messages_used || 0) / (tenant?.messages_limit || 5000)) * 100)}%`, background: 'linear-gradient(90deg, #3B82F6, #60A5FA)' }} />
               </div>
             </div>
-
-            {/* WhatsApp sent */}
             <div className={`${b}__usage-card`}>
               <div className={`${b}__usage-card-header`}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -1494,8 +1423,6 @@ const Settings = () => {
               </div>
               <span className={`${b}__usage-card-sub`}>mensajes este mes</span>
             </div>
-
-            {/* Campaigns */}
             <div className={`${b}__usage-card`}>
               <div className={`${b}__usage-card-header`}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
@@ -1506,8 +1433,6 @@ const Settings = () => {
               </div>
               <span className={`${b}__usage-card-sub`}>campañas este mes</span>
             </div>
-
-            {/* Messages remaining */}
             <div className={`${b}__usage-card`}>
               <div className={`${b}__usage-card-header`}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
@@ -1518,8 +1443,6 @@ const Settings = () => {
               </div>
               <span className={`${b}__usage-card-sub`}>mensajes disponibles</span>
             </div>
-
-            {/* WhatsApp status */}
             <div className={`${b}__usage-card`}>
               <div className={`${b}__usage-card-header`}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={metaStatus?.connected ? '#10B981' : '#EF4444'} strokeWidth="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>{metaStatus?.connected && <polyline points="22 4 12 14.01 9 11.01"/>}</svg>
@@ -1532,8 +1455,6 @@ const Settings = () => {
                 <span className={`${b}__usage-card-sub`}>Token expira en {metaStatus.days_until_expiry} dias</span>
               )}
             </div>
-
-            {/* Plan */}
             <div className={`${b}__usage-card`}>
               <div className={`${b}__usage-card-header`}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
@@ -1547,8 +1468,6 @@ const Settings = () => {
           </div>
         </div>
       )}
-
-      {/* Disconnect confirmation modal — rendered via portal to avoid stacking context issues */}
       {showDisconnectModal && createPortal(
         <div className={`${b}__modal-overlay`} onClick={() => setShowDisconnectModal(false)}>
           <div className={`${b}__modal`} onClick={e => e.stopPropagation()}>
@@ -1689,8 +1608,6 @@ function BrandingPanel({ addNotification }) {
     <div className={`${bb}__panel-content`}>
       <h3 className={`${bb}__panel-title`}>Marca e Identidad</h3>
       <p className={`${bb}__panel-desc`}>Personaliza la apariencia de tu plataforma. Tu equipo y clientes verán tu marca, no la nuestra.</p>
-
-      {/* Logo */}
       <div className={`${bb}__brand-section`}>
         <label className={`${bb}__brand-label`}>Logo del negocio</label>
         <div className={`${bb}__brand-logo-area`}>
@@ -1716,16 +1633,12 @@ function BrandingPanel({ addNotification }) {
           </div>
         </div>
       </div>
-
-      {/* Brand Name */}
       <div className={`${bb}__brand-section`}>
         <label className={`${bb}__brand-label`}>Nombre de marca</label>
         <p className={`${bb}__brand-hint`}>Se muestra en el sidebar, título de la página y recibos.</p>
         <input className={`${bb}__brand-input`} value={brandName} onChange={e => setBrandName(e.target.value)}
           placeholder="Ej: AlPelo CRM, Mi Barbería, etc." />
       </div>
-
-      {/* Save */}
       <div className={`${bb}__brand-save`}>
         <button className={`${bb}__brand-save-btn`} onClick={handleSave} disabled={saving}>
           {saving ? 'Guardando...' : 'Guardar cambios de marca'}

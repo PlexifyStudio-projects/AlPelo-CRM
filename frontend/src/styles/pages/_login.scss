@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// LOGIN — Ultra-modern split-panel
-// Dark canvas left, clean form right
-// ============================================
-
 .login {
   @include flex-center;
   min-height: 100vh;
@@ -14,7 +9,6 @@
   overflow: hidden;
   background: $bg-main;
 
-  // ─── Mounted state ───
   &--mounted {
     .login__wrapper {
       opacity: 1;
@@ -22,7 +16,6 @@
     }
   }
 
-  // ─── Main wrapper ───
   &__wrapper {
     position: relative;
     z-index: $z-base;
@@ -47,9 +40,6 @@
     }
   }
 
-  // ============================================
-  // LEFT PANEL — Dark Canvas with Particles
-  // ============================================
   &__showcase {
     position: relative;
     flex: 0 0 46%;
@@ -67,7 +57,6 @@
     }
   }
 
-  // Canvas for particle effect
   &__canvas {
     position: absolute;
     inset: 0;
@@ -182,7 +171,6 @@
     }
   }
 
-  // Feature badges
   &__showcase-badges {
     display: flex;
     flex-wrap: wrap;
@@ -216,7 +204,6 @@
     }
   }
 
-  // Legacy elements (hidden)
   &__showcase-stats,
   &__showcase-stat,
   &__showcase-stat-number,
@@ -228,9 +215,6 @@
     display: none;
   }
 
-  // ============================================
-  // RIGHT PANEL — Clean white form
-  // ============================================
   &__panel {
     flex: 1;
     display: flex;
@@ -263,7 +247,6 @@
     }
   }
 
-  // ─── View ───
   &__view {
     animation: fadeInUp 400ms $ease-out-expo both 200ms;
 
@@ -276,7 +259,6 @@
     }
   }
 
-  // ─── Accent line ───
   &__accent-line {
     height: 3px;
     width: 40px;
@@ -286,7 +268,6 @@
     animation: loginAccentExpand 500ms $ease-out-expo both 400ms;
   }
 
-  // ─── Header ───
   &__header {
     margin-bottom: $spacing-2xl;
     animation: fadeInUp 400ms $ease-out-expo both 350ms;
@@ -326,14 +307,12 @@
     font-weight: $font-weight-regular;
   }
 
-  // ─── Form ───
   &__form {
     @include flex-column;
     gap: $spacing-md;
     animation: fadeInUp 400ms $ease-out-expo both 450ms;
   }
 
-  // ─── Field ───
   &__field {
     position: relative;
     display: flex;
@@ -408,7 +387,6 @@
     }
   }
 
-  // ─── Input ───
   &__input {
     width: 100%;
     padding: 14px 0 2px;
@@ -436,7 +414,6 @@
     }
   }
 
-  // ─── Floating label ───
   &__floating-label {
     position: absolute;
     left: 0;
@@ -472,7 +449,6 @@
     }
   }
 
-  // ─── Toggle password ───
   &__toggle-password {
     @include flex-center;
     flex-shrink: 0;
@@ -496,7 +472,6 @@
     }
   }
 
-  // ─── Options row ───
   &__options {
     @include flex-between;
     animation: fadeIn 400ms $ease-out-quart both 600ms;
@@ -561,7 +536,6 @@
     }
   }
 
-  // ─── Error ───
   &__error {
     display: flex;
     align-items: center;
@@ -611,7 +585,6 @@
     }
   }
 
-  // ─── Active Session Warning ───
   &__session-warning {
     display: flex;
     flex-direction: column;
@@ -661,7 +634,6 @@
     }
   }
 
-  // ─── Submit button ───
   &__submit {
     position: relative;
     width: 100%;
@@ -753,7 +725,6 @@
     }
   }
 
-  // ─── Spinner ───
   &__spinner {
     width: 18px;
     height: 18px;
@@ -763,7 +734,6 @@
     animation: spin 600ms $ease-smooth infinite;
   }
 
-  // ─── Success state ───
   &__success {
     text-align: center;
     padding: $spacing-xl 0;
@@ -810,7 +780,6 @@
     }
   }
 
-  // ─── Footer ───
   &__footer {
     margin-top: $spacing-2xl;
     text-align: center;
@@ -836,9 +805,6 @@
   }
 }
 
-// ============================================
-// LOGIN KEYFRAMES
-// ============================================
 @keyframes loginTextShimmer {
   0% { background-position: 0% center; }
   100% { background-position: 200% center; }
@@ -855,9 +821,6 @@
   }
 }
 
-// ============================================
-// MICRO-INTERACTIONS
-// ============================================
 .login__submit {
   @include press-effect;
 }

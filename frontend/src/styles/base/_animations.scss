@@ -1,69 +1,31 @@
-// ============================================
-// Plexify Studio - Animation Library v3.0
-// Smooth, subtle, modern motion
-// ============================================
-
-// -----------------------------------------------
-// FADE VARIANTS
-// -----------------------------------------------
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes fadeInRight {
-  from {
-    opacity: 0;
-    transform: translateX(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes fadeOut {
@@ -72,215 +34,100 @@
 }
 
 @keyframes fadeOutDown {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(6px);
-  }
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(6px); }
 }
 
-// -----------------------------------------------
-// SLIDE VARIANTS
-// -----------------------------------------------
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideOutRight {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(100%);
-  }
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(100%); }
 }
 
-// -----------------------------------------------
-// SCALE / SPRING (gentle, no aggressive bounce)
-// -----------------------------------------------
 @keyframes bounceIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.02);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { opacity: 0; transform: scale(0.9); }
+  60% { opacity: 1; transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 
 @keyframes bounceInUp {
-  0% {
-    opacity: 0;
-    transform: translateY(16px) scale(0.98);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(-2px) scale(1.005);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
+  0% { opacity: 0; transform: translateY(16px) scale(0.98); }
+  60% { opacity: 1; transform: translateY(-2px) scale(1.005); }
+  100% { transform: translateY(0) scale(1); }
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes scaleInOvershoot {
-  0% {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  70% {
-    opacity: 1;
-    transform: scale(1.02);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { opacity: 0; transform: scale(0.9); }
+  70% { opacity: 1; transform: scale(1.02); }
+  100% { transform: scale(1); }
 }
 
-// -----------------------------------------------
-// CONTINUOUS / LOOPING
-// -----------------------------------------------
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 @keyframes pulseRing {
-  0% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
 }
 
 @keyframes pulseRingPrimary {
-  0% {
-    box-shadow: 0 0 0 0 rgba(30, 64, 175, 0.25);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(30, 64, 175, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(30, 64, 175, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(30, 64, 175, 0.25); }
+  70% { box-shadow: 0 0 0 6px rgba(30, 64, 175, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(30, 64, 175, 0); }
 }
 
 @keyframes pulseRingAccent {
-  0% {
-    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.25);
-  }
-  70% {
-    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.25); }
+  70% { box-shadow: 0 0 0 6px rgba(99, 102, 241, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
 }
 
 @keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 @keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 @keyframes floatSlow {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
 @keyframes shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  10%, 30%, 50%, 70%, 90% {
-    transform: translateX(-2px);
-  }
-  20%, 40%, 60%, 80% {
-    transform: translateX(2px);
-  }
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
 }
 
 @keyframes bellShake {
@@ -294,234 +141,109 @@
 }
 
 @keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-// -----------------------------------------------
-// SPECIAL EFFECTS
-// -----------------------------------------------
 @keyframes ripple {
-  0% {
-    transform: scale(0);
-    opacity: 0.3;
-  }
-  100% {
-    transform: scale(4);
-    opacity: 0;
-  }
+  0% { transform: scale(0); opacity: 0.3; }
+  100% { transform: scale(4); opacity: 0; }
 }
 
 @keyframes counterRoll {
-  0% {
-    opacity: 0;
-    transform: translateY(100%);
-    filter: blur(3px);
-  }
-  60% {
-    filter: blur(0);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
-  }
+  0% { opacity: 0; transform: translateY(100%); filter: blur(3px); }
+  60% { filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
 }
 
 @keyframes progressShrink {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }
 
 @keyframes borderGlow {
-  0%, 100% {
-    border-color: rgba(30, 64, 175, 0.15);
-  }
-  50% {
-    border-color: rgba(30, 64, 175, 0.4);
-  }
+  0%, 100% { border-color: rgba(30, 64, 175, 0.15); }
+  50% { border-color: rgba(30, 64, 175, 0.4); }
 }
 
 @keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 @keyframes gradientMesh {
-  0%, 100% {
-    opacity: 0.12;
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    opacity: 0.18;
-    transform: translate(20px, -15px) scale(1.03);
-  }
-  66% {
-    opacity: 0.1;
-    transform: translate(-15px, 8px) scale(0.98);
-  }
+  0%, 100% { opacity: 0.12; transform: translate(0, 0) scale(1); }
+  33% { opacity: 0.18; transform: translate(20px, -15px) scale(1.03); }
+  66% { opacity: 0.1; transform: translate(-15px, 8px) scale(0.98); }
 }
 
 @keyframes typewriter {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
+  from { width: 0; }
+  to { width: 100%; }
 }
 
 @keyframes blinkCaret {
-  from, to {
-    border-color: transparent;
-  }
-  50% {
-    border-color: currentColor;
-  }
+  from, to { border-color: transparent; }
+  50% { border-color: currentColor; }
 }
 
 @keyframes iconBounce {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
 }
 
 @keyframes slideIndicator {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) scaleY(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) scaleY(1);
-  }
+  from { opacity: 0; transform: translateY(-50%) scaleY(0.5); }
+  to { opacity: 1; transform: translateY(-50%) scaleY(1); }
 }
 
 @keyframes tooltipIn {
-  from {
-    opacity: 0;
-    transform: translateX(4px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
+  from { opacity: 0; transform: translateX(4px) scale(0.97); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 @keyframes dropdownIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes expandWidth {
-  from {
-    width: 0;
-    opacity: 0;
-  }
-  to {
-    width: 100%;
-    opacity: 1;
-  }
+  from { width: 0; opacity: 0; }
+  to { width: 100%; opacity: 1; }
 }
 
 @keyframes searchExpand {
-  from {
-    width: 200px;
-    background: rgba(0, 0, 0, 0.02);
-  }
-  to {
-    width: 100%;
-    background: rgba(255, 255, 255, 1);
-  }
+  from { width: 200px; background: rgba(0, 0, 0, 0.02); }
+  to { width: 100%; background: rgba(255, 255, 255, 1); }
 }
 
-// -----------------------------------------------
-// SUBTLE ENTRANCE ANIMATIONS
-// -----------------------------------------------
 @keyframes breathe {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.7;
-  }
-  50% {
-    transform: scale(1.02);
-    opacity: 1;
-  }
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.02); opacity: 1; }
 }
 
 @keyframes springUp {
-  0% {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  70% {
-    opacity: 1;
-    transform: translateY(-1px);
-  }
-  100% {
-    transform: translateY(0);
-  }
+  0% { opacity: 0; transform: translateY(12px); }
+  70% { opacity: 1; transform: translateY(-1px); }
+  100% { transform: translateY(0); }
 }
 
 @keyframes cardReveal {
-  0% {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes shineSweep {
-  0% {
-    left: -100%;
-  }
-  50%, 100% {
-    left: 200%;
-  }
+  0% { left: -100%; }
+  50%, 100% { left: 200%; }
 }
 
 @keyframes elasticPop {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.05);
-    opacity: 1;
-  }
-  80% {
-    transform: scale(0.97);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.05); opacity: 1; }
+  80% { transform: scale(0.97); }
+  100% { transform: scale(1); }
 }
 
 @keyframes wiggle {
@@ -542,42 +264,20 @@
 }
 
 @keyframes rowHighlight {
-  from {
-    background-position: -100% 0;
-  }
-  to {
-    background-position: 200% 0;
-  }
+  from { background-position: -100% 0; }
+  to { background-position: 200% 0; }
 }
 
-// -----------------------------------------------
-// WHATSAPP ANIMATIONS
-// -----------------------------------------------
 @keyframes typingDots {
-  0%, 80%, 100% {
-    transform: scale(0.6);
-    opacity: 0.4;
-  }
-  40% {
-    transform: scale(1);
-    opacity: 1;
-  }
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes messageAppear {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-// -----------------------------------------------
-// REDUCED MOTION
-// -----------------------------------------------
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -1,14 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// AlPelo - Utility Classes
-// Reusable atomic helpers
-// ============================================
-
-// -----------------------------------------------
-// ANIMATION STAGGER DELAYS
-// -----------------------------------------------
 .stagger-1 { animation-delay: 0.05s; }
 .stagger-2 { animation-delay: 0.1s; }
 .stagger-3 { animation-delay: 0.15s; }
@@ -22,9 +14,6 @@
 .stagger-11 { animation-delay: 0.55s; }
 .stagger-12 { animation-delay: 0.6s; }
 
-// -----------------------------------------------
-// TEXT UTILITIES
-// -----------------------------------------------
 .text--gradient {
   @include gradient-text(linear-gradient(135deg, $color-primary 0%, $color-accent 100%));
 }
@@ -33,58 +22,24 @@
   @include gradient-text(linear-gradient(135deg, $color-accent-light 0%, $color-accent 50%, $color-accent-dark 100%));
 }
 
-.text--muted {
-  color: $color-gray-400;
-}
-
-.text--subtle {
-  color: $color-gray-300;
-}
-
-.text--accent {
-  color: $color-accent;
-}
-
-.text--primary {
-  color: $color-primary;
-}
-
-.text--success {
-  color: $color-success;
-}
-
-.text--error {
-  color: $color-error;
-}
-
-.text--warning {
-  color: $color-warning;
-}
-
-.text--info {
-  color: $color-info;
-}
+.text--muted { color: $color-gray-400; }
+.text--subtle { color: $color-gray-300; }
+.text--accent { color: $color-accent; }
+.text--primary { color: $color-primary; }
+.text--success { color: $color-success; }
+.text--error { color: $color-error; }
+.text--warning { color: $color-warning; }
+.text--info { color: $color-info; }
 
 .text--emphasis {
   font-family: $font-heading;
   font-style: italic;
 }
 
-.text--caps {
-  @include label-text;
-}
+.text--caps { @include label-text; }
+.text--balance { text-wrap: balance; }
+.text--truncate { @include truncate; }
 
-.text--balance {
-  text-wrap: balance;
-}
-
-.text--truncate {
-  @include truncate;
-}
-
-// -----------------------------------------------
-// STATUS DOTS
-// -----------------------------------------------
 .status-dot {
   display: inline-block;
   width: 8px;
@@ -99,32 +54,13 @@
     animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  &--offline {
-    background: $color-gray-300;
-  }
-
-  &--away {
-    background: $color-warning;
-  }
-
-  &--busy {
-    background: $color-error;
-  }
-
-  &--lg {
-    width: 10px;
-    height: 10px;
-  }
-
-  &--sm {
-    width: 6px;
-    height: 6px;
-  }
+  &--offline { background: $color-gray-300; }
+  &--away { background: $color-warning; }
+  &--busy { background: $color-error; }
+  &--lg { width: 10px; height: 10px; }
+  &--sm { width: 6px; height: 6px; }
 }
 
-// -----------------------------------------------
-// SKELETON LOADING
-// -----------------------------------------------
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -144,9 +80,7 @@
     margin-bottom: $spacing-sm;
     border-radius: $border-radius-xs;
 
-    &:last-child {
-      width: 70%;
-    }
+    &:last-child { width: 70%; }
   }
 
   &--heading {
@@ -159,20 +93,9 @@
   &--circle {
     border-radius: $border-radius-full;
 
-    &--sm {
-      width: 32px;
-      height: 32px;
-    }
-
-    &--md {
-      width: 48px;
-      height: 48px;
-    }
-
-    &--lg {
-      width: 72px;
-      height: 72px;
-    }
+    &--sm { width: 32px; height: 32px; }
+    &--md { width: 48px; height: 48px; }
+    &--lg { width: 72px; height: 72px; }
   }
 
   &--card {
@@ -194,29 +117,15 @@
   }
 }
 
-// -----------------------------------------------
-// SECTION DIVIDERS
-// -----------------------------------------------
 .divider {
   @include gradient-divider;
   margin: $spacing-lg 0;
 
-  &--accent {
-    @include gradient-divider-accent;
-  }
-
-  &--sm {
-    margin: $spacing-sm 0;
-  }
-
-  &--lg {
-    margin: $spacing-xl 0;
-  }
+  &--accent { @include gradient-divider-accent; }
+  &--sm { margin: $spacing-sm 0; }
+  &--lg { margin: $spacing-xl 0; }
 }
 
-// -----------------------------------------------
-// SPACING UTILITIES
-// -----------------------------------------------
 .mt-0 { margin-top: 0; }
 .mt-xs { margin-top: $spacing-xs; }
 .mt-sm { margin-top: $spacing-sm; }
@@ -231,9 +140,6 @@
 .mb-lg { margin-bottom: $spacing-lg; }
 .mb-xl { margin-bottom: $spacing-xl; }
 
-// -----------------------------------------------
-// VISUALLY HIDDEN (accessible)
-// -----------------------------------------------
 .sr-only {
   position: absolute;
   width: 1px;
@@ -246,32 +152,12 @@
   border-width: 0;
 }
 
-// -----------------------------------------------
-// DOT PATTERN BACKGROUND (empty states)
-// -----------------------------------------------
 .bg-dots {
   @include dot-grid;
 }
 
-// -----------------------------------------------
-// ANIMATION UTILITY CLASSES
-// -----------------------------------------------
-.animate-fade-in {
-  animation: fadeIn 300ms $ease-out-quart both;
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 400ms $ease-out-expo both;
-}
-
-.animate-slide-in-right {
-  animation: slideInRight 400ms $ease-out-expo both;
-}
-
-.animate-scale-in {
-  animation: scaleIn 300ms $ease-spring both;
-}
-
-.animate-bounce-in {
-  animation: bounceIn 500ms $ease-spring both;
-}
+.animate-fade-in { animation: fadeIn 300ms $ease-out-quart both; }
+.animate-fade-in-up { animation: fadeInUp 400ms $ease-out-expo both; }
+.animate-slide-in-right { animation: slideInRight 400ms $ease-out-expo both; }
+.animate-scale-in { animation: scaleIn 300ms $ease-spring both; }
+.animate-bounce-in { animation: bounceIn 500ms $ease-spring both; }

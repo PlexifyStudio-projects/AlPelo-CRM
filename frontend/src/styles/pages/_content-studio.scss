@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ════════════════════════════════════════════════════════════════════
-// CONTENT STUDIO — AI-Powered Content Generation
-// Premium marketing studio for social media — MONUMENTAL REDESIGN
-// ════════════════════════════════════════════════════════════════════
-
 .content-studio {
   
   padding: $spacing-lg $spacing-xl;
@@ -21,9 +16,6 @@
     gap: $spacing-md;
   }
 
-  // ════════════════════════════════════════════════
-  // HERO HEADER
-  // ════════════════════════════════════════════════
   &__hero {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -33,7 +25,6 @@
     position: relative;
     overflow: hidden;
 
-    // Gradient accent at top
     &::before {
       content: '';
       position: absolute;
@@ -112,9 +103,6 @@
     flex-shrink: 0;
   }
 
-  // ════════════════════════════════════════════════
-  // META STATUS
-  // ════════════════════════════════════════════════
   &__meta-status {
     display: inline-flex;
     align-items: center;
@@ -148,9 +136,6 @@
     white-space: nowrap;
   }
 
-  // ════════════════════════════════════════════════
-  // STATS BAR
-  // ════════════════════════════════════════════════
   &__stats-bar {
     display: flex;
     align-items: center;
@@ -207,9 +192,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // CONTENT TYPE CARDS — Premium Redesign
-  // ════════════════════════════════════════════════
   &__types-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -241,7 +223,6 @@
     text-align: left;
     font-family: $font-primary;
     
-
     &::before {
       content: '';
       position: absolute;
@@ -404,9 +385,6 @@
     z-index: 2;
   }
 
-  // ════════════════════════════════════════════════
-  // WORKSPACE — Split Panel Layout
-  // ════════════════════════════════════════════════
   &__workspace {
     
   }
@@ -463,9 +441,6 @@
     flex-wrap: wrap;
   }
 
-  // ════════════════════════════════════════════════
-  // PREVIEW PANEL — Phone Mockup
-  // ════════════════════════════════════════════════
   &__preview-panel {
     display: flex;
     flex-direction: column;
@@ -606,9 +581,6 @@
     
   }
 
-  // ════════════════════════════════════════════════
-  // FORM FIELDS
-  // ════════════════════════════════════════════════
   &__field {
     display: flex;
     flex-direction: column;
@@ -726,9 +698,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // CHIPS
-  // ════════════════════════════════════════════════
   &__chips {
     display: flex;
     flex-wrap: wrap;
@@ -780,9 +749,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // DIMENSIONS GRID (Visual preview)
-  // ════════════════════════════════════════════════
   &__dimensions-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -844,9 +810,6 @@
     color: $color-gray-400;
   }
 
-  // ════════════════════════════════════════════════
-  // AVATAR GRID
-  // ════════════════════════════════════════════════
   &__avatar-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -906,9 +869,6 @@
     line-height: $line-height-snug;
   }
 
-  // ════════════════════════════════════════════════
-  // TOGGLE SWITCH
-  // ════════════════════════════════════════════════
   &__toggle-label {
     display: flex;
     align-items: center;
@@ -957,9 +917,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // CHARACTER COUNT
-  // ════════════════════════════════════════════════
   &__char-count {
     font-size: $font-size-2xs;
     font-weight: $font-weight-regular;
@@ -970,9 +927,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // AI ASSIST BUTTON (inline)
-  // ════════════════════════════════════════════════
   &__ai-assist {
     display: inline-flex;
     align-items: center;
@@ -1006,9 +960,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // PLATFORM TOGGLES
-  // ════════════════════════════════════════════════
   &__platform-toggles {
     display: flex;
     gap: 8px;
@@ -1040,22 +991,15 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // SCHEDULE ROW
-  // ════════════════════════════════════════════════
   &__schedule-row {
     display: flex;
     gap: $spacing-sm;
     
-
     @media (max-width: $breakpoint-sm) {
       flex-direction: column;
     }
   }
 
-  // ════════════════════════════════════════════════
-  // BUTTONS
-  // ════════════════════════════════════════════════
   &__btn-generate {
     display: inline-flex;
     align-items: center;
@@ -1144,9 +1088,6 @@
     gap: 8px;
   }
 
-  // ════════════════════════════════════════════════
-  // SPINNER
-  // ════════════════════════════════════════════════
   &__spinner {
     width: 16px;
     height: 16px;
@@ -1161,9 +1102,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // GENERATED THUMBNAIL
-  // ════════════════════════════════════════════════
   &__generated-thumb {
     position: relative;
     display: inline-block;
@@ -1198,9 +1136,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // CONTENT CALENDAR
-  // ════════════════════════════════════════════════
   &__calendar {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -1385,9 +1320,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // BRAND KIT
-  // ════════════════════════════════════════════════
   &__brand-kit {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -1485,9 +1417,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // HISTORY — Improved Grid
-  // ════════════════════════════════════════════════
   &__history {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -1772,9 +1701,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // AI SUGGESTIONS — FAB + Panel
-  // ════════════════════════════════════════════════
   &__ai-fab {
     position: fixed;
     bottom: $spacing-xl;
@@ -1942,9 +1868,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // PREVIEW MODAL
-  // ════════════════════════════════════════════════
   &__overlay {
     position: fixed;
     inset: 0;
@@ -1953,15 +1876,11 @@
     @include flex-center;
     padding: $spacing-xl;
     
-
     @media (max-width: $breakpoint-md) {
       padding: $spacing-md;
     }
   }
 
-  // ════════════════════════════════════════════════
-  // AD TEXT OVERLAY (live preview on image)
-  // ════════════════════════════════════════════════
   &__ad-overlay {
     position: absolute;
     left: 0;
@@ -1998,9 +1917,6 @@
     margin: 0;
   }
 
-  // ════════════════════════════════════════════════
-  // AD EDITOR CONTROLS (in preview sidebar)
-  // ════════════════════════════════════════════════
   &__ad-editor {
     padding: $spacing-md;
     background: $color-gray-50;
@@ -2249,35 +2165,6 @@
     @media (max-width: $breakpoint-sm) {
       flex-direction: column;
     }
-  }
-}
-
-// ════════════════════════════════════════════════
-// KEYFRAME ANIMATIONS
-// ════════════════════════════════════════════════
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 

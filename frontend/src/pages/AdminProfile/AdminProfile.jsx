@@ -9,7 +9,6 @@ const AdminProfile = ({ user, onUpdate }) => {
   const { addNotification } = useNotification();
   const { tenant } = useTenant();
 
-  // Profile form
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -20,7 +19,6 @@ const AdminProfile = ({ user, onUpdate }) => {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileData, setProfileData] = useState(null);
 
-  // Password form
   const [pwForm, setPwForm] = useState({
     current_password: '',
     new_password: '',
@@ -30,10 +28,8 @@ const AdminProfile = ({ user, onUpdate }) => {
   const [showCurrentPw, setShowCurrentPw] = useState(false);
   const [showNewPw, setShowNewPw] = useState(false);
 
-  // Active tab
   const [activeTab, setActiveTab] = useState('info');
 
-  // Fetch full profile data from API
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -51,7 +47,6 @@ const AdminProfile = ({ user, onUpdate }) => {
           });
         }
       } catch {
-        // Fall back to props
       } finally {
         setLoadingProfile(false);
       }
@@ -230,14 +225,12 @@ const AdminProfile = ({ user, onUpdate }) => {
 
   return (
     <div className={b}>
-      {/* Header */}
       <div className={`${b}__header`}>
         <h2 className={`${b}__title`}>Mi Perfil</h2>
         <p className={`${b}__subtitle`}>Gestiona tu cuenta, seguridad e informacion de sesion</p>
       </div>
 
       <div className={`${b}__layout`}>
-        {/* Sidebar card with avatar */}
         <div className={`${b}__sidebar`}>
           <div className={`${b}__avatar-card`}>
             <div className={`${b}__avatar`}>
@@ -291,10 +284,7 @@ const AdminProfile = ({ user, onUpdate }) => {
             )}
           </div>
         </div>
-
-        {/* Main content */}
         <div className={`${b}__main`}>
-          {/* Tabs */}
           <div className={`${b}__tabs`}>
             <button
               className={`${b}__tab ${activeTab === 'info' ? `${b}__tab--active` : ''}`}
@@ -326,8 +316,6 @@ const AdminProfile = ({ user, onUpdate }) => {
               <span>Sesion</span>
             </button>
           </div>
-
-          {/* Info tab */}
           {activeTab === 'info' && (
             <div className={`${b}__panel`}>
               <div className={`${b}__panel-header`}>
@@ -412,8 +400,6 @@ const AdminProfile = ({ user, onUpdate }) => {
               </form>
             </div>
           )}
-
-          {/* Security tab */}
           {activeTab === 'security' && (
             <div className={`${b}__panel`}>
               <div className={`${b}__panel-header`}>
@@ -508,8 +494,6 @@ const AdminProfile = ({ user, onUpdate }) => {
               </form>
             </div>
           )}
-
-          {/* Session tab */}
           {activeTab === 'session' && (
             <div className={`${b}__panel`}>
               <div className={`${b}__panel-header`}>

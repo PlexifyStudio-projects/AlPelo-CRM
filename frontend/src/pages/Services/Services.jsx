@@ -175,7 +175,6 @@ const Services = () => {
       if (!groups[s.category]) groups[s.category] = [];
       groups[s.category].push(s);
     });
-    // Sort groups by CATEGORY_META order
     const order = Object.keys(CATEGORY_META);
     const sorted = {};
     order.forEach(cat => { if (groups[cat]) sorted[cat] = groups[cat]; });
@@ -276,7 +275,6 @@ const Services = () => {
 
   return (
     <div className={b}>
-      {/* Header */}
       <div className={`${b}__header`}>
         <div className={`${b}__header-left`}>
           <h1 className={`${b}__title`}>Servicios</h1>
@@ -287,8 +285,6 @@ const Services = () => {
           Nuevo servicio
         </button>
       </div>
-
-      {/* Stats */}
       <div className={`${b}__stats`}>
         <div className={`${b}__stat`}>
           <span className={`${b}__stat-value`}>{stats.total}</span>
@@ -307,8 +303,6 @@ const Services = () => {
           <span className={`${b}__stat-label`}>Rango de precios</span>
         </div>
       </div>
-
-      {/* Filters */}
       <div className={`${b}__filters`}>
         <div className={`${b}__search`}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
@@ -336,8 +330,6 @@ const Services = () => {
           ))}
         </div>
       </div>
-
-      {/* Service Grid by Category */}
       <div className={`${b}__content`}>
         {Object.keys(grouped).length === 0 ? (
           <EmptyState
@@ -418,8 +410,6 @@ const Services = () => {
           })
         )}
       </div>
-
-      {/* Create/Edit Modal */}
       {showModal && createPortal(
         <div className={`${b}__modal-overlay`} onClick={() => setShowModal(false)}>
           <div className={`${b}__modal`} onClick={(e) => e.stopPropagation()}>

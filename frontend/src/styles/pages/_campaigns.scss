@@ -1,19 +1,12 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================================================
-// CAMPAIGNS — Premium Corporate Marketing Platform v2
-// Elevated SaaS aesthetic with depth, color accents, micro-interactions
-// ============================================================================
-
-// ── Local tokens ──
 $_gradient-hero: linear-gradient(135deg, #1E40AF 0%, #6366F1 50%, #3B82F6 100%);
 $_gradient-success: linear-gradient(135deg, #059669 0%, #10B981 100%);
 $_gradient-sending: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
 $_wa-green: #25D366;
 $_wa-bg: #E8F5E9;
 
-// Filter group colors for visual variety
 $_fg-status: #3B82F6;
 $_fg-activity: #8B5CF6;
 $_fg-service: #F59E0B;
@@ -31,9 +24,6 @@ $_fg-payment: #14B8A6;
   overflow-y: auto;
   @include custom-scrollbar;
 
-  // ============================================
-  // HEADER — Hero style with gradient accent
-  // ============================================
   &__header {
     display: flex;
     align-items: center;
@@ -122,9 +112,6 @@ $_fg-payment: #14B8A6;
     }
   }
 
-  // ============================================
-  // KPI CARDS — Glass cards with colored left accent
-  // ============================================
   &__kpis {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -187,9 +174,6 @@ $_fg-payment: #14B8A6;
     font-weight: $font-weight-medium;
   }
 
-  // ============================================
-  // TABS — Pill-style with gradient active
-  // ============================================
   &__tabs {
     display: flex;
     gap: 6px;
@@ -251,9 +235,6 @@ $_fg-payment: #14B8A6;
     }
   }
 
-  // ============================================
-  // LOADING
-  // ============================================
   &__loading {
     display: flex;
     align-items: center;
@@ -273,9 +254,6 @@ $_fg-payment: #14B8A6;
     animation: campaigns-spin 0.7s linear infinite;
   }
 
-  // ============================================
-  // TEMPLATES SECTION
-  // ============================================
   &__templates {
     display: flex;
     flex-direction: column;
@@ -358,9 +336,6 @@ $_fg-payment: #14B8A6;
     }
   }
 
-  // ============================================
-  // TEMPLATE CARDS — Elevated card design
-  // ============================================
   &__tpl-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -570,16 +545,12 @@ $_fg-payment: #14B8A6;
     }
   }
 
-  // ============================================
-  // SEND CAMPAIGN SECTION
-  // ============================================
   &__send {
     display: flex;
     flex-direction: column;
     gap: $spacing-xl;
   }
 
-  // ── Steps indicator — Premium stepper ──
   &__steps {
     display: flex;
     align-items: center;
@@ -659,7 +630,6 @@ $_fg-payment: #14B8A6;
     flex-shrink: 0;
   }
 
-  // ── Send section common ──
   &__send-section {
     display: flex;
     flex-direction: column;
@@ -691,7 +661,6 @@ $_fg-payment: #14B8A6;
     gap: $spacing-md;
   }
 
-  // ── Template selection cards ──
   &__tpl-select-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -771,9 +740,6 @@ $_fg-payment: #14B8A6;
     border: 1px solid $border-color-light;
   }
 
-  // ============================================
-  // AUDIENCE BUILDER (Step 1) — Two-column layout
-  // ============================================
   &__audience-layout {
     display: grid;
     grid-template-columns: 1fr 380px;
@@ -781,7 +747,6 @@ $_fg-payment: #14B8A6;
     align-items: start;
   }
 
-  // ── Filters panel — Left column, NO internal scroll ──
   &__filters-panel {
     display: flex;
     flex-direction: column;
@@ -793,7 +758,6 @@ $_fg-payment: #14B8A6;
     box-shadow: $shadow-sm;
   }
 
-  // ── Quick segments ──
   &__quick-segments {
     h4 {
       font-size: $font-size-2xs;
@@ -875,7 +839,6 @@ $_fg-payment: #14B8A6;
     }
   }
 
-  // ── Filter groups (accordion) — Colored icons per group ──
   &__filter-group {
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: $border-radius-lg;
@@ -888,7 +851,6 @@ $_fg-payment: #14B8A6;
       box-shadow: $shadow-sm;
     }
 
-    // Color per group via data attribute
     &[data-group="status"] .campaigns__filter-group-icon { background: rgba($_fg-status, 0.12); color: $_fg-status; }
     &[data-group="activity"] .campaigns__filter-group-icon { background: rgba($_fg-activity, 0.12); color: $_fg-activity; }
     &[data-group="service"] .campaigns__filter-group-icon { background: rgba($_fg-service, 0.12); color: $_fg-service; }
@@ -919,7 +881,6 @@ $_fg-payment: #14B8A6;
       background: $color-gray-50;
     }
 
-    // Force all children visible
     * {
       visibility: visible;
       opacity: 1;
@@ -1070,7 +1031,6 @@ $_fg-payment: #14B8A6;
     }
   }
 
-  // ── Audience Preview (right panel) ──
   &__audience-preview {
     display: flex;
     flex-direction: column;
@@ -1263,9 +1223,6 @@ $_fg-payment: #14B8A6;
     padding: 6px 0;
   }
 
-  // ============================================
-  // CONTACTS REVIEW (Step 2) — Table with checkbox selection
-  // ============================================
   &__contacts-action-bar {
     display: flex;
     align-items: center;
@@ -1449,9 +1406,6 @@ $_fg-payment: #14B8A6;
     &--inactivo { background: $color-error-bg; color: $color-error-dark; }
   }
 
-  // ============================================
-  // SENDING SCREEN (Step 3) — Dark terminal aesthetic
-  // ============================================
   &__sending-screen {
     display: flex;
     flex-direction: column;
@@ -1523,7 +1477,6 @@ $_fg-payment: #14B8A6;
     min-height: 450px;
   }
 
-  // ── Queue (left) — White card with list ──
   &__sending-queue {
     background: $color-white;
     border: 1px solid $border-color;
@@ -1637,7 +1590,6 @@ $_fg-payment: #14B8A6;
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
   }
 
-  // ── Log (right) — Dark terminal style ──
   &__sending-log {
     background: $_gradient-sending;
     border-radius: $border-radius-xl;
@@ -1748,9 +1700,6 @@ $_fg-payment: #14B8A6;
     &--sending { color: $color-info; background: rgba(59, 130, 246, 0.12); }
   }
 
-  // ============================================
-  // SHARED BUTTONS
-  // ============================================
   &__btn-primary {
     display: inline-flex;
     align-items: center;
@@ -1845,9 +1794,6 @@ $_fg-payment: #14B8A6;
     }
   }
 
-  // ============================================
-  // TEMPLATE EDITOR MODAL
-  // ============================================
   &__overlay {
     position: fixed;
     top: 0;
@@ -2031,9 +1977,6 @@ $_fg-payment: #14B8A6;
     border-radius: 0 0 $border-radius-2xl $border-radius-2xl;
   }
 
-  // ============================================
-  // CONFIRM MODAL
-  // ============================================
   &__confirm {
     width: 95%;
     max-width: 440px;
@@ -2059,9 +2002,6 @@ $_fg-payment: #14B8A6;
     gap: $spacing-sm;
   }
 
-  // ============================================
-  // ANIMATIONS
-  // ============================================
   @keyframes campaigns-spin {
     to { transform: rotate(360deg); }
   }

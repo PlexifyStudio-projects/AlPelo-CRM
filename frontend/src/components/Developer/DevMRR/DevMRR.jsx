@@ -25,15 +25,6 @@ const DevMRR = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (loading) {
-    return (
-      <div className={b}>
-        <div className={`${b}__header`}><h1 className={`${b}__title`}>MRR & Tendencias</h1></div>
-        <p className={`${b}__loading`}>Cargando historial de ingresos...</p>
-      </div>
-    );
-  }
-
   const months = data?.months || [];
   const projection = data?.projection_next_3 || [0, 0, 0];
 
@@ -59,6 +50,15 @@ const DevMRR = () => {
       })),
     };
   }, [months, projection]);
+
+  if (loading) {
+    return (
+      <div className={b}>
+        <div className={`${b}__header`}><h1 className={`${b}__title`}>MRR & Tendencias</h1></div>
+        <p className={`${b}__loading`}>Cargando historial de ingresos...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={b}>

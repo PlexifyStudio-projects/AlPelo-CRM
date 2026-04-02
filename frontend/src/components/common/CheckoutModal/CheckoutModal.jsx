@@ -96,7 +96,6 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const [cashReceived, setCashReceived] = useState('');
   const [mixedRows, setMixedRows] = useState([{ method: '', amount: '' }]);
 
-  const [sendWhatsApp, setSendWhatsApp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -237,7 +236,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           : paymentMethod === 'mixto'
             ? { splits: mixedRows.map(r => ({ method: r.method, amount: parseInt(r.amount, 10) || 0 })) }
             : null,
-        send_whatsapp_receipt: sendWhatsApp,
+        send_whatsapp_receipt: false,
       };
 
       const res = await fetch(`${API_URL}/checkout`, {
@@ -263,7 +262,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       alert(msg || 'Error al procesar el cobro');
     }
     setSubmitting(false);
-  }, [appointment, selectedClientId, clientName, items, subtotal, discountType, discountPercent, discountFixed, discountAmount, tip, total, paymentMethod, cashReceived, cashChange, mixedRows, sendWhatsApp, onCompleted]);
+  }, [appointment, selectedClientId, clientName, items, subtotal, discountType, discountPercent, discountFixed, discountAmount, tip, total, paymentMethod, cashReceived, cashChange, mixedRows, onCompleted]);
 
   if (!appointment) return null;
 

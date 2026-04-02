@@ -506,7 +506,6 @@ const ContentStudio = () => {
   const { addNotification } = useNotification();
   const workspaceRef = useRef(null);
 
-  // State
   const [selectedType, setSelectedType] = useState(null);
   const [metaStatus, setMetaStatus] = useState(null);
   const [generating, setGenerating] = useState(false);
@@ -524,15 +523,13 @@ const ContentStudio = () => {
   const [calendarSelectedDay, setCalendarSelectedDay] = useState(null);
   const [previewShimmer, setPreviewShimmer] = useState(false);
 
-  // Ad overlay editor
   const [overlayHeadline, setOverlayHeadline] = useState('');
   const [overlaySubtext, setOverlaySubtext] = useState('');
-  const [overlayPosition, setOverlayPosition] = useState('center'); // top, center, bottom
+  const [overlayPosition, setOverlayPosition] = useState('center');
   const [overlayColor, setOverlayColor] = useState('#FFFFFF');
   const [overlayBgOpacity, setOverlayBgOpacity] = useState(0.5);
   const [overlayFontSize, setOverlayFontSize] = useState(48);
 
-  // Brand Kit
   const [brandKit, setBrandKit] = useState({
     logo_url: null,
     primary_color: '#2D5A3D',
@@ -543,14 +540,12 @@ const ContentStudio = () => {
     tone: 'profesional',
   });
 
-  // Image form
   const [imagePrompt, setImagePrompt] = useState('');
   const [imageStyle, setImageStyle] = useState('profesional');
   const [imageColorMood, setImageColorMood] = useState('auto');
   const [imageDimensions, setImageDimensions] = useState('1080x1080');
   const [useBrandOverlay, setUseBrandOverlay] = useState(true);
 
-  // Video form
   const [videoScript, setVideoScript] = useState('');
   const [videoAvatar, setVideoAvatar] = useState('mujer_ejecutiva');
   const [videoLanguage, setVideoLanguage] = useState('es');
@@ -558,27 +553,22 @@ const ContentStudio = () => {
   const [videoBackground, setVideoBackground] = useState('studio');
   const [videoBgColor, setVideoBgColor] = useState('#2D5A3D');
 
-  // Quick post form
   const [quickCaption, setQuickCaption] = useState('');
   const [quickTopic, setQuickTopic] = useState('');
   const [quickPlatforms, setQuickPlatforms] = useState(['facebook', 'instagram']);
   const [quickImageGenerated, setQuickImageGenerated] = useState(null);
 
-  // Story form
   const [storyPrompt, setStoryPrompt] = useState('');
   const [storyTextOverlay, setStoryTextOverlay] = useState('');
   const [storyDuration, setStoryDuration] = useState('10');
   const [storyMusicMood, setStoryMusicMood] = useState('energetico');
 
-  // Schedule
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
 
-  // Caption for publish
   const [publishCaption, setPublishCaption] = useState('');
   const [publishPlatforms, setPublishPlatforms] = useState(['facebook', 'instagram']);
 
-  // Load meta status and history on mount
   useEffect(() => {
     const init = async () => {
       const [status, kit, hist] = await Promise.all([
@@ -595,7 +585,6 @@ const ContentStudio = () => {
     init();
   }, []);
 
-  // Scroll to workspace when type is selected
   useEffect(() => {
     if (selectedType && workspaceRef.current) {
       setTimeout(() => {
@@ -604,7 +593,6 @@ const ContentStudio = () => {
     }
   }, [selectedType]);
 
-  // Reload history
   const reloadHistory = useCallback(async () => {
     setLoadingHistory(true);
     const hist = await contentGeneratorService.getHistory();
@@ -613,14 +601,12 @@ const ContentStudio = () => {
     setLoadingHistory(false);
   }, []);
 
-  // Visible history items (paginated)
   const ITEMS_PER_PAGE = 8;
   const visibleHistory = useMemo(() => {
     return history.slice(0, historyPage * ITEMS_PER_PAGE);
   }, [history, historyPage]);
   const hasMoreHistory = history.length > visibleHistory.length;
 
-  // Stats (computed from history)
   const stats = useMemo(() => {
     if (history.length === 0) return MOCK_STATS;
     return {
@@ -631,7 +617,6 @@ const ContentStudio = () => {
     };
   }, [history]);
 
-  // Render image with text overlay using Canvas API and download
   const renderAndDownload = useCallback(() => {
     const imgSrc = generatedContent?.url || generatedContent?.media_url;
     if (!imgSrc) return;
@@ -644,10 +629,8 @@ const ContentStudio = () => {
       canvas.height = img.height || 1080;
       const ctx = canvas.getContext('2d');
 
-      // Draw background image
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      // Draw dark overlay for text readability
       if (overlayHeadline || overlaySubtext) {
         const posY = overlayPosition === 'top' ? 0 : overlayPosition === 'bottom' ? canvas.height * 0.55 : canvas.height * 0.25;
         const boxH = overlayPosition === 'center' ? canvas.height * 0.5 : canvas.height * 0.45;
@@ -655,7 +638,6 @@ const ContentStudio = () => {
         ctx.fillStyle = `rgba(0, 0, 0, ${overlayBgOpacity})`;
         ctx.fillRect(0, posY, canvas.width, boxH);
 
-        // Draw headline
         if (overlayHeadline) {
           const fontSize = Math.round(overlayFontSize * (canvas.width / 1080));
           ctx.font = `bold ${fontSize}px 'Inter', 'Helvetica Neue', Arial, sans-serif`;
@@ -671,7 +653,6 @@ const ContentStudio = () => {
             ctx.fillText(line, canvas.width / 2, startY + i * lineH);
           });
 
-          // Draw subtext below
           if (overlaySubtext) {
             const subSize = Math.round(fontSize * 0.45);
             ctx.font = `500 ${subSize}px 'Inter', 'Helvetica Neue', Arial, sans-serif`;
@@ -683,7 +664,6 @@ const ContentStudio = () => {
         }
       }
 
-      // Download
       canvas.toBlob((blob) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -697,7 +677,6 @@ const ContentStudio = () => {
     img.src = imgSrc;
   }, [generatedContent, overlayHeadline, overlaySubtext, overlayPosition, overlayColor, overlayBgOpacity, overlayFontSize, addNotification]);
 
-  // Helper: wrap text into lines that fit canvas width
   const wrapText = (ctx, text, maxWidth) => {
     const words = text.split(' ');
     const lines = [];
@@ -715,7 +694,6 @@ const ContentStudio = () => {
     return lines.length ? lines : [text];
   };
 
-  // Progress simulation — smooth 0-100% during real API call
   const startProgress = (messages) => {
     setGenProgress(0);
     setGenMessage(messages[0] || 'Iniciando...');
@@ -723,7 +701,7 @@ const ContentStudio = () => {
     const msgInterval = Math.floor(90 / messages.length);
     const interval = setInterval(() => {
       progress += Math.random() * 4 + 1;
-      if (progress > 95) progress = 95; // Never reach 100 until done
+      if (progress > 95) progress = 95;
       setGenProgress(Math.floor(progress));
       const msgIdx = Math.min(Math.floor(progress / msgInterval), messages.length - 1);
       setGenMessage(messages[msgIdx]);
@@ -1071,11 +1049,9 @@ const ContentStudio = () => {
     setAiSuggestions(newSuggestions);
   };
 
-  // Script character count
   const scriptCharCount = videoScript.length;
   const scriptMaxChars = 500;
 
-  // Type label for history
   const typeLabel = (type) => {
     const labels = { image: 'Imagen', video: 'Video', story: 'Historia', quick: 'Post' };
     return labels[type] || 'Contenido';
@@ -1103,8 +1079,6 @@ const ContentStudio = () => {
             </div>
           </div>
         </div>
-
-        {/* Stats Bar */}
         <div className={`${B}__stats-bar`}>
           <div className={`${B}__stat`}>
             <span className={`${B}__stat-value`}>{stats.generated}</span>
@@ -1169,10 +1143,7 @@ const ContentStudio = () => {
       {selectedType && (
         <div className={`${B}__workspace`} ref={workspaceRef}>
           <div className={`${B}__workspace-panels`}>
-            {/* LEFT PANEL — Configuration */}
             <div className={`${B}__config-panel`}>
-
-              {/* ── IMAGE FORM ── */}
               {selectedType === 'image' && (
                 <div className={`${B}__form`}>
                   <h3 className={`${B}__form-title`}>
@@ -1280,8 +1251,6 @@ const ContentStudio = () => {
                   </button>
                 </div>
               )}
-
-              {/* ── VIDEO FORM ── */}
               {selectedType === 'video' && (
                 <div className={`${B}__form`}>
                   <h3 className={`${B}__form-title`}>
@@ -1405,8 +1374,6 @@ const ContentStudio = () => {
                   </button>
                 </div>
               )}
-
-              {/* ── QUICK POST FORM ── */}
               {selectedType === 'quick' && (
                 <div className={`${B}__form`}>
                   <h3 className={`${B}__form-title`}>
@@ -1560,8 +1527,6 @@ const ContentStudio = () => {
                   </div>
                 </div>
               )}
-
-              {/* ── STORY / REEL FORM ── */}
               {selectedType === 'story' && (
                 <div className={`${B}__form`}>
                   <h3 className={`${B}__form-title`}>
@@ -1654,8 +1619,6 @@ const ContentStudio = () => {
                 </div>
               )}
             </div>
-
-            {/* RIGHT PANEL — Live Preview */}
             <div className={`${B}__preview-panel`}>
               <div className={`${B}__phone-mockup`}>
                 <div className={`${B}__phone-notch`} />
@@ -1691,8 +1654,6 @@ const ContentStudio = () => {
                 </div>
                 <div className={`${B}__phone-home`} />
               </div>
-
-              {/* Platform badges below phone */}
               <div className={`${B}__preview-platforms`}>
                 {(selectedType === 'quick' ? quickPlatforms : publishPlatforms).map((p) => (
                   <span key={p} className={`${B}__preview-platform-badge`}>
@@ -1701,8 +1662,6 @@ const ContentStudio = () => {
                   </span>
                 ))}
               </div>
-
-              {/* Quick action buttons below preview */}
               {generatedContent && (
                 <div className={`${B}__preview-quick-actions`}>
                   <button
@@ -1924,7 +1883,6 @@ const ContentStudio = () => {
                       <span className={`${B}__history-card-type`}>
                         {typeLabel(item.type)}
                       </span>
-                      {/* Hover actions */}
                       <div className={`${B}__history-card-actions`}>
                         <button
                           className={`${B}__history-action-btn`}
@@ -2051,7 +2009,6 @@ const ContentStudio = () => {
             </div>
 
             <div className={`${B}__preview-body`}>
-              {/* Preview image with live text overlay */}
               <div className={`${B}__preview-media`}>
                 <div className={`${B}__preview-frame ${generatedContent.dimensions === '1080x1920' || generatedContent.type === 'story' ? `${B}__preview-frame--vertical` : ''}`} style={{ position: 'relative' }}>
                   {generatedContent.url || generatedContent.media_url || generatedContent.thumbnail_url ? (
@@ -2062,7 +2019,6 @@ const ContentStudio = () => {
                         onLoad={(e) => { e.target.style.opacity = '1'; }}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0, transition: 'opacity 0.5s ease' }}
                       />
-                      {/* Live text overlay preview */}
                       {(overlayHeadline || overlaySubtext) && (
                         <div className={`${B}__ad-overlay`} style={{
                           [overlayPosition === 'top' ? 'top' : overlayPosition === 'bottom' ? 'bottom' : 'top']: overlayPosition === 'center' ? '25%' : '0',
@@ -2090,10 +2046,7 @@ const ContentStudio = () => {
                   )}
                 </div>
               </div>
-
-              {/* Ad text editor + publish controls */}
               <div className={`${B}__preview-controls`}>
-                {/* AD TEXT OVERLAY EDITOR */}
                 <div className={`${B}__ad-editor`}>
                   <h4 className={`${B}__ad-editor-title`}>Texto Publicitario</h4>
                   <div className={`${B}__field`}>

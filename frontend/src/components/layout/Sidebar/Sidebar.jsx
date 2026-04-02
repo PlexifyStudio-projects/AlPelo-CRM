@@ -72,21 +72,6 @@ const SVG_ICONS = {
       <path d="M7 12h6" />
     </svg>
   ),
-  'lina-activity': (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  ),
-  'chat-ai': (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2a4 4 0 0 1 4 4v1a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z" />
-      <path d="M6.5 10a6.5 6.5 0 0 0 11 0" />
-      <circle cx="9" cy="6" r="0.5" fill="currentColor" />
-      <circle cx="15" cy="6" r="0.5" fill="currentColor" />
-      <path d="M8 22v-2a4 4 0 0 1 4-4h0a4 4 0 0 1 4 4v2" />
-      <path d="M12 16v-3" />
-    </svg>
-  ),
   campaigns: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" />

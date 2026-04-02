@@ -1,31 +1,17 @@
-// ============================================
-// Plexify Studio — Design System v3.0
-// Ultra-modern SaaS · Clean · Precision
-// Methodology: BEM (Block Element Modifier)
-// ============================================
-
-// --- Abstracts (no CSS output) ---
-// Must load first: variables, mixins, functions
 @use 'abstracts/variables';
 @use 'abstracts/mixins';
 @use 'abstracts/functions';
 
-// --- Base ---
-// Reset, typography, global styles, animations, utilities
 @use 'base/reset';
 @use 'base/typography';
 @use 'base/animations';
 @use 'base/base';
 @use 'base/utilities';
 
-// --- Layout ---
-// Structural containers: sidebar, header, main wrapper
 @use 'layout/sidebar';
 @use 'layout/header';
 @use 'layout/main-layout';
 
-// --- Components ---
-// Reusable UI blocks (alphabetical)
 @use 'components/add-client-modal';
 @use 'components/add-visit-modal';
 @use 'components/ai-pause-banner';
@@ -51,8 +37,6 @@
 @use 'components/reviews';
 @use 'components/usage-meter';
 
-// --- Pages ---
-// Page-specific styles (alphabetical)
 @use 'pages/admin-profile';
 @use 'pages/agenda';
 @use 'pages/automations';
@@ -68,7 +52,6 @@
 @use 'pages/inventory';
 @use 'pages/lina-activity';
 @use 'pages/login';
-// messaging removed — templates now in campaigns
 @use 'pages/not-found';
 @use 'pages/profile';
 @use 'pages/services';
@@ -77,6 +60,3 @@
 @use 'pages/staff-dashboard';
 @use 'pages/staff-finances';
 @use 'pages/team';
-
-// Landing styles are loaded separately in LandingRouter.jsx
-// via landing-entry.scss — NO se incluyen aquí para reducir bundle CSS del CRM

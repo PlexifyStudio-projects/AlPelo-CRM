@@ -1,10 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// 404 Not Found — Ultra-Modern
-// ============================================
-
 .not-found {
   @include flex-column-center;
   min-height: 60vh;

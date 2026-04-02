@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// MODAL — Modern overlay modal
-// 24px radius, generous padding, backdrop blur
-// ============================================
-
 .modal {
   position: relative;
   width: 90%;
@@ -18,16 +13,12 @@
   z-index: $z-modal;
   animation: modalScaleIn 300ms $ease-out-expo both;
 
-  // Layered shadow for depth
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.03),
     0 4px 12px rgba(0, 0, 0, 0.06),
     0 16px 48px rgba(0, 0, 0, 0.1),
     0 32px 80px rgba(0, 0, 0, 0.06);
 
-  // -----------------------------------------------
-  // OVERLAY / BACKDROP
-  // -----------------------------------------------
   &__overlay {
     position: fixed;
     inset: 0;
@@ -47,9 +38,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // HEADER
-  // -----------------------------------------------
   &__header {
     @include flex-between;
     padding: $spacing-lg 28px;
@@ -97,9 +85,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // BODY
-  // -----------------------------------------------
   &__body {
     flex: 1;
     min-height: 0;
@@ -110,9 +95,6 @@
     @include custom-scrollbar;
   }
 
-  // -----------------------------------------------
-  // SIZES
-  // -----------------------------------------------
   &--sm {
     max-width: 400px;
   }
@@ -126,9 +108,6 @@
     max-height: 90vh;
   }
 
-  // -----------------------------------------------
-  // RESPONSIVE
-  // -----------------------------------------------
   @media (max-width: $breakpoint-md) {
     width: 95%;
     max-height: 92vh;
@@ -174,7 +153,6 @@
     }
   }
 
-  // Exit animation class (apply via JS)
   &--exiting {
     animation: modalScaleOut 200ms $ease-smooth forwards;
   }

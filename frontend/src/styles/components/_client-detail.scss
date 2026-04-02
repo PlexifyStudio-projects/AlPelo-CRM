@@ -1,12 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Plexify Studio - Client Detail Drawer
-// White panel, $shadow-2xl, neutral labels, blue only for primary CTA
-// ============================================
-
-// --- Wrapper (portal root) ---
 .client-detail__wrapper {
   position: fixed;
   inset: 0;
@@ -15,7 +9,6 @@
   justify-content: flex-end;
 }
 
-// --- Overlay ---
 .client-detail__overlay {
   position: fixed;
   inset: 0;
@@ -24,7 +17,6 @@
   animation: cdFadeIn 350ms $ease-out-quart both;
 }
 
-// --- Drawer panel ---
 .client-detail {
   position: fixed;
   top: 0;
@@ -47,7 +39,6 @@
 
   @include custom-scrollbar;
 
-  // --- Accent bar ---
   &__accent-bar {
     height: 3px;
     flex-shrink: 0;
@@ -62,7 +53,6 @@
     &--inactive { @extend .client-detail__accent-bar--inactivo; }
   }
 
-  // --- Header ---
   &__header {
     @include flex-between;
     padding: $spacing-md $spacing-xl;
@@ -254,7 +244,6 @@
     &--nuevo { background: #60A5FA; }
   }
 
-  // --- Close button ---
   &__close {
     width: 36px;
     height: 36px;
@@ -281,7 +270,6 @@
     }
   }
 
-  // --- Tabs ---
   &__tabs {
     display: flex;
     padding: 0 $spacing-xl;
@@ -339,7 +327,6 @@
     }
   }
 
-  // --- Content ---
   &__content {
     flex: 1;
     overflow-y: auto;
@@ -360,7 +347,6 @@
     }
   }
 
-  // --- Stats grid ---
   &__stats-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -443,7 +429,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // --- Info sections ---
   &__info-section {
     margin-bottom: $spacing-xl;
   }
@@ -537,7 +522,6 @@
     @include truncate;
   }
 
-  // --- Preferences grid ---
   &__pref-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -575,7 +559,6 @@
     font-weight: $font-weight-medium;
   }
 
-  // --- Tags ---
   &__tags {
     display: flex;
     flex-wrap: wrap;
@@ -626,7 +609,6 @@
     }
   }
 
-  // --- Analytics tab ---
   &__loyalty-card {
     background: $color-gray-50;
     border: $border-width solid $color-gray-200;
@@ -685,7 +667,6 @@
     margin-top: $spacing-xs;
   }
 
-  // --- Loyalty program section ---
   &__loyalty-section {
     background: $color-gray-50;
     border: $border-width solid $color-gray-200;
@@ -955,7 +936,6 @@
     }
   }
 
-  // --- History timeline ---
   &__history {
     @include flex-column;
     gap: 0;
@@ -1079,7 +1059,6 @@
     line-height: $line-height-relaxed;
   }
 
-  // --- Stars ---
   &__stars {
     display: inline-flex;
     gap: 1px;
@@ -1098,7 +1077,6 @@
     font-style: italic;
   }
 
-  // --- Notes ---
   &__notes {
     @include flex-column;
     gap: $spacing-md;
@@ -1198,7 +1176,6 @@
     margin-bottom: $spacing-sm;
   }
 
-  // --- Empty state ---
   &__empty {
     @include flex-column-center;
     padding: $spacing-3xl 0;
@@ -1210,7 +1187,6 @@
     p { margin: 0; }
   }
 
-  // --- Footer ---
   &__footer {
     display: flex;
     justify-content: flex-end;
@@ -1234,9 +1210,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // RESPONSIVE
-  // -----------------------------------------------
   @media (max-width: $breakpoint-md) {
     width: 85vw;
   }
@@ -1266,7 +1239,6 @@
   }
 }
 
-// --- Keyframes ---
 @keyframes cdSlideInRight {
   from {
     transform: translateX(100%);

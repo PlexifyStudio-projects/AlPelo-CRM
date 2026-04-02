@@ -1,10 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Admin Profile — Ultra-Modern
-// ============================================
-
 .admin-profile {
   @include page-enter;
   max-width: 960px;
@@ -156,7 +152,6 @@
     span { @include truncate; }
   }
 
-  // TABS
   &__tabs {
     display: flex;
     gap: 0;
@@ -194,7 +189,6 @@
     }
   }
 
-  // PANEL
   &__panel {
     background: $color-white;
     border: $border-width solid $border-color;
@@ -223,7 +217,6 @@
     color: $color-gray-400;
   }
 
-  // FORM
   &__form {
     @include flex-column;
     gap: $spacing-lg;
@@ -365,7 +358,6 @@
     }
   }
 
-  // SESSION
   &__session-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

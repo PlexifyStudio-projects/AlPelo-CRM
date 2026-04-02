@@ -122,12 +122,10 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [showStaffDrop, setShowStaffDrop] = useState(false);
   const staffDropRef = useRef(null);
 
-
   const [showModal, setShowModal] = useState(false);
   const [editingApt, setEditingApt] = useState(null);
   const [formData, setFormData] = useState({ date: toISO(new Date()), notes: '', status: 'confirmed' });
   const [submitting, setSubmitting] = useState(false);
-
 
   const [clientSearch, setClientSearch] = useState('');
   const [clientResults, setClientResults] = useState([]);
@@ -137,7 +135,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [newClientName, setNewClientName] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
 
-  // ── Modal: services + per-service assignments ──
   const [serviceAssignments, setServiceAssignments] = useState([]);
   const [serviceSearch, setServiceSearch] = useState('');
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
@@ -146,7 +143,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const { addNotification } = useNotification();
   const scrollRef = useRef(null);
 
-  // ── Staff completion modal ──
   const [staffCompleteApt, setStaffCompleteApt] = useState(null);
   const [checkoutApt, setCheckoutApt] = useState(null);
   const [staffPaymentCode, setStaffPaymentCode] = useState('');
@@ -156,7 +152,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
 
-  // Close search dropdown on click outside
   useEffect(() => {
     const handler = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setSearchOpen(false); };
     document.addEventListener('mousedown', handler);
@@ -164,14 +159,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   }, []);
 
   const [draggingApt, setDraggingApt] = useState(null);
-  const [dropTarget, setDropTarget] = useState(null);  // { date, time }
+  const [dropTarget, setDropTarget] = useState(null);
 
   const handleDragStart = useCallback((e, apt) => {
     if (isStaffMode || apt.status === 'completed' || apt.status === 'paid' || apt.status === 'cancelled') return;
     setDraggingApt(apt);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', String(apt.id));
-    // Make ghost semi-transparent
     if (e.target) e.target.style.opacity = '0.5';
   }, [isStaffMode]);
 
@@ -195,7 +189,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     const newDate = toISO(date);
     const newTime = time;
 
-    // Skip if same date+time
     if (newDate === draggingApt.date && newTime === draggingApt.time) {
       setDraggingApt(null);
       return;
@@ -211,7 +204,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setDraggingApt(null);
   }, [draggingApt, addNotification]);
 
-  // ─── Calendar derived ──────────────────────────────
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
   const columns = useMemo(() => view === 'week' ? weekDays : [currentDate], [view, weekDays, currentDate]);
   const baseSlotH = view === 'week' ? 28 : 32;
@@ -229,7 +221,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return map;
   }, [services]);
 
-  // ─── Modal derived ─────────────────────────────────
   const selectedServiceIds = useMemo(() => serviceAssignments.map(a => a.serviceId), [serviceAssignments]);
 
   const totalDuration = useMemo(() =>
@@ -256,7 +247,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return groups;
   }, [filteredServices]);
 
-  // Quick date buttons (next 7 days)
   const quickDates = useMemo(() => {
     const dates = [];
     const today = new Date();
@@ -269,7 +259,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return dates;
   }, []);
 
-  // ─── Load data ─────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -293,11 +282,9 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // ─── Close staff dropdown on outside click ────────
   useEffect(() => {
     if (!showStaffDrop) return;
     const handler = (e) => {
-      // Check if click is inside the trigger button or the portal menu
       if (staffDropRef.current && staffDropRef.current.contains(e.target)) return;
       if (e.target.closest(`.${b}__staff-drop-menu`)) return;
       setShowStaffDrop(false);
@@ -306,7 +293,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, [showStaffDrop]);
 
-  // ─── Client search (debounced) ─────────────────────
   useEffect(() => {
     if (!clientSearch.trim() || isNewClient) { setClientResults([]); return; }
     const timer = setTimeout(async () => {
@@ -320,13 +306,10 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return () => clearTimeout(timer);
   }, [clientSearch, isNewClient]);
 
-  // ─── Load appointments for modal date ──────────────
   useEffect(() => {
     if (!showModal || !formData.date) return;
-    // Immediately use locally-loaded appointments (no blank flash)
     const local = appointments.filter(a => a.date === formData.date && a.status !== 'cancelled');
     setModalDayApts(local);
-    // Then refresh from API for any changes by other users / Lina
     const load = async () => {
       try {
         const apts = await appointmentService.list({ date_from: formData.date, date_to: formData.date });
@@ -336,7 +319,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     load();
   }, [showModal, formData.date, appointments]);
 
-  // ─── Per-service availability computation ──────────
   const computeSlots = useCallback((staffId, serviceId, assignmentIndex) => {
     const svc = serviceMap[serviceId];
     const dur = svc?.duration_minutes || 30;
@@ -345,7 +327,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       .filter(a => a.staff_id === staffId && (!editingApt || a.id !== editingApt.id))
       .map(a => ({ s: timeToMin(a.time), e: timeToMin(a.time) + (a.duration_minutes || 30) }));
 
-    // Block times from OTHER assignments using same staff
     serviceAssignments.forEach((other, j) => {
       if (j === assignmentIndex || !other.staffId || !other.time) return;
       if (parseInt(other.staffId) !== staffId) return;
@@ -357,12 +338,10 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     const isTodayDate = formData.date === toISO(now);
     const nowMin = isTodayDate ? now.getHours() * 60 + now.getMinutes() : 0;
 
-    // When editing, always include the original appointment time so user can save without changes
     const editOriginalMin = editingApt ? timeToMin(editingApt.time) : null;
 
     const slots = [];
     for (let m = HOURS_START * 60; m < HOURS_END * 60; m += 15) {
-      // Allow past times only for the editing appointment's original time
       if (isTodayDate && m < nowMin && m !== editOriginalMin) continue;
       const end = m + dur;
       if (end > HOURS_END * 60) break;
@@ -381,7 +360,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setServiceAssignments(prev => prev.map((a, j) => j === index ? { ...a, ...updates } : a));
   };
 
-  // ─── Calendar filtered & laid out ──────────────────
   const filtered = useMemo(() => {
     let list = [...appointments];
     const activeFilter = isStaffMode ? String(staffOnlyId) : staffFilter;
@@ -389,7 +367,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return list;
   }, [appointments, staffFilter, isStaffMode, staffOnlyId]);
 
-  // ─── Per-column appointments ─────────────────────
   const colApts = useMemo(() => {
     return columns.map(day => {
       const dayStr = toISO(day);
@@ -397,7 +374,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     });
   }, [columns, filtered]);
 
-  // ─── Slot-based layout (15-min slots, each grows to fit) ──
   const slotHeights = useMemo(() => {
     const heights = new Array(TOTAL_SLOTS).fill(baseSlotH);
     colApts.forEach(apts => {
@@ -422,14 +398,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   const totalH = slotTops[TOTAL_SLOTS];
 
-  // Hour boundary positions (for labels & grid lines)
   const hourTop = (h) => slotTops[(h - HOURS_START) * SLOTS_PER_HOUR];
   const hourHeight = (h) => {
     const si = (h - HOURS_START) * SLOTS_PER_HOUR;
     return slotTops[si + SLOTS_PER_HOUR] - slotTops[si];
   };
 
-  // Minute to px (for now-line)
   const minToPx = (m) => {
     const si = Math.max(0, Math.min(Math.floor((m - HOURS_START * 60) / SLOT_MIN), TOTAL_SLOTS - 1));
     const slotStart = HOURS_START * 60 + si * SLOT_MIN;
@@ -437,7 +411,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return slotTops[si] + frac * slotHeights[si];
   };
 
-  // ─── Scroll to current time on load ────────────────
   useEffect(() => {
     if (!loading && scrollRef.current) {
       const now = new Date();
@@ -446,7 +419,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     }
   }, [loading, view, currentDate, slotTops]);
 
-  // ─── Stats ─────────────────────────────────────────
   const stats = useMemo(() => {
     const todayStr = toISO(new Date());
     const todayAll = appointments.filter(a => a.date === todayStr);
@@ -461,7 +433,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     };
   }, [appointments]);
 
-  // ─── Smart Search Results ──────────────────────────
   const searchResults = useMemo(() => {
     if (!searchQuery || searchQuery.length < 2) return [];
     const q = searchQuery.toLowerCase().trim();
@@ -475,7 +446,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         return haystack.includes(q);
       })
       .sort((a, b) => {
-        // Today first, then future, then past
         const today = toISO(new Date());
         const aToday = a.date === today ? 0 : a.date > today ? 1 : 2;
         const bToday = b.date === today ? 0 : b.date > today ? 1 : 2;
@@ -485,7 +455,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       .slice(0, 15);
   }, [searchQuery, appointments]);
 
-  // ─── Navigation ────────────────────────────────────
   const navLabel = useMemo(() => {
     if (view === 'day') {
       const d = currentDate;
@@ -513,17 +482,14 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const goToday = () => setCurrentDate(new Date());
   const switchToDay = (date) => { setCurrentDate(date); setView('day'); };
 
-  // ─── Column appointment counts ─────────────────────
   const colCounts = useMemo(() => {
     return colApts.map(apts => apts.length);
   }, [colApts]);
 
-  // ─── Total appointments this week ──────────────────
   const weekTotal = useMemo(() => {
     return filtered.length;
   }, [filtered]);
 
-  // ─── Modal open/close ──────────────────────────────
   const resetModal = () => {
     setSelectedClient(null);
     setIsNewClient(false);
@@ -557,7 +523,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setServiceAssignments(prev => prev.map(a => ({ ...a, time: '' })));
   };
 
-  // ─── Submit ────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -599,7 +564,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
       if (editingApt) {
         const first = serviceAssignments[0];
-        // Only send fields that changed to avoid Pydantic coercion issues
         const updateData = {};
         if (clientName !== editingApt.client_name) updateData.client_name = clientName;
         if (clientPhone !== editingApt.client_phone) updateData.client_phone = clientPhone;
@@ -661,13 +625,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     } catch (err) { addNotification(err.message, 'error'); }
   };
 
-  // ─── Now line ──────────────────────────────────────
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const showNow = nowMin >= HOURS_START * 60 && nowMin < HOURS_END * 60;
   const nowTop = minToPx(nowMin);
 
-  // ─── Loading state ─────────────────────────────────
   if (loading) {
     return (
       <div className={b}>
@@ -688,11 +650,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     );
   }
 
-  // ═══════════════════════════════════════════════════
   return (
     <div className={`${b}${draggingApt ? ` ${b}--dragging` : ''}`}>
-
-      {/* ── TOPBAR ── */}
       <div className={`${b}__topbar`}>
         <div className={`${b}__topbar-left`}>
           <h1 className={`${b}__title`}>Agenda</h1>
@@ -718,8 +677,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           )}
         </div>
       </div>
-
-      {/* ── OVERVIEW BAR ── */}
       <div className={`${b}__overview`}>
         <div className={`${b}__ov-stats`}>
           <div className={`${b}__ov-stat`}>
@@ -756,7 +713,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         </div>
 
         <div className={`${b}__ov-right`}>
-          {/* Staff color legend — hidden in staff mode */}
+
           {!isStaffMode && staff.length > 0 && (
             <div className={`${b}__staff-legend`}>
               {staff.slice(0, 5).map((s, i) => (
@@ -810,8 +767,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           </div>
         </div>
       </div>
-
-      {/* ── SMART SEARCH BAR ── */}
       <div className={`${b}__search`} ref={searchRef}>
         <div className={`${b}__search-box ${searchOpen ? `${b}__search-box--open` : ''}`}>
           <SearchIcon />
@@ -842,15 +797,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
               return (
                 <button key={apt.id} className={`${b}__search-result`} onClick={() => {
                   setSearchOpen(false);
-                  // Navigate to the day of this appointment
                   const aptDate = new Date(apt.date + 'T12:00:00');
                   setCurrentDate(aptDate);
                   if (view === 'week') {
-                    // Already shows the week
                   } else {
                     setView('day');
                   }
-                  // Open edit modal
                   setTimeout(() => openEdit(apt), 200);
                 }}>
                   <div className={`${b}__search-result-status`} style={{ background: sc }} />
@@ -884,10 +836,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           </div>
         )}
       </div>
-
-      {/* Precision scheduling removed — was "Horarios sugeridos" */}
-
-      {/* ── CALENDAR ── */}
       <div className={`${b}__calendar`}>
         <div className={`${b}__cal-scroll`} ref={scrollRef}>
 
@@ -911,7 +859,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           </div>
 
           <div className={`${b}__cal-grid`} style={{ gridTemplateColumns: gridCols }}>
-            {/* ── Time column with 15-min labels ── */}
+
             <div className={`${b}__time-col`} style={{ height: `${totalH}px` }}>
               {HOURS.map(h => {
                 const si0 = (h - HOURS_START) * SLOTS_PER_HOUR;
@@ -926,8 +874,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 ));
               })}
             </div>
-
-            {/* ── Day columns ── */}
             {columns.map((day, ci) => {
               const today = isToday(day);
               const apts = colApts[ci] || [];
@@ -940,11 +886,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
               return (
                 <div key={ci} className={`${b}__day-col ${today ? `${b}__day-col--today` : ''} ${ci % 2 === 1 ? `${b}__day-col--alt` : ''}`} style={{ height: `${totalH}px` }}>
-                  {/* Hour grid lines */}
+
                   {HOURS.map(h => (
                     <div key={`hl-${h}`} className={`${b}__hour-line`} style={{ top: `${hourTop(h)}px` }} />
                   ))}
-                  {/* 15-min grid lines */}
+
                   {HOURS.map(h => {
                     const base = (h - HOURS_START) * SLOTS_PER_HOUR;
                     return [
@@ -953,16 +899,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                       <div key={`q3-${h}`} className={`${b}__quarter-line`} style={{ top: `${slotTops[base + 3]}px` }} />,
                     ];
                   })}
-
-                  {/* Empty state for the column */}
                   {apts.length === 0 && today && (
                     <div className={`${b}__empty-col`}>
                       <EmptyCalIcon />
                       <span>Sin citas</span>
                     </div>
                   )}
-
-                  {/* Event stacks per slot */}
                   {Object.entries(slotGroups).map(([si, group]) => (
                     <div key={si} className={`${b}__event-stack`} style={{ top: `${slotTops[parseInt(si)]}px` }}>
                       {group.map((apt, evIdx) => {
@@ -1009,14 +951,14 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                       })}
                     </div>
                   ))}
-                  {/* Now line */}
+
                   {today && showNow && (
                     <div className={`${b}__now`} style={{ top: `${nowTop}px` }}>
                       <div className={`${b}__now-dot`} />
                       <div className={`${b}__now-line`} />
                     </div>
                   )}
-                  {/* Clickable + droppable slots (15-min each) — hidden for staff */}
+
                   {!isStaffMode && HOURS.map(h => {
                     const dt = toISO(day);
                     return [0, 15, 30, 45].map((m) => {
@@ -1043,9 +985,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════
-          MODAL — Appointment Create / Edit
-         ══════════════════════════════════════════════ */}
       {showModal && createPortal(
         <div className={`${b}__overlay`} onClick={() => setShowModal(false)}>
           <div className={`${b}__modal`} onClick={e => e.stopPropagation()}>
@@ -1063,8 +1002,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             </div>
 
             <form onSubmit={handleSubmit} className={`${b}__modal-body`}>
-
-              {/* ── CLIENT ── */}
               <div className={`${b}__section`}>
                 <span className={`${b}__section-label`}>Cliente</span>
                 {selectedClient && !isNewClient ? (
@@ -1131,8 +1068,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                   </div>
                 )}
               </div>
-
-              {/* ── SERVICES (multi) ── */}
               <div className={`${b}__section`}>
                 <span className={`${b}__section-label`}>
                   {serviceAssignments.length > 1 ? `Servicios (${serviceAssignments.length})` : 'Servicio'}
@@ -1197,8 +1132,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                   )}
                 </div>
               </div>
-
-              {/* ── DATE (quick-pick + input) ── */}
               {serviceAssignments.length > 0 && (
                 <div className={`${b}__section`}>
                   <span className={`${b}__section-label`}>Fecha</span>
@@ -1219,8 +1152,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                   <input type="date" value={formData.date} onChange={e => handleDateChange(e.target.value)} required />
                 </div>
               )}
-
-              {/* ── PER-SERVICE AVAILABILITY ── */}
               {serviceAssignments.length > 0 && formData.date && serviceAssignments.map((assignment, aIdx) => {
                 const svc = serviceMap[assignment.serviceId];
                 if (!svc) return null;
@@ -1249,8 +1180,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                                 className={`${b}__avail-card ${active ? `${b}__avail-card--on` : ''} ${freeSlots === 0 ? `${b}__avail-card--full` : ''}`}
                                 style={{ '--sc': color }}
                                 onClick={() => {
-                                  if (active) return; // don't clear time if same staff
-                                  // Try to keep current time if available for new staff
+                                  if (active) return;
                                   const keepTime = assignment.time && s.availableSlots.includes(timeToMin(assignment.time)) ? assignment.time : '';
                                   updateAssignment(aIdx, { staffId: String(s.id), time: keepTime });
                                 }}
@@ -1276,7 +1206,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                           const slots = computeSlots(selStaffId, assignment.serviceId, aIdx);
                           const selStaff = staff.find(s => s.id === selStaffId);
 
-                          // Compute ALL busy ranges for this staff (including current apt) for visual display
                           const busyRanges = modalDayApts
                             .filter(a => a.staff_id === selStaffId && a.status !== 'cancelled')
                             .map(a => ({
@@ -1287,7 +1216,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                               type: 'staff',
                             }));
 
-                          // Client busy ranges — show when the SELECTED CLIENT has appointments with OTHER staff
                           const clientBusyRanges = selectedClient ? modalDayApts
                             .filter(a => a.client_id === selectedClient.id && a.staff_id !== selStaffId && a.status !== 'cancelled')
                             .map(a => ({
@@ -1299,7 +1227,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
                           const allBusyRanges = [...busyRanges, ...clientBusyRanges];
 
-                          // Generate ALL time slots for display (available + busy)
                           const allSlots = [];
                           for (let m = HOURS_START * 60; m < HOURS_END * 60; m += 15) {
                             const staffOverlap = busyRanges.find(r => m >= r.s && m < r.e);
@@ -1358,7 +1285,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 );
               })}
 
-              {/* ── STATUS (edit) ── */}
               {editingApt && (
                 <div className={`${b}__section`}>
                   <span className={`${b}__section-label`}>Estado</span>
@@ -1376,14 +1302,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 </div>
               )}
 
-              {/* ── NOTES ── */}
               <div className={`${b}__section`}>
                 <span className={`${b}__section-label`}>Notas (opcional)</span>
                 <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Preferencias, indicaciones especiales..." rows={2} />
               </div>
 
-              {/* ── FOOTER ── */}
               {(() => {
                 const missingClient = !selectedClient && !isNewClient;
                 const missingService = !serviceAssignments.length;
@@ -1418,7 +1342,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         document.body
       )}
 
-      {/* ── STAFF COMPLETION MODAL ── */}
       {staffCompleteApt && isStaffMode && createPortal(
         <div className={`${b}__overlay`} onClick={() => setStaffCompleteApt(null)}>
           <div className={`${b}__staff-complete`} onClick={e => e.stopPropagation()}>
@@ -1484,7 +1407,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         </div>,
         document.body
       )}
-      {/* ── CHECKOUT MODAL ── */}
+
       {checkoutApt && (
         <CheckoutModal
           appointment={checkoutApt}

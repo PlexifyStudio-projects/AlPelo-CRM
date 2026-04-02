@@ -467,7 +467,6 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
 
   return (
     <>
-      {/* KPIs */}
       <div className="finances__kpis">
         <div className="finances__kpi-card finances__kpi-card--primary">
           <div className="finances__kpi-icon finances__kpi-icon--primary">{Icons.dollar}</div>
@@ -523,8 +522,6 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
       </div>
 
       {!loading && hasData && <InsightsPanel data={data} />}
-
-      {/* Chart + Services */}
       <div className="finances__body">
         <div className="finances__card finances__card--chart">
           <div className="finances__card-header">
@@ -584,8 +581,6 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
           )}
         </div>
       </div>
-
-      {/* Categories + Staff + Payment Methods */}
       <div className="finances__body finances__body--bottom">
         <div className="finances__card">
           <div className="finances__card-header">
@@ -612,16 +607,10 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
           )}
         </div>
       </div>
-
-      {/* Owner Profit Panel */}
       {!loading && <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-
-      {/* Payment Methods (Donut Chart) */}
       <div className="finances__body finances__body--bottom">
         {!loading && <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       </div>
-
-      {/* AI Widget */}
       {!loading && <FinanceAIWidget period={period} dateFrom={dateFrom} dateTo={dateTo} />}
     </>
   );
@@ -647,7 +636,6 @@ const OwnerProfitPanel = ({ period, dateFrom, dateTo }) => {
 
   return (
     <div className="finances__owner-panel">
-      {/* Left: big number hero */}
       <div className="finances__owner-hero">
         <span className="finances__owner-eyebrow">Tu Ganancia Neta</span>
         <span className={`finances__owner-big ${isProfit ? '' : 'finances__owner-big--loss'}`}>
@@ -660,8 +648,6 @@ const OwnerProfitPanel = ({ period, dateFrom, dateTo }) => {
           <span className="finances__owner-margin-label">Margen {pnl.margin_pct}%</span>
         </div>
       </div>
-
-      {/* Right: breakdown */}
       <div className="finances__owner-breakdown">
         <div className="finances__owner-row">
           <div className="finances__owner-row-left">
@@ -693,8 +679,6 @@ const OwnerProfitPanel = ({ period, dateFrom, dateTo }) => {
             <span className="finances__owner-value finances__owner-value--muted">{formatCOP(estimatedIva)}</span>
           </div>
         )}
-
-        {/* Mini visual bar showing distribution */}
         <div className="finances__owner-dist">
           {pnl.total_revenue > 0 && (
             <>
@@ -791,8 +775,6 @@ const FinanceAIWidget = ({ period, dateFrom, dateTo }) => {
     </div>
   );
 };
-
-
 const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
 
 const TabReportes = ({ period, dateFrom, dateTo }) => {
@@ -858,15 +840,12 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
 
   return (
     <>
-      {/* Export button */}
       <div className="finances__section-header">
         <h3 className="finances__section-title">Reportes Avanzados</h3>
         <button className="finances__action-btn" onClick={handleExport}>
           {Icons.download} Exportar CSV
         </button>
       </div>
-
-      {/* Period Comparison Cards */}
       <div className="finances__comparison-grid">
         {comparisonItems.map((item, i) => {
           const isPositive = item.invertColor ? item.change <= 0 : item.change >= 0;
@@ -889,8 +868,6 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
           );
         })}
       </div>
-
-      {/* Revenue by Staff — Ranking + Chart */}
       <div className="finances__body">
         <div className="finances__card">
           <div className="finances__card-header">
@@ -924,8 +901,6 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
             </table>
           </div>
         </div>
-
-        {/* Revenue by Service */}
         <div className="finances__card">
           <div className="finances__card-header">
             <h2 className="finances__card-title">{Icons.scissors} Revenue por Servicio</h2>
@@ -961,8 +936,6 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
           </div>
         </div>
       </div>
-
-      {/* Weekday Heatmap / Bar Chart */}
       {weekdayData.length > 0 && (
         <div className="finances__card">
           <div className="finances__card-header">
@@ -997,8 +970,6 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
           </div>
         </div>
       )}
-
-      {/* Category Breakdown (Stacked) */}
       {(analytics.revenue_by_category || []).length > 0 && (
         <div className="finances__card">
           <div className="finances__card-header">
@@ -1018,8 +989,6 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
           </div>
         </div>
       )}
-
-      {/* Summary Insights */}
       <div className="finances__report-summary">
         <div className="finances__report-summary-item">
           <span className="finances__report-summary-label">Clientes Unicos</span>
@@ -1041,8 +1010,6 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
     </>
   );
 };
-
-
 const TabGastos = ({ period, dateFrom, dateTo }) => {
   const { addNotification } = useNotification();
   const [expenses, setExpenses] = useState([]);
@@ -1136,7 +1103,6 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
 
   return (
     <>
-      {/* P&L Card */}
       {pnl && (
         <div className="finances__pnl-card">
           <div className="finances__pnl-row">
@@ -1161,16 +1127,12 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
           <span className="finances__pnl-margin">Margen: {pnl.margin_pct}%</span>
         </div>
       )}
-
-      {/* Header + Add button */}
       <div className="finances__section-header">
         <h3 className="finances__section-title">Gastos del periodo</h3>
         <button className="finances__action-btn" onClick={() => { setShowForm(!showForm); setEditingId(null); setForm(emptyForm); }}>
           {Icons.plus} Nuevo Gasto
         </button>
       </div>
-
-      {/* Expense Form — Redesigned (Fase 3) */}
       {showForm && (
         <form className="finances__expense-form" onSubmit={handleSubmit}>
           <p className="finances__form-subtitle">Detalle del gasto</p>
@@ -1216,8 +1178,6 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
           </div>
         </form>
       )}
-
-      {/* Expense Summary */}
       {summary && summary.by_category && summary.by_category.length > 0 && (
         <div className="finances__card">
           <div className="finances__card-header">
@@ -1243,8 +1203,6 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
           </div>
         </div>
       )}
-
-      {/* Expense List */}
       <div className="finances__table-wrap">
         <table className="finances__table">
           <thead>
@@ -1297,8 +1255,6 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
     </>
   );
 };
-
-
 const STAFF_COLORS = ['#2D5A3D', '#8B6914', '#3B82F6', '#EF4444', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
 
 const TabComisiones = ({ period, dateFrom, dateTo }) => {
@@ -1348,6 +1304,25 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
     }
   };
 
+  const { totalCommissions, totalServices, avgRate, maxPayout, staffData } = useMemo(() => {
+    const tc = payouts.reduce((s, p) => s + p.commission_amount, 0);
+    const tr = payouts.reduce((s, p) => s + p.total_revenue, 0);
+    const ts = payouts.reduce((s, p) => s + p.services_count, 0);
+    const ar = configs.length > 0 ? configs.reduce((s, c) => s + c.default_rate, 0) / configs.length : 0.40;
+    const mp = Math.max(...payouts.map(p => p.commission_amount), 1);
+    const sd = configs.map((cfg, i) => {
+      const payout = payouts.find(p => p.staff_id === cfg.staff_id);
+      return {
+        ...cfg,
+        revenue: payout?.total_revenue || 0,
+        commission: payout?.commission_amount || 0,
+        services: payout?.services_count || 0,
+        color: STAFF_COLORS[i % STAFF_COLORS.length],
+      };
+    });
+    return { totalCommissions: tc, totalRevenue: tr, totalServices: ts, avgRate: ar, maxPayout: mp, staffData: sd };
+  }, [configs, payouts]);
+
   if (loading) {
     return (
       <div className="finances__comm-skeleton">
@@ -1368,28 +1343,8 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
     );
   }
 
-  const { totalCommissions, totalServices, avgRate, maxPayout, staffData } = useMemo(() => {
-    const tc = payouts.reduce((s, p) => s + p.commission_amount, 0);
-    const tr = payouts.reduce((s, p) => s + p.total_revenue, 0);
-    const ts = payouts.reduce((s, p) => s + p.services_count, 0);
-    const ar = configs.length > 0 ? configs.reduce((s, c) => s + c.default_rate, 0) / configs.length : 0.40;
-    const mp = Math.max(...payouts.map(p => p.commission_amount), 1);
-    const sd = configs.map((cfg, i) => {
-      const payout = payouts.find(p => p.staff_id === cfg.staff_id);
-      return {
-        ...cfg,
-        revenue: payout?.total_revenue || 0,
-        commission: payout?.commission_amount || 0,
-        services: payout?.services_count || 0,
-        color: STAFF_COLORS[i % STAFF_COLORS.length],
-      };
-    });
-    return { totalCommissions: tc, totalRevenue: tr, totalServices: ts, avgRate: ar, maxPayout: mp, staffData: sd };
-  }, [configs, payouts]);
-
   return (
     <>
-      {/* Summary KPIs */}
       <div className="finances__kpis">
         <div className="finances__kpi-card finances__kpi-card--primary">
           <div className="finances__kpi-icon finances__kpi-icon--primary">{Icons.users}</div>
@@ -1420,8 +1375,6 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
           </div>
         </div>
       </div>
-
-      {/* Commissions distribution bar */}
       {payouts.length > 0 && (
         <div className="finances__comm-dist">
           <div className="finances__comm-dist-bar">
@@ -1447,8 +1400,6 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
           </div>
         </div>
       )}
-
-      {/* Staff cards */}
       <div className="finances__section-header">
         <h3 className="finances__section-title">Equipo y Comisiones</h3>
       </div>
@@ -1461,7 +1412,6 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
 
           return (
             <div key={staff.staff_id} className="finances__staff-card" style={{ animationDelay: `${0.05 + i * 0.06}s` }}>
-              {/* Top: avatar + name + rate badge */}
               <div className="finances__sc-header">
                 <div className="finances__sc-avatar" style={{ background: `${staff.color}18`, color: staff.color, borderColor: `${staff.color}30` }}>
                   {initials}
@@ -1505,8 +1455,6 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
                   )}
                 </div>
               </div>
-
-              {/* Financial row */}
               <div className="finances__sc-financials">
                 <div className="finances__sc-fin-item">
                   <span className="finances__sc-fin-label">Ingresos generados</span>
@@ -1520,8 +1468,6 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
                   </span>
                 </div>
               </div>
-
-              {/* Progress bar */}
               <div className="finances__sc-bar-wrap">
                 <div className="finances__sc-bar-bg">
                   <div className="finances__sc-bar-fill" style={{ width: `${payoutPct}%`, background: staff.color }} />
@@ -1542,8 +1488,6 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
     </>
   );
 };
-
-
 const STATUS_COLORS = { draft: '#8E8E85', sent: '#3B82F6', paid: '#10B981', cancelled: '#EF4444' };
 const STATUS_LABELS = { draft: 'Borrador', sent: 'Enviada', paid: 'Pagada', cancelled: 'Anulada' };
 const STATUS_ICONS = {
@@ -1759,7 +1703,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
 
   return (
     <>
-      {/* KPIs */}
       <div className="finances__kpis">
         <div className="finances__kpi-card finances__kpi-card--primary">
           <div className="finances__kpi-icon finances__kpi-icon--primary">{Icons.fileText}</div>
@@ -1792,8 +1735,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
           </div>
         )}
       </div>
-
-      {/* Action bar */}
       <div className="finances__section-header">
         <h3 className="finances__section-title">
           {invoices.length > 0 ? `${invoices.length} factura${invoices.length !== 1 ? 's' : ''}` : 'Facturas'}
@@ -1802,13 +1743,9 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
           {Icons.plus} Nueva Factura
         </button>
       </div>
-
-      {/* Invoice Form — connected to real data */}
       {showForm && (
         <form className="finances__invoice-form" onSubmit={handleSubmit}>
           <p className="finances__form-subtitle">Datos del cliente</p>
-
-          {/* Client search */}
           <div className="finances__client-search-wrap" ref={clientSearchRef}>
             {selectedClient ? (
               <div className="finances__client-selected">
@@ -1862,8 +1799,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
               </div>
             )}
           </div>
-
-          {/* Manual fields if no client selected */}
           {!selectedClient && clientSearch.length >= 2 && (
             <div className="finances__form-grid">
               <input className="finances__input" placeholder="Nombre *" value={form.client_name || clientSearch} onChange={(e) => setForm({ ...form, client_name: e.target.value })} required />
@@ -1884,8 +1819,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
               </label>
             </div>
           </div>
-
-          {/* Uninvoiced visits (Fase 4) */}
           {selectedClient && uninvoicedVisits.length > 0 && (
             <div className="finances__uninvoiced">
               <button type="button" className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => setShowVisitImport(!showVisitImport)}>
@@ -1911,7 +1844,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
           <div className="finances__invoice-items">
             {form.items.map((item, idx) => (
               <div key={idx} className="finances__invoice-item-row">
-                {/* Service dropdown from catalog */}
                 <select
                   className="finances__select"
                   value={item.service_name}
@@ -1930,8 +1862,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
 
                 <input className="finances__input finances__input--sm" type="number" min="1" placeholder="Cant" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} />
                 <input className="finances__input" type="number" placeholder="Precio *" value={item.unit_price} onChange={(e) => updateItem(idx, 'unit_price', e.target.value)} required />
-
-                {/* Staff dropdown from team */}
                 <select
                   className="finances__select"
                   value={item.staff_name}
@@ -1966,24 +1896,19 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
           </div>
         </form>
       )}
-
-      {/* Invoice cards */}
       {invoices.length > 0 ? (
         <div className="finances__inv-list">
           {invoices.map((inv, i) => {
             const isExpanded = expandedId === inv.id;
-            // Commission from backend (real rate) or fallback 50%
             const commissionRate = inv.staff_commission_rate || 0.5;
             const tipAmount = inv.tip || 0;
             const staffEarnings = Math.round(inv.subtotal * commissionRate) + tipAmount;
             const businessEarnings = inv.subtotal - Math.round(inv.subtotal * commissionRate);
-            // Unique staff names from items
             const staffNames = [...new Set((inv.items || []).filter(it => it.staff_name).map(it => it.staff_name))];
             const primaryStaff = staffNames.length > 0 ? staffNames[0] : null;
 
             return (
               <div key={inv.id} className={`finances__inv-card ${isExpanded ? 'finances__inv-card--expanded' : ''}`} style={{ animationDelay: `${0.05 + i * 0.04}s` }}>
-                {/* Collapsed header row */}
                 <div className="finances__inv-header" onClick={() => setExpandedId(isExpanded ? null : inv.id)}>
                   <div className="finances__inv-header-left">
                     <span className={`finances__inv-badge finances__inv-badge--${inv.status}`}>
@@ -2006,11 +1931,8 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                     <svg className={`finances__inv-chevron ${isExpanded ? 'finances__inv-chevron--open' : ''}`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
                   </div>
                 </div>
-
-                {/* Expanded details */}
                 {isExpanded && (
                   <div className="finances__inv-details">
-                    {/* Client info bar */}
                     <div className="finances__inv-client-bar">
                       <div className="finances__inv-client-info">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -2029,8 +1951,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         </div>
                       )}
                     </div>
-
-                    {/* Items table */}
                     {inv.items && inv.items.length > 0 && (
                       <div className="finances__inv-table">
                         <div className="finances__inv-table-head">
@@ -2051,10 +1971,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         ))}
                       </div>
                     )}
-
-                    {/* Financial breakdown + Commission split side by side */}
                     <div className="finances__inv-bottom">
-                      {/* Financial breakdown */}
                       <div className="finances__inv-breakdown">
                         <div className="finances__inv-breakdown-line">
                           <span>Subtotal</span>
@@ -2083,8 +2000,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           <span>{formatCOP(inv.total)}</span>
                         </div>
                       </div>
-
-                      {/* Commission split */}
                       {primaryStaff && (
                         <div className="finances__inv-commission">
                           <span className="finances__inv-commission-title">Distribución de comisión</span>
@@ -2111,8 +2026,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         </div>
                       )}
                     </div>
-
-                    {/* Footer: payment method + actions */}
                     <div className="finances__inv-footer">
                       <div className="finances__inv-footer-left">
                         {inv.payment_method && (
@@ -2168,7 +2081,7 @@ const TabCaja = () => {
   const [openingAmount, setOpeningAmount] = useState('');
   const [transactions, setTransactions] = useState([]);
   const [history, setHistory] = useState([]);
-  const [subTab, setSubTab] = useState('hoy'); // 'hoy' | 'historial'
+  const [subTab, setSubTab] = useState('hoy');
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [countedCash, setCountedCash] = useState('');
   const [closeNotes, setCloseNotes] = useState('');
@@ -2303,7 +2216,6 @@ const TabCaja = () => {
 
   return (
     <div className="finances__caja">
-      {/* Sub-tab toggle: Hoy / Historial */}
       <div className="finances__caja-subtabs">
         <button
           className={`finances__caja-subtab ${subTab === 'hoy' ? 'finances__caja-subtab--active' : ''}`}
@@ -2321,7 +2233,6 @@ const TabCaja = () => {
 
       {subTab === 'hoy' && (
         <>
-          {/* CLOSED STATE */}
           {!isOpen && (
             <div className="finances__caja-closed">
               <div className="finances__caja-closed-banner">
@@ -2362,11 +2273,8 @@ const TabCaja = () => {
               </div>
             </div>
           )}
-
-          {/* OPEN STATE */}
           {isOpen && (
             <>
-              {/* Status banner */}
               <div className="finances__caja-status">
                 <div className="finances__caja-status-left">
                   <span className="finances__caja-status-dot" />
@@ -2384,8 +2292,6 @@ const TabCaja = () => {
                   Cerrar caja
                 </button>
               </div>
-
-              {/* Summary cards */}
               <div className="finances__caja-summary">
                 <div className="finances__caja-card">
                   <span className="finances__caja-card-label">Total ventas hoy</span>
@@ -2404,8 +2310,6 @@ const TabCaja = () => {
                   <span className="finances__caja-card-value">{formatCOP(totalTips)}</span>
                 </div>
               </div>
-
-              {/* Transactions table */}
               <div className="finances__caja-table-wrap">
                 <h4 className="finances__caja-table-title">Transacciones de hoy</h4>
                 {transactions.length === 0 ? (
@@ -2449,8 +2353,6 @@ const TabCaja = () => {
           )}
         </>
       )}
-
-      {/* HISTORY SUB-TAB */}
       {subTab === 'historial' && (
         <div className="finances__caja-history">
           <h4 className="finances__caja-table-title">Historial de cajas</h4>
@@ -2500,8 +2402,6 @@ const TabCaja = () => {
           )}
         </div>
       )}
-
-      {/* CLOSE MODAL */}
       {showCloseModal && (
         <div className="finances__caja-overlay" onClick={() => setShowCloseModal(false)}>
           <div className="finances__caja-modal" onClick={(e) => e.stopPropagation()}>
@@ -2598,8 +2498,6 @@ const TabForecast = () => {
 
   return (
     <div className="finances__forecast">
-
-      {/* ── HERO: How's the month going? ── */}
       <div className="finances__fc-hero">
         <div className="finances__fc-hero-left">
           <p className="finances__fc-hero-label">Llevas facturado este mes</p>
@@ -2617,8 +2515,6 @@ const TabForecast = () => {
           </div>
         </div>
       </div>
-
-      {/* ── PROGRESS: How close to last month? ── */}
       {month.prev_month_total > 0 && (
         <div className="finances__fc-progress-section">
           <div className="finances__fc-progress-head">
@@ -2630,8 +2526,6 @@ const TabForecast = () => {
           </div>
         </div>
       )}
-
-      {/* ── KPIs row ── */}
       <div className="finances__fc-kpis">
         <div className="finances__fc-kpi">
           <span className="finances__fc-kpi-icon" style={{ background: '#ECFDF5', color: '#059669' }}>$</span>
@@ -2655,8 +2549,6 @@ const TabForecast = () => {
           </div>
         </div>
       </div>
-
-      {/* ── WEEKLY CHART ── */}
       <div className="finances__fc-week-card">
         <div className="finances__fc-week-head">
           <h3>Esta semana dia por dia</h3>
@@ -2684,8 +2576,6 @@ const TabForecast = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* ── Daily cards (visual, not a table) ── */}
         <div className="finances__fc-days">
           {week.daily.map((d) => {
             const mainValue = d.is_past ? d.actual : d.confirmed;
@@ -2714,8 +2604,6 @@ const TabForecast = () => {
     </div>
   );
 };
-
-
 const Finances = () => {
   const { tenant } = useTenant();
   const [data, setData] = useState(null);
@@ -2787,7 +2675,6 @@ const Finances = () => {
       setShowCustomRange(false);
     } else {
       setShowCustomRange(true);
-      // Set defaults: last 30 days
       const today = new Date();
       const thirtyAgo = new Date(today);
       thirtyAgo.setDate(today.getDate() - 30);
@@ -2817,7 +2704,6 @@ const Finances = () => {
 
   return (
     <div className="finances">
-      {/* HEADER */}
       <div className="finances__header">
         <div className="finances__header-left">
           <div className="finances__header-title-row">
@@ -2875,8 +2761,6 @@ const Finances = () => {
           )}
         </div>
       </div>
-
-      {/* TAB SELECTOR */}
       <div className="finances__tab-selector">
         {TAB_OPTIONS.map((tab) => (
           <button
@@ -2888,8 +2772,6 @@ const Finances = () => {
           </button>
         ))}
       </div>
-
-      {/* TAB CONTENT */}
       {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'forecast' && <TabForecast />}
       {activeTab === 'reportes' && <TabReportes period={period} dateFrom={dateFrom} dateTo={dateTo} />}

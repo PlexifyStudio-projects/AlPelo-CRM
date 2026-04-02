@@ -10,7 +10,6 @@ import { formatPhone } from '../../utils/formatters';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
-// ===== ICONS (inline SVGs) =====
 const Icons = {
   users: (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -91,7 +90,6 @@ const Icons = {
   ),
 };
 
-// ===== ANIMATED NUMBER =====
 const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
   const [displayValue, setDisplayValue] = useState(0);
 
@@ -116,13 +114,11 @@ const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
   return <span>{prefix}{displayValue.toLocaleString('es-CO')}{suffix}</span>;
 };
 
-// ===== FORMAT COP =====
 const formatCOP = (value) => {
   if (!value && value !== 0) return '$0';
   return `$${Number(value).toLocaleString('es-CO')}`;
 };
 
-// ===== TIME AGO =====
 const timeAgo = (dateStr) => {
   if (!dateStr) return '';
   const now = new Date();
@@ -137,13 +133,11 @@ const timeAgo = (dateStr) => {
   return `Hace ${diffDays}d`;
 };
 
-/** Calculate countdown for pending tasks: how long until execution */
 const taskCountdown = (createdAt, content) => {
   if (!createdAt) return null;
   const txt = content || '';
   let executeAt = null;
 
-  // 1) Appointment reminders: parse "Xmin antes de cita HH:MMam/pm DD/MM"
   const reminderMatch = txt.match(/(\d+)\s*min(?:utos?)?\s*antes\s+de\s+(?:la\s+)?cita\s+(\d{1,2}):(\d{2})\s*(am|pm)\s+(\d{1,2})\/(\d{2})/i);
   if (reminderMatch) {
     const leadMin = parseInt(reminderMatch[1]);
@@ -157,14 +151,12 @@ const taskCountdown = (createdAt, content) => {
     const now = new Date();
     const year = now.getFullYear();
     const apptDate = new Date(year, month, day, hour, minute);
-    // If date already passed this year, try next year
     if (apptDate < new Date(now.getTime() - 24 * 60 * 60000)) {
       apptDate.setFullYear(year + 1);
     }
     executeAt = new Date(apptDate.getTime() - leadMin * 60000);
   }
 
-  // 2) Fallback: "en X min" delay from creation time
   if (!executeAt) {
     const delayMatch = txt.match(/en\s+(\d+)\s*min/i);
     const delayMin = delayMatch ? parseInt(delayMatch[1]) : 5;
@@ -186,7 +178,6 @@ const taskCountdown = (createdAt, content) => {
   return { text: `${remainSec}s`, done: false };
 };
 
-// ===== CHART COLORS (match status badges) =====
 const CHART_COLORS = {
   confirmed: '#34D399',
   completed: '#60A5FA',
@@ -196,7 +187,6 @@ const CHART_COLORS = {
   no_show: '#E05252',
 };
 
-// ===== CUSTOM TOOLTIP for revenue chart =====
 const RevenueTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -207,7 +197,6 @@ const RevenueTooltip = ({ active, payload }) => {
   );
 };
 
-// ===== CUSTOM LEGEND for pie chart =====
 const StatusLegend = ({ payload }) => {
   const total = payload?.reduce((s, e) => s + (e.payload?.value || 0), 0) || 0;
   return (
@@ -225,7 +214,6 @@ const StatusLegend = ({ payload }) => {
   );
 };
 
-// ===== STATUS BADGE CONFIG =====
 const STATUS_CONFIG = {
   confirmed: { label: 'Confirmada', modifier: 'success' },
   completed: { label: 'Completada', modifier: 'info' },
@@ -235,7 +223,6 @@ const STATUS_CONFIG = {
   no_show: { label: 'No asistio', modifier: 'error' },
 };
 
-// ===== SKELETON LOADER =====
 const SkeletonCard = () => (
   <div className="dashboard__kpi-card dashboard__kpi-card--skeleton">
     <div className="dashboard__kpi-icon dashboard__kpi-icon--skeleton" />
@@ -256,7 +243,6 @@ const SkeletonRow = () => (
   </div>
 );
 
-// ===== MAIN DASHBOARD =====
 const Dashboard = ({ onNavigate }) => {
   const { tenant } = useTenant();
   const [stats, setStats] = useState(null);
@@ -267,9 +253,8 @@ const Dashboard = ({ onNavigate }) => {
   const [dismissingAlert, setDismissingAlert] = useState(null);
   const [revenueData, setRevenueData] = useState([]);
   const [financeRevenue, setFinanceRevenue] = useState(null);
-  const [, setTick] = useState(0); // Forces re-render every second for countdowns
+  const [, setTick] = useState(0);
 
-  // Tick every second when there are pending tasks
   useEffect(() => {
     const hasPending = (stats?.pending_tasks || []).some(t => t.status === 'pending');
     if (!hasPending) return;
@@ -290,12 +275,10 @@ const Dashboard = ({ onNavigate }) => {
       const data = await res.json();
       setStats(data);
       setError(null);
-      // Build revenue chart from paid appointments data
       if (data.revenue_by_day && Array.isArray(data.revenue_by_day)) {
         setRevenueData(data.revenue_by_day.map(d => ({ label: d.date, value: d.revenue || 0 })));
       }
 
-      // Fetch finance summary (month) for accurate revenue — same source as Finances page
       try {
         const finRes = await fetch(`${API_URL}/finances/summary?period=month`, {
           headers: { 'Content-Type': 'application/json' },
@@ -305,7 +288,7 @@ const Dashboard = ({ onNavigate }) => {
           const finData = await finRes.json();
           setFinanceRevenue(finData.total_revenue || 0);
         }
-      } catch (_) { /* fallback to dashboard stats revenue */ }
+      } catch { }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -313,14 +296,12 @@ const Dashboard = ({ onNavigate }) => {
     }
   }, []);
 
-  // Fetch on mount + every 30s
   useEffect(() => {
     fetchStats();
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, [fetchStats]);
 
-  // Sync payment alerts from stats
   useEffect(() => {
     if (stats?.payment_alerts) setPaymentAlerts(stats.payment_alerts);
   }, [stats]);
@@ -341,13 +322,11 @@ const Dashboard = ({ onNavigate }) => {
     } catch (e) { console.error(e); }
   };
 
-  // Toggle Lina IA globally
   const handleLinaToggle = async () => {
     if (linaToggling || !stats || tenant.ai_is_paused) return;
     setLinaToggling(true);
     const newState = !stats.lina_is_global_active;
 
-    // Optimistic update
     setStats(prev => ({ ...prev, lina_is_global_active: newState }));
 
     try {
@@ -358,7 +337,6 @@ const Dashboard = ({ onNavigate }) => {
         body: JSON.stringify({ enable: newState }),
       });
       if (!res.ok) {
-        // Revert on failure
         setStats(prev => ({ ...prev, lina_is_global_active: !newState }));
       }
     } catch {
@@ -368,7 +346,6 @@ const Dashboard = ({ onNavigate }) => {
     }
   };
 
-  // ===== LOADING STATE =====
   if (loading) {
     return (
       <div className="dashboard">
@@ -394,7 +371,6 @@ const Dashboard = ({ onNavigate }) => {
     );
   }
 
-  // ===== ERROR STATE =====
   if (error && !stats) {
     return (
       <div className="dashboard">
@@ -415,7 +391,6 @@ const Dashboard = ({ onNavigate }) => {
 
   if (!stats) return null;
 
-  // Compute trend indicators from available data
   const newClients = stats.new_clients_this_month || 0;
   const totalCl = stats.total_clients || 1;
   const trends = {
@@ -426,7 +401,6 @@ const Dashboard = ({ onNavigate }) => {
     riskTrend: (stats.at_risk_clients || 0) > 0 ? -Math.round(((stats.at_risk_clients || 0) / totalCl) * 100) : 0,
   };
 
-  // Appointment status breakdown for pie chart
   const statusCounts = {};
   (stats.appointments_today_list || []).forEach(appt => {
     const s = appt.status || 'pending';
@@ -447,7 +421,7 @@ const Dashboard = ({ onNavigate }) => {
 
   return (
     <div className="dashboard">
-      {/* ===== HEADER ===== */}
+
       <div className="dashboard__header">
         <div className="dashboard__header-left">
           <h1 className="dashboard__title">Dashboard</h1>
@@ -459,7 +433,6 @@ const Dashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* ===== KPI CARDS ===== */}
       <div className="dashboard__kpis">
         <div className="dashboard__kpi-card">
           <div className="dashboard__kpi-icon dashboard__kpi-icon--primary">{Icons.users}</div>
@@ -552,9 +525,8 @@ const Dashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* ===== CHARTS SECTION ===== */}
       <div className="dashboard__chart-section">
-        {/* Revenue sparkline */}
+
         <div className="dashboard__revenue-chart">
           <div className="dashboard__section-header">
             <h2 className="dashboard__section-title">
@@ -595,12 +567,11 @@ const Dashboard = ({ onNavigate }) => {
           ) : (
             <div className="dashboard__chart-empty">
               <p>Sin datos de ingresos diarios disponibles</p>
-              {/* Revenue chart - data from /finances/analytics → revenue_by_day */}
+
             </div>
           )}
         </div>
 
-        {/* Appointment status donut */}
         <div className="dashboard__status-chart">
           <div className="dashboard__section-header">
             <h2 className="dashboard__section-title">
@@ -656,9 +627,8 @@ const Dashboard = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* ===== MIDDLE SECTION: AGENDA + LINA ===== */}
       <div className="dashboard__body">
-        {/* --- AGENDA DE HOY --- */}
+
         <div className="dashboard__agenda">
           <div className="dashboard__section-header">
             <h2 className="dashboard__section-title">
@@ -700,7 +670,6 @@ const Dashboard = ({ onNavigate }) => {
             </div>
           )}
 
-          {/* Top services of the day */}
           {topServices.length > 0 && (
             <div className="dashboard__top-services">
               <span className="dashboard__top-services-label">Servicios populares hoy:</span>
@@ -713,7 +682,6 @@ const Dashboard = ({ onNavigate }) => {
           )}
         </div>
 
-        {/* --- LINA IA PANEL --- */}
         <div className="dashboard__lina">
           <div className="dashboard__section-header">
             <h2 className="dashboard__section-title">
@@ -725,7 +693,6 @@ const Dashboard = ({ onNavigate }) => {
             </span>
           </div>
 
-          {/* Toggle */}
           {tenant.ai_is_paused ? (
             <div className="dashboard__lina-blocked">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -750,7 +717,6 @@ const Dashboard = ({ onNavigate }) => {
             </div>
           )}
 
-          {/* Stats grid */}
           <div className="dashboard__lina-stats">
             <div className="dashboard__lina-stat">
               <div className="dashboard__lina-stat-icon">{Icons.message}</div>
@@ -789,18 +755,15 @@ const Dashboard = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* WhatsApp summary */}
           <div className="dashboard__lina-wa">
             <span className="dashboard__lina-wa-label">WhatsApp hoy</span>
             <span className="dashboard__lina-wa-value">{stats.whatsapp_messages_today || 0} mensajes</span>
           </div>
 
-          {/* AI Message Usage */}
           <UsageMeter />
         </div>
       </div>
 
-      {/* ===== PAYMENT ALERTS ===== */}
       {paymentAlerts.length > 0 && (
         <div className="dashboard__payment-alerts">
           <div className="dashboard__section-header">
@@ -833,7 +796,6 @@ const Dashboard = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* ===== PENDING TASKS ===== */}
       <div className="dashboard__tasks">
         <div className="dashboard__section-header">
           <h2 className="dashboard__section-title">

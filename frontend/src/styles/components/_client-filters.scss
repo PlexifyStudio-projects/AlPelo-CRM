@@ -1,18 +1,10 @@
 @use '../abstracts/variables' as *;
 
-// ============================================
-// Client Filters — Plexify Studio v3
-// Search bar + segmented status tabs
-// ============================================
-
 .client-filters {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 
-  // -----------------------------------------------
-  // SEARCH
-  // -----------------------------------------------
   &__search {
     position: relative;
     width: 100%;
@@ -96,9 +88,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // STATUS TABS
-  // -----------------------------------------------
   &__status-tabs {
     display: flex;
     gap: 2px;
@@ -198,9 +187,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // RESPONSIVE
-  // -----------------------------------------------
   @media (max-width: 768px) {
     &__search {
       max-width: 100%;

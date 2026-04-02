@@ -10,7 +10,6 @@ import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
-import financeService from '../../services/financeService';
 
 const Clients = () => {
   const [clients, setClients] = useState([]);

@@ -1,18 +1,11 @@
 @use '../abstracts/variables' as *;
 
-// ============================================
-// Automation Studio — Premium Design
-// Google-level polish, interactive, dynamic
-// BEM: .auto-studio
-// ============================================
-
 .auto-studio {
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
   animation: asAppear 0.4s $ease-out-expo;
 
-  // ─── LOADING ───
   &__loading {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: $spacing-md; padding: $spacing-5xl; color: $color-gray-400; font-size: $font-size-sm;
@@ -22,7 +15,6 @@
     border-radius: 50%; animation: asSpin 0.7s linear infinite;
   }
 
-  // ─── HERO HEADER ───
   &__hero {
     display: flex; align-items: center; justify-content: space-between; gap: $spacing-lg;
     padding: $spacing-xl $spacing-xl $spacing-lg;
@@ -40,7 +32,6 @@
     p { font-size: $font-size-sm; color: $color-gray-400; margin-top: 2px; }
   }
 
-  // ─── BUTTONS (Shared) ───
   &__btn-primary {
     display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px;
     background: $gradient-primary; color: white; border: none; border-radius: $border-radius-sm;
@@ -64,7 +55,6 @@
     &:hover { background: $color-error-dark; }
   }
 
-  // ─── METRICS BAR ───
   &__metrics {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: $spacing-md;
   }
@@ -83,7 +73,6 @@
   &__metric-value { font-size: $font-size-xl; font-weight: $font-weight-bold; color: $color-gray-800; line-height: 1; }
   &__metric-label { font-size: $font-size-2xs; color: $color-gray-400; text-transform: uppercase; letter-spacing: $letter-spacing-wider; margin-top: 3px; }
 
-  // ─── SECTIONS ───
   &__section-header {
     display: flex; align-items: center; gap: 8px; margin-bottom: $spacing-md;
     > svg { color: $color-gray-400; }
@@ -95,7 +84,6 @@
   }
   &__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: $spacing-md; width: 100%; }
 
-  // ─── AUTOMATION CARD ───
   &__card {
     position: relative; background: white; border: 1px solid $border-color; border-radius: $border-radius-md;
     padding: 0; display: flex; flex-direction: column; overflow: hidden;
@@ -118,7 +106,6 @@
   }
   &__card-trigger { font-size: $font-size-xs; color: $color-gray-400; margin-top: 2px; }
 
-  // Toggle
   &__toggle {
     background: none; border: none; cursor: pointer; padding: 0; flex-shrink: 0;
     &--on .auto-studio__toggle-track { background: $color-success; }
@@ -134,7 +121,6 @@
     transition: transform 0.3s $ease-spring;
   }
 
-  // Card status
   &__card-status {
     display: flex; align-items: center; gap: 6px; margin: 0 18px; padding: 6px 12px;
     border-radius: $border-radius-xs; font-size: $font-size-xs; font-weight: $font-weight-medium;
@@ -147,7 +133,6 @@
     opacity: 0.8; &:hover { opacity: 1; }
   }
 
-  // Card bubble preview
   &__card-bubble {
     display: flex; gap: 8px; margin: 10px 18px; padding: 10px 14px;
     background: $color-gray-50; border-radius: $border-radius-sm; border-left: 3px solid $wa-green;
@@ -155,20 +140,17 @@
     > p { margin: 0; font-size: $font-size-xs; color: $color-gray-500; line-height: $line-height-base; }
   }
 
-  // Card chain
   &__card-chain {
     display: flex; align-items: center; gap: 6px; margin: 0 18px; padding: 6px 10px;
     background: rgba($color-accent, 0.04); border-radius: $border-radius-xs;
     font-size: $font-size-2xs; color: $color-accent;
   }
 
-  // Card metrics
   &__card-metrics {
     display: flex; gap: 16px; padding: 8px 18px; font-size: $font-size-2xs; color: $color-gray-400;
     > span { display: flex; align-items: center; gap: 4px; }
   }
 
-  // Card toolbar
   &__card-toolbar {
     display: flex; align-items: center; gap: 2px; padding: 8px 14px; border-top: 1px solid $border-color-light;
     background: $color-gray-50;
@@ -188,7 +170,6 @@
     &:hover { color: $color-error !important; background: $color-error-bg !important; }
   }
 
-  // ─── SUGGESTED TEMPLATES ───
   &__suggested {
     padding: $spacing-xl; border-radius: $border-radius-lg;
     background: linear-gradient(135deg, rgba($color-accent, 0.02) 0%, rgba($color-primary, 0.02) 100%);
@@ -212,7 +193,6 @@
     span { display: block; font-size: $font-size-xs; color: $color-gray-400; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   }
 
-  // ─── EMPTY STATE ───
   &__empty {
     display: flex; flex-direction: column; align-items: center; gap: $spacing-md;
     padding: $spacing-5xl $spacing-xl; text-align: center;
@@ -224,7 +204,6 @@
     border-radius: 50%; background: $color-primary-ghost; color: $color-primary-light;
   }
 
-  // ─── MODAL ───
   &__overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px);
     display: flex; align-items: center; justify-content: center; z-index: $z-modal;
@@ -244,16 +223,12 @@
   }
   &__modal-btns { display: flex; gap: $spacing-sm; margin-top: $spacing-lg; justify-content: center; }
 
-  // ═════════════════════════════════════════════
-  // WIZARD
-  // ═════════════════════════════════════════════
   &__wizard {
     display: flex; flex-direction: column; min-height: calc(100vh - 100px);
     background: white; border-radius: $border-radius-lg; border: 1px solid $border-color;
     box-shadow: $shadow-lg; animation: asSlideUp 0.35s $ease-out-expo; overflow: hidden;
   }
 
-  // Wizard header
   &__wz-header {
     display: flex; align-items: center; gap: $spacing-md; padding: $spacing-md $spacing-xl;
     border-bottom: 1px solid $border-color; background: white; position: relative;
@@ -285,7 +260,6 @@
     border-radius: 1px; transition: width 0.5s $ease-out-expo;
   }
 
-  // Wizard body/footer
   &__wz-body { flex: 1; padding: $spacing-xl; overflow-y: auto; }
   &__wz-footer {
     display: flex; align-items: center; padding: $spacing-md $spacing-xl;
@@ -297,7 +271,6 @@
     @media (max-width: $breakpoint-md) { flex-direction: column; }
   }
 
-  // ─── FORM FIELDS ───
   &__field {
     > label { display: block; font-size: $font-size-xs; font-weight: $font-weight-semibold; color: $color-gray-500;
       text-transform: uppercase; letter-spacing: $letter-spacing-wider; margin-bottom: 6px; }
@@ -315,7 +288,6 @@
     &::placeholder { color: $color-gray-300; }
   }
 
-  // ─── TRIGGER CARDS ───
   &__trigger-group { margin-bottom: $spacing-md; }
   &__trigger-group-label {
     display: flex; align-items: center; gap: 6px; font-size: $font-size-xs; font-weight: $font-weight-bold;
@@ -347,7 +319,6 @@
     background: var(--tc); color: white; animation: asPopIn 0.3s $ease-spring;
   }
 
-  // ─── CONFIG PANELS ───
   &__config-panel {
     padding: $spacing-lg; background: $color-gray-50; border-radius: $border-radius-md; border: 1px solid $border-color-light;
     h4 { display: flex; align-items: center; gap: 8px; font-size: $font-size-sm; font-weight: $font-weight-semibold;
@@ -373,7 +344,6 @@
     > span { font-size: $font-size-sm; color: $color-gray-500; }
   }
 
-  // ─── STEP 2: FILTERS ───
   &__audience-all {
     display: flex; align-items: center; gap: 14px; padding: 16px 20px;
     background: $color-success-bg; border: 1px solid $color-success-border; border-radius: $border-radius-md;
@@ -405,7 +375,6 @@
     &:hover { border-color: $color-primary-light; color: $color-primary; background: $color-primary-ghost; }
   }
 
-  // Audience preview
   &__audience {
     padding: $spacing-lg; border-radius: $border-radius-md;
     background: linear-gradient(135deg, rgba($color-primary, 0.03) 0%, rgba($color-accent, 0.02) 100%);
@@ -437,7 +406,6 @@
   &__audience-more { font-size: $font-size-2xs; color: $color-gray-400; align-self: center; }
   &__audience-empty { font-size: $font-size-xs; color: $color-gray-400; margin-top: 8px; font-style: italic; }
 
-  // ─── STEP 3: EDITOR ───
   &__editor { flex: 1; display: flex; flex-direction: column; gap: $spacing-sm; }
   &__editor-ta {
     width: 100%; padding: 14px 16px; border: 1px solid $border-color; border-radius: $border-radius-sm;
@@ -464,7 +432,6 @@
     &:hover { background: $color-primary; color: white; border-color: $color-primary; transform: scale(1.05); }
   }
 
-  // WhatsApp phone preview
   &__phone-preview { width: 320px; flex-shrink: 0; @media (max-width: $breakpoint-md) { width: 100%; } }
   &__phone {
     border-radius: 28px; overflow: hidden; border: 3px solid $color-gray-700;
@@ -496,7 +463,6 @@
       font-size: $font-size-xs; color: $color-gray-600; background: white; }
   }
 
-  // ─── STEP 4: SUMMARY ───
   &__summary {
     background: white; border: 1px solid $border-color; border-radius: $border-radius-md;
     overflow: hidden; box-shadow: $shadow-sm;
@@ -519,7 +485,6 @@
   &__summary-value { font-size: $font-size-sm; color: $color-gray-700; }
   &__summary-msg { margin-top: $spacing-md; }
 
-  // Chain
   &__chain {
     background: white; border: 1px solid $border-color; border-radius: $border-radius-md; padding: $spacing-lg;
   }
@@ -538,7 +503,6 @@
     > p { font-size: $font-size-sm; color: $color-gray-500; }
   }
 
-  // Timeline
   &__timeline {
     padding: $spacing-lg; background: $color-gray-50; border-radius: $border-radius-md; border: 1px solid $border-color-light;
   }
@@ -557,7 +521,6 @@
   }
   &__timeline-est { margin-top: $spacing-md; font-size: $font-size-xs; color: $color-gray-500; text-align: center; font-style: italic; }
 
-  // ─── HISTORY ───
   &__history { display: flex; flex-direction: column; gap: $spacing-lg; animation: asAppear 0.3s $ease-out-expo; }
   &__history-top {
     display: flex; align-items: center; gap: $spacing-md;
@@ -587,9 +550,6 @@
   &__history-chain { padding: 2px 8px; border-radius: $border-radius-full; font-size: 10px; font-weight: $font-weight-semibold; color: $color-accent; background: $color-accent-ghost; }
 }
 
-// ═════════════════════════════════════════════
-// ANIMATIONS
-// ═════════════════════════════════════════════
 @keyframes asAppear { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes asSlideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes asFadeIn { from { opacity: 0; } to { opacity: 1; } }

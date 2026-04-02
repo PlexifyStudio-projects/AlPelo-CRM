@@ -46,6 +46,13 @@ const DevComparison = () => {
     return () => clearInterval(iv);
   }, [fetchData]);
 
+  const tenants = data?.tenants || [];
+  const activeMetric = METRICS.find((m) => m.key === metric) || METRICS[0];
+  const { sorted, maxVal } = useMemo(() => {
+    const s = [...tenants].sort((a, b2) => (b2[metric] || 0) - (a[metric] || 0));
+    return { sorted: s, maxVal: s.length ? (s[0][metric] || 1) : 1 };
+  }, [tenants, metric]);
+
   if (loading) {
     return (
       <div className={b}>
@@ -54,13 +61,6 @@ const DevComparison = () => {
       </div>
     );
   }
-
-  const tenants = data?.tenants || [];
-  const activeMetric = METRICS.find((m) => m.key === metric) || METRICS[0];
-  const { sorted, maxVal } = useMemo(() => {
-    const s = [...tenants].sort((a, b2) => (b2[metric] || 0) - (a[metric] || 0));
-    return { sorted: s, maxVal: s.length ? (s[0][metric] || 1) : 1 };
-  }, [tenants, metric]);
 
   return (
     <div className={b}>

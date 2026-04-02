@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// NOTIFICATION — Floating toast / inline alert
-// Rounded, soft shadow, left colored bar
-// ============================================
-
 .notification {
   display: flex;
   align-items: center;
@@ -21,7 +16,6 @@
     transform $transition-fast,
     box-shadow $transition-fast;
 
-  // Left colored bar (4px)
   &::before {
     content: '';
     position: absolute;
@@ -32,9 +26,6 @@
     border-radius: $border-radius-lg 0 0 $border-radius-lg;
   }
 
-  // -----------------------------------------------
-  // TYPE VARIANTS
-  // -----------------------------------------------
   &--info {
     background: $color-info-bg;
     color: $color-info-dark;
@@ -67,9 +58,6 @@
     &::before { background: $color-error; }
   }
 
-  // -----------------------------------------------
-  // ELEMENTS
-  // -----------------------------------------------
   &__icon {
     @include flex-center;
     width: 28px;
@@ -116,7 +104,6 @@
     }
   }
 
-  // Pulsing dot for urgent errors
   &--error &__pulse-dot {
     width: 8px;
     height: 8px;
@@ -126,17 +113,11 @@
     flex-shrink: 0;
   }
 
-  // -----------------------------------------------
-  // HOVER
-  // -----------------------------------------------
   &:hover {
     transform: translateY(-1px);
     box-shadow: $shadow-md;
   }
 
-  // -----------------------------------------------
-  // PROGRESS BAR (auto-dismiss)
-  // -----------------------------------------------
   &__progress {
     position: absolute;
     bottom: 0;
@@ -152,9 +133,6 @@
   &--error &__progress { background: $color-error; }
 }
 
-// -----------------------------------------------
-// KEYFRAMES
-// -----------------------------------------------
 @keyframes notifSlideIn {
   from {
     opacity: 0;

@@ -1,16 +1,8 @@
 @use '../abstracts/variables' as *;
 
-// ============================================
-// Client Table — Plexify Studio v3
-// Modern rounded table, sticky header, hover accents
-// ============================================
-
 .client-table {
   margin-top: $spacing-md;
 
-  // -----------------------------------------------
-  // TABLE WRAPPER
-  // -----------------------------------------------
   &__wrapper {
     background: $color-white;
     border: 1px solid $color-gray-200;
@@ -34,9 +26,6 @@
     min-width: 780px;
   }
 
-  // -----------------------------------------------
-  // TABLE HEAD
-  // -----------------------------------------------
   &__head {
     position: sticky;
     top: 0;
@@ -97,9 +86,6 @@
     width: 100%;
   }
 
-  // -----------------------------------------------
-  // SORT ICON
-  // -----------------------------------------------
   &__sort-icon {
     color: $color-gray-300;
     flex-shrink: 0;
@@ -115,9 +101,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // TABLE BODY
-  // -----------------------------------------------
   &__body {
     .client-table__row {
       &:nth-child(even) {
@@ -130,9 +113,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // TABLE ROW
-  // -----------------------------------------------
   &__row {
     border-bottom: 1px solid $color-gray-100;
     cursor: pointer;
@@ -165,9 +145,6 @@
     position: relative;
   }
 
-  // -----------------------------------------------
-  // TABLE CELL
-  // -----------------------------------------------
   &__td {
     padding: 14px $spacing-lg;
     vertical-align: middle;
@@ -184,9 +161,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // CLIENT CELL
-  // -----------------------------------------------
   &__client-cell {
     display: flex;
     align-items: center;
@@ -279,9 +253,6 @@
     @media (max-width: 768px) { display: none; }
   }
 
-  // -----------------------------------------------
-  // VISIT CELL
-  // -----------------------------------------------
   &__visit-cell {
     display: flex;
     flex-direction: column;
@@ -334,9 +305,6 @@
     font-style: italic;
   }
 
-  // -----------------------------------------------
-  // VISITS COUNT
-  // -----------------------------------------------
   &__visits-count {
     font-family: $font-primary;
     font-size: $font-size-base;
@@ -349,9 +317,6 @@
     transition: color $transition-fast;
   }
 
-  // -----------------------------------------------
-  // SPENT
-  // -----------------------------------------------
   &__spent {
     font-family: $font-primary;
     font-size: $font-size-base;
@@ -374,9 +339,6 @@
     margin-top: 2px;
   }
 
-  // -----------------------------------------------
-  // SOURCE TAG
-  // -----------------------------------------------
   &__source-tag {
     display: inline-flex;
     align-items: center;
@@ -425,9 +387,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // STATUS BADGE
-  // -----------------------------------------------
   &__status {
     display: inline-flex;
     align-items: center;
@@ -478,9 +437,6 @@
     flex-shrink: 0;
   }
 
-  // -----------------------------------------------
-  // MOBILE CARD VIEW
-  // -----------------------------------------------
   &__cards {
     display: none;
 
@@ -551,9 +507,6 @@
     letter-spacing: 0.05em;
   }
 
-  // -----------------------------------------------
-  // EMPTY STATE
-  // -----------------------------------------------
   &__empty {
     display: flex;
     flex-direction: column;

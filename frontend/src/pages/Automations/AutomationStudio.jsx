@@ -133,7 +133,6 @@ export default function AutomationStudio() {
       addNotification('Primero envíe la plantilla a Meta para poder activar', 'warning');
       return;
     }
-    // Check plan limit before activating
     if (!rule.is_enabled) {
       const activeCount = automations.filter(a => a.is_enabled).length;
       if (activeCount >= planLimit) {
@@ -223,7 +222,6 @@ export default function AutomationStudio() {
 
   return (
     <div className={B}>
-      {/* ─── HERO HEADER ─── */}
       <div className={`${B}__hero`}>
         <div className={`${B}__hero-content`}>
           <div className={`${B}__hero-icon`}><ZapIcon size={24} /></div>
@@ -244,8 +242,6 @@ export default function AutomationStudio() {
           <PlusIcon size={18} /><span>Nueva automatización</span>
         </button>
       </div>
-
-      {/* ─── METRICS ─── */}
       {stats && (
         <div className={`${B}__metrics`}>
           {[
@@ -264,8 +260,6 @@ export default function AutomationStudio() {
           ))}
         </div>
       )}
-
-      {/* ─── ACTIVE AUTOMATIONS ─── */}
       {active.length > 0 && (
         <section className={`${B}__section`}>
           <div className={`${B}__section-header`}>
@@ -281,8 +275,6 @@ export default function AutomationStudio() {
           </div>
         </section>
       )}
-
-      {/* ─── DRAFTS & INACTIVE ─── */}
       {inactive.length > 0 && (
         <section className={`${B}__section`}>
           <div className={`${B}__section-header`}>
@@ -298,11 +290,7 @@ export default function AutomationStudio() {
           </div>
         </section>
       )}
-
-      {/* ─── SUGGESTED TEMPLATES ─── */}
       <SuggestedTemplates onUse={(tpl) => openWizard(tpl)} />
-
-      {/* ─── EMPTY STATE ─── */}
       {automations.length === 0 && (
         <div className={`${B}__empty`}>
           <div className={`${B}__empty-icon`}><ZapIcon size={32} /></div>
@@ -313,8 +301,6 @@ export default function AutomationStudio() {
           </button>
         </div>
       )}
-
-      {/* ─── DELETE MODAL ─── */}
       {deleteModal && (
         <div className={`${B}__overlay`} onClick={() => setDeleteModal(null)}>
           <div className={`${B}__modal`} onClick={e => e.stopPropagation()}>
@@ -354,11 +340,6 @@ export default function AutomationStudio() {
     </div>
   );
 }
-
-
-// ═══════════════════════════════════════════════════════════════════════
-// AUTOMATION CARD — Rich, interactive card with status, preview, actions
-// ═══════════════════════════════════════════════════════════════════════
 function AutomationCard({ rule, index, onToggle, onEdit, onDelete, onDuplicate, onSubmitMeta, onCheckMeta, onHistory }) {
   const TriggerIcon = TRIGGER_ICONS[rule.trigger_type] || ZapIcon;
   const triggerColor = TRIGGER_COLORS[rule.trigger_type] || '#64748B';
@@ -387,7 +368,6 @@ function AutomationCard({ rule, index, onToggle, onEdit, onDelete, onDuplicate, 
 
   return (
     <div className={`${B}__card ${rule.is_enabled ? `${B}__card--active` : ''}`} style={{ '--card-color': triggerColor, animationDelay: `${index * 0.05}s` }}>
-      {/* Accent strip */}
       <div className={`${B}__card-accent`} />
 
       <div className={`${B}__card-top`}>
@@ -400,8 +380,6 @@ function AutomationCard({ rule, index, onToggle, onEdit, onDelete, onDuplicate, 
           <div className={`${B}__toggle-track`}><div className={`${B}__toggle-knob`} /></div>
         </button>
       </div>
-
-      {/* Meta status */}
       <div className={`${B}__card-status`} style={{ '--status-color': meta.color, '--status-bg': meta.bg }}>
         <MetaIcon size={14} />
         <span>{meta.label}</span>
@@ -409,30 +387,22 @@ function AutomationCard({ rule, index, onToggle, onEdit, onDelete, onDuplicate, 
           <button className={`${B}__card-status-action`} onClick={() => onCheckMeta(rule)}><RefreshIcon size={12} /> Verificar</button>
         )}
       </div>
-
-      {/* Message bubble preview */}
       {msg && (
         <div className={`${B}__card-bubble`}>
           <WhatsAppIcon />
           <p>{msg.length > 100 ? msg.slice(0, 100) + '…' : msg}</p>
         </div>
       )}
-
-      {/* Chain indicator */}
       {rule.chain_config && (
         <div className={`${B}__card-chain`}>
           <LinkIcon size={12} />
           <span>Seguimiento en {rule.chain_config.if_no_reply_days || 3} días si no responde</span>
         </div>
       )}
-
-      {/* Stats */}
       <div className={`${B}__card-metrics`}>
         <span><SendIcon size={12} /> {rule.stats.sent} enviados</span>
         <span><MessageIcon size={12} /> {rule.stats.responded} respuestas</span>
       </div>
-
-      {/* Actions toolbar */}
       <div className={`${B}__card-toolbar`}>
         <button onClick={() => onEdit(rule)} title="Editar"><EditIcon size={15} /></button>
         <button onClick={() => onHistory(rule)} title="Historial"><HistoryIcon size={15} /></button>
@@ -445,11 +415,6 @@ function AutomationCard({ rule, index, onToggle, onEdit, onDelete, onDuplicate, 
     </div>
   );
 }
-
-
-// ═══════════════════════════════════════════════════════════════════════
-// SUGGESTED TEMPLATES
-// ═══════════════════════════════════════════════════════════════════════
 function SuggestedTemplates({ onUse }) {
   const [templates, setTemplates] = useState([]);
   useEffect(() => { svc.getSuggestedTemplates().then(d => setTemplates(d.templates || [])); }, []);
@@ -480,11 +445,6 @@ function SuggestedTemplates({ onUse }) {
     </section>
   );
 }
-
-
-// ═══════════════════════════════════════════════════════════════════════
-// WIZARD — 4-Step Creator/Editor
-// ═══════════════════════════════════════════════════════════════════════
 function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -591,7 +551,6 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
 
   return (
     <div className={`${B}__wizard`}>
-      {/* Header */}
       <div className={`${B}__wz-header`}>
         <button className={`${B}__wz-close`} onClick={onClose}><XIcon size={20} /></button>
         <h2>{editingRule?.id ? 'Editar automatización' : 'Nueva automatización'}</h2>
@@ -609,10 +568,7 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
           <div className={`${B}__wz-progress`} style={{ width: `${((step - 1) / 3) * 100}%` }} />
         </div>
       </div>
-
-      {/* Body */}
       <div className={`${B}__wz-body`}>
-        {/* ─── STEP 1: TRIGGER ─── */}
         {step === 1 && (
           <div className={`${B}__wz-content`}>
             <div className={`${B}__field`}>
@@ -649,8 +605,6 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
                 </div>
               );
             })}
-
-            {/* Trigger config */}
             {selectedTrigger?.config_fields?.length > 0 && (
               <div className={`${B}__config-panel`}>
                 <h4><TargetIcon size={14} /> Configuración del trigger</h4>
@@ -665,8 +619,6 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
                 </div>
               </div>
             )}
-
-            {/* Advanced config */}
             {triggerType && (
               <div className={`${B}__config-panel`}>
                 <h4><LayersIcon size={14} /> Configuración avanzada</h4>
@@ -699,11 +651,7 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
             )}
           </div>
         )}
-
-        {/* ─── STEP 2: AUDIENCE ─── */}
         {step === 2 && <WizardStep2 filterConfig={filterConfig} setFilterConfig={setFilterConfig} audience={audience} />}
-
-        {/* ─── STEP 3: MESSAGE ─── */}
         {step === 3 && (
           <div className={`${B}__wz-split`}>
             <div className={`${B}__editor`}>
@@ -750,11 +698,8 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
             </div>
           </div>
         )}
-
-        {/* ─── STEP 4: SUMMARY ─── */}
         {step === 4 && (
           <div className={`${B}__wz-content`}>
-            {/* Summary */}
             <div className={`${B}__summary`}>
               <div className={`${B}__summary-header`}>
                 {(() => { const TI = TRIGGER_ICONS[triggerType] || ZapIcon; return <TI size={22} />; })()}
@@ -777,16 +722,12 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
                 ))}
               </div>
             </div>
-
-            {/* Message preview */}
             <div className={`${B}__summary-msg`}>
               <label className={`${B}__field-label`}><MessageIcon size={14} /> Mensaje</label>
               <div className={`${B}__phone-bubble ${B}__phone-bubble--full`}>
                 <p>{renderPreview()}</p>
               </div>
             </div>
-
-            {/* Chain */}
             <div className={`${B}__chain`}>
               <div className={`${B}__chain-top`}>
                 <LinkIcon size={18} /><h4>Seguimiento automático</h4>
@@ -813,8 +754,6 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
                 </div>
               )}
             </div>
-
-            {/* Timeline */}
             <div className={`${B}__timeline`}>
               <label className={`${B}__field-label`}><ClockIcon size={14} /> Línea de tiempo</label>
               <div className={`${B}__timeline-track`}>
@@ -831,8 +770,6 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
           </div>
         )}
       </div>
-
-      {/* Footer */}
       <div className={`${B}__wz-footer`}>
         {step > 1 && <button className={`${B}__btn-ghost`} onClick={() => setStep(step - 1)}><ChevronLeft /> Anterior</button>}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
@@ -849,11 +786,6 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
     </div>
   );
 }
-
-
-// ═══════════════════════════════════════════════════════════════════════
-// WIZARD STEP 2 — Audience Filters + Preview
-// ═══════════════════════════════════════════════════════════════════════
 function WizardStep2({ filterConfig, setFilterConfig, audience }) {
   const FILTER_OPTIONS = [
     { key: 'status', label: 'Estado del cliente', type: 'select', options: ['activo', 'vip', 'en_riesgo', 'inactivo', 'nuevo'] },
@@ -930,8 +862,6 @@ function WizardStep2({ filterConfig, setFilterConfig, audience }) {
         })}
         <button className={`${B}__filter-add`} onClick={addFilter}><PlusIcon size={14} /> Agregar filtro</button>
       </div>
-
-      {/* Audience preview */}
       {audience && (
         <div className={`${B}__audience`}>
           <div className={`${B}__audience-top`}><EyeIcon size={18} /><h4>Preview de audiencia</h4></div>
@@ -954,11 +884,6 @@ function WizardStep2({ filterConfig, setFilterConfig, audience }) {
     </div>
   );
 }
-
-
-// ═══════════════════════════════════════════════════════════════════════
-// EXECUTION HISTORY
-// ═══════════════════════════════════════════════════════════════════════
 function ExecutionHistory({ rule, onBack }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

@@ -1,49 +1,27 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Plexify Studio - Base Styles v3.0
-// Clean, modern, minimal foundation
-// ============================================
-
-// -----------------------------------------------
-// CSS CUSTOM PROPERTIES
-// -----------------------------------------------
 :root {
-  // Primary palette (overridden per tenant via TenantContext)
   --color-primary: #{$color-primary};
   --color-primary-light: #{$color-primary-light};
   --color-primary-dark: #{$color-primary-dark};
   --color-primary-rgb: 30, 64, 175;
-
-  // Accent
   --color-accent: #{$color-accent};
   --color-accent-light: #{$color-accent-light};
-
-  // Semantic
   --color-success: #{$color-success};
   --color-warning: #{$color-warning};
   --color-error: #{$color-error};
   --color-info: #{$color-info};
-
-  // Backgrounds
   --bg-main: #{$bg-main};
   --bg-card: #{$bg-card};
   --bg-sidebar: #0F172A;
-
-  // Text
   --text-primary: #{$color-secondary};
   --text-secondary: #{$color-gray-500};
   --text-muted: #{$color-gray-400};
-
-  // Surfaces
   --surface-elevated: #{$color-white};
   --surface-overlay: rgba(255, 255, 255, 0.7);
 }
 
-// -----------------------------------------------
-// BODY
-// -----------------------------------------------
 body {
   background: var(--bg-main, #{$bg-main});
   color: var(--text-primary, #{$color-secondary});
@@ -59,17 +37,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-// -----------------------------------------------
-// ROOT ELEMENT
-// -----------------------------------------------
 #root {
   min-height: 100vh;
   min-height: 100dvh;
 }
 
-// -----------------------------------------------
-// SELECTION
-// -----------------------------------------------
 ::selection {
   background-color: rgba(30, 64, 175, 0.15);
   color: $color-primary-dark;
@@ -80,18 +52,12 @@ body {
   color: $color-primary-dark;
 }
 
-// -----------------------------------------------
-// FOCUS — Clean blue ring
-// -----------------------------------------------
 :focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.2), 0 0 0 4px rgba(30, 64, 175, 0.08);
   border-radius: $border-radius-sm;
 }
 
-// -----------------------------------------------
-// INTERACTIVE RESETS
-// -----------------------------------------------
 button,
 [role="button"] {
   cursor: pointer;
@@ -107,35 +73,23 @@ select {
   @include focus-ring;
 }
 
-// -----------------------------------------------
-// IMAGE
-// -----------------------------------------------
 img {
   max-width: 100%;
   height: auto;
   display: block;
 }
 
-// -----------------------------------------------
-// TABULAR NUMBERS
-// -----------------------------------------------
 [data-numeric],
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-// -----------------------------------------------
-// SMOOTH SCROLL
-// -----------------------------------------------
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
   }
 }
 
-// -----------------------------------------------
-// SCROLLBAR
-// -----------------------------------------------
 html {
   @include custom-scrollbar;
   scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
@@ -155,9 +109,6 @@ html {
   }
 }
 
-// -----------------------------------------------
-// VIEW TRANSITIONS
-// -----------------------------------------------
 @supports (view-transition-name: root) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
@@ -166,16 +117,10 @@ html {
   }
 }
 
-// -----------------------------------------------
-// CONTENT CONTAINMENT
-// -----------------------------------------------
 main {
   contain: layout style;
 }
 
-// -----------------------------------------------
-// HR / DIVIDER
-// -----------------------------------------------
 hr {
   border: none;
   height: 1px;
@@ -183,9 +128,6 @@ hr {
   margin: $spacing-lg 0;
 }
 
-// -----------------------------------------------
-// DISABLED ELEMENTS
-// -----------------------------------------------
 [disabled],
 .is-disabled {
   opacity: 0.5;
@@ -194,9 +136,6 @@ hr {
   user-select: none;
 }
 
-// -----------------------------------------------
-// TAP HIGHLIGHT
-// -----------------------------------------------
 button,
 [role="button"],
 a {
@@ -204,12 +143,8 @@ a {
   touch-action: manipulation;
 }
 
-// -----------------------------------------------
-// SAFE AREA
-// -----------------------------------------------
 @supports (padding: env(safe-area-inset-bottom)) {
   body {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
-

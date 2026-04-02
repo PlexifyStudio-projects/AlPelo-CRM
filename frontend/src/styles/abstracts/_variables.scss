@@ -1,13 +1,3 @@
-// ============================================
-// Plexify Studio - Design System v3.0
-// Ultra-modern SaaS · Linear/Vercel/Stripe aesthetic
-// ============================================
-
-// -----------------------------------------------
-// COLOR SYSTEM
-// -----------------------------------------------
-
-// --- Primary palette (Corporate Blue) ---
 $color-primary: #1E40AF;
 $color-primary-light: #3B82F6;
 $color-primary-lighter: #60A5FA;
@@ -16,17 +6,14 @@ $color-primary-darker: #172554;
 $color-primary-glow: rgba(30, 64, 175, 0.25);
 $color-primary-ghost: rgba(30, 64, 175, 0.06);
 
-// --- Secondary ---
 $color-secondary: #0F172A;
 
-// --- Accent (Indigo) ---
 $color-accent: #6366F1;
 $color-accent-light: #818CF8;
 $color-accent-dark: #4F46E5;
 $color-accent-glow: rgba(99, 102, 241, 0.25);
 $color-accent-ghost: rgba(99, 102, 241, 0.06);
 
-// --- Neutrals (Slate cool tones) ---
 $color-white: #FFFFFF;
 $color-off-white: #F8FAFC;
 $color-gray-50: #F1F5F9;
@@ -41,7 +28,6 @@ $color-gray-800: #0F172A;
 $color-gray-900: #020617;
 $color-black: #000000;
 
-// --- Semantic colors ---
 $color-success: #10B981;
 $color-success-dark: #059669;
 $color-success-bg: rgba(16, 185, 129, 0.08);
@@ -62,9 +48,6 @@ $color-info-dark: #2563EB;
 $color-info-bg: rgba(59, 130, 246, 0.08);
 $color-info-border: rgba(59, 130, 246, 0.2);
 
-// -----------------------------------------------
-// GLASSMORPHISM SYSTEM
-// -----------------------------------------------
 $glass-bg: rgba(255, 255, 255, 0.7);
 $glass-bg-heavy: rgba(255, 255, 255, 0.85);
 $glass-bg-light: rgba(255, 255, 255, 0.4);
@@ -79,21 +62,12 @@ $glass-blur-heavy: 32px;
 $glass-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 $glass-inner-glow-subtle: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 
-// -----------------------------------------------
-// BACKGROUNDS
-// -----------------------------------------------
 $bg-main: #F1F5F9;
 $bg-gradient: linear-gradient(135deg, #F1F5F9 0%, #E2E8F0 50%, #F1F5F9 100%);
 $bg-sidebar: linear-gradient(180deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
 $bg-card: #FFFFFF;
 $bg-input: rgba(255, 255, 255, 0.6);
 
-// Noise texture opacity
-$noise-opacity: 0.02;
-
-// -----------------------------------------------
-// GRADIENTS
-// -----------------------------------------------
 $gradient-primary: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
 $gradient-accent: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
 $gradient-hero: linear-gradient(135deg, #1E40AF 0%, #6366F1 50%, #3B82F6 100%);
@@ -103,25 +77,21 @@ $gradient-subtle: linear-gradient(135deg, rgba(59, 130, 246, 0.04) 0%, rgba(99, 
 $gradient-mesh-1: radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
 $gradient-mesh-2: radial-gradient(ellipse at 80% 20%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
 
-// -----------------------------------------------
-// TYPOGRAPHY - Major Third Scale (1.25)
-// -----------------------------------------------
 $font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 $font-heading: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-// Major third ratio: 1.25
-$font-size-2xs: 0.64rem;      // ~10.2px
-$font-size-xs: 0.75rem;       // 12px
-$font-size-sm: 0.875rem;      // 14px
-$font-size-base: 1rem;        // 16px
-$font-size-md: 1.125rem;      // 18px
-$font-size-lg: 1.25rem;       // 20px
-$font-size-xl: 1.5rem;        // 24px
-$font-size-2xl: 1.875rem;     // 30px
-$font-size-3xl: 2.25rem;      // 36px
-$font-size-4xl: 3rem;         // 48px
-$font-size-5xl: 3.75rem;      // 60px
-$font-size-display: 4.5rem;   // 72px
+$font-size-2xs: 0.64rem;
+$font-size-xs: 0.75rem;
+$font-size-sm: 0.875rem;
+$font-size-base: 1rem;
+$font-size-md: 1.125rem;
+$font-size-lg: 1.25rem;
+$font-size-xl: 1.5rem;
+$font-size-2xl: 1.875rem;
+$font-size-3xl: 2.25rem;
+$font-size-4xl: 3rem;
+$font-size-5xl: 3.75rem;
+$font-size-display: 4.5rem;
 
 $font-weight-light: 300;
 $font-weight-regular: 400;
@@ -136,7 +106,6 @@ $line-height-snug: 1.3;
 $line-height-base: 1.6;
 $line-height-relaxed: 1.8;
 
-// Letter spacing
 $letter-spacing-tighter: -0.04em;
 $letter-spacing-tight: -0.025em;
 $letter-spacing-normal: -0.011em;
@@ -145,26 +114,18 @@ $letter-spacing-wider: 0.05em;
 $letter-spacing-widest: 0.1em;
 $letter-spacing-caps: 0.12em;
 
-// -----------------------------------------------
-// SPACING - 8px baseline, generous
-// -----------------------------------------------
-$spacing-unit: 0.5rem;  // 8px
+$spacing-2xs: 0.125rem;
+$spacing-xs: 0.25rem;
+$spacing-sm: 0.5rem;
+$spacing-md: 1rem;
+$spacing-lg: 1.5rem;
+$spacing-xl: 2rem;
+$spacing-2xl: 2.5rem;
+$spacing-3xl: 3rem;
+$spacing-4xl: 4rem;
+$spacing-5xl: 6rem;
+$spacing-6xl: 8rem;
 
-$spacing-2xs: 0.125rem;  // 2px
-$spacing-xs: 0.25rem;    // 4px
-$spacing-sm: 0.5rem;     // 8px
-$spacing-md: 1rem;       // 16px
-$spacing-lg: 1.5rem;     // 24px
-$spacing-xl: 2rem;       // 32px
-$spacing-2xl: 2.5rem;    // 40px
-$spacing-3xl: 3rem;      // 48px
-$spacing-4xl: 4rem;      // 64px
-$spacing-5xl: 6rem;      // 96px
-$spacing-6xl: 8rem;      // 128px
-
-// -----------------------------------------------
-// BORDERS & RADII — rounder, more modern
-// -----------------------------------------------
 $border-radius-xs: 6px;
 $border-radius-sm: 8px;
 $border-radius-md: 12px;
@@ -178,9 +139,6 @@ $border-color-light: rgba(0, 0, 0, 0.03);
 $border-color-medium: rgba(0, 0, 0, 0.1);
 $border-width: 1px;
 
-// -----------------------------------------------
-// SHADOWS — Ultra-soft, floating feel
-// -----------------------------------------------
 $shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
 $shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
 $shadow-md: 0 1px 3px rgba(0, 0, 0, 0.04), 0 6px 24px rgba(0, 0, 0, 0.06);
@@ -192,17 +150,9 @@ $shadow-glass-hover: 0 2px 6px rgba(0, 0, 0, 0.04), 0 14px 44px rgba(0, 0, 0, 0.
 $shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.03);
 $shadow-inner-glow: inset 0 1px 2px rgba(255, 255, 255, 0.25);
 
-// Colored shadows
 $shadow-glow-primary: 0 0 40px rgba(30, 64, 175, 0.12);
-$shadow-glow-accent: 0 0 40px rgba(99, 102, 241, 0.1);
 $shadow-glow-error: 0 0 32px rgba(239, 68, 68, 0.12);
 $shadow-glow-success: 0 0 32px rgba(16, 185, 129, 0.12);
-$shadow-glow-info: 0 0 32px rgba(59, 130, 246, 0.12);
-
-$shadow-primary-colored: 0 8px 30px rgba(30, 64, 175, 0.1);
-$shadow-accent-colored: 0 8px 30px rgba(99, 102, 241, 0.1);
-$shadow-info-colored: 0 8px 30px rgba(59, 130, 246, 0.1);
-$shadow-success-colored: 0 8px 30px rgba(16, 185, 129, 0.1);
 
 $shadow-colored-primary: 0 4px 16px rgba(30, 64, 175, 0.12), 0 1px 4px rgba(30, 64, 175, 0.08);
 $shadow-colored-accent: 0 4px 16px rgba(99, 102, 241, 0.12), 0 1px 4px rgba(99, 102, 241, 0.08);
@@ -210,13 +160,9 @@ $shadow-colored-success: 0 4px 16px rgba(16, 185, 129, 0.12), 0 1px 4px rgba(16,
 $shadow-colored-info: 0 4px 16px rgba(59, 130, 246, 0.12), 0 1px 4px rgba(59, 130, 246, 0.08);
 $shadow-colored-error: 0 4px 16px rgba(239, 68, 68, 0.12), 0 1px 4px rgba(239, 68, 68, 0.08);
 
-// Card shadows
 $shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.03), 0 12px 40px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.02);
 $shadow-card-active: 0 1px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
 
-// -----------------------------------------------
-// TRANSITIONS & EASINGS
-// -----------------------------------------------
 $ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 $ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 $ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
@@ -232,9 +178,6 @@ $transition-bounce: 400ms $ease-spring;
 $transition-spring: 500ms $ease-spring-gentle;
 $transition-page: 350ms $ease-out-expo;
 
-// -----------------------------------------------
-// ANIMATION TIMING
-// -----------------------------------------------
 $duration-instant: 80ms;
 $duration-fast: 150ms;
 $duration-normal: 200ms;
@@ -244,26 +187,16 @@ $duration-page: 350ms;
 $stagger-base: 0.04s;
 $stagger-fast: 0.025s;
 
-// -----------------------------------------------
-// LAYOUT
-// -----------------------------------------------
 $sidebar-width: 260px;
 $sidebar-collapsed-width: 72px;
 $header-height: 64px;
-$max-content-width: 1440px;
 
-// -----------------------------------------------
-// BREAKPOINTS
-// -----------------------------------------------
 $breakpoint-sm: 576px;
 $breakpoint-md: 768px;
 $breakpoint-lg: 992px;
 $breakpoint-xl: 1200px;
 $breakpoint-2xl: 1400px;
 
-// -----------------------------------------------
-// Z-INDEX SCALE
-// -----------------------------------------------
 $z-base: 1;
 $z-dropdown: 100;
 $z-sticky: 200;
@@ -274,16 +207,6 @@ $z-notification: 600;
 $z-tooltip: 700;
 $z-command-palette: 800;
 
-// -----------------------------------------------
-// CONTENT WIDTHS
-// -----------------------------------------------
-$content-width-narrow: 680px;
-$content-width-medium: 960px;
-$content-width-wide: 1200px;
-
-// -----------------------------------------------
-// WHATSAPP COLORS
-// -----------------------------------------------
 $wa-green: #25D366;
 $wa-green-dark: #128C7E;
 $wa-sent-bubble: #DCF8C6;

@@ -51,6 +51,21 @@ const DevDashboard = ({ onNavigate }) => {
     return () => clearInterval(interval);
   }, [fetchAll]);
 
+  const s = stats || {};
+  const wa = waHealth || {};
+  const al = alerts || {};
+
+  const tokensMonth = s.total_ai_tokens || 0;
+  const costUSD = s.cost_estimate_usd || 0;
+  const costCOP = Math.round(costUSD * TRM);
+
+  const periodLabel = useMemo(() => {
+    const period = s.period || '';
+    if (!period) return '';
+    const monthNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return `${monthNames[parseInt(period.split('-')[1])]} ${period.split('-')[0]}`;
+  }, [s.period]);
+
   if (loading) {
     return (
       <div className={b}>
@@ -69,21 +84,6 @@ const DevDashboard = ({ onNavigate }) => {
       </div>
     );
   }
-
-  const s = stats || {};
-  const wa = waHealth || {};
-  const al = alerts || {};
-
-  const tokensMonth = s.total_ai_tokens || 0;
-  const costUSD = s.cost_estimate_usd || 0;
-  const costCOP = Math.round(costUSD * TRM);
-
-  const periodLabel = useMemo(() => {
-    const period = s.period || '';
-    if (!period) return '';
-    const monthNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    return `${monthNames[parseInt(period.split('-')[1])]} ${period.split('-')[0]}`;
-  }, [s.period]);
 
   const linaTotal = s.lina_total || 0;
   const totalWAMessages = s.total_messages_sent || 0;

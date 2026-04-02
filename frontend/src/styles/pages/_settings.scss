@@ -1,10 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Settings — Premium Card Accordion Design
-// ============================================
-
 $fb-blue: #1877F2;
 $fb-blue-hover: #166FE5;
 $ai-purple: #7C3AED;
@@ -20,7 +16,6 @@ $_gap-sm: 10px;
 .settings {
   @include page-enter;
 
-  // HEADER
   &__header {
     margin-bottom: $spacing-xl;
   }
@@ -37,9 +32,6 @@ $_gap-sm: 10px;
     margin-top: 2px;
   }
 
-  // ═══════════════════════════════════
-  // SECTION CARDS GRID — premium glassmorphism
-  // ═══════════════════════════════════
   &__grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -107,7 +99,6 @@ $_gap-sm: 10px;
     }
   }
 
-  // Top gradient glow line (like reference)
   &__section-card-glow {
     position: absolute;
     top: 0;
@@ -164,9 +155,6 @@ $_gap-sm: 10px;
     border: 1px solid $color-success-border;
   }
 
-  // ═══════════════════════════════════
-  // EXPANDED PANEL
-  // ═══════════════════════════════════
   &__panel {
     background: $color-white;
     border: 1px solid rgba(0, 0, 0, 0.08);
@@ -181,11 +169,6 @@ $_gap-sm: 10px;
     padding: 28px;
   }
 
-  // ═══════════════════════════════════
-  // SHARED FORM ELEMENTS — compact
-  // ═══════════════════════════════════
-
-  // OPTION ROWS
   &__option {
     @include flex-between;
     padding: $_gap-sm 0;
@@ -213,7 +196,6 @@ $_gap-sm: 10px;
     max-width: 340px;
   }
 
-  // TOGGLE — compact
   &__toggle {
     position: relative;
     width: 40px;
@@ -247,7 +229,6 @@ $_gap-sm: 10px;
     }
   }
 
-  // FORM INPUTS — 36px
   &__meta-field {
     @include flex-column;
     gap: 3px;
@@ -325,7 +306,6 @@ $_gap-sm: 10px;
     &:hover { border-color: $color-primary; color: $color-primary; }
   }
 
-  // BUTTONS — compact
   &__ai-save {
     height: $_btn-h;
     padding: 0 $_gap;
@@ -394,9 +374,6 @@ $_gap-sm: 10px;
     }
   }
 
-  // ═══════════════════════════════════
-  // LINA AI SECTION
-  // ═══════════════════════════════════
   &__ai-field {
     margin-bottom: $_gap;
 
@@ -466,10 +443,6 @@ $_gap-sm: 10px;
     flex-wrap: wrap;
     margin-bottom: $_gap;
   }
-
-  // ═══════════════════════════════════
-  // META / WHATSAPP SECTION
-  // ═══════════════════════════════════
 
   &__meta-expiry-warning {
     display: flex;
@@ -674,7 +647,6 @@ $_gap-sm: 10px;
     max-width: 300px;
   }
 
-  // Manual config accordion
   &__meta-manual {
     border-top: 1px solid $border-color-light;
     margin-top: $_gap-sm;
@@ -711,9 +683,6 @@ $_gap-sm: 10px;
     animation: settings-slide-down 200ms $ease-out-quart;
   }
 
-  // ═══════════════════════════════════
-  // WA BUSINESS PROFILE
-  // ═══════════════════════════════════
   &__wa-profile {
     border-top: 1px solid $border-color-light;
     padding-top: $_gap;
@@ -855,7 +824,6 @@ $_gap-sm: 10px;
     margin-top: 1px;
   }
 
-  // Templates list — compact
   &__meta-templates {
     border-top: 1px solid $border-color-light;
     padding-top: $_gap-sm;
@@ -930,9 +898,6 @@ $_gap-sm: 10px;
     @include truncate;
   }
 
-  // ═══════════════════════════════════
-  // LEGACY FORM ELEMENTS (used in some sections)
-  // ═══════════════════════════════════
   &__form-section {
     margin-bottom: $_gap;
     padding-bottom: $_gap;
@@ -1085,9 +1050,6 @@ $_gap-sm: 10px;
   }
   &__ai-range-labels { display: flex; justify-content: space-between; font-size: $font-size-2xs; color: $color-gray-400; margin-top: 2px; }
 
-  // ═══════════════════════════════════
-  // USAGE OVERVIEW PANEL
-  // ═══════════════════════════════════
   &__usage {
     margin-top: 8px;
     animation: settings-panel-open 400ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -1186,9 +1148,6 @@ $_gap-sm: 10px;
     transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  // ═══════════════════════════════════
-  // RESPONSIVE
-  // ═══════════════════════════════════
   @media (max-width: $breakpoint-md) {
     &__ai-row { flex-direction: column; gap: $_gap-sm; }
     &__ai-field--half, &__ai-field--quarter { flex: 1; min-width: 100%; }
@@ -1206,9 +1165,6 @@ $_gap-sm: 10px;
   }
 }
 
-// ═══════════════════════════════════
-// DISCONNECT MODAL (portal)
-// ═══════════════════════════════════
 .settings__modal-overlay {
   position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(4px); display: flex; align-items: center;
@@ -1276,10 +1232,6 @@ $_gap-sm: 10px;
   from { opacity: 0; transform: translateY(-6px); max-height: 0; }
   to { opacity: 1; transform: translateY(0); max-height: 2000px; }
 }
-
-// ════════════════════════════════════════════════════
-// BRANDING PANEL — White-label settings
-// ════════════════════════════════════════════════════
 
 .settings__brand-section {
   margin-bottom: $spacing-xl;

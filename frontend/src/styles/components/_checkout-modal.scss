@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// CheckoutModal — POS multi-step checkout
-// BEM block: checkout-modal
-// ============================================
-
 .checkout-modal {
   position: relative;
   width: 100%;
@@ -19,7 +14,6 @@
   overflow: hidden;
   animation: checkoutSlideUp 300ms $ease-out-expo;
 
-  // ─── Overlay ──────────────────────────────────
   &__overlay {
     position: fixed;
     inset: 0;
@@ -34,7 +28,6 @@
     animation: checkoutFadeIn 200ms ease;
   }
 
-  // ─── Header ───────────────────────────────────
   &__header {
     @include flex-between;
     padding: $spacing-lg $spacing-xl;
@@ -67,7 +60,6 @@
     }
   }
 
-  // ─── Step indicator ───────────────────────────
   &__steps {
     display: flex;
     align-items: center;
@@ -134,14 +126,12 @@
     color: $color-gray-500;
   }
 
-  // ─── Body ─────────────────────────────────────
   &__body {
     flex: 1;
     overflow-y: auto;
     padding: $spacing-lg $spacing-xl;
   }
 
-  // ─── Step container ───────────────────────────
   &__step {
     display: flex;
     flex-direction: column;
@@ -149,7 +139,6 @@
     animation: checkoutFadeIn 200ms ease;
   }
 
-  // ─── Service items (Step 1) ───────────────────
   &__items {
     display: flex;
     flex-direction: column;
@@ -218,7 +207,6 @@
     }
   }
 
-  // ─── Add service (Step 1) ─────────────────────
   &__add-btn {
     display: flex;
     align-items: center;
@@ -328,7 +316,6 @@
     }
   }
 
-  // ─── Subtotal ─────────────────────────────────
   &__subtotal {
     @include flex-between;
     padding-top: $spacing-md;
@@ -344,7 +331,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // ─── Sections (Step 2) ────────────────────────
   &__section {
     display: flex;
     flex-direction: column;
@@ -357,7 +343,6 @@
     color: $color-gray-700;
   }
 
-  // ─── Discount tabs ───────────────────────────
   &__discount-tabs {
     display: flex;
     gap: $spacing-xs;
@@ -385,7 +370,6 @@
     }
   }
 
-  // ─── Discount percent ────────────────────────
   &__discount-percent {
     display: flex;
     flex-direction: column;
@@ -427,21 +411,18 @@
     gap: $spacing-xs;
   }
 
-  // ─── Discount fixed ──────────────────────────
   &__discount-fixed {
     display: flex;
     align-items: center;
     gap: $spacing-xs;
   }
 
-  // ─── Tip input ────────────────────────────────
   &__tip-input {
     display: flex;
     align-items: center;
     gap: $spacing-xs;
   }
 
-  // ─── Generic input ────────────────────────────
   &__input {
     flex: 1;
     padding: $spacing-sm $spacing-md;
@@ -462,7 +443,6 @@
       color: $color-gray-300;
     }
 
-    // Hide number spinners
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button {
       -webkit-appearance: none;
@@ -484,7 +464,6 @@
     color: $color-gray-400;
   }
 
-  // ─── Summary lines (Step 2) ───────────────────
   &__summary-lines {
     display: flex;
     flex-direction: column;
@@ -516,7 +495,6 @@
     }
   }
 
-  // ─── Payment grid (Step 3) ────────────────────
   &__payment-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -551,7 +529,6 @@
       }
     }
 
-    // Per-method accent colors
     &[data-method="nequi"] {
       .checkout-modal__payment-card-icon { color: #6B21A8; }
       .checkout-modal__payment-card-letter { background: rgba(107, 33, 168, 0.1); color: #6B21A8; }
@@ -620,7 +597,6 @@
     }
   }
 
-  // ─── Cash section ─────────────────────────────
   &__cash-section {
     display: flex;
     flex-direction: column;
@@ -653,7 +629,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // ─── Mixed payment section ────────────────────
   &__mixed-section {
     display: flex;
     flex-direction: column;
@@ -736,7 +711,6 @@
     }
   }
 
-  // ─── Payment total ────────────────────────────
   &__payment-total {
     @include flex-between;
     padding-top: $spacing-md;
@@ -752,7 +726,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // ─── Receipt (Step 4) ─────────────────────────
   &__receipt {
     border: 1px dashed $color-gray-200;
     border-radius: $border-radius-md;
@@ -842,7 +815,6 @@
     }
   }
 
-  // ─── WhatsApp toggle ──────────────────────────
   &__whatsapp-toggle {
     display: flex;
     align-items: center;
@@ -872,7 +844,6 @@
     }
   }
 
-  // ─── CTA button (Step 4) ──────────────────────
   &__cta {
     width: 100%;
     padding: $spacing-md $spacing-lg;
@@ -902,7 +873,6 @@
     }
   }
 
-  // ─── Footer navigation ────────────────────────
   &__footer {
     @include flex-between;
     padding: $spacing-md $spacing-xl;
@@ -950,7 +920,6 @@
   }
 }
 
-// ─── Animations ─────────────────────────────────
 @keyframes checkoutFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

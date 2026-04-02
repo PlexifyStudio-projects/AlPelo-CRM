@@ -1,14 +1,1 @@
-// ============================================
-// LANDING ENTRY — Solo estilos de la landing page
-// NO incluye nada del CRM, Dashboard, Dev Panel, etc.
-// Resultado: ~80% menos CSS para visitantes de la landing
-// ============================================
-
-// Landing tiene su propio sistema de diseño completo:
-// - abstracts (variables, mixins)
-// - base (reset, typography, animations)
-// - layout (header, footer)
-// - components (buttons, effects)
-// - sections (hero, features, pricing, etc.)
-// - pages (about, contact, product, etc.)
 @use 'landing/landing';

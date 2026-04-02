@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// DevUsage + DevBilling — Vercel/Railway aesthetic
-// Technical, monospace accents, clean data display
-// ============================================
-
 $_primary: #1E40AF;
 $_primary-light: #3B82F6;
 $_accent: #0EA5E9;
@@ -25,7 +20,6 @@ $_surface: #F8FAFC;
   flex-direction: column;
   gap: 28px;
 
-  // Header
   &__header {
     @include flex-between;
     align-items: flex-start;
@@ -53,7 +47,6 @@ $_surface: #F8FAFC;
     font-family: $_mono;
   }
 
-  // Period selector
   &__period-selector {
     display: flex;
     align-items: center;
@@ -76,7 +69,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // Summary cards
   &__summary {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -130,7 +122,6 @@ $_surface: #F8FAFC;
     font-family: $_mono;
   }
 
-  // Section
   &__section {
     background: $_card-bg;
     border-radius: 12px;
@@ -147,7 +138,6 @@ $_surface: #F8FAFC;
     border-bottom: 1px solid #F1F5F9;
   }
 
-  // Tenant billing status grid
   &__tenants-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -222,7 +212,6 @@ $_surface: #F8FAFC;
     font-family: $_mono;
   }
 
-  // Table
   &__table-wrap {
     overflow-x: auto;
     @include custom-scrollbar;
@@ -286,7 +275,6 @@ $_surface: #F8FAFC;
     font-weight: $font-weight-medium;
   }
 
-  // Status badge
   &__status {
     display: inline-flex;
     align-items: center;
@@ -329,7 +317,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // Create button
   &__btn-create {
     display: flex;
     align-items: center;
@@ -356,7 +343,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // Action buttons in table
   &__actions {
     display: flex;
     gap: 6px;
@@ -396,7 +382,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // Modal
   &__modal-overlay {
     position: fixed;
     inset: 0;
@@ -486,7 +471,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // Form fields
   &__form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -528,7 +512,6 @@ $_surface: #F8FAFC;
 
   &__form-select { cursor: pointer; }
 
-  // Responsive
   @media (max-width: $breakpoint-md) {
     gap: 20px;
 

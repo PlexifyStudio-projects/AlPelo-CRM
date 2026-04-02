@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// DevProfile — Developer profile & credentials
-// Vercel/Railway: clean, technical, monospace accents
-// ============================================
-
 $_primary: #1E40AF;
 $_primary-light: #3B82F6;
 $_card-bg: #FFFFFF;
@@ -40,7 +35,6 @@ $_surface: #F8FAFC;
     color: $_text-muted;
   }
 
-  // Card
   &__card {
     background: $_card-bg;
     border-radius: 12px;
@@ -105,7 +99,6 @@ $_surface: #F8FAFC;
     box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
   }
 
-  // Form
   &__form {
     display: flex;
     flex-direction: column;
@@ -249,7 +242,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // Responsive
   @media (max-width: $breakpoint-md) {
     &__card {
       padding: 20px;

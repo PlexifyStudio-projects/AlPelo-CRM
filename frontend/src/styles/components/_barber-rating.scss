@@ -1,12 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// BarberRating Component — Redesigned
-// Staff performance & rating cards
-// Clean, professional, blue accent system
-// ============================================
-
 $_blue: #1E40AF;
 $_blue-light: #3B82F6;
 $_blue-sky: #0EA5E9;
@@ -42,7 +36,6 @@ $_radius-xl: 20px;
 .barber-rating {
   @include page-enter;
 
-  // ---- Header ----
   &__header {
     display: flex;
     align-items: flex-start;
@@ -76,7 +69,6 @@ $_radius-xl: 20px;
     font-weight: $font-weight-medium;
   }
 
-  // ---- Barber Cards Grid ----
   &__grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -92,7 +84,6 @@ $_radius-xl: 20px;
     }
   }
 
-  // ---- Card ----
   &__card {
     background: $color-white;
     border: 1px solid $_slate-200;
@@ -133,7 +124,6 @@ $_radius-xl: 20px;
     margin-bottom: $spacing-md;
   }
 
-  // ---- Avatar ----
   &__card-avatar {
     width: 52px;
     height: 52px;
@@ -254,7 +244,6 @@ $_radius-xl: 20px;
     }
   }
 
-  // ---- Star Rating ----
   &__card-rating {
     margin-bottom: $spacing-md;
   }
@@ -273,7 +262,6 @@ $_radius-xl: 20px;
     letter-spacing: $letter-spacing-wide;
   }
 
-  // ---- Card Metrics ----
   &__card-metrics {
     display: flex;
     gap: $spacing-md;
@@ -320,7 +308,6 @@ $_radius-xl: 20px;
     font-weight: $font-weight-semibold;
   }
 
-  // ---- Expandable Detail Section ----
   &__detail {
     display: grid;
     grid-template-rows: 0fr;
@@ -340,7 +327,6 @@ $_radius-xl: 20px;
     }
   }
 
-  // ---- Detail Section ----
   &__detail-section {
     margin-bottom: $spacing-xl;
 
@@ -357,7 +343,6 @@ $_radius-xl: 20px;
     margin-bottom: $spacing-md;
   }
 
-  // ---- Info Grid ----
   &__info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -427,7 +412,6 @@ $_radius-xl: 20px;
     font-style: italic;
   }
 
-  // ---- Performance Metrics Grid ----
   &__metrics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -483,7 +467,6 @@ $_radius-xl: 20px;
     font-weight: $font-weight-semibold;
   }
 
-  // ---- Top Services ----
   &__top-services {
     display: flex;
     flex-direction: column;
@@ -515,7 +498,6 @@ $_radius-xl: 20px;
     white-space: nowrap;
   }
 
-  // ---- Detail Header ----
   &__detail-header {
     display: flex;
     align-items: center;
@@ -553,7 +535,6 @@ $_radius-xl: 20px;
     gap: $spacing-sm;
   }
 
-  // ---- Action Buttons ----
   &__feedback-btn {
     display: flex;
     align-items: center;
@@ -677,7 +658,6 @@ $_radius-xl: 20px;
     }
   }
 
-  // ---- Actions Row ----
   &__actions {
     display: flex;
     gap: $spacing-sm;
@@ -686,7 +666,6 @@ $_radius-xl: 20px;
     border-top: 1px solid $_slate-100;
   }
 
-  // ---- Filters ----
   &__detail-filters {
     display: flex;
     align-items: center;
@@ -765,7 +744,6 @@ $_radius-xl: 20px;
     }
   }
 
-  // ---- Client List ----
   &__clients-list {
     display: flex;
     flex-direction: column;
@@ -859,7 +837,6 @@ $_radius-xl: 20px;
     font-size: $font-size-sm;
   }
 
-  // ---- Modal ----
   &__modal {
     max-width: 580px;
   }
@@ -870,7 +847,6 @@ $_radius-xl: 20px;
     gap: $spacing-lg;
   }
 
-  // ---- Message Preview ----
   &__message-preview {
     display: flex;
     flex-direction: column;
@@ -912,7 +888,6 @@ $_radius-xl: 20px;
     }
   }
 
-  // ---- Client Selection ----
   &__client-selection {
     display: flex;
     flex-direction: column;
@@ -960,7 +935,6 @@ $_radius-xl: 20px;
     }
   }
 
-  // ---- Checkbox ----
   &__checkbox-wrapper {
     display: flex;
     align-items: center;
@@ -1028,7 +1002,6 @@ $_radius-xl: 20px;
     white-space: nowrap;
   }
 
-  // ---- Modal Footer ----
   &__modal-footer {
     display: flex;
     justify-content: flex-end;
@@ -1097,14 +1070,6 @@ $_radius-xl: 20px;
   }
 }
 
-// ---- Team Page wrapper ----
 .team-page {
   @include page-enter;
-}
-
-// ---- Spinner keyframe ----
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }

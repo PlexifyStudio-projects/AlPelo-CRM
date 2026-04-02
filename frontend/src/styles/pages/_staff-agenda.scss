@@ -1,12 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Staff Agenda — Redesigned
-// Mobile-first appointment list for staff
-// Clean cards, large touch targets, clear status
-// ============================================
-
 $_blue: #1E40AF;
 $_blue-light: #3B82F6;
 $_blue-sky: #0EA5E9;
@@ -44,7 +38,6 @@ $_radius-lg: 16px;
     padding: $spacing-lg $spacing-xl;
   }
 
-  // ---- Loading ----
   &__loading {
     color: $_slate-400;
     padding: $spacing-2xl;
@@ -52,7 +45,6 @@ $_radius-lg: 16px;
     font-size: $font-size-base;
   }
 
-  // ---- Header ----
   &__header {
     margin-bottom: $spacing-md;
 
@@ -77,7 +69,6 @@ $_radius-lg: 16px;
     }
   }
 
-  // ---- Date Navigation ----
   &__date-nav {
     display: flex;
     align-items: center;
@@ -159,7 +150,6 @@ $_radius-lg: 16px;
     }
   }
 
-  // ---- Day Stats ----
   &__stats {
     display: flex;
     gap: $spacing-md;
@@ -186,14 +176,12 @@ $_radius-lg: 16px;
     &--gold span { color: $_gold; }
   }
 
-  // ---- Appointment List ----
   &__list {
     display: flex;
     flex-direction: column;
     gap: $spacing-sm;
   }
 
-  // ---- Appointment Card ----
   &__card {
     display: flex;
     align-items: center;
@@ -333,7 +321,6 @@ $_radius-lg: 16px;
     }
   }
 
-  // ---- Empty State ----
   &__empty {
     text-align: center;
     padding: $spacing-3xl $spacing-md;

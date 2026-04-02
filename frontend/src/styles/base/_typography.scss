@@ -1,12 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// AlPelo - Typography System
-// Inter + Playfair Display
-// Perfect vertical rhythm on 8px baseline
-// ============================================
-
 body {
   font-family: $font-primary;
   font-size: $font-size-base;
@@ -21,9 +15,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-// -----------------------------------------------
-// HEADINGS - Playfair Display
-// -----------------------------------------------
 h1, h2, h3, h4, h5, h6 {
   font-family: $font-heading;
   font-weight: $font-weight-bold;
@@ -68,9 +59,6 @@ h6 {
   margin-bottom: $spacing-xs;
 }
 
-// -----------------------------------------------
-// BODY TEXT
-// -----------------------------------------------
 p {
   margin-bottom: $spacing-md;
   text-wrap: pretty;
@@ -94,22 +82,17 @@ small {
   color: $color-gray-400;
 }
 
-// -----------------------------------------------
-// LINKS — Underline animation on hover
-// -----------------------------------------------
 a {
   color: $color-primary;
   text-decoration: none;
   position: relative;
-  transition:
-    color $transition-fast;
+  transition: color $transition-fast;
 
   &:hover {
     color: $color-primary-light;
   }
 }
 
-// Utility: animated underline for inline links
 .link--underline {
   position: relative;
   display: inline;
@@ -133,9 +116,6 @@ a {
   }
 }
 
-// -----------------------------------------------
-// CODE / MONO
-// -----------------------------------------------
 code {
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.9em;
@@ -147,32 +127,20 @@ code {
   font-variant-ligatures: none;
 }
 
-// -----------------------------------------------
-// EMPHASIS WITH PLAYFAIR ITALIC
-// -----------------------------------------------
 .text-emphasis {
   font-family: $font-heading;
   font-style: italic;
   font-weight: $font-weight-medium;
 }
 
-// -----------------------------------------------
-// LABEL UTILITY — uppercase micro label
-// -----------------------------------------------
 .text-label {
   @include label-text;
 }
 
-// -----------------------------------------------
-// CAPTION UTILITY
-// -----------------------------------------------
 .text-caption {
   @include caption-text;
 }
 
-// -----------------------------------------------
-// NUMERIC DISPLAY — Premium stat counters
-// -----------------------------------------------
 .text-stat {
   font-family: $font-heading;
   font-weight: $font-weight-bold;
@@ -182,9 +150,6 @@ code {
   color: $color-secondary;
 }
 
-// -----------------------------------------------
-// GRADIENT HEADLINE — For hero/accent headings
-// -----------------------------------------------
 .text-gradient-primary {
   @include gradient-text(linear-gradient(135deg, $color-primary, $color-primary-light));
 }
@@ -193,18 +158,12 @@ code {
   @include gradient-text(linear-gradient(135deg, $color-accent, $color-accent-light));
 }
 
-// -----------------------------------------------
-// SMOOTH FONT RENDERING FOR DARK BACKGROUNDS
-// -----------------------------------------------
 .text-on-dark {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-// -----------------------------------------------
-// MONOSPACED DATA (IDs, codes, tokens)
-// -----------------------------------------------
 .text-mono {
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.9em;
@@ -212,9 +171,6 @@ code {
   letter-spacing: $letter-spacing-wide;
 }
 
-// -----------------------------------------------
-// SUBTLE DIVIDER HEADING (section separators)
-// -----------------------------------------------
 .text-divider {
   display: flex;
   align-items: center;

@@ -1,18 +1,10 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// INPUT — Modern clean inputs
-// 12px radius, 48px height, subtle bg, clean focus
-// ============================================
-
 .input {
   @include flex-column;
   position: relative;
 
-  // -----------------------------------------------
-  // LABEL
-  // -----------------------------------------------
   &__label {
     font-family: $font-primary;
     font-size: $font-size-sm;
@@ -22,9 +14,6 @@
     transition: all 200ms $ease-out-quart;
   }
 
-  // -----------------------------------------------
-  // FIELD
-  // -----------------------------------------------
   &__field {
     width: 100%;
     height: 48px;
@@ -62,9 +51,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // FLOATING LABEL VARIANT
-  // -----------------------------------------------
   &--floating {
     position: relative;
 
@@ -100,17 +86,11 @@
     }
   }
 
-  // -----------------------------------------------
-  // REQUIRED INDICATOR
-  // -----------------------------------------------
   &__required {
     color: $color-error;
     font-weight: $font-weight-medium;
   }
 
-  // -----------------------------------------------
-  // ERROR STATE
-  // -----------------------------------------------
   &--error &__field {
     border-color: $color-error;
     background: rgba($color-error, 0.02);
@@ -147,9 +127,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // SUCCESS STATE
-  // -----------------------------------------------
   &--success &__field {
     border-color: $color-success;
 
@@ -177,9 +154,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // CHARACTER COUNT
-  // -----------------------------------------------
   &__char-count {
     position: absolute;
     right: $spacing-md;
@@ -198,9 +172,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // SEARCH INPUT — pill shape, left icon
-  // -----------------------------------------------
   &--search {
     position: relative;
 
@@ -242,9 +213,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // TEXTAREA VARIANT
-  // -----------------------------------------------
   &--textarea &__field {
     height: auto;
     min-height: 120px;
@@ -253,9 +221,6 @@
     line-height: $line-height-base;
   }
 
-  // -----------------------------------------------
-  // WITH ICON
-  // -----------------------------------------------
   &--with-icon {
     .input__field {
       padding-left: 40px;
@@ -278,17 +243,11 @@
     }
   }
 
-  // -----------------------------------------------
-  // FOCUS-VISIBLE
-  // -----------------------------------------------
   &__field:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
   }
 
-  // -----------------------------------------------
-  // SELECT DROPDOWN
-  // -----------------------------------------------
   &__select {
     width: 100%;
     height: 48px;

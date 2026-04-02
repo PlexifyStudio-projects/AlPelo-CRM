@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// DevLayout — Plexify Studio Developer Shell
-// Vercel/Railway inspired: Dark, technical, premium
-// ============================================
-
 $_sidebar-width: 260px;
 $_sidebar-collapsed: 72px;
 $_sidebar-bg: #0F172A;
@@ -28,9 +23,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
   min-height: 100vh;
   background: $_content-bg;
 
-  // -----------------------------------------------
-  // SIDEBAR
-  // -----------------------------------------------
   &__sidebar {
     width: $_sidebar-width;
     height: 100vh;
@@ -48,7 +40,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     z-index: 10;
     overflow: hidden;
 
-    // Subtle inner glow on right edge
     &::after {
       content: '';
       position: absolute;
@@ -65,9 +56,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     width: $_sidebar-collapsed;
   }
 
-  // -----------------------------------------------
-  // BRAND
-  // -----------------------------------------------
   &__brand {
     display: flex;
     align-items: center;
@@ -116,9 +104,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     margin-top: 2px;
   }
 
-  // -----------------------------------------------
-  // NAVIGATION
-  // -----------------------------------------------
   &__nav {
     flex: 1;
     display: flex;
@@ -216,9 +201,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     color: rgba(255, 255, 255, 0.7);
   }
 
-  // -----------------------------------------------
-  // SIDEBAR FOOTER
-  // -----------------------------------------------
   &__sidebar-footer {
     margin-top: auto;
     padding: 12px 10px 14px;
@@ -364,9 +346,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     }
   }
 
-  // -----------------------------------------------
-  // CONTENT AREA (topbar + main)
-  // -----------------------------------------------
   &__content-area {
     flex: 1;
     min-width: 0;
@@ -376,9 +355,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     overflow: hidden;
   }
 
-  // -----------------------------------------------
-  // TOPBAR
-  // -----------------------------------------------
   &__topbar {
     display: flex;
     align-items: center;
@@ -510,9 +486,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     margin: 4px 0;
   }
 
-  // -----------------------------------------------
-  // MAIN CONTENT
-  // -----------------------------------------------
   &__main {
     flex: 1;
     min-width: 0;
@@ -522,9 +495,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     @include custom-scrollbar;
   }
 
-  // -----------------------------------------------
-  // COLLAPSED STATE
-  // -----------------------------------------------
   &--collapsed {
     .dev-layout__brand-text,
     .dev-layout__nav-text {
@@ -568,9 +538,6 @@ $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
     }
   }
 
-  // -----------------------------------------------
-  // RESPONSIVE
-  // -----------------------------------------------
   @media (max-width: $breakpoint-lg) {
     &__main {
       padding: 24px;

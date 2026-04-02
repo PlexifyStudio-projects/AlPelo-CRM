@@ -1,12 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Staff Dashboard — Redesigned
-// Mobile-first, clean professional layout
-// Blue accent system for staff portal
-// ============================================
-
 $_blue: #1E40AF;
 $_blue-light: #3B82F6;
 $_blue-sky: #0EA5E9;
@@ -46,7 +40,6 @@ $_radius-xl: 20px;
     padding: $spacing-lg $spacing-xl;
   }
 
-  // ---- Loading ----
   &__loading {
     color: $_slate-400;
     padding: $spacing-2xl;
@@ -54,7 +47,6 @@ $_radius-xl: 20px;
     font-size: $font-size-base;
   }
 
-  // ---- Greeting ----
   &__greeting {
     margin-bottom: $spacing-lg;
     padding-bottom: $spacing-lg;
@@ -84,7 +76,6 @@ $_radius-xl: 20px;
     }
   }
 
-  // ---- KPI Cards ----
   &__kpis {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -181,7 +172,6 @@ $_radius-xl: 20px;
     @include truncate;
   }
 
-  // ---- Next Appointment Hero ----
   &__next-appt {
     background: linear-gradient(135deg, $_blue 0%, $_blue-light 60%, $_blue-sky 100%);
     border-radius: $_radius-lg;
@@ -254,7 +244,6 @@ $_radius-xl: 20px;
     @include truncate;
   }
 
-  // ---- Notifications Section ----
   &__notifications {
     margin-bottom: $spacing-lg;
   }
@@ -352,7 +341,6 @@ $_radius-xl: 20px;
     border: 1px dashed $_slate-200;
   }
 
-  // ---- Quick Actions ----
   &__actions {
     display: flex;
     flex-direction: column;

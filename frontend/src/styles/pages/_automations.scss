@@ -1,18 +1,10 @@
 @use '../abstracts/variables' as *;
 
-// ============================================
-// Automations — Plexify Studio v3
-// Workflow engine cards, toggles, stats
-// ============================================
-
 .automations {
   display: flex;
   flex-direction: column;
   gap: $spacing-md;
 
-  // ════════════════════════════════════════════════
-  // PAGE HEADER
-  // ════════════════════════════════════════════════
   &__header {
     display: flex;
     align-items: center;
@@ -104,9 +96,6 @@
     animation: auto-pulse 2.5s ease-in-out infinite;
   }
 
-  // ════════════════════════════════════════════════
-  // LOADING
-  // ════════════════════════════════════════════════
   &__loading {
     display: flex;
     flex-direction: column;
@@ -127,9 +116,6 @@
     animation: auto-spin 0.8s linear infinite;
   }
 
-  // ════════════════════════════════════════════════
-  // STATS
-  // ════════════════════════════════════════════════
   &__stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -223,9 +209,6 @@
     line-height: 1.3;
   }
 
-  // ════════════════════════════════════════════════
-  // TABS
-  // ════════════════════════════════════════════════
   &__tabs {
     display: flex;
     gap: 4px;
@@ -274,9 +257,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // FILTERS
-  // ════════════════════════════════════════════════
   &__filters {
     display: flex;
     gap: $spacing-xs;
@@ -322,9 +302,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // ════════════════════════════════════════════════
-  // EMPTY
-  // ════════════════════════════════════════════════
   &__empty {
     display: flex;
     flex-direction: column;
@@ -359,9 +336,6 @@
     max-width: 400px;
   }
 
-  // ════════════════════════════════════════════════
-  // GRID
-  // ════════════════════════════════════════════════
   &__grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -376,9 +350,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // CARD
-  // ════════════════════════════════════════════════
   &__card {
     background: $color-white;
     border: 1px solid $color-gray-100;
@@ -466,7 +437,6 @@
     color: $color-gray-400;
   }
 
-  // Toggle switch
   &__toggle {
     position: relative;
     width: 44px;
@@ -511,7 +481,6 @@
     }
   }
 
-  // Card badges
   &__card-badges {
     display: flex;
     flex-wrap: wrap;
@@ -585,7 +554,6 @@
     line-height: 1.4;
   }
 
-  // Card config
   &__card-config {
     display: flex;
     flex-direction: column;
@@ -643,7 +611,6 @@
     }
   }
 
-  // Meta template status indicator
   &__card-meta-status {
     display: flex;
     align-items: center;
@@ -691,7 +658,6 @@
     .automations__card-meta-status--rejected & { background: $color-error; }
   }
 
-  // Edit template inline
   &__card-edit {
     display: flex;
     flex-direction: column;
@@ -772,7 +738,6 @@
     border: 1px solid $color-gray-100;
   }
 
-  // Submit to Meta button
   &__card-submit-btn {
     display: inline-flex;
     align-items: center;
@@ -797,7 +762,6 @@
     &:disabled { opacity: 0.6; cursor: not-allowed; }
   }
 
-  // Toggle disabled state
   &__toggle--disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -807,7 +771,6 @@
     }
   }
 
-  // Template ready
   &__card-template-ready {
     display: inline-flex;
     align-items: center;
@@ -830,7 +793,6 @@
     &--warn { background: $color-warning; }
   }
 
-  // Variables
   &__card-variables {
     display: flex;
     flex-wrap: wrap;
@@ -847,7 +809,6 @@
     font-family: 'SF Mono', 'Fira Code', monospace;
   }
 
-  // Days
   &__card-days {
     display: flex;
     align-items: center;
@@ -870,7 +831,6 @@
     color: $color-gray-700;
   }
 
-  // Message
   &__card-message {
     display: flex;
     flex-direction: column;
@@ -915,7 +875,6 @@
     }
   }
 
-  // Footer
   &__card-footer {
     display: flex;
     align-items: center;
@@ -1026,9 +985,6 @@
     color: $color-gray-300;
   }
 
-  // ════════════════════════════════════════════════
-  // HISTORY
-  // ════════════════════════════════════════════════
   &__history {
     background: $color-white;
     border: 1px solid $color-gray-100;
@@ -1141,9 +1097,6 @@
     }
   }
 
-  // ════════════════════════════════════════════════
-  // RESPONSIVE
-  // ════════════════════════════════════════════════
   @media (max-width: 768px) {
     &__header {
       flex-direction: column;

@@ -7,11 +7,11 @@ const SmokeCanvas = () => {
   const animRef = useRef(null);
 
   const COLORS = [
-    { r: 59, g: 130, b: 246 },   // blue #3B82F6
-    { r: 236, g: 72, b: 153 },   // pink #EC4899
-    { r: 6, g: 182, b: 212 },    // cyan #06B6D4
-    { r: 139, g: 92, b: 246 },   // purple #8B5CF6
-    { r: 16, g: 185, b: 129 },   // green #10B981
+    { r: 59, g: 130, b: 246 },
+    { r: 236, g: 72, b: 153 },
+    { r: 6, g: 182, b: 212 },
+    { r: 139, g: 92, b: 246 },
+    { r: 16, g: 185, b: 129 },
   ];
 
   const createParticle = useCallback((x, y, isAmbient = false) => {
@@ -272,7 +272,7 @@ const Login = ({ onLogin }) => {
   return (
     <div className={`${b} ${mounted ? `${b}--mounted` : ''}`}>
       <div className={`${b}__wrapper`}>
-        {/* Left panel: Dark canvas with interactive smoke */}
+
         <div className={`${b}__showcase`}>
           <SmokeCanvas />
 
@@ -328,7 +328,6 @@ const Login = ({ onLogin }) => {
           </div>
         </div>
 
-        {/* Right panel: Login form */}
         <div className={`${b}__panel`}>
           <div className={`${b}__panel-glow`} />
           <div className={`${b}__panel-content`}>
@@ -350,7 +349,7 @@ const Login = ({ onLogin }) => {
               </div>
 
               <form className={`${b}__form`} onSubmit={handleSubmit}>
-                {/* Username field */}
+
                 <div className={`${b}__field ${focusedField === 'username' ? `${b}__field--focused` : ''} ${hasValue('username') ? `${b}__field--filled` : ''}`}>
                   <div className={`${b}__field-icon`}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -378,7 +377,6 @@ const Login = ({ onLogin }) => {
                   <div className={`${b}__field-line`} />
                 </div>
 
-                {/* Password field */}
                 <div className={`${b}__field ${focusedField === 'password' ? `${b}__field--focused` : ''} ${hasValue('password') ? `${b}__field--filled` : ''}`}>
                   <div className={`${b}__field-icon`}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -425,7 +423,6 @@ const Login = ({ onLogin }) => {
                   <div className={`${b}__field-line`} />
                 </div>
 
-                {/* Options */}
                 <div className={`${b}__options`}>
                   <label className={`${b}__checkbox`}>
                     <input
@@ -442,7 +439,6 @@ const Login = ({ onLogin }) => {
                   </label>
                 </div>
 
-                {/* Active Session Warning */}
                 {activeSessionPrompt && (
                   <div className={`${b}__session-warning`}>
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -459,7 +455,6 @@ const Login = ({ onLogin }) => {
                   </div>
                 )}
 
-                {/* Error */}
                 {error && !suspended && !activeSessionPrompt && (
                   <div className={`${b}__error`}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -471,7 +466,6 @@ const Login = ({ onLogin }) => {
                   </div>
                 )}
 
-                {/* Suspended account */}
                 {suspended && (
                   <div className={`${b}__suspended`}>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -483,7 +477,6 @@ const Login = ({ onLogin }) => {
                   </div>
                 )}
 
-                {/* Submit */}
                 <button
                   type="submit"
                   className={`${b}__submit ${isLoading ? `${b}__submit--loading` : ''}`}
@@ -510,7 +503,6 @@ const Login = ({ onLogin }) => {
               </form>
             </div>
 
-            {/* Back to landing */}
             <div style={{ textAlign: 'center', marginTop: 16 }}>
               <a
                 href={import.meta.env.BASE_URL || '/'}
@@ -521,7 +513,6 @@ const Login = ({ onLogin }) => {
               </a>
             </div>
 
-            {/* Footer */}
             <div className={`${b}__footer`}>
               <div className={`${b}__footer-divider`} />
               <p className={`${b}__footer-copyright`}>

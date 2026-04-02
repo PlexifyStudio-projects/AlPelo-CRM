@@ -1,18 +1,11 @@
-// ============================================
-// AlPelo - SCSS Functions
-// ============================================
-
-/// Spacing multiplier based on 8px grid
 @function space($multiplier) {
   @return calc(#{$multiplier} * 0.5rem);
 }
 
-/// Convert px to rem
 @function to-rem($px) {
   @return calc(#{$px} / 16 * 1rem);
 }
 
-/// Fluid clamp helper
 @function fluid($min, $max, $vw-min: 375, $vw-max: 1440) {
   $slope: calc((#{$max} - #{$min}) / (#{$vw-max} - #{$vw-min}));
   $y-intercept: calc(#{$min} - #{$slope} * #{$vw-min});

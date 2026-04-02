@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// DevDashboard — Plexify Studio Metrics
-// Vercel/Railway: clean, data-dense, technical
-// ============================================
-
 $_primary: #1E40AF;
 $_primary-light: #3B82F6;
 $_accent: #0EA5E9;
@@ -25,9 +20,6 @@ $_surface: #F8FAFC;
   flex-direction: column;
   gap: 28px;
 
-  // -----------------------------------------------
-  // HEADER
-  // -----------------------------------------------
   &__header {
     @include flex-between;
     align-items: flex-start;
@@ -80,9 +72,6 @@ $_surface: #F8FAFC;
     gap: 12px;
   }
 
-  // -----------------------------------------------
-  // KPIs
-  // -----------------------------------------------
   &__kpis {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -200,9 +189,6 @@ $_surface: #F8FAFC;
     font-family: $_mono;
   }
 
-  // -----------------------------------------------
-  // SKELETON
-  // -----------------------------------------------
   &__skeleton-line {
     height: 14px;
     background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%);
@@ -217,9 +203,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // -----------------------------------------------
-  // SECTION
-  // -----------------------------------------------
   &__section {
     background: $_card-bg;
     border-radius: 12px;
@@ -279,9 +262,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // -----------------------------------------------
-  // EMPTY STATE
-  // -----------------------------------------------
   &__empty {
     padding: 56px 24px;
     text-align: center;
@@ -312,9 +292,6 @@ $_surface: #F8FAFC;
     margin: 0;
   }
 
-  // -----------------------------------------------
-  // TABLE
-  // -----------------------------------------------
   &__table-wrap {
     overflow-x: auto;
     @include custom-scrollbar;
@@ -408,9 +385,6 @@ $_surface: #F8FAFC;
     font-size: 12px;
   }
 
-  // -----------------------------------------------
-  // USAGE BAR
-  // -----------------------------------------------
   &__usage-bar {
     display: inline-block;
     width: 72px;
@@ -438,9 +412,6 @@ $_surface: #F8FAFC;
     color: $_text-muted;
   }
 
-  // -----------------------------------------------
-  // STATUS INDICATORS
-  // -----------------------------------------------
   &__ai-status {
     display: inline-flex;
     align-items: center;
@@ -491,9 +462,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // -----------------------------------------------
-  // TWO COLUMN GRID
-  // -----------------------------------------------
   &__grid-2col {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -504,9 +472,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // -----------------------------------------------
-  // WHATSAPP STATS
-  // -----------------------------------------------
   &__wa-stats {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -545,9 +510,6 @@ $_surface: #F8FAFC;
     letter-spacing: 0.04em;
   }
 
-  // -----------------------------------------------
-  // MINI CHART
-  // -----------------------------------------------
   &__mini-chart {
     padding: 16px 20px;
   }
@@ -593,9 +555,6 @@ $_surface: #F8FAFC;
     font-family: $_mono;
   }
 
-  // -----------------------------------------------
-  // ACTIVITY FEED
-  // -----------------------------------------------
   &__activity-list {
     display: flex;
     flex-direction: column;
@@ -656,9 +615,6 @@ $_surface: #F8FAFC;
     font-size: 13px;
   }
 
-  // -----------------------------------------------
-  // ALERT BANNER
-  // -----------------------------------------------
   &__alert-banner {
     display: flex;
     align-items: center;
@@ -679,9 +635,6 @@ $_surface: #F8FAFC;
     }
   }
 
-  // -----------------------------------------------
-  // QUICK NAV CARDS
-  // -----------------------------------------------
   &__quick-nav {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -731,9 +684,6 @@ $_surface: #F8FAFC;
     color: $_text-muted;
   }
 
-  // -----------------------------------------------
-  // RESPONSIVE
-  // -----------------------------------------------
   @media (max-width: $breakpoint-xl) {
     &__kpis {
       grid-template-columns: repeat(2, 1fr);
@@ -783,7 +733,6 @@ $_surface: #F8FAFC;
   100% { background-position: 200% 0; }
 }
 
-// Alert modal
 .dev-dash__alert-overlay {
   position: fixed;
   inset: 0;

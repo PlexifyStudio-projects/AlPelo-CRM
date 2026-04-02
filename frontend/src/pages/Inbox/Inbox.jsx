@@ -5,7 +5,6 @@ import { formatCurrency } from '../../utils/formatters';
 import UsageMeter from '../../components/common/UsageMeter/UsageMeter';
 import { useTenant } from '../../context/TenantContext';
 
-
 const b = 'inbox';
 const API_BASE = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -483,13 +482,10 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
 
   return (
     <div className={`${b}__client-sidebar`}>
-      {/* Close button */}
       <div className={`${b}__client-sidebar-header`}>
         <button className={`${b}__client-sidebar-close`} onClick={onClose}>{Icons.close}</button>
         <span className={`${b}__client-sidebar-title`}>Info. del contacto</span>
       </div>
-
-      {/* Profile header */}
       <div className={`${b}__client-header`}>
         <div className={`${b}__client-avatar-lg`} style={!conversation?.wa_profile_photo_url ? { background: getAvatarColor(name) } : undefined}>
           {conversation?.wa_profile_photo_url ? (
@@ -507,8 +503,6 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
           </span>
         )}
       </div>
-
-      {/* Quick actions */}
       <div className={`${b}__client-quick-actions`}>
         <button className={`${b}__client-quick-action`} title="Mensaje">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
@@ -527,8 +521,6 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
           <span>Buscar</span>
         </button>
       </div>
-
-      {/* Business data */}
       {client && (
         <div className={`${b}__client-section`}>
           <h4 className={`${b}__client-section-title`}>Datos del cliente</h4>
@@ -548,8 +540,6 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
           </div>
         </div>
       )}
-
-      {/* Contact details */}
       <div className={`${b}__client-section`}>
         <h4 className={`${b}__client-section-title`}>Informacion</h4>
         <div className={`${b}__client-details`}>
@@ -583,8 +573,6 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
           )}
         </div>
       </div>
-
-      {/* Starred messages */}
       <div className={`${b}__client-section`}>
         <button className={`${b}__client-section-btn`}>
           <span className={`${b}__client-section-btn-left`}>
@@ -596,8 +584,6 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
           </span>
         </button>
       </div>
-
-      {/* Media, links, docs */}
       <div className={`${b}__client-section`}>
         <h4 className={`${b}__client-section-title`}>Multimedia, enlaces y docs</h4>
         <div className={`${b}__client-media-tabs`}>
@@ -615,8 +601,6 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
           No hay archivos compartidos aun.
         </div>
       </div>
-
-      {/* Internal Notes */}
       <div className={`${b}__client-section`}>
         <h4 className={`${b}__client-section-title`}>{Icons.notepad} Notas internas</h4>
         <div className={`${b}__notes-section`}>
@@ -663,8 +647,6 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
           </div>
         </div>
       </div>
-
-      {/* Actions */}
       <div className={`${b}__client-section`}>
         <button className={`${b}__client-action`}>
           {Icons.mute} Silenciar notificaciones
@@ -815,7 +797,7 @@ const Inbox = () => {
   const [showNewChat, setShowNewChat] = useState(false);
   const [newChatPhone, setNewChatPhone] = useState('');
   const [newChatName, setNewChatName] = useState('');
-  const [newChatStep, setNewChatStep] = useState('phone'); // 'phone' | 'template' | 'custom'
+  const [newChatStep, setNewChatStep] = useState('phone');
   const [newChatLoading, setNewChatLoading] = useState(false);
   const [newChatError, setNewChatError] = useState('');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
@@ -840,8 +822,6 @@ const Inbox = () => {
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [convStatuses, setConvStatuses] = useState(() => loadJson(LS_CONV_STATUSES, {}));
   const [showStatusPicker, setShowStatusPicker] = useState(null);
-
-
 
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
@@ -1369,7 +1349,6 @@ const Inbox = () => {
 
   return (
     <div className={`${b} ${selectedConvId ? `${b}--chat-open` : ''}`}>
-      {/* ===== LIST PANEL ===== */}
       <div className={`${b}__list-panel`}>
         <div className={`${b}__list-header`}>
           <h2 className={`${b}__list-title`}>Chats</h2>
@@ -1386,8 +1365,6 @@ const Inbox = () => {
             {totalUnread > 0 && <span className={`${b}__unread-total`}>{totalUnread}</span>}
           </div>
         </div>
-
-        {/* Blast panel */}
         {showBlast && (
           <div className={`${b}__blast-panel`}>
             <div className={`${b}__blast-header`}>
@@ -1409,8 +1386,6 @@ const Inbox = () => {
             </div>
           </div>
         )}
-
-        {/* Global Message Search Panel */}
         {showGlobalSearch && (
           <div className={`${b}__global-search-panel`}>
             <div className={`${b}__global-search-header`}>
@@ -1474,8 +1449,6 @@ const Inbox = () => {
             </div>
           </div>
         )}
-
-        {/* New Chat Panel */}
         {showNewChat && (
           <div className={`${b}__new-chat-panel`}>
             <div className={`${b}__new-chat-header`}>
@@ -1489,7 +1462,6 @@ const Inbox = () => {
 
             {newChatStep === 'phone' && (
               <div className={`${b}__new-chat-form`}>
-                {/* Client search */}
                 <div className={`${b}__new-chat-search-wrap`}>
                   <input
                     type="text"
@@ -1532,8 +1504,6 @@ const Inbox = () => {
                 <p className={`${b}__new-chat-templates-hint`}>Enviando a <strong>{newChatName || newChatPhone}</strong></p>
                 <p className={`${b}__new-chat-meta-note`}>WhatsApp requiere una plantilla aprobada por Meta para iniciar conversaciones con contactos nuevos. Una vez el cliente responda, puedes enviar mensajes libres.</p>
                 {newChatError && <p className={`${b}__new-chat-error`}>{newChatError}</p>}
-
-                {/* Meta approved templates */}
                 {metaTemplates.length > 0 ? (
                   <>
                     <p className={`${b}__new-chat-section-label`}>Plantillas disponibles</p>
@@ -1602,14 +1572,10 @@ const Inbox = () => {
             )}
           </div>
         )}
-
-        {/* Search */}
         <div className={`${b}__search`}>
           <span className={`${b}__search-icon`}>{Icons.search}</span>
           <input type="text" className={`${b}__search-input`} placeholder="Buscar o empezar un chat nuevo" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
         </div>
-
-        {/* Filters */}
         <div className={`${b}__filters`}>
           {[
             { id: 'all', label: 'Todos' },
@@ -1623,8 +1589,6 @@ const Inbox = () => {
             </button>
           ))}
         </div>
-
-        {/* Conversation List */}
         <div className={`${b}__conv-list`}>
           {loading ? (
             <div className={`${b}__conv-loading`}>
@@ -1734,8 +1698,6 @@ const Inbox = () => {
             <div className={`${b}__empty`}><p>No se encontraron conversaciones</p></div>
           )}
         </div>
-
-        {/* Conversation Context Menu */}
         {showConvMenu && (
           <div
             className={`${b}__conv-context-menu`}
@@ -1771,8 +1733,6 @@ const Inbox = () => {
             </button>
           </div>
         )}
-
-        {/* Label Picker */}
         {showLabelPicker && (
           <div className={`${b}__label-picker`}>
             <div className={`${b}__label-picker-header`}>
@@ -1791,8 +1751,6 @@ const Inbox = () => {
             ))}
           </div>
         )}
-
-        {/* Status Picker */}
         {showStatusPicker && (
           <div className={`${b}__label-picker`}>
             <div className={`${b}__label-picker-header`}>
@@ -1812,12 +1770,9 @@ const Inbox = () => {
           </div>
         )}
       </div>
-
-      {/* ===== CHAT PANEL ===== */}
       <div className={`${b}__chat-panel`}>
         {selectedConv ? (
           <>
-            {/* Chat Header */}
             <div className={`${b}__chat-header`}>
               <button className={`${b}__back-btn`} onClick={() => setSelectedConvId(null)}>
                 {Icons.back}
@@ -1836,8 +1791,6 @@ const Inbox = () => {
                   {typingState[selectedConvId] ? 'escribiendo...' : selectedConv?.last_message_at ? `ult. vez ${formatConvTime(selectedConv.last_message_at)}` : ''}
                 </span>
               </div>
-
-              {/* AI Toggle */}
               <button
                 className={`${b}__ai-toggle ${isAiActive ? `${b}__ai-toggle--ai` : `${b}__ai-toggle--human`}`}
                 onClick={toggleAiMode}
@@ -1847,8 +1800,6 @@ const Inbox = () => {
                 <span>{isAiActive ? 'Lina IA' : 'Manual'}</span>
               </button>
             </div>
-
-            {/* Client info bar */}
             {selectedConv && (
               <div className={`${b}__client-bar`}>
                 {selectedConv.client ? (
@@ -1870,8 +1821,6 @@ const Inbox = () => {
                 </div>
               </div>
             )}
-
-            {/* Search in chat bar */}
             {showSearchInChat && (
               <div className={`${b}__search-in-chat`}>
                 <div className={`${b}__search-in-chat-input-wrap`}>
@@ -1898,7 +1847,6 @@ const Inbox = () => {
             )}
 
             <div className={`${b}__chat-body-wrapper`}>
-              {/* Messages */}
               <div className={`${b}__messages`}>
                 <div className={`${b}__messages-inner`}>
                   <div className={`${b}__encryption-notice`}>
@@ -1938,8 +1886,6 @@ const Inbox = () => {
                           <div className={`${b}__message-bubble`}>
                             {isSent && <span className={`${b}__bubble-tail ${b}__bubble-tail--sent`} />}
                             {!isSent && <span className={`${b}__bubble-tail ${b}__bubble-tail--received`} />}
-
-                            {/* Hover actions */}
                             <button
                               className={`${b}__msg-hover-btn`}
                               onClick={(e) => {
@@ -1960,8 +1906,6 @@ const Inbox = () => {
                             >
                               {Icons.chevronDown}
                             </button>
-
-                            {/* Reply quote */}
                             {msg.reply_to && (
                               <div className={`${b}__reply-quote`}>
                                 <span className={`${b}__reply-quote-text`}>
@@ -1969,16 +1913,12 @@ const Inbox = () => {
                                 </span>
                               </div>
                             )}
-
-                            {/* Lina IA label */}
                             {msg.sent_by?.startsWith('lina_ia') && (
                               <div className={`${b}__lina-label`}>
                                 {Icons.robot}
                                 <span>Lina IA</span>
                               </div>
                             )}
-
-                            {/* Media content */}
                             {msg.media_url && msg.message_type === 'sticker' && (
                               <img src={resolveMediaUrl(msg.media_url)} alt="Sticker" className={`${b}__message-sticker`} loading="lazy" />
                             )}
@@ -2017,8 +1957,6 @@ const Inbox = () => {
                               {msg.status === 'failed' && <span className={`${b}__message-failed`}>!</span>}
                             </div>
                           </div>
-
-                          {/* Quick reactions */}
                           {msg._showReactions && (
                             <div className={`${b}__quick-reactions`}>
                               {QUICK_REACTIONS.map((r, i) => (
@@ -2032,13 +1970,9 @@ const Inbox = () => {
                       );
                     })
                   )}
-
-                  {/* Lina AI thinking indicator — show when AI is active and last message is from client */}
                   {selectedConv?.is_ai_active && messages.length > 0 && messages[messages.length - 1]?.direction === 'inbound' && !typingState[selectedConvId] && (
                     <LinaThinking />
                   )}
-
-                  {/* Typing indicator */}
                   {typingState[selectedConvId] && (
                     <div className={`${b}__message ${typingState[selectedConvId] === 'business' ? `${b}__message--sent` : `${b}__message--received`}`}>
                       <div className={`${b}__message-bubble ${b}__message-bubble--typing`}>
@@ -2052,8 +1986,6 @@ const Inbox = () => {
                   <div ref={messagesEndRef} />
                 </div>
               </div>
-
-              {/* Message context menu */}
               {msgContextMenu && (
                 <MessageContextMenu
                   msg={msgContextMenu.msg}
@@ -2063,8 +1995,6 @@ const Inbox = () => {
                   onClose={() => setMsgContextMenu(null)}
                 />
               )}
-
-              {/* Client sidebar */}
               {showClientInfo && (
                 <ClientSidebar
                   conversation={selectedConv}
@@ -2085,16 +2015,12 @@ const Inbox = () => {
                 />
               )}
             </div>
-
-            {/* AI bar */}
             {isAiActive && (
               <div className={`${b}__ai-bar`}>
                 <span className={`${b}__ai-bar-dot`} />
                 Lina IA esta respondiendo este chat automaticamente
               </div>
             )}
-
-            {/* Reply bar */}
             {replyingTo && (
               <div className={`${b}__reply-bar`}>
                 <div className={`${b}__reply-bar-content`}>
@@ -2108,8 +2034,6 @@ const Inbox = () => {
                 </button>
               </div>
             )}
-
-            {/* Templates panel */}
             {showTemplates && (
               <div className={`${b}__templates-panel`}>
                 <div className={`${b}__templates-header`}>
@@ -2126,20 +2050,13 @@ const Inbox = () => {
                 </div>
               </div>
             )}
-
-            {/* Input */}
             <div className={`${b}__input-area`}>
-              {/* Emoji picker */}
               {showEmojiPicker && (
                 <EmojiPicker onSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
               )}
-
-              {/* Attachment menu */}
               {showAttachMenu && (
                 <AttachmentMenu onClose={() => setShowAttachMenu(false)} />
               )}
-
-              {/* Quick replies dropdown */}
               {showQuickReplies && (
                 <div className={`${b}__quick-replies`}>
                   <div className={`${b}__quick-replies-header`}>
@@ -2162,10 +2079,6 @@ const Inbox = () => {
               <button className={`${b}__input-action ${showEmojiPicker ? `${b}__input-action--active` : ''}`} onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowAttachMenu(false); setShowQuickReplies(false); }} title="Emojis">
                 {Icons.smiley}
               </button>
-              {/* Attach button removed — not functional yet */}
-
-              {/* Quick replies removed */}
-
               <div className={`${b}__input-wrapper`}>
                 <textarea
                   ref={inputRef}
@@ -2177,10 +2090,6 @@ const Inbox = () => {
                   rows={1}
                 />
               </div>
-
-              {/* Templates removed from input bar */}
-
-              {/* Send button — always visible */}
               <button className={`${b}__send-btn ${messageInput.trim() ? `${b}__send-btn--active` : ''}`} onClick={handleSendMessage} disabled={sendingMessage || !messageInput.trim()}>
                 {Icons.send}
               </button>

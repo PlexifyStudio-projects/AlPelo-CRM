@@ -12,11 +12,9 @@ const MENU_ITEMS = [
   { id: 'services', label: 'Servicios', description: 'CATALOGO Y PRECIOS', section: 'GESTION PRINCIPAL' },
   { id: 'inventory', label: 'Inventario', description: 'PRODUCTOS Y STOCK', section: 'GESTION PRINCIPAL' },
   { id: 'finances', label: 'Finanzas', description: 'INGRESOS Y METRICAS', section: 'GESTION PRINCIPAL' },
-  { id: 'lina-activity', label: 'Actividad Lina', description: 'MONITOREO EN TIEMPO REAL', section: 'GESTION PRINCIPAL' },
   { id: 'team', label: 'Equipo', description: 'RENDIMIENTO Y FEEDBACK', section: 'GESTION PRINCIPAL' },
   { id: 'automations', label: 'Automatizaciones', description: 'WORKFLOWS INTELIGENTES', section: 'MARKETING' },
   { id: 'inbox', label: 'Inbox', description: 'CONVERSACIONES WHATSAPP', section: 'WHATSAPP' },
-  { id: 'chat-ai', label: 'Lina IA', description: 'ASISTENTE INTELIGENTE', section: 'WHATSAPP' },
 ];
 
 const MOBILE_BREAKPOINT = 1024;
@@ -63,7 +61,7 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
       try {
         const data = await whatsappService.getUnreadCount();
         setInboxUnread(data.total_unread || 0);
-      } catch { /* silent */ }
+      } catch {}
     };
     fetchUnread();
     const interval = setInterval(fetchUnread, 10000);

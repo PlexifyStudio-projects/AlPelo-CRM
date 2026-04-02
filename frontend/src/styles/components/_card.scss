@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// CARD — Ultra-modern SaaS card
-// White bg, 20px radius, very soft shadow, subtle border
-// ============================================
-
 .card {
   background: $bg-card;
   border-radius: $border-radius-xl;
@@ -19,16 +14,12 @@
     border-color 250ms $ease-out-expo;
   animation: fadeInUp 350ms $ease-out-expo both;
 
-  // Hover: lift + deeper shadow
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 12px 40px rgba(0, 0, 0, 0.08);
     border-color: $color-gray-200;
   }
 
-  // -----------------------------------------------
-  // HEADER
-  // -----------------------------------------------
   &__header {
     @include flex-between;
     margin-bottom: $spacing-md;
@@ -53,9 +44,6 @@
     color: $color-gray-500;
   }
 
-  // -----------------------------------------------
-  // ACCENT BORDER VARIANTS — 3px top gradient bar
-  // -----------------------------------------------
   &--accent-primary {
     border-top: 3px solid $color-primary;
   }
@@ -72,9 +60,6 @@
     border-top: 3px solid $color-success;
   }
 
-  // -----------------------------------------------
-  // STAT CARD (dashboard numbers)
-  // -----------------------------------------------
   &--stat {
     padding: $spacing-lg;
     position: relative;
@@ -124,16 +109,10 @@
     }
   }
 
-  // -----------------------------------------------
-  // COMPACT VARIANT
-  // -----------------------------------------------
   &--compact {
     padding: $spacing-md;
   }
 
-  // -----------------------------------------------
-  // SHIMMER SKELETON LOADING
-  // -----------------------------------------------
   &--skeleton {
     pointer-events: none;
 
@@ -187,9 +166,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // FLAT VARIANT
-  // -----------------------------------------------
   &--flat {
     background: $color-white;
     backdrop-filter: none;
@@ -201,9 +177,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // INTERACTIVE / CLICKABLE
-  // -----------------------------------------------
   &--interactive {
     cursor: pointer;
 
@@ -217,12 +190,8 @@
     }
   }
 
-  // -----------------------------------------------
-  // STAGGER CHILDREN
-  // -----------------------------------------------
   @include stagger-children(0.04s, 8);
 
-  // Focus ring for interactive cards
   &--interactive:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px $color-white, 0 0 0 4px rgba($color-primary, 0.2), $shadow-lg;

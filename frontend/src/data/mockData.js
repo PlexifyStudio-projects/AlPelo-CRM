@@ -1131,7 +1131,6 @@ export const mockVisitHistory = [
 ];
 __CUT_START__
 
-  // Conv 4 — Emmanuel Rojas: Cliente nuevo preguntando precios
   'conv-4': [
     { id: 'me-1', from: 'client', text: 'Hola, buenas tardes!', time: '2026-03-03T17:00:00', status: 'read' },
     { id: 'me-2', from: 'business', text: 'Hola Emmanuel! Bienvenido, soy Lina de Al Pelo. ¿En qué te puedo ayudar?', time: '2026-03-03T17:03:00', status: 'read' },
@@ -1142,14 +1141,12 @@ __CUT_START__
     { id: 'me-7', from: 'client', text: 'Buenísimo, entonces agendo para el sábado!', time: '2026-03-04T08:30:00', status: 'delivered' },
   ],
 
-  // Conv 5 — Nicolás Pabón: Feedback post-visita
   'conv-5': [
     { id: 'mn-1', from: 'business', text: 'Hola Nicolás! Soy Lina de Al Pelo. ¿Cómo te fue con el corte de hoy? Cuéntanos, queremos saber si quedaste contento!', time: '2026-03-03T14:00:00', status: 'read' },
     { id: 'mn-2', from: 'client', text: 'Quedó brutal hermano, 10/10 🔥', time: '2026-03-03T16:20:00', status: 'read' },
     { id: 'mn-3', from: 'business', text: 'Me alegra mucho saber eso! Le paso la buena vibra a Victor, seguro se pone feliz. Te esperamos para la próxima!', time: '2026-03-03T16:25:00', status: 'read' },
   ],
 
-  // Conv 6 — David López: Recordatorio + confirmación rápida
   'conv-6': [
     { id: 'md-1', from: 'business', text: 'Hola David! Soy Lina de Al Pelo. Te recuerdo que tienes cita de Spa Manicure mañana a las 3:00 PM con Josemith. ¿Confirmas?', time: '2026-03-03T12:00:00', status: 'read' },
     { id: 'md-2', from: 'client', text: 'Sí! Gracias por avisar, casi se me olvida jaja', time: '2026-03-03T14:15:00', status: 'read' },
@@ -1157,14 +1154,12 @@ __CUT_START__
     { id: 'md-4', from: 'client', text: 'Listo, ahí estaré sin falta!', time: '2026-03-03T14:30:00', status: 'read' },
   ],
 
-  // Conv 7 — Valentina Morales: Post lifting de pestañas
   'conv-7': [
     { id: 'mv-1', from: 'business', text: 'Hola Valentina! Soy Lina de Al Pelo. ¿Cómo te quedó el lifting de pestañas? Josemith estaba muy contenta con el resultado!', time: '2026-03-02T18:00:00', status: 'read' },
     { id: 'mv-2', from: 'client', text: 'Me encantó! Quedaron divinas 😍 Todas mis amigas me preguntaron dónde me las hice', time: '2026-03-02T19:15:00', status: 'read' },
     { id: 'mv-3', from: 'business', text: 'Qué bueno saberlo! Si alguna amiga quiere venir, le damos un 10% de descuento por ser referida tuya. Y para ti hay un descuento especial en tu próximo servicio. Gracias por la confianza!', time: '2026-03-02T19:20:00', status: 'read' },
   ],
 
-  // Conv 8 — Esteban Capacho: Cliente nuevo recomendado
   'conv-8': [
     { id: 'mec-1', from: 'client', text: 'Hola! Me recomendó mi amigo Carlos Mendoza. ¿Cómo hago para agendar?', time: '2026-03-02T14:30:00', status: 'read' },
     { id: 'mec-2', from: 'business', text: 'Hola Esteban! Qué bueno que llegas de parte de Carlos, es de nuestros mejores clientes 😊 Bienvenido a Al Pelo!\n\nPuedes agendar por nuestra página: https://book.weibook.co/alpelo-peluqueria\n\nO si prefieres, dime qué servicio te interesa y te busco disponibilidad ahorita mismo 💈', time: '2026-03-02T14:35:00', status: 'read' },
@@ -1175,24 +1170,20 @@ __CUT_START__
     { id: 'mec-7', from: 'client', text: 'Dale, perfecto. Nos vemos el jueves entonces!', time: '2026-03-02T15:10:00', status: 'read' },
   ],
 
-  // Conv 9 — Juan Pablo Pérez: Recordatorio + confirmación
   'conv-9': [
     { id: 'c9-1', from: 'business', text: 'Hola Juan Pablo! Te recuerdo que mañana tienes cita a las 3:00 PM con Memo. Corte hipster como siempre.', time: '2026-03-04T07:30:00', status: 'read' },
     { id: 'c9-2', from: 'client', text: 'Listo, muchas gracias!', time: '2026-03-04T07:45:00', status: 'read' },
   ],
 
-  // Conv 10 — Santiago Reyes: Seguimiento
   'conv-10': [
     { id: 'c10-1', from: 'business', text: 'Hola Santiago! Hace un tiempito que no vienes. ¿Todo bien?', time: '2026-03-04T07:00:00', status: 'read' },
     { id: 'c10-2', from: 'client', text: 'Bueno, ahí miro entonces', time: '2026-03-04T07:20:00', status: 'read' },
   ],
 
-  // Conv 11 — Camilo Hernández: No-show seguimiento
   'conv-11': [
     { id: 'c11-1', from: 'business', text: 'Hola Camilo! Vimos que no pudiste asistir a tu cita del martes. ¿Quieres reagendar? Te esperamos!', time: '2026-03-04T06:50:00', status: 'delivered' },
   ],
 
-  // Conv 12 — Sebastián Cárdenas: Agendar cita
   'conv-12': [
     { id: 'c12-1', from: 'client', text: 'Hola, necesito una cita para esta semana', time: '2026-03-03T18:00:00', status: 'read' },
     { id: 'c12-2', from: 'business', text: 'Hola Sebastián! Claro, ¿qué servicio necesitas y qué día te queda bien?', time: '2026-03-03T18:15:00', status: 'read' },
@@ -1201,12 +1192,10 @@ __CUT_START__
     { id: 'c12-5', from: 'client', text: 'Gracias Lina, nos vemos!', time: '2026-03-03T18:40:00', status: 'read' },
   ],
 
-  // Conv 13 — Mateo Gómez: Recordatorio de cita
   'conv-13': [
     { id: 'c13-1', from: 'business', text: 'Hola Mateo! Te recuerdo que mañana tienes cita a las 11:00 AM con Memo. Corte + cejas.', time: '2026-03-03T17:00:00', status: 'delivered' },
   ],
 
-  // Conv 14 — Fabián Andrés Capacho: Cita urgente
   'conv-14': [
     { id: 'c14-1', from: 'client', text: 'Parce necesito cita urgente esta semana', time: '2026-03-03T15:00:00', status: 'read' },
     { id: 'c14-2', from: 'business', text: 'Hola Fabián! Déjame revisar... ¿Qué servicio necesitas?', time: '2026-03-03T15:10:00', status: 'read' },
@@ -1215,7 +1204,6 @@ __CUT_START__
     { id: 'c14-5', from: 'client', text: 'Nos vemos hermano!', time: '2026-03-03T15:30:00', status: 'read' },
   ],
 
-  // Conv 15 — Karen Lizeth Amaya: Semipermanente
   'conv-15': [
     { id: 'c15-1', from: 'client', text: 'Hola, quiero agendar semipermanente para el sábado', time: '2026-03-03T13:45:00', status: 'read' },
     { id: 'c15-2', from: 'business', text: 'Hola Karen! Claro, el sábado a las 10:00 AM con Josemith hay espacio. ¿Te sirve?', time: '2026-03-03T14:00:00', status: 'read' },
@@ -1223,136 +1211,36 @@ __CUT_START__
     { id: 'c15-4', from: 'business', text: 'Perfecto Karen! Te esperamos el sábado a las 10:00 AM.', time: '2026-03-03T14:10:00', status: 'read' },
   ],
 
-  // Conv 16 — Robinson Ferney Patiño: Reactivación
   'conv-16': [
     { id: 'c16-1', from: 'business', text: 'Hola Robinson! Hace 45 días que no te vemos por Al Pelo. Te extrañamos! Agenda tu cita: https://book.weibook.co/alpelo-peluqueria', time: '2026-03-03T12:00:00', status: 'delivered' },
   ],
 
-  // Conv 17 — Harold Steven Pineda: Promo
   'conv-17': [
     { id: 'c17-1', from: 'business', text: 'Hola Harold! Tenemos una promo especial esta semana: Corte + Barba + Cejas por $40.000.', time: '2026-03-02T20:00:00', status: 'read' },
     { id: 'c17-2', from: 'client', text: 'Sí claro, cuánto sale?', time: '2026-03-02T20:30:00', status: 'read' },
   ],
 
-  // Conv 18 — Cristian Camilo Ordóñez: Cambio de look
   'conv-18': [
     { id: 'c18-1', from: 'client', text: 'Buenas, es que quiero un cambio de look total', time: '2026-03-02T19:00:00', status: 'read' },
   ],
 
-  // Conv 19 — Jhon Fredy Blanco: Cita para hoy (inbound)
   'conv-19': [
     { id: 'c19-1', from: 'client', text: 'Buenas tardes, necesito una cita para hoy si hay', time: '2026-03-04T11:30:00', status: 'read' },
   ],
 
-  // Conv 20 — Oscar Mauricio Jaimes: Precio corte hipster (inbound)
   'conv-20': [
     { id: 'c20-1', from: 'client', text: 'Hola, cuánto sale el corte hipster?', time: '2026-03-04T11:00:00', status: 'read' },
   ],
 
-  // Conv 21 — Daniela Fernanda Rueda: Disponibilidad mañana (inbound)
   'conv-21': [
     { id: 'c21-1', from: 'client', text: 'Hola! Quiero saber si tienen disponibilidad para mañana', time: '2026-03-04T10:45:00', status: 'read' },
   ],
 
-  // Conv 22 — Yesid Orlando Mantilla: Reagendar cita (inbound)
   'conv-22': [
     { id: 'c22-1', from: 'client', text: 'Necesito reagendar mi cita del jueves', time: '2026-03-04T10:20:00', status: 'read' },
   ],
 
-  // Conv 23 — Luis García: Nuevo cliente potencial (inbound)
   'conv-23': [
     { id: 'c23-1', from: 'client', text: 'Hola buenas, me recomendaron esta barbería. Cómo hago para agendar?', time: '2026-03-04T10:00:00', status: 'read' },
   ],
 };
-
-// ============================================
-// WhatsApp Templates — 43 plantillas, 12 categorías
-// Todas empiezan con "Hola {{nombre}}, soy Lina de Al Pelo..."
-// ============================================
-export const mockWhatsAppTemplates = [
-  // --- POST-SERVICIO (3) ---
-  { id: 'tpl-1', name: 'Como te fue?', category: 'post-servicio', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Que tal te fue con tu {{servicio}}? Quedaste contento? Cuentanos, tu opinion nos importa mucho!', variables: ['nombre', 'servicio'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-2', name: 'Calificanos', category: 'post-servicio', body: 'Hola {{nombre}}! Gracias por visitarnos en AlPelo. Del 1 al 5, como calificas tu experiencia? Si hay algo que mejorar, cuentanos con confianza.', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-3', name: 'Dejanos tu reseña', category: 'post-servicio', body: 'Hola {{nombre}}! Si te gusto tu visita a AlPelo, nos ayudaria mucho una reseña en Google. Es rapido y nos ayuda a que mas gente nos conozca. Gracias!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- REACTIVACION (3) ---
-  { id: 'tpl-4', name: 'Hace rato no vienes', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Que tal estas? Vemos que llevas un tiempito sin venir. Queremos regalarte un 10% de descuento en el servicio que elijas. Te gustaria venir esta semana?', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-5', name: 'Te extrañamos + regalo', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Llevas bastante tiempo sin visitarnos y te extrañamos! Te regalamos un 10% de descuento al servicio que elijas mas una bebida gratis. Te gustaria venir esta semana?', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-6', name: 'Vuelve cuando quieras', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Hace mucho no te vemos por aca y la verdad te extrañamos. No importa cuanto tiempo haya pasado, siempre eres bienvenido. Tenemos novedades que te van a gustar!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- RECORDATORIO (2) ---
-  { id: 'tpl-7', name: 'Recordatorio de cita', category: 'recordatorio', body: 'Hola {{nombre}}! Te recordamos tu cita en AlPelo manana a las {{hora}} con {{barbero}}. Te esperamos! Confirma respondiendo SI.', variables: ['nombre', 'hora', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-8', name: 'Tu cita es hoy', category: 'recordatorio', body: 'Hola {{nombre}}! Hoy tienes cita en AlPelo a las {{hora}}. Recuerda llegar 5 minuticos antes para que {{barbero}} te atienda puntual. Te esperamos!', variables: ['nombre', 'hora', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- PROMOCION Y REFERIDOS (2) ---
-  { id: 'tpl-9', name: 'Promo de la semana', category: 'promocion', body: 'Hola {{nombre}}! Esta semana en AlPelo tenemos promo especial: {{servicio}} con 15% de descuento. Solo hasta el sabado. Agenda antes de que se acaben los cupos: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre', 'servicio'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-10', name: 'Trae un amigo', category: 'promocion', body: 'Hola {{nombre}}! En AlPelo tenemos algo para ti: trae a un amigo y los dos reciben 10% de descuento. Solo muestra este mensaje al llegar. Te esperamos!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- FIDELIZACION VIP (3) ---
-  { id: 'tpl-11', name: 'Gracias VIP', category: 'fidelizacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Queria agradecerte por ser parte de nuestros clientes mas fieles. Llevas {{visitas}} visitas con nosotros y eso para nosotros vale mucho. Te esperamos pronto!', variables: ['nombre', 'visitas'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-12', name: 'Beneficio exclusivo VIP', category: 'fidelizacion', body: 'Hola {{nombre}}! Por ser cliente frecuente de AlPelo, te regalamos un servicio de hidratacion express en tu proxima visita. Solo menciona este mensaje al llegar. Te esperamos!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-13', name: 'Tu barbero te extraña', category: 'fidelizacion', body: 'Hola {{nombre}}! {{barbero}} me pidio que te saludara. Dice que hace rato no te ve y quiere saber como estas. Cuando quieras venir, aqui te esperamos con los brazos abiertos!', variables: ['nombre', 'barbero'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- REACTIVACION AGRESIVA (3) ---
-  { id: 'tpl-14', name: 'Ultimo intento', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo. Hace bastante no sabemos de ti y te echamos de menos. Tenemos un 15% de descuento esperandote en cualquier servicio. Solo hasta esta semana. Te animas?', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-15', name: 'Cambio de look gratis', category: 'reactivacion', body: 'Hola {{nombre}}! En AlPelo estamos estrenando estilos nuevos y queremos que seas de los primeros en probarlos. Te regalamos una asesoria de imagen gratis en tu proxima visita. Que dices?', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-16', name: 'Que tal todo?', category: 'reactivacion', body: 'Hola {{nombre}}! Soy Lina de AlPelo, como estas? Solo queria saludarte y recordarte que cuando necesites un buen corte o un cambio de look, aqui estamos para ti. Buen dia!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-
-  // --- PROMOCION EXTRA (2) ---
-  { id: 'tpl-17', name: '2x1 en combo', category: 'promocion', body: 'Hola {{nombre}}! En AlPelo esta semana tenemos 2x1 en Corte + Barba. Ven con un amigo y pagan uno solo. Agenda aqui: https://book.weibook.co/alpelo-peluqueria', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-  { id: 'tpl-18', name: 'Descuento cumpleaños', category: 'promocion', body: 'Hola {{nombre}}! De parte de todo el equipo de AlPelo, feliz cumpleanos! Te regalamos un 20% de descuento en el servicio que quieras durante esta semana. Pasa cuando gustes!', variables: ['nombre'], timesSent: 0, responseRate: 0, lastSent: null },
-];
-
-// Template category metadata
-export const templateCategories = [
-  { id: 'post-servicio', name: 'Post-Servicio', icon: 'star', color: '#34D399', count: 3 },
-  { id: 'reactivacion', name: 'Reactivación', icon: 'refresh', color: '#FBBF24', count: 6 },
-  { id: 'recordatorio', name: 'Recordatorio', icon: 'clock', color: '#60A5FA', count: 2 },
-  { id: 'promocion', name: 'Promoción', icon: 'tag', color: '#8B5CF6', count: 4 },
-  { id: 'fidelizacion', name: 'Fidelización', icon: 'heart', color: '#EC4899', count: 3 },
-];
-
-// ============================================
-// WhatsApp Stats
-// ============================================
-export const mockWhatsAppStats = {
-  messagesToday: 0,
-  messagesThisWeek: 0,
-  messagesThisMonth: 0,
-  conversationsActive: 0,
-  responseRate: 0,
-  avgResponseTime: '-',
-  templatesSentToday: 0,
-  templatesSentWeek: 0,
-  topTemplates: [
-    { id: 'tpl-1', name: 'Como te fue?', sent: 0, responses: 0 },
-    { id: 'tpl-4', name: 'Hace rato no vienes', sent: 0, responses: 0 },
-    { id: 'tpl-5', name: 'Te extrañamos + regalo', sent: 0, responses: 0 },
-  ],
-  clientsWithoutContact7Days: 0,
-  clientsWithoutContact30Days: 0,
-};
-
-// ============================================
-// Lina IA — Mock response patterns
-// ============================================
-export const mockLinaResponses = {
-  greetings: [
-    'Quiubo parce! Soy Lina, la asistente de AlPelo. ¿En qué te puedo ayudar hoy?',
-    'Ey, ¿qué más? Aquí Lina lista pa\' lo que necesites.',
-    'Hola! Lina al servicio. Pregúntame lo que quieras sobre el negocio.',
-  ],
-  unknownQuery: [
-    'Hmm, no estoy seguro de entender esa pregunta, parce. ¿Puedes reformularla?',
-    'Uy, esa se me escapa. Intenta preguntarme sobre clientes, mensajes, plantillas o el equipo.',
-    'No pillé bien la pregunta. Puedo ayudarte con info de clientes, WhatsApp, plantillas y más.',
-  ],
-  thinkingPhrases: [
-    'Déjame revisar los datos...',
-    'Un momento, consultando la info...',
-    'Buscando en la base de datos...',
-    'Analizando los números...',
-    'Procesando tu solicitud...',
-  ],
-};
-__CUT_END__

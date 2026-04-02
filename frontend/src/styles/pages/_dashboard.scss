@@ -1,18 +1,10 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Dashboard — Ultra-Modern Executive View
-// Linear × Vercel quality analytics
-// ============================================
-
 .dashboard {
   @include page-enter;
   margin: 0 auto;
 
-  // ===========================================
-  // HEADER
-  // ===========================================
   &__header {
     @include flex-between;
     margin-bottom: $spacing-2xl;
@@ -62,9 +54,6 @@
     letter-spacing: $letter-spacing-wider;
   }
 
-  // ===========================================
-  // KPI CARDS
-  // ===========================================
   &__kpis {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -207,9 +196,6 @@
     }
   }
 
-  // ===========================================
-  // CHARTS SECTION
-  // ===========================================
   &__chart-section {
     display: grid;
     grid-template-columns: 1.6fr 1fr;
@@ -288,9 +274,6 @@
     flex-shrink: 0;
   }
 
-  // ===========================================
-  // SKELETON LINES
-  // ===========================================
   &__skeleton-line {
     @include shimmer-bg;
     height: 14px;
@@ -302,9 +285,6 @@
     &--long { width: 160px; }
   }
 
-  // ===========================================
-  // BODY (AGENDA + LINA)
-  // ===========================================
   &__body {
     display: grid;
     grid-template-columns: 1.6fr 1fr;
@@ -316,9 +296,6 @@
     }
   }
 
-  // ===========================================
-  // SECTION HEADER
-  // ===========================================
   &__section-header {
     @include flex-between;
     margin-bottom: $spacing-md;
@@ -347,9 +324,6 @@
     border-radius: $border-radius-full;
   }
 
-  // ===========================================
-  // AGENDA
-  // ===========================================
   &__agenda {
     background: $color-white;
     border: $border-width solid $border-color;
@@ -495,9 +469,6 @@
     }
   }
 
-  // ===========================================
-  // LINA IA PANEL
-  // ===========================================
   &__lina {
     background: $color-white;
     border: $border-width solid $border-color;
@@ -677,9 +648,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // ===========================================
-  // PAYMENT ALERTS
-  // ===========================================
   &__payment-alerts {
     background: $color-white;
     border: $border-width solid $color-error-border;
@@ -820,9 +788,6 @@
     &:disabled { opacity: 0.4; cursor: default; }
   }
 
-  // ===========================================
-  // PENDING TASKS
-  // ===========================================
   &__tasks {
     background: $color-white;
     border: $border-width solid $color-warning-border;
@@ -1009,9 +974,6 @@
     white-space: nowrap;
   }
 
-  // ===========================================
-  // ERROR STATE
-  // ===========================================
   &__error {
     @include glass-card;
     @include flex-column-center;
@@ -1061,9 +1023,6 @@
   }
 }
 
-// ===========================================
-// RESPONSIVE
-// ===========================================
 @media (max-width: $breakpoint-md) {
   .dashboard {
     &__header {
@@ -1123,9 +1082,6 @@
   }
 }
 
-// ===========================================
-// KEYFRAMES
-// ===========================================
 @keyframes db-fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

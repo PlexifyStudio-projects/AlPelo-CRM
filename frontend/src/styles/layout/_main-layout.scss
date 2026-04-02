@@ -1,20 +1,12 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// MAIN LAYOUT — Content area
-// Cool slate bg, generous padding, smooth sidebar
-// ============================================
-
 .main-layout {
   display: flex;
   min-height: 100vh;
   min-height: 100dvh;
   background: $bg-main;
 
-  // -----------------------------------------------
-  // CONTENT AREA
-  // -----------------------------------------------
   &__content {
     flex: 1;
     margin-left: $sidebar-width;
@@ -30,9 +22,6 @@
     max-width: 100%;
   }
 
-  // -----------------------------------------------
-  // MAIN CONTENT
-  // -----------------------------------------------
   &__main {
     flex: 1;
     padding: 28px $spacing-xl $spacing-xl;
@@ -40,11 +29,9 @@
     overflow-x: hidden;
     width: 100%;
     min-width: 0; // Prevents flex child from overflowing
-    // full width — no max-width constraint
     @include custom-scrollbar;
     position: relative;
 
-    // Page content enter animation — simple fadeIn + slideUp
     > * {
       animation: mainFadeIn 350ms $ease-out-expo both;
 
@@ -55,16 +42,10 @@
     }
   }
 
-  // -----------------------------------------------
-  // COLLAPSED SIDEBAR ADJUSTMENT
-  // -----------------------------------------------
   &--collapsed &__content {
     margin-left: $sidebar-collapsed-width;
   }
 
-  // -----------------------------------------------
-  // RESPONSIVE
-  // -----------------------------------------------
   @include respond-to(lg) {
     &__main {
       padding: 28px $spacing-xl;
@@ -77,9 +58,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // MOBILE / TABLET — sidebar is overlay, no margin
-  // -----------------------------------------------
   &--mobile &__content {
     margin-left: 0;
   }
@@ -110,9 +88,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // STAGGER CHILDREN
-  // -----------------------------------------------
   &__main {
     > *:nth-child(1) { animation-delay: 0s; }
     > *:nth-child(2) { animation-delay: 0.03s; }

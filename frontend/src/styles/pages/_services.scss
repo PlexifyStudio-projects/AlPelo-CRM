@@ -1,16 +1,9 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Services — Ultra-Modern Catalog
-// ============================================
-
 .services {
   @include page-enter;
   padding: $spacing-xl $spacing-xl $spacing-3xl;
-  // max-width removed — full-width content
-
-  // HEADER
   &__header {
     @include flex-between;
     margin-bottom: $spacing-2xl;
@@ -50,7 +43,6 @@
     &:active { transform: scale(0.98); }
   }
 
-  // STATS
   &__stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -79,7 +71,6 @@
     @include label-text;
   }
 
-  // FILTERS
   &__filters {
     @include flex-column;
     gap: $spacing-md;
@@ -164,7 +155,6 @@
     font-weight: $font-weight-semibold;
   }
 
-  // CONTENT
   &__content {
     @include flex-column;
     gap: $spacing-3xl;
@@ -179,9 +169,7 @@
     p { font-size: $font-size-base; margin: 0; }
   }
 
-  // CATEGORY
   &__category {
-    // stagger handled by JSX
   }
 
   &__category-header {
@@ -219,7 +207,6 @@
     color: $color-gray-400;
   }
 
-  // CARDS
   &__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -284,7 +271,6 @@
     line-height: 1.4;
   }
 
-  // Type picker in modal
   &__type-picker {
     display: flex;
     gap: 8px;
@@ -412,7 +398,6 @@
     font-weight: $font-weight-medium;
   }
 
-  // MODAL
   &__modal-overlay {
     position: fixed;
     inset: 0;
@@ -601,7 +586,6 @@
     &:hover { background: $color-primary-dark; box-shadow: $shadow-colored-primary; }
   }
 
-  // LOADING
   &__loading {
     @include flex-column-center;
     gap: $spacing-md;
@@ -619,7 +603,6 @@
     animation: svc-spin 0.8s linear infinite;
   }
 
-  // RESPONSIVE
   @media (max-width: $breakpoint-lg) {
     &__stats { grid-template-columns: repeat(2, 1fr); }
     &__form-row { grid-template-columns: 1fr; }

@@ -97,7 +97,6 @@ const FILTER_OPTIONS = [
   { value: 'error', label: 'Errores' },
 ];
 
-
 const LinaActivity = () => {
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState(null);
@@ -123,7 +122,6 @@ const LinaActivity = () => {
       setStats(data.stats || null);
       setLastUpdate(new Date());
 
-      // Auto-scroll to top if new events
       if (data.events?.length > prevCountRef.current && feedRef.current) {
         feedRef.current.scrollTop = 0;
       }
@@ -160,7 +158,7 @@ const LinaActivity = () => {
       });
       if (resp.ok) {
         setNewRule('');
-        fetchMemory(); // refresh
+        fetchMemory();
       }
     } catch {}
     finally { setSavingRule(false); }

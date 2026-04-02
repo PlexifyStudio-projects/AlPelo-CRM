@@ -27,15 +27,6 @@ const DevClients = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  if (loading) {
-    return (
-      <div className={b}>
-        <div className={`${b}__header`}><h1 className={`${b}__title`}>Nuestros Clientes</h1></div>
-        <p className={`${b}__loading`}>Cargando agencias...</p>
-      </div>
-    );
-  }
-
   const { active, inactive, totalMRR, totalMsgsUsed, totalMsgsLimit, nearLimit, aiPaused } = useMemo(() => {
     const act = tenants.filter(t => t.is_active);
     const inact = tenants.filter(t => !t.is_active);
@@ -49,6 +40,15 @@ const DevClients = () => {
       aiPaused: tenants.filter(t => t.ai_is_paused),
     };
   }, [tenants]);
+
+  if (loading) {
+    return (
+      <div className={b}>
+        <div className={`${b}__header`}><h1 className={`${b}__title`}>Nuestros Clientes</h1></div>
+        <p className={`${b}__loading`}>Cargando agencias...</p>
+      </div>
+    );
+  }
 
   return (
     <div className={b}>

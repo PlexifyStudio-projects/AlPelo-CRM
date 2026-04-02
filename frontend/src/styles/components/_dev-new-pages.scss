@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// New Dev Pages — Activity, WhatsApp, Clients, Performance, System
-// Vercel/Railway: dark accents, monospace, technical density
-// ============================================
-
 $_primary: #1E40AF;
 $_primary-light: #3B82F6;
 $_accent: #0EA5E9;
@@ -20,7 +15,6 @@ $_text-muted: #94A3B8;
 $_mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
 $_surface: #F8FAFC;
 
-// Shared base for all new dev pages
 .dev-activity,
 .dev-whatsapp,
 .dev-clients,
@@ -32,7 +26,6 @@ $_surface: #F8FAFC;
   animation: fadeInUp 400ms $ease-out-expo both;
 }
 
-// Shared header
 .dev-activity__header,
 .dev-whatsapp__header,
 .dev-clients__header,
@@ -90,7 +83,6 @@ $_surface: #F8FAFC;
   }
 }
 
-// Shared refresh button
 .dev-activity__refresh,
 .dev-system__refresh {
   padding: 8px 18px;
@@ -118,7 +110,6 @@ $_surface: #F8FAFC;
   }
 }
 
-// Shared KPIs grid
 .dev-whatsapp__kpis,
 .dev-clients__kpis,
 .dev-perf__kpis {
@@ -171,7 +162,6 @@ $_surface: #F8FAFC;
   letter-spacing: 0.04em;
 }
 
-// Shared card grid
 .dev-whatsapp__grid,
 .dev-clients__grid,
 .dev-perf__grid,
@@ -213,9 +203,6 @@ $_surface: #F8FAFC;
   border-bottom: 1px solid #F1F5F9;
 }
 
-// ============================================
-// DEV ACTIVITY — Real-time Monitoring
-// ============================================
 .dev-activity {
   &__stats {
     display: grid;
@@ -238,7 +225,6 @@ $_surface: #F8FAFC;
     position: relative;
     overflow: hidden;
 
-    // Top accent line on hover
     &::before {
       content: '';
       position: absolute;
@@ -354,7 +340,6 @@ $_surface: #F8FAFC;
     transition: background 150ms $ease-smooth;
     position: relative;
 
-    // Timeline connector
     &::after {
       content: '';
       position: absolute;
@@ -439,9 +424,6 @@ $_surface: #F8FAFC;
   }
 }
 
-// ============================================
-// DEV WHATSAPP
-// ============================================
 .dev-whatsapp {
   &__status-pill {
     display: flex;
@@ -603,9 +585,6 @@ $_surface: #F8FAFC;
   }
 }
 
-// ============================================
-// DEV CLIENTS
-// ============================================
 .dev-clients {
   &__status-list {
     display: flex;
@@ -670,7 +649,6 @@ $_surface: #F8FAFC;
     &--alert { color: #EF4444; }
   }
 
-  // Section & Table
   &__section {
     background: $_card-bg;
     border-radius: 12px;
@@ -822,9 +800,6 @@ $_surface: #F8FAFC;
   }
 }
 
-// ============================================
-// DEV PERFORMANCE
-// ============================================
 .dev-perf {
   &__card-body {
     display: flex;
@@ -850,9 +825,6 @@ $_surface: #F8FAFC;
   }
 }
 
-// ============================================
-// DEV SYSTEM
-// ============================================
 .dev-system {
   &__health {
     display: flex;
@@ -1121,9 +1093,6 @@ $_surface: #F8FAFC;
   }
 }
 
-// ============================================
-// KEYFRAMES
-// ============================================
 @keyframes devSpin {
   to { transform: rotate(360deg); }
 }

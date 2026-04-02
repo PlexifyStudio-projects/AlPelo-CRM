@@ -1,8 +1,5 @@
 @use 'variables' as *;
 
-// -----------------------------------------------
-// RESPONSIVE
-// -----------------------------------------------
 @mixin respond-to($breakpoint) {
   @if $breakpoint == sm { @media (min-width: $breakpoint-sm) { @content; } }
   @else if $breakpoint == md { @media (min-width: $breakpoint-md) { @content; } }
@@ -11,9 +8,6 @@
   @else if $breakpoint == 2xl { @media (min-width: $breakpoint-2xl) { @content; } }
 }
 
-// -----------------------------------------------
-// FLEX HELPERS
-// -----------------------------------------------
 @mixin flex-center {
   display: flex;
   align-items: center;
@@ -38,9 +32,6 @@
   justify-content: center;
 }
 
-// -----------------------------------------------
-// GLASSMORPHISM
-// -----------------------------------------------
 @mixin glass($bg: $glass-bg, $blur: $glass-blur) {
   background: $bg;
   backdrop-filter: blur($blur);
@@ -69,9 +60,6 @@
   border: $border-width solid rgba(255, 255, 255, 0.25);
 }
 
-// -----------------------------------------------
-// TYPOGRAPHY
-// -----------------------------------------------
 @mixin heading($size: $font-size-xl) {
   font-family: $font-heading;
   font-size: $size;
@@ -126,9 +114,6 @@
   color: $color-secondary;
 }
 
-// -----------------------------------------------
-// TEXT UTILITIES
-// -----------------------------------------------
 @mixin truncate {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -149,9 +134,6 @@
   background-clip: text;
 }
 
-// -----------------------------------------------
-// TRANSITIONS
-// -----------------------------------------------
 @mixin transition($properties: all, $duration: $transition-base) {
   transition: $properties $duration;
   will-change: auto;
@@ -161,9 +143,6 @@
   transition: transform $duration, box-shadow $duration;
 }
 
-// -----------------------------------------------
-// CARD STYLES — Modern floating cards
-// -----------------------------------------------
 @mixin card-style {
   @include glass-card;
 }
@@ -178,9 +157,6 @@
   }
 }
 
-// -----------------------------------------------
-// SECTION SPACING
-// -----------------------------------------------
 @mixin section-spacing {
   padding: $spacing-2xl;
   gap: $spacing-xl;
@@ -190,9 +166,6 @@
   gap: $spacing-2xl;
 }
 
-// -----------------------------------------------
-// HOVER EFFECTS — Subtle lifts
-// -----------------------------------------------
 @mixin hover-lift($distance: -2px) {
   @include transition;
 
@@ -228,9 +201,6 @@
   }
 }
 
-// -----------------------------------------------
-// FOCUS
-// -----------------------------------------------
 @mixin focus-ring($color: rgba(30, 64, 175, 0.2)) {
   &:focus-visible {
     outline: none;
@@ -245,9 +215,6 @@
   }
 }
 
-// -----------------------------------------------
-// SCROLLBAR
-// -----------------------------------------------
 @mixin custom-scrollbar {
   &::-webkit-scrollbar {
     width: 6px;
@@ -286,9 +253,6 @@
   }
 }
 
-// -----------------------------------------------
-// NOISE TEXTURE OVERLAY
-// -----------------------------------------------
 @mixin noise-overlay($opacity: 0.02) {
   &::before {
     content: '';
@@ -304,9 +268,6 @@
   }
 }
 
-// -----------------------------------------------
-// BORDER GRADIENT
-// -----------------------------------------------
 @mixin border-gradient($gradient) {
   position: relative;
 
@@ -325,26 +286,17 @@
   }
 }
 
-// -----------------------------------------------
-// DOT PATTERN (empty states)
-// -----------------------------------------------
 @mixin dot-grid($color: rgba(0, 0, 0, 0.05), $size: 1px, $gap: 24px) {
   background-image: radial-gradient(circle, $color $size, transparent $size);
   background-size: $gap $gap;
 }
 
-// -----------------------------------------------
-// REDUCED MOTION
-// -----------------------------------------------
 @mixin reduced-motion {
   @media (prefers-reduced-motion: reduce) {
     @content;
   }
 }
 
-// -----------------------------------------------
-// STAGGER CHILDREN ANIMATION
-// -----------------------------------------------
 @mixin stagger-children($base-delay: 0.04s, $count: 12) {
   @for $i from 1 through $count {
     &:nth-child(#{$i}) {
@@ -353,9 +305,6 @@
   }
 }
 
-// -----------------------------------------------
-// GRADIENT DIVIDER
-// -----------------------------------------------
 @mixin gradient-divider($color: rgba(0, 0, 0, 0.06)) {
   height: 1px;
   border: none;
@@ -368,9 +317,6 @@
   background: linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.15) 50%, transparent 100%);
 }
 
-// -----------------------------------------------
-// PAGE ENTER ANIMATION
-// -----------------------------------------------
 @mixin page-enter {
   animation: fadeInUp 350ms $ease-out-expo both;
 
@@ -380,9 +326,6 @@
   }
 }
 
-// -----------------------------------------------
-// PRESS / CLICK EFFECT
-// -----------------------------------------------
 @mixin press-effect {
   transition:
     transform $duration-instant $ease-smooth,
@@ -395,9 +338,6 @@
   }
 }
 
-// -----------------------------------------------
-// GLOW RING
-// -----------------------------------------------
 @mixin glow-ring($color: $color-primary, $intensity: 0.12) {
   position: relative;
 
@@ -418,9 +358,6 @@
   }
 }
 
-// -----------------------------------------------
-// SHIMMER BACKGROUND (loading / skeleton)
-// -----------------------------------------------
 @mixin shimmer-bg($base: $color-gray-100, $highlight: $color-gray-50) {
   background: linear-gradient(
     90deg,
@@ -432,9 +369,6 @@
   animation: shimmer 1.8s $ease-smooth infinite;
 }
 
-// -----------------------------------------------
-// SKELETON LOADING
-// -----------------------------------------------
 @mixin skeleton-loading($width: 100%, $height: 16px, $radius: $border-radius-sm) {
   width: $width;
   height: $height;
@@ -442,9 +376,6 @@
   @include shimmer-bg;
 }
 
-// -----------------------------------------------
-// SMOOTH REVEAL
-// -----------------------------------------------
 @mixin smooth-reveal($delay: 0s) {
   opacity: 0;
   transform: translateY(8px);
@@ -458,9 +389,6 @@
   }
 }
 
-// -----------------------------------------------
-// INTERACTIVE CARD
-// -----------------------------------------------
 @mixin interactive-card {
   @include glass-card;
   @include transition;
@@ -479,18 +407,11 @@
   }
 
   @include reduced-motion {
-    &:hover {
-      transform: none;
-    }
-    &:active {
-      transform: none;
-    }
+    &:hover { transform: none; }
+    &:active { transform: none; }
   }
 }
 
-// -----------------------------------------------
-// ANIMATED BORDER
-// -----------------------------------------------
 @mixin animated-border($speed: 4s) {
   position: relative;
 
@@ -517,9 +438,6 @@
   }
 }
 
-// -----------------------------------------------
-// STAGGER FADE IN
-// -----------------------------------------------
 @mixin stagger-fade-in($base-delay: $stagger-base, $count: 12) {
   > * {
     opacity: 0;
@@ -538,9 +456,6 @@
   }
 }
 
-// -----------------------------------------------
-// COUNTER ROLL IN
-// -----------------------------------------------
 @mixin counter-roll-in($delay: 0s) {
   animation: counterRoll 500ms $ease-out-expo both;
   animation-delay: $delay;

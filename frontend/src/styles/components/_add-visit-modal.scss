@@ -1,16 +1,10 @@
 @use '../abstracts/variables' as *;
 
-// ============================================
-// Add Visit Modal — Plexify Studio v3
-// Multi-step form: search > select > details
-// ============================================
-
 .add-visit-modal {
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
 
-  // --- Error banner ---
   &__error {
     display: flex;
     align-items: center;
@@ -26,7 +20,6 @@
     svg { flex-shrink: 0; }
   }
 
-  // --- Search step ---
   &__instruction {
     font-size: $font-size-sm;
     color: $color-gray-500;
@@ -82,7 +75,6 @@
     flex-shrink: 0;
   }
 
-  // --- Results list ---
   &__results-label {
     font-size: $font-size-2xs;
     font-weight: 700;
@@ -195,7 +187,6 @@
     }
   }
 
-  // --- Selected client card ---
   &__selected-client {
     display: flex;
     align-items: center;
@@ -206,12 +197,10 @@
     border-radius: $border-radius-md;
   }
 
-  // --- Date row ---
   &__date-row {
     max-width: 220px;
   }
 
-  // --- Items list ---
   &__items {
     display: flex;
     flex-direction: column;
@@ -288,7 +277,6 @@
     }
   }
 
-  // --- Form grid ---
   &__grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -299,7 +287,6 @@
     }
   }
 
-  // --- Select & Label ---
   &__select-group {
     display: flex;
     flex-direction: column;
@@ -338,7 +325,6 @@
     }
   }
 
-  // --- Textarea ---
   &__textarea-group {
     display: flex;
     flex-direction: column;
@@ -366,7 +352,6 @@
     &::placeholder { color: $color-gray-400; }
   }
 
-  // --- Actions ---
   &__actions {
     display: flex;
     align-items: center;

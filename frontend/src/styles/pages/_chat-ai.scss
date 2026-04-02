@@ -1,12 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Lina IA — Premium Chat Interface
-// Purple AI identity, clean typography, smooth UX
-// ============================================
-
-// AI purple palette (local)
 $lina-purple: #7C3AED;
 $lina-purple-light: #8B5CF6;
 $lina-purple-dark: #6D28D9;
@@ -23,7 +17,6 @@ $lina-assistant-bg: #F1F5F9;
   max-height: calc(100vh - #{$header-height} - #{$spacing-2xl});
   overflow: hidden;
 
-  // HEADER — Purple gradient for AI identity
   &__header {
     @include flex-between;
     padding: $spacing-sm $spacing-lg;
@@ -110,7 +103,6 @@ $lina-assistant-bg: #F1F5F9;
     }
   }
 
-  // BODY
   &__body {
     display: flex;
     flex: 1;
@@ -125,7 +117,6 @@ $lina-assistant-bg: #F1F5F9;
     position: relative;
   }
 
-  // MESSAGES — More padding, better spacing
   &__messages {
     flex: 1;
     overflow-y: auto;
@@ -152,7 +143,6 @@ $lina-assistant-bg: #F1F5F9;
     }
   }
 
-  // Lina avatar — small purple circle
   &__avatar {
     @include flex-center;
     width: 32px;
@@ -186,7 +176,6 @@ $lina-assistant-bg: #F1F5F9;
     white-space: pre-wrap;
     word-break: break-word;
 
-    // User bubbles — rich blue with white text
     &--user {
       background: $lina-user-blue;
       color: $color-white;
@@ -194,7 +183,6 @@ $lina-assistant-bg: #F1F5F9;
       box-shadow: 0 1px 4px rgba($lina-user-blue, 0.2);
     }
 
-    // Assistant bubbles — card with purple left accent
     &--assistant {
       background: $color-white;
       color: $color-secondary;
@@ -206,7 +194,6 @@ $lina-assistant-bg: #F1F5F9;
       padding: $spacing-md $spacing-lg;
     }
 
-    // Typing indicator bubble
     &--typing {
       display: flex;
       align-items: center;
@@ -218,7 +205,6 @@ $lina-assistant-bg: #F1F5F9;
     }
   }
 
-  // Typing dots — smooth animated
   &__dot {
     width: 6px;
     height: 6px;
@@ -230,7 +216,6 @@ $lina-assistant-bg: #F1F5F9;
     &:nth-child(3) { animation-delay: 0.3s; }
   }
 
-  // Timestamps — smaller, lighter, more subtle
   &__time {
     font-size: 10px;
     color: $color-gray-300;
@@ -239,7 +224,6 @@ $lina-assistant-bg: #F1F5F9;
     opacity: 0.7;
   }
 
-  // ACTION RESULTS — clean card with subtle border
   &__text {
     display: block;
   }
@@ -277,7 +261,6 @@ $lina-assistant-bg: #F1F5F9;
     margin-top: 1px;
   }
 
-  // SCROLL BUTTON — floating pill, subtle shadow
   &__scroll-btn {
     position: absolute;
     bottom: 140px;
@@ -303,7 +286,6 @@ $lina-assistant-bg: #F1F5F9;
     }
   }
 
-  // WELCOME — clean centered layout
   &__welcome {
     @include flex-column-center;
     padding: $spacing-3xl $spacing-xl;
@@ -338,7 +320,6 @@ $lina-assistant-bg: #F1F5F9;
     margin: 0 0 $spacing-2xl;
   }
 
-  // Prompt chips — pill-shaped, subtle border
   &__prompts {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -397,7 +378,6 @@ $lina-assistant-bg: #F1F5F9;
     line-height: $line-height-snug;
   }
 
-  // INPUT AREA — clean border-top, subtle shadow above
   &__input-area {
     @include flex-column;
     gap: $spacing-xs;
@@ -578,7 +558,6 @@ $lina-assistant-bg: #F1F5F9;
     margin: $spacing-2xs 0 0;
   }
 
-  // PAUSED OVERLAY
   &__paused-overlay {
     display: flex;
     align-items: center;
@@ -595,7 +574,6 @@ $lina-assistant-bg: #F1F5F9;
     svg { flex-shrink: 0; }
   }
 
-  // SIDEBAR — clean card with subtle shadow, better typography
   &__sidebar {
     width: 240px;
     min-width: 240px;
@@ -723,7 +701,6 @@ $lina-assistant-bg: #F1F5F9;
   }
 }
 
-// RESPONSIVE
 @media (max-width: $breakpoint-md) {
   .chat-ai {
     height: calc(100vh - #{$header-height} - #{$spacing-md});
@@ -784,7 +761,6 @@ $lina-assistant-bg: #F1F5F9;
   }
 }
 
-// STRATEGY SECTION — Business Intelligence buttons
 .chat-ai {
   &__strategy {
     @include flex-column;
@@ -821,7 +797,6 @@ $lina-assistant-bg: #F1F5F9;
     }
 
     @media (max-width: 1024px) {
-      // Horizontal scroll on tablet/phone
       display: flex;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
@@ -921,7 +896,6 @@ $lina-assistant-bg: #F1F5F9;
     50% { opacity: 0.7; }
   }
 
-  // STAFF RETENTION MODAL
   &__modal-overlay {
     position: fixed;
     inset: 0;
@@ -1079,7 +1053,6 @@ $lina-assistant-bg: #F1F5F9;
   to { transform: rotate(360deg); }
 }
 
-// ANIMATIONS
 @keyframes typingPulse {
   0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
   30% { transform: translateY(-5px); opacity: 1; }

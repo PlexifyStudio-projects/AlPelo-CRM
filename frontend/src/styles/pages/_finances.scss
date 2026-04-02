@@ -1,18 +1,11 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Finances — Premium Financial Module v2
-// ============================================
-
 .finances {
   
   margin: 0 auto;
   overflow: hidden;
 
-  // ===========================================
-  // HEADER
-  // ===========================================
   &__header {
     @include flex-between;
     margin-bottom: $spacing-xl;
@@ -75,7 +68,6 @@
     }
   }
 
-  // --- Refresh Button ---
   &__refresh-btn {
     @include flex-center;
     width: 36px;
@@ -100,7 +92,6 @@
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  // --- Period Selector — Segmented Control ---
   &__period-selector {
     display: flex;
     gap: 2px;
@@ -146,9 +137,6 @@
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  // ===========================================
-  // KPI CARDS — Premium Metric Tiles
-  // ===========================================
   &__kpis {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -174,7 +162,6 @@
     position: relative;
     overflow: hidden;
 
-    // Top accent line
     &::before {
       content: '';
       position: absolute;
@@ -186,7 +173,6 @@
       transition: all 350ms $ease-out-expo;
     }
 
-    // Subtle shimmer on hover
     &::after {
       content: '';
       position: absolute;
@@ -266,7 +252,6 @@
     letter-spacing: $letter-spacing-wide;
   }
 
-  // --- Growth Badge — Refined Pill ---
   &__growth {
     display: inline-flex;
     align-items: center;
@@ -292,9 +277,6 @@
     }
   }
 
-  // ===========================================
-  // INSIGHTS STRIP
-  // ===========================================
   &__insights {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -359,9 +341,6 @@
     @include truncate;
   }
 
-  // ===========================================
-  // BODY (CHART + SERVICES / CATEGORY + STAFF)
-  // ===========================================
   &__body {
     display: grid;
     grid-template-columns: 1.4fr 1fr;
@@ -377,9 +356,6 @@
     }
   }
 
-  // ===========================================
-  // CARD (shared)
-  // ===========================================
   &__card {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -435,9 +411,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // ===========================================
-  // CHART (Enhanced)
-  // ===========================================
   &__chart {
     flex: 1;
     display: flex;
@@ -607,9 +580,6 @@
     }
   }
 
-  // ===========================================
-  // RANKING LIST (Services) — Enhanced
-  // ===========================================
   &__ranking-list {
     @include flex-column;
     gap: 0;
@@ -742,9 +712,6 @@
     font-weight: $font-weight-medium;
   }
 
-  // ===========================================
-  // CATEGORY BREAKDOWN
-  // ===========================================
   &__categories {
     @include flex-column;
     gap: $spacing-md;
@@ -817,9 +784,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // ===========================================
-  // STAFF PERFORMANCE (Enhanced)
-  // ===========================================
   &__staff-list {
     @include flex-column;
     gap: 0;
@@ -941,9 +905,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // ===========================================
-  // EMPTY & ERROR STATES
-  // ===========================================
   &__empty {
     @include flex-center;
     padding: $spacing-2xl $spacing-md;
@@ -1007,9 +968,6 @@
     &:active { transform: translateY(0); }
   }
 
-  // ===========================================
-  // SKELETON
-  // ===========================================
   &__skeleton {
     @include shimmer-bg;
     border-radius: $border-radius-xs;
@@ -1020,9 +978,6 @@
     gap: $spacing-sm;
   }
 
-  // ===========================================
-  // RESPONSIVE
-  // ===========================================
   @media (max-width: $breakpoint-md) {
     &__header {
       flex-direction: column;
@@ -1112,9 +1067,6 @@
     }
   }
 
-  // ===========================================
-  // TAB SELECTOR — Premium Segmented Control
-  // ===========================================
   &__tab-selector {
     display: flex;
     gap: 2px;
@@ -1172,9 +1124,6 @@
     }
   }
 
-  // ===========================================
-  // P&L CARD
-  // ===========================================
   &__pnl-card {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -1225,9 +1174,6 @@
     font-weight: 700;
   }
 
-  // ===========================================
-  // SECTION HEADER
-  // ===========================================
   &__section-header {
     @include flex-between;
     flex-wrap: wrap;
@@ -1244,9 +1190,6 @@
     min-width: 0;
   }
 
-  // ===========================================
-  // ACTION BUTTON (pill)
-  // ===========================================
   &__action-btn {
     display: inline-flex;
     align-items: center;
@@ -1270,9 +1213,6 @@
     }
   }
 
-  // ===========================================
-  // FORMS (Expense, Invoice)
-  // ===========================================
   &__expense-form,
   &__invoice-form {
     background: $color-white;
@@ -1427,9 +1367,6 @@
     }
   }
 
-  // ===========================================
-  // INVOICE LINE ITEMS
-  // ===========================================
   &__invoice-items {
     @include flex-column;
     gap: $spacing-sm;
@@ -1448,9 +1385,6 @@
     margin-bottom: $spacing-md;
   }
 
-  // ===========================================
-  // TABLE
-  // ===========================================
   &__table-wrap {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -1571,9 +1505,6 @@
     }
   }
 
-  // ===========================================
-  // PAYMENT METHODS
-  // ===========================================
   &__payment-methods {
     @include flex-column;
     gap: $spacing-xs;
@@ -1626,9 +1557,6 @@
     text-align: right;
   }
 
-  // ===========================================
-  // FORM SUBTITLE
-  // ===========================================
   &__form-subtitle {
     font-size: $font-size-xs;
     font-weight: $font-weight-bold;
@@ -1642,9 +1570,6 @@
     &:first-of-type { margin-top: 0; }
   }
 
-  // ===========================================
-  // COMMISSION — DISTRIBUTION BAR
-  // ===========================================
   &__comm-dist {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -1695,9 +1620,6 @@
     flex-shrink: 0;
   }
 
-  // ===========================================
-  // COMMISSION — STAFF CARDS
-  // ===========================================
   &__staff-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -1796,7 +1718,6 @@
     &:hover { opacity: 0.85; transform: scale(1.05); }
   }
 
-  // --- Financial rows ---
   &__sc-financials {
     display: flex;
     align-items: center;
@@ -1840,7 +1761,6 @@
     flex-shrink: 0;
   }
 
-  // --- Progress bar ---
   &__sc-bar-wrap {
     padding: 0 $spacing-xs;
   }
@@ -1859,9 +1779,6 @@
     transition: width 800ms $ease-out-expo;
   }
 
-  // ===========================================
-  // COMMISSION — SKELETON
-  // ===========================================
   &__comm-skeleton {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -1873,9 +1790,6 @@
     }
   }
 
-  // ===========================================
-  // EMPTY STATE (rich)
-  // ===========================================
   &__empty-state {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -1912,9 +1826,6 @@
     line-height: $line-height-relaxed;
   }
 
-  // ===========================================
-  // INVOICES — REDESIGNED CARD LIST
-  // ===========================================
   &__inv-list {
     @include flex-column;
     gap: $spacing-sm;
@@ -1946,7 +1857,6 @@
     }
   }
 
-  // --- Header row (always visible, clickable) ---
   &__inv-header {
     display: flex;
     align-items: center;
@@ -2077,14 +1987,12 @@
     }
   }
 
-  // --- Expanded details ---
   &__inv-details {
     border-top: 1px solid $color-gray-100;
     background: $color-off-white;
     animation: fin-slideDown 300ms $ease-out-expo both;
   }
 
-  // Client info bar
   &__inv-client-bar {
     display: flex;
     align-items: center;
@@ -2108,7 +2016,6 @@
     }
   }
 
-  // Items table
   &__inv-table {
     padding: $spacing-md $spacing-xl;
   }
@@ -2185,7 +2092,6 @@
     }
   }
 
-  // Bottom section: breakdown + commission side by side
   &__inv-bottom {
     display: flex;
     gap: $spacing-xl;
@@ -2198,7 +2104,6 @@
     }
   }
 
-  // Financial breakdown
   &__inv-breakdown {
     @include flex-column;
     gap: $spacing-xs;
@@ -2231,7 +2136,6 @@
     }
   }
 
-  // Commission split
   &__inv-commission {
     flex: 1;
     @include flex-column;
@@ -2318,7 +2222,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // Footer: payment method + actions
   &__inv-footer {
     display: flex;
     align-items: center;
@@ -2388,9 +2291,6 @@
     gap: $spacing-xs;
   }
 
-  // ===========================================
-  // STAFF CARD (individual card in grid)
-  // ===========================================
   &__staff-card {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -2399,16 +2299,12 @@
     padding: $spacing-lg;
     transition: all 300ms $ease-out-quart;
     
-
     &:hover {
       transform: translateY(-2px);
       box-shadow: $shadow-md;
     }
   }
 
-  // ===========================================
-  // CLIENT SEARCH (Invoice Form)
-  // ===========================================
   &__client-search-wrap {
     position: relative;
     margin-bottom: $spacing-md;
@@ -2507,7 +2403,6 @@
     font-style: italic;
   }
 
-  // --- Selected client card ---
   &__client-selected {
     display: flex;
     align-items: center;
@@ -2551,9 +2446,6 @@
     font-weight: $font-weight-medium;
   }
 
-  // ===========================================
-  // TAX TOGGLE + INLINE LABEL
-  // ===========================================
   &__tax-toggle {
     display: flex;
     align-items: center;
@@ -2578,17 +2470,11 @@
     &:hover { color: $color-gray-900; }
   }
 
-  // ===========================================
-  // P&L ROWS (inside card)
-  // ===========================================
   &__pnl-rows {
     @include flex-column;
     gap: 0;
   }
 
-  // ===========================================
-  // CUSTOM DATE RANGE (Fase 1)
-  // ===========================================
   &__period-custom {
     display: flex;
     align-items: center;
@@ -2622,9 +2508,6 @@
     }
   }
 
-  // ===========================================
-  // OWNER PROFIT PANEL (Fase 2)
-  // ===========================================
   &__owner-panel {
     display: grid;
     grid-template-columns: 1fr 1.5fr;
@@ -2642,7 +2525,6 @@
     }
   }
 
-  // --- Left hero — Big Impact ---
   &__owner-hero {
     background: $color-gray-800;
     color: $color-white;
@@ -2654,7 +2536,6 @@
     position: relative;
     overflow: hidden;
 
-    // Layered depth pattern
     &::before {
       content: '';
       position: absolute;
@@ -2665,7 +2546,6 @@
       pointer-events: none;
     }
 
-    // Top gold accent
     &::after {
       content: '';
       position: absolute;
@@ -2742,7 +2622,6 @@
     white-space: nowrap;
   }
 
-  // --- Right breakdown — Clean Ledger ---
   &__owner-breakdown {
     padding: 24px 32px;
     display: flex;
@@ -2814,7 +2693,6 @@
     &--muted { color: $color-gray-400; }
   }
 
-  // Distribution bar
   &__owner-dist {
     display: flex;
     height: 6px;
@@ -2835,9 +2713,6 @@
     &--expense { background: #f59e0b; border-radius: 0 3px 3px 0; }
   }
 
-  // ===========================================
-  // RECURRING TOGGLE (Fase 3)
-  // ===========================================
   &__recurring-toggle {
     display: flex;
     align-items: center;
@@ -2865,9 +2740,6 @@
     margin-left: 4px;
   }
 
-  // ===========================================
-  // UNINVOICED VISITS (Fase 4)
-  // ===========================================
   &__uninvoiced {
     margin-bottom: $spacing-md;
     animation: fin-fadeIn 200ms $ease-out-expo;
@@ -2933,9 +2805,6 @@
     display: flex;
   }
 
-  // ===========================================
-  // AI WIDGET (Fase 5)
-  // ===========================================
   &__ai-widget {
     margin-top: $spacing-xl;
     border: 1.5px solid rgba(30, 64, 175, 0.08);
@@ -3050,7 +2919,6 @@
     border: 1.5px solid rgba(30, 64, 175, 0.06);
     position: relative;
 
-    // Left accent bar
     &::before {
       content: '';
       position: absolute;
@@ -3092,9 +2960,6 @@
   }
 }
 
-// ===========================================
-// NAMESPACED KEYFRAMES
-// ===========================================
 @keyframes fin-fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -3134,12 +2999,7 @@
   }
 }
 
-// ============================================
-// RECHARTS — Premium Charts v2
-// ============================================
-
 .finances {
-  // --- Recharts Container — Premium ---
   &__recharts-container {
     width: 100%;
     max-width: 100%;
@@ -3156,7 +3016,6 @@
       filter: drop-shadow(0 3px 8px rgba(30, 64, 175, 0.35));
     }
 
-    // Clean up Recharts internal text
     .recharts-text {
       font-family: $font-primary;
       font-feature-settings: 'cv01', 'cv02';
@@ -3168,7 +3027,6 @@
     }
   }
 
-  // --- Recharts Tooltip — Elevated Card ---
   &__recharts-tooltip {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -3205,7 +3063,6 @@
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
   }
 
-  // --- Donut Chart — Centered & Clean ---
   &__donut-wrap {
     display: flex;
     align-items: center;
@@ -3225,7 +3082,6 @@
     width: 220px;
     height: 220px;
 
-    // Subtle radial glow behind the donut
     &::before {
       content: '';
       position: absolute;
@@ -3320,7 +3176,6 @@
     font-weight: 700;
   }
 
-  // --- Comparison Grid (Reportes Tab) ---
   &__comparison-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -3390,7 +3245,6 @@
     padding: 0 4px;
   }
 
-  // --- Report Table ---
   &__report-table {
     margin-top: $spacing-md;
     border-top: 1px solid $color-gray-100;
@@ -3403,7 +3257,6 @@
     gap: $spacing-md;
   }
 
-  // --- Weekday Stats ---
   &__weekday-stats {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -3444,7 +3297,6 @@
     color: $color-gray-400;
   }
 
-  // --- Report Summary ---
   &__report-summary {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -3475,9 +3327,6 @@
     color: $color-primary;
   }
 
-  // ===========================================
-  // CAJA (CASH REGISTER)
-  // ===========================================
   &__caja {
     animation: fadeIn 300ms ease;
   }
@@ -3492,7 +3341,6 @@
     font-size: $font-size-sm;
   }
 
-  // Sub-tabs (Hoy / Historial)
   &__caja-subtabs {
     display: flex;
     gap: 2px;
@@ -3528,7 +3376,6 @@
     }
   }
 
-  // Closed state
   &__caja-closed {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -3630,7 +3477,6 @@
     }
   }
 
-  // Buttons
   &__caja-btn {
     padding: 10px $spacing-lg;
     border: none;
@@ -3686,7 +3532,6 @@
     }
   }
 
-  // Open state — status banner
   &__caja-status {
     display: flex;
     align-items: center;
@@ -3732,7 +3577,6 @@
     font-weight: $font-weight-medium;
   }
 
-  // Summary cards
   &__caja-summary {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -3774,7 +3618,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // Transactions table
   &__caja-table-wrap {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -3809,7 +3652,6 @@
     font-size: $font-size-sm;
   }
 
-  // History
   &__caja-history {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -3818,7 +3660,6 @@
     box-shadow: $shadow-sm;
   }
 
-  // Close modal overlay
   &__caja-overlay {
     position: fixed;
     top: 0;
@@ -3905,7 +3746,6 @@
     }
   }
 
-  // Discrepancy indicator
   &__caja-discrepancy {
     display: flex;
     align-items: center;
@@ -3940,8 +3780,6 @@
     margin-top: $spacing-lg;
   }
 
-  // ── FORECAST / PROYECCIÓN TAB ──
-
   &__forecast {
     display: flex;
     flex-direction: column;
@@ -3955,7 +3793,6 @@
     font-size: 0.95rem;
   }
 
-  // ── Hero: big number ──
   &__fc-hero {
     display: flex;
     justify-content: space-between;
@@ -4021,7 +3858,6 @@
     .finances__fc-hero-card--red & { color: #DC2626; }
   }
 
-  // ── Progress bar ──
   &__fc-progress-section {
     background: white;
     border-radius: 12px;
@@ -4056,7 +3892,6 @@
     transition: width 0.8s ease;
   }
 
-  // ── KPIs row ──
   &__fc-kpis {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -4097,7 +3932,6 @@
     color: $color-gray-400;
   }
 
-  // ── Weekly card ──
   &__fc-week-card {
     background: white;
     border-radius: 16px;
@@ -4132,7 +3966,6 @@
 
   &__fc-chart { margin-bottom: 1.25rem; }
 
-  // ── Daily cards ──
   &__fc-days {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -4200,7 +4033,6 @@
     margin-top: 0.25rem;
   }
 
-  // Responsive
   @media (max-width: 768px) {
     &__fc-hero { flex-direction: column; align-items: flex-start; padding: 1.25rem; }
     &__fc-hero-amount { font-size: 2rem; }

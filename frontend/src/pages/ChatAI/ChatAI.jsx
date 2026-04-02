@@ -27,17 +27,6 @@ const SUGGESTED_PROMPTS = [
   { icon: '📋', text: 'Clientes que llevan mas de 40 dias sin venir', desc: 'Filtrar clientes inactivos' },
 ];
 
-const QUICK_ACTIONS = [
-  { icon: '➕', text: 'Crear un cliente nuevo' },
-  { icon: '📋', text: 'Listar clientes en riesgo' },
-  { icon: '📱', text: 'Resumen del inbox' },
-  { icon: '👥', text: 'Estado del equipo' },
-  { icon: '📝', text: 'Agregar nota a un cliente' },
-  { icon: '📨', text: 'Enviar plantilla a clientes inactivos' },
-  { icon: '🔄', text: 'Ultimas visitas registradas' },
-  { icon: '⚙️', text: 'Ver configuracion de IA actual' },
-];
-
 const generateId = () => `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 const parseAIResponse = (text) => {
@@ -45,7 +34,7 @@ const parseAIResponse = (text) => {
 
   let clean = text
     .replace(/[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}\s*action[\s\S]*?[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}/gi, '')
-    .replace(/[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}\s*action[\s\S]*/gi, '') // unclosed blocks
+    .replace(/[`\u0060\u02CB\u2018\u2019\uFF40]{1,3}\s*action[\s\S]*/gi, '')
     .trim();
 
   const lines = clean.split('\n');
@@ -184,7 +173,6 @@ const ChatAI = () => {
     if (data.response) return data.response;
     if (data.raw_response) return data.raw_response;
 
-    // Pretty labels for known keys
     const labels = {
       tendencia: '📈 TENDENCIA',
       por_que: '💡 POR QUÉ ESTA CAMPAÑA',
@@ -248,7 +236,6 @@ const ChatAI = () => {
       setStaffModalOpen(true);
       setSelectedStaffId('');
       setOfferDescription('');
-      // Fetch staff list
       try {
         const res = await fetch(`${API_URL}/staff/`, { credentials: 'include' });
         if (res.ok) {
@@ -259,7 +246,6 @@ const ChatAI = () => {
       return;
     }
     setStrategyLoading(strategy.id);
-    // Add user message
     const userMsg = { id: generateId(), role: 'user', content: `${strategy.icon} ${strategy.label}`, timestamp: new Date().toISOString() };
     setMessages((prev) => [...prev, userMsg]);
     try {
@@ -285,7 +271,6 @@ const ChatAI = () => {
   const handleAuthorizeCampaign = useCallback(async (campaignText) => {
     setAuthorizingCampaign(true);
     try {
-      // Create campaign in DB
       const res = await fetch(`${API_URL}/campaigns`, {
         method: 'POST',
         credentials: 'include',
@@ -300,7 +285,6 @@ const ChatAI = () => {
       if (!res.ok) throw new Error('Error al crear campaña');
       const campaign = await res.json();
 
-      // Submit to Meta for approval
       const metaRes = await fetch(`${API_URL}/campaigns/${campaign.id}/submit-to-meta`, {
         method: 'POST',
         credentials: 'include',
@@ -362,11 +346,10 @@ const ChatAI = () => {
   };
 
   const hasMessages = messages.length > 0;
-  const responseCount = messages.filter((m) => m.role === 'assistant' && !m.isError).length;
 
   return (
     <div className="chat-ai">
-      {/* Header */}
+
       <div className="chat-ai__header">
         <div className="chat-ai__header-left">
           <div className="chat-ai__header-icon">
@@ -404,7 +387,7 @@ const ChatAI = () => {
       </div>
 
       <div className="chat-ai__body">
-        {/* Main chat area */}
+
         <div className="chat-ai__main">
           <div className="chat-ai__messages" ref={messagesContainerRef} onScroll={handleScroll}>
             {!hasMessages ? (
@@ -512,7 +495,6 @@ const ChatAI = () => {
             </button>
           )}
 
-          {/* Input */}
           {tenant.ai_is_paused && (
             <div className="chat-ai__paused-overlay">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -600,7 +582,6 @@ const ChatAI = () => {
           </form>
         </div>
 
-        {/* Staff Retention Modal */}
         {staffModalOpen && (
           <div className="chat-ai__modal-overlay" onClick={() => setStaffModalOpen(false)}>
             <div className="chat-ai__modal" onClick={(e) => e.stopPropagation()}>
@@ -645,7 +626,6 @@ const ChatAI = () => {
           </div>
         )}
 
-        {/* Sidebar */}
         {sidebarOpen && (
           <aside className="chat-ai__sidebar">
             <div className="chat-ai__sidebar-section">

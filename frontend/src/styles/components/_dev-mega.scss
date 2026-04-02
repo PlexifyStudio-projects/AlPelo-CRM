@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Dev Panel MEGA — Comparison, MRR, Health, Alerts, Errors, Prospector
-// Vercel/Railway: dark accents, monospace, technical density
-// ============================================
-
 $_primary: #1E40AF;
 $_primary-light: #3B82F6;
 $_accent: #0EA5E9;
@@ -23,7 +18,6 @@ $_success: #10B981;
 $_warning: #F59E0B;
 $_danger: #EF4444;
 
-// ─── Shared base ───
 .dev-comparison,
 .dev-mrr,
 .dev-health,
@@ -36,7 +30,6 @@ $_danger: #EF4444;
   animation: fadeInUp 400ms $ease-out-expo both;
 }
 
-// ─── Shared: header ───
 .dev-comparison__header,
 .dev-mrr__header,
 .dev-health__header,
@@ -86,7 +79,6 @@ $_danger: #EF4444;
   font-family: $_mono;
 }
 
-// ─── Shared: refresh button ───
 .dev-comparison__refresh,
 .dev-mrr__refresh,
 .dev-health__refresh,
@@ -110,7 +102,6 @@ $_danger: #EF4444;
   }
 }
 
-// ─── Shared: table ───
 .dev-comparison__table,
 .dev-mrr__table,
 .dev-errors__table {
@@ -155,7 +146,6 @@ $_danger: #EF4444;
   font-size: 12px;
 }
 
-// ─── Shared: empty state ───
 .dev-alerts__empty,
 .dev-errors__empty,
 .dev-prospector__empty {
@@ -189,11 +179,6 @@ $_danger: #EF4444;
   color: $_text-muted;
   margin: 0;
 }
-
-
-// ============================================
-// 1. COMPARISON
-// ============================================
 
 .dev-comparison {
   &__metrics {
@@ -288,11 +273,6 @@ $_danger: #EF4444;
     &--down { color: $_danger; }
   }
 }
-
-
-// ============================================
-// 2. MRR
-// ============================================
 
 .dev-mrr {
   &__kpis {
@@ -403,11 +383,6 @@ $_danger: #EF4444;
     }
   }
 }
-
-
-// ============================================
-// 3. HEALTH
-// ============================================
 
 .dev-health {
   &__header-right {
@@ -593,11 +568,6 @@ $_danger: #EF4444;
   }
 }
 
-
-// ============================================
-// 4. ALERTS
-// ============================================
-
 .dev-alerts {
   &__count-badge {
     display: inline-flex;
@@ -706,11 +676,6 @@ $_danger: #EF4444;
     line-height: 1.5;
   }
 }
-
-
-// ============================================
-// 5. ERRORS
-// ============================================
 
 .dev-errors {
   &__controls {
@@ -898,11 +863,6 @@ $_danger: #EF4444;
   }
 }
 
-
-// ============================================
-// 6. PROSPECTOR
-// ============================================
-
 .dev-prospector {
   &__stats {
     display: flex;
@@ -938,7 +898,6 @@ $_danger: #EF4444;
     color: $_text-primary;
   }
 
-  // Generator panel
   &__generator {
     background: $_card-bg;
     border: 1px solid $_card-border;
@@ -1077,7 +1036,6 @@ $_danger: #EF4444;
     animation: spin 600ms linear infinite;
   }
 
-  // Filters
   &__filters {
     display: flex;
     gap: 12px;
@@ -1110,7 +1068,6 @@ $_danger: #EF4444;
     &:focus { outline: none; border-color: $_primary-light; }
   }
 
-  // Prospects list
   &__list {
     display: flex;
     flex-direction: column;
@@ -1231,7 +1188,6 @@ $_danger: #EF4444;
     color: $_text-muted;
   }
 
-  // Expanded detail
   &__card-detail {
     padding: 0 16px 16px;
     border-top: 1px solid $_card-border;
@@ -1351,12 +1307,6 @@ $_danger: #EF4444;
   }
 }
 
-
-// ============================================
-// 7. DEV SYSTEM — Premium Config Cards
-// Glassmorphism + glow lines + scale hovers
-// ============================================
-
 .dev-system {
   &__grid {
     display: grid;
@@ -1367,7 +1317,6 @@ $_danger: #EF4444;
     @media (max-width: 600px) { grid-template-columns: 1fr; }
   }
 
-  // ─── Premium Card ───
   &__card {
     position: relative;
     display: flex;
@@ -1421,7 +1370,6 @@ $_danger: #EF4444;
     }
   }
 
-  // ─── Glow line at top ───
   &__card-glow {
     position: absolute;
     top: 0;
@@ -1441,7 +1389,6 @@ $_danger: #EF4444;
     );
   }
 
-  // ─── Icon with subtle gradient bg ───
   &__card-icon {
     display: flex;
     align-items: center;
@@ -1503,7 +1450,6 @@ $_danger: #EF4444;
     }
   }
 
-  // ─── Expanded Panel ───
   &__panel {
     background: #fff;
     border: 1px solid rgba(0, 0, 0, 0.06);
@@ -1556,7 +1502,6 @@ $_danger: #EF4444;
     }
   }
 
-  // ─── Info rows ───
   &__info-list {
     display: flex;
     flex-direction: column;
@@ -1588,7 +1533,6 @@ $_danger: #EF4444;
     &--missing { color: $_danger; opacity: 0.7; }
   }
 
-  // ─── Form ───
   &__form {
     display: flex;
     flex-direction: column;
@@ -1679,7 +1623,6 @@ $_danger: #EF4444;
     font-weight: 500;
   }
 
-  // ─── Env vars ───
   &__env-list {
     display: flex;
     flex-direction: column;
@@ -1712,7 +1655,6 @@ $_danger: #EF4444;
     &--missing { color: $_danger; }
   }
 
-  // ─── Pricing note ───
   &__pricing-note {
     margin-top: 20px;
     padding: 18px 22px;
@@ -1735,7 +1677,6 @@ $_danger: #EF4444;
     }
   }
 
-  // ─── Help steps ───
   &__help-steps {
     padding-left: 20px;
     margin: 12px 0 16px;
@@ -1747,7 +1688,6 @@ $_danger: #EF4444;
     strong { color: $_text-primary; }
   }
 
-  // ─── Select ───
   &__select {
     padding: 12px 16px;
     border: 1.5px solid rgba(0, 0, 0, 0.08);
@@ -1761,7 +1701,6 @@ $_danger: #EF4444;
     &:focus { outline: none; border-color: $_primary-light; }
   }
 
-  // ─── Empty message ───
   &__empty-msg {
     padding: 20px;
     text-align: center;
@@ -1771,7 +1710,6 @@ $_danger: #EF4444;
     border-radius: 12px;
   }
 
-  // ─── Provider list ───
   &__provider-list {
     display: flex;
     flex-direction: column;
@@ -1886,7 +1824,6 @@ $_danger: #EF4444;
     @media (max-width: 600px) { grid-template-columns: 1fr; }
   }
 
-  // ─── Cost cards ───
   &__cost-summary {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1937,7 +1874,6 @@ $_danger: #EF4444;
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   }
 
-  // ─── Origins ───
   &__origins-list {
     display: flex;
     flex-direction: column;
@@ -1968,7 +1904,6 @@ $_danger: #EF4444;
     align-items: center;
   }
 
-  // ─── Toast notification ───
   &__toast {
     position: fixed;
     top: 24px;
@@ -2081,10 +2016,4 @@ $_danger: #EF4444;
 @keyframes sysPanelOpen {
   from { opacity: 0; transform: translateY(-8px) scale(0.99); }
   to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-
-// ─── Shared keyframes ───
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }

@@ -28,7 +28,6 @@ const UsageMeter = ({ variant = 'default', showDetails = true }) => {
     return 'Mensajes disponibles';
   };
 
-  // Compact variant for Inbox header
   if (variant === 'compact') {
     return (
       <div className={`${b} ${b}--compact ${b}--${status}`}>
@@ -45,7 +44,6 @@ const UsageMeter = ({ variant = 'default', showDetails = true }) => {
     );
   }
 
-  // Badge variant for inline indicators
   if (variant === 'badge') {
     return (
       <span className={`${b} ${b}--badge ${b}--${status}`}>
@@ -57,7 +55,6 @@ const UsageMeter = ({ variant = 'default', showDetails = true }) => {
     );
   }
 
-  // Default: full meter with details
   return (
     <div className={`${b} ${b}--${status}`}>
       <div className={`${b}__header`}>

@@ -1,10 +1,5 @@
 @use '../abstracts/variables' as *;
 
-// ============================================
-// EMPTY STATE — Centered, generous padding
-// Large icon in subtle circle, clean typography
-// ============================================
-
 .empty-state {
   display: flex;
   flex-direction: column;

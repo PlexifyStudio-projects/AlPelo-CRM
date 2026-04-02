@@ -1,16 +1,10 @@
 @use '../abstracts/variables' as *;
 
-// ============================================
-// Add Client Modal — Plexify Studio v3
-// Clean form sections, modern inputs
-// ============================================
-
 .add-client-modal {
   display: flex;
   flex-direction: column;
   gap: $spacing-lg;
 
-  // --- Section ---
   &__section {
     display: flex;
     flex-direction: column;
@@ -60,7 +54,6 @@
     color: $color-primary;
   }
 
-  // --- Grid ---
   &__grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -71,7 +64,6 @@
     }
   }
 
-  // --- Gender radio group ---
   &__gender-group {
     display: flex;
     flex-direction: column;
@@ -129,7 +121,6 @@
     }
   }
 
-  // --- Select ---
   &__select-group {
     display: flex;
     flex-direction: column;
@@ -164,7 +155,6 @@
     }
   }
 
-  // --- Textarea ---
   &__textarea-group {
     display: flex;
     flex-direction: column;
@@ -201,7 +191,6 @@
     }
   }
 
-  // --- Toggle ---
   &__toggle-row {
     display: flex;
     align-items: center;
@@ -265,7 +254,6 @@
     }
   }
 
-  // --- Actions ---
   &__actions {
     display: flex;
     justify-content: flex-end;

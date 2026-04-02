@@ -1,10 +1,5 @@
 @use '../abstracts/variables' as *;
 
-// ============================================
-// Lina Activity Monitor — Plexify Studio v3
-// Timeline feed, stat cards, memory panel
-// ============================================
-
 .lina-activity {
   padding: $spacing-xl $spacing-xl $spacing-lg;
   min-height: 100%;
@@ -13,7 +8,6 @@
   flex-direction: column;
   gap: $spacing-xl;
 
-  // ----- Header -----
   &__header {
     display: flex;
     justify-content: space-between;
@@ -106,7 +100,6 @@
     color: $color-gray-300;
   }
 
-  // ----- Token status bar -----
   &__token-bar {
     display: flex;
     align-items: center;
@@ -164,7 +157,6 @@
     }
   }
 
-  // ----- Stats cards -----
   &__stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
@@ -258,7 +250,6 @@
     text-overflow: ellipsis;
   }
 
-  // ----- Filter bar -----
   &__filters {
     display: flex;
     justify-content: space-between;
@@ -311,7 +302,6 @@
     white-space: nowrap;
   }
 
-  // ----- Event feed (timeline) -----
   &__feed {
     flex: 1;
     overflow-y: auto;
@@ -454,7 +444,6 @@
     word-break: break-word;
   }
 
-  // ----- Loading / Empty states -----
   &__loading {
     display: flex;
     flex-direction: column;
@@ -513,7 +502,6 @@
     svg { width: 28px; height: 28px; }
   }
 
-  // ----- Memory section -----
   &__memory {
     border-radius: $border-radius-lg;
     background: $color-white;
@@ -755,7 +743,6 @@
   }
 }
 
-// ----- Animations -----
 @keyframes la-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }

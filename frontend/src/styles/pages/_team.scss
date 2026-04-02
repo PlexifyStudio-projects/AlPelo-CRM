@@ -1,18 +1,8 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// AlPelo - Team Page (Premium Redesign)
-// World-class staff grid + Detail drawer
-// ============================================
-
 .team {
   
-  // max-width removed — full-width content
-
-  // -----------------------------------------------
-  // TOP BAR
-  // -----------------------------------------------
   &__topbar {
     display: flex;
     align-items: flex-start;
@@ -44,9 +34,6 @@
     margin-top: $spacing-xs;
   }
 
-  // -----------------------------------------------
-  // BUTTONS
-  // -----------------------------------------------
   &__btn {
     display: inline-flex;
     align-items: center;
@@ -135,9 +122,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // KPI BAR — Role counts + rating
-  // -----------------------------------------------
   &__kpis {
     display: flex;
     gap: $spacing-sm;
@@ -208,9 +192,6 @@
     font-weight: 700;
   }
 
-  // -----------------------------------------------
-  // TOOLBAR — Search + Filters
-  // -----------------------------------------------
   &__toolbar {
     display: flex;
     flex-direction: column;
@@ -315,18 +296,12 @@
     font-weight: $font-weight-medium;
   }
 
-  // -----------------------------------------------
-  // GRID — Premium card layout
-  // -----------------------------------------------
   &__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: $spacing-md;
   }
 
-  // -----------------------------------------------
-  // CARD — Premium staff card
-  // -----------------------------------------------
   &__card {
     display: flex;
     flex-direction: column;
@@ -342,7 +317,6 @@
     position: relative;
     overflow: hidden;
 
-    // Colored top accent bar (always visible)
     &::before {
       content: '';
       position: absolute;
@@ -610,9 +584,6 @@
     svg { width: 12px; height: 12px; }
   }
 
-  // -----------------------------------------------
-  // EMPTY STATE
-  // -----------------------------------------------
   &__empty {
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -631,9 +602,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // OVERLAY (shared for modals)
-  // -----------------------------------------------
   &__overlay {
     position: fixed;
     inset: 0;
@@ -645,9 +613,6 @@
     
   }
 
-  // -----------------------------------------------
-  // DETAIL DRAWER
-  // -----------------------------------------------
   &__drawer-overlay {
     position: fixed;
     inset: 0;
@@ -710,7 +675,6 @@
     text-align: center;
     position: relative;
 
-    // Dot pattern overlay
     &::before {
       content: '';
       position: absolute;
@@ -805,7 +769,6 @@
     gap: $spacing-sm;
   }
 
-  // Drawer stats
   &__drawer-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -842,7 +805,6 @@
     font-weight: 700;
   }
 
-  // Drawer sections
   &__drawer-section {
     padding: $spacing-lg $spacing-xl;
     border-bottom: 1px solid $color-gray-100;
@@ -906,7 +868,6 @@
     font-style: italic;
   }
 
-  // Client table in drawer
   &__drawer-clients {
     font-size: $font-size-sm;
     border: 1.5px solid $color-gray-200;
@@ -989,9 +950,6 @@
     font-style: italic;
   }
 
-  // -----------------------------------------------
-  // SKILL EDITOR
-  // -----------------------------------------------
   &__skill-editor {
     display: flex;
     flex-direction: column;
@@ -1083,9 +1041,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // FORM MODAL — Premium Design
-  // -----------------------------------------------
   &__form-modal {
     background: $color-white;
     border-radius: 24px;
@@ -1156,7 +1111,6 @@
     gap: 0;
   }
 
-  // Visual section grouping
   &__form-section {
     padding: 1rem 0;
 
@@ -1334,9 +1288,6 @@
     border-radius: 0 0 24px 24px;
   }
 
-  // -----------------------------------------------
-  // DEACTIVATION MODAL
-  // -----------------------------------------------
   &__deact-modal {
     background: $color-white;
     border-radius: $border-radius-xl;
@@ -1426,7 +1377,6 @@
     svg { color: $wa-green; flex-shrink: 0; }
   }
 
-  // Client list with checkboxes
   &__deact-clients {
     padding: 0 $spacing-xl $spacing-md;
   }
@@ -1569,7 +1519,6 @@
     border: 1.5px solid $color-info-border;
   }
 
-  // Info note
   &__deact-note {
     display: flex;
     align-items: flex-start;
@@ -1595,9 +1544,6 @@
     border-top: 1px solid $color-gray-100;
   }
 
-  // -----------------------------------------------
-  // SIMPLE DEACTIVATION CONFIRM
-  // -----------------------------------------------
   &__simple-confirm {
     background: $color-white;
     border-radius: $border-radius-xl;
@@ -1634,9 +1580,6 @@
   }
 }
 
-// -----------------------------------------------
-// KEYFRAMES
-// -----------------------------------------------
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
@@ -1647,9 +1590,6 @@
   to { transform: translateX(0); }
 }
 
-// -----------------------------------------------
-// RESPONSIVE
-// -----------------------------------------------
 @media (max-width: $breakpoint-lg) {
   .team {
     &__kpis {
@@ -1805,9 +1745,6 @@
   }
 }
 
-// -----------------------------------------------
-// TEAM: CREDENTIALS SECTION (form + drawer)
-// -----------------------------------------------
 .team {
   &__form-divider {
     display: flex;
@@ -1863,7 +1800,6 @@
     gap: 0.65rem;
   }
 
-  // When credentials exist — show card
   &__creds-card {
     display: flex;
     flex-direction: column;
@@ -1935,7 +1871,6 @@
     letter-spacing: 0.1em;
   }
 
-  // When no credentials — empty state
   &__creds-empty {
     display: flex;
     align-items: center;
@@ -1970,7 +1905,6 @@
     color: $color-gray-400;
   }
 
-  // Edit mode
   &__creds-edit {
     display: flex;
     flex-direction: column;
@@ -2028,7 +1962,6 @@
     margin-top: 0.35rem;
   }
 
-  // Small primary button for credential empty state
   &__btn--primary-sm {
     padding: 0.35rem 0.75rem;
     font-size: $font-size-xs;
@@ -2045,7 +1978,6 @@
     &:hover { background: $color-primary-light; }
   }
 
-  // Success button (green)
   &__btn--success {
     display: inline-flex;
     align-items: center;
@@ -2067,9 +1999,6 @@
     &:disabled { opacity: 0.55; cursor: not-allowed; }
   }
 
-  // -----------------------------------------------
-  // SCHEDULE EDITOR
-  // -----------------------------------------------
   &__sched {
     display: flex;
     flex-direction: column;
@@ -2178,9 +2107,6 @@
     }
   }
 
-  // -----------------------------------------------
-  // DAYS OFF
-  // -----------------------------------------------
   &__daysoff {
     margin-top: $spacing-xl;
     padding: $spacing-lg;
@@ -2283,10 +2209,6 @@
     }
   }
 }
-
-// ════════════════════════════════════════════
-// ADMINS PANEL
-// ════════════════════════════════════════════
 
 .team__admins {
   background: white;

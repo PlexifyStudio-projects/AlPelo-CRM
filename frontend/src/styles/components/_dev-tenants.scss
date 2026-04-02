@@ -1,11 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// DevTenants — Premium Agency Management
-// Glassmorphism, generous spacing, refined typography
-// ============================================
-
 $_primary: #1E40AF;
 $_primary-light: #3B82F6;
 $_card-bg: rgba(255, 255, 255, 0.9);
@@ -26,7 +21,6 @@ $_danger: #EF4444;
   gap: 28px;
   animation: fadeInUp 400ms $ease-out-expo both;
 
-  // ─── Header ───
   &__header { @include flex-between; align-items: flex-start; }
 
   &__title {
@@ -80,7 +74,6 @@ $_danger: #EF4444;
     }
   }
 
-  // ─── Cards Grid ───
   &__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
@@ -89,7 +82,6 @@ $_danger: #EF4444;
     @media (max-width: 500px) { grid-template-columns: 1fr; }
   }
 
-  // ─── Card ───
   &__card {
     position: relative;
     background: $_card-bg;
@@ -115,7 +107,6 @@ $_danger: #EF4444;
     }
   }
 
-  // ─── Card Top ───
   &__card-top {
     display: flex;
     flex-direction: column;
@@ -155,7 +146,6 @@ $_danger: #EF4444;
     flex-shrink: 0;
   }
 
-  // ─── Usage Section ───
   &__usage {
     display: flex;
     flex-direction: column;
@@ -231,7 +221,6 @@ $_danger: #EF4444;
     }
   }
 
-  // ─── Recarga Panel ───
   &__recarga-panel {
     display: flex;
     flex-wrap: wrap;
@@ -317,7 +306,6 @@ $_danger: #EF4444;
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 
-  // ─── Info Grid ───
   &__info-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -355,7 +343,6 @@ $_danger: #EF4444;
     &--warn { color: $_danger; }
   }
 
-  // ─── Owner ───
   &__owner {
     display: flex;
     align-items: center;
@@ -382,7 +369,6 @@ $_danger: #EF4444;
     border-radius: 6px;
   }
 
-  // ─── Phone Input Row ───
   &__phone-row {
     display: flex;
     align-items: stretch;
@@ -445,7 +431,6 @@ $_danger: #EF4444;
     &::placeholder { color: $_text-muted; font-family: $_mono; }
   }
 
-  // ─── Actions ───
   &__actions {
     display: flex;
     gap: 8px;
@@ -478,7 +463,6 @@ $_danger: #EF4444;
     &:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   }
 
-  // ─── Status Row ───
   &__status-row {
     display: flex;
     gap: 16px;
@@ -513,7 +497,6 @@ $_danger: #EF4444;
     }
   }
 
-  // ─── Modal ───
   &__overlay {
     position: fixed;
     top: 0;
@@ -590,7 +573,6 @@ $_danger: #EF4444;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
   }
 
-  // ─── Form Sections ───
   &__form-section {
     display: flex;
     flex-direction: column;
@@ -645,7 +627,6 @@ $_danger: #EF4444;
     select { cursor: pointer; }
   }
 
-  // ─── Plan Selector Cards ───
   &__plan-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -726,7 +707,6 @@ $_danger: #EF4444;
     font-weight: 500;
   }
 
-  // ─── Credentials ───
   &__cred-btn {
     padding: 10px 20px;
     background: transparent;
@@ -753,7 +733,6 @@ $_danger: #EF4444;
     &--error { background: rgba(239, 68, 68, 0.06); color: $_danger; border: 1px solid rgba(239, 68, 68, 0.12); }
   }
 
-  // ─── Footer Buttons ───
   &__btn-save {
     padding: 12px 28px;
     background: $_primary;
@@ -786,10 +765,6 @@ $_danger: #EF4444;
     &:hover { border-color: rgba(0, 0, 0, 0.15); background: rgba(0, 0, 0, 0.02); }
   }
 }
-
-// ════════════════════════════════════════════
-// LOCATIONS PANEL
-// ════════════════════════════════════════════
 
 .dev-tenants__locations {
   margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px;
@@ -935,7 +910,6 @@ $_danger: #EF4444;
   &:hover { border-color: rgba(255,255,255,0.25); color: white; }
 }
 
-// Sort filters
 .dev-tenants__filters {
   display: flex;
   gap: 6px;
@@ -973,7 +947,6 @@ $_danger: #EF4444;
   }
 }
 
-// Admin list in tenant edit modal
 .dev-tenants__admin-list {
   display: flex;
   flex-direction: column;

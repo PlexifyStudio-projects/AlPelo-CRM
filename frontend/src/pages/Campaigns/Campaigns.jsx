@@ -10,8 +10,6 @@ import templateService from '../../services/templateService';
 import { formatPhone } from '../../utils/formatters';
 
 const B = 'campaigns';
-
-
 const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
 const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
 const SendIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
@@ -34,8 +32,6 @@ const XCircleIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="
 const CheckCircleIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>;
 const ClockIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
 const AlertIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>;
-
-
 const TEMPLATE_CATEGORIES = [
   { id: 'all', name: 'Todas' },
   { id: 'recordatorio', name: 'Recordatorio' },
@@ -52,8 +48,6 @@ const STATUS_CONFIG = {
   approved: { label: 'Aprobada', color: '#10B981', bg: 'rgba(16,185,129,0.08)', icon: CheckCircleIcon },
   rejected: { label: 'Rechazada', color: '#EF4444', bg: 'rgba(239,68,68,0.08)', icon: XCircleIcon },
 };
-
-
 const FilterGroupIcons = {
   status: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><path d="M8 12l2 2 4-4" /></svg>,
   activity: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>,
@@ -63,8 +57,6 @@ const FilterGroupIcons = {
   dates: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
   payment: () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>,
 };
-
-
 const FILTER_GROUPS = [
   {
     id: 'status',
@@ -187,33 +179,27 @@ const formatCOP = (n) => {
   if (!n) return '$0';
   return '$' + Number(n).toLocaleString('es-CO');
 };
-
-
 const Campaigns = () => {
   const { addNotification } = useNotification();
 
-  // ─── Data ──────────────────────────
   const [templates, setTemplates] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [servicesList, setServicesList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ─── UI State ──────────────────────
   const [mainTab, setMainTab] = useState('templates');
   const [templateFilter, setTemplateFilter] = useState('all');
   const [templateSearch, setTemplateSearch] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
 
-  // ─── Template Editor Modal ─────────
   const [showEditor, setShowEditor] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState('promocion');
   const [editBody, setEditBody] = useState('');
 
-  // ─── Send Campaign Flow ────────────
-  const [sendStep, setSendStep] = useState(0); // 0=select template, 1=filters, 2=contacts, 3=sending
+  const [sendStep, setSendStep] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [filters, setFilters] = useState({});
   const [expandedGroups, setExpandedGroups] = useState(['status', 'activity', 'service', 'financial', 'personal', 'dates', 'payment']);
@@ -222,9 +208,8 @@ const Campaigns = () => {
   const [selectedContacts, setSelectedContacts] = useState(new Set());
   const [contactSearch, setContactSearch] = useState('');
 
-  // ─── Sending Animation ─────────────
   const [sendingActive, setSendingActive] = useState(false);
-  const [sendQueue, setSendQueue] = useState([]); // {id, name, phone, status: 'pending'|'sending'|'sent'|'failed'}
+  const [sendQueue, setSendQueue] = useState([]);
   const [sendCurrent, setSendCurrent] = useState(null);
   const [sendLog, setSendLog] = useState([]);
   const [sendStats, setSendStats] = useState({ sent: 0, failed: 0, total: 0 });
@@ -232,10 +217,8 @@ const Campaigns = () => {
   const sendingRef = useRef(false);
   const logEndRef = useRef(null);
 
-  // ─── Confirm modal ─────────────────
   const [confirmModal, setConfirmModal] = useState(null);
 
-  // ═══ Data Loading ═══
   useEffect(() => {
     const load = async () => {
       try {
@@ -264,7 +247,6 @@ const Campaigns = () => {
     } catch {}
   }, []);
 
-  // ═══ Template CRUD ═══
   const openNewTemplate = () => {
     setEditId(null);
     setEditName('');
@@ -349,7 +331,6 @@ const Campaigns = () => {
     }
   };
 
-  // ═══ Filtered Templates ═══
   const filteredTemplates = useMemo(() => {
     let list = [...templates];
     if (templateFilter !== 'all') {
@@ -362,7 +343,6 @@ const Campaigns = () => {
     return list;
   }, [templates, templateFilter, templateSearch]);
 
-  // ═══ Stats ═══
   const stats = useMemo(() => ({
     total: templates.length,
     approved: templates.filter(t => t.status === 'approved').length,
@@ -371,7 +351,6 @@ const Campaigns = () => {
     totalSent: campaigns.reduce((a, c) => a + (c.sent_count || 0), 0),
   }), [templates, campaigns]);
 
-  // ═══ Audience Search ═══
   const handleSearchAudience = async () => {
     setAudienceLoading(true);
     try {
@@ -416,11 +395,9 @@ const Campaigns = () => {
     return Object.keys(filters).filter(k => filters[k] !== '' && filters[k] !== null && filters[k] !== undefined).length;
   }, [filters]);
 
-  // ═══ Sending Logic (1-by-1) ═══
   const startSending = async () => {
     if (!selectedTemplate || selectedContacts.size === 0) return;
 
-    // Create campaign record
     let campId = null;
     try {
       const camp = await campaignService.create({
@@ -434,7 +411,6 @@ const Campaigns = () => {
       setActiveCampaignId(campId);
     } catch {}
 
-    // Deduplicate by client ID
     const seenIds = new Set();
     const contacts = (audienceResults?.contacts || []).filter(c => {
       if (!selectedContacts.has(c.id) || seenIds.has(c.id)) return false;
@@ -449,12 +425,10 @@ const Campaigns = () => {
     setSendStep(3);
     sendingRef.current = true;
 
-    // Send one-by-one
     for (let i = 0; i < queue.length; i++) {
       if (!sendingRef.current) break;
       const contact = queue[i];
 
-      // Update current
       setSendCurrent(contact);
       setSendQueue(prev => prev.map((q, idx) => idx === i ? { ...q, status: 'sending' } : q));
 
@@ -488,7 +462,6 @@ const Campaigns = () => {
         setSendStats(prev => ({ ...prev, failed: prev.failed + 1 }));
       }
 
-      // Small delay between sends
       await new Promise(r => setTimeout(r, 300));
     }
 
@@ -502,12 +475,10 @@ const Campaigns = () => {
     setSendingActive(false);
   };
 
-  // Auto-scroll send log
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [sendLog]);
 
-  // ═══ Reset send flow ═══
   const resetSendFlow = () => {
     setSendStep(0);
     setSelectedTemplate(null);
@@ -522,7 +493,6 @@ const Campaigns = () => {
     setActiveCampaignId(null);
   };
 
-  // Filtered contacts for review
   const filteredContacts = useMemo(() => {
     if (!audienceResults?.contacts) return [];
     if (!contactSearch) return audienceResults.contacts;
@@ -532,16 +502,12 @@ const Campaigns = () => {
     );
   }, [audienceResults, contactSearch]);
 
-  // ═══════════════════════════════════════════════
-  // RENDER
-  // ═══════════════════════════════════════════════
   if (loading) {
     return <div className={B}><div className={`${B}__loading`}><div className={`${B}__loading-spinner`} /><span>Cargando sistema de campañas...</span></div></div>;
   }
 
   return (
     <div className={B}>
-      {/* ─── Header ─── */}
       <div className={`${B}__header`}>
         <div className={`${B}__header-left`}>
           <h1 className={`${B}__title`}>Campañas</h1>
@@ -555,8 +521,6 @@ const Campaigns = () => {
           )}
         </div>
       </div>
-
-      {/* ─── KPI Cards ─── */}
       <div className={`${B}__kpis`}>
         {[
           { value: stats.total, label: 'Total plantillas', color: '#1E40AF' },
@@ -573,8 +537,6 @@ const Campaigns = () => {
           </div>
         ))}
       </div>
-
-      {/* ─── Main Tabs ─── */}
       <div className={`${B}__tabs`}>
         <button className={`${B}__tab ${mainTab === 'templates' ? `${B}__tab--active` : ''}`} onClick={() => { setMainTab('templates'); resetSendFlow(); }}>
           <TemplateIcon /> Plantillas
@@ -585,13 +547,8 @@ const Campaigns = () => {
           <span className={`${B}__tab-badge`}>{stats.approved}</span>
         </button>
       </div>
-
-      {/* ═══════════════════════════════════════════
-          TAB 1: PLANTILLAS
-          ═══════════════════════════════════════════ */}
       {mainTab === 'templates' && (
         <div className={`${B}__templates`}>
-          {/* Toolbar */}
           <div className={`${B}__toolbar`}>
             <div className={`${B}__search-box`}>
               <SearchIcon />
@@ -614,8 +571,6 @@ const Campaigns = () => {
               ))}
             </div>
           </div>
-
-          {/* Template Grid */}
           {filteredTemplates.length === 0 ? (
             <EmptyState
               icon={<MegaphoneIcon />}
@@ -699,13 +654,8 @@ const Campaigns = () => {
           )}
         </div>
       )}
-
-      {/* ═══════════════════════════════════════════
-          TAB 2: ENVIAR CAMPANA
-          ═══════════════════════════════════════════ */}
       {mainTab === 'send' && (
         <div className={`${B}__send`}>
-          {/* Step indicator */}
           <div className={`${B}__steps`}>
             {['Plantilla', 'Audiencia', 'Contactos', 'Envio'].map((label, i) => (
               <div key={i} className={`${B}__step ${sendStep >= i ? `${B}__step--active` : ''} ${sendStep === i ? `${B}__step--current` : ''}`}>
@@ -715,8 +665,6 @@ const Campaigns = () => {
               </div>
             ))}
           </div>
-
-          {/* ─── Step 0: Select Template ─── */}
           {sendStep === 0 && (
             <div className={`${B}__send-section`}>
               <div className={`${B}__send-section-header`}>
@@ -759,8 +707,6 @@ const Campaigns = () => {
               </div>
             </div>
           )}
-
-          {/* ─── Step 1: Audience Filters ─── */}
           {sendStep === 1 && (
             <div className={`${B}__send-section`}>
               <div className={`${B}__send-section-header`}>
@@ -769,9 +715,7 @@ const Campaigns = () => {
               </div>
 
               <div className={`${B}__audience-layout`}>
-                {/* Left: Filters */}
                 <div className={`${B}__filters-panel`}>
-                  {/* Quick Segments */}
                   <div className={`${B}__quick-segments`}>
                     <h4>Segmentos rapidos</h4>
                     <div className={`${B}__quick-segments-grid`}>
@@ -795,8 +739,6 @@ const Campaigns = () => {
                       </button>
                     )}
                   </div>
-
-                  {/* Filter Groups */}
                   {FILTER_GROUPS.map(group => (
                     <div key={group.id} className={`${B}__filter-group ${expandedGroups.includes(group.id) ? `${B}__filter-group--open` : ''}`} data-group={group.id}>
                       <button className={`${B}__filter-group-header`} onClick={() => toggleGroup(group.id)}>
@@ -867,8 +809,6 @@ const Campaigns = () => {
                     </div>
                   ))}
                 </div>
-
-                {/* Right: Preview */}
                 <div className={`${B}__audience-preview`}>
                   <div className={`${B}__preview-header`}>
                     <FilterIcon />
@@ -935,11 +875,8 @@ const Campaigns = () => {
               </div>
             </div>
           )}
-
-          {/* ─── Step 2: Contact Review ─── */}
           {sendStep === 2 && (
             <div className={`${B}__send-section`}>
-              {/* Action bar at TOP — send button immediately visible */}
               <div className={`${B}__contacts-action-bar`}>
                 <button className={`${B}__btn-secondary`} onClick={() => setSendStep(1)}>
                   <ArrowLeft /> Atras
@@ -1023,8 +960,6 @@ const Campaigns = () => {
               </div>
             </div>
           )}
-
-          {/* ─── Step 3: Sending Screen ─── */}
           {sendStep === 3 && (
             <div className={`${B}__sending-screen`}>
               <div className={`${B}__sending-header`}>
@@ -1042,7 +977,6 @@ const Campaigns = () => {
               </div>
 
               <div className={`${B}__sending-layout`}>
-                {/* Left: Contact Queue */}
                 <div className={`${B}__sending-queue`}>
                   <h3>Cola de envio</h3>
                   <div className={`${B}__sending-queue-list`}>
@@ -1060,8 +994,6 @@ const Campaigns = () => {
                     ))}
                   </div>
                 </div>
-
-                {/* Right: Live Log */}
                 <div className={`${B}__sending-log`}>
                   <h3>Registro en vivo</h3>
                   <div className={`${B}__sending-log-entries`}>
@@ -1109,8 +1041,6 @@ const Campaigns = () => {
           )}
         </div>
       )}
-
-      {/* ═══ Template Editor Modal ═══ */}
       {showEditor && createPortal(
         <div className={`${B}__overlay`} onClick={() => setShowEditor(false)}>
           <div className={`${B}__editor`} onClick={e => e.stopPropagation()}>
@@ -1181,8 +1111,6 @@ const Campaigns = () => {
         </div>,
         document.body
       )}
-
-      {/* ═══ Confirm Modal ═══ */}
       {confirmModal && createPortal(
         <div className={`${B}__overlay`} onClick={() => setConfirmModal(null)}>
           <div className={`${B}__confirm`} onClick={e => e.stopPropagation()}>

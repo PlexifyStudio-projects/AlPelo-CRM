@@ -1,12 +1,6 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// ============================================
-// Staff Finances — Redesigned
-// Mobile-first earnings view for staff
-// Clean cards, big numbers, blue accent system
-// ============================================
-
 $_blue: #1E40AF;
 $_blue-light: #3B82F6;
 $_blue-sky: #0EA5E9;
@@ -37,7 +31,6 @@ $_radius-lg: 16px;
     padding: $spacing-lg $spacing-xl;
   }
 
-  // ---- Loading ----
   &__loading {
     color: $_slate-400;
     padding: $spacing-2xl;
@@ -45,7 +38,6 @@ $_radius-lg: 16px;
     font-size: $font-size-base;
   }
 
-  // ---- Header ----
   &__header {
     margin-bottom: $spacing-md;
 
@@ -70,7 +62,6 @@ $_radius-lg: 16px;
     }
   }
 
-  // ---- Period Tabs ----
   &__tabs {
     display: flex;
     gap: 4px;
@@ -106,7 +97,6 @@ $_radius-lg: 16px;
     }
   }
 
-  // ---- Summary Cards ----
   &__summary {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -201,7 +191,6 @@ $_radius-lg: 16px;
     @include truncate;
   }
 
-  // ---- Commission Bar ----
   &__bar-container {
     margin-bottom: $spacing-lg;
     padding: $spacing-md;
@@ -233,7 +222,6 @@ $_radius-lg: 16px;
     font-weight: $font-weight-medium;
   }
 
-  // ---- Detail Table ----
   &__detail {
     background: $color-white;
     border: 1px solid $_slate-200;
@@ -306,7 +294,6 @@ $_radius-lg: 16px;
       background: $_blue-ghost;
     }
 
-    // Mobile: stack layout
     @media (max-width: $breakpoint-md) {
       grid-template-columns: 1fr 1fr;
       min-width: 0;
@@ -333,7 +320,6 @@ $_radius-lg: 16px;
     color: $_blue;
   }
 
-  // ---- Empty State ----
   &__empty {
     text-align: center;
     padding: $spacing-3xl $spacing-md;
