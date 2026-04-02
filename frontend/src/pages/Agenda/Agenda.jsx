@@ -112,7 +112,7 @@ class AgendaErrorBoundary extends React.Component {
 const AgendaInner = ({ staffOnlyId = null }) => {
   const isStaffMode = !!staffOnlyId;
 
-  const [view, setView] = useState(() => window.innerWidth < 576 ? 'day' : 'week');
+  const [view, setView] = useState(() => window.innerWidth < 576 ? 'day' : 'staff');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -140,6 +140,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   const [modalDayApts, setModalDayApts] = useState([]);
 
+  const [productItems, setProductItems] = useState([]);
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [inventory, setInventory] = useState([]);
+
   const { addNotification } = useNotification();
   const scrollRef = useRef(null);
 
@@ -149,6 +154,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [staffCompleting, setStaffCompleting] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeChunk, setActiveChunk] = useState(0);
+  const [serviceFilter, setServiceFilter] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
 
@@ -205,9 +212,57 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   }, [draggingApt, addNotification]);
 
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
-  const columns = useMemo(() => view === 'week' ? weekDays : [currentDate], [view, weekDays, currentDate]);
+  const isStaffView = view === 'staff';
+
+  const serviceCategories = useMemo(() => {
+    const cats = new Set();
+    services.forEach(s => { if (s.category) cats.add(s.category); });
+    return Array.from(cats).sort();
+  }, [services]);
+  const columns = useMemo(() => {
+    if (isStaffView) return [currentDate];
+    return view === 'week' ? weekDays : [currentDate];
+  }, [view, weekDays, currentDate, isStaffView]);
+  const staffColumns = useMemo(() => {
+    if (!isStaffView) return [];
+    let result = staff;
+
+    if (serviceFilter) {
+      const catServices = services.filter(svc => svc.category === serviceFilter);
+      const eligibleStaffIds = new Set();
+      catServices.forEach(svc => { svc.staff_ids?.forEach(id => eligibleStaffIds.add(id)); });
+      result = result.filter(s => eligibleStaffIds.has(s.id));
+    }
+
+    if (searchQuery && searchQuery.length >= 2) {
+      const q = searchQuery.toLowerCase().trim();
+      const dayStr = toISO(currentDate);
+      const dayApts = appointments.filter(a => a.date === dayStr);
+      result = result.filter(s => {
+        if (s.name.toLowerCase().includes(q)) return true;
+        const staffServices = services.filter(svc => svc.staff_ids?.includes(s.id));
+        if (staffServices.some(svc => svc.name.toLowerCase().includes(q) || svc.category?.toLowerCase().includes(q))) return true;
+        const staffApts = dayApts.filter(a => a.staff_id === s.id);
+        if (staffApts.some(a => a.client_name?.toLowerCase().includes(q) || a.service_name?.toLowerCase().includes(q))) return true;
+        return false;
+      });
+    }
+
+    return result;
+  }, [isStaffView, staff, searchQuery, serviceFilter, currentDate, appointments, services]);
+  const STAFF_PER_ROW = 10;
+  const staffChunks = useMemo(() => {
+    if (!isStaffView) return [];
+    const chunks = [];
+    for (let i = 0; i < staffColumns.length; i += STAFF_PER_ROW) {
+      chunks.push(staffColumns.slice(i, i + STAFF_PER_ROW));
+    }
+    return chunks;
+  }, [isStaffView, staffColumns]);
   const baseSlotH = view === 'week' ? 28 : 32;
-  const gridCols = view === 'week' ? '56px repeat(7, 1fr)' : '56px 1fr';
+  const gridCols = isStaffView
+    ? `56px repeat(${Math.max(staffColumns.length, 1)}, minmax(140px, 1fr))`
+    : view === 'week' ? '56px repeat(7, 1fr)' : '56px 1fr';
 
   const staffColorMap = useMemo(() => {
     const map = {};
@@ -265,14 +320,17 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       const monday = getMonday(currentDate);
       const sunday = new Date(monday);
       sunday.setDate(sunday.getDate() + 6);
-      const [aptList, staffList, svcList] = await Promise.all([
+      const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+      const [aptList, staffList, svcList, invData] = await Promise.all([
         appointmentService.list({ date_from: toISO(monday), date_to: toISO(sunday) }),
         staffService.list(),
         servicesService.list(),
+        fetch(`${API}/inventory/products`, { credentials: 'include' }).then(r => r.ok ? r.json() : []).catch(() => []),
       ]);
       setAppointments(aptList);
       setStaff(staffList.filter(s => s.is_active !== false));
       setServices(svcList.filter(s => s.is_active));
+      if (Array.isArray(invData)) setInventory(invData);
     } catch (err) {
       addNotification('Error al cargar agenda: ' + err.message, 'error');
     } finally {
@@ -367,12 +425,20 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return list;
   }, [appointments, staffFilter, isStaffMode, staffOnlyId]);
 
+  const getStaffApts = useCallback((staffMember) => {
+    const dayStr = toISO(currentDate);
+    return filtered.filter(a => a.date === dayStr && a.staff_id === staffMember.id).sort((x, y) => x.time.localeCompare(y.time));
+  }, [filtered, currentDate]);
+
   const colApts = useMemo(() => {
+    if (isStaffView) {
+      return staffColumns.map(s => getStaffApts(s));
+    }
     return columns.map(day => {
       const dayStr = toISO(day);
       return filtered.filter(a => a.date === dayStr).sort((x, y) => x.time.localeCompare(y.time));
     });
-  }, [columns, filtered]);
+  }, [columns, filtered, isStaffView, staffColumns, getStaffApts]);
 
   const slotHeights = useMemo(() => {
     const heights = new Array(TOTAL_SLOTS).fill(baseSlotH);
@@ -456,7 +522,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   }, [searchQuery, appointments]);
 
   const navLabel = useMemo(() => {
-    if (view === 'day') {
+    if (view === 'day' || isStaffView) {
       const d = currentDate;
       return `${DAYS_FULL[d.getDay()]}, ${d.getDate()} de ${MONTHS[d.getMonth()]}`;
     }
@@ -465,11 +531,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       return `${s.getDate()} — ${e.getDate()} de ${MONTHS[s.getMonth()]}`;
     }
     return `${s.getDate()} ${MONTHS[s.getMonth()].substring(0, 3)} — ${e.getDate()} ${MONTHS[e.getMonth()].substring(0, 3)}`;
-  }, [view, currentDate, weekDays]);
+  }, [view, currentDate, weekDays, isStaffView]);
 
   const navYear = useMemo(() => {
-    return view === 'day' ? currentDate.getFullYear() : weekDays[0].getFullYear();
-  }, [view, currentDate, weekDays]);
+    return (view === 'day' || isStaffView) ? currentDate.getFullYear() : weekDays[0].getFullYear();
+  }, [view, currentDate, weekDays, isStaffView]);
 
   const navigate = (dir) => {
     setCurrentDate(prev => {
@@ -500,6 +566,9 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setServiceAssignments([]);
     setServiceSearch('');
     setShowServiceDropdown(false);
+    setProductItems([]);
+    setProductSearch('');
+    setShowProductDropdown(false);
   };
 
   const openCreate = (date, time) => {
@@ -655,7 +724,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       <div className={`${b}__topbar`}>
         <div className={`${b}__topbar-left`}>
           <h1 className={`${b}__title`}>Agenda</h1>
-          <span className={`${b}__subtitle`}>{navYear} &middot; {weekTotal} cita{weekTotal !== 1 ? 's' : ''} esta semana</span>
+          <span className={`${b}__subtitle`}>{navYear}</span>
         </div>
         <div className={`${b}__topbar-center`}>
           <div className={`${b}__topbar-nav`}>
@@ -667,6 +736,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         </div>
         <div className={`${b}__topbar-right`}>
           <div className={`${b}__view-toggle`}>
+            <button className={`${b}__vt-btn ${view === 'staff' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('staff')}>Equipo</button>
             <button className={`${b}__vt-btn ${view === 'week' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('week')}>Semana</button>
             <button className={`${b}__vt-btn ${view === 'day' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('day')}>Dia</button>
           </div>
@@ -677,103 +747,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           )}
         </div>
       </div>
-      <div className={`${b}__overview`}>
-        <div className={`${b}__ov-stats`}>
-          <div className={`${b}__ov-stat`}>
-            <div className={`${b}__ov-stat-icon ${b}__ov-stat-icon--primary`}><CalendarIcon /></div>
-            <div className={`${b}__ov-stat-content`}>
-              <span className={`${b}__ov-num`}>{stats.total}</span>
-              <span className={`${b}__ov-label`}>Citas hoy</span>
-            </div>
-          </div>
-          <div className={`${b}__ov-divider`} />
-          <div className={`${b}__ov-stat`}>
-            <div className={`${b}__ov-stat-icon ${b}__ov-stat-icon--accent`}><DollarIcon /></div>
-            <div className={`${b}__ov-stat-content`}>
-              <span className={`${b}__ov-num`}>{formatCOP(stats.revenue)}</span>
-              <span className={`${b}__ov-label`}>Ingresos</span>
-            </div>
-          </div>
-          <div className={`${b}__ov-divider`} />
-          <div className={`${b}__ov-stat`}>
-            <div className={`${b}__ov-stat-icon ${b}__ov-stat-icon--success`}><CheckCircleIcon /></div>
-            <div className={`${b}__ov-stat-content`}>
-              <span className={`${b}__ov-num`}>{stats.completed}</span>
-              <span className={`${b}__ov-label`}>Completadas</span>
-            </div>
-          </div>
-          <div className={`${b}__ov-divider`} />
-          <div className={`${b}__ov-stat`}>
-            <div className={`${b}__ov-stat-icon ${b}__ov-stat-icon--warning`}><AlertIcon /></div>
-            <div className={`${b}__ov-stat-content`}>
-              <span className={`${b}__ov-num`}>{stats.pending}</span>
-              <span className={`${b}__ov-label`}>Pendientes</span>
-            </div>
-          </div>
-        </div>
-
-        <div className={`${b}__ov-right`}>
-
-          {!isStaffMode && staff.length > 0 && (
-            <div className={`${b}__staff-legend`}>
-              {staff.slice(0, 5).map((s, i) => (
-                <div key={s.id} className={`${b}__staff-dot`} title={s.name}>
-                  <span className={`${b}__staff-dot-circle`} style={{ background: staffColorMap[s.id] || STAFF_COLORS[i % STAFF_COLORS.length] }} />
-                  <span className={`${b}__staff-dot-name`}>{s.name.split(' ')[0]}</span>
-                </div>
-              ))}
-              {staff.length > 5 && <span className={`${b}__staff-dot-more`}>+{staff.length - 5}</span>}
-            </div>
-          )}
-          <div className={`${b}__staff-drop`} ref={staffDropRef} style={isStaffMode ? { display: 'none' } : undefined}>
-            <button type="button" className={`${b}__staff-drop-btn`} onClick={() => setShowStaffDrop(p => !p)}>
-              {staffFilter ? (
-                <>
-                  <span className={`${b}__staff-drop-dot`} style={{ background: staffColorMap[parseInt(staffFilter)] || '#6B6B63' }} />
-                  <span className={`${b}__staff-drop-text`}>{staff.find(s => s.id === parseInt(staffFilter))?.name || 'Todos'}</span>
-                </>
-              ) : (
-                <span className={`${b}__staff-drop-text`}>Todos los profesionales</span>
-              )}
-              <ChevronDown />
-            </button>
-            {showStaffDrop && createPortal(
-              <div className={`${b}__staff-drop-menu`}
-                ref={el => {
-                  if (el && staffDropRef.current) {
-                    const rect = staffDropRef.current.getBoundingClientRect();
-                    el.style.position = 'fixed';
-                    el.style.top = `${rect.bottom + 6}px`;
-                    el.style.right = `${window.innerWidth - rect.right}px`;
-                    el.style.zIndex = '9999';
-                  }
-                }}>
-                <button type="button" className={`${b}__staff-drop-item ${!staffFilter ? `${b}__staff-drop-item--on` : ''}`}
-                  onClick={() => { setStaffFilter(''); setShowStaffDrop(false); }}>
-                  <span className={`${b}__staff-drop-item-name`}>Todos los profesionales</span>
-                </button>
-                {staff.map((s, i) => (
-                  <button key={s.id} type="button"
-                    className={`${b}__staff-drop-item ${staffFilter === String(s.id) ? `${b}__staff-drop-item--on` : ''}`}
-                    onClick={() => { setStaffFilter(String(s.id)); setShowStaffDrop(false); }}>
-                    <span className={`${b}__staff-drop-item-dot`} style={{ background: staffColorMap[s.id] || STAFF_COLORS[i % STAFF_COLORS.length] }} />
-                    <span className={`${b}__staff-drop-item-name`}>{s.name}</span>
-                    {staffFilter === String(s.id) && <span className={`${b}__staff-drop-item-check`}>✓</span>}
-                  </button>
-                ))}
-              </div>,
-              document.body
-            )}
-          </div>
-        </div>
-      </div>
       <div className={`${b}__search`} ref={searchRef}>
         <div className={`${b}__search-box ${searchOpen ? `${b}__search-box--open` : ''}`}>
           <SearchIcon />
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+            onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); setActiveChunk(0); }}
             onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)}
             placeholder="Buscar cliente, servicio, precio, estado..."
             className={`${b}__search-input`}
@@ -784,7 +764,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             </button>
           )}
         </div>
-        {searchOpen && searchResults.length > 0 && (
+        {searchOpen && !isStaffView && searchResults.length > 0 && (
           <div className={`${b}__search-results`}>
             <div className={`${b}__search-results-header`}>
               <span>{searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}</span>
@@ -830,160 +810,346 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             })}
           </div>
         )}
-        {searchOpen && searchQuery.length >= 2 && searchResults.length === 0 && (
+        {searchOpen && !isStaffView && searchQuery.length >= 2 && searchResults.length === 0 && (
           <div className={`${b}__search-results`}>
             <div className={`${b}__search-empty`}>No se encontraron citas para "{searchQuery}"</div>
           </div>
         )}
       </div>
-      <div className={`${b}__calendar`}>
-        <div className={`${b}__cal-scroll`} ref={scrollRef}>
-
-          <div className={`${b}__cal-header`} style={{ gridTemplateColumns: gridCols }}>
-            <div className={`${b}__corner`}>
-              <ScissorsIcon />
-            </div>
-            {columns.map((day, i) => {
-              const today = isToday(day);
-              const count = colCounts[i];
+      {isStaffView && serviceCategories.length > 0 && (
+        <div className={`${b}__service-filters`}>
+          <button
+            className={`${b}__sf-chip ${!serviceFilter ? `${b}__sf-chip--active` : ''}`}
+            onClick={() => { setServiceFilter(''); setActiveChunk(0); }}>
+            Todos
+          </button>
+          {serviceCategories.map(cat => (
+            <button
+              key={cat}
+              className={`${b}__sf-chip ${serviceFilter === cat ? `${b}__sf-chip--active` : ''}`}
+              onClick={() => { setServiceFilter(prev => prev === cat ? '' : cat); setActiveChunk(0); }}>
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+      {isStaffView ? (
+        <div className={`${b}__calendar`}>
+          <div className={`${b}__cal-scroll`} ref={scrollRef}>
+            {staffChunks.map((chunk, chunkIdx) => {
+              const chunkGridCols = `56px repeat(${chunk.length}, minmax(140px, 1fr))`;
+              const chunkStartIdx = chunkIdx * STAFF_PER_ROW;
               return (
-                <div key={i} className={`${b}__col-head ${today ? `${b}__col-head--today` : ''}`} onClick={() => view === 'week' ? switchToDay(day) : null}>
-                  <span className={`${b}__col-day`}>{DAYS_SHORT[day.getDay()]}</span>
-                  <span className={`${b}__col-num ${today ? `${b}__col-num--today` : ''}`}>{day.getDate()}</span>
-                  {count > 0 && (
-                    <span className={`${b}__col-badge`}>{count}</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          <div className={`${b}__cal-grid`} style={{ gridTemplateColumns: gridCols }}>
-
-            <div className={`${b}__time-col`} style={{ height: `${totalH}px` }}>
-              {HOURS.map(h => {
-                const si0 = (h - HOURS_START) * SLOTS_PER_HOUR;
-                return [0, 15, 30, 45].map((m, mi) => (
-                  <div key={`${h}-${m}`}
-                    className={`${b}__time-cell ${mi === 0 ? `${b}__time-cell--hour` : `${b}__time-cell--sub`}`}
-                    style={{ top: `${slotTops[si0 + mi]}px`, height: `${baseSlotH}px` }}>
-                    <span className={`${b}__time-text`}>
-                      {mi === 0 ? formatHourLabel(h) : `${pad2(m)}`}
-                    </span>
-                  </div>
-                ));
-              })}
-            </div>
-            {columns.map((day, ci) => {
-              const today = isToday(day);
-              const apts = colApts[ci] || [];
-              const slotGroups = {};
-              apts.forEach(apt => {
-                const si = getSlotIndex(apt.time);
-                if (!slotGroups[si]) slotGroups[si] = [];
-                slotGroups[si].push(apt);
-              });
-
-              return (
-                <div key={ci} className={`${b}__day-col ${today ? `${b}__day-col--today` : ''} ${ci % 2 === 1 ? `${b}__day-col--alt` : ''}`} style={{ height: `${totalH}px` }}>
-
-                  {HOURS.map(h => (
-                    <div key={`hl-${h}`} className={`${b}__hour-line`} style={{ top: `${hourTop(h)}px` }} />
-                  ))}
-
-                  {HOURS.map(h => {
-                    const base = (h - HOURS_START) * SLOTS_PER_HOUR;
-                    return [
-                      <div key={`q1-${h}`} className={`${b}__quarter-line`} style={{ top: `${slotTops[base + 1]}px` }} />,
-                      <div key={`hh-${h}`} className={`${b}__half-line`} style={{ top: `${slotTops[base + 2]}px` }} />,
-                      <div key={`q3-${h}`} className={`${b}__quarter-line`} style={{ top: `${slotTops[base + 3]}px` }} />,
-                    ];
-                  })}
-                  {apts.length === 0 && today && (
-                    <div className={`${b}__empty-col`}>
-                      <EmptyCalIcon />
-                      <span>Sin citas</span>
+                <div key={chunkIdx} id={`staff-chunk-${chunkIdx}`} className={`${b}__staff-chunk`}>
+                  <div className={`${b}__cal-header`} style={{ gridTemplateColumns: chunkGridCols }}>
+                    <div className={`${b}__corner`}>
+                      <ScissorsIcon />
                     </div>
-                  )}
-                  {Object.entries(slotGroups).map(([si, group]) => (
-                    <div key={si} className={`${b}__event-stack`} style={{ top: `${slotTops[parseInt(si)]}px` }}>
-                      {group.map((apt, evIdx) => {
-                        const staffColor = staffColorMap[apt.staff_id] || '#6B6B63';
-                        const statusColor = STATUS_META[apt.status]?.color || '#6B6B63';
-                        const statusLabel = STATUS_META[apt.status]?.label || '';
-                        const svc = serviceMap[apt.service_id];
-                        const endTime = getEndTime(apt.time, apt.duration_minutes || svc?.duration_minutes || 30);
-                        return (
-                          <div key={apt.id}
-                            className={`${b}__event ${(apt.status === 'completed' || apt.status === 'paid') ? (isStaffMode ? `${b}__event--done-staff` : `${b}__event--done`) : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''} ${draggingApt?.id === apt.id ? `${b}__event--dragging` : ''}`}
-                            style={{ '--c': staffColor, '--sc': statusColor, animationDelay: `${evIdx * 30}ms` }}
-                            draggable={!isStaffMode && apt.status === 'confirmed'}
-                            onDragStart={(e) => handleDragStart(e, apt)}
-                            onDragEnd={handleDragEnd}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isStaffMode) {
-                                if (apt.status === 'confirmed') { setStaffCompleteApt(apt); setStaffPaymentCode(''); }
-                              } else {
-                                openEdit(apt);
-                              }
-                            }}
-                            title={`${apt.client_name} - ${apt.service_name || ''} (${formatTime12(apt.time)} - ${formatTime12(endTime)})`}>
-                            <div className={`${b}__event-accent`} />
-                            <div className={`${b}__event-body`}>
-                              <div className={`${b}__event-left`}>
-                                <span className={`${b}__event-time`}>{formatTime12(apt.time)}</span>
-                                <span className={`${b}__event-sep`}>&middot;</span>
-                                <span className={`${b}__event-name`}>{apt.client_name}</span>
-                              </div>
-                              <div className={`${b}__event-right`}>
-                                <span className={`${b}__event-service`}>{apt.service_name || ''}</span>
-                                <span className={`${b}__event-dur`}>{formatDur(apt.duration_minutes || svc?.duration_minutes)}</span>
-                                <span className={`${b}__event-price`}>{formatCOP(apt.price)}</span>
-                                <span className={`${b}__event-badge`} style={{ '--sc': statusColor }} title={statusLabel}>
-                                  <span className={`${b}__event-badge-dot`} style={{ background: statusColor }} />
-                                  {apt.staff_name || ''}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
-
-                  {today && showNow && (
-                    <div className={`${b}__now`} style={{ top: `${nowTop}px` }}>
-                      <div className={`${b}__now-dot`} />
-                      <div className={`${b}__now-line`} />
-                    </div>
-                  )}
-
-                  {!isStaffMode && HOURS.map(h => {
-                    const dt = toISO(day);
-                    return [0, 15, 30, 45].map((m) => {
-                      const t = `${pad2(h)}:${pad2(m)}`;
-                      const si = (h - HOURS_START) * SLOTS_PER_HOUR + (m / SLOT_MIN);
-                      const isDrop = dropTarget?.date === dt && dropTarget?.time === t;
+                    {chunk.map((s, i) => {
+                      const globalIdx = chunkStartIdx + i;
+                      const apts = getStaffApts(s);
+                      const count = apts.length;
+                      const color = staffColorMap[s.id] || STAFF_COLORS[globalIdx % STAFF_COLORS.length];
                       return (
-                        <div key={`s${h}${m}`}
-                          className={`${b}__slot ${isDrop ? `${b}__slot--drop-target` : ''}`}
-                          style={{ top: `${slotTops[si]}px`, height: `${baseSlotH}px` }}
-                          onClick={() => openCreate(day, t)}
-                          onDragOver={(e) => handleDragOver(e, day, t)}
-                          onDragLeave={() => setDropTarget(null)}
-                          onDrop={(e) => handleDrop(e, day, t)}>
-                          {isDrop && <span className={`${b}__drop-label`}>{formatTime12(t)}</span>}
+                        <div key={s.id} className={`${b}__col-head ${b}__col-head--staff`}>
+                          <div className={`${b}__staff-avatar`} style={{ '--staff-color': color }}>
+                            {s.photo_url ? (
+                              <img src={s.photo_url} alt={s.name} className={`${b}__staff-avatar-img`} />
+                            ) : (
+                              <span className={`${b}__staff-avatar-initials`}>
+                                {s.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <span className={`${b}__col-staff-name`}>{s.name.split(' ')[0]}</span>
+                          {count > 0 && <span className={`${b}__col-badge`}>{count}</span>}
                         </div>
                       );
-                    });
-                  })}
+                    })}
+                  </div>
+
+                  <div className={`${b}__cal-grid`} style={{ gridTemplateColumns: chunkGridCols }}>
+                    <div className={`${b}__time-col`} style={{ height: `${totalH}px` }}>
+                      {HOURS.map(h => {
+                        const si0 = (h - HOURS_START) * SLOTS_PER_HOUR;
+                        return [0, 15, 30, 45].map((m, mi) => (
+                          <div key={`${h}-${m}`}
+                            className={`${b}__time-cell ${mi === 0 ? `${b}__time-cell--hour` : `${b}__time-cell--sub`}`}
+                            style={{ top: `${slotTops[si0 + mi]}px`, height: `${baseSlotH}px` }}>
+                            <span className={`${b}__time-text`}>
+                              {mi === 0 ? formatHourLabel(h) : `${pad2(m)}`}
+                            </span>
+                          </div>
+                        ));
+                      })}
+                    </div>
+                    {chunk.map((s, ci) => {
+                      const apts = getStaffApts(s);
+                      const slotGroups = {};
+                      apts.forEach(apt => {
+                        const si = getSlotIndex(apt.time);
+                        if (!slotGroups[si]) slotGroups[si] = [];
+                        slotGroups[si].push(apt);
+                      });
+                      const today = isToday(currentDate);
+                      return (
+                        <div key={s.id} className={`${b}__day-col ${ci % 2 === 1 ? `${b}__day-col--alt` : ''}`} style={{ height: `${totalH}px` }}>
+                          {HOURS.map(h => (
+                            <div key={`hl-${h}`} className={`${b}__hour-line`} style={{ top: `${hourTop(h)}px` }} />
+                          ))}
+                          {HOURS.map(h => {
+                            const base = (h - HOURS_START) * SLOTS_PER_HOUR;
+                            return [
+                              <div key={`q1-${h}`} className={`${b}__quarter-line`} style={{ top: `${slotTops[base + 1]}px` }} />,
+                              <div key={`hh-${h}`} className={`${b}__half-line`} style={{ top: `${slotTops[base + 2]}px` }} />,
+                              <div key={`q3-${h}`} className={`${b}__quarter-line`} style={{ top: `${slotTops[base + 3]}px` }} />,
+                            ];
+                          })}
+                          {apts.length === 0 && (
+                            <div className={`${b}__empty-col`}>
+                              <EmptyCalIcon />
+                              <span>Sin citas</span>
+                            </div>
+                          )}
+                          {Object.entries(slotGroups).map(([si, group]) => (
+                            <div key={si} className={`${b}__event-stack`} style={{ top: `${slotTops[parseInt(si)]}px` }}>
+                              {group.map((apt, evIdx) => {
+                                const staffColor = staffColorMap[apt.staff_id] || '#6B6B63';
+                                const statusColor = STATUS_META[apt.status]?.color || '#6B6B63';
+                                const svc = serviceMap[apt.service_id];
+                                const endTime = getEndTime(apt.time, apt.duration_minutes || svc?.duration_minutes || 30);
+                                return (
+                                  <div key={apt.id}
+                                    className={`${b}__event ${(apt.status === 'completed' || apt.status === 'paid') ? `${b}__event--done` : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''} ${draggingApt?.id === apt.id ? `${b}__event--dragging` : ''}`}
+                                    style={{ '--c': staffColor, '--sc': statusColor, animationDelay: `${evIdx * 30}ms` }}
+                                    draggable={apt.status === 'confirmed'}
+                                    onDragStart={(e) => handleDragStart(e, apt)}
+                                    onDragEnd={handleDragEnd}
+                                    onClick={(e) => { e.stopPropagation(); openEdit(apt); }}
+                                    title={`${apt.client_name} - ${apt.service_name || ''} (${formatTime12(apt.time)} - ${formatTime12(endTime)})`}>
+                                    <div className={`${b}__event-accent`} />
+                                    <div className={`${b}__event-body`}>
+                                      <div className={`${b}__event-left`}>
+                                        <span className={`${b}__event-time`}>{formatTime12(apt.time)}</span>
+                                        <span className={`${b}__event-sep`}>&middot;</span>
+                                        <span className={`${b}__event-name`}>{apt.client_name}</span>
+                                      </div>
+                                      <div className={`${b}__event-right`}>
+                                        <span className={`${b}__event-service`}>{apt.service_name || ''}</span>
+                                        <span className={`${b}__event-dur`}>{formatDur(apt.duration_minutes || svc?.duration_minutes)}</span>
+                                        <span className={`${b}__event-price`}>{formatCOP(apt.price)}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                          {today && showNow && ci === 0 && chunkIdx === 0 && (
+                            <div className={`${b}__now`} style={{ top: `${nowTop}px`, width: `calc(${chunk.length} * 100%)`, zIndex: 5 }}>
+                              <div className={`${b}__now-dot`} />
+                              <div className={`${b}__now-line`} />
+                            </div>
+                          )}
+                          {HOURS.map(h => {
+                            const dt = toISO(currentDate);
+                            return [0, 15, 30, 45].map((m) => {
+                              const t = `${pad2(h)}:${pad2(m)}`;
+                              const si = (h - HOURS_START) * SLOTS_PER_HOUR + (m / SLOT_MIN);
+                              const isDrop = dropTarget?.date === dt && dropTarget?.time === t;
+                              return (
+                                <div key={`s${h}${m}`}
+                                  className={`${b}__slot ${isDrop ? `${b}__slot--drop-target` : ''}`}
+                                  style={{ top: `${slotTops[si]}px`, height: `${baseSlotH}px` }}
+                                  onClick={() => openCreate(currentDate, t)}
+                                  onDragOver={(e) => handleDragOver(e, currentDate, t)}
+                                  onDragLeave={() => setDropTarget(null)}
+                                  onDrop={(e) => handleDrop(e, currentDate, t)}>
+                                  {isDrop && <span className={`${b}__drop-label`}>{formatTime12(t)}</span>}
+                                </div>
+                              );
+                            });
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
           </div>
+          {staffChunks.length > 1 && (
+            <div className={`${b}__chunk-arrows`}>
+              <button
+                className={`${b}__chunk-arrow ${activeChunk === 0 ? `${b}__chunk-arrow--disabled` : ''}`}
+                disabled={activeChunk === 0}
+                onClick={() => {
+                  const prev = activeChunk - 1;
+                  setActiveChunk(prev);
+                  const el = document.getElementById(`staff-chunk-${prev}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="18 15 12 9 6 15" />
+                </svg>
+              </button>
+              <span className={`${b}__chunk-label`}>{activeChunk + 1}/{staffChunks.length}</span>
+              <button
+                className={`${b}__chunk-arrow ${activeChunk >= staffChunks.length - 1 ? `${b}__chunk-arrow--disabled` : ''}`}
+                disabled={activeChunk >= staffChunks.length - 1}
+                onClick={() => {
+                  const next = activeChunk + 1;
+                  setActiveChunk(next);
+                  const el = document.getElementById(`staff-chunk-${next}`);
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className={`${b}__calendar`}>
+          <div className={`${b}__cal-scroll`} ref={scrollRef}>
+            <div className={`${b}__cal-header`} style={{ gridTemplateColumns: gridCols }}>
+              <div className={`${b}__corner`}>
+                <ScissorsIcon />
+              </div>
+              {columns.map((day, i) => {
+                const today = isToday(day);
+                const count = colCounts[i];
+                return (
+                  <div key={i} className={`${b}__col-head ${today ? `${b}__col-head--today` : ''}`} onClick={() => view === 'week' ? switchToDay(day) : null}>
+                    <span className={`${b}__col-day`}>{DAYS_SHORT[day.getDay()]}</span>
+                    <span className={`${b}__col-num ${today ? `${b}__col-num--today` : ''}`}>{day.getDate()}</span>
+                    {count > 0 && <span className={`${b}__col-badge`}>{count}</span>}
+                  </div>
+                );
+              })}
+            </div>
+            <div className={`${b}__cal-grid`} style={{ gridTemplateColumns: gridCols }}>
+              <div className={`${b}__time-col`} style={{ height: `${totalH}px` }}>
+                {HOURS.map(h => {
+                  const si0 = (h - HOURS_START) * SLOTS_PER_HOUR;
+                  return [0, 15, 30, 45].map((m, mi) => (
+                    <div key={`${h}-${m}`}
+                      className={`${b}__time-cell ${mi === 0 ? `${b}__time-cell--hour` : `${b}__time-cell--sub`}`}
+                      style={{ top: `${slotTops[si0 + mi]}px`, height: `${baseSlotH}px` }}>
+                      <span className={`${b}__time-text`}>
+                        {mi === 0 ? formatHourLabel(h) : `${pad2(m)}`}
+                      </span>
+                    </div>
+                  ));
+                })}
+              </div>
+              {columns.map((day, ci) => {
+                const today = isToday(day);
+                const apts = colApts[ci] || [];
+                const slotGroups = {};
+                apts.forEach(apt => {
+                  const si = getSlotIndex(apt.time);
+                  if (!slotGroups[si]) slotGroups[si] = [];
+                  slotGroups[si].push(apt);
+                });
+                return (
+                  <div key={ci} className={`${b}__day-col ${today ? `${b}__day-col--today` : ''} ${ci % 2 === 1 ? `${b}__day-col--alt` : ''}`} style={{ height: `${totalH}px` }}>
+                    {HOURS.map(h => (
+                      <div key={`hl-${h}`} className={`${b}__hour-line`} style={{ top: `${hourTop(h)}px` }} />
+                    ))}
+                    {HOURS.map(h => {
+                      const base = (h - HOURS_START) * SLOTS_PER_HOUR;
+                      return [
+                        <div key={`q1-${h}`} className={`${b}__quarter-line`} style={{ top: `${slotTops[base + 1]}px` }} />,
+                        <div key={`hh-${h}`} className={`${b}__half-line`} style={{ top: `${slotTops[base + 2]}px` }} />,
+                        <div key={`q3-${h}`} className={`${b}__quarter-line`} style={{ top: `${slotTops[base + 3]}px` }} />,
+                      ];
+                    })}
+                    {apts.length === 0 && today && (
+                      <div className={`${b}__empty-col`}>
+                        <EmptyCalIcon />
+                        <span>Sin citas</span>
+                      </div>
+                    )}
+                    {Object.entries(slotGroups).map(([si, group]) => (
+                      <div key={si} className={`${b}__event-stack`} style={{ top: `${slotTops[parseInt(si)]}px` }}>
+                        {group.map((apt, evIdx) => {
+                          const staffColor = staffColorMap[apt.staff_id] || '#6B6B63';
+                          const statusColor = STATUS_META[apt.status]?.color || '#6B6B63';
+                          const statusLabel = STATUS_META[apt.status]?.label || '';
+                          const svc = serviceMap[apt.service_id];
+                          const endTime = getEndTime(apt.time, apt.duration_minutes || svc?.duration_minutes || 30);
+                          return (
+                            <div key={apt.id}
+                              className={`${b}__event ${(apt.status === 'completed' || apt.status === 'paid') ? (isStaffMode ? `${b}__event--done-staff` : `${b}__event--done`) : ''} ${apt.status === 'cancelled' ? `${b}__event--cancel` : ''} ${draggingApt?.id === apt.id ? `${b}__event--dragging` : ''}`}
+                              style={{ '--c': staffColor, '--sc': statusColor, animationDelay: `${evIdx * 30}ms` }}
+                              draggable={!isStaffMode && apt.status === 'confirmed'}
+                              onDragStart={(e) => handleDragStart(e, apt)}
+                              onDragEnd={handleDragEnd}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isStaffMode) {
+                                  if (apt.status === 'confirmed') { setStaffCompleteApt(apt); setStaffPaymentCode(''); }
+                                } else {
+                                  openEdit(apt);
+                                }
+                              }}
+                              title={`${apt.client_name} - ${apt.service_name || ''} (${formatTime12(apt.time)} - ${formatTime12(endTime)})`}>
+                              <div className={`${b}__event-accent`} />
+                              <div className={`${b}__event-body`}>
+                                <div className={`${b}__event-left`}>
+                                  <span className={`${b}__event-time`}>{formatTime12(apt.time)}</span>
+                                  <span className={`${b}__event-sep`}>&middot;</span>
+                                  <span className={`${b}__event-name`}>{apt.client_name}</span>
+                                </div>
+                                <div className={`${b}__event-right`}>
+                                  <span className={`${b}__event-service`}>{apt.service_name || ''}</span>
+                                  <span className={`${b}__event-dur`}>{formatDur(apt.duration_minutes || svc?.duration_minutes)}</span>
+                                  <span className={`${b}__event-price`}>{formatCOP(apt.price)}</span>
+                                  <span className={`${b}__event-badge`} style={{ '--sc': statusColor }} title={statusLabel}>
+                                    <span className={`${b}__event-badge-dot`} style={{ background: statusColor }} />
+                                    {apt.staff_name || ''}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                    {today && showNow && (
+                      <div className={`${b}__now`} style={{ top: `${nowTop}px` }}>
+                        <div className={`${b}__now-dot`} />
+                        <div className={`${b}__now-line`} />
+                      </div>
+                    )}
+                    {!isStaffMode && HOURS.map(h => {
+                      const dt = toISO(day);
+                      return [0, 15, 30, 45].map((m) => {
+                        const t = `${pad2(h)}:${pad2(m)}`;
+                        const si = (h - HOURS_START) * SLOTS_PER_HOUR + (m / SLOT_MIN);
+                        const isDrop = dropTarget?.date === dt && dropTarget?.time === t;
+                        return (
+                          <div key={`s${h}${m}`}
+                            className={`${b}__slot ${isDrop ? `${b}__slot--drop-target` : ''}`}
+                            style={{ top: `${slotTops[si]}px`, height: `${baseSlotH}px` }}
+                            onClick={() => openCreate(day, t)}
+                            onDragOver={(e) => handleDragOver(e, day, t)}
+                            onDragLeave={() => setDropTarget(null)}
+                            onDrop={(e) => handleDrop(e, day, t)}>
+                            {isDrop && <span className={`${b}__drop-label`}>{formatTime12(t)}</span>}
+                          </div>
+                        );
+                      });
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && createPortal(
         <div className={`${b}__overlay`} onClick={() => setShowModal(false)}>
@@ -1127,6 +1293,86 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                         ))
                       ) : (
                         <div className={`${b}__search-empty`}>Sin resultados para &ldquo;{serviceSearch}&rdquo;</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className={`${b}__section`}>
+                <span className={`${b}__section-label`}>
+                  Productos utilizados {productItems.length > 0 ? `(${productItems.length})` : ''}
+                </span>
+                {productItems.length > 0 && (
+                  <div className={`${b}__product-list`}>
+                    {productItems.map((item, i) => (
+                      <div key={i} className={`${b}__product-row`}>
+                        <div className={`${b}__product-info`}>
+                          <span className={`${b}__product-name`}>{item.name}</span>
+                          <span className={`${b}__product-stock`}>Stock: {item.stock}</span>
+                        </div>
+                        <div className={`${b}__product-fields`}>
+                          <div className={`${b}__product-field`}>
+                            <label>Precio</label>
+                            <input type="number" value={item.salePrice}
+                              onChange={e => setProductItems(prev => prev.map((p, j) => j === i ? { ...p, salePrice: Number(e.target.value) } : p))} />
+                          </div>
+                          <div className={`${b}__product-field`}>
+                            <label>Cant.</label>
+                            <input type="number" min="1" value={item.qty}
+                              onChange={e => setProductItems(prev => prev.map((p, j) => j === i ? { ...p, qty: Number(e.target.value) || 1 } : p))} />
+                          </div>
+                          <div className={`${b}__product-field`}>
+                            <label>Comision</label>
+                            <input type="number" value={item.commission}
+                              onChange={e => setProductItems(prev => prev.map((p, j) => j === i ? { ...p, commission: Number(e.target.value) } : p))} />
+                          </div>
+                        </div>
+                        <button type="button" className={`${b}__product-remove`}
+                          onClick={() => setProductItems(prev => prev.filter((_, j) => j !== i))}>
+                          <CloseIcon />
+                        </button>
+                      </div>
+                    ))}
+                    <div className={`${b}__product-total`}>
+                      Total productos: {formatCOP(productItems.reduce((s, p) => s + p.salePrice * p.qty, 0))}
+                      {productItems.some(p => p.commission > 0) && (
+                        <> &middot; Comisiones: {formatCOP(productItems.reduce((s, p) => s + p.commission, 0))}</>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className={`${b}__svc-search`}>
+                  <div className={`${b}__search-wrap`}>
+                    <SearchIcon />
+                    <input type="text" value={productSearch}
+                      onChange={e => { setProductSearch(e.target.value); setShowProductDropdown(true); }}
+                      onFocus={() => setShowProductDropdown(true)}
+                      placeholder="Buscar producto del inventario..." />
+                  </div>
+                  {showProductDropdown && productSearch.length >= 1 && (
+                    <div className={`${b}__svc-results`}>
+                      {inventory.filter(p => p.name?.toLowerCase().includes(productSearch.toLowerCase())).length > 0 ? (
+                        inventory.filter(p => p.name?.toLowerCase().includes(productSearch.toLowerCase())).map(p => (
+                          <button key={p.id} type="button" className={`${b}__svc-item`}
+                            onClick={() => {
+                              setProductItems(prev => [...prev, {
+                                productId: p.id,
+                                name: p.name,
+                                stock: p.stock || 0,
+                                basePrice: p.sale_price || p.price || 0,
+                                salePrice: p.sale_price || p.price || 0,
+                                qty: 1,
+                                commission: 0,
+                              }]);
+                              setProductSearch('');
+                              setShowProductDropdown(false);
+                            }}>
+                            <span className={`${b}__svc-item-name`}>{p.name}</span>
+                            <span className={`${b}__svc-item-detail`}>Stock: {p.stock || 0} · {formatCOP(p.sale_price || p.price || 0)}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className={`${b}__search-empty`}>Sin productos para &ldquo;{productSearch}&rdquo;</div>
                       )}
                     </div>
                   )}
