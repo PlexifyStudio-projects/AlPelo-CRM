@@ -32,6 +32,29 @@ const STATUS_META = {
 };
 
 const pad2 = (n) => String(n).padStart(2, '0');
+const PRODUCTS_TAG = '<!--PRODUCTS:';
+const PRODUCTS_TAG_END = ':PRODUCTS-->';
+
+const serializeProducts = (products, userNotes) => {
+  const base = userNotes || '';
+  if (!products || products.length === 0) return base || null;
+  const data = products.map(p => ({ id: p.productId, name: p.name, base: p.basePrice, sale: p.salePrice, qty: p.qty, comm: p.commission }));
+  return `${base}${base ? '\n' : ''}${PRODUCTS_TAG}${JSON.stringify(data)}${PRODUCTS_TAG_END}`;
+};
+
+const deserializeProducts = (notes) => {
+  if (!notes) return { userNotes: '', products: [] };
+  const start = notes.indexOf(PRODUCTS_TAG);
+  if (start === -1) return { userNotes: notes, products: [] };
+  const end = notes.indexOf(PRODUCTS_TAG_END);
+  if (end === -1) return { userNotes: notes, products: [] };
+  const userNotes = notes.substring(0, start).trim();
+  try {
+    const data = JSON.parse(notes.substring(start + PRODUCTS_TAG.length, end));
+    const products = data.map(p => ({ productId: p.id, name: p.name, basePrice: p.base, salePrice: p.sale, qty: p.qty, commission: p.comm, stock: 0 }));
+    return { userNotes, products };
+  } catch { return { userNotes: notes, products: [] }; }
+};
 const toISO = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
 const minToTime = (m) => `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
@@ -583,7 +606,9 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     resetModal();
     setSelectedClient({ id: apt.client_id, name: apt.client_name, phone: apt.client_phone });
     setServiceAssignments([{ serviceId: apt.service_id, staffId: String(apt.staff_id), time: apt.time, clientPrice: apt.price || serviceMap[apt.service_id]?.price || 0 }]);
-    setFormData({ date: apt.date, notes: apt.notes || '', status: apt.status });
+    const { userNotes, products } = deserializeProducts(apt.notes);
+    setFormData({ date: apt.date, notes: userNotes, status: apt.status });
+    setProductItems(products);
     setShowModal(true);
   };
 
@@ -641,7 +666,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         if (first.serviceId !== editingApt.service_id) updateData.service_id = first.serviceId;
         if (formData.date !== editingApt.date) updateData.date = formData.date;
         if (first.time !== editingApt.time) updateData.time = first.time;
-        if ((formData.notes || null) !== (editingApt.notes || null)) updateData.notes = formData.notes || null;
+        const serializedNotes = serializeProducts(productItems, formData.notes);
+        if ((serializedNotes || null) !== (editingApt.notes || null)) updateData.notes = serializedNotes || null;
         if (formData.status !== editingApt.status) updateData.status = formData.status;
         const firstPrice = first.clientPrice ?? serviceMap[first.serviceId]?.price;
         if (firstPrice && firstPrice !== editingApt.price) updateData.price = firstPrice;
@@ -661,12 +687,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       } else {
         for (const a of serviceAssignments) {
           const svcPrice = a.clientPrice ?? serviceMap[a.serviceId]?.price;
+          const serializedNotes = serializeProducts(productItems, formData.notes);
           await appointmentService.create({
             client_name: clientName, client_phone: clientPhone, client_id: clientId || null,
             staff_id: parseInt(a.staffId), service_id: a.serviceId,
             date: formData.date, time: a.time,
             price: svcPrice || null,
-            notes: formData.notes || null, status: formData.status, created_by: 'admin',
+            notes: serializedNotes || null, status: formData.status, created_by: 'admin',
           });
         }
         {
