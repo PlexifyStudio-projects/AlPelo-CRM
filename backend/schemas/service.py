@@ -11,6 +11,7 @@ class ServiceCreate(BaseModel):
     duration_minutes: Optional[int] = None
     description: Optional[str] = None
     staff_ids: List[int] = []
+    ai_mode: str = "auto"  # auto = Lina books, manual = Lina pauses + notifies admin
     is_active: bool = True
 
 class ServiceUpdate(BaseModel):
@@ -21,6 +22,7 @@ class ServiceUpdate(BaseModel):
     duration_minutes: Optional[int] = None
     description: Optional[str] = None
     staff_ids: Optional[List[int]] = None
+    ai_mode: Optional[str] = None
     is_active: Optional[bool] = None
 
 class ServiceResponse(BaseModel):
@@ -32,6 +34,7 @@ class ServiceResponse(BaseModel):
     duration_minutes: Optional[int] = None
     description: Optional[str] = None
     staff_ids: List[int] = []
+    ai_mode: str = "auto"
     staff_names: List[str] = []
     is_active: bool
     created_at: Optional[datetime] = None

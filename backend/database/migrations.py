@@ -106,6 +106,8 @@ def run_migrations(engine):
         ("tenant", "booking_google_reviews", "JSON DEFAULT '[]'"),
         # Staff photo
         ("staff", "photo_url", "TEXT"),
+        # Service AI mode
+        ("service", "ai_mode", "VARCHAR(10) DEFAULT 'auto'"),
     ]
 
     for table, column, col_type in migrations:

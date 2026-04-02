@@ -356,68 +356,50 @@ const Services = () => {
                   </div>
                 </div>
 
-                <div className={`${b}__grid`}>
+                <div className={`${b}__list`}>
                   {items.map(svc => (
-                    <div key={svc.id} className={`${b}__card`} style={{ '--card-accent': meta.color }}>
-                      <div className={`${b}__card-top`}>
-                        <div className={`${b}__card-name`}>
+                    <div key={svc.id} className={`${b}__row`} style={{ '--row-accent': meta.color }} onClick={() => openEditModal(svc)}>
+                      <div className={`${b}__row-accent`} />
+                      <div className={`${b}__row-main`}>
+                        <div className={`${b}__row-name`}>
                           {svc.name}
                           {svc.service_type && svc.service_type !== 'cita' && (
-                            <span className={`${b}__card-type`} style={{ background: SERVICE_TYPE_META[svc.service_type]?.color || '#64748B' }}>
+                            <span className={`${b}__row-type`} style={{ background: SERVICE_TYPE_META[svc.service_type]?.color || '#64748B' }}>
                               {SERVICE_TYPE_META[svc.service_type]?.label || svc.service_type}
                             </span>
                           )}
                         </div>
-                        <div className={`${b}__card-actions`}>
-                          <button className={`${b}__card-edit`} onClick={() => openEditModal(svc)} title="Editar">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          <button className={`${b}__card-delete`} onClick={() => handleDelete(svc)} title="Eliminar">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                          </button>
-                        </div>
+                        {svc.description && <span className={`${b}__row-desc`}>{svc.description}</span>}
                       </div>
-
-                      {svc.description && (
-                        <p className={`${b}__card-desc`}>{svc.description}</p>
-                      )}
-
-                      <div className={`${b}__card-details`}>
-                        <div className={`${b}__card-price`}>
-                          <span className={`${b}__card-price-value`}>{formatCurrency(svc.price)}</span>
-                        </div>
-                        <div className={`${b}__card-duration`}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                      <div className={`${b}__row-meta`}>
+                        <span className={`${b}__row-price`}>{formatCurrency(svc.price)}</span>
+                        <span className={`${b}__row-duration`}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                           {formatDuration(svc.duration_minutes, svc.service_type)}
-                        </div>
+                        </span>
                       </div>
-
                       {(svc.staff_names || []).length > 0 && (
-                        <div className={`${b}__card-staff`}>
-                          <span className={`${b}__card-staff-label`}>Profesionales:</span>
-                          <div className={`${b}__card-staff-list`}>
-                            {svc.staff_names.map((name, i) => (
-                              <span key={i} className={`${b}__card-staff-tag`}>{name}</span>
-                            ))}
-                          </div>
+                        <div className={`${b}__row-staff`}>
+                          {svc.staff_names.slice(0, 3).map((name, i) => (
+                            <span key={i} className={`${b}__row-staff-tag`}>{name.split(' ')[0]}</span>
+                          ))}
+                          {svc.staff_names.length > 3 && <span className={`${b}__row-staff-more`}>+{svc.staff_names.length - 3}</span>}
                         </div>
                       )}
-
-                      <div className={`${b}__card-ai`}>
-                        <span className={`${b}__card-ai-label`}>Lina IA:</span>
-                        <button
-                          type="button"
-                          className={`${b}__card-ai-toggle ${(svc.ai_mode || 'auto') === 'manual' ? `${b}__card-ai-toggle--manual` : ''}`}
-                          onClick={async () => {
-                            const newMode = (svc.ai_mode || 'auto') === 'auto' ? 'manual' : 'auto';
-                            try {
-                              await servicesService.update(svc.id, { ai_mode: newMode });
-                              loadData();
-                            } catch {}
-                          }}>
-                          {(svc.ai_mode || 'auto') === 'auto' ? 'Automatico' : 'Manual'}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        className={`${b}__row-ai ${(svc.ai_mode || 'auto') === 'manual' ? `${b}__row-ai--manual` : ''}`}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const newMode = (svc.ai_mode || 'auto') === 'auto' ? 'manual' : 'auto';
+                          try { await servicesService.update(svc.id, { ai_mode: newMode }); loadData(); } catch {}
+                        }}>
+                        <span className={`${b}__row-ai-dot`} />
+                        {(svc.ai_mode || 'auto') === 'auto' ? 'Auto' : 'Manual'}
+                      </button>
+                      <button className={`${b}__row-delete`} onClick={(e) => { e.stopPropagation(); handleDelete(svc); }} title="Eliminar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                      </button>
                     </div>
                   ))}
                 </div>
