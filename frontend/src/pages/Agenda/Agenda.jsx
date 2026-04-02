@@ -680,8 +680,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       }
       if (productItems.length > 0) {
         const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+        const assignedStaff = serviceAssignments[0]?.staffId ? staff.find(s => s.id === parseInt(serviceAssignments[0].staffId)) : null;
+        const staffLabel = assignedStaff ? assignedStaff.name : 'Staff';
         for (const item of productItems) {
           try {
+            const priceDiff = item.salePrice !== item.basePrice ? ` (base: ${formatCOP(item.basePrice)}, cliente: ${formatCOP(item.salePrice)})` : ` (${formatCOP(item.salePrice)})`;
+            const commLabel = item.commission ? ` — Comision ${staffLabel}: ${formatCOP(item.commission)}` : '';
             await fetch(`${API}/inventory/products/${item.productId}/stock`, {
               method: 'POST',
               credentials: 'include',
@@ -689,7 +693,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
               body: JSON.stringify({
                 type: 'sale',
                 quantity: item.qty,
-                notes: `Venta en cita — ${clientName} — ${formatCOP(item.salePrice)} x${item.qty}${item.commission ? ` (comision: ${formatCOP(item.commission)})` : ''}`,
+                notes: `Venta en cita — ${clientName} — ${item.name} x${item.qty}${priceDiff}${commLabel}`,
               }),
             });
           } catch {}
@@ -1332,35 +1336,38 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 </span>
                 {productItems.length > 0 && (
                   <div className={`${b}__product-list`}>
-                    {productItems.map((item, i) => (
-                      <div key={i} className={`${b}__product-row`}>
-                        <div className={`${b}__product-info`}>
-                          <span className={`${b}__product-name`}>{item.name}</span>
-                          <span className={`${b}__product-stock`}>Stock: {item.stock}</span>
+                    {productItems.map((item, i) => {
+                      const assignedStaff = serviceAssignments[0]?.staffId ? staff.find(s => s.id === parseInt(serviceAssignments[0].staffId)) : null;
+                      return (
+                        <div key={i} className={`${b}__product-row`}>
+                          <div className={`${b}__product-info`}>
+                            <span className={`${b}__product-name`}>{item.name}</span>
+                            <span className={`${b}__product-stock`}>Stock: {item.stock} &middot; Base: {formatCOP(item.basePrice)}</span>
+                          </div>
+                          <div className={`${b}__product-fields`}>
+                            <div className={`${b}__product-field`}>
+                              <label>Precio cliente</label>
+                              <input type="number" value={item.salePrice}
+                                onChange={e => setProductItems(prev => prev.map((p, j) => j === i ? { ...p, salePrice: Number(e.target.value) } : p))} />
+                            </div>
+                            <div className={`${b}__product-field`}>
+                              <label>Cant.</label>
+                              <input type="number" min="1" value={item.qty}
+                                onChange={e => setProductItems(prev => prev.map((p, j) => j === i ? { ...p, qty: Number(e.target.value) || 1 } : p))} />
+                            </div>
+                            <div className={`${b}__product-field`}>
+                              <label>Comision {assignedStaff ? assignedStaff.name.split(' ')[0] : ''}</label>
+                              <input type="number" value={item.commission}
+                                onChange={e => setProductItems(prev => prev.map((p, j) => j === i ? { ...p, commission: Number(e.target.value) } : p))} />
+                            </div>
+                          </div>
+                          <button type="button" className={`${b}__product-remove`}
+                            onClick={() => setProductItems(prev => prev.filter((_, j) => j !== i))}>
+                            <CloseIcon />
+                          </button>
                         </div>
-                        <div className={`${b}__product-fields`}>
-                          <div className={`${b}__product-field`}>
-                            <label>Precio</label>
-                            <input type="number" value={item.salePrice}
-                              onChange={e => setProductItems(prev => prev.map((p, j) => j === i ? { ...p, salePrice: Number(e.target.value) } : p))} />
-                          </div>
-                          <div className={`${b}__product-field`}>
-                            <label>Cant.</label>
-                            <input type="number" min="1" value={item.qty}
-                              onChange={e => setProductItems(prev => prev.map((p, j) => j === i ? { ...p, qty: Number(e.target.value) || 1 } : p))} />
-                          </div>
-                          <div className={`${b}__product-field`}>
-                            <label>Comision</label>
-                            <input type="number" value={item.commission}
-                              onChange={e => setProductItems(prev => prev.map((p, j) => j === i ? { ...p, commission: Number(e.target.value) } : p))} />
-                          </div>
-                        </div>
-                        <button type="button" className={`${b}__product-remove`}
-                          onClick={() => setProductItems(prev => prev.filter((_, j) => j !== i))}>
-                          <CloseIcon />
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                     <div className={`${b}__product-total`}>
                       Total productos: {formatCOP(productItems.reduce((s, p) => s + p.salePrice * p.qty, 0))}
                       {productItems.some(p => p.commission > 0) && (
