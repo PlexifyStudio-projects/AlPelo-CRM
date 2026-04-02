@@ -686,17 +686,23 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           try {
             const priceDiff = item.salePrice !== item.basePrice ? ` (base: ${formatCOP(item.basePrice)}, cliente: ${formatCOP(item.salePrice)})` : ` (${formatCOP(item.salePrice)})`;
             const commLabel = item.commission ? ` — Comision ${staffLabel}: ${formatCOP(item.commission)}` : '';
-            await fetch(`${API}/inventory/products/${item.productId}/stock`, {
+            const resp = await fetch(`${API}/inventory/products/${item.productId}/stock`, {
               method: 'POST',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 type: 'sale',
                 quantity: item.qty,
-                notes: `Venta en cita — ${clientName} — ${item.name} x${item.qty}${priceDiff}${commLabel}`,
+                note: `Venta en cita — ${clientName} — ${item.name} x${item.qty}${priceDiff}${commLabel}`,
               }),
             });
-          } catch {}
+            if (!resp.ok) {
+              const err = await resp.json().catch(() => ({}));
+              addNotification(`Error inventario (${item.name}): ${err.detail || resp.status}`, 'error');
+            }
+          } catch (e) {
+            addNotification(`Error inventario (${item.name}): ${e.message}`, 'error');
+          }
         }
         addNotification(`${productItems.length} producto(s) descontados del inventario`, 'info');
       }
