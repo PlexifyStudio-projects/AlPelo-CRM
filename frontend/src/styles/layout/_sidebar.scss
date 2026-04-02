@@ -8,94 +8,57 @@
   width: $sidebar-width;
   height: 100vh;
   height: 100dvh;
-  background: $bg-sidebar;
+  background: #FAFBFC;
   color: $color-secondary;
   @include flex-column;
-  transition: width 300ms $ease-out-expo;
+  transition: width 280ms cubic-bezier(0.2, 0, 0, 1);
   z-index: $z-fixed;
   overflow: hidden;
   will-change: width;
-  border-right: 1px solid $color-gray-200;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
 
   > * {
     position: relative;
     z-index: 1;
   }
 
+  // Collapsed
   &--collapsed {
     width: $sidebar-collapsed-width;
 
-    .sidebar__brand {
-      justify-content: center;
-      padding: $spacing-lg $spacing-sm;
-    }
-
-    .sidebar__brand-inner {
-      justify-content: center;
-    }
-
-    .sidebar__item {
-      justify-content: center;
-      padding: $spacing-sm;
-      margin: 2px auto;
-      width: calc(100% - #{$spacing-md});
-    }
-
-    .sidebar__label,
-    .sidebar__description {
-      display: none;
-    }
-
-    .sidebar__section-title {
-      opacity: 0;
-      height: 0;
-      padding: 0;
-      margin: 0;
-      overflow: hidden;
-    }
-
-    .sidebar__user {
-      justify-content: center;
-      padding: $spacing-sm;
-    }
-
-    .sidebar__user-info {
-      display: none;
-    }
-
-    .sidebar__brand-divider {
-      margin-left: $spacing-sm;
-      margin-right: $spacing-sm;
-    }
-
-    .sidebar__footer-divider {
-      margin-left: $spacing-sm;
-      margin-right: $spacing-sm;
-    }
+    .sidebar__brand { justify-content: center; padding: 14px 8px; }
+    .sidebar__brand-inner { justify-content: center; }
+    .sidebar__label { display: none; }
+    .sidebar__user { justify-content: center; padding: 6px; }
+    .sidebar__user-info, .sidebar__user-chevron { display: none; }
+    .sidebar__brand-divider { margin: 0 8px; }
+    .sidebar__footer-divider { margin: 0 8px; }
 
     .sidebar__item {
+      justify-content: center;
+      padding: 8px;
+      margin: 1px auto;
+      width: calc(100% - 12px);
       position: relative;
 
       &::after {
         content: attr(data-tooltip);
         position: absolute;
-        left: calc(100% + 14px);
+        left: calc(100% + 10px);
         top: 50%;
-        transform: translateY(-50%) translateX(6px);
+        transform: translateY(-50%) translateX(4px);
         padding: 6px 12px;
-        background: $color-gray-800;
+        background: $color-secondary;
         color: $color-white;
-        font-size: $font-size-xs;
-        font-weight: $font-weight-medium;
-        border-radius: $border-radius-sm;
+        font-size: 12px;
+        font-weight: 500;
+        border-radius: 8px;
         white-space: nowrap;
         opacity: 0;
         pointer-events: none;
         z-index: $z-tooltip;
-        box-shadow: $shadow-lg;
-        transition:
-          opacity 150ms $ease-out-quart,
-          transform 150ms $ease-out-quart;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transition: all 150ms cubic-bezier(0.2, 0, 0, 1);
       }
 
       &:hover::after {
@@ -103,349 +66,145 @@
         transform: translateY(-50%) translateX(0);
       }
     }
-
-    .sidebar__brand,
-    .sidebar__nav,
-    .sidebar__footer,
-    .sidebar__user {
-      transition: all 300ms $ease-out-expo;
-    }
   }
 
+  // Brand
   &__brand {
-    @include flex-between;
-    padding: $spacing-lg $spacing-lg $spacing-md;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 10px;
     flex-shrink: 0;
   }
 
   &__brand-inner {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
-    transition: transform 250ms $ease-out-quart;
-
-    &:hover {
-      transform: translateX(2px);
-    }
-  }
-
-  &__brand-text {
-    @include flex-column;
-    gap: 0;
-    line-height: 1;
+    gap: 10px;
   }
 
   &__logo-icon {
     @include flex-center;
-    width: 36px;
-    height: 36px;
-    border-radius: $border-radius-md;
-    background: rgba($color-primary, 0.08);
-    color: $color-primary;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 8%) 100%);
+    color: $color-white;
     flex-shrink: 0;
-    border: 1px solid rgba($color-primary, 0.15);
-    position: relative;
-    transition:
-      background 250ms $ease-out-quart,
-      transform 250ms $ease-out-quart,
-      box-shadow 250ms $ease-out-quart;
+    box-shadow: 0 2px 8px rgba($color-primary, 0.25);
 
-    svg {
-      filter: none;
-    }
-
-    .sidebar__brand-inner:hover & {
-      transform: scale(1.06) rotate(-2deg);
-      box-shadow: 0 2px 12px rgba($color-primary, 0.15);
-    }
-  }
-
-  &__logo-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: $border-radius-sm;
+    svg { width: 16px; height: 16px; }
   }
 
   &__logo {
     font-family: $font-heading;
-    font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
+    font-size: 15px;
+    font-weight: 700;
     color: $color-secondary;
-    letter-spacing: $letter-spacing-tight;
-    line-height: 1.15;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    word-break: break-word;
-    -webkit-text-fill-color: unset;
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
-  }
-
-  &__logo-sub {
-    font-family: $font-primary;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-400;
-    letter-spacing: $letter-spacing-caps;
-    text-transform: uppercase;
+    letter-spacing: -0.02em;
     line-height: 1;
-    margin-top: 3px;
   }
 
   &__brand-divider {
     height: 1px;
-    margin: 0 $spacing-lg;
+    margin: 0 16px 4px;
     flex-shrink: 0;
-    background: $color-gray-200;
+    background: rgba(0, 0, 0, 0.05);
   }
 
   &__toggle {
     @include flex-center;
-    width: 28px;
-    height: 28px;
-    border-radius: $border-radius-sm;
-    color: $color-gray-400;
-    transition:
-      background 200ms $ease-out-quart,
-      color 200ms $ease-out-quart,
-      transform 250ms $ease-out-quart;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    color: rgba(0, 0, 0, 0.3);
+    transition: all 150ms ease;
 
     &:hover {
-      background: $color-gray-100;
-      color: $color-gray-600;
+      background: rgba(0, 0, 0, 0.04);
+      color: rgba(0, 0, 0, 0.5);
     }
 
-    &:active {
-      transform: scale(0.88);
-      transition-duration: 80ms;
-    }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px rgba($color-primary, 0.3);
-    }
-
-    svg {
-      width: 16px;
-      height: 16px;
-      transition: transform 300ms $ease-out-expo;
-    }
+    svg { width: 14px; height: 14px; }
 
     &--collapsed {
-      width: 36px;
-      height: 36px;
-      margin: $spacing-xs auto 0;
-      border-radius: $border-radius-md;
-      background: $color-gray-50;
-      color: $color-gray-400;
+      width: 34px;
+      height: 34px;
+      margin: 6px auto 0;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.03);
 
       &:hover {
-        background: $color-gray-100;
+        background: rgba(0, 0, 0, 0.06);
         color: $color-primary;
       }
     }
   }
 
+  // Nav
   &__nav {
     flex: 1;
-    padding: $spacing-sm 0 $spacing-md;
+    padding: 8px 0;
     overflow-y: auto;
     overflow-x: hidden;
-    @include custom-scrollbar;
-    scrollbar-color: transparent transparent;
-    scrollbar-width: thin;
+    scrollbar-width: none;
 
-    &:hover {
-      scrollbar-color: rgba(0, 0, 0, 0.08) transparent;
-    }
-
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0px,
-      black 6px,
-      black calc(100% - 6px),
-      transparent 100%
-    );
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0px,
-      black 6px,
-      black calc(100% - 6px),
-      transparent 100%
-    );
-
-    &::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: transparent;
-      border-radius: $border-radius-full;
-      transition: background 300ms;
-    }
-
-    &:hover::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.08);
-    }
-
-    &::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 0, 0, 0.15);
-    }
-  }
-
-  &__section {
-    margin-bottom: $spacing-xs;
-
-    & + & {
-      &::before {
-        content: '';
-        display: block;
-        height: 1px;
-        margin: $spacing-xs $spacing-xl $spacing-sm;
-        background: $color-gray-100;
-      }
-    }
-  }
-
-  &__section-dot {
-    width: 4px;
-    height: 4px;
-    border-radius: $border-radius-full;
-    background: $color-gray-200;
-    margin: $spacing-md auto $spacing-sm;
-  }
-
-  &__section-header {
-    @include flex-between;
-    width: 100%;
-    padding: $spacing-sm $spacing-lg $spacing-xs;
-    cursor: pointer;
-    background: none;
-    border: none;
-    font-family: $font-primary;
-
-    &:hover .sidebar__section-title {
-      color: $color-gray-500;
-    }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: inset 0 0 0 2px rgba($color-primary, 0.1);
-      border-radius: $border-radius-sm;
-    }
-  }
-
-  &__section-title {
-    font-family: $font-primary;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    letter-spacing: $letter-spacing-caps;
-    text-transform: uppercase;
-    color: $color-gray-400;
-    transition:
-      opacity 250ms $ease-out-quart,
-      height 250ms $ease-out-quart,
-      padding 250ms $ease-out-quart,
-      color 250ms $ease-out-quart;
-  }
-
-  &__section-chevron {
-    color: $color-gray-300;
-    transition:
-      transform 250ms $ease-out-quart,
-      color 250ms $ease-out-quart;
-    flex-shrink: 0;
-
-    &--closed {
-      transform: rotate(-90deg);
-    }
-
-    .sidebar__section-header:hover & {
-      color: $color-gray-400;
-    }
+    &::-webkit-scrollbar { width: 0; }
   }
 
   &__menu {
-    @include flex-column;
+    display: flex;
+    flex-direction: column;
     gap: 4px;
-    padding: 0 $spacing-sm;
+    padding: 0 10px;
   }
 
   &__item {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
-    padding: 8px $spacing-md;
-    margin: 2px $spacing-xs;
-    border-radius: $border-radius-sm;
+    gap: 11px;
+    padding: 0 14px;
+    margin: 0;
+    border-radius: 10px;
     cursor: pointer;
     white-space: nowrap;
     position: relative;
-    height: 42px;
-    transition:
-      background 200ms $ease-out-quart,
-      box-shadow 200ms $ease-out-quart,
-      border-color 200ms $ease-out-quart;
-
-    animation: fadeInLeft 300ms $ease-out-expo both;
-    animation-delay: calc(0.04s * var(--item-index, 0));
-
-    @include reduced-motion {
-      animation: none;
-    }
+    height: 40px;
+    transition: all 150ms ease;
+    color: rgba(0, 0, 0, 0.5);
 
     &:hover {
-      background: $color-gray-100;
+      background: rgba(0, 0, 0, 0.04);
+      color: rgba(0, 0, 0, 0.8);
 
-      .sidebar__icon {
-        opacity: 0.9;
-        transform: scale(1.05);
-        color: $color-gray-600;
-      }
-
-      .sidebar__label {
-        color: $color-secondary;
-      }
+      .sidebar__icon { color: rgba(0, 0, 0, 0.55); }
+      .sidebar__label { color: rgba(0, 0, 0, 0.8); }
     }
 
     &:active {
-      background: $color-gray-200;
-      transform: scale(0.98);
-      transition-duration: 80ms;
-    }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: inset 0 0 0 2px rgba($color-primary, 0.2);
+      background: rgba(0, 0, 0, 0.06);
+      transition-duration: 50ms;
     }
 
     &--active {
-      background: rgba($color-primary, 0.06);
-      border-left: 3px solid $color-primary;
-      padding-left: calc(#{$spacing-md} - 3px);
+      background: $color-white;
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(0, 0, 0, 0.04);
+      color: $color-secondary;
 
       &:hover {
-        background: rgba($color-primary, 0.1);
+        background: $color-white;
+        box-shadow:
+          0 2px 5px rgba(0, 0, 0, 0.08),
+          0 0 0 1px rgba(0, 0, 0, 0.04);
       }
 
-      .sidebar__icon {
-        opacity: 1;
-        color: $color-primary;
-        filter: none;
-      }
+      .sidebar__icon { color: $color-primary; }
 
       .sidebar__label {
         color: $color-secondary;
-        font-weight: $font-weight-semibold;
-      }
-
-      .sidebar__description {
-        color: $color-gray-400;
+        font-weight: 600;
       }
     }
   }
@@ -455,44 +214,31 @@
     @include flex-center;
     width: 20px;
     height: 20px;
-    opacity: 0.55;
-    color: $color-gray-400;
-    transition:
-      opacity 200ms $ease-out-quart,
-      color 200ms $ease-out-quart,
-      filter 200ms $ease-out-quart,
-      transform 200ms $ease-out-quart;
+    color: rgba(0, 0, 0, 0.35);
+    transition: color 150ms ease;
 
-    svg {
-      width: 100%;
-      height: 100%;
-    }
+    svg { width: 20px; height: 20px; }
   }
 
-  &__item-text {
-    @include flex-column;
-    gap: 1px;
-    min-width: 0;
-    flex: 1;
-  }
+  // Icon colors per tab — color psychology
+  &__item[data-id="dashboard"] .sidebar__icon { color: #3B82F6; }    // Blue — overview
+  &__item[data-id="agenda"] .sidebar__icon { color: #6366F1; }       // Indigo — time
+  &__item[data-id="clients"] .sidebar__icon { color: #8B5CF6; }      // Violet — people
+  &__item[data-id="campaigns"] .sidebar__icon { color: #EF4444; }    // Red — action
+  &__item[data-id="services"] .sidebar__icon { color: #F97316; }     // Orange — craft
+  &__item[data-id="inventory"] .sidebar__icon { color: #D97706; }    // Amber — value
+  &__item[data-id="finances"] .sidebar__icon { color: #10B981; }     // Emerald — money
+  &__item[data-id="team"] .sidebar__icon { color: #14B8A6; }         // Teal — collaboration
+  &__item[data-id="automations"] .sidebar__icon { color: #EAB308; }  // Yellow — energy
+  &__item[data-id="inbox"] .sidebar__icon { color: #25D366; }        // WhatsApp green
 
   &__label {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-regular;
-    letter-spacing: $letter-spacing-normal;
-    color: $color-gray-600;
-    transition:
-      opacity 200ms $ease-out-quart,
-      color 200ms $ease-out-quart;
-  }
-
-  &__description {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    letter-spacing: $letter-spacing-wider;
-    text-transform: uppercase;
-    @include truncate;
-    transition: color 200ms $ease-out-quart;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.55);
+    transition: color 150ms ease;
+    line-height: 1;
+    letter-spacing: -0.01em;
   }
 
   &__badge {
@@ -502,72 +248,62 @@
     padding: 0 6px;
     background: $color-primary;
     color: $color-white;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    border-radius: $border-radius-full;
-    letter-spacing: -0.02em;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 10px;
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
-    animation: bounceIn 400ms $ease-spring both;
-    box-shadow: 0 2px 8px rgba($color-primary, 0.25);
-    transition: transform 200ms $ease-spring;
-
-    &:hover {
-      transform: scale(1.1);
-    }
+    margin-left: auto;
+    letter-spacing: -0.02em;
+    box-shadow: 0 2px 6px rgba($color-primary, 0.3);
 
     &--dot {
       position: absolute;
       top: 6px;
       right: 6px;
-      width: 8px;
-      height: 8px;
-      min-width: 8px;
+      width: 7px;
+      height: 7px;
+      min-width: 7px;
       padding: 0;
       background: $color-primary;
-      border: 2px solid $bg-sidebar;
-      animation: pulseRingAccent 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      border: 2px solid #FAFBFC;
+      border-radius: 50%;
+      box-shadow: none;
     }
 
     &--soon {
-      background: $color-gray-100;
-      color: $color-gray-400;
+      background: rgba(0, 0, 0, 0.04);
+      color: rgba(0, 0, 0, 0.3);
       box-shadow: none;
       font-size: 9px;
-      letter-spacing: 0.04em;
       text-transform: uppercase;
-      animation: none;
-      border: 1px solid $color-gray-200;
+      letter-spacing: 0.04em;
     }
   }
 
   &__item--disabled {
-    opacity: 0.3;
+    opacity: 0.25;
     cursor: default;
     pointer-events: none;
-
-    &:hover {
-      background: transparent;
-    }
   }
 
+  // Footer
   &__footer {
-    padding: $spacing-sm $spacing-md $spacing-md;
+    padding: 6px 8px 10px;
     flex-shrink: 0;
-    position: relative;
   }
 
   &__footer-divider {
     height: 1px;
-    margin: 0 $spacing-sm $spacing-md;
-    background: $color-gray-200;
+    margin: 0 8px 8px;
+    background: rgba(0, 0, 0, 0.05);
   }
 
   &__footer-icons {
     display: flex;
     align-items: center;
-    gap: $spacing-xs;
-    padding: 0 $spacing-xs $spacing-sm;
+    gap: 2px;
+    padding: 0 4px 6px;
   }
 
   &__footer-notif {
@@ -576,38 +312,23 @@
 
   &__footer-btn {
     @include flex-center;
-    width: 34px;
-    height: 34px;
-    border-radius: $border-radius-sm;
-    color: $color-gray-400;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    color: rgba(0, 0, 0, 0.35);
     position: relative;
-    transition:
-      background 150ms $ease-out-quart,
-      color 150ms $ease-out-quart;
+    transition: all 150ms ease;
 
-    svg {
-      width: 18px;
-      height: 18px;
-    }
+    svg { width: 16px; height: 16px; }
 
     &:hover {
-      background: $color-gray-100;
-      color: $color-gray-600;
-    }
-
-    &:active {
-      transform: scale(0.94);
-      transition-duration: 80ms;
+      background: rgba(0, 0, 0, 0.04);
+      color: rgba(0, 0, 0, 0.6);
     }
 
     &--active {
       background: rgba($color-primary, 0.08);
       color: $color-primary;
-    }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px rgba($color-primary, 0.2);
     }
   }
 
@@ -616,36 +337,34 @@
     top: 2px;
     right: 2px;
     @include flex-center;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
     background: $color-error;
-    border-radius: $border-radius-full;
-    border: 2px solid $color-white;
-    font-size: 9px;
-    font-weight: $font-weight-bold;
-    font-family: $font-primary;
+    border-radius: 7px;
+    border: 1.5px solid #FAFBFC;
+    font-size: 8px;
+    font-weight: 700;
     color: $color-white;
-    font-variant-numeric: tabular-nums;
     line-height: 1;
-    letter-spacing: -0.02em;
-    animation: badgeAppear 300ms $ease-spring both;
     pointer-events: none;
   }
 
-  // Notification panel (positioned from footer)
+  // Notification panel
   &__notif-panel {
     position: absolute;
-    bottom: calc(100% + $spacing-sm);
+    bottom: calc(100% + 8px);
     left: 0;
-    width: 360px;
-    max-height: 460px;
+    width: 340px;
+    max-height: 400px;
     background: $color-white;
-    border: $border-width solid $color-gray-200;
-    border-radius: $border-radius-xl;
-    box-shadow: $shadow-xl;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
+    box-shadow:
+      0 8px 30px rgba(0, 0, 0, 0.12),
+      0 0 0 1px rgba(0, 0, 0, 0.02);
     z-index: $z-dropdown;
-    animation: sidebarPanelReveal 250ms $ease-out-expo both;
+    animation: sidebarPanelReveal 200ms cubic-bezier(0.2, 0, 0, 1) both;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -655,133 +374,97 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: $spacing-md $spacing-lg;
-    border-bottom: $border-width solid $color-gray-100;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     flex-shrink: 0;
     flex-wrap: wrap;
-    gap: $spacing-sm;
+    gap: 6px;
   }
 
   &__notif-title-row {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
+    gap: 8px;
   }
 
   &__notif-title {
-    font-family: $font-primary;
-    font-size: $font-size-base;
-    font-weight: $font-weight-semibold;
+    font-size: 13px;
+    font-weight: 600;
     color: $color-secondary;
+    letter-spacing: -0.01em;
   }
 
   &__notif-unread-badge {
     @include flex-center;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 $spacing-xs;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
     background: $color-primary;
     color: $color-white;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    border-radius: $border-radius-full;
-    animation: bounceIn 300ms $ease-spring both 0.1s;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 10px;
   }
 
   &__notif-actions {
     display: flex;
     align-items: center;
-    gap: $spacing-2xs;
+    gap: 2px;
   }
 
-  &__notif-mark-read {
-    display: flex;
-    align-items: center;
-    gap: $spacing-2xs;
-    font-size: $font-size-xs;
-    color: $color-primary;
-    font-weight: $font-weight-medium;
-    transition: all 150ms $ease-out-quart;
-    white-space: nowrap;
-    padding: $spacing-2xs $spacing-sm;
-    border-radius: $border-radius-sm;
-    cursor: pointer;
-
-    svg { flex-shrink: 0; }
-
-    &:hover {
-      color: $color-primary-dark;
-      background: $color-primary-ghost;
-    }
-
-    &:active {
-      transform: scale(0.96);
-      transition-duration: 80ms;
-    }
-  }
-
+  &__notif-mark-read,
   &__notif-clear {
     display: flex;
     align-items: center;
-    gap: $spacing-2xs;
-    font-size: $font-size-xs;
-    color: $color-gray-400;
-    font-weight: $font-weight-medium;
-    transition: all 150ms $ease-out-quart;
-    padding: $spacing-2xs $spacing-sm;
-    border-radius: $border-radius-sm;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 6px;
     cursor: pointer;
+    transition: all 120ms ease;
 
-    svg { flex-shrink: 0; }
+    svg { flex-shrink: 0; width: 12px; height: 12px; }
+  }
 
-    &:hover {
-      color: $color-error;
-      background: $color-error-bg;
-    }
+  &__notif-mark-read {
+    color: $color-primary;
+    &:hover { background: rgba($color-primary, 0.06); }
+  }
 
-    &:active {
-      transform: scale(0.96);
-      transition-duration: 80ms;
-    }
+  &__notif-clear {
+    color: rgba(0, 0, 0, 0.35);
+    &:hover { color: $color-error; background: rgba($color-error, 0.06); }
   }
 
   &__notif-list {
     overflow-y: auto;
     flex: 1;
-    @include custom-scrollbar;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { width: 0; }
   }
 
   &__notif-item {
     display: flex;
     align-items: flex-start;
-    gap: $spacing-sm;
-    padding: $spacing-sm $spacing-md;
-    border-bottom: $border-width solid $color-gray-100;
+    gap: 10px;
+    padding: 10px 16px;
     cursor: pointer;
-    transition: all 150ms $ease-out-quart;
-    animation: fadeInUp 200ms $ease-out-expo both;
     position: relative;
-    overflow: hidden;
+    transition: background 120ms ease;
 
-    &:last-child { border-bottom: none; }
+    & + & { border-top: 1px solid rgba(0, 0, 0, 0.03); }
 
     &:hover {
-      background: $color-gray-50;
+      background: rgba(0, 0, 0, 0.02);
 
-      .sidebar__notif-dismiss {
-        opacity: 1;
-        transform: translateX(0);
-      }
+      .sidebar__notif-dismiss { opacity: 1; }
     }
 
     &--unread {
       background: rgba($color-primary, 0.02);
 
-      &:hover { background: rgba($color-primary, 0.04); }
-
-      .sidebar__notif-message {
-        font-weight: $font-weight-semibold;
-      }
+      .sidebar__notif-message { font-weight: 600; }
     }
   }
 
@@ -790,8 +473,7 @@
     left: 0;
     top: 0;
     bottom: 0;
-    width: 3px;
-    border-radius: 0 $border-radius-xs $border-radius-xs 0;
+    width: 2px;
 
     &--info { background: $color-info; }
     &--success { background: $color-success; }
@@ -801,91 +483,71 @@
 
   &__notif-icon {
     @include flex-center;
-    width: 32px;
-    height: 32px;
-    border-radius: $border-radius-md;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
     flex-shrink: 0;
-    margin-top: 1px;
 
-    svg { width: 16px; height: 16px; }
+    svg { width: 14px; height: 14px; }
 
-    &--info { background: $color-info-bg; color: $color-info; }
-    &--success { background: $color-success-bg; color: $color-success; }
-    &--warning { background: $color-warning-bg; color: $color-warning; }
-    &--error { background: $color-error-bg; color: $color-error; }
+    &--info { background: rgba($color-info, 0.1); color: $color-info; }
+    &--success { background: rgba($color-success, 0.1); color: $color-success; }
+    &--warning { background: rgba($color-warning, 0.1); color: $color-warning; }
+    &--error { background: rgba($color-error, 0.1); color: $color-error; }
   }
 
-  &__notif-content {
-    flex: 1;
-    min-width: 0;
-  }
+  &__notif-content { flex: 1; min-width: 0; }
 
   &__notif-message {
-    font-size: $font-size-xs;
-    color: $color-gray-600;
-    line-height: $line-height-snug;
-    font-weight: $font-weight-regular;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.65);
+    line-height: 1.4;
     margin-bottom: 2px;
   }
 
   &__notif-time {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    font-weight: $font-weight-regular;
+    font-size: 10px;
+    color: rgba(0, 0, 0, 0.3);
   }
 
   &__notif-dismiss {
     @include flex-center;
-    width: 24px;
-    height: 24px;
-    border-radius: $border-radius-sm;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
     flex-shrink: 0;
-    color: $color-gray-300;
+    color: rgba(0, 0, 0, 0.2);
     opacity: 0;
-    transform: translateX(8px);
-    transition:
-      opacity 150ms $ease-out-quart,
-      transform 150ms $ease-out-quart,
-      background 150ms $ease-out-quart,
-      color 150ms $ease-out-quart;
+    transition: all 120ms ease;
 
-    @media (hover: none) {
-      opacity: 1;
-      transform: translateX(0);
-    }
-
-    &:hover {
-      background: $color-error-bg;
-      color: $color-error;
-    }
+    &:hover { background: rgba($color-error, 0.08); color: $color-error; }
   }
 
   &__notif-empty {
     @include flex-column-center;
-    gap: $spacing-sm;
-    padding: $spacing-2xl $spacing-lg;
+    gap: 8px;
+    padding: 32px 16px;
   }
 
   &__notif-empty-icon {
     @include flex-center;
-    width: 56px;
-    height: 56px;
-    border-radius: $border-radius-full;
-    background: $color-gray-100;
-    margin-bottom: $spacing-xs;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.03);
 
-    svg { color: $color-gray-300; }
+    svg { color: rgba(0, 0, 0, 0.2); }
   }
 
   &__notif-empty-title {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-500;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.5);
   }
 
   &__notif-empty-desc {
-    font-size: $font-size-xs;
-    color: $color-gray-400;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.3);
   }
 
   // User section
@@ -896,391 +558,257 @@
   &__user {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
-    padding: $spacing-sm;
-    border-radius: $border-radius-md;
-    transition:
-      background 200ms $ease-out-quart,
-      box-shadow 200ms $ease-out-quart;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 10px;
     cursor: pointer;
+    transition: background 120ms ease;
 
-    &:hover {
-      background: $color-gray-100;
-    }
+    &:hover { background: rgba(0, 0, 0, 0.04); }
   }
 
   &__user-avatar {
     @include flex-center;
-    width: 34px;
-    height: 34px;
-    border-radius: $border-radius-full;
-    background: linear-gradient(135deg, $color-primary, $color-accent);
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 12%) 100%);
     color: $color-white;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-bold;
-    letter-spacing: $letter-spacing-wide;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     flex-shrink: 0;
     position: relative;
-    border: 2px solid rgba($color-primary, 0.2);
-    transition: border-color 300ms $ease-out-quart;
-
-    .sidebar__user:hover & {
-      border-color: rgba($color-primary, 0.4);
-    }
+    box-shadow: 0 2px 6px rgba($color-primary, 0.2);
 
     &::after {
       content: '';
       position: absolute;
       bottom: -1px;
       right: -1px;
-      width: 10px;
-      height: 10px;
-      background: $color-success;
-      border: 2px solid $color-white;
-      border-radius: $border-radius-full;
-      animation: sidebarOnlinePulse 3s ease-in-out infinite;
+      width: 9px;
+      height: 9px;
+      background: #22C55E;
+      border: 2px solid #FAFBFC;
+      border-radius: 50%;
     }
   }
 
   &__user-info {
     @include flex-column;
-    gap: 2px;
+    gap: 1px;
     min-width: 0;
     flex: 1;
   }
 
   &__user-name {
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
+    font-size: 12px;
+    font-weight: 600;
     color: $color-secondary;
     @include truncate;
-    line-height: 1.3;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
   &__user-role {
-    font-size: $font-size-2xs;
-    color: $color-gray-400;
-    font-weight: $font-weight-regular;
-    letter-spacing: $letter-spacing-wider;
+    font-size: 10px;
+    color: rgba(0, 0, 0, 0.35);
+    line-height: 1.2;
   }
 
   &__user-chevron {
-    color: $color-gray-400;
-    transition: transform 250ms $ease-out-expo;
+    color: rgba(0, 0, 0, 0.2);
+    transition: transform 200ms ease;
     flex-shrink: 0;
 
-    &--open {
-      transform: rotate(180deg);
-    }
+    &--open { transform: rotate(180deg); }
   }
 
   &__user-dropdown {
     position: absolute;
-    bottom: calc(100% + $spacing-xs);
+    bottom: calc(100% + 4px);
     left: 0;
     right: 0;
     background: $color-white;
-    border: $border-width solid $color-gray-200;
-    border-radius: $border-radius-md;
-    box-shadow: $shadow-lg;
-    padding: $spacing-xs;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(0, 0, 0, 0.02);
+    padding: 4px;
     z-index: $z-dropdown;
-    animation: sidebarPanelReveal 200ms $ease-out-expo both;
+    animation: sidebarPanelReveal 150ms cubic-bezier(0.2, 0, 0, 1) both;
   }
 
   &__user-dropdown-item {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
+    gap: 8px;
     width: 100%;
-    padding: $spacing-sm $spacing-md;
-    border-radius: $border-radius-sm;
+    padding: 8px 10px;
+    border-radius: 7px;
     font-family: $font-primary;
-    font-size: $font-size-sm;
-    color: $color-gray-600;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.5);
     cursor: pointer;
-    transition:
-      background 150ms $ease-out-quart,
-      color 150ms $ease-out-quart;
+    transition: all 120ms ease;
 
-    svg {
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-      opacity: 0.6;
-      transition: opacity 150ms $ease-out-quart;
-    }
+    svg { width: 14px; height: 14px; flex-shrink: 0; }
 
     &:hover {
-      background: $color-gray-100;
+      background: rgba(0, 0, 0, 0.04);
       color: $color-secondary;
-
-      svg { opacity: 1; }
-    }
-
-    &:active {
-      transform: scale(0.98);
-      transition-duration: 80ms;
     }
 
     &--danger {
       color: $color-error;
-
-      &:hover {
-        background: $color-error-bg;
-        color: $color-error-dark;
-      }
-    }
-  }
-
-  &__footer-actions {
-    margin-top: $spacing-sm;
-  }
-
-  &__logout {
-    display: flex;
-    align-items: center;
-    gap: $spacing-sm;
-    width: 100%;
-    padding: $spacing-xs $spacing-sm;
-    border-radius: $border-radius-sm;
-    font-family: $font-primary;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
-    color: $color-gray-400;
-    letter-spacing: $letter-spacing-wide;
-    transition:
-      background 200ms $ease-out-quart,
-      color 200ms $ease-out-quart;
-
-    &:hover {
-      background: rgba($color-error, 0.1);
-      color: $color-error;
-    }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px rgba($color-error, 0.3);
-      border-radius: $border-radius-sm;
-    }
-
-    svg {
-      width: 16px;
-      height: 16px;
-      flex-shrink: 0;
-      opacity: 0.7;
-      transition:
-        opacity 200ms $ease-out-quart,
-        transform 200ms $ease-out-quart;
-    }
-
-    &:hover svg {
-      opacity: 1;
-      transform: translateX(-2px);
+      &:hover { background: rgba($color-error, 0.06); }
     }
   }
 
   &__close-mobile {
     @include flex-center;
-    width: 32px;
-    height: 32px;
-    border-radius: $border-radius-sm;
-    color: $color-gray-400;
-    transition:
-      background 200ms $ease-out-quart,
-      color 200ms $ease-out-quart,
-      transform 200ms $ease-out-quart;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    color: rgba(0, 0, 0, 0.35);
+    transition: all 120ms ease;
 
-    &:hover {
-      background: $color-gray-100;
-      color: $color-gray-600;
-    }
-
-    &:active {
-      transform: scale(0.9);
-    }
+    &:hover { background: rgba(0, 0, 0, 0.04); color: rgba(0, 0, 0, 0.6); }
   }
 
+  // Mobile
   @media (max-width: 1024px) {
     transform: translateX(-100%);
-    transition: transform 300ms $ease-out-expo;
+    transition: transform 280ms cubic-bezier(0.2, 0, 0, 1);
     box-shadow: none;
     width: $sidebar-width;
 
     &--mobile-open {
       transform: translateX(0);
-      box-shadow:
-        $shadow-2xl,
-        24px 0 60px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.12);
     }
 
     &--collapsed {
       width: $sidebar-width;
       transform: translateX(-100%);
 
-      &.sidebar--mobile-open {
-        transform: translateX(0);
-      }
+      &.sidebar--mobile-open { transform: translateX(0); }
 
-      .sidebar__brand {
-        justify-content: space-between;
-        padding: $spacing-lg $spacing-lg $spacing-md;
-      }
-
-      .sidebar__brand-inner {
-        justify-content: flex-start;
-      }
-
-      .sidebar__label,
-      .sidebar__description,
-      .sidebar__brand-text,
-      .sidebar__user-info {
-        display: flex;
-      }
-
+      .sidebar__brand { justify-content: space-between; padding: 16px; }
+      .sidebar__brand-inner { justify-content: flex-start; }
+      .sidebar__label, .sidebar__user-info { display: flex; }
       .sidebar__item {
         justify-content: flex-start;
-        padding: 10px $spacing-md;
-        margin: 1px $spacing-xs;
+        padding: 0 12px;
+        margin: 0;
         width: auto;
-
-        &::after {
-          display: none;
-        }
+        &::after { display: none; }
       }
-
-      .sidebar__section-title {
-        opacity: 1;
-        height: auto;
-        padding: $spacing-sm $spacing-lg $spacing-xs;
-      }
-
-      .sidebar__user {
-        justify-content: flex-start;
-        padding: $spacing-sm;
-      }
+      .sidebar__user { justify-content: flex-start; padding: 6px 8px; }
     }
   }
 }
 
+// Location selector
 .sidebar__location {
-  padding: 0 $spacing-md $spacing-sm;
+  padding: 0 8px 6px;
   position: relative;
 }
 
 .sidebar__location-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  padding: 8px 12px;
-  background: $color-gray-50;
-  border: 1px solid $color-gray-200;
-  border-radius: $border-radius-sm;
-  color: $color-gray-600;
-  font-size: $font-size-xs;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 8px;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 11px;
   cursor: pointer;
-  transition: all $transition-fast;
+  transition: all 120ms ease;
 
-  > svg:first-child { color: $color-primary; flex-shrink: 0; }
+  > svg:first-child { color: $color-primary; flex-shrink: 0; width: 14px; height: 14px; }
 
   &:hover {
-    background: $color-gray-100;
-    border-color: $color-gray-300;
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.06);
   }
 }
 
 .sidebar__location-label {
   flex: 1;
   text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include truncate;
 }
 
 .sidebar__location-chevron {
   flex-shrink: 0;
   transition: transform 0.2s ease;
-  opacity: 0.5;
-
+  opacity: 0.3;
   &--open { transform: rotate(180deg); }
 }
 
 .sidebar__location-drop {
   margin-top: 4px;
   background: $color-white;
-  border: 1px solid $color-gray-200;
-  border-radius: $border-radius-sm;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
   overflow: hidden;
-  animation: sidebarLocDrop 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  animation: sidebarLocDrop 0.12s ease;
 }
 
 .sidebar__location-option {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  padding: 9px 12px;
+  padding: 8px 10px;
   background: none;
   border: none;
-  border-bottom: 1px solid $color-gray-100;
-  color: $color-gray-600;
-  font-size: $font-size-xs;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 11px;
   cursor: pointer;
   text-align: left;
-  transition: background $transition-fast;
+  transition: background 100ms ease;
 
-  &:last-child { border-bottom: none; }
-  &:hover { background: $color-gray-50; }
-  &--active { background: rgba($color-primary, 0.06); color: $color-primary; }
+  & + & { border-top: 1px solid rgba(0, 0, 0, 0.03); }
+  &:hover { background: rgba(0, 0, 0, 0.02); }
+  &--active { background: rgba($color-primary, 0.05); color: $color-primary; font-weight: 500; }
 }
 
 .sidebar__location-badge {
   font-size: 9px;
-  padding: 1px 6px;
-  border-radius: $border-radius-full;
-  background: rgba($color-primary, 0.1);
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba($color-primary, 0.08);
   color: $color-primary;
   margin-left: auto;
+  font-weight: 600;
 }
 
 .sidebar__location-check {
   margin-left: auto;
   color: $color-primary;
-  font-size: $font-size-xs;
+  font-size: 11px;
 }
 
 @keyframes sidebarLocDrop {
-  from { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 0; transform: translateY(-3px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes sidebarPanelReveal {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes sidebarOnlinePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.25); }
-  50% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0); }
+  from { opacity: 0; transform: translateY(3px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes badgeAppear {
-  0% {
-    opacity: 0;
-    transform: scale(0);
-  }
-  60% {
-    transform: scale(1.15);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  0% { opacity: 0; transform: scale(0); }
+  60% { transform: scale(1.1); }
+  100% { opacity: 1; transform: scale(1); }
 }

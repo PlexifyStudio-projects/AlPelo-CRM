@@ -152,7 +152,6 @@ const getNotificationIcon = (type) => {
 };
 
 const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout, isMobileOpen, onCloseMobile, badgeCounts = {}, onNavigate }) => {
-  const [openSections, setOpenSections] = useState({});
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { tenant } = useTenant();
@@ -167,19 +166,6 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
   const b = 'sidebar';
   const userDropdownRef = useRef(null);
   const notifRef = useRef(null);
-
-  const sections = menuItems.reduce((acc, item) => {
-    const section = item.section || 'General';
-    if (!acc[section]) acc[section] = [];
-    acc[section].push(item);
-    return acc;
-  }, {});
-
-  const toggleSection = useCallback((section) => {
-    setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
-  }, []);
-
-  const isSectionOpen = (section) => openSections[section] !== false;
 
   const userInitials = user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'AP';
   const userFirstName = user?.name?.split(' ')[0] || 'Admin';
@@ -226,17 +212,14 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
       <div className={`${b}__brand`}>
         <div className={`${b}__brand-inner`}>
           <div className={`${b}__logo-icon`}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="currentColor" opacity="0.15" />
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" stroke="currentColor" strokeWidth="1.5" fill="none" />
               <path d="M8 12l2.5 2.5L16 9" stroke="currentColor" strokeWidth="2" fill="none" />
             </svg>
           </div>
           {!isCollapsed && (
-            <div className={`${b}__brand-text`}>
-              <h1 className={`${b}__logo`}>{tenant.name || 'Mi Negocio'}</h1>
-              <span className={`${b}__logo-sub`}>{BUSINESS_TYPES[tenant.business_type] || 'CRM'}</span>
-            </div>
+            <h1 className={`${b}__logo`}>{tenant.name || 'Mi Negocio'}</h1>
           )}
         </div>
         {isMobileOpen ? (
@@ -260,62 +243,40 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
       <LocationSelector />
 
       <nav className={`${b}__nav`}>
-        {Object.entries(sections).map(([sectionName, items]) => (
-          <div key={sectionName} className={`${b}__section`}>
-            {!isCollapsed && (
-              <button className={`${b}__section-header`} onClick={() => toggleSection(sectionName)}>
-                <span className={`${b}__section-title`}>{sectionName}</span>
-                <svg
-                  className={`${b}__section-chevron ${isSectionOpen(sectionName) ? '' : `${b}__section-chevron--closed`}`}
-                  width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-            )}
-            {isCollapsed && <div className={`${b}__section-dot`} />}
-            {(isCollapsed || isSectionOpen(sectionName)) && (
-              <ul className={`${b}__menu`}>
-                {items.map((item, index) => (
-                  <li
-                    key={item.id}
-                    className={`${b}__item ${activeItem === item.id ? `${b}__item--active` : ''} ${item.disabled ? `${b}__item--disabled` : ''}`}
-                    onClick={() => !item.disabled && onItemClick(item.id)}
-                    data-tooltip={item.label}
-                    role="button"
-                    tabIndex={item.disabled ? -1 : 0}
-                    onKeyDown={(e) => e.key === 'Enter' && !item.disabled && onItemClick(item.id)}
-                    style={{ '--item-index': index }}
-                  >
-                    <span className={`${b}__icon`}>
-                      {SVG_ICONS[item.id] || item.icon}
+        <ul className={`${b}__menu`}>
+          {menuItems.map((item, index) => (
+            <li
+              key={item.id}
+              className={`${b}__item ${activeItem === item.id ? `${b}__item--active` : ''} ${item.disabled ? `${b}__item--disabled` : ''}`}
+              onClick={() => !item.disabled && onItemClick(item.id)}
+              data-tooltip={item.label}
+              data-id={item.id}
+              role="button"
+              tabIndex={item.disabled ? -1 : 0}
+              onKeyDown={(e) => e.key === 'Enter' && !item.disabled && onItemClick(item.id)}
+              style={{ '--item-index': index }}
+            >
+              <span className={`${b}__icon`}>
+                {SVG_ICONS[item.id] || item.icon}
+              </span>
+              {!isCollapsed && (
+                <>
+                  <span className={`${b}__label`}>{item.label}</span>
+                  {item.disabled ? (
+                    <span className={`${b}__badge ${b}__badge--soon`}>Pronto</span>
+                  ) : badgeCounts[item.id] ? (
+                    <span className={`${b}__badge`}>
+                      {badgeCounts[item.id]}
                     </span>
-                    {!isCollapsed && (
-                      <>
-                        <div className={`${b}__item-text`}>
-                          <span className={`${b}__label`}>{item.label}</span>
-                          {item.description && (
-                            <span className={`${b}__description`}>{item.description}</span>
-                          )}
-                        </div>
-                        {item.disabled ? (
-                          <span className={`${b}__badge ${b}__badge--soon`}>Pronto</span>
-                        ) : badgeCounts[item.id] ? (
-                          <span className={`${b}__badge`}>
-                            {badgeCounts[item.id]}
-                          </span>
-                        ) : null}
-                      </>
-                    )}
-                    {isCollapsed && badgeCounts[item.id] && !item.disabled && (
-                      <span className={`${b}__badge ${b}__badge--dot`} />
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
+                  ) : null}
+                </>
+              )}
+              {isCollapsed && badgeCounts[item.id] && !item.disabled && (
+                <span className={`${b}__badge ${b}__badge--dot`} />
+              )}
+            </li>
+          ))}
+        </ul>
       </nav>
 
       <div className={`${b}__footer`}>

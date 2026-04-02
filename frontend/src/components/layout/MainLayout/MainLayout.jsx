@@ -4,16 +4,16 @@ import { useTenant } from '../../../context/TenantContext';
 import whatsappService from '../../../services/whatsappService';
 
 const MENU_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', description: 'PANEL EJECUTIVO', section: 'GESTION PRINCIPAL' },
-  { id: 'agenda', label: 'Agenda', description: 'CITAS Y CALENDARIO', section: 'GESTION PRINCIPAL' },
-  { id: 'clients', label: 'Clientes', description: 'CRM Y GESTION DE CLIENTES', section: 'GESTION PRINCIPAL' },
-  { id: 'campaigns', label: 'Campañas', description: 'RECUPERACIÓN Y RETENCIÓN', section: 'GESTION PRINCIPAL' },
-  { id: 'services', label: 'Servicios', description: 'CATALOGO Y PRECIOS', section: 'GESTION PRINCIPAL' },
-  { id: 'inventory', label: 'Inventario', description: 'PRODUCTOS Y STOCK', section: 'GESTION PRINCIPAL' },
-  { id: 'finances', label: 'Finanzas', description: 'INGRESOS Y METRICAS', section: 'GESTION PRINCIPAL' },
-  { id: 'team', label: 'Equipo', description: 'RENDIMIENTO Y FEEDBACK', section: 'GESTION PRINCIPAL' },
-  { id: 'automations', label: 'Automatizaciones', description: 'WORKFLOWS INTELIGENTES', section: 'MARKETING' },
-  { id: 'inbox', label: 'Inbox', description: 'CONVERSACIONES WHATSAPP', section: 'WHATSAPP' },
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'agenda', label: 'Agenda' },
+  { id: 'clients', label: 'Clientes' },
+  { id: 'campaigns', label: 'Campañas' },
+  { id: 'services', label: 'Servicios' },
+  { id: 'inventory', label: 'Inventario' },
+  { id: 'finances', label: 'Finanzas' },
+  { id: 'team', label: 'Equipo' },
+  { id: 'automations', label: 'Automatizaciones' },
+  { id: 'inbox', label: 'Inbox' },
 ];
 
 const MOBILE_BREAKPOINT = 1024;
