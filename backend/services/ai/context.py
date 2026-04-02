@@ -174,8 +174,22 @@ Ingreso total registrado: ${total_revenue:,} COP""")
                 catalog_lines.append(f"  - {svc.name} [RESERVA]: ${svc.price:,}{duracion}")
             else:
                 duration = f" {svc.duration_minutes}min" if svc.duration_minutes else ""
-                catalog_lines.append(f"  - {svc.name}: ${svc.price:,}{duration}")
+                ai_tag = " [MANUAL - NO agendar, pausar y notificar admin]" if getattr(svc, 'ai_mode', 'auto') == 'manual' else ""
+                catalog_lines.append(f"  - {svc.name}: ${svc.price:,}{duration}{ai_tag}")
         sections.append(f"=== SERVICIOS ({len(all_services)}) ===\n" + "\n".join(catalog_lines))
+
+    # --- Inventory / Products ---
+    try:
+        from database.models import Product
+        prod_q = db.query(Product).filter(Product.is_active == True)
+        if tenant_id:
+            prod_q = prod_q.filter(Product.tenant_id == tenant_id)
+        products = prod_q.all()
+        if products:
+            prod_lines = [f"  - {p.name}: stock {p.stock}, precio venta ${p.sale_price:,} COP" for p in products]
+            sections.append(f"=== PRODUCTOS/INVENTARIO ({len(products)}) ===\n" + "\n".join(prod_lines))
+    except Exception:
+        pass
 
     # --- Upcoming appointments (today + next 3 days) ---
     today = _today_colombia(db)

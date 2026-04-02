@@ -402,6 +402,22 @@ const Services = () => {
                           </div>
                         </div>
                       )}
+
+                      <div className={`${b}__card-ai`}>
+                        <span className={`${b}__card-ai-label`}>Lina IA:</span>
+                        <button
+                          type="button"
+                          className={`${b}__card-ai-toggle ${(svc.ai_mode || 'auto') === 'manual' ? `${b}__card-ai-toggle--manual` : ''}`}
+                          onClick={async () => {
+                            const newMode = (svc.ai_mode || 'auto') === 'auto' ? 'manual' : 'auto';
+                            try {
+                              await servicesService.update(svc.id, { ai_mode: newMode });
+                              loadData();
+                            } catch {}
+                          }}>
+                          {(svc.ai_mode || 'auto') === 'auto' ? 'Automatico' : 'Manual'}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

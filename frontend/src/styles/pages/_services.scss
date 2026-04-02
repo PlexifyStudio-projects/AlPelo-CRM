@@ -398,6 +398,47 @@
     font-weight: $font-weight-medium;
   }
 
+  &__card-ai {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    margin-top: 8px;
+  }
+
+  &__card-ai-label {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.4);
+    font-weight: 500;
+  }
+
+  &__card-ai-toggle {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 150ms ease;
+    background: rgba(#10B981, 0.1);
+    color: #059669;
+    border: 1px solid rgba(#10B981, 0.2);
+
+    &:hover {
+      background: rgba(#10B981, 0.15);
+    }
+
+    &--manual {
+      background: rgba(#F59E0B, 0.1);
+      color: #D97706;
+      border-color: rgba(#F59E0B, 0.2);
+
+      &:hover {
+        background: rgba(#F59E0B, 0.15);
+      }
+    }
+  }
+
   &__modal-overlay {
     position: fixed;
     inset: 0;

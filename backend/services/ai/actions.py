@@ -1025,6 +1025,22 @@ def _execute_action(action: dict, db: Session) -> str:
                 s.name for s in db.query(Service).filter(Service.is_active == True, Service.tenant_id == _tid).limit(10).all()
             ) if _tid else "ERROR: No encontre el servicio."
 
+        # --- AI MODE CHECK: manual services require admin intervention ---
+        svc_ai_mode = getattr(svc_obj, 'ai_mode', 'auto') or 'auto'
+        if svc_ai_mode == 'manual':
+            from activity_log import log_event as _log_manual
+            _log_manual("alerta", f"⚠️ Servicio MANUAL solicitado: {svc_obj.name}", detail=f"Cliente: {client_name} ({client_phone}) quiere {svc_obj.name}. Este servicio requiere atencion personalizada del admin.", contact_name=client_name, status="warning")
+            # Pause AI for this conversation
+            try:
+                from database.models import WhatsAppConversation
+                conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone.contains(client_phone[-10:])).first()
+                if conv:
+                    conv.is_ai_active = False
+                    db.commit()
+            except Exception:
+                pass
+            return f"MANUAL_PAUSE: El servicio '{svc_obj.name}' requiere atencion personalizada. Le he dicho al cliente que un momento mientras verificamos disponibilidad. La conversacion queda en modo MANUAL para que un administrador la atienda."
+
         apt_date = action.get("date")
         apt_time = action.get("time")
         if not apt_date or not apt_time:

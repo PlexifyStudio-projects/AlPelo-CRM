@@ -134,6 +134,7 @@ class Service(Base):
     duration_minutes = Column(Integer, nullable=True)  # Para citas: duración en min. Para paquetes: días de vigencia
     description = Column(Text, nullable=True)
     staff_ids = Column(JSON, default=list)  # IDs of staff who can perform this service
+    ai_mode = Column(String(10), nullable=False, default='auto')  # auto = Lina can book, manual = Lina pauses and notifies admin
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
