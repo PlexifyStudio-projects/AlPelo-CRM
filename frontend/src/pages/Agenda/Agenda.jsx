@@ -211,28 +211,41 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setDropTarget({ date: toISO(date), time });
   }, []);
 
-  const handleDrop = useCallback(async (e, date, time) => {
+  const handleDrop = useCallback(async (e, date, time, newStaffId) => {
     e.preventDefault();
     setDropTarget(null);
     if (!draggingApt) return;
 
     const newDate = toISO(date);
     const newTime = time;
+    const sameDate = newDate === draggingApt.date;
+    const sameTime = newTime === draggingApt.time;
+    const sameStaff = !newStaffId || newStaffId === draggingApt.staff_id;
 
-    if (newDate === draggingApt.date && newTime === draggingApt.time) {
+    if (sameDate && sameTime && sameStaff) {
       setDraggingApt(null);
       return;
     }
 
     try {
-      await appointmentService.update(draggingApt.id, { date: newDate, time: newTime });
-      addNotification(`Cita de ${draggingApt.client_name} movida a ${newTime}`, 'success');
+      const updateData = { date: newDate, time: newTime };
+      if (newStaffId && newStaffId !== draggingApt.staff_id) {
+        updateData.staff_id = newStaffId;
+      }
+      await appointmentService.update(draggingApt.id, updateData);
+      const staffName = newStaffId && newStaffId !== draggingApt.staff_id
+        ? staff.find(s => s.id === newStaffId)?.name?.split(' ')[0] || ''
+        : '';
+      const msg = staffName
+        ? `Cita de ${draggingApt.client_name} movida a ${newTime} con ${staffName}`
+        : `Cita de ${draggingApt.client_name} movida a ${newTime}`;
+      addNotification(msg, 'success');
       loadData();
     } catch (err) {
       addNotification('Error al mover cita: ' + (err.message || 'Conflicto de horario'), 'error');
     }
     setDraggingApt(null);
-  }, [draggingApt, addNotification]);
+  }, [draggingApt, addNotification, staff]);
 
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
   const isStaffView = view === 'staff';
@@ -1024,7 +1037,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                                   onClick={() => openCreate(currentDate, t)}
                                   onDragOver={(e) => handleDragOver(e, currentDate, t)}
                                   onDragLeave={() => setDropTarget(null)}
-                                  onDrop={(e) => handleDrop(e, currentDate, t)}>
+                                  onDrop={(e) => handleDrop(e, currentDate, t, s.id)}>
                                   {isDrop && <span className={`${b}__drop-label`}>{formatTime12(t)}</span>}
                                 </div>
                               );
