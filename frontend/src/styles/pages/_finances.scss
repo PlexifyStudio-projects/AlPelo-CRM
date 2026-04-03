@@ -1826,6 +1826,59 @@
     line-height: $line-height-relaxed;
   }
 
+  &__method-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  &__method-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    transition: all 150ms ease;
+
+    &:hover { background: rgba(0, 0, 0, 0.06); }
+
+    &--active {
+      background: $color-primary;
+      color: $color-white;
+      border-color: $color-primary;
+    }
+  }
+
+  &__method-chip-count {
+    font-size: 10px;
+    font-weight: 700;
+    opacity: 0.7;
+  }
+
+  &__inv-method-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    white-space: nowrap;
+    background: rgba(0, 0, 0, 0.04);
+    color: rgba(0, 0, 0, 0.5);
+
+    &--efectivo { background: rgba(#10B981, 0.08); color: #059669; }
+    &--nequi { background: rgba(#6B21A8, 0.08); color: #6B21A8; }
+    &--daviplata { background: rgba(#DC2626, 0.08); color: #DC2626; }
+    &--transferencia { background: rgba(#FDDA24, 0.15); color: #92400E; }
+    &--tarjeta { background: rgba(#64748B, 0.08); color: #475569; }
+    &--mixto { background: rgba(#3B82F6, 0.08); color: #2563EB; }
+  }
+
   &__inv-list {
     @include flex-column;
     gap: $spacing-sm;
