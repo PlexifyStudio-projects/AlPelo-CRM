@@ -298,11 +298,13 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           const dataUri = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
+            reader.onerror = () => reject(new Error('Error leyendo comprobante'));
             reader.readAsDataURL(receiptFile);
           });
-          payload.receipt_url = dataUri;
-        } catch {}
+          if (dataUri) payload.receipt_url = dataUri;
+        } catch (e) {
+          console.error('Receipt read error:', e);
+        }
       }
 
       const res = await fetch(`${API_URL}/checkout`, {
@@ -648,7 +650,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         </div>
       )}
 
-      {['nequi', 'daviplata', 'transferencia'].includes(paymentMethod) && (
+      {['nequi', 'daviplata', 'transferencia', 'bancolombia', 'tarjeta', 'tarjeta_debito', 'tarjeta_credito'].includes(paymentMethod) && (
         <div className={`${b}__receipt-section`}>
           <label className={`${b}__section-label`}>Comprobante de pago (opcional)</label>
           <div className={`${b}__receipt-upload`}>
