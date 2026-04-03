@@ -1460,23 +1460,28 @@
   }
 
   &__code-input {
-    padding: 10px 14px !important;
-    border: 2px solid rgba($color-primary, 0.2) !important;
-    border-radius: 10px !important;
-    font-size: 15px !important;
-    font-weight: 700 !important;
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid rgba($color-primary, 0.2);
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: $font-primary;
     letter-spacing: 0.04em;
-    color: $color-primary !important;
+    color: $color-primary;
     text-transform: uppercase;
+    background: $color-white;
+    outline: none;
 
     &::placeholder {
       font-weight: 400;
       color: rgba(0, 0, 0, 0.25);
       text-transform: none;
+      font-size: 13px;
     }
 
     &:focus {
-      border-color: $color-primary !important;
+      border-color: $color-primary;
       box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
     }
   }
@@ -1489,8 +1494,20 @@
   }
 
   &__notes-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: $font-primary;
+    color: $color-secondary;
+    background: $color-white;
+    outline: none;
     resize: vertical;
-    min-height: 44px;
+    min-height: 50px;
+
+    &::placeholder { color: rgba(0, 0, 0, 0.3); }
+    &:focus { border-color: $color-primary; box-shadow: 0 0 0 3px rgba($color-primary, 0.08); }
   }
 
   &__modal-save {
