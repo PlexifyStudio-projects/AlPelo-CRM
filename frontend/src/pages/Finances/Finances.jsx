@@ -1908,8 +1908,17 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
             </button>
           ))}
         </div>
-        <div className="finances__inv-list">
-          {invoices.filter(inv => !methodFilter || inv.payment_method === methodFilter).map((inv, i) => {
+        <div className="finances__sale-table">
+          <div className="finances__sale-thead">
+            <span className="finances__sale-th" style={{ width: '80px' }}>Hora</span>
+            <span className="finances__sale-th" style={{ width: '80px' }}>Estado</span>
+            <span className="finances__sale-th" style={{ flex: 1 }}>Cliente</span>
+            <span className="finances__sale-th" style={{ flex: 1.5 }}>Servicio / Producto</span>
+            <span className="finances__sale-th" style={{ width: '110px', textAlign: 'right' }}>Valor</span>
+            <span className="finances__sale-th" style={{ width: '130px' }}>Medio de pago</span>
+            <span className="finances__sale-th" style={{ width: '50px' }} />
+          </div>
+          {invoices.filter(inv => !methodFilter || inv.payment_method === methodFilter).map((inv) => {
             const isExpanded = expandedId === inv.id;
             const commissionRate = inv.staff_commission_rate || 0.5;
             const tipAmount = inv.tip || 0;
@@ -1917,149 +1926,103 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
             const businessEarnings = inv.subtotal - Math.round(inv.subtotal * commissionRate);
             const staffNames = [...new Set((inv.items || []).filter(it => it.staff_name).map(it => it.staff_name))];
             const primaryStaff = staffNames.length > 0 ? staffNames[0] : null;
+            const paidTime = inv.paid_at ? new Date(inv.paid_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+            const methodLabel = PAYMENT_METHODS.find(p => p.value === inv.payment_method)?.label || inv.payment_method || '—';
 
             return (
-              <div key={inv.id} className={`finances__inv-card ${isExpanded ? 'finances__inv-card--expanded' : ''}`} style={{ animationDelay: `${0.05 + i * 0.04}s` }}>
-                <div className="finances__inv-header" onClick={() => setExpandedId(isExpanded ? null : inv.id)}>
-                  <div className="finances__inv-header-left">
+              <div key={inv.id} className={`finances__sale-row-wrap ${isExpanded ? 'finances__sale-row-wrap--expanded' : ''}`}>
+                <div className="finances__sale-row" onClick={() => setExpandedId(isExpanded ? null : inv.id)}>
+                  <span className="finances__sale-td finances__sale-td--time" style={{ width: '80px' }}>
+                    <span className="finances__sale-time">{paidTime || '—'}</span>
+                    <span className="finances__sale-invnum">{inv.invoice_number}</span>
+                  </span>
+                  <span className="finances__sale-td" style={{ width: '80px' }}>
                     <span className={`finances__inv-badge finances__inv-badge--${inv.status}`}>
-                      {STATUS_ICONS[inv.status]}
                       {STATUS_LABELS[inv.status]}
                     </span>
-                    <div className="finances__inv-id-wrap">
-                      <span className="finances__inv-number">{inv.invoice_number}</span>
-                      <span className="finances__inv-date">
-                        {new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="finances__inv-header-center">
-                    <span className="finances__inv-client">{inv.client_name}</span>
-                    {inv.client_phone && <span className="finances__inv-phone">{inv.client_phone}</span>}
-                  </div>
-                  <div className="finances__inv-header-right">
-                    {inv.payment_method && (
-                      <span className={`finances__inv-method-tag finances__inv-method-tag--${inv.payment_method}`}>
-                        {PAYMENT_METHODS.find(p => p.value === inv.payment_method)?.label || inv.payment_method}
-                      </span>
-                    )}
-                    <span className="finances__inv-total-amount">{formatCOP(inv.total)}</span>
-                    <svg className={`finances__inv-chevron ${isExpanded ? 'finances__inv-chevron--open' : ''}`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
-                  </div>
+                  </span>
+                  <span className="finances__sale-td finances__sale-td--client" style={{ flex: 1 }}>
+                    <strong>{inv.client_name}</strong>
+                    {inv.client_phone && <small>{inv.client_phone}</small>}
+                  </span>
+                  <span className="finances__sale-td finances__sale-td--services" style={{ flex: 1.5 }}>
+                    {(inv.items || []).map((item, idx) => (
+                      <div key={idx} className="finances__sale-svc-line">
+                        <span className="finances__sale-svc-name">{item.service_name}</span>
+                        {item.staff_name && <span className="finances__sale-svc-staff">{item.staff_name}</span>}
+                      </div>
+                    ))}
+                  </span>
+                  <span className="finances__sale-td" style={{ width: '110px', textAlign: 'right' }}>
+                    <strong className="finances__sale-amount">{formatCOP(inv.total)}</strong>
+                  </span>
+                  <span className="finances__sale-td" style={{ width: '130px' }}>
+                    <span className={`finances__inv-method-tag finances__inv-method-tag--${inv.payment_method}`}>{methodLabel}</span>
+                  </span>
+                  <span className="finances__sale-td" style={{ width: '50px' }}>
+                    <svg className={`finances__inv-chevron ${isExpanded ? 'finances__inv-chevron--open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  </span>
                 </div>
+
                 {isExpanded && (
-                  <div className="finances__inv-details">
-                    <div className="finances__inv-client-bar">
-                      <div className="finances__inv-client-info">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        <span>{inv.client_name}</span>
-                      </div>
-                      {inv.client_phone && (
-                        <div className="finances__inv-client-info">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                          <span>{inv.client_phone}</span>
-                        </div>
-                      )}
-                      {inv.client_document && (
-                        <div className="finances__inv-client-info">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/></svg>
-                          <span>{inv.client_document}</span>
-                        </div>
-                      )}
-                    </div>
-                    {inv.items && inv.items.length > 0 && (
-                      <div className="finances__inv-table">
-                        <div className="finances__inv-table-head">
-                          <span className="finances__inv-th finances__inv-th--service">Servicio</span>
-                          <span className="finances__inv-th finances__inv-th--qty">Cant.</span>
-                          <span className="finances__inv-th finances__inv-th--price">Precio Unit.</span>
-                          <span className="finances__inv-th finances__inv-th--staff">Profesional</span>
-                          <span className="finances__inv-th finances__inv-th--total">Total</span>
-                        </div>
-                        {inv.items.map((item, idx) => (
-                          <div key={idx} className="finances__inv-table-row">
-                            <span className="finances__inv-td finances__inv-td--service">{item.service_name}</span>
-                            <span className="finances__inv-td finances__inv-td--qty">{item.quantity}</span>
-                            <span className="finances__inv-td finances__inv-td--price">{formatCOP(item.unit_price)}</span>
-                            <span className="finances__inv-td finances__inv-td--staff">{item.staff_name || '—'}</span>
-                            <span className="finances__inv-td finances__inv-td--total">{formatCOP(item.total)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="finances__inv-bottom">
-                      <div className="finances__inv-breakdown">
-                        <div className="finances__inv-breakdown-line">
-                          <span>Subtotal</span>
-                          <span>{formatCOP(inv.subtotal)}</span>
-                        </div>
-                        {inv.discount_amount > 0 && (
-                          <div className="finances__inv-breakdown-line finances__inv-breakdown-line--discount">
-                            <span>Descuento{inv.discount_pct ? ` (${inv.discount_pct}%)` : ''}</span>
-                            <span>-{formatCOP(inv.discount_amount)}</span>
-                          </div>
-                        )}
-                        {inv.tax_amount > 0 && (
-                          <div className="finances__inv-breakdown-line">
-                            <span>IVA ({(inv.tax_rate * 100).toFixed(0)}%)</span>
-                            <span>{formatCOP(inv.tax_amount)}</span>
-                          </div>
-                        )}
-                        {inv.tip > 0 && (
-                          <div className="finances__inv-breakdown-line finances__inv-breakdown-line--tip">
-                            <span>Propina</span>
-                            <span>+{formatCOP(inv.tip)}</span>
-                          </div>
-                        )}
-                        <div className="finances__inv-breakdown-line finances__inv-breakdown-line--total">
-                          <span>TOTAL</span>
-                          <span>{formatCOP(inv.total)}</span>
-                        </div>
-                      </div>
-                      {primaryStaff && (
-                        <div className="finances__inv-commission">
-                          <span className="finances__inv-commission-title">Distribución de comisión</span>
-                          <div className="finances__inv-commission-bar">
-                            <div className="finances__inv-commission-seg finances__inv-commission-seg--staff" style={{ width: `${commissionRate * 100}%` }} />
-                            <div className="finances__inv-commission-seg finances__inv-commission-seg--business" style={{ width: `${(1 - commissionRate) * 100}%` }} />
-                          </div>
-                          <div className="finances__inv-commission-labels">
-                            <div className="finances__inv-commission-item finances__inv-commission-item--staff">
-                              <span className="finances__inv-commission-dot finances__inv-commission-dot--staff" />
-                              <div className="finances__inv-commission-info">
-                                <span className="finances__inv-commission-name">Profesional: {primaryStaff}</span>
-                                <span className="finances__inv-commission-value">{(commissionRate * 100).toFixed(0)}% del servicio{tipAmount > 0 ? ' + propina' : ''} = {formatCOP(staffEarnings)}</span>
+                  <div className="finances__sale-detail">
+                    <div className="finances__sale-detail-grid">
+                      <div className="finances__sale-detail-col">
+                        <h4>Detalle de venta</h4>
+                        <div className="finances__sale-detail-items">
+                          {(inv.items || []).map((item, idx) => (
+                            <div key={idx} className="finances__sale-detail-item">
+                              <div className="finances__sale-detail-item-main">
+                                <span className="finances__sale-detail-item-name">{item.service_name}</span>
+                                <span className="finances__sale-detail-item-price">{formatCOP(item.total)}</span>
+                              </div>
+                              <div className="finances__sale-detail-item-meta">
+                                {item.staff_name && <span>Profesional: {item.staff_name}</span>}
+                                <span>Cant: {item.quantity}</span>
+                                <span>P/U: {formatCOP(item.unit_price)}</span>
                               </div>
                             </div>
-                            <div className="finances__inv-commission-item finances__inv-commission-item--business">
-                              <span className="finances__inv-commission-dot finances__inv-commission-dot--business" />
-                              <div className="finances__inv-commission-info">
-                                <span className="finances__inv-commission-name">Negocio</span>
-                                <span className="finances__inv-commission-value">{((1 - commissionRate) * 100).toFixed(0)}% = {formatCOP(businessEarnings)}</span>
-                              </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="finances__sale-detail-col">
+                        <h4>Resumen financiero</h4>
+                        <div className="finances__sale-detail-summary">
+                          <div className="finances__sale-summary-line"><span>Subtotal</span><span>{formatCOP(inv.subtotal)}</span></div>
+                          {inv.discount_amount > 0 && <div className="finances__sale-summary-line finances__sale-summary-line--discount"><span>Descuento</span><span>-{formatCOP(inv.discount_amount)}</span></div>}
+                          {inv.tax_amount > 0 && <div className="finances__sale-summary-line"><span>IVA ({(inv.tax_rate * 100).toFixed(0)}%)</span><span>{formatCOP(inv.tax_amount)}</span></div>}
+                          {inv.tip > 0 && <div className="finances__sale-summary-line"><span>Propina</span><span>+{formatCOP(inv.tip)}</span></div>}
+                          <div className="finances__sale-summary-line finances__sale-summary-line--total"><span>TOTAL</span><span>{formatCOP(inv.total)}</span></div>
+                        </div>
+
+                        {primaryStaff && (
+                          <div className="finances__sale-detail-commission">
+                            <div className="finances__sale-commission-row">
+                              <span className="finances__sale-commission-dot finances__sale-commission-dot--staff" />
+                              <span>Comision {primaryStaff} ({(commissionRate * 100).toFixed(0)}%)</span>
+                              <strong>{formatCOP(staffEarnings)}</strong>
+                            </div>
+                            <div className="finances__sale-commission-row">
+                              <span className="finances__sale-commission-dot finances__sale-commission-dot--biz" />
+                              <span>Ganancia negocio</span>
+                              <strong>{formatCOP(businessEarnings)}</strong>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="finances__inv-footer">
-                      <div className="finances__inv-footer-left">
-                        {inv.payment_method && (
-                          <span className={`finances__inv-method-pill finances__inv-method-pill--${inv.payment_method}`}>
-                            {Icons.creditCard}
-                            {PAYMENT_METHODS.find(m => m.value === inv.payment_method)?.label || inv.payment_method}
-                          </span>
                         )}
-                        {inv.notes && <span className="finances__inv-notes">{inv.notes}</span>}
                       </div>
-                      <div className="finances__inv-footer-actions">
-                        {inv.status === 'draft' && (
-                          <button className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => handleStatusChange(inv.id, 'sent')}>
-                            {STATUS_ICONS.sent} Marcar enviada
-                          </button>
-                        )}
+                    </div>
+
+                    <div className="finances__sale-detail-footer">
+                      <div className="finances__sale-detail-meta">
+                        <span>Factura: {inv.invoice_number}</span>
+                        <span>Fecha: {new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        <span>Pago: {methodLabel}</span>
+                        {inv.client_document && <span>CC/NIT: {inv.client_document}</span>}
+                      </div>
+                      <div className="finances__sale-detail-actions">
                         {(inv.status === 'draft' || inv.status === 'sent') && (
-                          <button className="finances__btn-primary" style={{ padding: '4px 12px', fontSize: '12px' }} onClick={() => handleStatusChange(inv.id, 'paid')}>
+                          <button className="finances__btn-primary" style={{ padding: '6px 14px', fontSize: '12px' }} onClick={() => handleStatusChange(inv.id, 'paid')}>
                             {Icons.check} Marcar pagada
                           </button>
                         )}
@@ -2068,6 +2031,9 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             {Icons.trash}
                           </button>
                         )}
+                        <button className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => window.print()} title="Imprimir">
+                          {Icons.fileText} Imprimir
+                        </button>
                       </div>
                     </div>
                   </div>
