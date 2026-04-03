@@ -245,7 +245,7 @@ def walkin_checkin(data: dict, db: Session = Depends(get_db), user: Admin = Depe
     if not service:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
 
-    duration = service.duration or 30
+    duration = service.duration_minutes or 30
     price = service.price or 0
 
     # Find or create client
