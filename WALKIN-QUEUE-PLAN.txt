@@ -1,0 +1,143 @@
+================================================================================
+  PLEXIFY STUDIO — WALK-IN QUEUE / COLA DE ESPERA
+  Fecha: 3 de abril de 2026
+  Estado: Diseño aprobado, listo para implementar
+================================================================================
+
+CONCEPTO
+--------
+Sistema de turnos rotativos (round-robin) para walk-ins. Justo para el staff:
+el que atendio ultimo va al final. El admin puede reorganizar arrastrando.
+
+MODELO DE ROTACION (Round-Robin)
+---------------------------------
+Staff: Anderson(1), Astrid(2), Camilo(3), Carolina(4), Angel(5)
+
+Llega walk-in 1 → Anderson (turno 1) → cola queda: 2,3,4,5,1
+Llega walk-in 2 → Astrid (turno 2)   → cola queda: 3,4,5,1,2
+Walk-in 3 llega pero Carolina(4) se desocupa primero → Carolina → cola: 3,5,1,2,4
+Walk-in 4 → Camilo(3)                → cola queda: 5,1,2,4,3
+
+El orden es DINAMICO — el admin puede arrastrar para cambiar prioridades.
+
+BACKEND
+-------
+Nuevo modelo: StaffQueue (o extension de algo existente)
+  - tenant_id
+  - staff_id
+  - position (int) — orden en la cola
+  - is_available (bool) — si puede recibir walk-ins ahora
+  - last_walkin_at (datetime) — cuando atendio su ultimo walk-in
+  - updated_at
+
+Nuevo modelo: WalkIn (o Appointment con status="waiting", created_by="walkin")
+  OPCION B: Usar Appointment con:
+    - status = "waiting" (nuevo estado)
+    - created_by = "walkin"
+    - assigned_queue_position (int) — posicion cuando se asigno
+
+Endpoints:
+  GET  /walkin/queue          — Cola de staff ordenada por posicion
+  PUT  /walkin/queue/reorder  — Reordenar cola (drag-drop, recibe [staff_ids])
+  POST /walkin/checkin        — Registrar walk-in: nombre, telefono, servicio
+                                Sistema asigna staff segun cola rotativa
+                                Crea Appointment con status="waiting"
+  PUT  /walkin/{id}/start     — Staff empieza a atender → status="confirmed"
+  PUT  /walkin/{id}/cancel    — Cliente se fue
+  GET  /walkin/waiting        — Lista de walk-ins esperando
+
+Logica de asignacion:
+  1. Tomar el staff en posicion 1 de la cola
+  2. Verificar que esta trabajando hoy (StaffSchedule + no DayOff)
+  3. Verificar que no esta en medio de una cita ahora
+  4. Si no disponible, pasar al siguiente
+  5. Calcular proximo slot libre de ESE staff
+  6. Crear cita en ese slot
+  7. Mover ese staff al final de la cola
+  8. Retornar: staff asignado + hora estimada + posicion en espera
+
+FRONTEND — AGENDA
+-----------------
+1. Boton "Walk-in" en el header de la Agenda (junto a "Nueva cita")
+   - Abre modal rapido:
+     * Buscar cliente existente o nombre nuevo
+     * Telefono (opcional)
+     * Servicio (select por categoria)
+     * Staff preferido (opcional) o "Siguiente en turno" (default)
+   - Al confirmar: sistema asigna y muestra resultado
+   - "Anderson lo atendera en ~15 min (turno #2)"
+
+2. Card especial en la agenda para walk-ins:
+   - Color naranja/amarillo (diferente a verde de citas normales)
+   - Icono de reloj/espera
+   - Badge "WALK-IN"
+   - Muestra tiempo estimado de espera
+
+3. Barra lateral o panel de cola:
+   - Lista de staff ordenada por turno
+   - Drag-and-drop para reordenar (como Google Calendar)
+   - Cada staff muestra:
+     * Nombre + foto
+     * Estado: Disponible / Atendiendo / Descanso
+     * Numero de walk-ins atendidos hoy
+   - Lista de walk-ins esperando debajo
+
+FRONTEND — DRAG AND DROP
+-------------------------
+Usa el mismo approach que la agenda (ya tiene drag-drop):
+  - Click y arrastrar un staff para cambiar su posicion en la cola
+  - Visual feedback al arrastrar (sombra, espacio)
+  - Guarda el nuevo orden via PUT /walkin/queue/reorder
+  - Animacion suave al reorganizar
+
+NOTIFICACIONES
+--------------
+- Walk-in registrado → notificacion al admin + staff asignado
+- "Tu turno" → WhatsApp al cliente (si dio telefono):
+  "Hola Juan, ya es tu turno. Te atiende Anderson. Bienvenido!"
+- Staff se desocupa antes → walk-in sube automaticamente
+
+INTEGRACION CON LINA
+--------------------
+- Lina sabe cuantos walk-ins hay esperando
+- Si un cliente escribe por WhatsApp preguntando "hay fila?":
+  "Hola! Hay 2 personas en espera, el tiempo estimado es ~20 min.
+   Quiere que lo ponga en la cola o prefiere agendar para mas tarde?"
+- Si dice "ponme en la cola" → Lina crea walk-in automaticamente
+
+METRICAS
+--------
+- Walk-ins por dia/semana/mes
+- Tiempo promedio de espera
+- Tasa de abandono (se fueron sin ser atendidos)
+- Walk-ins por staff (balance de carga)
+- Conversion walk-in → cliente recurrente
+
+================================================================================
+  ORDEN DE IMPLEMENTACION
+================================================================================
+
+FASE 1 — Backend (modelo + endpoints)
+  1.1  StaffQueue model + migration
+  1.2  Walk-in endpoints (checkin, queue, reorder, start, cancel)
+  1.3  Round-robin assignment logic
+  1.4  Slot calculation for walk-in assignment
+
+FASE 2 — Frontend modal + agenda integration
+  2.1  Boton "Walk-in" en Agenda header
+  2.2  Modal rapido de check-in
+  2.3  Card especial naranja en la agenda
+  2.4  Badge "WALK-IN" + tiempo estimado
+
+FASE 3 — Panel de cola + drag-drop
+  3.1  Panel lateral con cola de staff
+  3.2  Drag-and-drop reorder
+  3.3  Lista de walk-ins esperando
+  3.4  Estado en tiempo real (disponible/atendiendo)
+
+FASE 4 — Notificaciones + Lina
+  4.1  WhatsApp al cliente cuando es su turno
+  4.2  Lina detecta preguntas sobre fila/espera
+  4.3  Lina puede crear walk-in desde WhatsApp
+
+================================================================================
