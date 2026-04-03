@@ -872,13 +872,10 @@ const AgendaInner = ({ staffOnlyId = null }) => {
               return (
                 <button key={apt.id} className={`${b}__search-result`} onClick={() => {
                   setSearchOpen(false);
+                  setSearchQuery('');
                   const aptDate = new Date(apt.date + 'T12:00:00');
                   setCurrentDate(aptDate);
-                  if (view === 'week') {
-                  } else {
-                    setView('day');
-                  }
-                  setTimeout(() => openEdit(apt), 200);
+                  openEdit(apt);
                 }}>
                   <div className={`${b}__search-result-status`} style={{ background: sc }} />
                   <div className={`${b}__search-result-info`}>
