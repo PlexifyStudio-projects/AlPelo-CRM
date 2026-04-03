@@ -279,12 +279,14 @@ const Campaigns = () => {
     }
     // Convert header image to base64 data URI if provided
     let headerMediaUrl = null;
-    if (editHeaderType === 'IMAGE' && editHeaderMedia?.file) {
+    if ((editHeaderType === 'IMAGE' || editHeaderType === 'VIDEO') && editHeaderMedia?.file) {
       headerMediaUrl = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.readAsDataURL(editHeaderMedia.file);
       });
+    } else if (editHeaderMedia?.preview && !editHeaderMedia?.file) {
+      headerMediaUrl = editHeaderMedia.preview; // Already stored URL from edit
     }
 
     const payload = {
@@ -1130,7 +1132,28 @@ const Campaigns = () => {
                   </div>
                 )}
                 {editHeaderType === 'VIDEO' && (
-                  <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', padding: '8px 0' }}>El video se adjunta al enviar a Meta. Formatos: MP4, max 16MB.</p>
+                  <div className={`${B}__editor-media-upload`}>
+                    {editHeaderMedia?.preview ? (
+                      <div className={`${B}__editor-media-preview`}>
+                        <video src={editHeaderMedia.preview} style={{ width: 200, height: 120, objectFit: 'cover', borderRadius: 10, border: '1px solid rgba(0,0,0,0.08)' }} muted />
+                        <button onClick={() => { if (editHeaderMedia.preview) URL.revokeObjectURL(editHeaderMedia.preview); setEditHeaderMedia(null); }} className={`${B}__editor-media-remove`}><CloseIcon /></button>
+                      </div>
+                    ) : (
+                      <label className={`${B}__editor-media-btn`}>
+                        <input type="file" accept="video/mp4,video/*" style={{ display: 'none' }} onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 16 * 1024 * 1024) { alert('Video muy grande (max 16MB)'); return; }
+                            setEditHeaderMedia({ file, preview: URL.createObjectURL(file) });
+                          }
+                          e.target.value = '';
+                        }} />
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                        Seleccionar video
+                      </label>
+                    )}
+                    <p style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 4 }}>MP4, max 16MB. Meta lo revisara junto con la plantilla.</p>
+                  </div>
                 )}
                 {editHeaderType === 'TEXT' && (
                   <input type="text" value={editHeaderText} onChange={e => setEditHeaderText(e.target.value)} placeholder="Texto del encabezado" maxLength={60} />
@@ -1157,6 +1180,9 @@ const Campaigns = () => {
                   <div className={`${B}__editor-preview-bubble`}>
                     {editHeaderType === 'IMAGE' && editHeaderMedia?.preview && (
                       <img src={editHeaderMedia.preview} alt="" style={{ width: '100%', borderRadius: '8px 8px 0 0', maxHeight: 180, objectFit: 'cover', marginBottom: 8 }} />
+                    )}
+                    {editHeaderType === 'VIDEO' && editHeaderMedia?.preview && (
+                      <video src={editHeaderMedia.preview} style={{ width: '100%', borderRadius: '8px 8px 0 0', maxHeight: 180, objectFit: 'cover', marginBottom: 8 }} muted controls />
                     )}
                     {editHeaderType === 'TEXT' && editHeaderText && (
                       <p style={{ fontWeight: 700, marginBottom: 4 }}>{editHeaderText}</p>
