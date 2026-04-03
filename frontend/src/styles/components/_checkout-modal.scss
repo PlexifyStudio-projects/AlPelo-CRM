@@ -356,6 +356,78 @@
     color: #D97706;
   }
 
+  &__product-remove {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    border: none;
+    background: none;
+    flex-shrink: 0;
+    transition: all 150ms ease;
+
+    svg { width: 14px; height: 14px; }
+    &:hover { background: rgba(#EF4444, 0.06); color: #EF4444; }
+  }
+
+  &__product-search-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    background: #FAFBFC;
+  }
+
+  &__product-results {
+    max-height: 180px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__product-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 100ms ease;
+    font-family: inherit;
+    text-align: left;
+
+    span { font-size: 13px; font-weight: 600; color: $color-secondary; }
+    small { font-size: 11px; color: rgba(0, 0, 0, 0.35); }
+
+    &:hover { background: rgba(0, 0, 0, 0.03); }
+  }
+
+  &__product-empty {
+    padding: 12px;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.35);
+  }
+
+  &__product-cancel {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    text-align: center;
+    padding: 6px;
+    border: none;
+    background: none;
+    &:hover { color: rgba(0, 0, 0, 0.7); }
+  }
+
   &__subtotal-line {
     display: flex;
     justify-content: space-between;

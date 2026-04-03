@@ -114,6 +114,9 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const [checkoutError, setCheckoutError] = useState('');
   const [receiptFile, setReceiptFile] = useState(null);
   const [productItems, setProductItems] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [showProductSearch, setShowProductSearch] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -156,6 +159,10 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       setLoadingServices(false);
     };
     fetchServices();
+    fetch(`${API_URL}/inventory/products`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : { products: [] })
+      .then(data => setAllProducts(data.products || []))
+      .catch(() => {});
   }, []);
 
   const servicesTotal = useMemo(() => items.reduce((s, i) => s + (i.price || 0), 0), [items]);
@@ -409,20 +416,51 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         </button>
       )}
 
-      {productItems.length > 0 && (
-        <div className={`${b}__products-section`}>
-          <label className={`${b}__section-label`}>Productos utilizados</label>
-          {productItems.map((p, i) => (
-            <div key={i} className={`${b}__product-row`}>
-              <div className={`${b}__product-info`}>
-                <span className={`${b}__product-name`}>{p.name}</span>
-                <span className={`${b}__product-meta`}>{fmt(p.salePrice)} x{p.qty}{p.commission ? ` · Comision: ${fmt(p.commission)}` : ''}</span>
-              </div>
-              <span className={`${b}__product-total`}>{fmt(p.salePrice * p.qty)}</span>
+      <div className={`${b}__products-section`}>
+        <label className={`${b}__section-label`}>Productos utilizados {productItems.length > 0 ? `(${productItems.length})` : ''}</label>
+        {productItems.map((p, i) => (
+          <div key={i} className={`${b}__product-row`}>
+            <div className={`${b}__product-info`}>
+              <span className={`${b}__product-name`}>{p.name}</span>
+              <span className={`${b}__product-meta`}>{fmt(p.salePrice)} x{p.qty}{p.commission ? ` · Comision: ${fmt(p.commission)}` : ''}</span>
             </div>
-          ))}
-        </div>
-      )}
+            <span className={`${b}__product-total`}>{fmt(p.salePrice * p.qty)}</span>
+            <button type="button" className={`${b}__product-remove`} onClick={() => setProductItems(prev => prev.filter((_, j) => j !== i))} title="Quitar producto">
+              <CloseIcon />
+            </button>
+          </div>
+        ))}
+        {showProductSearch ? (
+          <div className={`${b}__product-search-wrap`}>
+            <input
+              type="text"
+              placeholder="Buscar producto..."
+              value={productSearchQuery}
+              onChange={e => setProductSearchQuery(e.target.value)}
+              autoFocus
+              className={`${b}__input`}
+            />
+            <div className={`${b}__product-results`}>
+              {allProducts.filter(p => !productSearchQuery || p.name?.toLowerCase().includes(productSearchQuery.toLowerCase())).map(p => (
+                <button key={p.id} type="button" className={`${b}__product-option`} onClick={() => {
+                  setProductItems(prev => [...prev, { productId: p.id, name: p.name, basePrice: p.sale_price || p.price || 0, salePrice: p.sale_price || p.price || 0, qty: 1, commission: 0 }]);
+                  setShowProductSearch(false);
+                  setProductSearchQuery('');
+                }}>
+                  <span>{p.name}</span>
+                  <small>Stock: {p.stock || 0} · {fmt(p.sale_price || p.price || 0)}</small>
+                </button>
+              ))}
+              {allProducts.length === 0 && <div className={`${b}__product-empty`}>No hay productos en inventario</div>}
+            </div>
+            <button type="button" className={`${b}__product-cancel`} onClick={() => { setShowProductSearch(false); setProductSearchQuery(''); }}>Cancelar</button>
+          </div>
+        ) : (
+          <button type="button" className={`${b}__add-btn`} onClick={() => setShowProductSearch(true)}>
+            <PlusIcon /> Agregar producto
+          </button>
+        )}
+      </div>
 
       <div className={`${b}__subtotal`}>
         {productItems.length > 0 && (
