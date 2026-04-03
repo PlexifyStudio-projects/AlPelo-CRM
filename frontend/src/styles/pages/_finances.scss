@@ -1826,6 +1826,50 @@
     line-height: $line-height-relaxed;
   }
 
+  &__inv-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  &__inv-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: $color-white;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    transition: border-color 150ms ease;
+
+    &:focus-within {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
+    }
+
+    svg { color: rgba(0, 0, 0, 0.3); flex-shrink: 0; }
+
+    input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      color: $color-secondary;
+      font-family: $font-primary;
+      &::placeholder { color: rgba(0, 0, 0, 0.3); }
+    }
+
+    button {
+      color: rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+      &:hover { color: rgba(0, 0, 0, 0.6); }
+    }
+  }
+
   &__method-filters {
     display: flex;
     gap: 6px;

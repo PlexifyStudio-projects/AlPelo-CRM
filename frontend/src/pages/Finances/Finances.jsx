@@ -1504,6 +1504,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [methodFilter, setMethodFilter] = useState('');
+  const [invoiceSearch, setInvoiceSearch] = useState('');
 
   const [allClients, setAllClients] = useState([]);
   const [allServices, setAllServices] = useState([]);
@@ -1899,14 +1900,30 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
       )}
       {invoices.length > 0 ? (
         <>
-        <div className="finances__method-filters">
-          <button className={`finances__method-chip ${!methodFilter ? 'finances__method-chip--active' : ''}`} onClick={() => setMethodFilter('')}>Todos</button>
-          {[...new Set(invoices.map(inv => inv.payment_method).filter(Boolean))].map(m => (
-            <button key={m} className={`finances__method-chip ${methodFilter === m ? 'finances__method-chip--active' : ''}`} onClick={() => setMethodFilter(prev => prev === m ? '' : m)}>
-              {PAYMENT_METHODS.find(p => p.value === m)?.label || m}
-              <span className="finances__method-chip-count">{invoices.filter(inv => inv.payment_method === m).length}</span>
-            </button>
-          ))}
+        <div className="finances__inv-filters">
+          <div className="finances__inv-search">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <input
+              type="text"
+              placeholder="Buscar por cliente, factura, servicio, monto..."
+              value={invoiceSearch}
+              onChange={e => setInvoiceSearch(e.target.value)}
+            />
+            {invoiceSearch && (
+              <button onClick={() => setInvoiceSearch('')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            )}
+          </div>
+          <div className="finances__method-filters">
+            <button className={`finances__method-chip ${!methodFilter ? 'finances__method-chip--active' : ''}`} onClick={() => setMethodFilter('')}>Todos</button>
+            {[...new Set(invoices.map(inv => inv.payment_method).filter(Boolean))].map(m => (
+              <button key={m} className={`finances__method-chip ${methodFilter === m ? 'finances__method-chip--active' : ''}`} onClick={() => setMethodFilter(prev => prev === m ? '' : m)}>
+                {PAYMENT_METHODS.find(p => p.value === m)?.label || m}
+                <span className="finances__method-chip-count">{invoices.filter(inv => inv.payment_method === m).length}</span>
+              </button>
+            ))}
+          </div>
         </div>
         <div className="finances__sale-table">
           <div className="finances__sale-thead">
@@ -1918,7 +1935,21 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
             <span className="finances__sale-th" style={{ width: '130px' }}>Medio de pago</span>
             <span className="finances__sale-th" style={{ width: '50px' }} />
           </div>
-          {invoices.filter(inv => !methodFilter || inv.payment_method === methodFilter).map((inv) => {
+          {invoices
+            .filter(inv => {
+              if (methodFilter && inv.payment_method !== methodFilter) return false;
+              if (!invoiceSearch) return true;
+              const q = invoiceSearch.toLowerCase();
+              const haystack = [
+                inv.client_name, inv.client_phone, inv.invoice_number,
+                inv.payment_method, String(inv.total),
+                ...(inv.items || []).map(it => it.service_name),
+                ...(inv.items || []).map(it => it.staff_name),
+              ].filter(Boolean).join(' ').toLowerCase();
+              return haystack.includes(q);
+            })
+            .sort((a, b) => new Date(b.paid_at || b.created_at) - new Date(a.paid_at || a.created_at))
+            .map((inv) => {
             const isExpanded = expandedId === inv.id;
             const commissionRate = inv.staff_commission_rate || 0.5;
             const tipAmount = inv.tip || 0;
@@ -2032,37 +2063,60 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           </button>
                         )}
                         <button className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => {
-                          const win = window.open('', '_blank', 'width=800,height=600');
+                          const win = window.open('', '_blank', 'width=900,height=700');
+                          const dateStr = new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+                          const timeStr = inv.paid_at ? new Date(inv.paid_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+                          const ml = PAYMENT_METHODS.find(p => p.value === inv.payment_method)?.label || inv.payment_method;
+                          const prodCommissions = (inv.items || []).filter(it => it.staff_name?.startsWith('Comision:')).reduce((s, it) => s + (it.total || 0), 0);
                           win.document.write(`<html><head><title>Factura ${inv.invoice_number}</title><style>
-                            body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;color:#1a1a1a;max-width:700px;margin:0 auto}
-                            h2{margin:0 0 4px;font-size:20px}
-                            .sub{color:#888;font-size:12px;margin-bottom:24px}
-                            table{width:100%;border-collapse:collapse;margin:16px 0}
-                            th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#888;padding:8px 0;border-bottom:2px solid #e5e7eb}
-                            td{padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
-                            .r{text-align:right}
-                            .total-row td{font-weight:700;font-size:16px;border-top:2px solid #1a1a1a;border-bottom:none}
-                            .meta{margin-top:24px;font-size:11px;color:#888;display:flex;gap:20px;flex-wrap:wrap}
-                            .commission{margin-top:16px;padding:12px;background:#f8f9fb;border-radius:8px;font-size:12px}
-                            .commission div{display:flex;justify-content:space-between;padding:3px 0}
+                            *{margin:0;padding:0;box-sizing:border-box}
+                            body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:48px;color:#1a1a1a;max-width:780px;margin:0 auto;font-size:13px}
+                            .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
+                            .header h1{font-size:22px;letter-spacing:-0.02em}
+                            .header-right{text-align:right;font-size:12px;color:#64748b}
+                            .header-right strong{font-size:14px;color:#1a1a1a;display:block;margin-bottom:2px}
+                            .client{background:#f8f9fb;padding:16px 20px;border-radius:10px;margin-bottom:24px;display:flex;gap:32px;font-size:12px}
+                            .client strong{font-size:14px;display:block;margin-bottom:2px}
+                            .client span{color:#64748b}
+                            table{width:100%;border-collapse:collapse;margin:20px 0}
+                            th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;padding:10px 0;border-bottom:2px solid #e5e7eb}
+                            th.r{text-align:right}
+                            td{padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+                            td.r{text-align:right;font-variant-numeric:tabular-nums}
+                            td.staff{font-size:11px;color:#64748b}
+                            .product td{color:#92400e;font-style:italic}
+                            .subtotal-row td{color:#64748b;font-size:12px;border-bottom:none;padding:6px 0}
+                            .total-row td{font-weight:800;font-size:18px;border-top:2px solid #1a1a1a;border-bottom:none;padding-top:12px;letter-spacing:-0.02em}
+                            .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
+                            .box{padding:16px;background:#f8f9fb;border-radius:10px}
+                            .box h3{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;margin-bottom:10px}
+                            .box-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#475569}
+                            .box-row strong{color:#1a1a1a}
+                            .box-row.green strong{color:#059669}
+                            .box-row.blue strong{color:#2563eb}
+                            .box-row.amber strong{color:#d97706}
+                            .footer{margin-top:32px;padding-top:16px;border-top:1px dashed #d1d5db;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8}
+                            @media print{body{padding:24px}}
                           </style></head><body>`);
-                          win.document.write(`<h2>Factura ${inv.invoice_number}</h2>`);
-                          win.document.write(`<div class="sub">${new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })} — ${inv.client_name}${inv.client_phone ? ' — ' + inv.client_phone : ''}${inv.client_document ? ' — CC/NIT: ' + inv.client_document : ''}</div>`);
+                          win.document.write(`<div class="header"><div><h1>Factura ${inv.invoice_number}</h1><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — ' + timeStr : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}</div></div>`);
+                          win.document.write(`<div class="client"><div><strong>${inv.client_name}</strong><span>Cliente</span></div>${inv.client_phone ? `<div><strong>${inv.client_phone}</strong><span>Telefono</span></div>` : ''}${inv.client_document ? `<div><strong>${inv.client_document}</strong><span>CC/NIT</span></div>` : ''}</div>`);
                           win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
                           (inv.items || []).forEach(it => {
-                            win.document.write(`<tr><td>${it.service_name}</td><td>${it.staff_name || '—'}</td><td>${it.quantity}</td><td class="r">${formatCOP(it.unit_price)}</td><td class="r">${formatCOP(it.total)}</td></tr>`);
+                            const isProduct = it.service_name?.startsWith('[Producto]');
+                            win.document.write(`<tr class="${isProduct ? 'product' : ''}"><td>${it.service_name}</td><td class="staff">${it.staff_name || '—'}</td><td>${it.quantity}</td><td class="r">${formatCOP(it.unit_price)}</td><td class="r">${formatCOP(it.total)}</td></tr>`);
                           });
-                          win.document.write(`<tr><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
-                          if (inv.discount_amount > 0) win.document.write(`<tr><td colspan="4">Descuento</td><td class="r">-${formatCOP(inv.discount_amount)}</td></tr>`);
-                          if (inv.tax_amount > 0) win.document.write(`<tr><td colspan="4">IVA (${(inv.tax_rate*100).toFixed(0)}%)</td><td class="r">${formatCOP(inv.tax_amount)}</td></tr>`);
-                          if (inv.tip > 0) win.document.write(`<tr><td colspan="4">Propina</td><td class="r">+${formatCOP(inv.tip)}</td></tr>`);
-                          win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr>`);
-                          win.document.write('</table>');
+                          win.document.write(`<tr class="subtotal-row"><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
+                          if (inv.discount_amount > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">Descuento</td><td class="r" style="color:#dc2626">-${formatCOP(inv.discount_amount)}</td></tr>`);
+                          if (inv.tax_amount > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">IVA (${(inv.tax_rate*100).toFixed(0)}%)</td><td class="r">${formatCOP(inv.tax_amount)}</td></tr>`);
+                          if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">Propina</td><td class="r">+${formatCOP(inv.tip)}</td></tr>`);
+                          win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr></table>`);
+                          win.document.write('<div class="breakdown">');
                           if (primaryStaff) {
-                            win.document.write(`<div class="commission"><div><span>Profesional: ${primaryStaff} (${(commissionRate*100).toFixed(0)}%)</span><span>${formatCOP(staffEarnings)}</span></div><div><span>Ganancia negocio</span><span>${formatCOP(businessEarnings)}</span></div></div>`);
+                            win.document.write(`<div class="box"><h3>Distribucion</h3><div class="box-row green"><span>Comision ${primaryStaff} (${(commissionRate*100).toFixed(0)}%)</span><strong>${formatCOP(staffEarnings)}</strong></div><div class="box-row blue"><span>Ganancia negocio</span><strong>${formatCOP(businessEarnings)}</strong></div>${prodCommissions > 0 ? `<div class="box-row amber"><span>Comisiones productos</span><strong>${formatCOP(prodCommissions)}</strong></div>` : ''}</div>`);
                           }
-                          const ml = PAYMENT_METHODS.find(p => p.value === inv.payment_method)?.label || inv.payment_method;
-                          win.document.write(`<div class="meta"><span>Pago: ${ml}</span><span>Factura: ${inv.invoice_number}</span></div>`);
+                          win.document.write(`<div class="box"><h3>Detalles de pago</h3><div class="box-row"><span>Metodo</span><strong>${ml}</strong></div><div class="box-row"><span>Estado</span><strong>${STATUS_LABELS[inv.status] || inv.status}</strong></div><div class="box-row"><span>Fecha</span><strong>${dateStr}</strong></div>${timeStr ? `<div class="box-row"><span>Hora</span><strong>${timeStr}</strong></div>` : ''}</div>`);
+                          win.document.write('</div>');
+                          win.document.write(`<div class="footer"><span>Factura ${inv.invoice_number} — ${dateStr}</span><span>Generado por Plexify Studio</span></div>`);
                           win.document.write('</body></html>');
                           win.document.close();
                           setTimeout(() => { win.print(); }, 300);
