@@ -2032,8 +2032,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           </button>
                         )}
                         <button className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => {
-                          const el = document.getElementById(`invoice-print-${inv.id}`);
-                          if (!el) return;
                           const win = window.open('', '_blank', 'width=800,height=600');
                           win.document.write(`<html><head><title>Factura ${inv.invoice_number}</title><style>
                             body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;color:#1a1a1a;max-width:700px;margin:0 auto}
