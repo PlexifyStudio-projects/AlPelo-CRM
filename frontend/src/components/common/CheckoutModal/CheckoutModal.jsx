@@ -283,6 +283,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         tip,
         total,
         payment_method: paymentMethod,
+        notes: appointment.notes || null,
         payment_details: paymentMethod === 'efectivo'
           ? { received: parseInt(cashReceived, 10) || 0, change: cashChange }
           : paymentMethod === 'mixto'
