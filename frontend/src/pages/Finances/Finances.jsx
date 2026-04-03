@@ -2678,6 +2678,55 @@ const TabForecast = () => {
     </div>
   );
 };
+const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
+  const [visits, setVisits] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`${API}/appointments/?date_from=${dateFrom}&date_to=${dateTo}&staff_id=${staffId}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        const completed = (Array.isArray(data) ? data : []).filter(a => a.status === 'completed' || a.status === 'paid');
+        setVisits(completed.sort((a, b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time)));
+      })
+      .catch(() => setVisits([]))
+      .finally(() => setLoading(false));
+  }, [staffId, dateFrom, dateTo]);
+
+  if (loading) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Cargando visitas...</p>;
+  if (!visits.length) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Sin servicios completados en este periodo</p>;
+
+  return (
+    <div className="finances__visit-list">
+      {visits.map(v => {
+        const commission = Math.round((v.price || 0) * commissionRate);
+        return (
+          <div key={v.id} className="finances__visit-item">
+            <div className="finances__visit-top">
+              <span className="finances__visit-date">{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>
+              <span className="finances__visit-time">{v.time}</span>
+              <span className="finances__visit-client">{v.client_name}</span>
+              <span className="finances__visit-amount">{formatCOP(v.price || 0)}</span>
+            </div>
+            <div className="finances__visit-bottom">
+              <span className="finances__visit-service">{v.service_name}</span>
+              <span className="finances__visit-commission">Comision: {formatCOP(commission)}</span>
+              {v.status === 'paid' && <span className="finances__visit-paid-tag">Cobrada</span>}
+            </div>
+          </div>
+        );
+      })}
+      <div className="finances__visit-summary">
+        <span>Total: {visits.length} servicios</span>
+        <span>Revenue: {formatCOP(visits.reduce((s, v) => s + (v.price || 0), 0))}</span>
+        <span>Comisiones: {formatCOP(Math.round(visits.reduce((s, v) => s + (v.price || 0), 0) * commissionRate))}</span>
+      </div>
+    </div>
+  );
+};
+
 const TabNomina = ({ dateFrom, dateTo }) => {
   const { addNotification } = useNotification();
   const [summary, setSummary] = useState([]);
@@ -2687,6 +2736,7 @@ const TabNomina = ({ dateFrom, dateTo }) => {
   const [payForm, setPayForm] = useState({ amount: '', concept: '', payment_method: 'efectivo', reference: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [expandedStaff, setExpandedStaff] = useState(null);
+  const [staffVisits, setStaffVisits] = useState([]);
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
   const fetchApi = async (url, options = {}) => {
@@ -2874,6 +2924,12 @@ const TabNomina = ({ dateFrom, dateTo }) => {
 
               {isExpanded && (
                 <div className="finances__nomina-detail">
+                  <div className="finances__nomina-detail-grid">
+                    <div>
+                      <h4>Servicios realizados</h4>
+                      <StaffVisitsList staffId={st.staff_id} dateFrom={dateFrom} dateTo={dateTo} commissionRate={st.commission_rate} />
+                    </div>
+                    <div>
                   <h4>Historial de pagos</h4>
                   {staffPayments.length > 0 ? (
                     <div className="finances__nomina-payments">
@@ -2899,6 +2955,8 @@ const TabNomina = ({ dateFrom, dateTo }) => {
                   ) : (
                     <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.4)', padding: '12px 0' }}>Sin pagos registrados en este período</p>
                   )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
