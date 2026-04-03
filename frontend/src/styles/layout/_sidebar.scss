@@ -353,8 +353,8 @@
   // Notification panel
   &__notif-panel {
     position: absolute;
-    bottom: calc(100% + 8px);
-    left: 0;
+    bottom: 0;
+    left: calc(100% + 8px);
     width: 380px;
     max-height: 440px;
     background: $color-white;
