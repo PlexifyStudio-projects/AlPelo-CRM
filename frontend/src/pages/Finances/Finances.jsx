@@ -2696,7 +2696,7 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('unpaid'); // unpaid, paid, all
+  const [filter, setFilter] = useState('all'); // unpaid, paid, all
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
   useEffect(() => {
@@ -2716,8 +2716,11 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
   if (loading) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Cargando visitas...</p>;
   if (!visits.length) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Sin servicios completados en este periodo</p>;
 
-  // Apply payment status filter
-  const byStatus = filter === 'all' ? visits
+  // Check if backend returns staff_payment_id — if no visit has it, the field doesn't exist yet (pre-deploy)
+  const hasPaymentField = visits.some(v => v.staff_payment_id != null);
+
+  // Apply payment status filter — only filter if the field actually exists in the data
+  const byStatus = (!hasPaymentField || filter === 'all') ? visits
     : filter === 'paid' ? visits.filter(v => v.staff_payment_id)
     : visits.filter(v => !v.staff_payment_id);
 
@@ -2733,8 +2736,8 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
     return s + prods.reduce((ps, p) => ps + ((p.sale || 0) * (p.qty || 1)), 0);
   }, 0);
 
-  const unpaidCount = visits.filter(v => !v.staff_payment_id).length;
-  const paidCount = visits.filter(v => v.staff_payment_id).length;
+  const unpaidCount = hasPaymentField ? visits.filter(v => !v.staff_payment_id).length : visits.length;
+  const paidCount = hasPaymentField ? visits.filter(v => v.staff_payment_id).length : 0;
 
   // Selection helpers
   const isSelected = (id) => selectedIds && selectedIds.includes(id);
@@ -2745,7 +2748,7 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
   };
   const selectAllUnpaid = () => {
     if (!onSelectionChange) return;
-    onSelectionChange(filtered.filter(v => !v.staff_payment_id).map(v => v.id));
+    onSelectionChange(filtered.filter(v => !hasPaymentField || !v.staff_payment_id).map(v => v.id));
   };
   const selectNone = () => onSelectionChange && onSelectionChange([]);
 
@@ -2783,7 +2786,7 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
           const commission = Math.round((v.price || 0) * commissionRate);
           const products = parseProducts(v.notes);
           const dur = v.duration_minutes;
-          const isPaid = !!v.staff_payment_id;
+          const isPaid = hasPaymentField && !!v.staff_payment_id;
           return (
             <div key={v.id} className={`finances__visit-item ${isPaid ? 'finances__visit-item--paid' : ''} ${selectable && isSelected(v.id) ? 'finances__visit-item--selected' : ''}`}
               onClick={selectable && !isPaid ? () => toggleSelect(v.id) : undefined}
@@ -3153,8 +3156,8 @@ const TabNomina = () => {
                   </span>
                 </span>
                 <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>{st.services_count}</span>
-                <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600, color: st.unpaid_services_count > 0 ? '#D97706' : '#059669' }}>
-                  {st.unpaid_services_count > 0 ? st.unpaid_services_count : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600, color: (st.unpaid_services_count ?? st.services_count) > 0 ? '#D97706' : '#059669' }}>
+                  {(st.unpaid_services_count ?? st.services_count) > 0 ? (st.unpaid_services_count ?? st.services_count) : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
                 </span>
                 <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#059669' }}>{formatCOP(st.total_earned)}</span>
                 <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#3B82F6' }}>{formatCOP(st.total_paid)}</span>
