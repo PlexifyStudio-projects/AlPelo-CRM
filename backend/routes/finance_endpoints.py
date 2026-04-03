@@ -379,9 +379,16 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_u
     elif data.discount_type == 'fixed' and data.discount_value > 0:
         discount_amount = min(data.discount_value, subtotal)
 
+    # IVA INCLUIDO: price already has IVA, decompose for reporting
     taxable = subtotal - discount_amount
-    tax_amount = round(taxable * data.tax_rate)
-    total = taxable + tax_amount
+    if data.tax_rate > 0:
+        base_amount = round(taxable / (1 + data.tax_rate))
+        tax_amount = taxable - base_amount
+        total = taxable  # Client pays same amount, IVA is internal
+    else:
+        base_amount = taxable
+        tax_amount = 0
+        total = taxable
 
     inv = Invoice(
         tenant_id=tid,
@@ -393,7 +400,7 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_u
         client_document_type=data.client_document_type,
         client_email=data.client_email,
         client_address=data.client_address,
-        subtotal=subtotal,
+        subtotal=base_amount if data.tax_rate > 0 else subtotal,
         discount_type=data.discount_type,
         discount_value=data.discount_value,
         discount_amount=discount_amount,

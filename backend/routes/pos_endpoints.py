@@ -323,11 +323,18 @@ def create_checkout(
     if visit_ids:
         checkout.visit_id = visit_ids[0]
 
-    # ---- IVA from tenant config ----
+    # ---- IVA from tenant config (IVA INCLUIDO en el precio) ----
     tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
     tax_rate = getattr(tenant, 'default_tax_rate', 0) or 0
-    tax_amount = round(subtotal * tax_rate) if tax_rate > 0 else 0
-    invoice_total = subtotal - discount_amount + tax_amount + data.tip
+    if tax_rate > 0:
+        # Price INCLUDES IVA → decompose: base = total / (1 + rate), iva = total - base
+        taxable_base = subtotal - discount_amount
+        base_amount = round(taxable_base / (1 + tax_rate))
+        tax_amount = taxable_base - base_amount
+    else:
+        base_amount = subtotal - discount_amount
+        tax_amount = 0
+    invoice_total = subtotal - discount_amount + data.tip  # Client pays same price, IVA is internal
 
     # ---- Auto-create Invoice + InvoiceItems ----
     invoice_number = _next_invoice_number(db, tid)
@@ -337,7 +344,7 @@ def create_checkout(
         client_id=client_id,
         client_name=client_name,
         client_phone=client_phone,
-        subtotal=subtotal,
+        subtotal=base_amount if tax_rate > 0 else subtotal,
         discount_type=data.discount_type,
         discount_value=data.discount_value,
         discount_amount=discount_amount,
