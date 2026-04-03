@@ -594,6 +594,7 @@ const Settings = () => {
     { id: 'google', title: 'Google Reviews', desc: 'Redirige clientes satisfechos a dejar resenas', color1: '#FBBC05', color2: '#EA4335' },
     { id: 'booking', title: 'Reservas Online', desc: 'Pagina publica para que tus clientes agenden citas', color1: '#F59E0B', color2: '#FBBF24' },
     { id: 'brand', title: 'Marca y Logo', desc: 'Logo, nombre y colores de tu negocio', color1: '#8B5CF6', color2: '#A78BFA' },
+    { id: 'tax', title: 'Impuestos / IVA', desc: 'Configura el IVA para facturas y cobros', color1: '#059669', color2: '#34D399' },
   ];
 
   const [usageStats, setUsageStats] = useState(null);
@@ -617,6 +618,7 @@ const Settings = () => {
       loyalty: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" fill={`url(#${gid})`} opacity=".15"/><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinejoin="round"/></svg>,
       google: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
       booking: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<rect x="3" y="4" width="18" height="17" rx="2" fill={`url(#${gid})`} opacity=".15"/><rect x="3" y="4" width="18" height="17" rx="2" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M16 2v4M8 2v4M3 9h18" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="15" r="2" fill={`url(#${gid})`}/></svg>,
+      tax: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<rect x="2" y="3" width="20" height="18" rx="2" fill={`url(#${gid})`} opacity=".15"/><rect x="2" y="3" width="20" height="18" rx="2" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M8 7v10M16 7v10M6 12h12" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="8" r="1.5" fill={`url(#${gid})`}/><circle cx="12" cy="16" r="1.5" fill={`url(#${gid})`}/></svg>,
     };
     return icons[id] || null;
   };
@@ -1394,6 +1396,10 @@ const Settings = () => {
             <BrandingPanel addNotification={addNotification} />
           )}
 
+          {openSection === 'tax' && (
+            <TaxPanel addNotification={addNotification} />
+          )}
+
         </div>
       )}
       {!openSection && (
@@ -1519,6 +1525,72 @@ const PRESET_COLORS = [
   { name: 'Esmeralda', color: '#059669' },
   { name: 'Slate Oscuro', color: '#334155' },
 ];
+
+function TaxPanel({ addNotification }) {
+  const [ivaEnabled, setIvaEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_URL}/settings/tax`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setIvaEnabled(d.iva_enabled); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/settings/tax`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ iva_enabled: ivaEnabled }),
+      });
+      if (!res.ok) throw new Error('Error');
+      addNotification(ivaEnabled ? 'IVA 19% activado para cobros y facturas' : 'IVA desactivado', 'success');
+    } catch { addNotification('Error guardando', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <p style={{ padding: 20, color: 'rgba(0,0,0,0.4)' }}>Cargando...</p>;
+
+  return (
+    <div style={{ padding: '24px 32px' }}>
+      <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Impuestos</h3>
+      <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 24 }}>Configura el IVA que se aplica automaticamente en los cobros y facturas del checkout.</p>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px', background: 'rgba(0,0,0,0.02)', borderRadius: 12, marginBottom: 20 }}>
+        <div style={{ flex: 1 }}>
+          <strong style={{ fontSize: 15 }}>IVA 19%</strong>
+          <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', marginTop: 2 }}>
+            {ivaEnabled ? 'Activo — se cobra IVA 19% en cada checkout automaticamente' : 'Desactivado — los cobros no incluyen IVA'}
+          </p>
+        </div>
+        <label style={{ position: 'relative', width: 48, height: 26, cursor: 'pointer' }}>
+          <input type="checkbox" checked={ivaEnabled} onChange={e => setIvaEnabled(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+          <span style={{
+            position: 'absolute', inset: 0, borderRadius: 13,
+            background: ivaEnabled ? '#059669' : 'rgba(0,0,0,0.15)',
+            transition: 'background 200ms',
+          }} />
+          <span style={{
+            position: 'absolute', top: 3, left: ivaEnabled ? 25 : 3, width: 20, height: 20,
+            borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            transition: 'left 200ms',
+          }} />
+        </label>
+      </div>
+
+      <button onClick={handleSave} disabled={saving} style={{
+        padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer',
+        background: '#2D5A3D', color: '#fff', fontWeight: 600, fontSize: 14, fontFamily: 'inherit',
+      }}>
+        {saving ? 'Guardando...' : 'Guardar'}
+      </button>
+    </div>
+  );
+}
 
 function BrandingPanel({ addNotification }) {
   const { tenant, refreshTenant } = useTenant();
