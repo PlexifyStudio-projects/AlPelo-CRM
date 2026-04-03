@@ -2692,10 +2692,11 @@ const parseProducts = (notes) => {
   try { return JSON.parse(notes.substring(s + PRODUCTS_TAG.length, e)); } catch { return []; }
 };
 
-const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
+const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable = false, selectedIds, onSelectionChange, onVisitsLoaded }) => {
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('unpaid'); // unpaid, paid, all
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
   useEffect(() => {
@@ -2704,7 +2705,9 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const completed = (Array.isArray(data) ? data : []).filter(a => a.status === 'completed' || a.status === 'paid');
-        setVisits(completed.sort((a, b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time)));
+        const sorted = completed.sort((a, b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time));
+        setVisits(sorted);
+        if (onVisitsLoaded) onVisitsLoaded(sorted);
       })
       .catch(() => setVisits([]))
       .finally(() => setLoading(false));
@@ -2713,10 +2716,15 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
   if (loading) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Cargando visitas...</p>;
   if (!visits.length) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Sin servicios completados en este periodo</p>;
 
-  const filtered = search ? visits.filter(v => {
+  // Apply payment status filter
+  const byStatus = filter === 'all' ? visits
+    : filter === 'paid' ? visits.filter(v => v.staff_payment_id)
+    : visits.filter(v => !v.staff_payment_id);
+
+  const filtered = search ? byStatus.filter(v => {
     const q = search.toLowerCase();
     return [v.client_name, v.service_name, String(v.id), String(v.price), v.date].some(x => x?.toLowerCase().includes(q));
-  }) : visits;
+  }) : byStatus;
 
   const totalRevenue = filtered.reduce((s, v) => s + (v.price || 0), 0);
   const totalCommission = Math.round(totalRevenue * commissionRate);
@@ -2725,19 +2733,74 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
     return s + prods.reduce((ps, p) => ps + ((p.sale || 0) * (p.qty || 1)), 0);
   }, 0);
 
+  const unpaidCount = visits.filter(v => !v.staff_payment_id).length;
+  const paidCount = visits.filter(v => v.staff_payment_id).length;
+
+  // Selection helpers
+  const isSelected = (id) => selectedIds && selectedIds.includes(id);
+  const toggleSelect = (id) => {
+    if (!onSelectionChange) return;
+    const next = isSelected(id) ? selectedIds.filter(x => x !== id) : [...(selectedIds || []), id];
+    onSelectionChange(next);
+  };
+  const selectAllUnpaid = () => {
+    if (!onSelectionChange) return;
+    onSelectionChange(filtered.filter(v => !v.staff_payment_id).map(v => v.id));
+  };
+  const selectNone = () => onSelectionChange && onSelectionChange([]);
+
   return (
     <div className="finances__visit-list">
-      <div className="finances__visit-search">
-        <input type="text" placeholder="Buscar por cliente, servicio, ID..." value={search} onChange={e => setSearch(e.target.value)} />
+      <div className="finances__visit-toolbar">
+        <div className="finances__visit-search">
+          <input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="finances__visit-filters">
+          <button className={`finances__visit-filter-chip ${filter === 'unpaid' ? 'finances__visit-filter-chip--active' : ''}`} onClick={() => setFilter('unpaid')}>
+            Sin pagar {unpaidCount > 0 && <span className="finances__visit-filter-count">{unpaidCount}</span>}
+          </button>
+          <button className={`finances__visit-filter-chip ${filter === 'paid' ? 'finances__visit-filter-chip--active' : ''}`} onClick={() => setFilter('paid')}>
+            Pagadas {paidCount > 0 && <span className="finances__visit-filter-count">{paidCount}</span>}
+          </button>
+          <button className={`finances__visit-filter-chip ${filter === 'all' ? 'finances__visit-filter-chip--active' : ''}`} onClick={() => setFilter('all')}>
+            Todas
+          </button>
+        </div>
       </div>
+      {selectable && (
+        <div className="finances__visit-select-bar">
+          <button className="finances__visit-select-btn" onClick={selectAllUnpaid}>Seleccionar sin pagar</button>
+          {selectedIds && selectedIds.length > 0 && (
+            <>
+              <button className="finances__visit-select-btn finances__visit-select-btn--clear" onClick={selectNone}>Deseleccionar</button>
+              <span className="finances__visit-select-count">{selectedIds.length} seleccionadas</span>
+            </>
+          )}
+        </div>
+      )}
       <div className="finances__visit-scroll">
         {filtered.map(v => {
           const commission = Math.round((v.price || 0) * commissionRate);
           const products = parseProducts(v.notes);
           const dur = v.duration_minutes;
+          const isPaid = !!v.staff_payment_id;
           return (
-            <div key={v.id} className="finances__visit-item">
+            <div key={v.id} className={`finances__visit-item ${isPaid ? 'finances__visit-item--paid' : ''} ${selectable && isSelected(v.id) ? 'finances__visit-item--selected' : ''}`}
+              onClick={selectable && !isPaid ? () => toggleSelect(v.id) : undefined}
+              style={selectable && !isPaid ? { cursor: 'pointer' } : undefined}
+            >
               <div className="finances__visit-top">
+                {selectable && (
+                  <span className="finances__visit-check">
+                    {isPaid ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#10B981" stroke="#10B981" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                    ) : (
+                      <span className={`finances__visit-checkbox ${isSelected(v.id) ? 'finances__visit-checkbox--checked' : ''}`}>
+                        {isSelected(v.id) && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
+                      </span>
+                    )}
+                  </span>
+                )}
                 <span className="finances__visit-id">{(() => { const cm = (v.notes || '').match(/\[CODIGO:([^\]]+)\]/); return cm ? cm[1] : `#${v.id}`; })()}</span>
                 <span className="finances__visit-date">{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                 <span className="finances__visit-time">{v.time}</span>
@@ -2748,7 +2811,11 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
                 <span className="finances__visit-service">{v.service_name}</span>
                 {dur && <span className="finances__visit-dur">{dur}min</span>}
                 <span className="finances__visit-commission">{formatCOP(commission)}</span>
-                <span className={`finances__visit-status finances__visit-status--${v.status}`}>{v.status === 'paid' ? 'Cobrada' : 'Completada'}</span>
+                {isPaid ? (
+                  <span className="finances__visit-status finances__visit-status--liquidada">Liquidada</span>
+                ) : (
+                  <span className={`finances__visit-status finances__visit-status--pendiente`}>Pendiente</span>
+                )}
               </div>
               {products.length > 0 && (
                 <div className="finances__visit-products">
@@ -2771,6 +2838,41 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
   );
 };
 
+const openPaymentReceipt = (paymentId, apiBase) => {
+  const w = window.open('', '_blank', 'width=800,height=900');
+  if (!w) return;
+  w.document.write('<html><head><title>Comprobante de Pago</title></head><body style="font-family:system-ui,-apple-system,sans-serif;padding:40px;color:#1a1a1a;max-width:700px;margin:0 auto"><p style="text-align:center;color:#888">Cargando comprobante...</p></body></html>');
+  fetch(`${apiBase}/staff-payments/${paymentId}/detail`, { credentials: 'include' })
+    .then(r => r.ok ? r.json() : Promise.reject('Error'))
+    .then(d => {
+      const visits = d.visits || [];
+      const commRate = d.commission_total && visits.length ? (d.commission_total / visits.reduce((s, v) => s + (v.amount || 0), 0) || 0.4) : 0.4;
+      const visitRows = visits.map(v => {
+        const comm = Math.round((v.amount || 0) * commRate);
+        const code = (v.notes || '').match(/\[CODIGO:([^\]]+)\]/);
+        return `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${new Date(v.visit_date + 'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'})}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${v.service_name}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${v.client_name||''}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:center">${code?code[1]:'#'+v.id}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right">$${(v.amount||0).toLocaleString('es-CO')}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right">$${comm.toLocaleString('es-CO')}</td></tr>`;
+      }).join('');
+      const bank = d.staff_bank;
+      const bankLine = bank ? (bank.preferred_payment_method === 'nequi' && bank.nequi_phone_masked ? `Nequi ${bank.nequi_phone_masked}` : bank.preferred_payment_method === 'daviplata' && bank.daviplata_phone_masked ? `Daviplata ${bank.daviplata_phone_masked}` : bank.bank_name && bank.bank_account_number_masked ? `${bank.bank_name} ${bank.bank_account_type||''} ${bank.bank_account_number_masked}` : d.payment_method) : d.payment_method;
+      const periodFrom = new Date(d.period_from+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'long'});
+      const periodTo = new Date(d.period_to+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'});
+      w.document.open();
+      w.document.write(`<!DOCTYPE html><html><head><title>Comprobante ${d.receipt_number||'CP'}</title><style>@media print{.no-print{display:none!important}body{padding:20px!important}}body{font-family:system-ui,-apple-system,sans-serif;padding:40px;color:#1a1a1a;max-width:700px;margin:0 auto;line-height:1.5}table{width:100%;border-collapse:collapse}.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #2D5A3D}.logo-area{display:flex;align-items:center;gap:12px}.biz-info{font-size:12px;color:#666;text-align:right}.title{text-align:center;background:#f8f9fa;padding:12px;border-radius:8px;margin:16px 0}.staff-info{background:#f0fdf4;padding:16px;border-radius:8px;margin:16px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px}.staff-info dt{font-size:11px;color:#666;text-transform:uppercase;letter-spacing:0.5px}.staff-info dd{font-size:14px;font-weight:600;margin:0 0 8px}.totals{margin-top:16px;border-top:2px solid #e5e7eb;padding-top:12px}.totals .row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}.totals .total{font-size:16px;font-weight:700;border-top:2px solid #1a1a1a;padding-top:8px;margin-top:4px}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#888;text-align:center}</style></head><body>
+      <div class="hdr"><div class="logo-area">${d.tenant_logo_url?`<img src="${d.tenant_logo_url}" style="width:48px;height:48px;border-radius:8px;object-fit:cover">`:''}<div><strong style="font-size:18px">${d.tenant_name||'Negocio'}</strong>${d.tenant_nit?`<br><span style="font-size:12px;color:#666">NIT: ${d.tenant_nit}</span>`:''}</div></div><div class="biz-info">${d.tenant_address||''}${d.tenant_phone?`<br>${d.tenant_phone}`:''}</div></div>
+      <div class="title"><strong style="font-size:15px;color:#2D5A3D">COMPROBANTE DE PAGO DE NOMINA</strong><br><span style="font-size:13px;color:#666">No. ${d.receipt_number||'—'}</span></div>
+      <div class="staff-info"><div><dt>Beneficiario</dt><dd>${d.staff_name}</dd></div><div><dt>Cargo</dt><dd>${d.staff_role||'—'}</dd></div><div><dt>Documento</dt><dd>${bank?.document_type||''} ${bank?.document_number_masked||'—'}</dd></div><div><dt>Cuenta destino</dt><dd>${bankLine}</dd></div><div><dt>Periodo</dt><dd>${periodFrom} — ${periodTo}</dd></div><div><dt>Fecha de pago</dt><dd>${d.paid_at?new Date(d.paid_at).toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</dd></div></div>
+      ${visits.length?`<h4 style="font-size:13px;color:#666;margin:20px 0 8px;text-transform:uppercase;letter-spacing:0.5px">Detalle de servicios</h4><table><thead><tr style="background:#f8f9fa"><th style="padding:8px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Fecha</th><th style="padding:8px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Servicio</th><th style="padding:8px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Cliente</th><th style="padding:8px;text-align:center;font-size:11px;color:#666;text-transform:uppercase">Codigo</th><th style="padding:8px;text-align:right;font-size:11px;color:#666;text-transform:uppercase">Precio</th><th style="padding:8px;text-align:right;font-size:11px;color:#666;text-transform:uppercase">Comision</th></tr></thead><tbody>${visitRows}</tbody></table>`:''}
+      <div class="totals"><div class="row"><span>Comisiones servicios</span><strong>$${(d.commission_total||0).toLocaleString('es-CO')}</strong></div>${d.tips_total?`<div class="row"><span>Propinas</span><strong>$${d.tips_total.toLocaleString('es-CO')}</strong></div>`:''}${d.product_commissions?`<div class="row"><span>Comisiones productos</span><strong>$${d.product_commissions.toLocaleString('es-CO')}</strong></div>`:''}${d.deductions?`<div class="row" style="color:#DC2626"><span>Deducciones</span><strong>-$${d.deductions.toLocaleString('es-CO')}</strong></div>`:''}
+      <div class="row total"><span>TOTAL PAGADO</span><span style="color:#2D5A3D">$${(d.amount||0).toLocaleString('es-CO')}</span></div></div>
+      <div style="margin-top:20px;font-size:13px;color:#444"><strong>Metodo:</strong> ${d.payment_method}${d.reference?` &nbsp;|&nbsp; <strong>Ref:</strong> ${d.reference}`:''}${d.paid_by?` &nbsp;|&nbsp; <strong>Pagado por:</strong> ${d.paid_by}`:''}</div>
+      <div class="footer">Comprobante generado por Plexify Studio<br>${new Date().toLocaleDateString('es-CO',{day:'numeric',month:'long',year:'numeric'})}</div>
+      <div class="no-print" style="text-align:center;margin-top:24px"><button onclick="window.print()" style="background:#2D5A3D;color:#fff;border:none;padding:10px 32px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">Imprimir</button></div>
+      </body></html>`);
+      w.document.close();
+    })
+    .catch(() => { w.document.body.innerHTML = '<p style="color:red;text-align:center">Error cargando comprobante</p>'; });
+};
+
 const TabNomina = ({ dateFrom, dateTo }) => {
   const { addNotification } = useNotification();
   const [summary, setSummary] = useState([]);
@@ -2780,12 +2882,18 @@ const TabNomina = ({ dateFrom, dateTo }) => {
   const [payForm, setPayForm] = useState({ amount: '', concept: '', payment_method: 'efectivo', reference: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
   const [expandedStaff, setExpandedStaff] = useState(null);
-  const [staffVisits, setStaffVisits] = useState([]);
+  const [selectedVisitIds, setSelectedVisitIds] = useState([]);
+  const [bankInfo, setBankInfo] = useState(null);
+  const [staffVisitsMap, setStaffVisitsMap] = useState({}); // staffId -> visits[]
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
   const fetchApi = async (url, options = {}) => {
     const res = await fetch(`${API}${url}`, { credentials: 'include', ...options });
-    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Error ${res.status}`); }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const msg = typeof err.detail === 'string' ? err.detail : Array.isArray(err.detail) ? err.detail.map(e => e.msg || JSON.stringify(e)).join(', ') : `Error ${res.status}`;
+      throw new Error(msg);
+    }
     return res.json();
   };
 
@@ -2811,15 +2919,47 @@ const TabNomina = ({ dateFrom, dateTo }) => {
   const totalPaid = summary.reduce((s, st) => s + st.total_paid, 0);
   const totalEarned = summary.reduce((s, st) => s + st.total_earned, 0);
 
-  const openPayModal = (staff) => {
+  const fmtDate = (d) => {
+    if (!d) return '—';
+    const parts = d.split('-');
+    if (parts.length !== 3) return d;
+    const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12);
+    return dt.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  };
+  const fmtDateFull = (d) => {
+    if (!d) return '—';
+    const parts = d.split('-');
+    if (parts.length !== 3) return d;
+    const dt = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12);
+    return dt.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const openPayModal = async (staff, keepSelection = false) => {
     setShowPayModal(staff);
+    if (!keepSelection) setSelectedVisitIds([]);
+    setBankInfo(null);
+
+    // Calculate amount: if we have selected visits, sum their commissions; otherwise use full balance
+    let amount = Math.max(0, staff.balance);
+    const currentSelected = keepSelection ? selectedVisitIds : [];
+    if (currentSelected.length > 0) {
+      const visits = staffVisitsMap[staff.staff_id] || [];
+      const selectedRevenue = visits.filter(v => currentSelected.includes(v.id)).reduce((s, v) => s + (v.price || 0), 0);
+      amount = Math.round(selectedRevenue * staff.commission_rate);
+    }
+
     setPayForm({
-      amount: String(Math.max(0, staff.balance)),
-      concept: `Comisiones ${new Date(dateFrom + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} — ${new Date(dateTo + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`,
-      payment_method: 'efectivo',
+      amount: String(amount),
+      concept: `Comisiones ${fmtDate(dateFrom)} — ${fmtDateFull(dateTo)}`,
+      payment_method: staff.preferred_payment_method || 'efectivo',
       reference: '',
       notes: '',
     });
+    // Fetch bank info
+    try {
+      const info = await fetchApi(`/staff-payments/bank-info/${staff.staff_id}`);
+      setBankInfo(info);
+    } catch {}
   };
 
   const handlePay = async (e) => {
@@ -2843,6 +2983,7 @@ const TabNomina = ({ dateFrom, dateTo }) => {
           tips_total: 0,
           product_commissions: 0,
           deductions: 0,
+          appointment_ids: selectedVisitIds.length > 0 ? selectedVisitIds : null,
         }),
       });
       addNotification(`Pago registrado para ${showPayModal.staff_name}`, 'success');
@@ -2867,6 +3008,7 @@ const TabNomina = ({ dateFrom, dateTo }) => {
       } catch {}
 
       setShowPayModal(null);
+      setSelectedVisitIds([]);
       load();
     } catch (err) {
       addNotification('Error: ' + err.message, 'error');
@@ -2930,33 +3072,37 @@ const TabNomina = ({ dateFrom, dateTo }) => {
         <div className="finances__nomina-thead">
           <span style={{ flex: 1 }}>Profesional</span>
           <span style={{ width: 80, textAlign: 'center' }}>Servicios</span>
+          <span style={{ width: 80, textAlign: 'center' }}>Sin pagar</span>
           <span style={{ width: 110, textAlign: 'right' }}>Ganado</span>
           <span style={{ width: 110, textAlign: 'right' }}>Pagado</span>
           <span style={{ width: 110, textAlign: 'right' }}>Saldo</span>
-          <span style={{ width: 120 }} />
+          <span style={{ width: 130 }} />
         </div>
         {summary.map(st => {
           const isExpanded = expandedStaff === st.staff_id;
           const staffPayments = payments.filter(p => p.staff_id === st.staff_id);
           return (
             <div key={st.staff_id} className={`finances__nomina-row-wrap ${isExpanded ? 'finances__nomina-row-wrap--expanded' : ''}`}>
-              <div className="finances__nomina-row" onClick={() => setExpandedStaff(isExpanded ? null : st.staff_id)}>
+              <div className="finances__nomina-row" onClick={() => { setExpandedStaff(isExpanded ? null : st.staff_id); setSelectedVisitIds([]); }}>
                 <span className="finances__nomina-staff" style={{ flex: 1 }}>
                   <span className="finances__nomina-avatar" style={{ background: st.photo_url ? 'transparent' : '#2D5A3D' }}>
                     {st.photo_url ? <img src={st.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : st.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2)}
                   </span>
                   <span className="finances__nomina-name">
                     <strong>{st.staff_name}</strong>
-                    <small>{st.staff_role} · {(st.commission_rate * 100).toFixed(0)}%</small>
+                    <small>{st.staff_role} · {(st.commission_rate * 100).toFixed(0)}%{st.has_bank_info && <span className="finances__nomina-bank-badge" title="Datos bancarios configurados">$</span>}</small>
                   </span>
                 </span>
                 <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>{st.services_count}</span>
+                <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600, color: st.unpaid_services_count > 0 ? '#D97706' : '#059669' }}>
+                  {st.unpaid_services_count > 0 ? st.unpaid_services_count : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                </span>
                 <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#059669' }}>{formatCOP(st.total_earned)}</span>
                 <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#3B82F6' }}>{formatCOP(st.total_paid)}</span>
                 <span style={{ width: 110, textAlign: 'right', fontSize: 14, fontWeight: 700, color: st.balance > 0 ? '#DC2626' : '#059669' }}>
-                  {st.balance > 0 ? formatCOP(st.balance) : 'Al día'}
+                  {st.balance > 0 ? formatCOP(st.balance) : 'Al dia'}
                 </span>
-                <span style={{ width: 120, display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                <span style={{ width: 130, display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                   {st.balance > 0 && (
                     <button className="finances__btn-primary" style={{ padding: '5px 12px', fontSize: 11 }} onClick={(e) => { e.stopPropagation(); openPayModal(st); }}>
                       Pagar
@@ -2970,35 +3116,59 @@ const TabNomina = ({ dateFrom, dateTo }) => {
                 <div className="finances__nomina-detail">
                   <div className="finances__nomina-detail-grid">
                     <div>
-                      <h4>Servicios realizados</h4>
-                      <StaffVisitsList staffId={st.staff_id} dateFrom={dateFrom} dateTo={dateTo} commissionRate={st.commission_rate} />
+                      <div className="finances__nomina-detail-header">
+                        <h4>Servicios realizados</h4>
+                        {selectedVisitIds.length > 0 && (
+                          <button className="finances__btn-primary" style={{ padding: '4px 12px', fontSize: 11 }} onClick={() => openPayModal(st, true)}>
+                            Pagar {selectedVisitIds.length} seleccionadas
+                          </button>
+                        )}
+                      </div>
+                      <StaffVisitsList
+                        staffId={st.staff_id}
+                        dateFrom={dateFrom}
+                        dateTo={dateTo}
+                        commissionRate={st.commission_rate}
+                        selectable={true}
+                        selectedIds={selectedVisitIds}
+                        onSelectionChange={setSelectedVisitIds}
+                        onVisitsLoaded={(v) => setStaffVisitsMap(prev => ({ ...prev, [st.staff_id]: v }))}
+                      />
                     </div>
                     <div>
-                  <h4>Historial de pagos</h4>
-                  {staffPayments.length > 0 ? (
-                    <div className="finances__nomina-payments">
-                      {staffPayments.map(p => (
-                        <div key={p.id} className="finances__nomina-payment">
-                          <div className="finances__nomina-payment-main">
-                            <span className="finances__nomina-payment-date">{new Date(p.paid_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                            <span className="finances__nomina-payment-concept">{p.concept}</span>
-                            <span className={`finances__inv-method-tag finances__inv-method-tag--${p.payment_method}`}>{p.payment_method}</span>
-                            <strong className="finances__nomina-payment-amount">{formatCOP(p.amount)}</strong>
-                            <button className="finances__icon-btn finances__icon-btn--danger" onClick={() => handleDeletePayment(p.id)} title="Eliminar" style={{ marginLeft: 4 }}>{Icons.trash}</button>
-                          </div>
-                          {(p.reference || p.notes) && (
-                            <div className="finances__nomina-payment-meta">
-                              {p.reference && <span>Ref: {p.reference}</span>}
-                              {p.notes && <span>{p.notes}</span>}
-                              {p.paid_by && <span>Por: {p.paid_by}</span>}
+                      <h4>Historial de pagos</h4>
+                      {staffPayments.length > 0 ? (
+                        <div className="finances__nomina-payments">
+                          {staffPayments.map(p => (
+                            <div key={p.id} className="finances__nomina-payment">
+                              <div className="finances__nomina-payment-main">
+                                <span className="finances__nomina-payment-date">{new Date(p.paid_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                                <span className="finances__nomina-payment-concept">{p.concept}</span>
+                                <span className={`finances__inv-method-tag finances__inv-method-tag--${p.payment_method}`}>{p.payment_method}</span>
+                                <strong className="finances__nomina-payment-amount">{formatCOP(p.amount)}</strong>
+                              </div>
+                              <div className="finances__nomina-payment-actions">
+                                {p.receipt_number && (
+                                  <button className="finances__icon-btn" onClick={() => openPaymentReceipt(p.id, API)} title="Ver comprobante">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                  </button>
+                                )}
+                                <button className="finances__icon-btn finances__icon-btn--danger" onClick={() => handleDeletePayment(p.id)} title="Eliminar">{Icons.trash}</button>
+                              </div>
+                              {(p.reference || p.notes || p.receipt_number) && (
+                                <div className="finances__nomina-payment-meta">
+                                  {p.receipt_number && <span className="finances__nomina-receipt-badge">{p.receipt_number}</span>}
+                                  {p.reference && <span>Ref: {p.reference}</span>}
+                                  {p.notes && <span>{p.notes}</span>}
+                                  {p.paid_by && <span>Por: {p.paid_by}</span>}
+                                </div>
+                              )}
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.4)', padding: '12px 0' }}>Sin pagos registrados en este período</p>
-                  )}
+                      ) : (
+                        <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.4)', padding: '12px 0' }}>Sin pagos registrados en este periodo</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -3009,23 +3179,58 @@ const TabNomina = ({ dateFrom, dateTo }) => {
       </div>
 
       {showPayModal && createPortal(
-        <div className="finances__pay-overlay" onClick={() => setShowPayModal(null)}>
+        <div className="finances__pay-overlay" onClick={() => { setShowPayModal(null); setSelectedVisitIds([]); }}>
           <form className="finances__pay-modal" onClick={e => e.stopPropagation()} onSubmit={handlePay}>
             <div className="finances__pay-header">
               <h2>Registrar pago</h2>
-              <button type="button" onClick={() => setShowPayModal(null)} className="finances__modal-close">&times;</button>
+              <button type="button" onClick={() => { setShowPayModal(null); setSelectedVisitIds([]); }} className="finances__modal-close">&times;</button>
             </div>
+
             <div className="finances__pay-staff">
-              <span className="finances__nomina-avatar" style={{ background: '#2D5A3D', width: 40, height: 40, fontSize: 14 }}>
-                {showPayModal.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+              <span className="finances__nomina-avatar" style={{ background: showPayModal.photo_url ? 'transparent' : '#2D5A3D', width: 44, height: 44, fontSize: 15 }}>
+                {showPayModal.photo_url ? <img src={showPayModal.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : showPayModal.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2)}
               </span>
               <div>
                 <strong>{showPayModal.staff_name}</strong>
                 <small style={{ display: 'block', color: 'rgba(0,0,0,0.4)', fontSize: 12 }}>
-                  Ganado: {formatCOP(showPayModal.total_earned)} · Pagado: {formatCOP(showPayModal.total_paid)} · Saldo: {formatCOP(showPayModal.balance)}
+                  {showPayModal.staff_role} · {(showPayModal.commission_rate * 100).toFixed(0)}%
+                </small>
+                <small style={{ display: 'block', color: 'rgba(0,0,0,0.5)', fontSize: 12, marginTop: 2 }}>
+                  Ganado: {formatCOP(showPayModal.total_earned)} · Pagado: {formatCOP(showPayModal.total_paid)} · <strong style={{ color: showPayModal.balance > 0 ? '#DC2626' : '#059669' }}>Saldo: {formatCOP(showPayModal.balance)}</strong>
                 </small>
               </div>
             </div>
+
+            {/* Bank info destination */}
+            {bankInfo && (bankInfo.bank_account_number || bankInfo.nequi_phone || bankInfo.daviplata_phone) && (
+              <div className="finances__pay-bank">
+                <span className="finances__pay-bank-label">Cuenta destino</span>
+                <div className="finances__pay-bank-info">
+                  {bankInfo.preferred_payment_method === 'nequi' && bankInfo.nequi_phone ? (
+                    <span>Nequi: <strong>{bankInfo.nequi_phone.replace(/(\d{3})(\d+)(\d{4})/, '$1-***-$3')}</strong></span>
+                  ) : bankInfo.preferred_payment_method === 'daviplata' && bankInfo.daviplata_phone ? (
+                    <span>Daviplata: <strong>{bankInfo.daviplata_phone.replace(/(\d{3})(\d+)(\d{4})/, '$1-***-$3')}</strong></span>
+                  ) : bankInfo.bank_name && bankInfo.bank_account_number ? (
+                    <span>{bankInfo.bank_name} · {bankInfo.bank_account_type} · <strong>****{bankInfo.bank_account_number.slice(-4)}</strong></span>
+                  ) : (
+                    <span style={{ color: '#999' }}>Metodo preferido: {bankInfo.preferred_payment_method || '—'}</span>
+                  )}
+                  {bankInfo.document_type && bankInfo.document_number && (
+                    <small style={{ display: 'block', color: 'rgba(0,0,0,0.4)', fontSize: 11, marginTop: 2 }}>
+                      {bankInfo.document_type}: ****{bankInfo.document_number.slice(-4)}
+                    </small>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {selectedVisitIds.length > 0 && (
+              <div className="finances__pay-selected-info">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2D5A3D" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <span>{selectedVisitIds.length} servicios seleccionados — Comision: {formatCOP(parseInt(payForm.amount) || 0)}</span>
+              </div>
+            )}
+
             <div className="finances__pay-fields">
               <div className="finances__pay-field">
                 <label>Monto a pagar *</label>
@@ -3039,12 +3244,12 @@ const TabNomina = ({ dateFrom, dateTo }) => {
                 <input value={payForm.concept} onChange={e => setPayForm(f => ({ ...f, concept: e.target.value }))} required className="finances__input" />
               </div>
               <div className="finances__pay-field">
-                <label>Método de pago *</label>
+                <label>Metodo de pago *</label>
                 <select value={payForm.payment_method} onChange={e => setPayForm(f => ({ ...f, payment_method: e.target.value }))} className="finances__select">
                   <option value="efectivo">Efectivo</option>
                   <option value="nequi">Nequi</option>
                   <option value="daviplata">Daviplata</option>
-                  <option value="transferencia">Bancolombia</option>
+                  <option value="bancolombia">Bancolombia</option>
                 </select>
               </div>
               <div className="finances__pay-field">
@@ -3057,7 +3262,7 @@ const TabNomina = ({ dateFrom, dateTo }) => {
               </div>
             </div>
             <div className="finances__pay-actions">
-              <button type="button" className="finances__btn-ghost" onClick={() => setShowPayModal(null)}>Cancelar</button>
+              <button type="button" className="finances__btn-ghost" onClick={() => { setShowPayModal(null); setSelectedVisitIds([]); }}>Cancelar</button>
               <button type="submit" className="finances__btn-primary" disabled={submitting}>
                 {submitting ? 'Procesando...' : `Pagar ${formatCOP(parseInt(payForm.amount) || 0)}`}
               </button>

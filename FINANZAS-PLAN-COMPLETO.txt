@@ -1,0 +1,536 @@
+================================================================================
+  PLEXIFY STUDIO — PLAN COMPLETO MODULO FINANZAS
+  Fecha: 3 de abril de 2026
+  Estado: Auditoria completada, listo para ejecutar
+================================================================================
+
+TABLA DE CONTENIDOS
+-------------------
+1. Estado actual — Las 8 tabs que existen
+2. Fase 1 — Nomina completa
+3. Fase 2 — Facturas mejoradas
+4. Fase 3 — Checkout coherente
+5. Fase 4 — Caja visible + Config fiscal
+6. Fase 5 — Integracion DIAN (futuro)
+7. Fase 6 — Wompi (futuro, necesita RUT)
+
+
+================================================================================
+  1. ESTADO ACTUAL — LAS 8 TABS QUE EXISTEN
+================================================================================
+
+Archivo principal: frontend/src/pages/Finances/Finances.jsx (3,252 lineas)
+SCSS: frontend/src/styles/pages/_finances.scss (4,801 lineas)
+Service: frontend/src/services/financeService.js (170 lineas)
+
+TAB 1: RESUMEN — Completo
+  - 5 KPIs animados (ingresos, servicios, clientes, ticket promedio, pendientes)
+  - AreaChart ingresos por dia
+  - Top 10 servicios por revenue
+  - Distribucion por categoria (barra segmentada)
+  - Rendimiento por profesional (BarChart horizontal)
+  - Panel Ganancia Neta del Dueno (ingresos - comisiones - gastos)
+  - Donut metodos de pago
+  - Widget IA financiero (Lina)
+
+TAB 2: PROYECCION — Completo
+  - Hero: facturado este mes + proyeccion cierre + % vs anterior
+  - Barra progreso vs meta
+  - 3 KPIs: promedio/dia, citas por cobrar, total mes anterior
+  - Grafica semanal (proyectado vs confirmado vs facturado)
+  - Cards por dia con estado
+
+TAB 3: REPORTES — Completo
+  - Comparacion actual vs anterior (5 metricas con %)
+  - Ranking por profesional
+  - Revenue por servicio, dia de semana, categoria
+  - Export CSV
+
+TAB 4: GASTOS — Completo
+  - CRUD con 8 categorias + subcategorias
+  - Gastos recurrentes (semanal/quincenal/mensual/bimestral/anual)
+  - P&L resumido
+  - Grafica por categoria
+
+TAB 5: COMISIONES — Completo
+  - Config % por staff (editable inline)
+  - Calculo automatico desde visitas
+  - Distribucion visual staff vs negocio
+
+TAB 6: FACTURAS — Funcional basico
+  - CRUD completo
+  - Import visitas sin facturar
+  - IVA toggle 19%
+  - Estados: draft > sent > paid > cancelled
+  - Print individual
+  - PROBLEMAS: no descuento, no credito, consecutivo no thread-safe,
+    no campos fiscales, no envio WA
+
+TAB 7: CAJA — Existe pero OCULTA (no esta en TAB_OPTIONS)
+  - Abrir/cerrar caja con monto inicial
+  - Transacciones del dia
+  - Cuadre efectivo esperado vs contado
+  - Historial
+
+TAB 8: NOMINA — Funcional basico
+  - KPIs: profesionales, ganado, pagado, pendiente
+  - Tabla por staff con expandible (visitas + historial pagos)
+  - Modal pago: monto, concepto, metodo, referencia, notas
+  - WhatsApp al staff al pagar
+  - PROBLEMAS: no selecciona visitas, no comprobante, no datos bancarios,
+    SCSS basico, puede pagar doble sin darse cuenta
+
+
+================================================================================
+  BACKEND — Modelos existentes
+================================================================================
+
+Invoice (invoice):
+  id, tenant_id, invoice_number (FV-XXXX), client_id, client_name,
+  client_phone, client_document, subtotal, tax_rate (default 0.19),
+  tax_amount, total, payment_method, status, issued_date, paid_at, notes
+  -> items (InvoiceItem[])
+
+InvoiceItem (invoice_item):
+  id, tenant_id, invoice_id, service_name, quantity, unit_price, total,
+  staff_name, visit_id
+
+Checkout (checkout):
+  id, tenant_id, location_id, appointment_id, client_id, client_name,
+  staff_id, staff_name, subtotal, discount_type, discount_value,
+  discount_amount, tip, total, payment_method, payment_details (JSON),
+  status, notes, receipt_sent, invoice_id, visit_id, created_by
+
+CheckoutItem (checkout_item):
+  id, tenant_id, checkout_id, service_id, service_name, quantity,
+  unit_price, total, staff_id, staff_name
+
+CashRegister (cash_register):
+  id, tenant_id, location_id, date, status, opening_amount, opened_by,
+  opened_at, expected_cash, counted_cash, discrepancy, closed_by,
+  closed_at, total_sales, total_cash, total_nequi, total_daviplata,
+  total_transfer, total_card, total_tips, total_discounts,
+  transaction_count, notes
+
+Expense (expense):
+  id, tenant_id, location_id, category, description, amount, date,
+  payment_method, receipt_url, subcategory, vendor, is_recurring,
+  recurring_frequency, created_by
+
+StaffCommission (staff_commission):
+  id, tenant_id, staff_id (unique), default_rate (0.40), service_overrides (JSON)
+
+StaffPayment (staff_payment):
+  id, tenant_id, staff_id, amount, period_from, period_to, concept,
+  payment_method, reference, receipt_url, commission_total, tips_total,
+  product_commissions, deductions, notes, paid_by, paid_at, status
+
+BillingRecord (billing_record):
+  id, tenant_id, period, amount, status, payment_method, notes, paid_at
+
+
+================================================================================
+  BACKEND — Endpoints existentes
+================================================================================
+
+FINANZAS (finance_endpoints.py — 1,163 lineas):
+  GET    /expenses/                          Lista gastos
+  POST   /expenses/                          Crear gasto
+  PUT    /expenses/{id}                      Editar gasto
+  DELETE /expenses/{id}                      Eliminar gasto
+  GET    /expenses/summary                   Resumen por categoria
+  GET    /finances/commissions/config        Config comisiones
+  PUT    /finances/commissions/config/{id}   Editar % comision
+  GET    /finances/commissions/payouts       Calculo comisiones periodo
+  GET    /invoices/                          Lista facturas
+  GET    /invoices/{id}                      Detalle factura
+  POST   /invoices/                          Crear factura
+  PUT    /invoices/{id}                      Actualizar factura
+  DELETE /invoices/{id}                      Cancelar factura
+  GET    /finances/uninvoiced-visits         Visitas sin facturar
+  GET    /finances/pnl                       P&L
+  GET    /finances/payment-methods           Metodos de pago
+  GET    /finances/analytics                 Analitica comparativa
+  GET    /finances/export                    Export CSV
+  GET    /finances/forecast                  Proyeccion revenue
+
+POS (pos_endpoints.py — 704 lineas):
+  POST   /checkout                           Crear checkout
+  GET    /checkouts                          Listar checkouts
+  GET    /checkouts/{id}                     Detalle checkout
+  POST   /checkouts/{id}/send-receipt        Enviar recibo WA
+  POST   /checkouts/{id}/void               Anular checkout
+  POST   /cash-register/open                Abrir caja
+  GET    /cash-register/today               Caja de hoy
+  POST   /cash-register/close               Cerrar caja
+  GET    /cash-register/history             Historial cajas
+
+NOMINA (staff_payment_endpoints.py — 238 lineas):
+  GET    /staff-payments/summary             Resumen por staff
+  GET    /staff-payments/                    Lista pagos
+  POST   /staff-payments/                    Registrar pago
+  PUT    /staff-payments/{id}                Editar pago
+  DELETE /staff-payments/{id}                Eliminar pago
+
+
+================================================================================
+  2. FASE 1 — NOMINA COMPLETA
+================================================================================
+
+PRIORIDAD: CRITICA — El negocio necesita pagar a su gente correctamente.
+
+----------------------------------------------------------------------
+1.1 SELECCION DE VISITAS PARA PAGAR
+----------------------------------------------------------------------
+
+PROBLEMA:
+  Hoy el admin escribe un monto a mano y ya. No sabe que visitas pago.
+  Puede pagar doble. No hay trazabilidad.
+
+SOLUCION BACKEND:
+  - Agregar campo payment_id (FK a staff_payment, nullable) en VisitHistory
+  - Migracion: ALTER TABLE visit_history ADD COLUMN payment_id INTEGER
+    REFERENCES staff_payment(id)
+  - POST /staff-payments/ ahora recibe visit_ids: [1,2,3...]
+  - Al crear pago: UPDATE visit_history SET payment_id = {new_id}
+    WHERE id IN (visit_ids)
+  - GET /staff-payments/summary calcula earned SOLO de visitas
+    donde payment_id IS NULL (sin pagar)
+  - GET /appointments/ agrega filtro: ?payment_status=unpaid|paid|all
+
+SOLUCION FRONTEND:
+  - En la lista expandida de visitas de cada staff:
+    * Checkbox por cada visita
+    * "Seleccionar todas sin pagar" / "Deseleccionar"
+    * Contador: "12 visitas seleccionadas"
+    * Monto auto-calculado: sum(comision + propina + productos)
+  - Al abrir modal de pago:
+    * Monto pre-llenado con el calculo
+    * Lista resumida de visitas incluidas
+    * El admin puede ajustar monto (deducciones, adelantos)
+  - Filtro en la lista: "Sin pagar" | "Pagadas" | "Todas"
+  - Las visitas pagadas muestran badge verde + referencia del pago
+
+----------------------------------------------------------------------
+1.2 DATOS BANCARIOS DEL STAFF
+----------------------------------------------------------------------
+
+PROBLEMA:
+  El admin no sabe a donde transferir. Busca en WhatsApp o pregunta.
+
+SOLUCION BACKEND:
+  Campos nuevos en Staff model (encriptados con Fernet/AES):
+    - document_type       VARCHAR(5)    CC, CE, NIT
+    - document_number     VARCHAR(20)   Encriptado
+    - bank_name           VARCHAR(100)  Bancolombia, Davivienda, etc.
+    - bank_account_type   VARCHAR(20)   Ahorros / Corriente
+    - bank_account_number VARCHAR(30)   Encriptado
+    - nequi_phone         VARCHAR(15)   Encriptado
+    - daviplata_phone     VARCHAR(15)   Encriptado
+    - preferred_method    VARCHAR(20)   nequi, bancolombia, daviplata, efectivo
+
+  Endpoints:
+    GET  /api/staff/{id}/bank-info    Solo admin, devuelve enmascarado
+    PUT  /api/staff/{id}/bank-info    Solo admin
+
+  Migracion: 8 columnas nuevas en tabla staff
+
+  Validaciones:
+    - Cedula: 6-12 digitos
+    - Cuenta bancaria: 10-16 digitos
+    - Nequi/Daviplata: +57 3XX XXXXXXX
+    - Al menos 1 metodo configurado para poder pagar digitalmente
+
+SOLUCION FRONTEND:
+  En Equipo (Team.jsx):
+    - Seccion "Datos bancarios" en el drawer/modal del staff
+    - Campos con iconos de banco
+    - Datos sensibles enmascarados: ****4567
+    - Solo visible para admin (no para staff en su portal)
+
+  En Nomina (modal de pago):
+    - Mostrar automaticamente cuenta destino del staff
+    - "Transferir a: Nequi 300-***-4567 (Angel Pabon)"
+    - Si no tiene datos bancarios: mensaje "Configura datos bancarios
+      del profesional en Equipo"
+
+----------------------------------------------------------------------
+1.3 COMPROBANTE DE PAGO IMPRIMIBLE
+----------------------------------------------------------------------
+
+PROBLEMA:
+  No hay constancia formal del pago. El admin no puede demostrar que pago.
+
+SOLUCION FRONTEND:
+  Boton "Ver comprobante" en cada pago del historial.
+  Abre ventana nueva con comprobante estilizado:
+
+  ┌─────────────────────────────────────────────┐
+  │  [LOGO]  AlPelo Peluqueria                  │
+  │  NIT: 901234567-8                           │
+  │  Cra 33 #52-10, Cabecera, Bucaramanga      │
+  │                                             │
+  │  COMPROBANTE DE PAGO DE NOMINA              │
+  │  No. CP-0001                                │
+  │─────────────────────────────────────────────│
+  │  Beneficiario: Angel Pabon                  │
+  │  Documento: CC 1098765432                   │
+  │  Cargo: Barbero                             │
+  │  Metodo: Nequi 300-***-4567                 │
+  │  Periodo: 1 abr — 7 abr 2026               │
+  │─────────────────────────────────────────────│
+  │  Fecha    Servicio         Cliente   Com.   │
+  │  2 abr    Corte Hipster    Luis N.   $16K   │
+  │  2 abr    Pedi Spa Semi    Maria     $34K   │
+  │  3 abr    Barba Completa   Juan      $12K   │
+  │  ...                                        │
+  │─────────────────────────────────────────────│
+  │  Comisiones servicios:          $300,800    │
+  │  Comisiones productos:            $1,500    │
+  │  Propinas:                        $15,000   │
+  │  Deducciones:                    -$20,000   │
+  │  ═══════════════════════════════════════    │
+  │  TOTAL PAGADO:                  $297,300    │
+  │─────────────────────────────────────────────│
+  │  Referencia: TRF-987654321                  │
+  │  Fecha de pago: 7 abr 2026, 6:15 p.m.      │
+  │  Pagado por: Jaime (Administrador)          │
+  │                                             │
+  │  Comprobante generado por Plexify Studio    │
+  └─────────────────────────────────────────────┘
+
+  Boton: [Imprimir] (window.print con @media print)
+
+SOLUCION BACKEND:
+  - Agregar campo receipt_number al StaffPayment (auto-generado: CP-XXXX)
+  - GET /staff-payments/{id} debe incluir:
+    * Datos del staff (nombre, documento, rol, banco)
+    * Lista de visitas vinculadas (via payment_id en visit_history)
+    * Datos del tenant (logo, nombre, NIT, direccion)
+
+----------------------------------------------------------------------
+1.4 REDISENO SCSS PREMIUM DE NOMINA
+----------------------------------------------------------------------
+
+PROBLEMA:
+  El diseno actual es basico. Necesita verse corporate/premium.
+
+QUE MEJORAR:
+  - Cards de staff: foto mas grande, badge de estado (Al dia / Pendiente)
+  - Tabla de visitas: bordes sutiles, hover highlight, status chips
+  - Modal de pago: 720px, grid layout, seccion cuenta destino destacada
+  - Comprobante: tipografia seria, bordes finos, logo prominente
+  - KPIs: iconos mas claros, colores semanticos
+  - Animaciones: stagger en cards, slide en expandibles
+  - Print styles: @media print optimizado para comprobantes
+
+----------------------------------------------------------------------
+1.5 PAGAR A TODOS (BULK)
+----------------------------------------------------------------------
+
+Boton "Liquidar nomina" en la cabecera de Nomina:
+  - Muestra modal con todos los staff que tienen saldo > 0
+  - Checkbox por cada uno
+  - Monto total a dispersar
+  - Metodo de pago comun o individual
+  - Confirmar → crea un StaffPayment por cada staff seleccionado
+  - Vincula las visitas correspondientes
+  - Notifica por WhatsApp a cada uno
+
+
+================================================================================
+  3. FASE 2 — FACTURAS MEJORADAS
+================================================================================
+
+PRIORIDAD: ALTA — Necesario para operacion profesional.
+
+----------------------------------------------------------------------
+2.1 CONSECUTIVO THREAD-SAFE
+----------------------------------------------------------------------
+  - Hoy: next_num = last.id + 1 → puede duplicar en concurrencia
+  - Fix: SELECT MAX(invoice_number) ... FOR UPDATE (lock pesimista)
+  - O usar secuencia de PostgreSQL por tenant
+
+----------------------------------------------------------------------
+2.2 DESCUENTO EN FACTURA
+----------------------------------------------------------------------
+  - Agregar campos: discount_type (percent/fixed), discount_value, discount_amount
+  - Calculo: subtotal - descuento + IVA = total
+  - Frontend: campo de descuento en formulario de factura
+
+----------------------------------------------------------------------
+2.3 FORMA DE PAGO: CONTADO VS CREDITO
+----------------------------------------------------------------------
+  - Campo payment_terms: contado / credito
+  - Si credito: due_date (fecha vencimiento)
+  - Estado "overdue" si due_date < hoy y status != paid
+  - Alerta en la lista de facturas vencidas
+
+----------------------------------------------------------------------
+2.4 CAMPOS FISCALES DEL RECEPTOR
+----------------------------------------------------------------------
+  - document_type: CC, NIT, CE, TI, Pasaporte, DIE
+  - person_type: Natural / Juridica
+  - email: obligatorio para factura electronica
+  - address: direccion del receptor
+  - Preparacion para cuando se integre DIAN
+
+----------------------------------------------------------------------
+2.5 PRINT MEJORADO
+----------------------------------------------------------------------
+  - Logo del negocio (de tenant config)
+  - Datos del negocio (nombre, NIT, direccion)
+  - QR placeholder (para cuando DIAN se integre)
+  - Leyenda "Documento equivalente — no es factura electronica"
+
+----------------------------------------------------------------------
+2.6 ENVIAR POR WHATSAPP
+----------------------------------------------------------------------
+  - Boton en cada factura
+  - Genera imagen/PDF del recibo
+  - Envia via Meta API como documento adjunto
+  - Marca factura como "enviada"
+
+
+================================================================================
+  4. FASE 3 — CHECKOUT COHERENTE
+================================================================================
+
+PRIORIDAD: ALTA — Coherencia entre modulos.
+
+----------------------------------------------------------------------
+3.1 UNIFICAR FUENTE DE VERDAD
+----------------------------------------------------------------------
+  - Nomina debe leer de VisitHistory (lo que checkout crea)
+  - NO de appointments directamente
+  - Verificar que el summary endpoint usa visit_history correctamente
+
+----------------------------------------------------------------------
+3.2 IVA EN CHECKOUT
+----------------------------------------------------------------------
+  - Hoy checkout NO aplica IVA, factura SI
+  - Incoherencia: factura dice $41,650, checkout dice $35,000
+  - Solucion: config por tenant → "Precios incluyen IVA: Si/No"
+  - Si incluyen: el checkout muestra el desglose (base + IVA)
+  - Si no incluyen: el checkout suma IVA al total
+
+----------------------------------------------------------------------
+3.3 PRODUCTOS → COMISIONES
+----------------------------------------------------------------------
+  - Productos vendidos en checkout deben reflejarse en nomina
+  - Campo product_commissions en StaffPayment ya existe
+  - Verificar que el calculo esta correcto
+
+
+================================================================================
+  5. FASE 4 — CAJA VISIBLE + CONFIG FISCAL
+================================================================================
+
+PRIORIDAD: MEDIA
+
+----------------------------------------------------------------------
+4.1 ACTIVAR TAB CAJA
+----------------------------------------------------------------------
+  - Agregar 'caja' a TAB_OPTIONS en Finances.jsx
+  - Verificar que los endpoints funcionan con datos actuales
+  - Posicionar entre Facturas y Nomina
+
+----------------------------------------------------------------------
+4.2 VINCULAR CAJA CON FACTURAS
+----------------------------------------------------------------------
+  - Cada transaccion de caja tiene un checkout → tiene un invoice
+  - Cuadre: total caja del dia = total facturas del dia
+  - Mostrar discrepancias si las hay
+
+----------------------------------------------------------------------
+4.3 CONFIG FISCAL DEL TENANT
+----------------------------------------------------------------------
+  Nuevo modelo TenantBillingConfig:
+    - nit, nit_dv, legal_name, trade_name
+    - person_type, tax_regime, tax_responsibilities
+    - ciiu_code, fiscal_address, municipality_code, department_code
+    - fiscal_phone, fiscal_email
+    - dian_resolution_number, invoice_prefix, range_from, range_to
+    - resolution_valid_from, resolution_valid_to
+    - default_tax_rate (para todo el tenant)
+    - billing_provider (dataico/ninguno)
+    - billing_environment (test/production)
+
+  UI: Settings > Facturacion
+    - Formulario completo
+    - Barra de completitud
+    - Se usa automaticamente en todas las facturas
+
+
+================================================================================
+  6. FASE 5 — INTEGRACION DIAN (FUTURO)
+================================================================================
+
+PRIORIDAD: BAJA (requiere config fiscal completa + proveedor Dataico)
+
+  - XML UBL 2.1 generado por Dataico
+  - Firma digital con certificado del tenant
+  - CUFE (Codigo Unico de Factura Electronica)
+  - Envio a DIAN via API Dataico
+  - PDF con QR de verificacion
+  - Nota credito / Nota debito electronica
+  - Documento equivalente POS electronico
+  - Almacenamiento XML 5 anos
+
+  Ver: FACTURACION-DIAN-ANALISIS-COMPLETO.txt para detalles
+
+
+================================================================================
+  7. FASE 6 — WOMPI (FUTURO, NECESITA RUT)
+================================================================================
+
+PRIORIDAD: BAJA (el negocio necesita RUT activo ante Wompi)
+
+  - Config por tenant en Settings > Pagos
+  - API keys Wompi (public, private, events)
+  - Dispersiones: POST /v1/disbursements
+  - Webhook: verificacion HMAC de estados
+  - Boton "Pagar ahora" en modal de nomina
+  - Pagos masivos (batch disbursement)
+
+  Ver: PAGOS-STAFF-WOMPI-PLAN.txt para detalles
+
+
+================================================================================
+  ORDEN DE EJECUCION — RESUMEN
+================================================================================
+
+  FASE 1 — NOMINA COMPLETA                    Prioridad: CRITICA
+    1.1  Backend: payment_id en VisitHistory
+    1.2  Frontend: Checkboxes visitas + calculo
+    1.3  Backend: Datos bancarios staff
+    1.4  Frontend: Datos bancarios en Equipo + Nomina
+    1.5  Backend+Frontend: Comprobante imprimible
+    1.6  SCSS: Rediseno premium Nomina
+    1.7  Frontend: "Liquidar nomina" bulk
+
+  FASE 2 — FACTURAS MEJORADAS                 Prioridad: ALTA
+    2.1  Backend: Consecutivo thread-safe
+    2.2  Backend+Frontend: Descuento en factura
+    2.3  Backend+Frontend: Contado/Credito + due_date
+    2.4  Backend+Frontend: Campos fiscales receptor
+    2.5  Frontend: Print con logo + datos negocio
+    2.6  Frontend+Backend: Enviar factura por WA
+
+  FASE 3 — CHECKOUT COHERENTE                 Prioridad: ALTA
+    3.1  Backend: Unificar fuente verdad nomina
+    3.2  Backend+Frontend: IVA en checkout
+    3.3  Backend: Productos → comisiones nomina
+
+  FASE 4 — CAJA + CONFIG FISCAL               Prioridad: MEDIA
+    4.1  Frontend: Activar tab Caja
+    4.2  Backend: Vincular caja ↔ facturas
+    4.3  Backend+Frontend: TenantBillingConfig
+
+  FASE 5 — DIAN                                Prioridad: BAJA (futuro)
+  FASE 6 — WOMPI                               Prioridad: BAJA (futuro)
+
+
+================================================================================
+  FIN DEL DOCUMENTO
+================================================================================

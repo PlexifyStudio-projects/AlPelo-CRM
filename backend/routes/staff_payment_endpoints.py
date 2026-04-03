@@ -1,13 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, text
 from datetime import date, datetime
 from typing import Optional
 
 from database.connection import get_db
-from database.models import StaffPayment, Staff, VisitHistory, StaffCommission
+from database.models import StaffPayment, Staff, VisitHistory, StaffCommission, Tenant, Client, Appointment
 from schemas.staff_payment import (
-    StaffPaymentCreate, StaffPaymentUpdate, StaffPaymentResponse, StaffPayrollSummary
+    StaffPaymentCreate, StaffPaymentUpdate, StaffPaymentResponse,
+    StaffPayrollSummary, StaffPaymentDetailResponse, VisitDetailItem,
+    StaffBankInfo,
 )
 from middleware.auth_middleware import get_current_user
 from database.models import Admin
@@ -18,6 +20,54 @@ router = APIRouter(prefix="/staff-payments", tags=["Staff Payments"])
 def _tid(user, db):
     from routes._helpers import safe_tid
     return safe_tid(user, db)
+
+
+def _mask(value: str | None, show_last: int = 4) -> str | None:
+    """Mask sensitive data: ****4567"""
+    if not value:
+        return None
+    if len(value) <= show_last:
+        return value
+    return "*" * (len(value) - show_last) + value[-show_last:]
+
+
+def _next_receipt_number(db: Session, tid: int) -> str:
+    """Generate next receipt number CP-XXXX for this tenant."""
+    result = db.execute(text(
+        "SELECT receipt_number FROM staff_payment "
+        "WHERE tenant_id = :tid AND receipt_number IS NOT NULL "
+        "ORDER BY id DESC LIMIT 1"
+    ), {"tid": tid})
+    row = result.fetchone()
+    if row and row[0]:
+        try:
+            num = int(row[0].replace("CP-", ""))
+            return f"CP-{num + 1:04d}"
+        except (ValueError, AttributeError):
+            pass
+    return "CP-0001"
+
+
+def _build_bank_info(staff: Staff) -> StaffBankInfo:
+    """Build masked bank info from staff record."""
+    return StaffBankInfo(
+        document_type=getattr(staff, 'document_type', None),
+        document_number_masked=_mask(getattr(staff, 'document_number', None)),
+        bank_name=getattr(staff, 'bank_name', None),
+        bank_account_type=getattr(staff, 'bank_account_type', None),
+        bank_account_number_masked=_mask(getattr(staff, 'bank_account_number', None)),
+        nequi_phone_masked=_mask(getattr(staff, 'nequi_phone', None)),
+        daviplata_phone_masked=_mask(getattr(staff, 'daviplata_phone', None)),
+        preferred_payment_method=getattr(staff, 'preferred_payment_method', None),
+    )
+
+
+def _staff_has_bank_info(staff: Staff) -> bool:
+    return bool(
+        getattr(staff, 'bank_account_number', None)
+        or getattr(staff, 'nequi_phone', None)
+        or getattr(staff, 'daviplata_phone', None)
+    )
 
 
 # ============================================================================
@@ -69,6 +119,9 @@ def get_payroll_summary(
         commission_earned = round(total_revenue * rate)
         total_earned = commission_earned + total_tips
 
+        # Count unpaid visits (no payment_id linked)
+        unpaid_count = sum(1 for v in visits if not getattr(v, 'payment_id', None))
+
         # Payments made in period
         pay_q = db.query(StaffPayment).filter(
             StaffPayment.staff_id == s.id,
@@ -76,7 +129,6 @@ def get_payroll_summary(
         )
         if tid:
             pay_q = pay_q.filter(StaffPayment.tenant_id == tid)
-        # Payments that overlap with the period
         pay_q = pay_q.filter(
             StaffPayment.period_from <= d_to,
             StaffPayment.period_to >= d_from,
@@ -95,7 +147,10 @@ def get_payroll_summary(
             total_paid=total_paid,
             balance=total_earned - total_paid,
             services_count=len(visits),
+            unpaid_services_count=unpaid_count,
             payment_count=payment_count,
+            preferred_payment_method=getattr(s, 'preferred_payment_method', None),
+            has_bank_info=_staff_has_bank_info(s),
         ))
 
     return sorted(results, key=lambda x: -x.balance)
@@ -134,7 +189,7 @@ def list_payments(
 
 
 # ============================================================================
-# CREATE PAYMENT
+# CREATE PAYMENT — Now accepts visit_ids to link visits
 # ============================================================================
 
 @router.post("/", response_model=StaffPaymentResponse)
@@ -153,6 +208,9 @@ def create_payment(
     if not staff:
         raise HTTPException(status_code=404, detail="Staff not found")
 
+    # Generate receipt number
+    receipt_num = _next_receipt_number(db, tid or 0)
+
     payment = StaffPayment(
         tenant_id=tid or 0,
         staff_id=data.staff_id,
@@ -169,15 +227,100 @@ def create_payment(
         deductions=data.deductions,
         notes=data.notes,
         paid_by=user.username,
+        receipt_number=receipt_num,
         status="paid",
     )
     db.add(payment)
+    db.flush()  # Get the ID before linking visits
+
+    # Link appointments to this payment
+    if data.appointment_ids:
+        for aid in data.appointment_ids:
+            apt = db.query(Appointment).filter(
+                Appointment.id == aid,
+                Appointment.staff_id == data.staff_id,
+            )
+            if tid:
+                apt = apt.filter(Appointment.tenant_id == tid)
+            apt = apt.first()
+            if apt:
+                apt.staff_payment_id = payment.id
+
+    # Link visit_history records too (if provided)
+    if data.visit_ids:
+        for vid in data.visit_ids:
+            visit = db.query(VisitHistory).filter(
+                VisitHistory.id == vid,
+                VisitHistory.staff_id == data.staff_id,
+            )
+            if tid:
+                visit = visit.filter(VisitHistory.tenant_id == tid)
+            visit = visit.first()
+            if visit:
+                visit.payment_id = payment.id
+
     db.commit()
     db.refresh(payment)
 
     return StaffPaymentResponse(
         **{c.name: getattr(payment, c.name) for c in payment.__table__.columns},
         staff_name=staff.name,
+    )
+
+
+# ============================================================================
+# PAYMENT DETAIL — Full info for receipt/comprobante generation
+# ============================================================================
+
+@router.get("/{payment_id}/detail", response_model=StaffPaymentDetailResponse)
+def get_payment_detail(
+    payment_id: int,
+    db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
+):
+    tid = _tid(user, db)
+    q = db.query(StaffPayment).filter(StaffPayment.id == payment_id)
+    if tid:
+        q = q.filter(StaffPayment.tenant_id == tid)
+    payment = q.first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    staff = db.query(Staff).filter(Staff.id == payment.staff_id).first()
+
+    # Get linked visits
+    visits_q = db.query(VisitHistory).filter(VisitHistory.payment_id == payment.id)
+    visits_raw = visits_q.all()
+    visits = []
+    for v in visits_raw:
+        client = db.query(Client).filter(Client.id == v.client_id).first()
+        visits.append(VisitDetailItem(
+            id=v.id,
+            client_name=client.name if client else "?",
+            service_name=v.service_name,
+            amount=v.amount or 0,
+            visit_date=v.visit_date,
+            payment_method=v.payment_method,
+            notes=v.notes,
+        ))
+
+    # Tenant info for receipt header
+    tenant = db.query(Tenant).filter(Tenant.id == (tid or payment.tenant_id)).first()
+
+    # Build response
+    base = {c.name: getattr(payment, c.name) for c in payment.__table__.columns}
+    return StaffPaymentDetailResponse(
+        **base,
+        staff_name=staff.name if staff else "?",
+        visits=visits,
+        staff_bank=_build_bank_info(staff) if staff else None,
+        staff_role=staff.role if staff else "",
+        staff_photo_url=getattr(staff, 'photo_url', None) if staff else None,
+        tenant_name=tenant.name if tenant else None,
+        tenant_address=getattr(tenant, 'address', None) if tenant else None,
+        tenant_phone=getattr(tenant, 'phone', None) if tenant else None,
+        tenant_logo_url=getattr(tenant, 'logo_url', None) if tenant else None,
+        tenant_nit=getattr(tenant, 'nit', None) if tenant else None,
     )
 
 
@@ -215,7 +358,7 @@ def update_payment(
 
 
 # ============================================================================
-# DELETE PAYMENT
+# DELETE PAYMENT — Also unlinks visits
 # ============================================================================
 
 @router.delete("/{payment_id}")
@@ -232,6 +375,79 @@ def delete_payment(
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
 
+    # Unlink appointments and visits associated with this payment
+    db.query(Appointment).filter(
+        Appointment.staff_payment_id == payment.id
+    ).update({"staff_payment_id": None})
+    db.query(VisitHistory).filter(
+        VisitHistory.payment_id == payment.id
+    ).update({"payment_id": None})
+
     db.delete(payment)
     db.commit()
     return {"success": True, "message": "Payment deleted"}
+
+
+# ============================================================================
+# STAFF BANK INFO — GET / PUT (admin only)
+# ============================================================================
+
+@router.get("/bank-info/{staff_id}")
+def get_bank_info(
+    staff_id: int,
+    db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
+):
+    tid = _tid(user, db)
+    q = db.query(Staff).filter(Staff.id == staff_id)
+    if tid:
+        q = q.filter(Staff.tenant_id == tid)
+    staff = q.first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+
+    return {
+        "staff_id": staff.id,
+        "staff_name": staff.name,
+        "document_type": getattr(staff, 'document_type', None),
+        "document_number": getattr(staff, 'document_number', None),
+        "bank_name": getattr(staff, 'bank_name', None),
+        "bank_account_type": getattr(staff, 'bank_account_type', None),
+        "bank_account_number": getattr(staff, 'bank_account_number', None),
+        "nequi_phone": getattr(staff, 'nequi_phone', None),
+        "daviplata_phone": getattr(staff, 'daviplata_phone', None),
+        "preferred_payment_method": getattr(staff, 'preferred_payment_method', None),
+    }
+
+
+@router.put("/bank-info/{staff_id}")
+def update_bank_info(
+    staff_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
+):
+    tid = _tid(user, db)
+    q = db.query(Staff).filter(Staff.id == staff_id)
+    if tid:
+        q = q.filter(Staff.tenant_id == tid)
+    staff = q.first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+
+    allowed_fields = [
+        'document_type', 'document_number', 'bank_name', 'bank_account_type',
+        'bank_account_number', 'nequi_phone', 'daviplata_phone', 'preferred_payment_method',
+    ]
+    for field in allowed_fields:
+        if field in data:
+            setattr(staff, field, data[field])
+
+    db.commit()
+    db.refresh(staff)
+
+    return {
+        "success": True,
+        "staff_id": staff.id,
+        "message": f"Bank info updated for {staff.name}",
+    }

@@ -2468,6 +2468,8 @@
 
     &--paid { background: rgba(#3B82F6, 0.08); color: #3B82F6; }
     &--completed { background: rgba(#10B981, 0.08); color: #059669; }
+    &--liquidada { background: rgba(#10B981, 0.1); color: #059669; }
+    &--pendiente { background: rgba(#D97706, 0.08); color: #D97706; }
   }
 
   &__visit-products {
@@ -2516,6 +2518,228 @@
     padding-top: 6px;
     margin-top: 4px;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  // Visit toolbar with search + filters
+  &__visit-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+
+    @media (max-width: 600px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  &__visit-filters {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__visit-filter-chip {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 20px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: $color-white;
+    color: rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+    transition: all 120ms ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: inherit;
+
+    &:hover { border-color: rgba(0, 0, 0, 0.15); }
+
+    &--active {
+      background: $color-primary;
+      color: $color-white;
+      border-color: $color-primary;
+    }
+  }
+
+  &__visit-filter-count {
+    font-size: 9px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.25);
+    padding: 1px 5px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+
+    .finances__visit-filter-chip--active & {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+
+  // Selection bar
+  &__visit-select-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+  }
+
+  &__visit-select-btn {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid $color-primary;
+    background: rgba($color-primary, 0.05);
+    color: $color-primary;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 120ms ease;
+
+    &:hover { background: rgba($color-primary, 0.1); }
+
+    &--clear {
+      border-color: rgba(0, 0, 0, 0.1);
+      background: transparent;
+      color: rgba(0, 0, 0, 0.4);
+
+      &:hover { background: rgba(0, 0, 0, 0.03); }
+    }
+  }
+
+  &__visit-select-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: $color-primary;
+  }
+
+  // Checkbox
+  &__visit-check {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-right: 4px;
+  }
+
+  &__visit-checkbox {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 120ms ease;
+    background: $color-white;
+
+    &--checked {
+      background: $color-primary;
+      border-color: $color-primary;
+    }
+  }
+
+  // Visit item states
+  &__visit-item {
+    &--paid {
+      opacity: 0.6;
+      background: rgba(#10B981, 0.02);
+
+      .finances__visit-checkbox { display: none; }
+    }
+
+    &--selected {
+      border-color: rgba($color-primary, 0.3) !important;
+      background: rgba($color-primary, 0.02);
+    }
+  }
+
+  // Bank badge on staff name
+  &__nomina-bank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    background: rgba(#10B981, 0.1);
+    color: #059669;
+    font-size: 8px;
+    font-weight: 800;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  // Detail header with action button
+  &__nomina-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+
+    h4 {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(0, 0, 0, 0.3);
+      margin: 0;
+    }
+  }
+
+  // Payment actions row
+  &__nomina-payment-actions {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  // Receipt badge
+  &__nomina-receipt-badge {
+    font-size: 10px;
+    font-weight: 700;
+    color: $color-primary;
+    background: rgba($color-primary, 0.06);
+    padding: 1px 7px;
+    border-radius: 6px;
+  }
+
+  // Pay modal bank info section
+  &__pay-bank {
+    padding: 12px 24px;
+    background: rgba(#10B981, 0.04);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  }
+
+  &__pay-bank-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(0, 0, 0, 0.3);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  &__pay-bank-info {
+    font-size: 13px;
+    color: $color-secondary;
+
+    strong { font-weight: 700; }
+  }
+
+  // Selected visits info in modal
+  &__pay-selected-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: rgba($color-primary, 0.03);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    font-size: 12px;
+    font-weight: 600;
+    color: $color-primary;
   }
 
   &__pay-overlay {

@@ -42,6 +42,15 @@ class Staff(Base):
     photo_url = Column(Text, nullable=True)  # Base64 data URI for staff photo
     username = Column(String, unique=True, index=True, nullable=True)  # login credential (nullable = no login)
     password = Column(String, nullable=True)  # hashed password
+    # Bank info for payroll
+    document_type = Column(String(5), nullable=True)  # CC, CE, NIT
+    document_number = Column(String(200), nullable=True)  # Encrypted
+    bank_name = Column(String(100), nullable=True)  # Bancolombia, Davivienda, etc.
+    bank_account_type = Column(String(20), nullable=True)  # Ahorros, Corriente
+    bank_account_number = Column(String(200), nullable=True)  # Encrypted
+    nequi_phone = Column(String(200), nullable=True)  # Encrypted
+    daviplata_phone = Column(String(200), nullable=True)  # Encrypted
+    preferred_payment_method = Column(String(20), nullable=True)  # nequi, bancolombia, daviplata, efectivo
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -87,10 +96,12 @@ class VisitHistory(Base):
     payment_method = Column(String, nullable=True)  # efectivo, transferencia, tarjeta, nequi, daviplata
     notes = Column(Text, nullable=True)
     is_invoiced = Column(Boolean, default=False)
+    payment_id = Column(Integer, ForeignKey("staff_payment.id"), nullable=True)  # Links visit to staff payment
     created_at = Column(DateTime, default=datetime.utcnow)
 
     client = relationship("Client", back_populates="visits")
     staff = relationship("Staff", back_populates="visits")
+    payment = relationship("StaffPayment", back_populates="visits", foreign_keys=[payment_id])
 
 
 class ClientNote(Base):
@@ -177,6 +188,7 @@ class Appointment(Base):
     price = Column(Integer, nullable=False)  # COP
     status = Column(String, nullable=False, default="confirmed")  # confirmed, completed, cancelled, no_show
     notes = Column(Text, nullable=True)
+    staff_payment_id = Column(Integer, ForeignKey("staff_payment.id"), nullable=True)  # Links to payroll payment
     created_by = Column(String, nullable=True)  # admin, lina_ia, client
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -1176,8 +1188,10 @@ class StaffPayment(Base):
     notes = Column(Text, nullable=True)
     paid_by = Column(String(100), nullable=True)  # admin who made the payment
     paid_at = Column(DateTime, default=datetime.utcnow)
+    receipt_number = Column(String(20), nullable=True)  # Auto-generated CP-XXXX
     status = Column(String(20), nullable=False, default='paid')  # paid, pending, cancelled
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     staff = relationship("Staff", foreign_keys=[staff_id])
+    visits = relationship("VisitHistory", back_populates="payment", foreign_keys="VisitHistory.payment_id")

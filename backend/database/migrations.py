@@ -108,6 +108,20 @@ def run_migrations(engine):
         ("staff", "photo_url", "TEXT"),
         # Service AI mode
         ("service", "ai_mode", "VARCHAR(10) DEFAULT 'auto'"),
+        # Nómina v2: link appointments/visits to payments
+        ("appointment", "staff_payment_id", "INTEGER REFERENCES staff_payment(id)"),
+        ("visit_history", "payment_id", "INTEGER REFERENCES staff_payment(id)"),
+        # Nómina v2: receipt number for payment receipts
+        ("staff_payment", "receipt_number", "VARCHAR(20)"),
+        # Staff bank info for payroll
+        ("staff", "document_type", "VARCHAR(5)"),
+        ("staff", "document_number", "VARCHAR(200)"),
+        ("staff", "bank_name", "VARCHAR(100)"),
+        ("staff", "bank_account_type", "VARCHAR(20)"),
+        ("staff", "bank_account_number", "VARCHAR(200)"),
+        ("staff", "nequi_phone", "VARCHAR(200)"),
+        ("staff", "daviplata_phone", "VARCHAR(200)"),
+        ("staff", "preferred_payment_method", "VARCHAR(20)"),
     ]
 
     for table, column, col_type in migrations:

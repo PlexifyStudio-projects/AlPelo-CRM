@@ -45,6 +45,7 @@ class AppointmentResponse(BaseModel):
     price: Optional[int] = 0
     status: str
     notes: Optional[str] = None
+    staff_payment_id: Optional[int] = None  # Linked payroll payment
     created_by: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
