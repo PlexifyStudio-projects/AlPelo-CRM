@@ -576,6 +576,98 @@ def create_conversation(body: dict, db: Session = Depends(get_db), user=Depends(
 
 
 # ============================================================================
+# SEND TEXT — Quick send a text message to any phone (find/create conversation)
+# ============================================================================
+@router.post("/send-text")
+async def send_text_to_phone(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Send a free-text WhatsApp message to a phone number. Finds or creates conversation."""
+    phone = body.get("phone", "").strip()
+    message = body.get("message", "").strip()
+    name = body.get("name", "").strip()
+
+    if not phone:
+        raise HTTPException(status_code=400, detail="Numero de telefono requerido")
+    if not message:
+        raise HTTPException(status_code=400, detail="Mensaje vacio")
+
+    clean_phone = normalize_phone(phone)
+    if not clean_phone:
+        raise HTTPException(status_code=400, detail="Numero de telefono invalido")
+
+    tid = safe_tid(user, db)
+
+    # Find or create conversation
+    conv = db.query(WhatsAppConversation).filter(
+        WhatsAppConversation.wa_contact_phone == phone
+    ).first()
+    if not conv:
+        conv = db.query(WhatsAppConversation).filter(
+            WhatsAppConversation.wa_contact_phone == clean_phone
+        ).first()
+    if not conv:
+        client = db.query(Client).filter(Client.phone == phone).first()
+        if not client:
+            client = db.query(Client).filter(Client.phone == clean_phone).first()
+        conv = WhatsAppConversation(
+            tenant_id=tid,
+            wa_contact_phone=phone,
+            wa_contact_name=name or (client.name if client else None),
+            client_id=client.id if client else None,
+            is_ai_active=False,
+            unread_count=0,
+        )
+        db.add(conv)
+        db.flush()
+
+    # Send via Meta API
+    wa_message_id = None
+    status = "sent"
+    try:
+        send_url = f"{_get_wa_base_url(db)}/messages"
+        async with httpx.AsyncClient(timeout=15) as client_http:
+            resp = await client_http.post(
+                send_url,
+                headers=wa_headers(db),
+                json={
+                    "messaging_product": "whatsapp",
+                    "to": clean_phone,
+                    "type": "text",
+                    "text": {"body": message},
+                },
+            )
+            data = resp.json()
+            if resp.status_code == 200 and "messages" in data:
+                wa_message_id = data["messages"][0].get("id")
+            else:
+                status = "failed"
+                error_msg = data.get("error", {}).get("message", str(data))
+                print(f"[WA-SEND-TEXT] FAILED: {error_msg}")
+                raise HTTPException(status_code=400, detail=f"WhatsApp: {error_msg}")
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=f"Error de conexion: {str(e)}")
+
+    # Store message
+    msg = WhatsAppMessage(
+        conversation_id=conv.id,
+        wa_message_id=wa_message_id,
+        direction="outbound",
+        content=message,
+        message_type="text",
+        status=status,
+        sent_by="admin",
+    )
+    db.add(msg)
+    conv.last_message_at = datetime.utcnow()
+    conv.updated_at = datetime.utcnow()
+    db.commit()
+
+    if status == "sent":
+        track_message_sent()
+
+    return {"success": True, "status": status, "wa_message_id": wa_message_id}
+
+
+# ============================================================================
 # WEBHOOK — Meta sends messages here
 # ============================================================================
 @router.get("/webhook")
