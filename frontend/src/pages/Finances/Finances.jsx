@@ -2721,7 +2721,7 @@ const TabNomina = ({ dateFrom, dateTo }) => {
     setShowPayModal(staff);
     setPayForm({
       amount: String(Math.max(0, staff.balance)),
-      concept: `Comisiones ${new Date(dateFrom).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} — ${new Date(dateTo).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+      concept: `Comisiones ${new Date(dateFrom + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} — ${new Date(dateTo + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`,
       payment_method: 'efectivo',
       reference: '',
       notes: '',
@@ -2752,6 +2752,26 @@ const TabNomina = ({ dateFrom, dateTo }) => {
         }),
       });
       addNotification(`Pago registrado para ${showPayModal.staff_name}`, 'success');
+
+      // Send WhatsApp notification to staff
+      try {
+        const staffRes = await fetch(`${API}/staff/${showPayModal.staff_id}`, { credentials: 'include' });
+        if (staffRes.ok) {
+          const staffData = await staffRes.json();
+          const phone = staffData.phone || staffData.personal_phone;
+          if (phone) {
+            const amt = formatCOP(parseInt(payForm.amount) || 0);
+            const msg = `Hola ${showPayModal.staff_name.split(' ')[0]}, se ha registrado un pago de ${amt} por concepto de: ${payForm.concept}. Método: ${payForm.payment_method}${payForm.reference ? '. Ref: ' + payForm.reference : ''}. Gracias por tu trabajo.`;
+            await fetch(`${API}/whatsapp/send-text`, {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phone, message: msg }),
+            }).catch(() => {});
+          }
+        }
+      } catch {}
+
       setShowPayModal(null);
       load();
     } catch (err) {
