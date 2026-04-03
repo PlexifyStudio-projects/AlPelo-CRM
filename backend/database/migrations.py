@@ -122,6 +122,15 @@ def run_migrations(engine):
         ("staff", "nequi_phone", "VARCHAR(200)"),
         ("staff", "daviplata_phone", "VARCHAR(200)"),
         ("staff", "preferred_payment_method", "VARCHAR(20)"),
+        # Invoice v2: discount, credit terms, fiscal fields
+        ("invoice", "discount_type", "VARCHAR(10)"),
+        ("invoice", "discount_value", "INTEGER NOT NULL DEFAULT 0"),
+        ("invoice", "discount_amount", "INTEGER NOT NULL DEFAULT 0"),
+        ("invoice", "payment_terms", "VARCHAR(20) NOT NULL DEFAULT 'contado'"),
+        ("invoice", "due_date", "DATE"),
+        ("invoice", "client_document_type", "VARCHAR(5)"),
+        ("invoice", "client_email", "VARCHAR(200)"),
+        ("invoice", "client_address", "TEXT"),
     ]
 
     for table, column, col_type in migrations:

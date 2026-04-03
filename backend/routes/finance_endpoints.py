@@ -347,19 +347,37 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Ad
 
 @router.post("/invoices/", response_model=InvoiceResponse)
 def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
+    from sqlalchemy import text as sa_text
     tid = safe_tid(current_user, db)
 
-    # Auto-generate invoice number (scoped to tenant)
-    q = db.query(Invoice)
-    q = _tenant_filter(q, Invoice, tid)
-    last = q.order_by(Invoice.id.desc()).first()
-    next_num = (last.id + 1) if last else 1
+    # Thread-safe invoice number: use SELECT FOR UPDATE to lock
+    result = db.execute(sa_text(
+        "SELECT invoice_number FROM invoice WHERE tenant_id = :tid "
+        "ORDER BY id DESC LIMIT 1 FOR UPDATE"
+    ), {"tid": tid or 0})
+    row = result.fetchone()
+    if row and row[0]:
+        try:
+            num = int(row[0].replace("FV-", ""))
+            next_num = num + 1
+        except (ValueError, AttributeError):
+            next_num = 1
+    else:
+        next_num = 1
     invoice_number = f"FV-{next_num:04d}"
 
-    # Calculate totals
+    # Calculate totals with discount
     subtotal = sum(item.unit_price * item.quantity for item in data.items)
-    tax_amount = int(subtotal * data.tax_rate)
-    total = subtotal + tax_amount
+
+    discount_amount = 0
+    if data.discount_type == 'percent' and data.discount_value > 0:
+        discount_amount = round(subtotal * data.discount_value / 100)
+    elif data.discount_type == 'fixed' and data.discount_value > 0:
+        discount_amount = min(data.discount_value, subtotal)
+
+    taxable = subtotal - discount_amount
+    tax_amount = round(taxable * data.tax_rate)
+    total = taxable + tax_amount
 
     inv = Invoice(
         tenant_id=tid,
@@ -368,11 +386,19 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_u
         client_name=data.client_name,
         client_phone=data.client_phone,
         client_document=data.client_document,
+        client_document_type=data.client_document_type,
+        client_email=data.client_email,
+        client_address=data.client_address,
         subtotal=subtotal,
+        discount_type=data.discount_type,
+        discount_value=data.discount_value,
+        discount_amount=discount_amount,
         tax_rate=data.tax_rate,
         tax_amount=tax_amount,
         total=total,
         payment_method=data.payment_method,
+        payment_terms=data.payment_terms or "contado",
+        due_date=data.due_date,
         status="draft",
         issued_date=data.issued_date or datetime.utcnow().date(),
         notes=data.notes,

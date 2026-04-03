@@ -1230,6 +1230,10 @@
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: $spacing-md;
     margin-bottom: $spacing-md;
+
+    &--4 {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
   }
 
   &__form-actions {

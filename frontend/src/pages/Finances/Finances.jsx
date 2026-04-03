@@ -1501,6 +1501,7 @@ const STATUS_ICONS = {
 
 const TabFacturas = ({ period, dateFrom, dateTo }) => {
   const { addNotification } = useNotification();
+  const { tenant } = useTenant();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -1524,8 +1525,12 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   const savedIvaDefault = localStorage.getItem('alpelo_iva_default') === 'true';
 
   const [form, setForm] = useState({
-    client_name: '', client_phone: '', client_document: '',
-    payment_method: '', tax_rate: savedIvaDefault ? 0.19 : 0.19, notes: '',
+    client_name: '', client_phone: '', client_document: '', client_document_type: 'CC',
+    client_email: '', client_address: '',
+    payment_method: '', payment_terms: 'contado', due_date: '',
+    tax_rate: savedIvaDefault ? 0.19 : 0.19,
+    discount_type: '', discount_value: '',
+    notes: '',
     items: [{ service_name: '', quantity: 1, unit_price: '', staff_name: '', visit_id: null }],
   });
 
@@ -1628,8 +1633,11 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   };
 
   const subtotal = form.items.reduce((s, it) => s + (Number(it.unit_price) || 0) * (Number(it.quantity) || 1), 0);
-  const taxAmount = Math.round(subtotal * form.tax_rate);
-  const total = subtotal + taxAmount;
+  const discountAmount = form.discount_type === 'percent' ? Math.round(subtotal * (Number(form.discount_value) || 0) / 100)
+    : form.discount_type === 'fixed' ? Math.min(Number(form.discount_value) || 0, subtotal) : 0;
+  const taxable = subtotal - discountAmount;
+  const taxAmount = Math.round(taxable * form.tax_rate);
+  const total = taxable + taxAmount;
 
   const resetForm = () => {
     setShowForm(false);
@@ -1638,8 +1646,12 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
     setUninvoicedVisits([]);
     setShowVisitImport(false);
     setForm({
-      client_name: '', client_phone: '', client_document: '',
-      payment_method: '', tax_rate: savedIvaDefault ? 0.19 : 0.19, notes: '',
+      client_name: '', client_phone: '', client_document: '', client_document_type: 'CC',
+      client_email: '', client_address: '',
+      payment_method: '', payment_terms: 'contado', due_date: '',
+      tax_rate: savedIvaDefault ? 0.19 : 0.19,
+      discount_type: '', discount_value: '',
+      notes: '',
       items: [{ service_name: '', quantity: 1, unit_price: '', staff_name: '', visit_id: null }],
     });
   };
@@ -1656,6 +1668,9 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
       await financeService.createInvoice({
         ...form,
         client_name: finalClientName,
+        discount_type: form.discount_type || undefined,
+        discount_value: Number(form.discount_value) || 0,
+        due_date: form.payment_terms === 'credito' && form.due_date ? form.due_date : undefined,
         items: form.items.map((it) => ({ ...it, unit_price: Number(it.unit_price), quantity: Number(it.quantity) || 1, visit_id: it.visit_id || undefined })),
       });
       addNotification('Factura creada', 'success');
@@ -1807,21 +1822,59 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
             <div className="finances__form-grid">
               <input className="finances__input" placeholder="Nombre *" value={form.client_name || clientSearch} onChange={(e) => setForm({ ...form, client_name: e.target.value })} required />
               <input className="finances__input" placeholder="Teléfono" value={form.client_phone} onChange={(e) => setForm({ ...form, client_phone: e.target.value })} />
-              <input className="finances__input" placeholder="CC / NIT" value={form.client_document} onChange={(e) => setForm({ ...form, client_document: e.target.value })} />
             </div>
           )}
 
-          <div className="finances__form-grid">
+          <p className="finances__form-subtitle" style={{ marginTop: 12 }}>Datos del receptor</p>
+          <div className="finances__form-grid finances__form-grid--4">
+            <select className="finances__select" value={form.client_document_type} onChange={(e) => setForm({ ...form, client_document_type: e.target.value })}>
+              <option value="CC">CC</option>
+              <option value="NIT">NIT</option>
+              <option value="CE">CE</option>
+              <option value="TI">TI</option>
+              <option value="Pasaporte">Pasaporte</option>
+              <option value="DIE">DIE</option>
+            </select>
+            <input className="finances__input" placeholder="Nro. documento" value={form.client_document} onChange={(e) => setForm({ ...form, client_document: e.target.value })} />
+            <input className="finances__input" type="email" placeholder="Email" value={form.client_email} onChange={(e) => setForm({ ...form, client_email: e.target.value })} />
+            <input className="finances__input" placeholder="Dirección" value={form.client_address} onChange={(e) => setForm({ ...form, client_address: e.target.value })} />
+          </div>
+
+          <p className="finances__form-subtitle" style={{ marginTop: 12 }}>Pago y condiciones</p>
+          <div className="finances__form-grid finances__form-grid--4">
             <select className="finances__select" value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}>
               <option value="">Método de pago</option>
               {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
+            <select className="finances__select" value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })}>
+              <option value="contado">Contado</option>
+              <option value="credito">Crédito</option>
+            </select>
+            {form.payment_terms === 'credito' && (
+              <input className="finances__input" type="date" placeholder="Fecha vencimiento" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
+            )}
             <div className="finances__tax-toggle">
               <label className="finances__label-inline">
                 <input type="checkbox" checked={form.tax_rate > 0} onChange={(e) => setForm({ ...form, tax_rate: e.target.checked ? 0.19 : 0 })} />
-                <span>Incluir IVA (19%)</span>
+                <span>IVA (19%)</span>
               </label>
             </div>
+          </div>
+
+          <div className="finances__form-grid" style={{ marginTop: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <select className="finances__select" style={{ width: 120 }} value={form.discount_type} onChange={(e) => setForm({ ...form, discount_type: e.target.value, discount_value: '' })}>
+                <option value="">Sin descuento</option>
+                <option value="percent">% Porcentaje</option>
+                <option value="fixed">$ Valor fijo</option>
+              </select>
+              {form.discount_type && (
+                <input className="finances__input" type="number" min="0" placeholder={form.discount_type === 'percent' ? '% descuento' : '$ descuento'}
+                  value={form.discount_value} onChange={(e) => setForm({ ...form, discount_value: e.target.value })} style={{ width: 130 }} />
+              )}
+              {discountAmount > 0 && <span style={{ fontSize: 12, color: '#DC2626', fontWeight: 600 }}>-{formatCOP(discountAmount)}</span>}
+            </div>
+            <input className="finances__input" placeholder="Notas / observaciones" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>
           {selectedClient && uninvoicedVisits.length > 0 && (
             <div className="finances__uninvoiced">
@@ -1887,6 +1940,9 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
 
           <div className="finances__invoice-totals">
             <div className="finances__pnl-row"><span>Subtotal</span><span>{formatCOP(subtotal)}</span></div>
+            {discountAmount > 0 && (
+              <div className="finances__pnl-row" style={{ color: '#DC2626' }}><span>Descuento {form.discount_type === 'percent' ? `(${form.discount_value}%)` : ''}</span><span>-{formatCOP(discountAmount)}</span></div>
+            )}
             {form.tax_rate > 0 && (
               <div className="finances__pnl-row"><span>IVA ({(form.tax_rate * 100).toFixed(0)}%)</span><span>{formatCOP(taxAmount)}</span></div>
             )}
@@ -2053,8 +2109,10 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         <span>Factura: {inv.invoice_number}</span>
                         {visitCode && <span style={{ fontWeight: 700, color: '#2D5A3D' }}>Codigo: {visitCode}</span>}
                         <span>Fecha: {new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                        <span>Pago: {methodLabel}</span>
-                        {inv.client_document && <span>CC/NIT: {inv.client_document}</span>}
+                        <span>Pago: {methodLabel}{inv.payment_terms === 'credito' ? ' (Credito)' : ''}</span>
+                        {inv.due_date && <span style={{ color: new Date(inv.due_date) < new Date() && inv.status !== 'paid' ? '#DC2626' : '#D97706' }}>Vence: {new Date(inv.due_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                        {inv.client_document && <span>{inv.client_document_type || 'CC'}: {inv.client_document}</span>}
+                        {inv.client_email && <span>{inv.client_email}</span>}
                       </div>
                       <div className="finances__sale-detail-actions">
                         {(inv.status === 'draft' || inv.status === 'sent') && (
@@ -2072,62 +2130,79 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           const dateStr = new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
                           const timeStr = inv.paid_at ? new Date(inv.paid_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
                           const ml = PAYMENT_METHODS.find(p => p.value === inv.payment_method)?.label || inv.payment_method;
-                          const prodCommissions = (inv.items || []).filter(it => it.staff_name?.startsWith('Comision:')).reduce((s, it) => s + (it.total || 0), 0);
+                          const tn = tenant || {};
                           win.document.write(`<html><head><title>Factura ${inv.invoice_number}</title><style>
-                            *{margin:0;padding:0;box-sizing:border-box}
-                            body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:48px;color:#1a1a1a;max-width:780px;margin:0 auto;font-size:13px}
-                            .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
-                            .header h1{font-size:22px;letter-spacing:-0.02em}
-                            .header-right{text-align:right;font-size:12px;color:#64748b}
-                            .header-right strong{font-size:14px;color:#1a1a1a;display:block;margin-bottom:2px}
-                            .client{background:#f8f9fb;padding:16px 20px;border-radius:10px;margin-bottom:24px;display:flex;gap:32px;font-size:12px}
-                            .client strong{font-size:14px;display:block;margin-bottom:2px}
-                            .client span{color:#64748b}
-                            table{width:100%;border-collapse:collapse;margin:20px 0}
-                            th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;padding:10px 0;border-bottom:2px solid #e5e7eb}
-                            th.r{text-align:right}
-                            td{padding:12px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
-                            td.r{text-align:right;font-variant-numeric:tabular-nums}
-                            td.staff{font-size:11px;color:#64748b}
+                            *{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:48px;color:#1a1a1a;max-width:780px;margin:0 auto;font-size:13px}
+                            .biz{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #2D5A3D}
+                            .biz-left{display:flex;align-items:center;gap:12px}.biz-logo{width:48px;height:48px;border-radius:10px;object-fit:cover}
+                            .biz-name{font-size:20px;font-weight:800;letter-spacing:-0.02em}.biz-info{font-size:11px;color:#64748b;text-align:right}
+                            .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+                            .header h2{font-size:18px;letter-spacing:-0.02em}.header-right{text-align:right;font-size:12px;color:#64748b}
+                            .header-right strong{font-size:16px;color:#1a1a1a;display:block;margin-bottom:2px}
+                            .client{background:#f8f9fb;padding:14px 20px;border-radius:10px;margin-bottom:20px;display:flex;gap:24px;flex-wrap:wrap;font-size:12px}
+                            .client strong{font-size:13px;display:block;margin-bottom:1px}.client span{color:#64748b}
+                            table{width:100%;border-collapse:collapse;margin:16px 0}
+                            th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;padding:8px 0;border-bottom:2px solid #e5e7eb}th.r{text-align:right}
+                            td{padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:13px}td.r{text-align:right;font-variant-numeric:tabular-nums}td.staff{font-size:11px;color:#64748b}
                             .product td{color:#92400e;font-style:italic}
-                            .subtotal-row td{color:#64748b;font-size:12px;border-bottom:none;padding:6px 0}
-                            .total-row td{font-weight:800;font-size:18px;border-top:2px solid #1a1a1a;border-bottom:none;padding-top:12px;letter-spacing:-0.02em}
-                            .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px}
-                            .box{padding:16px;background:#f8f9fb;border-radius:10px}
-                            .box h3{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;margin-bottom:10px}
-                            .box-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;color:#475569}
-                            .box-row strong{color:#1a1a1a}
-                            .box-row.green strong{color:#059669}
-                            .box-row.blue strong{color:#2563eb}
-                            .box-row.amber strong{color:#d97706}
-                            .footer{margin-top:32px;padding-top:16px;border-top:1px dashed #d1d5db;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8}
-                            @media print{body{padding:24px}}
+                            .subtotal-row td{color:#64748b;font-size:12px;border-bottom:none;padding:5px 0}
+                            .discount-row td{color:#dc2626;font-size:12px;border-bottom:none;padding:5px 0}
+                            .total-row td{font-weight:800;font-size:18px;border-top:2px solid #1a1a1a;border-bottom:none;padding-top:12px}
+                            .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+                            .box{padding:14px;background:#f8f9fb;border-radius:10px}.box h3{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#94a3b8;margin-bottom:8px}
+                            .box-row{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;color:#475569}.box-row strong{color:#1a1a1a}
+                            .box-row.green strong{color:#059669}.box-row.blue strong{color:#2563eb}
+                            .footer{margin-top:28px;padding-top:14px;border-top:1px dashed #d1d5db;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8}
+                            .no-print{text-align:center;margin-top:20px}@media print{.no-print{display:none!important}body{padding:24px}}
                           </style></head><body>`);
-                          win.document.write(`<div class="header"><div><h1>Factura ${inv.invoice_number}</h1><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — ' + timeStr : ''}${visitCode ? ' — Codigo: ' + visitCode : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}</div></div>`);
-                          win.document.write(`<div class="client"><div><strong>${inv.client_name}</strong><span>Cliente</span></div>${inv.client_phone ? `<div><strong>${inv.client_phone}</strong><span>Telefono</span></div>` : ''}${inv.client_document ? `<div><strong>${inv.client_document}</strong><span>CC/NIT</span></div>` : ''}</div>`);
+                          // Business header
+                          win.document.write(`<div class="biz"><div class="biz-left">${tn.logo_url ? `<img src="${tn.logo_url}" class="biz-logo">` : ''}<div><div class="biz-name">${tn.name || 'Negocio'}</div>${tn.nit ? `<span style="font-size:11px;color:#64748b">NIT: ${tn.nit}</span>` : ''}</div></div><div class="biz-info">${tn.address || ''}${tn.phone ? `<br>${tn.phone}` : ''}${tn.owner_email ? `<br>${tn.owner_email}` : ''}</div></div>`);
+                          // Invoice header
+                          win.document.write(`<div class="header"><div><h2>Factura ${inv.invoice_number}</h2><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — ' + timeStr : ''}${visitCode ? ' — Codigo: ' + visitCode : ''}${inv.payment_terms === 'credito' && inv.due_date ? ` — Vence: ${new Date(inv.due_date+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}` : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}${inv.payment_terms === 'credito' ? ' — Credito' : ''}</div></div>`);
+                          // Client info
+                          win.document.write(`<div class="client"><div><strong>${inv.client_name}</strong><span>Cliente</span></div>${inv.client_phone ? `<div><strong>${inv.client_phone}</strong><span>Telefono</span></div>` : ''}${inv.client_document ? `<div><strong>${inv.client_document_type || 'CC'} ${inv.client_document}</strong><span>Documento</span></div>` : ''}${inv.client_email ? `<div><strong>${inv.client_email}</strong><span>Email</span></div>` : ''}${inv.client_address ? `<div><strong>${inv.client_address}</strong><span>Direccion</span></div>` : ''}</div>`);
+                          // Items table
                           win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
                           (inv.items || []).forEach(it => {
                             const isProduct = it.service_name?.startsWith('[Producto]');
                             win.document.write(`<tr class="${isProduct ? 'product' : ''}"><td>${it.service_name}</td><td class="staff">${it.staff_name || '—'}</td><td>${it.quantity}</td><td class="r">${formatCOP(it.unit_price)}</td><td class="r">${formatCOP(it.total)}</td></tr>`);
                           });
                           win.document.write(`<tr class="subtotal-row"><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
-                          if (inv.discount_amount > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">Descuento</td><td class="r" style="color:#dc2626">-${formatCOP(inv.discount_amount)}</td></tr>`);
+                          if (inv.discount_amount > 0) win.document.write(`<tr class="discount-row"><td colspan="4">Descuento${inv.discount_type === 'percent' ? ` (${inv.discount_value}%)` : ''}</td><td class="r">-${formatCOP(inv.discount_amount)}</td></tr>`);
                           if (inv.tax_amount > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">IVA (${(inv.tax_rate*100).toFixed(0)}%)</td><td class="r">${formatCOP(inv.tax_amount)}</td></tr>`);
                           if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">Propina</td><td class="r">+${formatCOP(inv.tip)}</td></tr>`);
                           win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr></table>`);
+                          // Breakdown
                           win.document.write('<div class="breakdown">');
                           if (primaryStaff) {
-                            win.document.write(`<div class="box"><h3>Distribucion</h3><div class="box-row green"><span>Comision ${primaryStaff} (${(commissionRate*100).toFixed(0)}%)</span><strong>${formatCOP(staffEarnings)}</strong></div><div class="box-row blue"><span>Ganancia negocio</span><strong>${formatCOP(businessEarnings)}</strong></div>${prodCommissions > 0 ? `<div class="box-row amber"><span>Comisiones productos</span><strong>${formatCOP(prodCommissions)}</strong></div>` : ''}</div>`);
+                            win.document.write(`<div class="box"><h3>Distribucion</h3><div class="box-row green"><span>Comision ${primaryStaff} (${(commissionRate*100).toFixed(0)}%)</span><strong>${formatCOP(staffEarnings)}</strong></div><div class="box-row blue"><span>Ganancia negocio</span><strong>${formatCOP(businessEarnings)}</strong></div></div>`);
                           }
-                          win.document.write(`<div class="box"><h3>Detalles de pago</h3><div class="box-row"><span>Metodo</span><strong>${ml}</strong></div><div class="box-row"><span>Estado</span><strong>${STATUS_LABELS[inv.status] || inv.status}</strong></div><div class="box-row"><span>Fecha</span><strong>${dateStr}</strong></div>${timeStr ? `<div class="box-row"><span>Hora</span><strong>${timeStr}</strong></div>` : ''}</div>`);
+                          win.document.write(`<div class="box"><h3>Detalles de pago</h3><div class="box-row"><span>Metodo</span><strong>${ml}</strong></div><div class="box-row"><span>Condicion</span><strong>${inv.payment_terms === 'credito' ? 'Credito' : 'Contado'}</strong></div><div class="box-row"><span>Estado</span><strong>${STATUS_LABELS[inv.status] || inv.status}</strong></div><div class="box-row"><span>Fecha</span><strong>${dateStr}</strong></div>${timeStr ? `<div class="box-row"><span>Hora</span><strong>${timeStr}</strong></div>` : ''}</div>`);
                           win.document.write('</div>');
                           win.document.write(`<div class="footer"><span>Factura ${inv.invoice_number} — ${dateStr}</span><span>Generado por Plexify Studio</span></div>`);
+                          win.document.write('<div class="no-print"><button onclick="window.print()" style="background:#2D5A3D;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Imprimir</button></div>');
                           win.document.write('</body></html>');
                           win.document.close();
-                          setTimeout(() => { win.print(); }, 300);
                         }} title="Imprimir">
                           {Icons.fileText} Imprimir
                         </button>
+                        {inv.client_phone && (
+                          <button className="finances__btn-ghost finances__btn-ghost--sm" onClick={async () => {
+                            const items = (inv.items || []).map(it => `- ${it.service_name}: ${formatCOP(it.total)}`).join('\n');
+                            const msg = `Hola ${inv.client_name.split(' ')[0]}, le compartimos su factura ${inv.invoice_number}:\n\n${items}\n${inv.discount_amount > 0 ? `Descuento: -${formatCOP(inv.discount_amount)}\n` : ''}${inv.tax_amount > 0 ? `IVA: ${formatCOP(inv.tax_amount)}\n` : ''}TOTAL: ${formatCOP(inv.total)}\n\nMetodo: ${PAYMENT_METHODS.find(p => p.value === inv.payment_method)?.label || inv.payment_method || 'N/A'}${inv.payment_terms === 'credito' && inv.due_date ? `\nVence: ${new Date(inv.due_date+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}` : ''}\n\nGracias por su preferencia.`;
+                            try {
+                              await fetch(`${API_URL}/whatsapp/send-text`, {
+                                method: 'POST', credentials: 'include',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ phone: inv.client_phone, message: msg }),
+                              });
+                              addNotification('Factura enviada por WhatsApp', 'success');
+                              if (inv.status === 'draft') handleStatusChange(inv.id, 'sent');
+                            } catch { addNotification('Error enviando por WhatsApp', 'error'); }
+                          }} title="Enviar por WhatsApp">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg> WhatsApp
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

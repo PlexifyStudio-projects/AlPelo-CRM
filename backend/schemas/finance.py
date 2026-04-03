@@ -130,17 +130,29 @@ class InvoiceCreate(BaseModel):
     client_name: str
     client_phone: Optional[str] = None
     client_document: Optional[str] = None
+    client_document_type: Optional[str] = None  # CC, NIT, CE, TI, Pasaporte, DIE
+    client_email: Optional[str] = None
+    client_address: Optional[str] = None
     items: List[InvoiceItemCreate]
     tax_rate: float = 0.19
+    discount_type: Optional[str] = None  # percent, fixed
+    discount_value: int = 0
     payment_method: Optional[str] = None
+    payment_terms: str = "contado"  # contado, credito
+    due_date: Optional[date] = None
     notes: Optional[str] = None
     issued_date: Optional[date] = None
 
 class InvoiceUpdate(BaseModel):
     status: Optional[str] = None
     payment_method: Optional[str] = None
+    payment_terms: Optional[str] = None
+    due_date: Optional[date] = None
     notes: Optional[str] = None
     client_document: Optional[str] = None
+    client_document_type: Optional[str] = None
+    client_email: Optional[str] = None
+    client_address: Optional[str] = None
 
 class InvoiceItemResponse(BaseModel):
     id: int
@@ -161,11 +173,19 @@ class InvoiceResponse(BaseModel):
     client_name: str
     client_phone: Optional[str] = None
     client_document: Optional[str] = None
+    client_document_type: Optional[str] = None
+    client_email: Optional[str] = None
+    client_address: Optional[str] = None
     subtotal: int
+    discount_type: Optional[str] = None
+    discount_value: int = 0
+    discount_amount: int = 0
     tax_rate: float
     tax_amount: int
     total: int
     payment_method: Optional[str] = None
+    payment_terms: str = "contado"
+    due_date: Optional[date] = None
     status: str
     issued_date: date
     paid_at: Optional[datetime] = None

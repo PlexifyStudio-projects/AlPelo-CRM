@@ -455,12 +455,20 @@ class Invoice(Base):
     client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
     client_name = Column(String, nullable=False)
     client_phone = Column(String, nullable=True)
-    client_document = Column(String, nullable=True)  # CC/NIT
+    client_document = Column(String, nullable=True)  # CC/NIT number
+    client_document_type = Column(String(5), nullable=True)  # CC, NIT, CE, TI, Pasaporte, DIE
+    client_email = Column(String(200), nullable=True)
+    client_address = Column(Text, nullable=True)
     subtotal = Column(Integer, nullable=False, default=0)
+    discount_type = Column(String(10), nullable=True)  # percent, fixed
+    discount_value = Column(Integer, nullable=False, default=0)  # % or COP amount
+    discount_amount = Column(Integer, nullable=False, default=0)  # Calculated COP
     tax_rate = Column(Float, nullable=False, default=0.19)
     tax_amount = Column(Integer, nullable=False, default=0)
     total = Column(Integer, nullable=False, default=0)
     payment_method = Column(String, nullable=True)
+    payment_terms = Column(String(20), nullable=False, default='contado')  # contado, credito
+    due_date = Column(Date, nullable=True)  # Only for credito
     status = Column(String, nullable=False, default="draft")  # draft, sent, paid, cancelled
     issued_date = Column(Date, nullable=False)
     paid_at = Column(DateTime, nullable=True)
