@@ -635,7 +635,7 @@ const Dashboard = ({ onNavigate }) => {
               {Icons.calendar}
               Agenda de Hoy
             </h2>
-            <span className="dashboard__section-badge">{appointments.length} citas</span>
+            <span className="dashboard__section-badge">{appointments.length} citas hoy</span>
           </div>
 
           {appointments.length === 0 ? (
@@ -653,20 +653,31 @@ const Dashboard = ({ onNavigate }) => {
                 <span>Barbero</span>
                 <span>Estado</span>
               </div>
-              {appointments.map((appt) => {
-                const statusCfg = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending;
-                return (
-                  <div key={appt.id} className="dashboard__agenda-row">
-                    <span className="dashboard__agenda-time">{appt.time}</span>
-                    <span className="dashboard__agenda-client">{appt.client_name}</span>
-                    <span className="dashboard__agenda-service">{appt.service_name}</span>
-                    <span className="dashboard__agenda-staff">{appt.staff_name}</span>
-                    <span className={`dashboard__agenda-status dashboard__agenda-status--${statusCfg.modifier}`}>
-                      {statusCfg.label}
-                    </span>
-                  </div>
-                );
-              })}
+              {(() => {
+                const now = new Date();
+                const nowMin = now.getHours() * 60 + now.getMinutes();
+                return appointments
+                  .filter(a => {
+                    if (a.status === 'cancelled') return false;
+                    const [h, m] = (a.time || '00:00').split(':').map(Number);
+                    return h * 60 + m >= nowMin - 30;
+                  })
+                  .slice(0, 10)
+                  .map((appt) => {
+                    const statusCfg = STATUS_CONFIG[appt.status] || STATUS_CONFIG.pending;
+                    return (
+                      <div key={appt.id} className="dashboard__agenda-row">
+                        <span className="dashboard__agenda-time">{appt.time}</span>
+                        <span className="dashboard__agenda-client">{appt.client_name}</span>
+                        <span className="dashboard__agenda-service">{appt.service_name}</span>
+                        <span className="dashboard__agenda-staff">{appt.staff_name}</span>
+                        <span className={`dashboard__agenda-status dashboard__agenda-status--${statusCfg.modifier}`}>
+                          {statusCfg.label}
+                        </span>
+                      </div>
+                    );
+                  });
+              })()}
             </div>
           )}
 
