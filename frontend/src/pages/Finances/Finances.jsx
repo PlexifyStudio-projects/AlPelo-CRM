@@ -285,22 +285,40 @@ const RevenueAreaChart = ({ data }) => {
     return { ...item, label: `${weekday} ${day}`, avg_ticket: item.visits > 0 ? Math.round(item.revenue / item.visits) : 0 };
   });
 
+  const useBar = chartData.length <= 7;
+
   return (
     <div className="finances__recharts-container">
       <ResponsiveContainer width="100%" height={280}>
-        <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#2D5A3D" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#2D5A3D" stopOpacity={0.02} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} />
-          <YAxis tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} width={45} />
-          <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
-          <Area type="monotone" dataKey="revenue" name="Ingresos" stroke="#2D5A3D" strokeWidth={2.5} fill="url(#revenueGrad)" dot={{ r: 3, fill: '#2D5A3D', strokeWidth: 0 }} activeDot={{ r: 5, fill: '#2D5A3D', stroke: '#fff', strokeWidth: 2 }} />
-        </AreaChart>
+        {useBar ? (
+          <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#2D5A3D" />
+                <stop offset="100%" stopColor="#3D7A52" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#8E8E85', fontWeight: 600 }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} width={50} />
+            <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+            <Bar dataKey="revenue" name="Ingresos" fill="url(#barGrad)" radius={[6, 6, 0, 0]} maxBarSize={60} />
+          </BarChart>
+        ) : (
+          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#2D5A3D" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="#2D5A3D" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: '#8E8E85' }} tickLine={false} axisLine={false} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} width={50} />
+            <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+            <Area type="monotone" dataKey="revenue" name="Ingresos" stroke="#2D5A3D" strokeWidth={2.5} fill="url(#revenueGrad)" dot={{ r: 3, fill: '#2D5A3D', strokeWidth: 0 }} activeDot={{ r: 5, fill: '#2D5A3D', stroke: '#fff', strokeWidth: 2 }} />
+          </AreaChart>
+        )}
       </ResponsiveContainer>
     </div>
   );
@@ -566,7 +584,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
                     <div className="finances__ranking-info">
                       <div className="finances__ranking-top">
                         <div className="finances__ranking-name-wrap">
-                          <span className="finances__ranking-name">{svc.service_name}</span>
+                          <span className="finances__ranking-name">{svc.service_name.split(',').filter(s => !s.trim().startsWith('[Producto]')).join(', ').trim() || svc.service_name.split(',')[0]}</span>
                           {svc.category && <span className="finances__ranking-cat" style={{ color: CATEGORY_COLORS[svc.category] || CATEGORY_COLORS['Otros'] }}>{svc.category}</span>}
                         </div>
                         <div className="finances__ranking-amounts">
