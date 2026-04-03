@@ -1124,7 +1124,7 @@ const Inbox = () => {
     e.target.value = '';
 
     if (file.size > 5 * 1024 * 1024) {
-      alert(`Archivo muy grande: ${(file.size / 1024 / 1024).toFixed(1)}MB (max 5MB)`);
+      alert(`Archivo muy grande: ${(file.size/1024/1024).toFixed(1)}MB (max 5MB)`);
       return;
     }
 

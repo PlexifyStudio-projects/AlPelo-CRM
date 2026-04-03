@@ -381,6 +381,17 @@ async def update_template(template_id: int, data: dict, user=Depends(get_current
         elif "status" in data:
             tpl.status = data["status"]
 
+        # Header fields
+        if "header_type" in data:
+            tpl.header_type = data["header_type"] or None
+            content_changed = True
+        if "header_media_url" in data:
+            tpl.header_media_url = data["header_media_url"] or None
+            content_changed = True
+        if "header_text" in data:
+            tpl.header_text = data["header_text"] or None
+            content_changed = True
+
         tpl.updated_at = datetime.utcnow()
         db.commit()
         db.refresh(tpl)
@@ -490,12 +501,79 @@ async def submit_to_meta(template_id: int, user=Depends(get_current_user), _db: 
         meta_category = _META_CATEGORY_MAP.get(tpl.category, "MARKETING")
 
         # Build Meta API payload
-        components = [{
+        components = []
+
+        # Add HEADER component if template has media or text header
+        header_type = getattr(tpl, 'header_type', None)
+        header_media = getattr(tpl, 'header_media_url', None)
+        header_text = getattr(tpl, 'header_text', None)
+
+        if header_type == 'IMAGE' and header_media:
+            # Upload image to Meta first, then reference the handle
+            try:
+                import httpx as _httpx
+                import base64 as _b64
+
+                if header_media.startswith('data:'):
+                    # base64 data URI → bytes
+                    _, encoded = header_media.split(',', 1)
+                    img_bytes = _b64.b64decode(encoded)
+                    mime = header_media.split(';')[0].split(':')[1] if ';' in header_media else 'image/jpeg'
+                else:
+                    # URL — download it
+                    async_resp = None  # Can't do async here, skip URL for now
+                    img_bytes = None
+                    mime = 'image/jpeg'
+
+                if img_bytes:
+                    from services.whatsapp.helpers import _get_wa_base_url as _gwbu
+                    upload_resp = _httpx.post(
+                        f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/uploads",
+                        headers={"Authorization": f"Bearer {wa_token}"},
+                        params={"file_length": len(img_bytes), "file_type": mime, "messaging_product": "whatsapp"},
+                    )
+                    upload_data = upload_resp.json()
+
+                    if 'id' in upload_data:
+                        # Session-based upload
+                        upload_handle = upload_data['id']
+                        upload_resp2 = _httpx.post(
+                            f"https://graph.facebook.com/{WA_API_VERSION}/{upload_handle}",
+                            headers={"Authorization": f"OAuth {wa_token}", "file_offset": "0", "Content-Type": mime},
+                            content=img_bytes,
+                        )
+                        handle_data = upload_resp2.json()
+                        if 'h' in handle_data:
+                            components.append({
+                                "type": "HEADER",
+                                "format": "IMAGE",
+                                "example": {"header_handle": [handle_data['h']]},
+                            })
+                        else:
+                            # Fallback: just declare IMAGE header without example
+                            components.append({"type": "HEADER", "format": "IMAGE"})
+                    else:
+                        components.append({"type": "HEADER", "format": "IMAGE"})
+                else:
+                    components.append({"type": "HEADER", "format": "IMAGE"})
+            except Exception as e:
+                print(f"[META SUBMIT] Header image upload error: {e}")
+                components.append({"type": "HEADER", "format": "IMAGE"})
+
+        elif header_type == 'VIDEO':
+            components.append({"type": "HEADER", "format": "VIDEO"})
+
+        elif header_type == 'TEXT' and header_text:
+            components.append({"type": "HEADER", "format": "TEXT", "text": header_text})
+
+        # BODY component
+        components.append({
             "type": "BODY",
             "text": meta_body,
-        }]
+        })
 
         # Add example values for variables (Meta requires examples)
+        body_idx = len(components) - 1  # Index of BODY in components list
         if var_order:
             example_values = {
                 "nombre": "Juan",
@@ -514,7 +592,7 @@ async def submit_to_meta(template_id: int, user=Depends(get_current_user), _db: 
                 "nuevos": "3",
             }
             examples = [example_values.get(v, f"valor_{v}") for v in var_order]
-            components[0]["example"] = {"body_text": [examples]}
+            components[body_idx]["example"] = {"body_text": [examples]}
 
         # Meta requires specific language codes — "es" is valid for Spanish
         # Template name: only lowercase letters, numbers, underscores
@@ -815,4 +893,7 @@ def _serialize_template(t):
         "response_rate": t.response_rate or 0,
         "last_sent": t.last_sent_at.isoformat() if t.last_sent_at else None,
         "created_at": t.created_at.isoformat() if t.created_at else None,
+        "header_type": getattr(t, 'header_type', None),
+        "header_media_url": getattr(t, 'header_media_url', None),
+        "header_text": getattr(t, 'header_text', None),
     }

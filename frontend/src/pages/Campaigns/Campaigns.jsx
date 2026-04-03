@@ -198,6 +198,9 @@ const Campaigns = () => {
   const [editName, setEditName] = useState('');
   const [editCategory, setEditCategory] = useState('promocion');
   const [editBody, setEditBody] = useState('');
+  const [editHeaderType, setEditHeaderType] = useState('');
+  const [editHeaderMedia, setEditHeaderMedia] = useState(null); // { file, preview }
+  const [editHeaderText, setEditHeaderText] = useState('');
 
   const [sendStep, setSendStep] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -252,6 +255,9 @@ const Campaigns = () => {
     setEditName('');
     setEditCategory('promocion');
     setEditBody('');
+    setEditHeaderType('');
+    setEditHeaderMedia(null);
+    setEditHeaderText('');
     setShowEditor(true);
   };
 
@@ -260,6 +266,9 @@ const Campaigns = () => {
     setEditName(t.name);
     setEditCategory(t.category || 'promocion');
     setEditBody(t.body || '');
+    setEditHeaderType(t.header_type || '');
+    setEditHeaderMedia(t.header_media_url ? { preview: t.header_media_url } : null);
+    setEditHeaderText(t.header_text || '');
     setShowEditor(true);
   };
 
@@ -268,12 +277,29 @@ const Campaigns = () => {
       addNotification('Nombre y mensaje son requeridos', 'error');
       return;
     }
+    // Convert header image to base64 data URI if provided
+    let headerMediaUrl = null;
+    if (editHeaderType === 'IMAGE' && editHeaderMedia?.file) {
+      headerMediaUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(editHeaderMedia.file);
+      });
+    }
+
+    const payload = {
+      name: editName, category: editCategory, body: editBody, status: 'draft',
+      header_type: editHeaderType || null,
+      header_media_url: headerMediaUrl,
+      header_text: editHeaderType === 'TEXT' ? editHeaderText : null,
+    };
+
     try {
       if (editId) {
-        await templateService.updateTemplate(editId, { name: editName, category: editCategory, body: editBody, status: 'draft' });
+        await templateService.updateTemplate(editId, payload);
         addNotification('Plantilla actualizada — debes enviarla a Meta de nuevo para aprobacion', 'success');
       } else {
-        await templateService.createTemplate({ name: editName, category: editCategory, body: editBody, status: 'draft' });
+        await templateService.createTemplate(payload);
         addNotification('Plantilla creada como borrador', 'success');
       }
       setShowEditor(false);
@@ -1075,6 +1101,43 @@ const Campaigns = () => {
               </div>
 
               <div className={`${B}__editor-field`}>
+                <label>Encabezado (opcional)</label>
+                <select value={editHeaderType} onChange={e => { setEditHeaderType(e.target.value); setEditHeaderMedia(null); setEditHeaderText(''); }} style={{ marginBottom: 8 }}>
+                  <option value="">Sin encabezado</option>
+                  <option value="IMAGE">Imagen</option>
+                  <option value="VIDEO">Video</option>
+                  <option value="TEXT">Texto</option>
+                </select>
+                {editHeaderType === 'IMAGE' && (
+                  <div className={`${B}__editor-media-upload`}>
+                    {editHeaderMedia?.preview ? (
+                      <div className={`${B}__editor-media-preview`}>
+                        <img src={editHeaderMedia.preview} alt="" />
+                        <button onClick={() => setEditHeaderMedia(null)} className={`${B}__editor-media-remove`}><CloseIcon /></button>
+                      </div>
+                    ) : (
+                      <label className={`${B}__editor-media-btn`}>
+                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setEditHeaderMedia({ file, preview: URL.createObjectURL(file) });
+                          e.target.value = '';
+                        }} />
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                        Seleccionar imagen
+                      </label>
+                    )}
+                    <p style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)', marginTop: 4 }}>Meta revisara la imagen junto con la plantilla. Max 5MB, JPG/PNG.</p>
+                  </div>
+                )}
+                {editHeaderType === 'VIDEO' && (
+                  <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', padding: '8px 0' }}>El video se adjunta al enviar a Meta. Formatos: MP4, max 16MB.</p>
+                )}
+                {editHeaderType === 'TEXT' && (
+                  <input type="text" value={editHeaderText} onChange={e => setEditHeaderText(e.target.value)} placeholder="Texto del encabezado" maxLength={60} />
+                )}
+              </div>
+
+              <div className={`${B}__editor-field`}>
                 <label>Mensaje</label>
                 <textarea
                   value={editBody}
@@ -1092,6 +1155,12 @@ const Campaigns = () => {
                 <div className={`${B}__editor-preview`}>
                   <span className={`${B}__editor-preview-label`}>Vista previa WhatsApp</span>
                   <div className={`${B}__editor-preview-bubble`}>
+                    {editHeaderType === 'IMAGE' && editHeaderMedia?.preview && (
+                      <img src={editHeaderMedia.preview} alt="" style={{ width: '100%', borderRadius: '8px 8px 0 0', maxHeight: 180, objectFit: 'cover', marginBottom: 8 }} />
+                    )}
+                    {editHeaderType === 'TEXT' && editHeaderText && (
+                      <p style={{ fontWeight: 700, marginBottom: 4 }}>{editHeaderText}</p>
+                    )}
                     <WhatsAppIcon />
                     <p>{editBody.replace(/\{\{nombre\}\}/g, 'Juan').replace(/\{\{servicio\}\}/g, 'Corte Clasico').replace(/\{\{dias\}\}/g, '30').replace(/\{\{negocio\}\}/g, 'Tu Negocio').replace(/\{\{profesional\}\}/g, 'Carlos')}</p>
                   </div>
