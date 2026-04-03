@@ -914,14 +914,16 @@ async def send_media_file(
     user=Depends(get_current_user),
 ):
     """Send a file (image/doc) via WhatsApp. Uses multipart upload — fast."""
+    print(f"[WA-MEDIA] Received: phone={phone}, type={type}, filename={file.filename}, content_type={file.content_type}")
     clean_phone = normalize_phone(phone)
     if not clean_phone:
         raise HTTPException(status_code=400, detail="Numero invalido")
 
     tid = safe_tid(user, db)
     file_bytes = await file.read()
-    if len(file_bytes) > 16 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Archivo muy grande (max 16MB)")
+    print(f"[WA-MEDIA] File read: {len(file_bytes)} bytes ({len(file_bytes)/1024:.0f}KB)")
+    if len(file_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Archivo muy grande (max 5MB)")
 
     mime = file.content_type or ("application/pdf" if file.filename.endswith(".pdf") else "application/octet-stream")
     is_image = type == "image" or mime.startswith("image/")

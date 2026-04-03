@@ -1130,8 +1130,9 @@ const Inbox = () => {
     console.log('[MEDIA] File:', file.name, 'Size:', (file.size / 1024).toFixed(0) + 'KB', 'Type:', file.type);
     console.log('[MEDIA] Phone:', conv.wa_contact_phone);
 
-    if (file.size > 16 * 1024 * 1024) {
-      alert('Archivo muy grande (max 16MB)');
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`Archivo muy grande: ${(file.size / 1024 / 1024).toFixed(1)}MB (max 5MB)`);
+      setSendingMedia(false);
       return;
     }
 
