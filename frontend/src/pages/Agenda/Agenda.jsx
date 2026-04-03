@@ -174,14 +174,15 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
     autoSaveRef.current = setTimeout(async () => {
       try {
-        const notes = serializeProducts(productItems, formData.notes);
+        const userNotesWithCode = (formData.visit_code ? `[CODIGO:${formData.visit_code}] ` : '') + (formData.notes || '');
+        const notes = serializeProducts(productItems, userNotesWithCode.trim());
         if (notes !== editingApt.notes) {
           await appointmentService.update(editingApt.id, { notes: notes || null });
         }
       } catch {}
     }, 800);
     return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
-  }, [productItems, editingApt, showModal, formData.notes]);
+  }, [productItems, editingApt, showModal, formData.notes, formData.visit_code]);
 
   const { addNotification } = useNotification();
   const scrollRef = useRef(null);
