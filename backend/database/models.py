@@ -1208,3 +1208,24 @@ class StaffPayment(Base):
 
     staff = relationship("Staff", foreign_keys=[staff_id])
     visits = relationship("VisitHistory", back_populates="payment", foreign_keys="VisitHistory.payment_id")
+
+
+# ============================================================================
+# WALK-IN QUEUE — Round-robin staff rotation for walk-in clients
+# ============================================================================
+
+class StaffQueue(Base):
+    """Staff rotation order for walk-in assignment. Position 1 = next to receive."""
+    __tablename__ = "staff_queue"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
+    position = Column(Integer, nullable=False, default=0)
+    is_available = Column(Boolean, default=True)
+    walkins_today = Column(Integer, default=0)
+    last_walkin_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    staff = relationship("Staff", foreign_keys=[staff_id])

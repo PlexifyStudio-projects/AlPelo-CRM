@@ -311,6 +311,32 @@ def run_migrations(engine):
     except Exception as e:
         print(f"[MIGRATION] staff_payment table: {e}")
 
+    # --- Staff Queue table for walk-in round-robin ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='staff_queue'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.staff_queue (
+                        id SERIAL PRIMARY KEY,
+                        tenant_id INTEGER NOT NULL,
+                        staff_id INTEGER NOT NULL REFERENCES public.staff(id),
+                        position INTEGER NOT NULL DEFAULT 0,
+                        is_available BOOLEAN DEFAULT TRUE,
+                        walkins_today INTEGER DEFAULT 0,
+                        last_walkin_at TIMESTAMP,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_staff_queue_tenant ON public.staff_queue(tenant_id)"))
+                print("[MIGRATION] Created staff_queue table")
+    except Exception as e:
+        print(f"[MIGRATION] staff_queue table: {e}")
+
     # --- Index for tenant isolation on client and conversation tables ---
     try:
         with engine.begin() as conn:
