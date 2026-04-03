@@ -316,6 +316,68 @@
     }
   }
 
+  &__products-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  &__product-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: rgba(#D97706, 0.04);
+    border: 1px solid rgba(#D97706, 0.1);
+    border-radius: 10px;
+  }
+
+  &__product-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__product-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-secondary;
+  }
+
+  &__product-meta {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.4);
+  }
+
+  &__product-total {
+    font-size: 14px;
+    font-weight: 700;
+    color: #D97706;
+  }
+
+  &__subtotal-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.45);
+    padding: 2px 0;
+  }
+
+  &__subtotal-main {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    margin-top: 4px;
+  }
+
+  &__receipt-divider {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.06);
+    margin: 4px 0;
+  }
+
   &__subtotal {
     @include flex-between;
     padding-top: $spacing-md;

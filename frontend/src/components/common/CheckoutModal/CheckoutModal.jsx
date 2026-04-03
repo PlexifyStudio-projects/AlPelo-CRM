@@ -66,12 +66,26 @@ const PAYMENT_METHODS = [
   { id: 'efectivo', label: 'Efectivo', icon: CashIcon, color: '#10B981' },
   { id: 'nequi', label: 'Nequi', icon: null, color: '#6B21A8' },
   { id: 'daviplata', label: 'Daviplata', icon: null, color: '#DC2626' },
-  { id: 'transferencia', label: 'Transferencia', icon: TransferIcon, color: '#3B82F6' },
+  { id: 'transferencia', label: 'Bancolombia', icon: null, color: '#FDDA24', letter: 'B' },
   { id: 'tarjeta', label: 'Tarjeta', icon: CardIcon, color: '#64748B' },
   { id: 'mixto', label: 'Mixto', icon: MixedIcon, color: null },
 ];
 
 const DISCOUNT_PERCENTAGES = [5, 10, 15, 20];
+
+const PRODUCTS_TAG = '<!--PRODUCTS:';
+const PRODUCTS_TAG_END = ':PRODUCTS-->';
+const deserializeProducts = (notes) => {
+  if (!notes) return [];
+  const start = notes.indexOf(PRODUCTS_TAG);
+  if (start === -1) return [];
+  const end = notes.indexOf(PRODUCTS_TAG_END);
+  if (end === -1) return [];
+  try {
+    const data = JSON.parse(notes.substring(start + PRODUCTS_TAG.length, end));
+    return data.map(p => ({ productId: p.id, name: p.name, basePrice: p.base, salePrice: p.sale, qty: p.qty, commission: p.comm }));
+  } catch { return []; }
+};
 
 const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const [step, setStep] = useState(0);
@@ -98,6 +112,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
 
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState(null);
+  const [productItems, setProductItems] = useState([]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -116,6 +131,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       staff_id: appointment.staff_id,
       price: appointment.price || 0,
     }]);
+    setProductItems(deserializeProducts(appointment.notes));
   }, [appointment]);
 
   useEffect(() => {
@@ -141,7 +157,9 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     fetchServices();
   }, []);
 
-  const subtotal = useMemo(() => items.reduce((s, i) => s + (i.price || 0), 0), [items]);
+  const servicesTotal = useMemo(() => items.reduce((s, i) => s + (i.price || 0), 0), [items]);
+  const productsTotal = useMemo(() => productItems.reduce((s, p) => s + (p.salePrice || 0) * (p.qty || 1), 0), [productItems]);
+  const subtotal = useMemo(() => servicesTotal + productsTotal, [servicesTotal, productsTotal]);
   const [staffCommissionRate, setStaffCommissionRate] = useState(50);
 
   useEffect(() => {
@@ -376,9 +394,29 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         </button>
       )}
 
+      {productItems.length > 0 && (
+        <div className={`${b}__products-section`}>
+          <label className={`${b}__section-label`}>Productos utilizados</label>
+          {productItems.map((p, i) => (
+            <div key={i} className={`${b}__product-row`}>
+              <div className={`${b}__product-info`}>
+                <span className={`${b}__product-name`}>{p.name}</span>
+                <span className={`${b}__product-meta`}>{fmt(p.salePrice)} x{p.qty}{p.commission ? ` · Comision: ${fmt(p.commission)}` : ''}</span>
+              </div>
+              <span className={`${b}__product-total`}>{fmt(p.salePrice * p.qty)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className={`${b}__subtotal`}>
-        <span>Subtotal</span>
-        <span className={`${b}__subtotal-value`}>{fmt(subtotal)}</span>
+        {productItems.length > 0 && (
+          <>
+            <div className={`${b}__subtotal-line`}><span>Servicios</span><span>{fmt(servicesTotal)}</span></div>
+            <div className={`${b}__subtotal-line`}><span>Productos</span><span>{fmt(productsTotal)}</span></div>
+          </>
+        )}
+        <div className={`${b}__subtotal-main`}><span>Subtotal</span><span className={`${b}__subtotal-value`}>{fmt(subtotal)}</span></div>
       </div>
     </div>
   );
@@ -505,7 +543,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
               data-method={pm.id}
             >
               <div className={`${b}__payment-card-icon`}>
-                {Icon ? <Icon /> : <span className={`${b}__payment-card-letter`}>{pm.label[0]}</span>}
+                {Icon ? <Icon /> : <span className={`${b}__payment-card-letter`} style={pm.color ? { background: pm.color, color: pm.id === 'transferencia' ? '#003DA5' : '#fff' } : {}}>{pm.letter || pm.label[0]}</span>}
               </div>
               <span className={`${b}__payment-card-label`}>{pm.label}</span>
               {isSelected && <div className={`${b}__payment-card-check`}><CheckIcon /></div>}
@@ -634,6 +672,17 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
               <span>{fmt(item.price)}</span>
             </div>
           ))}
+          {productItems.length > 0 && (
+            <>
+              <div className={`${b}__receipt-divider`} />
+              {productItems.map((p, i) => (
+                <div key={`p-${i}`} className={`${b}__receipt-item`}>
+                  <span>{p.name} x{p.qty}</span>
+                  <span>{fmt(p.salePrice * p.qty)}</span>
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
         <div className={`${b}__receipt-totals`}>
