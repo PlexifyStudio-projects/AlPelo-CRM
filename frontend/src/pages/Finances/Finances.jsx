@@ -2712,13 +2712,25 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
       .finally(() => setLoading(false));
   }, [staffId, dateFrom, dateTo]);
 
+  const [filter, setFilter] = useState('all');
+
   if (loading) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Cargando visitas...</p>;
   if (!visits.length) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Sin servicios completados en este periodo</p>;
 
-  const filtered = search ? visits.filter(v => {
+  // A visit is "paid" if staff_payment_id is a truthy number
+  const isPaidVisit = (v) => typeof v.staff_payment_id === 'number' && v.staff_payment_id > 0;
+  const paidCount = visits.filter(isPaidVisit).length;
+  const unpaidCount = visits.length - paidCount;
+
+  // Filter by payment status
+  const byStatus = filter === 'paid' ? visits.filter(isPaidVisit)
+    : filter === 'unpaid' ? visits.filter(v => !isPaidVisit(v))
+    : visits;
+
+  const filtered = search ? byStatus.filter(v => {
     const q = search.toLowerCase();
     return [v.client_name, v.service_name, String(v.id), String(v.price), v.date].some(x => x?.toLowerCase().includes(q));
-  }) : visits;
+  }) : byStatus;
 
   const totalRevenue = filtered.reduce((s, v) => s + (v.price || 0), 0);
   const totalCommission = Math.round(totalRevenue * commissionRate);
@@ -2734,9 +2746,9 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
     const next = isSelected(id) ? selectedIds.filter(x => x !== id) : [...(selectedIds || []), id];
     onSelectionChange(next);
   };
-  const selectAll = () => {
+  const selectAllUnpaid = () => {
     if (!onSelectionChange) return;
-    onSelectionChange(filtered.map(v => v.id));
+    onSelectionChange(filtered.filter(v => !isPaidVisit(v)).map(v => v.id));
   };
   const selectNone = () => onSelectionChange && onSelectionChange([]);
 
@@ -2746,11 +2758,19 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
         <div className="finances__visit-search">
           <input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <span className="finances__visit-filter-count" style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)' }}>{visits.length} servicios</span>
+        <div className="finances__visit-filters">
+          {['all', 'unpaid', 'paid'].map(f => (
+            <button key={f} className={`finances__visit-filter-chip ${filter === f ? 'finances__visit-filter-chip--active' : ''}`} onClick={() => setFilter(f)}>
+              {f === 'all' ? 'Todas' : f === 'unpaid' ? 'Sin pagar' : 'Pagadas'}
+              {f === 'unpaid' && unpaidCount > 0 && <span className="finances__visit-filter-count">{unpaidCount}</span>}
+              {f === 'paid' && paidCount > 0 && <span className="finances__visit-filter-count">{paidCount}</span>}
+            </button>
+          ))}
+        </div>
       </div>
       {selectable && (
         <div className="finances__visit-select-bar">
-          <button className="finances__visit-select-btn" onClick={selectAll}>Seleccionar todas</button>
+          <button className="finances__visit-select-btn" onClick={selectAllUnpaid}>Seleccionar sin pagar</button>
           {selectedIds && selectedIds.length > 0 && (
             <>
               <button className="finances__visit-select-btn finances__visit-select-btn--clear" onClick={selectNone}>Deseleccionar</button>
@@ -2764,17 +2784,22 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
           const commission = Math.round((v.price || 0) * commissionRate);
           const products = parseProducts(v.notes);
           const dur = v.duration_minutes;
+          const paid = isPaidVisit(v);
           return (
-            <div key={v.id} className={`finances__visit-item ${selectable && isSelected(v.id) ? 'finances__visit-item--selected' : ''}`}
-              onClick={selectable ? () => toggleSelect(v.id) : undefined}
-              style={selectable ? { cursor: 'pointer' } : undefined}
+            <div key={v.id} className={`finances__visit-item ${paid ? 'finances__visit-item--paid' : ''} ${selectable && isSelected(v.id) ? 'finances__visit-item--selected' : ''}`}
+              onClick={selectable && !paid ? () => toggleSelect(v.id) : undefined}
+              style={selectable && !paid ? { cursor: 'pointer' } : undefined}
             >
               <div className="finances__visit-top">
                 {selectable && (
                   <span className="finances__visit-check">
-                    <span className={`finances__visit-checkbox ${isSelected(v.id) ? 'finances__visit-checkbox--checked' : ''}`}>
-                      {isSelected(v.id) && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
-                    </span>
+                    {paid ? (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#10B981" stroke="#10B981" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                    ) : (
+                      <span className={`finances__visit-checkbox ${isSelected(v.id) ? 'finances__visit-checkbox--checked' : ''}`}>
+                        {isSelected(v.id) && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
+                      </span>
+                    )}
                   </span>
                 )}
                 <span className="finances__visit-id">{(() => { const cm = (v.notes || '').match(/\[CODIGO:([^\]]+)\]/); return cm ? cm[1] : `#${v.id}`; })()}</span>
@@ -2787,7 +2812,11 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
                 <span className="finances__visit-service">{v.service_name}</span>
                 {dur && <span className="finances__visit-dur">{dur}min</span>}
                 <span className="finances__visit-commission">{formatCOP(commission)}</span>
-                <span className={`finances__visit-status finances__visit-status--${v.status}`}>{v.status === 'paid' ? 'Cobrada' : 'Completada'}</span>
+                {paid ? (
+                  <span className="finances__visit-status finances__visit-status--liquidada">Liquidada</span>
+                ) : (
+                  <span className="finances__visit-status finances__visit-status--pendiente">Pendiente</span>
+                )}
               </div>
               {products.length > 0 && (
                 <div className="finances__visit-products">
@@ -3169,7 +3198,7 @@ const TabNomina = () => {
         <div className="finances__nomina-thead">
           <span style={{ flex: 1 }}>Profesional</span>
           <span style={{ width: 80, textAlign: 'center' }}>Servicios</span>
-          <span style={{ width: 80, textAlign: 'center' }}>Estado</span>
+          <span style={{ width: 80, textAlign: 'center' }}>Sin pagar</span>
           <span style={{ width: 110, textAlign: 'right' }}>Ganado</span>
           <span style={{ width: 110, textAlign: 'right' }}>Pagado</span>
           <span style={{ width: 110, textAlign: 'right' }}>Saldo</span>
@@ -3191,8 +3220,8 @@ const TabNomina = () => {
                   </span>
                 </span>
                 <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>{st.services_count}</span>
-                <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600, color: st.balance > 0 ? '#D97706' : '#059669' }}>
-                  {st.balance > 0 ? 'Pendiente' : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600, color: (st.unpaid_services_count || 0) > 0 ? '#D97706' : '#059669' }}>
+                  {(st.unpaid_services_count || 0) > 0 ? st.unpaid_services_count : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
                 </span>
                 <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#059669' }}>{formatCOP(st.total_earned)}</span>
                 <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#3B82F6' }}>{formatCOP(st.total_paid)}</span>
