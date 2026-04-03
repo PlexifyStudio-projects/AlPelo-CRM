@@ -1082,28 +1082,38 @@ const Inbox = () => {
     else if (type === 'image') fileInputImgRef.current?.click();
   };
 
-  const compressImage = (file, maxSizeKB = 500) => {
-    return new Promise((resolve) => {
-      if (file.size <= maxSizeKB * 1024) {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-        return;
-      }
+  const readFileAsDataUri = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Error leyendo archivo'));
+    reader.readAsDataURL(file);
+  });
+
+  const compressImage = (file) => {
+    return new Promise((resolve, reject) => {
       const img = new Image();
+      const url = URL.createObjectURL(file);
       img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let w = img.width, h = img.height;
-        const maxDim = 1200;
-        if (w > maxDim || h > maxDim) {
-          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        try {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          const maxDim = 1200;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const result = canvas.toDataURL('image/jpeg', 0.7);
+          URL.revokeObjectURL(url);
+          resolve(result);
+        } catch (err) {
+          URL.revokeObjectURL(url);
+          reject(err);
         }
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
-      img.src = URL.createObjectURL(file);
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Error cargando imagen')); };
+      img.src = url;
     });
   };
 
@@ -1122,16 +1132,13 @@ const Inbox = () => {
     }
 
     setSendingMedia(true);
+    addNotification(`Subiendo ${type === 'image' ? 'imagen' : 'documento'}...`, 'info');
     try {
       let dataUri;
-      if (type === 'image') {
+      if (type === 'image' && file.type.startsWith('image/')) {
         dataUri = await compressImage(file);
       } else {
-        dataUri = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.readAsDataURL(file);
-        });
+        dataUri = await readFileAsDataUri(file);
       }
 
       const endpoint = type === 'image' ? '/whatsapp/send-image' : '/whatsapp/send-document';
