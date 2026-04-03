@@ -2220,6 +2220,39 @@
   }
 
   // Nomina
+  &__nomina-period-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  &__nomina-period-chips {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  &__nomina-custom-dates {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    input {
+      width: 140px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+  }
+
+  &__nomina-period-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.35);
+    margin-left: auto;
+  }
+
   &__nomina-table {
     background: $color-white;
     border: 1px solid rgba(0, 0, 0, 0.06);

@@ -2873,26 +2873,41 @@ const openPaymentReceipt = (paymentId, apiBase) => {
     .catch(() => { w.document.body.innerHTML = '<p style="color:red;text-align:center">Error cargando comprobante</p>'; });
 };
 
-const TabNomina = ({ dateFrom: rawFrom, dateTo: rawTo, period }) => {
+const NOMINA_PERIODS = [
+  { value: 'month', label: 'Este Mes' },
+  { value: 'last_month', label: 'Mes Anterior' },
+  { value: 'fortnight', label: 'Última Quincena' },
+  { value: 'year', label: 'Este Año' },
+  { value: 'custom', label: 'Personalizado' },
+];
+
+const TabNomina = () => {
   const { addNotification } = useNotification();
 
-  // Compute real dates — when period is not custom, dateFrom/dateTo are empty strings
+  const [nominaPeriod, setNominaPeriod] = useState('month');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
   const computedDates = useMemo(() => {
-    if (rawFrom && rawTo) return { from: rawFrom, to: rawTo };
     const today = new Date();
     const toStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const to = toStr(today);
-    if (period === 'today') return { from: to, to };
-    if (period === 'week') {
-      const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - today.getDay());
-      return { from: toStr(weekAgo), to };
+    if (nominaPeriod === 'custom' && customFrom && customTo) return { from: customFrom, to: customTo };
+    if (nominaPeriod === 'last_month') {
+      const first = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const last = new Date(today.getFullYear(), today.getMonth(), 0);
+      return { from: toStr(first), to: toStr(last) };
     }
-    if (period === 'year') {
+    if (nominaPeriod === 'fortnight') {
+      const fort = new Date(today); fort.setDate(today.getDate() - 15);
+      return { from: toStr(fort), to };
+    }
+    if (nominaPeriod === 'year') {
       return { from: `${today.getFullYear()}-01-01`, to };
     }
     // Default: month
     return { from: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`, to };
-  }, [rawFrom, rawTo, period]);
+  }, [nominaPeriod, customFrom, customTo]);
 
   const dateFrom = computedDates.from;
   const dateTo = computedDates.to;
@@ -3084,6 +3099,28 @@ const TabNomina = ({ dateFrom: rawFrom, dateTo: rawTo, period }) => {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="finances__nomina-period-bar">
+        <div className="finances__nomina-period-chips">
+          {NOMINA_PERIODS.map(p => (
+            <button
+              key={p.value}
+              className={`finances__visit-filter-chip ${nominaPeriod === p.value ? 'finances__visit-filter-chip--active' : ''}`}
+              onClick={() => setNominaPeriod(p.value)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {nominaPeriod === 'custom' && (
+          <div className="finances__nomina-custom-dates">
+            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="finances__input" />
+            <span style={{ color: 'rgba(0,0,0,0.3)' }}>—</span>
+            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="finances__input" />
+          </div>
+        )}
+        <span className="finances__nomina-period-label">{fmtDate(dateFrom)} — {fmtDateFull(dateTo)}</span>
       </div>
 
       <div className="finances__section-header">
@@ -3471,7 +3508,7 @@ const Finances = () => {
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-      {activeTab === 'nomina' && <TabNomina dateFrom={dateFrom} dateTo={dateTo} period={period} />}
+      {activeTab === 'nomina' && <TabNomina />}
     </div>
   );
 };
