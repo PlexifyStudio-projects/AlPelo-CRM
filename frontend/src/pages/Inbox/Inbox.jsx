@@ -1134,29 +1134,20 @@ const Inbox = () => {
     setSendingMedia(true);
     addNotification(`Subiendo ${type === 'image' ? 'imagen' : 'documento'}...`, 'info');
     try {
-      let dataUri;
-      if (type === 'image' && file.type.startsWith('image/')) {
-        dataUri = await compressImage(file);
-      } else {
-        dataUri = await readFileAsDataUri(file);
-      }
-
-      const endpoint = type === 'image' ? '/whatsapp/send-image' : '/whatsapp/send-document';
-      const body = {
-        phone: conv.wa_contact_phone,
-        caption: messageInput.trim() || '',
-        name: conv.wa_contact_name || '',
-        media_data: dataUri,
-      };
-      if (type === 'document') body.filename = file.name;
+      // Use multipart/form-data — much faster than base64 JSON
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('phone', conv.wa_contact_phone);
+      formData.append('caption', messageInput.trim() || '');
+      formData.append('name', conv.wa_contact_name || '');
+      formData.append('type', type);
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
+      const timeout = setTimeout(() => controller.abort(), 60000);
 
-      const res = await fetch(`${API_BASE}${endpoint}`, {
+      const res = await fetch(`${API_BASE}/whatsapp/send-media`, {
         method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: formData,
         signal: controller.signal,
       });
       clearTimeout(timeout);

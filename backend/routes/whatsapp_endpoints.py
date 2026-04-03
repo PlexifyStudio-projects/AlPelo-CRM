@@ -9,7 +9,7 @@ import asyncio
 import random
 import httpx
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Request, Query, BackgroundTasks, File, Form, UploadFile
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func as sa_func
@@ -901,6 +901,96 @@ async def send_image_to_phone(body: dict, db: Session = Depends(get_db), user=De
     track_message_sent()
 
     return {"success": True, "wa_message_id": wa_msg_id}
+
+
+@router.post("/send-media")
+async def send_media_file(
+    file: UploadFile = File(...),
+    phone: str = Form(...),
+    caption: str = Form(""),
+    name: str = Form(""),
+    type: str = Form("image"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Send a file (image/doc) via WhatsApp. Uses multipart upload — fast."""
+    clean_phone = normalize_phone(phone)
+    if not clean_phone:
+        raise HTTPException(status_code=400, detail="Numero invalido")
+
+    tid = safe_tid(user, db)
+    file_bytes = await file.read()
+    if len(file_bytes) > 16 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Archivo muy grande (max 16MB)")
+
+    mime = file.content_type or ("application/pdf" if file.filename.endswith(".pdf") else "application/octet-stream")
+    is_image = type == "image" or mime.startswith("image/")
+    filename = file.filename or ("image.jpg" if is_image else "document.pdf")
+
+    # Upload to Meta Media API
+    try:
+        upload_url = f"{_get_wa_base_url(db)}/media"
+        headers = wa_headers(db)
+        upload_headers = {k: v for k, v in headers.items() if k != "Content-Type"}
+        async with httpx.AsyncClient(timeout=30) as c:
+            resp = await c.post(
+                upload_url, headers=upload_headers,
+                files={"file": (filename, file_bytes, mime)},
+                data={"messaging_product": "whatsapp", "type": mime},
+            )
+            data = resp.json()
+            if "id" not in data:
+                error = data.get("error", {}).get("message", str(data))
+                raise HTTPException(status_code=400, detail=f"Meta upload: {error}")
+            media_id = data["id"]
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=f"Conexion: {str(e)}")
+
+    # Send message
+    msg_type = "image" if is_image else "document"
+    msg_payload = {"id": media_id, "caption": caption} if is_image else {"id": media_id, "filename": filename, "caption": caption}
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            resp = await c.post(
+                f"{_get_wa_base_url(db)}/messages",
+                headers=wa_headers(db),
+                json={"messaging_product": "whatsapp", "to": clean_phone, "type": msg_type, msg_type: msg_payload},
+            )
+            data = resp.json()
+            if "messages" not in data:
+                error = data.get("error", {}).get("message", str(data))
+                raise HTTPException(status_code=400, detail=f"Meta send: {error}")
+            wa_msg_id = data["messages"][0].get("id")
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=f"Conexion: {str(e)}")
+
+    # Store in conversation
+    conv = db.query(WhatsAppConversation).filter(
+        WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone])
+    ).first()
+    if not conv:
+        client_obj = db.query(Client).filter(Client.phone.in_([phone, clean_phone])).first()
+        conv = WhatsAppConversation(
+            tenant_id=tid, wa_contact_phone=phone,
+            wa_contact_name=name or (client_obj.name if client_obj else None),
+            client_id=client_obj.id if client_obj else None,
+            is_ai_active=False, unread_count=0,
+        )
+        db.add(conv)
+        db.flush()
+
+    label = f"[{'Imagen' if is_image else 'Documento'}: {filename}]"
+    msg = WhatsAppMessage(
+        conversation_id=conv.id, wa_message_id=wa_msg_id,
+        direction="outbound", content=f"{label} {caption}".strip(),
+        message_type=msg_type, status="sent", sent_by="admin",
+    )
+    db.add(msg)
+    conv.last_message_at = datetime.utcnow()
+    db.commit()
+    track_message_sent()
+
+    return {"success": True, "wa_message_id": wa_msg_id, "type": msg_type}
 
 
 def _fmt_cop_simple(v):
