@@ -4,8 +4,8 @@
 .checkout-modal {
   position: relative;
   width: 100%;
-  max-width: 560px;
-  max-height: 90vh;
+  max-width: 720px;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   background: $bg-card;
@@ -21,9 +21,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     padding: $spacing-md;
     animation: checkoutFadeIn 200ms ease;
   }
@@ -627,6 +627,211 @@
   &__cash-change-value {
     font-weight: $font-weight-bold;
     font-variant-numeric: tabular-nums;
+  }
+
+  // Client section
+  &__client-section {
+    margin-bottom: 8px;
+  }
+
+  &__client-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #FAFBFC;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+  }
+
+  &__client-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, $color-primary, darken($color-primary, 10%));
+    color: $color-white;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__client-name-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: $color-secondary;
+    flex: 1;
+  }
+
+  &__client-change {
+    font-size: 12px;
+    font-weight: 600;
+    color: $color-primary;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 8px;
+    transition: all 150ms ease;
+    border: none;
+    background: none;
+
+    &:hover { background: rgba($color-primary, 0.06); }
+  }
+
+  &__client-search-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__client-search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    background: $color-white;
+
+    &:focus-within { border-color: $color-primary; box-shadow: 0 0 0 3px rgba($color-primary, 0.1); }
+
+    svg { color: rgba(0, 0, 0, 0.3); flex-shrink: 0; }
+
+    input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      font-family: $font-primary;
+      color: $color-secondary;
+      &::placeholder { color: rgba(0, 0, 0, 0.3); }
+    }
+
+    button {
+      color: rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      &:hover { color: rgba(0, 0, 0, 0.6); }
+    }
+  }
+
+  &__client-results {
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    background: $color-white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+
+  &__client-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: background 100ms ease;
+    font-family: $font-primary;
+
+    & + & { border-top: 1px solid rgba(0, 0, 0, 0.04); }
+    &:hover { background: rgba(0, 0, 0, 0.02); }
+  }
+
+  &__client-option-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-secondary;
+  }
+
+  &__client-option-phone {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.35);
+  }
+
+  // Cash exact button
+  &__cash-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  &__cash-exact {
+    padding: 8px 16px;
+    border: 1px solid rgba($color-primary, 0.2);
+    border-radius: 10px;
+    background: rgba($color-primary, 0.04);
+    color: $color-primary;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 150ms ease;
+    font-family: $font-primary;
+
+    &:hover { background: rgba($color-primary, 0.08); }
+  }
+
+  // Receipt upload
+  &__receipt-section {
+    margin-top: 16px;
+  }
+
+  &__receipt-upload {
+    margin-top: 6px;
+  }
+
+  &__receipt-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px;
+    border: 2px dashed rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 150ms ease;
+    color: rgba(0, 0, 0, 0.35);
+
+    span { font-size: 12px; font-weight: 500; }
+
+    &:hover {
+      border-color: rgba($color-primary, 0.3);
+      background: rgba($color-primary, 0.02);
+      color: $color-primary;
+    }
+  }
+
+  &__receipt-preview {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+
+    img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: cover;
+    }
+  }
+
+  &__receipt-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: $color-white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+
+    &:hover { background: rgba(0, 0, 0, 0.8); }
   }
 
   &__mixed-section {

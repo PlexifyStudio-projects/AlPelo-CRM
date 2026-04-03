@@ -97,6 +97,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const [mixedRows, setMixedRows] = useState([{ method: '', amount: '' }]);
 
   const [submitting, setSubmitting] = useState(false);
+  const [receiptFile, setReceiptFile] = useState(null);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -141,7 +142,17 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   }, []);
 
   const subtotal = useMemo(() => items.reduce((s, i) => s + (i.price || 0), 0), [items]);
-  const commissionAmount = useMemo(() => Math.round(subtotal * 0.5), [subtotal]);
+  const [staffCommissionRate, setStaffCommissionRate] = useState(50);
+
+  useEffect(() => {
+    if (!appointment?.staff_id) return;
+    fetch(`${API_URL}/finances/commissions/config/${appointment.staff_id}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.base_percent) setStaffCommissionRate(data.base_percent); })
+      .catch(() => {});
+  }, [appointment?.staff_id]);
+
+  const commissionAmount = useMemo(() => Math.round(subtotal * (staffCommissionRate / 100)), [subtotal, staffCommissionRate]);
 
   const discountAmount = useMemo(() => {
     if (discountType === 'percent') return Math.round(subtotal * (discountPercent / 100));
@@ -270,18 +281,22 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
 
   const renderServices = () => (
     <div className={`${b}__step`}>
-      <div className={`${b}__client-row`}>
-        <span className={`${b}__client-label`}>Cliente:</span>
+      <div className={`${b}__client-section`}>
         {showClientSearch ? (
-          <div className={`${b}__client-search`}>
-            <input
-              type="text"
-              placeholder="Buscar cliente..."
-              value={clientSearch}
-              onChange={e => setClientSearch(e.target.value)}
-              autoFocus
-              className={`${b}__client-input`}
-            />
+          <div className={`${b}__client-search-wrap`}>
+            <div className={`${b}__client-search-box`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+              <input
+                type="text"
+                placeholder="Buscar cliente por nombre o telefono..."
+                value={clientSearch}
+                onChange={e => setClientSearch(e.target.value)}
+                autoFocus
+              />
+              <button type="button" onClick={() => { setShowClientSearch(false); setClientSearch(''); setClientResults([]); }}>
+                <CloseIcon />
+              </button>
+            </div>
             {clientResults.length > 0 && (
               <div className={`${b}__client-results`}>
                 {clientResults.map(c => (
@@ -292,17 +307,19 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
                     setClientSearch('');
                     setClientResults([]);
                   }} type="button">
-                    {c.name} <small style={{ color: '#94A3B8' }}>{formatPhone(c.phone)}</small>
+                    <span className={`${b}__client-option-name`}>{c.name}</span>
+                    <span className={`${b}__client-option-phone`}>{formatPhone(c.phone)}</span>
                   </button>
                 ))}
               </div>
             )}
-            <button className={`${b}__client-cancel`} onClick={() => { setShowClientSearch(false); setClientSearch(''); }} type="button">Cancelar</button>
           </div>
         ) : (
-          <button className={`${b}__client-name`} onClick={() => setShowClientSearch(true)} type="button" title="Cambiar cliente">
-            {clientName} <small style={{ color: '#3B82F6', marginLeft: '8px' }}>cambiar</small>
-          </button>
+          <div className={`${b}__client-display`}>
+            <div className={`${b}__client-avatar`}>{clientName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}</div>
+            <span className={`${b}__client-name-text`}>{clientName}</span>
+            <button className={`${b}__client-change`} onClick={() => setShowClientSearch(true)} type="button">Cambiar</button>
+          </div>
         )}
       </div>
 
@@ -500,17 +517,22 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       {paymentMethod === 'efectivo' && (
         <div className={`${b}__cash-section`}>
           <label className={`${b}__section-label`}>Monto recibido</label>
-          <div className={`${b}__cash-input`}>
-            <span className={`${b}__input-prefix`}>$</span>
-            <input
-              type="number"
-              min="0"
-              placeholder="0"
-              value={cashReceived}
-              onChange={(e) => setCashReceived(e.target.value)}
-              className={`${b}__input`}
-              autoFocus
-            />
+          <div className={`${b}__cash-row`}>
+            <div className={`${b}__cash-input`}>
+              <span className={`${b}__input-prefix`}>$</span>
+              <input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={cashReceived}
+                onChange={(e) => setCashReceived(e.target.value)}
+                className={`${b}__input`}
+                autoFocus
+              />
+            </div>
+            <button type="button" className={`${b}__cash-exact`} onClick={() => setCashReceived(String(total))}>
+              Monto completo
+            </button>
           </div>
           {(parseInt(cashReceived, 10) || 0) >= total && (parseInt(cashReceived, 10) || 0) > 0 && (
             <div className={`${b}__cash-change`}>
@@ -518,6 +540,32 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
               <span className={`${b}__cash-change-value`}>{fmt(cashChange)}</span>
             </div>
           )}
+        </div>
+      )}
+
+      {['nequi', 'daviplata', 'transferencia'].includes(paymentMethod) && (
+        <div className={`${b}__receipt-section`}>
+          <label className={`${b}__section-label`}>Comprobante de pago (opcional)</label>
+          <div className={`${b}__receipt-upload`}>
+            {receiptFile ? (
+              <div className={`${b}__receipt-preview`}>
+                <img src={URL.createObjectURL(receiptFile)} alt="Comprobante" />
+                <button type="button" className={`${b}__receipt-remove`} onClick={() => setReceiptFile(null)}>
+                  <CloseIcon />
+                </button>
+              </div>
+            ) : (
+              <label className={`${b}__receipt-drop`}>
+                <input type="file" accept="image/*,.pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} hidden />
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span>Subir foto o PDF del comprobante</span>
+              </label>
+            )}
+          </div>
         </div>
       )}
 
@@ -628,7 +676,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
             <span style={{ fontWeight: 600, color: '#1E293B' }}>{appointment.staff_name}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748B', marginTop: '4px' }}>
-            <span>Comision estimada (50%):</span>
+            <span>Comision ({staffCommissionRate}%):</span>
             <span style={{ fontWeight: 600, color: '#059669' }}>{fmt(commissionAmount)}</span>
           </div>
         </div>
