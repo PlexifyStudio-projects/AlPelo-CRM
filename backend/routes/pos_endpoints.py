@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from database.connection import get_db
 from database.models import (
     Admin, Checkout, CheckoutItem, CashRegister,
-    Appointment, Client, Staff, Service,
+    Appointment, Client, Staff, Service, Tenant,
     VisitHistory, Invoice, InvoiceItem, StaffCommission,
 )
 from middleware.auth_middleware import get_current_user
@@ -270,21 +270,62 @@ def create_checkout(
         )
         db.add(ci)
 
-    # ---- Auto-create VisitHistory ----
-    visit = VisitHistory(
-        tenant_id=tid,
-        client_id=client_id,
-        staff_id=staff_id,
-        service_name=", ".join(i.service_name for i in data.items),
-        amount=total,
-        visit_date=now_colombia().date(),
-        status="completed",
-        payment_method=data.payment_method,
-        is_invoiced=True,
-    )
-    db.add(visit)
-    db.flush()
-    checkout.visit_id = visit.id
+    # ---- Auto-create VisitHistory (ONE PER STAFF) ----
+    # Group items by staff_id so each staff gets their own visit record
+    staff_items: dict[int, list] = {}
+    for item in data.items:
+        sid = item.staff_id or staff_id
+        if sid not in staff_items:
+            staff_items[sid] = []
+        staff_items[sid].append(item)
+
+    # Separate services from products
+    visit_ids = []
+    for sid, items_for_staff in staff_items.items():
+        services = [i for i in items_for_staff if not (i.service_name or "").startswith("[Producto]")]
+        products = [i for i in items_for_staff if (i.service_name or "").startswith("[Producto]")]
+
+        service_revenue = sum(i.unit_price * i.quantity for i in services)
+        product_revenue = sum(i.unit_price * i.quantity for i in products)
+        service_names = ", ".join(i.service_name for i in services) if services else ", ".join(i.service_name for i in items_for_staff)
+
+        # Build notes with product info for Nómina
+        notes_parts = []
+        if data.notes:
+            notes_parts.append(data.notes)
+        if products:
+            import json as _json
+            prod_data = [{"name": p.service_name.replace("[Producto] ", ""), "qty": p.quantity, "sale": p.unit_price} for p in products]
+            notes_parts.append(f"<!--PRODUCTS:{_json.dumps(prod_data)}:PRODUCTS-->")
+        if product_revenue > 0:
+            notes_parts.append(f"[PRODUCT_COMMISSION:{product_revenue}]")
+
+        sname = db.query(Staff).filter(Staff.id == sid).first()
+        visit = VisitHistory(
+            tenant_id=tid,
+            client_id=client_id,
+            staff_id=sid,
+            service_name=service_names,
+            amount=service_revenue + product_revenue,
+            visit_date=now_colombia().date(),
+            status="completed",
+            payment_method=data.payment_method,
+            is_invoiced=True,
+            notes="\n".join(notes_parts) if notes_parts else None,
+        )
+        db.add(visit)
+        db.flush()
+        visit_ids.append(visit.id)
+
+    # Link checkout to first visit (backwards compat)
+    if visit_ids:
+        checkout.visit_id = visit_ids[0]
+
+    # ---- IVA from tenant config ----
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    tax_rate = getattr(tenant, 'default_tax_rate', 0) or 0
+    tax_amount = round(subtotal * tax_rate) if tax_rate > 0 else 0
+    invoice_total = subtotal - discount_amount + tax_amount + data.tip
 
     # ---- Auto-create Invoice + InvoiceItems ----
     invoice_number = _next_invoice_number(db, tid)
@@ -295,9 +336,12 @@ def create_checkout(
         client_name=client_name,
         client_phone=client_phone,
         subtotal=subtotal,
-        tax_rate=0,
-        tax_amount=0,
-        total=total,
+        discount_type=data.discount_type,
+        discount_value=data.discount_value,
+        discount_amount=discount_amount,
+        tax_rate=tax_rate,
+        tax_amount=tax_amount,
+        total=invoice_total,
         payment_method=data.payment_method,
         status="paid",
         issued_date=now_colombia().date(),
@@ -317,31 +361,9 @@ def create_checkout(
             unit_price=item.unit_price,
             total=item.unit_price * item.quantity,
             staff_name=item.staff_name or staff_name,
-            visit_id=visit.id,
+            visit_id=visit_ids[0] if visit_ids else None,
         )
         db.add(inv_item)
-
-    # ---- Auto-create StaffCommission ----
-    # Group earnings by staff_id from items
-    staff_earnings: dict[int, int] = {}
-    for item in data.items:
-        sid = item.staff_id or staff_id
-        if sid:
-            staff_earnings[sid] = staff_earnings.get(sid, 0) + (item.unit_price * item.quantity)
-
-    for sid, earnings in staff_earnings.items():
-        # Look up custom commission rate, default to 50%
-        commission_config = db.query(StaffCommission).filter(
-            StaffCommission.staff_id == sid
-        )
-        commission_config = _tenant_filter(commission_config, StaffCommission, tid).first()
-        rate = commission_config.default_rate if commission_config else 0.50
-        commission_amount = int(earnings * rate)
-
-        # Create a visit-linked commission record in visit_history-style
-        # StaffCommission is a config table, so we record the payout in visit
-        # The commission tracking is handled via the existing finance P&L system
-        # which reads from visit_history and staff_commission rates
 
     # ---- Update Appointment status ----
     if data.appointment_id:

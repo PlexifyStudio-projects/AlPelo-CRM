@@ -135,6 +135,8 @@ def run_migrations(engine):
         ("message_template", "header_type", "VARCHAR(10)"),
         ("message_template", "header_media_url", "TEXT"),
         ("message_template", "header_text", "VARCHAR(200)"),
+        # Tenant IVA config
+        ("tenant", "default_tax_rate", "FLOAT NOT NULL DEFAULT 0"),
     ]
 
     for table, column, col_type in migrations:
