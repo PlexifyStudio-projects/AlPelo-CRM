@@ -2873,8 +2873,30 @@ const openPaymentReceipt = (paymentId, apiBase) => {
     .catch(() => { w.document.body.innerHTML = '<p style="color:red;text-align:center">Error cargando comprobante</p>'; });
 };
 
-const TabNomina = ({ dateFrom, dateTo }) => {
+const TabNomina = ({ dateFrom: rawFrom, dateTo: rawTo, period }) => {
   const { addNotification } = useNotification();
+
+  // Compute real dates — when period is not custom, dateFrom/dateTo are empty strings
+  const computedDates = useMemo(() => {
+    if (rawFrom && rawTo) return { from: rawFrom, to: rawTo };
+    const today = new Date();
+    const toStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const to = toStr(today);
+    if (period === 'today') return { from: to, to };
+    if (period === 'week') {
+      const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - today.getDay());
+      return { from: toStr(weekAgo), to };
+    }
+    if (period === 'year') {
+      return { from: `${today.getFullYear()}-01-01`, to };
+    }
+    // Default: month
+    return { from: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`, to };
+  }, [rawFrom, rawTo, period]);
+
+  const dateFrom = computedDates.from;
+  const dateTo = computedDates.to;
+
   const [summary, setSummary] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -3449,7 +3471,7 @@ const Finances = () => {
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-      {activeTab === 'nomina' && <TabNomina dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'nomina' && <TabNomina dateFrom={dateFrom} dateTo={dateTo} period={period} />}
     </div>
   );
 };
