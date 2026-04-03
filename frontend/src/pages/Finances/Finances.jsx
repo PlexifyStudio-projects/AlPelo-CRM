@@ -219,6 +219,7 @@ const TAB_OPTIONS = [
   { value: 'gastos', label: 'Gastos' },
   { value: 'comisiones', label: 'Comisiones' },
   { value: 'facturas', label: 'Facturas' },
+  { value: 'nomina', label: 'Nómina' },
 ];
 
 const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
@@ -2676,6 +2677,276 @@ const TabForecast = () => {
     </div>
   );
 };
+const TabNomina = ({ dateFrom, dateTo }) => {
+  const { addNotification } = useNotification();
+  const [summary, setSummary] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showPayModal, setShowPayModal] = useState(null);
+  const [payForm, setPayForm] = useState({ amount: '', concept: '', payment_method: 'efectivo', reference: '', notes: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [expandedStaff, setExpandedStaff] = useState(null);
+  const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+  const fetchApi = async (url, options = {}) => {
+    const res = await fetch(`${API}${url}`, { credentials: 'include', ...options });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Error ${res.status}`); }
+    return res.json();
+  };
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [summ, pays] = await Promise.all([
+        fetchApi(`/staff-payments/summary?period_from=${dateFrom}&period_to=${dateTo}`),
+        fetchApi('/staff-payments/'),
+      ]);
+      setSummary(summ);
+      setPayments(pays);
+    } catch (err) {
+      addNotification('Error cargando nómina: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [dateFrom, dateTo, addNotification]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const totalOwed = summary.reduce((s, st) => s + Math.max(0, st.balance), 0);
+  const totalPaid = summary.reduce((s, st) => s + st.total_paid, 0);
+  const totalEarned = summary.reduce((s, st) => s + st.total_earned, 0);
+
+  const openPayModal = (staff) => {
+    setShowPayModal(staff);
+    setPayForm({
+      amount: String(Math.max(0, staff.balance)),
+      concept: `Comisiones ${new Date(dateFrom).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} — ${new Date(dateTo).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+      payment_method: 'efectivo',
+      reference: '',
+      notes: '',
+    });
+  };
+
+  const handlePay = async (e) => {
+    e.preventDefault();
+    if (!showPayModal || !payForm.amount) return;
+    setSubmitting(true);
+    try {
+      await fetchApi('/staff-payments/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          staff_id: showPayModal.staff_id,
+          amount: parseInt(payForm.amount) || 0,
+          period_from: dateFrom,
+          period_to: dateTo,
+          concept: payForm.concept,
+          payment_method: payForm.payment_method,
+          reference: payForm.reference || null,
+          notes: payForm.notes || null,
+          commission_total: showPayModal.total_earned,
+          tips_total: 0,
+          product_commissions: 0,
+          deductions: 0,
+        }),
+      });
+      addNotification(`Pago registrado para ${showPayModal.staff_name}`, 'success');
+      setShowPayModal(null);
+      load();
+    } catch (err) {
+      addNotification('Error: ' + err.message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeletePayment = async (id) => {
+    try {
+      await fetchApi(`/staff-payments/${id}`, { method: 'DELETE' });
+      addNotification('Pago eliminado', 'success');
+      load();
+    } catch (err) {
+      addNotification('Error: ' + err.message, 'error');
+    }
+  };
+
+  if (loading) return <div className="finances__comm-skeleton">{[...Array(3)].map((_, i) => <div key={i} className="finances__card" style={{ padding: 20 }}><SkeletonBlock width="100%" height="80px" /></div>)}</div>;
+
+  return (
+    <>
+      <div className="finances__kpis">
+        <div className="finances__kpi-card finances__kpi-card--primary">
+          <div className="finances__kpi-icon finances__kpi-icon--primary">{Icons.users}</div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value">{summary.length}</span>
+            <span className="finances__kpi-label">Profesionales</span>
+          </div>
+        </div>
+        <div className="finances__kpi-card">
+          <div className="finances__kpi-icon finances__kpi-icon--success">{Icons.dollar}</div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value"><AnimatedNumber value={totalEarned} prefix="$" /></span>
+            <span className="finances__kpi-label">Total Ganado</span>
+          </div>
+        </div>
+        <div className="finances__kpi-card">
+          <div className="finances__kpi-icon finances__kpi-icon--accent">{Icons.check}</div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value"><AnimatedNumber value={totalPaid} prefix="$" /></span>
+            <span className="finances__kpi-label">Total Pagado</span>
+          </div>
+        </div>
+        {totalOwed > 0 && (
+          <div className="finances__kpi-card finances__kpi-card--warning">
+            <div className="finances__kpi-icon finances__kpi-icon--warning">{Icons.alert}</div>
+            <div className="finances__kpi-info">
+              <span className="finances__kpi-value"><AnimatedNumber value={totalOwed} prefix="$" /></span>
+              <span className="finances__kpi-label">Pendiente por pagar</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="finances__section-header">
+        <h3 className="finances__section-title">Liquidación por profesional</h3>
+      </div>
+
+      <div className="finances__nomina-table">
+        <div className="finances__nomina-thead">
+          <span style={{ flex: 1 }}>Profesional</span>
+          <span style={{ width: 80, textAlign: 'center' }}>Servicios</span>
+          <span style={{ width: 110, textAlign: 'right' }}>Ganado</span>
+          <span style={{ width: 110, textAlign: 'right' }}>Pagado</span>
+          <span style={{ width: 110, textAlign: 'right' }}>Saldo</span>
+          <span style={{ width: 120 }} />
+        </div>
+        {summary.map(st => {
+          const isExpanded = expandedStaff === st.staff_id;
+          const staffPayments = payments.filter(p => p.staff_id === st.staff_id);
+          return (
+            <div key={st.staff_id} className={`finances__nomina-row-wrap ${isExpanded ? 'finances__nomina-row-wrap--expanded' : ''}`}>
+              <div className="finances__nomina-row" onClick={() => setExpandedStaff(isExpanded ? null : st.staff_id)}>
+                <span className="finances__nomina-staff" style={{ flex: 1 }}>
+                  <span className="finances__nomina-avatar" style={{ background: st.photo_url ? 'transparent' : '#2D5A3D' }}>
+                    {st.photo_url ? <img src={st.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : st.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                  </span>
+                  <span className="finances__nomina-name">
+                    <strong>{st.staff_name}</strong>
+                    <small>{st.staff_role} · {(st.commission_rate * 100).toFixed(0)}%</small>
+                  </span>
+                </span>
+                <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>{st.services_count}</span>
+                <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#059669' }}>{formatCOP(st.total_earned)}</span>
+                <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#3B82F6' }}>{formatCOP(st.total_paid)}</span>
+                <span style={{ width: 110, textAlign: 'right', fontSize: 14, fontWeight: 700, color: st.balance > 0 ? '#DC2626' : '#059669' }}>
+                  {st.balance > 0 ? formatCOP(st.balance) : 'Al día'}
+                </span>
+                <span style={{ width: 120, display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                  {st.balance > 0 && (
+                    <button className="finances__btn-primary" style={{ padding: '5px 12px', fontSize: 11 }} onClick={(e) => { e.stopPropagation(); openPayModal(st); }}>
+                      Pagar
+                    </button>
+                  )}
+                  <svg className={`finances__inv-chevron ${isExpanded ? 'finances__inv-chevron--open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+                </span>
+              </div>
+
+              {isExpanded && (
+                <div className="finances__nomina-detail">
+                  <h4>Historial de pagos</h4>
+                  {staffPayments.length > 0 ? (
+                    <div className="finances__nomina-payments">
+                      {staffPayments.map(p => (
+                        <div key={p.id} className="finances__nomina-payment">
+                          <div className="finances__nomina-payment-main">
+                            <span className="finances__nomina-payment-date">{new Date(p.paid_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            <span className="finances__nomina-payment-concept">{p.concept}</span>
+                            <span className={`finances__inv-method-tag finances__inv-method-tag--${p.payment_method}`}>{p.payment_method}</span>
+                            <strong className="finances__nomina-payment-amount">{formatCOP(p.amount)}</strong>
+                            <button className="finances__icon-btn finances__icon-btn--danger" onClick={() => handleDeletePayment(p.id)} title="Eliminar" style={{ marginLeft: 4 }}>{Icons.trash}</button>
+                          </div>
+                          {(p.reference || p.notes) && (
+                            <div className="finances__nomina-payment-meta">
+                              {p.reference && <span>Ref: {p.reference}</span>}
+                              {p.notes && <span>{p.notes}</span>}
+                              {p.paid_by && <span>Por: {p.paid_by}</span>}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.4)', padding: '12px 0' }}>Sin pagos registrados en este período</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {showPayModal && createPortal(
+        <div className="finances__pay-overlay" onClick={() => setShowPayModal(null)}>
+          <form className="finances__pay-modal" onClick={e => e.stopPropagation()} onSubmit={handlePay}>
+            <div className="finances__pay-header">
+              <h2>Registrar pago</h2>
+              <button type="button" onClick={() => setShowPayModal(null)} className="finances__modal-close">&times;</button>
+            </div>
+            <div className="finances__pay-staff">
+              <span className="finances__nomina-avatar" style={{ background: '#2D5A3D', width: 40, height: 40, fontSize: 14 }}>
+                {showPayModal.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+              </span>
+              <div>
+                <strong>{showPayModal.staff_name}</strong>
+                <small style={{ display: 'block', color: 'rgba(0,0,0,0.4)', fontSize: 12 }}>
+                  Ganado: {formatCOP(showPayModal.total_earned)} · Pagado: {formatCOP(showPayModal.total_paid)} · Saldo: {formatCOP(showPayModal.balance)}
+                </small>
+              </div>
+            </div>
+            <div className="finances__pay-fields">
+              <div className="finances__pay-field">
+                <label>Monto a pagar *</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ color: 'rgba(0,0,0,0.35)', fontWeight: 600 }}>$</span>
+                  <input type="number" value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))} required className="finances__input" />
+                </div>
+              </div>
+              <div className="finances__pay-field">
+                <label>Concepto *</label>
+                <input value={payForm.concept} onChange={e => setPayForm(f => ({ ...f, concept: e.target.value }))} required className="finances__input" />
+              </div>
+              <div className="finances__pay-field">
+                <label>Método de pago *</label>
+                <select value={payForm.payment_method} onChange={e => setPayForm(f => ({ ...f, payment_method: e.target.value }))} className="finances__select">
+                  <option value="efectivo">Efectivo</option>
+                  <option value="nequi">Nequi</option>
+                  <option value="daviplata">Daviplata</option>
+                  <option value="transferencia">Bancolombia</option>
+                </select>
+              </div>
+              <div className="finances__pay-field">
+                <label>Referencia / Nro. transferencia</label>
+                <input value={payForm.reference} onChange={e => setPayForm(f => ({ ...f, reference: e.target.value }))} className="finances__input" placeholder="Opcional" />
+              </div>
+              <div className="finances__pay-field">
+                <label>Notas</label>
+                <textarea value={payForm.notes} onChange={e => setPayForm(f => ({ ...f, notes: e.target.value }))} className="finances__input" rows={2} placeholder="Opcional" />
+              </div>
+            </div>
+            <div className="finances__pay-actions">
+              <button type="button" className="finances__btn-ghost" onClick={() => setShowPayModal(null)}>Cancelar</button>
+              <button type="submit" className="finances__btn-primary" disabled={submitting}>
+                {submitting ? 'Procesando...' : `Pagar ${formatCOP(parseInt(payForm.amount) || 0)}`}
+              </button>
+            </div>
+          </form>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+};
+
 const Finances = () => {
   const { tenant } = useTenant();
   const [data, setData] = useState(null);
@@ -2850,6 +3121,7 @@ const Finances = () => {
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'nomina' && <TabNomina dateFrom={dateFrom} dateTo={dateTo} />}
     </div>
   );
 };
