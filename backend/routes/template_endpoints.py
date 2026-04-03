@@ -508,60 +508,80 @@ async def submit_to_meta(template_id: int, user=Depends(get_current_user), _db: 
         header_media = getattr(tpl, 'header_media_url', None)
         header_text = getattr(tpl, 'header_text', None)
 
-        if header_type == 'IMAGE' and header_media:
-            # Upload image to Meta first, then reference the handle
-            try:
-                import httpx as _httpx
-                import base64 as _b64
+        def _upload_media_to_meta(data_uri, default_mime):
+            """Upload base64 data URI to Meta Resumable Upload API, return handle."""
+            import httpx as _httpx
+            import base64 as _b64
 
-                if header_media.startswith('data:'):
-                    # base64 data URI → bytes
-                    _, encoded = header_media.split(',', 1)
-                    img_bytes = _b64.b64decode(encoded)
-                    mime = header_media.split(';')[0].split(':')[1] if ';' in header_media else 'image/jpeg'
-                else:
-                    # URL — download it
-                    async_resp = None  # Can't do async here, skip URL for now
-                    img_bytes = None
-                    mime = 'image/jpeg'
+            if not data_uri or not data_uri.startswith('data:'):
+                return None
 
-                if img_bytes:
-                    from services.whatsapp.helpers import _get_wa_base_url as _gwbu
-                    upload_resp = _httpx.post(
-                        f"https://graph.facebook.com/{WA_API_VERSION}/{wa_business_id}/uploads",
-                        headers={"Authorization": f"Bearer {wa_token}"},
-                        params={"file_length": len(img_bytes), "file_type": mime, "messaging_product": "whatsapp"},
+            # Parse data URI
+            header_part, encoded = data_uri.split(',', 1)
+            mime = header_part.split(';')[0].split(':')[1] if ':' in header_part else default_mime
+            file_bytes = _b64.b64decode(encoded)
+            file_len = len(file_bytes)
+
+            print(f"[META UPLOAD] Uploading {file_len} bytes, mime={mime}")
+
+            # Step 1: Create upload session
+            resp1 = _httpx.post(
+                f"https://graph.facebook.com/{WA_API_VERSION}/app/uploads",
+                headers={"Authorization": f"Bearer {wa_token}"},
+                params={"file_length": file_len, "file_type": mime},
+                timeout=30,
+            )
+            data1 = resp1.json()
+            print(f"[META UPLOAD] Session response: {data1}")
+
+            session_id = data1.get("id")
+            if not session_id:
+                print(f"[META UPLOAD] No session ID, trying direct upload...")
+                # Fallback: try direct file upload to phone number media endpoint
+                phone_id = tenant.wa_phone_number_id if tenant else None
+                if phone_id:
+                    resp_direct = _httpx.post(
+                        f"https://graph.facebook.com/{WA_API_VERSION}/{phone_id}/media",
+                        headers={k: v for k, v in {"Authorization": f"Bearer {wa_token}"}.items()},
+                        files={"file": ("media", file_bytes, mime)},
+                        data={"messaging_product": "whatsapp", "type": mime},
+                        timeout=30,
                     )
-                    upload_data = upload_resp.json()
+                    data_direct = resp_direct.json()
+                    print(f"[META UPLOAD] Direct upload response: {data_direct}")
+                    return data_direct.get("id")  # This is a media_id, not a handle
+                return None
 
-                    if 'id' in upload_data:
-                        # Session-based upload
-                        upload_handle = upload_data['id']
-                        upload_resp2 = _httpx.post(
-                            f"https://graph.facebook.com/{WA_API_VERSION}/{upload_handle}",
-                            headers={"Authorization": f"OAuth {wa_token}", "file_offset": "0", "Content-Type": mime},
-                            content=img_bytes,
-                        )
-                        handle_data = upload_resp2.json()
-                        if 'h' in handle_data:
-                            components.append({
-                                "type": "HEADER",
-                                "format": "IMAGE",
-                                "example": {"header_handle": [handle_data['h']]},
-                            })
-                        else:
-                            # Fallback: just declare IMAGE header without example
-                            components.append({"type": "HEADER", "format": "IMAGE"})
-                    else:
-                        components.append({"type": "HEADER", "format": "IMAGE"})
+            # Step 2: Upload file bytes
+            resp2 = _httpx.post(
+                f"https://graph.facebook.com/{WA_API_VERSION}/{session_id}",
+                headers={"Authorization": f"OAuth {wa_token}", "file_offset": "0", "Content-Type": mime},
+                content=file_bytes,
+                timeout=60,
+            )
+            data2 = resp2.json()
+            print(f"[META UPLOAD] Upload response: {data2}")
+
+            return data2.get("h")  # The handle for template example
+
+        if header_type in ('IMAGE', 'VIDEO') and header_media:
+            fmt = header_type  # IMAGE or VIDEO
+            default_mime = 'image/jpeg' if fmt == 'IMAGE' else 'video/mp4'
+            try:
+                handle = _upload_media_to_meta(header_media, default_mime)
+                if handle:
+                    components.append({
+                        "type": "HEADER",
+                        "format": fmt,
+                        "example": {"header_handle": [handle]},
+                    })
+                    print(f"[META SUBMIT] Header {fmt} with handle: {handle[:30]}...")
                 else:
-                    components.append({"type": "HEADER", "format": "IMAGE"})
+                    print(f"[META SUBMIT] No handle returned, submitting {fmt} header without example")
+                    components.append({"type": "HEADER", "format": fmt})
             except Exception as e:
-                print(f"[META SUBMIT] Header image upload error: {e}")
-                components.append({"type": "HEADER", "format": "IMAGE"})
-
-        elif header_type == 'VIDEO':
-            components.append({"type": "HEADER", "format": "VIDEO"})
+                print(f"[META SUBMIT] Header upload error: {e}")
+                components.append({"type": "HEADER", "format": fmt})
 
         elif header_type == 'TEXT' and header_text:
             components.append({"type": "HEADER", "format": "TEXT", "text": header_text})
