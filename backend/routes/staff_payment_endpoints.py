@@ -9,7 +9,8 @@ from database.models import StaffPayment, Staff, VisitHistory, StaffCommission
 from schemas.staff_payment import (
     StaffPaymentCreate, StaffPaymentUpdate, StaffPaymentResponse, StaffPayrollSummary
 )
-from auth.auth import get_current_user, Admin
+from middleware.auth_middleware import get_current_user
+from database.models import Admin
 
 router = APIRouter(prefix="/staff-payments", tags=["Staff Payments"])
 
