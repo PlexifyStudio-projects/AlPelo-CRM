@@ -2122,7 +2122,10 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                       {inv.receipt_url && (
                         <div className="finances__sale-receipt">
                           <span className="finances__sale-receipt-label">Comprobante adjunto</span>
-                          <img src={inv.receipt_url} alt="Comprobante" className="finances__sale-receipt-img" onClick={() => window.open(inv.receipt_url, '_blank')} />
+                          <img src={inv.receipt_url} alt="Comprobante" className="finances__sale-receipt-img" onClick={() => {
+                          const w = window.open('', '_blank');
+                          if (w) { w.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111"><img src="${inv.receipt_url}" style="max-width:100%;max-height:100vh;object-fit:contain"></body></html>`); w.document.close(); }
+                        }} />
                         </div>
                       )}
                       <div className="finances__sale-detail-actions">
