@@ -1508,6 +1508,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   const [expandedId, setExpandedId] = useState(null);
   const [methodFilter, setMethodFilter] = useState('');
   const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [sendingWA, setSendingWA] = useState(null); // invoice id being sent
 
   const [allClients, setAllClients] = useState([]);
   const [allServices, setAllServices] = useState([]);
@@ -2187,7 +2188,8 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           {Icons.fileText} Imprimir
                         </button>
                         {inv.client_phone && (
-                          <button className="finances__btn-ghost finances__btn-ghost--sm" onClick={async () => {
+                          <button className="finances__btn-ghost finances__btn-ghost--sm" disabled={sendingWA === inv.id} onClick={async () => {
+                            setSendingWA(inv.id);
                             const items = (inv.items || []).map(it => `- ${it.service_name}: ${formatCOP(it.total)}`).join('\n');
                             const msg = `Hola ${inv.client_name.split(' ')[0]}, le compartimos su factura ${inv.invoice_number}:\n\n${items}\n${inv.discount_amount > 0 ? `Descuento: -${formatCOP(inv.discount_amount)}\n` : ''}${inv.tax_amount > 0 ? `IVA: ${formatCOP(inv.tax_amount)}\n` : ''}TOTAL: ${formatCOP(inv.total)}\n\nMetodo: ${PAYMENT_METHODS.find(p => p.value === inv.payment_method)?.label || inv.payment_method || 'N/A'}${inv.payment_terms === 'credito' && inv.due_date ? `\nVence: ${new Date(inv.due_date+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}` : ''}\n\nGracias por su preferencia.`;
                             try {
@@ -2203,8 +2205,13 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                               addNotification('Factura enviada por WhatsApp', 'success');
                               if (inv.status === 'draft') handleStatusChange(inv.id, 'sent');
                             } catch (err) { addNotification('Error: ' + err.message, 'error'); }
+                            finally { setSendingWA(null); }
                           }} title="Enviar por WhatsApp">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg> WhatsApp
+                            {sendingWA === inv.id ? (
+                              <><svg className="finances__spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Enviando...</>
+                            ) : (
+                              <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg> WhatsApp</>
+                            )}
                           </button>
                         )}
                       </div>
