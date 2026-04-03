@@ -329,7 +329,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       setCheckoutError(typeof err.message === 'string' ? err.message : 'Error al procesar el cobro');
     }
     setSubmitting(false);
-  }, [appointment, selectedClientId, clientName, items, subtotal, discountType, discountPercent, discountFixed, discountAmount, tip, total, paymentMethod, cashReceived, cashChange, mixedRows, onCompleted]);
+  }, [appointment, selectedClientId, clientName, items, subtotal, discountType, discountPercent, discountFixed, discountAmount, tip, total, paymentMethod, cashReceived, cashChange, mixedRows, receiptFile, onCompleted]);
 
   if (!appointment) return null;
 
