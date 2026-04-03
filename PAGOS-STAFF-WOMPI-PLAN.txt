@@ -1,0 +1,424 @@
+================================================================================
+  PLEXIFY STUDIO — PLAN COMPLETO: PAGOS AL STAFF + INTEGRACION WOMPI
+  Fecha: 2 de abril de 2026
+  Estado: Estructura backend lista, falta Wompi + UI mejorada
+================================================================================
+
+TABLA DE CONTENIDOS
+-------------------
+1. Estado actual — Lo que ya tenemos
+2. Lo que falta — Detallado
+3. Integracion Wompi — Como funciona
+4. Datos bancarios del staff
+5. Flujo completo de pago
+6. Seguridad
+7. Configuracion por tenant
+8. Comprobante de pago
+9. Plan de implementacion paso a paso
+
+
+================================================================================
+  1. ESTADO ACTUAL — LO QUE YA TENEMOS
+================================================================================
+
+BACKEND:
+- Modelo StaffPayment en la BD (tabla staff_payment)
+  * staff_id, tenant_id, amount, period_from, period_to
+  * concept, payment_method, reference, receipt_url
+  * commission_total, tips_total, product_commissions, deductions
+  * paid_by, paid_at, status, notes
+- Endpoints:
+  * GET /api/staff-payments/summary — resumen por staff (ganado vs pagado vs saldo)
+  * GET /api/staff-payments/ — listar pagos (filtro por staff, status)
+  * POST /api/staff-payments/ — registrar pago
+  * PUT /api/staff-payments/{id} — actualizar pago
+  * DELETE /api/staff-payments/{id} — eliminar pago
+- Migracion automatica de la tabla al iniciar
+
+FRONTEND:
+- Tab "Nomina" en Finanzas con:
+  * KPIs: Profesionales, Total Ganado, Total Pagado, Pendiente por pagar
+  * Tabla por profesional: avatar, nombre, rol, %, servicios, ganado, pagado, saldo
+  * Expandible: 2 columnas (Servicios realizados + Historial de pagos)
+  * Servicios: fecha, hora, cliente, servicio, duracion, precio, comision, productos, codigo visita
+  * Buscador dentro de servicios
+  * Modal "Registrar pago": monto, concepto, metodo, referencia, notas
+  * WhatsApp al staff al registrar pago
+  * Resumen: total servicios, revenue, comisiones, productos, total a pagar
+
+PROBLEMAS ACTUALES:
+- El "Invalid Date" en concepto se corrigio pero puede seguir en cache
+- Las visitas anteriores al fix del codigo de visita no tienen codigo
+- El pago es solo REGISTRO — no dispersa dinero realmente
+- No hay datos bancarios del staff guardados
+- No hay comprobante de pago descargable/imprimible
+- No hay integracion con proveedor de pagos
+
+
+================================================================================
+  2. LO QUE FALTA — DETALLADO
+================================================================================
+
+A. DATOS BANCARIOS DEL STAFF
+-----------------------------
+Nuevo modelo o extension de Staff con campos encriptados:
+- bank_name: VARCHAR(100) — Bancolombia, Davivienda, etc.
+- bank_account_type: VARCHAR(20) — Ahorros / Corriente
+- bank_account_number: VARCHAR(30) — Numero de cuenta (encriptado)
+- nequi_phone: VARCHAR(15) — Numero Nequi (encriptado)
+- daviplata_phone: VARCHAR(15) — Numero Daviplata (encriptado)
+- document_type: VARCHAR(5) — CC, CE, NIT
+- document_number: VARCHAR(20) — Cedula (encriptado)
+- bank_holder_name: VARCHAR(200) — Nombre titular de la cuenta
+
+Frontend: Seccion en el perfil del staff para llenar datos bancarios.
+Solo visible para admin (no para el staff mismo, por seguridad).
+
+B. CONFIGURACION WOMPI POR TENANT
+-----------------------------------
+En Settings > Pagos (nueva seccion):
+- wompi_public_key: VARCHAR(200) — Llave publica de Wompi
+- wompi_private_key: VARCHAR(200) — Llave privada (encriptada)
+- wompi_events_key: VARCHAR(200) — Llave de eventos/webhooks
+- wompi_environment: VARCHAR(10) — sandbox / production
+- payments_enabled: BOOLEAN — Si esta habilitado pagar desde la plataforma
+
+C. MODAL DE PAGO MEJORADO
+---------------------------
+Cuando el admin le da "Pagar":
+1. Mostrar datos bancarios del staff (cuenta destino)
+2. Si Wompi esta configurado:
+   - Boton "Pagar ahora" → dispersa via API Wompi
+   - Spinner de procesamiento
+   - Confirmacion con referencia de Wompi
+3. Si Wompi NO esta configurado:
+   - Mostrar datos bancarios para que el admin haga transferencia manual
+   - Campo para pegar referencia de la transferencia
+   - Upload de comprobante (foto/PDF)
+4. En ambos casos: se registra el StaffPayment + se notifica por WhatsApp
+
+D. COMPROBANTE DE PAGO
+------------------------
+Al registrar un pago, generar comprobante imprimible con:
+- Logo del negocio
+- Datos del negocio (nombre, NIT, direccion)
+- Datos del staff (nombre, cedula, cuenta)
+- Periodo cubierto
+- Detalle: servicios realizados, comisiones, propinas, productos
+- Monto total pagado
+- Metodo de pago + referencia
+- Fecha y hora del pago
+- Firma digital / QR de verificacion
+- Numero de comprobante unico
+
+E. SELECCION DE VISITAS PARA PAGAR
+-------------------------------------
+El admin debe poder:
+- Ver todas las visitas del periodo
+- Seleccionar cuales pagar (checkbox por visita)
+- Pago parcial: solo pagar X visitas, no todas
+- El sistema calcula el monto automaticamente
+- Las visitas pagadas se marcan para no pagarse doble
+
+
+================================================================================
+  3. INTEGRACION WOMPI — COMO FUNCIONA
+================================================================================
+
+Wompi (by Bancolombia) es el proveedor de pagos #1 en Colombia.
+URL: https://wompi.com | Docs: https://docs.wompi.co
+
+TIPOS DE OPERACION:
+1. COBROS (recibir dinero de clientes):
+   - Tarjeta de credito/debito
+   - Nequi
+   - PSE (transferencia bancaria)
+   - Corresponsal bancario
+   - Esto es para cuando implementemos cobros online (booking)
+
+2. DISPERSIONES (enviar dinero a staff):
+   - API de dispersiones: POST /v1/disbursements
+   - Requiere cuenta bancaria destino verificada
+   - Soporta: Bancolombia, Davivienda, Nequi, Daviplata, etc.
+   - Respuesta inmediata o asincrona (webhook)
+
+FLUJO DE DISPERSION:
+1. Backend llama: POST https://api.wompi.co/v1/disbursements
+2. Headers: Authorization: Bearer {private_key}
+3. Body:
+   {
+     "amount_in_cents": 75200000,  // $752,000 COP (en centavos)
+     "currency": "COP",
+     "payment_method": {
+       "type": "NEQUI",
+       "phone_number": "3001234567"
+     },
+     // O para cuenta bancaria:
+     "payment_method": {
+       "type": "BANCOLOMBIA_TRANSFER",
+       "bank_account": {
+         "bank_name": "Bancolombia",
+         "account_type": "SAVINGS",
+         "account_number": "12345678901"
+       }
+     },
+     "reference": "PAGO-STAFF-7-2026-04-02",
+     "customer_data": {
+       "full_name": "Angel Pabon",
+       "phone_number": "3001234567",
+       "legal_id": "1098765432",
+       "legal_id_type": "CC"
+     }
+   }
+4. Respuesta:
+   {
+     "data": {
+       "id": "dis_abc123",
+       "status": "PENDING",
+       "amount_in_cents": 75200000,
+       "payment_method": {...},
+       "reference": "PAGO-STAFF-7-2026-04-02"
+     }
+   }
+5. Webhook notifica cuando el pago es APPROVED o DECLINED
+
+COSTOS WOMPI:
+- Dispersiones: ~$800-1500 COP por transaccion
+- Sin costo mensual fijo
+- Requiere RUT/NIT del negocio + cuenta bancaria verificada
+
+ALTERNATIVAS A WOMPI:
+- Bold: Tambien colombiano, buena API
+- Payvalida: Dispersiones masivas
+- Kushki: Mas enterprise
+- RECOMENDACION: Wompi por ser de Bancolombia y tener la API mas limpia
+
+
+================================================================================
+  4. DATOS BANCARIOS DEL STAFF
+================================================================================
+
+MODELO (extension de Staff o tabla nueva StaffBankInfo):
+
+CAMPO                    | TIPO         | EJEMPLO              | ENCRIPTADO
+-------------------------|--------------|----------------------|-----------
+staff_id                 | FK           | 7                    | No
+document_type            | VARCHAR(5)   | CC                   | No
+document_number          | VARCHAR(20)  | 1098765432           | SI
+bank_name                | VARCHAR(100) | Bancolombia          | No
+bank_account_type        | VARCHAR(20)  | Ahorros              | No
+bank_account_number      | VARCHAR(30)  | 12345678901          | SI
+nequi_phone              | VARCHAR(15)  | 3001234567           | SI
+daviplata_phone          | VARCHAR(15)  | 3001234567           | SI
+preferred_method         | VARCHAR(20)  | nequi                | No
+
+DONDE SE LLENA:
+- Admin va a Equipo > click en un staff > seccion "Datos bancarios"
+- Solo el admin puede ver/editar esto
+- Los datos sensibles se muestran enmascarados: ****4567
+
+VALIDACIONES:
+- Cedula: 6-12 digitos
+- Cuenta bancaria: 10-16 digitos
+- Nequi/Daviplata: formato colombiano (+57 3XX...)
+- Al menos un metodo de pago debe estar configurado para poder pagar
+
+
+================================================================================
+  5. FLUJO COMPLETO DE PAGO
+================================================================================
+
+CASO A: CON WOMPI INTEGRADO
+1. Admin abre Nomina > ve saldo de Angel: $752,000
+2. Click "Pagar" > se abre modal
+3. Modal muestra:
+   - Datos de Angel (nombre, cedula, cuenta)
+   - Monto a pagar (editable)
+   - Metodo: Nequi de Angel (3001234567) [seleccion automatica]
+   - Concepto auto-generado
+4. Admin confirma > click "Pagar $752,000"
+5. Backend:
+   a. Crea StaffPayment con status="processing"
+   b. Llama API Wompi POST /disbursements
+   c. Wompi responde con ID de transaccion
+   d. Se actualiza StaffPayment con referencia Wompi
+6. Webhook de Wompi notifica:
+   a. Si APPROVED: status="paid", se notifica por WhatsApp al staff
+   b. Si DECLINED: status="failed", se notifica al admin
+7. Se genera comprobante de pago descargable
+
+CASO B: SIN WOMPI (PAGO MANUAL)
+1. Admin abre Nomina > ve saldo de Angel: $752,000
+2. Click "Pagar" > se abre modal
+3. Modal muestra:
+   - Datos bancarios de Angel para que el admin haga la transferencia
+   - "Transferir a: Nequi 300-123-4567 (Angel Pabon)"
+4. Admin hace la transferencia desde su app bancaria
+5. Vuelve al modal:
+   - Pega la referencia de la transferencia
+   - Sube foto del comprobante (opcional)
+   - Click "Confirmar pago"
+6. Se registra StaffPayment + se notifica por WhatsApp
+
+CASO C: PAGO EN EFECTIVO
+1. Admin paga en efectivo al staff en persona
+2. Abre Nomina > click "Pagar" > selecciona "Efectivo"
+3. Registra el pago como constancia
+4. Se notifica por WhatsApp como confirmacion
+
+
+================================================================================
+  6. SEGURIDAD
+================================================================================
+
+- Datos bancarios encriptados en BD (AES-256 o similar)
+- API keys de Wompi encriptadas (igual que AI provider keys)
+- Solo admin puede ver/editar datos bancarios
+- Staff NO puede ver su propia cuenta desde el portal staff
+- Cada transaccion tiene referencia unica
+- Logs de auditoria por cada pago
+- Doble confirmacion antes de dispersar (modal de confirmacion)
+- Rate limiting en dispersiones (max 10 por hora)
+- Webhook de Wompi verificado con events_key (firma HMAC)
+- Tenant isolation: cada negocio solo ve sus pagos
+
+
+================================================================================
+  7. CONFIGURACION POR TENANT
+================================================================================
+
+En Settings > seccion "Pagos y Dispersiones":
+
+CAMPO                    | TIPO        | DESCRIPCION
+-------------------------|-------------|------------------------------------
+payments_provider        | select      | Wompi / Manual / Desactivado
+wompi_public_key         | password    | pub_test_xxx o pub_prod_xxx
+wompi_private_key        | password    | prv_test_xxx o prv_prod_xxx
+wompi_events_key         | password    | Para verificar webhooks
+wompi_environment        | select      | Sandbox (pruebas) / Produccion
+auto_notify_staff        | boolean     | Enviar WhatsApp automatico al pagar
+payment_approval_required| boolean     | Requiere aprobacion de otro admin
+default_payment_method   | select      | Nequi / Bancolombia / Efectivo
+
+FLUJO DE ACTIVACION:
+1. Negocio se registra en wompi.com con su RUT
+2. Wompi verifica y activa la cuenta (1-3 dias)
+3. Admin copia las API keys a Settings > Pagos
+4. Selecciona "Produccion" como ambiente
+5. Listo — ya puede dispersar desde la plataforma
+
+
+================================================================================
+  8. COMPROBANTE DE PAGO
+================================================================================
+
+Documento generado por cada pago registrado:
+
+ENCABEZADO:
+- Logo del negocio (de tenant config)
+- Nombre del negocio + NIT
+- Direccion + telefono
+- "COMPROBANTE DE PAGO DE NOMINA"
+- Numero de comprobante: CP-0001
+
+DATOS DEL BENEFICIARIO:
+- Nombre completo
+- Documento: CC 1098765432
+- Cargo/Rol: Barbero
+- Metodo de pago: Nequi 300-123-4567
+
+DETALLE:
+| Fecha       | Servicio              | Cliente     | Codigo | Precio  | Comision (40%) |
+|-------------|----------------------|-------------|--------|---------|----------------|
+| 2 abr 2026  | Corte Hipster        | Luis Nava   | 3333   | $40,000 | $16,000        |
+| 2 abr 2026  | Pedi Spa Semi        | Plexify     | 1010   | $85,000 | $34,000        |
+| ...         | ...                  | ...         | ...    | ...     | ...            |
+| SUBTOTAL    |                      |             |        | $752K   | $300,800       |
+| Productos   | Gel de cabello x3    |             |        | $1.8M   | $1,500         |
+| TOTAL PAGO  |                      |             |        |         | $302,300       |
+
+PIE:
+- Referencia de pago: PAGO-STAFF-7-2026-04-02 / Wompi: dis_abc123
+- Fecha de pago: 2 de abril de 2026, 10:53 p.m.
+- Pagado por: Jaime (Administrador)
+- "Este documento es un comprobante de pago generado por Plexify Studio"
+
+
+================================================================================
+  9. PLAN DE IMPLEMENTACION PASO A PASO
+================================================================================
+
+FASE 1 — DATOS BANCARIOS DEL STAFF [PRIORIDAD: ALTA]
+------------------------------------------------------
+Backend:
+- Agregar columnas encriptadas a tabla staff (o crear staff_bank_info)
+- API: GET/PUT /api/staff/{id}/bank-info
+- Encriptacion AES-256 de datos sensibles
+- Validaciones de formato colombiano
+
+Frontend:
+- Seccion "Datos bancarios" en modal de editar staff (Equipo)
+- Campos: cedula, banco, tipo cuenta, numero, Nequi, Daviplata
+- Datos enmascarados al mostrar
+- Solo visible para admin
+
+FASE 2 — MODAL DE PAGO MEJORADO [PRIORIDAD: ALTA]
+----------------------------------------------------
+- Mostrar cuenta destino del staff al pagar
+- Seleccion de visitas a pagar (checkboxes)
+- Calculo automatico del monto segun visitas seleccionadas
+- Upload de comprobante
+- Comprobante de pago imprimible/descargable
+
+FASE 3 — COMPROBANTE DE PAGO [PRIORIDAD: MEDIA]
+-------------------------------------------------
+- Generar comprobante como ventana de impresion (como facturas)
+- Incluir: negocio, staff, detalle de servicios, productos, totales
+- Numero de comprobante unico
+- Botones: Imprimir / Descargar PDF
+
+FASE 4 — CONFIGURACION WOMPI [PRIORIDAD: MEDIA]
+-------------------------------------------------
+Backend:
+- Modelo TenantPaymentConfig (o extension de tenant)
+- API: GET/PUT /api/tenant/payment-config
+- Encriptacion de API keys
+
+Frontend:
+- Seccion "Pagos" en Settings
+- Campos para API keys de Wompi
+- Selector de ambiente (sandbox/produccion)
+- Boton de prueba de conexion
+
+FASE 5 — INTEGRACION WOMPI [PRIORIDAD: MEDIA-BAJA]
+----------------------------------------------------
+Backend:
+- Servicio: wompi_service.py
+- Funcion: create_disbursement(staff_id, amount, method)
+- Webhook endpoint: POST /api/webhooks/wompi
+- Verificacion de firma HMAC
+- Manejo de estados: PENDING -> APPROVED/DECLINED
+- Retry logic para fallos temporales
+
+Frontend:
+- Boton "Pagar ahora" en modal (solo si Wompi esta configurado)
+- Spinner de procesamiento
+- Estado en tiempo real (procesando -> pagado/fallido)
+- Badge de estado en historial de pagos
+
+FASE 6 — PAGOS MASIVOS [PRIORIDAD: BAJA]
+------------------------------------------
+- Boton "Pagar a todos" en la cabecera de Nomina
+- Seleccion multiple de staff
+- Dispersion masiva via API Wompi (batch)
+- Resumen antes de confirmar
+- Progreso de cada pago individual
+
+
+================================================================================
+  REFERENCIAS:
+  - Wompi API: https://docs.wompi.co
+  - Wompi Dispersiones: https://docs.wompi.co/docs/disbursements
+  - Bold API: https://docs.bold.co
+  - Regulacion Superfinanciera: https://www.superfinanciera.gov.co
+================================================================================
