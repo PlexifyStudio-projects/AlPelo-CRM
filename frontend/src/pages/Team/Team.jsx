@@ -528,6 +528,149 @@ const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const DAY_NAMES = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
 const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
+const BANKS = ['Bancolombia', 'Davivienda', 'BBVA', 'Banco de Bogota', 'Scotiabank', 'Banco Popular', 'Banco de Occidente', 'AV Villas', 'Banco Agrario', 'Banco Caja Social', 'Nequi', 'Daviplata', 'Otro'];
+const DOC_TYPES = [{ value: 'CC', label: 'Cedula de Ciudadania' }, { value: 'CE', label: 'Cedula de Extranjeria' }, { value: 'NIT', label: 'NIT' }];
+const PAY_METHODS = [{ value: 'nequi', label: 'Nequi' }, { value: 'daviplata', label: 'Daviplata' }, { value: 'bancolombia', label: 'Bancolombia' }, { value: 'efectivo', label: 'Efectivo' }];
+
+const BankInfoEditor = ({ staffId, onUpdated }) => {
+  const { addNotification } = useNotification();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    document_type: 'CC', document_number: '', bank_name: '', bank_account_type: 'Ahorros',
+    bank_account_number: '', nequi_phone: '', daviplata_phone: '', preferred_payment_method: 'efectivo',
+  });
+
+  useEffect(() => {
+    if (!staffId) return;
+    setLoading(true);
+    fetch(`${_API}/staff-payments/bank-info/${staffId}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) {
+          setData(d);
+          setForm({
+            document_type: d.document_type || 'CC',
+            document_number: d.document_number || '',
+            bank_name: d.bank_name || '',
+            bank_account_type: d.bank_account_type || 'Ahorros',
+            bank_account_number: d.bank_account_number || '',
+            nequi_phone: d.nequi_phone || '',
+            daviplata_phone: d.daviplata_phone || '',
+            preferred_payment_method: d.preferred_payment_method || 'efectivo',
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [staffId]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${_API}/staff-payments/bank-info/${staffId}`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error('Error guardando');
+      addNotification('Datos bancarios actualizados', 'success');
+      setData({ ...data, ...form });
+      setEditing(false);
+      if (onUpdated) onUpdated();
+    } catch (err) {
+      addNotification('Error: ' + err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const hasBankData = data && (data.bank_account_number || data.nequi_phone || data.daviplata_phone);
+  const mask = (v) => v ? '****' + v.slice(-4) : '—';
+
+  if (loading) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Cargando...</p>;
+
+  if (!editing) {
+    return (
+      <div className={`${b}__bank-view`}>
+        {hasBankData ? (
+          <div className={`${b}__bank-grid`}>
+            {data.document_type && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Documento</span><span className={`${b}__bank-value`}>{data.document_type} {mask(data.document_number)}</span></div>}
+            {data.bank_name && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Banco</span><span className={`${b}__bank-value`}>{data.bank_name} · {data.bank_account_type} · {mask(data.bank_account_number)}</span></div>}
+            {data.nequi_phone && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Nequi</span><span className={`${b}__bank-value`}>{mask(data.nequi_phone)}</span></div>}
+            {data.daviplata_phone && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Daviplata</span><span className={`${b}__bank-value`}>{mask(data.daviplata_phone)}</span></div>}
+            {data.preferred_payment_method && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Metodo preferido</span><span className={`${b}__bank-value ${b}__bank-value--highlight`}>{data.preferred_payment_method}</span></div>}
+          </div>
+        ) : (
+          <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.35)', padding: '4px 0' }}>Sin datos bancarios configurados</p>
+        )}
+        <button className={`${b}__btn ${b}__btn--outline-sm`} style={{ marginTop: 8 }} onClick={() => setEditing(true)}>
+          <EditIcon /> {hasBankData ? 'Editar' : 'Configurar'}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${b}__bank-form`}>
+      <div className={`${b}__bank-form-row`}>
+        <div className={`${b}__bank-field`}>
+          <label>Tipo documento</label>
+          <select value={form.document_type} onChange={e => setForm(f => ({ ...f, document_type: e.target.value }))} className={`${b}__input`}>
+            {DOC_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+          </select>
+        </div>
+        <div className={`${b}__bank-field`}>
+          <label>Numero documento</label>
+          <input value={form.document_number} onChange={e => setForm(f => ({ ...f, document_number: e.target.value }))} className={`${b}__input`} placeholder="1098765432" />
+        </div>
+      </div>
+      <div className={`${b}__bank-form-row`}>
+        <div className={`${b}__bank-field`}>
+          <label>Banco</label>
+          <select value={form.bank_name} onChange={e => setForm(f => ({ ...f, bank_name: e.target.value }))} className={`${b}__input`}>
+            <option value="">— Seleccionar —</option>
+            {BANKS.map(b2 => <option key={b2} value={b2}>{b2}</option>)}
+          </select>
+        </div>
+        <div className={`${b}__bank-field`}>
+          <label>Tipo cuenta</label>
+          <select value={form.bank_account_type} onChange={e => setForm(f => ({ ...f, bank_account_type: e.target.value }))} className={`${b}__input`}>
+            <option value="Ahorros">Ahorros</option>
+            <option value="Corriente">Corriente</option>
+          </select>
+        </div>
+      </div>
+      <div className={`${b}__bank-field`}>
+        <label>Numero de cuenta</label>
+        <input value={form.bank_account_number} onChange={e => setForm(f => ({ ...f, bank_account_number: e.target.value }))} className={`${b}__input`} placeholder="0000 0000 0000" />
+      </div>
+      <div className={`${b}__bank-form-row`}>
+        <div className={`${b}__bank-field`}>
+          <label>Nequi</label>
+          <input value={form.nequi_phone} onChange={e => setForm(f => ({ ...f, nequi_phone: e.target.value }))} className={`${b}__input`} placeholder="300 123 4567" />
+        </div>
+        <div className={`${b}__bank-field`}>
+          <label>Daviplata</label>
+          <input value={form.daviplata_phone} onChange={e => setForm(f => ({ ...f, daviplata_phone: e.target.value }))} className={`${b}__input`} placeholder="300 123 4567" />
+        </div>
+      </div>
+      <div className={`${b}__bank-field`}>
+        <label>Metodo preferido de pago</label>
+        <select value={form.preferred_payment_method} onChange={e => setForm(f => ({ ...f, preferred_payment_method: e.target.value }))} className={`${b}__input`}>
+          {PAY_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+        </select>
+      </div>
+      <div className={`${b}__bank-actions`}>
+        <button className={`${b}__btn ${b}__btn--outline-sm`} onClick={() => setEditing(false)}>Cancelar</button>
+        <button className={`${b}__btn ${b}__btn--primary-sm`} onClick={handleSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
+      </div>
+    </div>
+  );
+};
+
 const DEFAULT_SCHEDULE = DAY_NAMES.map((_, i) => ({
   day_of_week: i,
   start_time: '08:00',
@@ -828,6 +971,13 @@ const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) =>
         <div className={`${b}__drawer-section`}>
           <h4 className={`${b}__drawer-section-title`}>Acceso a la plataforma</h4>
           <CredentialEditor member={member} onUpdated={onUpdated} />
+        </div>
+        <div className={`${b}__drawer-section`}>
+          <h4 className={`${b}__drawer-section-title`}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            Datos bancarios
+          </h4>
+          <BankInfoEditor staffId={member.id} onUpdated={onUpdated} />
         </div>
         <div className={`${b}__drawer-section`}>
           <h4 className={`${b}__drawer-section-title`}>Habilidades</h4>

@@ -2894,6 +2894,9 @@ const TabNomina = () => {
   const [selectedVisitIds, setSelectedVisitIds] = useState([]);
   const [bankInfo, setBankInfo] = useState(null);
   const [staffVisitsMap, setStaffVisitsMap] = useState({}); // staffId -> visits[]
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkSelections, setBulkSelections] = useState({}); // staffId -> true/false
+  const [bulkPaying, setBulkPaying] = useState(false);
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
   const fetchApi = async (url, options = {}) => {
@@ -3036,6 +3039,64 @@ const TabNomina = () => {
     }
   };
 
+  const staffWithBalance = summary.filter(st => st.balance > 0);
+
+  const openBulkModal = () => {
+    const sel = {};
+    staffWithBalance.forEach(st => { sel[st.staff_id] = true; });
+    setBulkSelections(sel);
+    setShowBulkModal(true);
+  };
+
+  const bulkTotal = staffWithBalance.filter(st => bulkSelections[st.staff_id]).reduce((s, st) => s + st.balance, 0);
+
+  const handleBulkPay = async () => {
+    setBulkPaying(true);
+    const toPay = staffWithBalance.filter(st => bulkSelections[st.staff_id]);
+    let ok = 0;
+    let fail = 0;
+    for (const st of toPay) {
+      try {
+        await fetchApi('/staff-payments/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            staff_id: st.staff_id,
+            amount: Math.max(0, st.balance),
+            period_from: dateFrom,
+            period_to: dateTo,
+            concept: `Comisiones ${fmtDate(dateFrom)} — ${fmtDateFull(dateTo)}`,
+            payment_method: st.preferred_payment_method || 'efectivo',
+            commission_total: st.total_earned,
+            tips_total: 0,
+            product_commissions: 0,
+            deductions: 0,
+          }),
+        });
+        ok++;
+        // WA notification
+        try {
+          const staffRes = await fetch(`${API}/staff/${st.staff_id}`, { credentials: 'include' });
+          if (staffRes.ok) {
+            const staffData = await staffRes.json();
+            const phone = staffData.phone;
+            if (phone) {
+              await fetch(`${API}/whatsapp/send-text`, {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, message: `Hola ${st.staff_name.split(' ')[0]}, se ha registrado un pago de ${formatCOP(st.balance)}. Gracias por tu trabajo.` }),
+              }).catch(() => {});
+            }
+          }
+        } catch {}
+      } catch { fail++; }
+    }
+    addNotification(`Nomina liquidada: ${ok} pagos registrados${fail ? `, ${fail} fallidos` : ''}`, ok > 0 ? 'success' : 'error');
+    setShowBulkModal(false);
+    setBulkPaying(false);
+    load();
+  };
+
   if (loading) return <div className="finances__comm-skeleton">{[...Array(3)].map((_, i) => <div key={i} className="finances__card" style={{ padding: 20 }}><SkeletonBlock width="100%" height="80px" /></div>)}</div>;
 
   return (
@@ -3097,6 +3158,11 @@ const TabNomina = () => {
 
       <div className="finances__section-header">
         <h3 className="finances__section-title">Liquidación por profesional</h3>
+        {staffWithBalance.length > 0 && (
+          <button className="finances__btn-primary" style={{ padding: '6px 16px', fontSize: 12 }} onClick={openBulkModal}>
+            Liquidar nomina ({staffWithBalance.length})
+          </button>
+        )}
       </div>
 
       <div className="finances__nomina-table">
@@ -3299,6 +3365,52 @@ const TabNomina = () => {
               </button>
             </div>
           </form>
+        </div>,
+        document.body
+      )}
+
+      {showBulkModal && createPortal(
+        <div className="finances__pay-overlay" onClick={() => setShowBulkModal(false)}>
+          <div className="finances__pay-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
+            <div className="finances__pay-header">
+              <h2>Liquidar nomina</h2>
+              <button type="button" onClick={() => setShowBulkModal(false)} className="finances__modal-close">&times;</button>
+            </div>
+            <div style={{ padding: '16px 24px' }}>
+              <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.5)', marginBottom: 16 }}>
+                Selecciona los profesionales a pagar. Se creara un pago individual para cada uno.
+              </p>
+              <div className="finances__bulk-list">
+                {staffWithBalance.map(st => (
+                  <label key={st.staff_id} className={`finances__bulk-item ${bulkSelections[st.staff_id] ? 'finances__bulk-item--selected' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={!!bulkSelections[st.staff_id]}
+                      onChange={() => setBulkSelections(prev => ({ ...prev, [st.staff_id]: !prev[st.staff_id] }))}
+                    />
+                    <span className="finances__nomina-avatar" style={{ background: st.photo_url ? 'transparent' : '#2D5A3D', width: 32, height: 32, fontSize: 11, flexShrink: 0 }}>
+                      {st.photo_url ? <img src={st.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : st.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                    </span>
+                    <span style={{ flex: 1 }}>
+                      <strong style={{ fontSize: 13 }}>{st.staff_name}</strong>
+                      <small style={{ display: 'block', fontSize: 11, color: 'rgba(0,0,0,0.4)' }}>{st.staff_role} · {(st.commission_rate * 100).toFixed(0)}%</small>
+                    </span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#DC2626' }}>{formatCOP(st.balance)}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="finances__bulk-total">
+                <span>Total a dispersar ({staffWithBalance.filter(st => bulkSelections[st.staff_id]).length} profesionales)</span>
+                <strong>{formatCOP(bulkTotal)}</strong>
+              </div>
+            </div>
+            <div className="finances__pay-actions">
+              <button className="finances__btn-ghost" onClick={() => setShowBulkModal(false)}>Cancelar</button>
+              <button className="finances__btn-primary" onClick={handleBulkPay} disabled={bulkPaying || bulkTotal === 0}>
+                {bulkPaying ? 'Procesando...' : `Liquidar ${formatCOP(bulkTotal)}`}
+              </button>
+            </div>
+          </div>
         </div>,
         document.body
       )}

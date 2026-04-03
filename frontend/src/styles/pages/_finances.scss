@@ -2775,6 +2775,60 @@
     color: $color-primary;
   }
 
+  // Bulk pay modal
+  &__bulk-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  &__bulk-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: $color-white;
+    cursor: pointer;
+    transition: all 120ms ease;
+
+    &:hover { border-color: rgba(0, 0, 0, 0.12); }
+
+    &--selected {
+      background: rgba($color-primary, 0.03);
+      border-color: rgba($color-primary, 0.2);
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: $color-primary;
+      flex-shrink: 0;
+    }
+  }
+
+  &__bulk-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0 0;
+    margin-top: 14px;
+    border-top: 2px solid rgba(0, 0, 0, 0.06);
+    font-size: 14px;
+    font-weight: 600;
+    color: $color-secondary;
+
+    strong {
+      font-size: 18px;
+      font-weight: 800;
+      color: $color-primary;
+    }
+  }
+
   &__pay-overlay {
     position: fixed;
     inset: 0;

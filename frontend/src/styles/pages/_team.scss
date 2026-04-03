@@ -1578,6 +1578,79 @@
     gap: $spacing-md;
     margin-top: $spacing-xl;
   }
+
+  // Bank info section
+  &__bank-view {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__bank-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__bank-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+  }
+
+  &__bank-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__bank-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-secondary;
+
+    &--highlight {
+      color: $color-primary;
+      text-transform: capitalize;
+    }
+  }
+
+  &__bank-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__bank-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  &__bank-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    label {
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(0, 0, 0, 0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+  }
+
+  &__bank-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 4px;
+  }
 }
 
 @keyframes scaleIn {
