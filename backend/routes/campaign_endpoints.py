@@ -416,9 +416,42 @@ async def send_one_message(
             }
 
             components_params = []
+
+            # Check if template has media header
+            tpl_obj = db.query(MessageTemplate).filter(
+                MessageTemplate.slug == template_slug,
+                MessageTemplate.tenant_id == tid,
+            ).first()
+            if tpl_obj and getattr(tpl_obj, 'header_type', None) in ('IMAGE', 'VIDEO'):
+                header_media = getattr(tpl_obj, 'header_media_url', None)
+                if header_media and header_media.startswith('data:'):
+                    # Upload media to Meta for sending
+                    try:
+                        import base64 as _b64
+                        header_part, encoded = header_media.split(',', 1)
+                        mime = header_part.split(';')[0].split(':')[1] if ':' in header_part else ('image/jpeg' if tpl_obj.header_type == 'IMAGE' else 'video/mp4')
+                        file_bytes = _b64.b64decode(encoded)
+                        async with httpx.AsyncClient(timeout=30) as _c:
+                            upload_resp = await _c.post(
+                                f"https://graph.facebook.com/{WA_API_VERSION}/{wa_phone_id}/media",
+                                headers={"Authorization": f"Bearer {wa_token}"},
+                                files={"file": ("media", file_bytes, mime)},
+                                data={"messaging_product": "whatsapp", "type": mime},
+                            )
+                            upload_data = upload_resp.json()
+                            media_id = upload_data.get("id")
+                            if media_id:
+                                media_type = "image" if tpl_obj.header_type == "IMAGE" else "video"
+                                components_params.append({
+                                    "type": "header",
+                                    "parameters": [{"type": media_type, media_type: {"id": media_id}}],
+                                })
+                    except Exception as e:
+                        print(f"[CAMPAIGN] Header media upload error: {e}")
+
             if variables:
                 params = [{"type": "text", "text": var_values.get(v, v)} for v in variables]
-                components_params = [{"type": "body", "parameters": params}]
+                components_params.append({"type": "body", "parameters": params})
 
             payload = {
                 "messaging_product": "whatsapp",
@@ -1007,6 +1040,33 @@ async def send_campaign(campaign_id: int, user=Depends(get_current_user), db: Se
     failed = 0
     template_name = c.meta_template_name
 
+    # Pre-upload header media if template has IMAGE/VIDEO header (once, not per client)
+    header_media_id = None
+    tpl_obj = db.query(MessageTemplate).filter(
+        MessageTemplate.slug == template_name,
+        MessageTemplate.tenant_id == tid,
+    ).first()
+    if tpl_obj and getattr(tpl_obj, 'header_type', None) in ('IMAGE', 'VIDEO'):
+        header_media = getattr(tpl_obj, 'header_media_url', None)
+        if header_media and header_media.startswith('data:'):
+            try:
+                import base64 as _b64
+                header_part, encoded = header_media.split(',', 1)
+                mime = header_part.split(';')[0].split(':')[1] if ':' in header_part else ('image/jpeg' if tpl_obj.header_type == 'IMAGE' else 'video/mp4')
+                file_bytes = _b64.b64decode(encoded)
+                async with httpx.AsyncClient(timeout=30) as _c:
+                    upload_resp = await _c.post(
+                        f"https://graph.facebook.com/{WA_API_VERSION}/{wa_phone_id}/media",
+                        headers={"Authorization": f"Bearer {wa_token}"},
+                        files={"file": ("media", file_bytes, mime)},
+                        data={"messaging_product": "whatsapp", "type": mime},
+                    )
+                    upload_data = upload_resp.json()
+                    header_media_id = upload_data.get("id")
+                    print(f"[CAMPAIGN] Header media uploaded: {header_media_id}")
+            except Exception as e:
+                print(f"[CAMPAIGN] Header media upload error: {e}")
+
     for client_obj in audience:
         phone = normalize_phone(client_obj.phone)
         if len(phone) < 10:
@@ -1028,9 +1088,18 @@ async def send_campaign(campaign_id: int, user=Depends(get_current_user), db: Se
                 }
 
                 components_params = []
+
+                # Add header media if available
+                if header_media_id and tpl_obj and tpl_obj.header_type in ('IMAGE', 'VIDEO'):
+                    media_type = "image" if tpl_obj.header_type == "IMAGE" else "video"
+                    components_params.append({
+                        "type": "header",
+                        "parameters": [{"type": media_type, media_type: {"id": header_media_id}}],
+                    })
+
                 if variables:
                     params = [{"type": "text", "text": var_values.get(v, v)} for v in variables]
-                    components_params = [{"type": "body", "parameters": params}]
+                    components_params.append({"type": "body", "parameters": params})
 
                 payload = {
                     "messaging_product": "whatsapp",
