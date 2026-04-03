@@ -573,6 +573,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             if appt_client and contact and (appt_client in contact or contact in appt_client):
                                 action_data["client_phone"] = conv.wa_contact_phone
 
+                        if action_type == "pause_ai" and conv.wa_contact_phone:
+                            action_data["client_phone"] = conv.wa_contact_phone
+
                         # Route ALL actions through the unified executor
                         from routes.ai_endpoints import _execute_action
                         # Log the action BEFORE executing

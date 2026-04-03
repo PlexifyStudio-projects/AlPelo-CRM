@@ -82,6 +82,33 @@ def _execute_action(action: dict, db: Session) -> str:
     action_type = action.get("action")
     _tid = action.get("tenant_id")  # Injected by caller (ai_chat or whatsapp webhook)
 
+    # ---- PAUSE AI (manual service / photos / approval) ----
+    if action_type == "pause_ai":
+        reason = action.get("reason", "Servicio requiere atencion manual")
+        phone = action.get("client_phone", action.get("phone", ""))
+        from activity_log import log_event as _log_pause
+        _log_pause("alerta", f"⏸️ IA pausada: {reason}", detail=f"La conversacion se puso en modo manual. Razon: {reason}", status="warning", tenant_id=_tid)
+
+        # Find conversation and pause
+        paused = False
+        try:
+            from database.models import WhatsAppConversation
+            if phone:
+                conv_q = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone.contains(phone[-10:]))
+            else:
+                conv_q = db.query(WhatsAppConversation).filter(WhatsAppConversation.is_ai_active == True)
+            if _tid:
+                conv_q = conv_q.filter(WhatsAppConversation.tenant_id == _tid)
+            # Pause the most recent active conversation
+            conv = conv_q.order_by(WhatsAppConversation.last_message_at.desc()).first()
+            if conv:
+                conv.is_ai_active = False
+                db.commit()
+                paused = True
+        except Exception:
+            pass
+        return f"OK: Conversacion pausada. Razon: {reason}. {'IA desactivada para esta conversacion.' if paused else 'No se encontro conversacion activa.'}"
+
     # ---- CLIENTS ----
     if action_type == "create_client":
         name = action.get("name", "").strip()
