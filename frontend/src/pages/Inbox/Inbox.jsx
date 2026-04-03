@@ -818,6 +818,7 @@ const Inbox = () => {
   const [showTemplates, setShowTemplates] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [sendingMedia, setSendingMedia] = useState(false);
+  const [attachedFile, setAttachedFile] = useState(null); // { file, type, preview }
   const fileInputDocRef = useRef(null);
   const fileInputImgRef = useRef(null);
   const [convStatuses, setConvStatuses] = useState(() => loadJson(LS_CONV_STATUSES, {}));
@@ -1117,41 +1118,46 @@ const Inbox = () => {
     });
   };
 
-  const handleFileUpload = async (e, type) => {
-    console.log('[MEDIA] handleFileUpload called, type:', type);
+  const handleFileUpload = (e, type) => {
     const file = e.target.files?.[0];
-    if (!file) { console.log('[MEDIA] No file selected'); return; }
-    if (!selectedConvId) { console.log('[MEDIA] No conversation selected'); return; }
+    if (!file) return;
     e.target.value = '';
-
-    const conv = conversations.find(c => c.id === selectedConvId);
-    if (!conv) { console.log('[MEDIA] Conv not found'); return; }
-
-    console.log('[MEDIA] File:', file.name, 'Size:', (file.size / 1024).toFixed(0) + 'KB', 'Type:', file.type);
-    console.log('[MEDIA] Phone:', conv.wa_contact_phone);
 
     if (file.size > 5 * 1024 * 1024) {
       alert(`Archivo muy grande: ${(file.size / 1024 / 1024).toFixed(1)}MB (max 5MB)`);
-      setSendingMedia(false);
       return;
     }
 
-    setSendingMedia(true);
-    console.log(`[MEDIA] Subiendo ${file.name} (${(file.size / 1024).toFixed(0)}KB)...`);
+    // Create preview for images
+    let preview = null;
+    if (file.type.startsWith('image/')) {
+      preview = URL.createObjectURL(file);
+    }
 
+    setAttachedFile({ file, type: file.type.startsWith('image/') ? 'image' : 'document', preview });
+  };
+
+  const clearAttachment = () => {
+    if (attachedFile?.preview) URL.revokeObjectURL(attachedFile.preview);
+    setAttachedFile(null);
+  };
+
+  const handleSendMedia = async () => {
+    if (!attachedFile || !selectedConvId) return;
+    const conv = conversations.find(c => c.id === selectedConvId);
+    if (!conv) return;
+
+    setSendingMedia(true);
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', attachedFile.file);
       formData.append('phone', conv.wa_contact_phone);
       formData.append('caption', messageInput.trim() || '');
       formData.append('name', conv.wa_contact_name || '');
-      formData.append('type', type);
-
-      console.log('[MEDIA] Sending FormData to /whatsapp/send-media...');
-      const t0 = Date.now();
+      formData.append('type', attachedFile.type);
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => { console.log('[MEDIA] TIMEOUT after 60s'); controller.abort(); }, 60000);
+      const timeout = setTimeout(() => controller.abort(), 60000);
 
       const res = await fetch(`${API_BASE}/whatsapp/send-media`, {
         method: 'POST', credentials: 'include',
@@ -1160,21 +1166,15 @@ const Inbox = () => {
       });
       clearTimeout(timeout);
 
-      console.log('[MEDIA] Response:', res.status, 'in', Date.now() - t0, 'ms');
-
       if (!res.ok) {
         const errBody = await res.text().catch(() => '');
-        console.log('[MEDIA] Error body:', errBody);
-        let detail = 'Error enviando archivo';
+        let detail = 'Error enviando';
         try { detail = JSON.parse(errBody).detail || detail; } catch {}
         throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
       }
 
-      const result = await res.json();
-      console.log('[MEDIA] Success:', result);
-
       setMessageInput('');
-      console.log('[MEDIA] Enviado OK!');
+      clearAttachment();
       const msgs = await whatsappService.getMessages(selectedConvId);
       setMessages(msgs);
       setTimeout(() => {
@@ -1182,14 +1182,8 @@ const Inbox = () => {
         if (el) el.scrollTop = el.scrollHeight;
       }, 100);
     } catch (err) {
-      console.error('[MEDIA] ERROR:', err.name, err.message);
-      if (err.name === 'AbortError') {
-        alert('Timeout — el servidor no respondio en 60 segundos');
-      } else {
-        alert('Error enviando: ' + err.message);
-      }
+      alert(err.name === 'AbortError' ? 'Timeout — intenta con un archivo mas pequeno' : 'Error: ' + err.message);
     } finally {
-      console.log('[MEDIA] Done, clearing spinner');
       setSendingMedia(false);
     }
   };
@@ -2061,7 +2055,25 @@ const Inbox = () => {
                                 )}
                               </>
                             )}
-                            {!msg.media_url && msg.content && (
+                            {!msg.media_url && msg.message_type === 'document' && msg.content && (
+                              <div className={`${b}__message-doc`}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                <div>
+                                  <span className={`${b}__message-doc-name`}>{msg.content.replace(/^\[Documento: /, '').replace(/\].*$/, '') || 'Documento'}</span>
+                                  {msg.content.includes('] ') && <p className={`${b}__message-text`} style={{ marginTop: 4 }}>{msg.content.split('] ').slice(1).join('] ')}</p>}
+                                </div>
+                              </div>
+                            )}
+                            {!msg.media_url && msg.message_type === 'image' && msg.content && (
+                              <div className={`${b}__message-doc`}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                <div>
+                                  <span className={`${b}__message-doc-name`}>Imagen enviada</span>
+                                  {msg.content.includes('] ') && <p className={`${b}__message-text`} style={{ marginTop: 4 }}>{msg.content.split('] ').slice(1).join('] ')}</p>}
+                                </div>
+                              </div>
+                            )}
+                            {!msg.media_url && msg.message_type !== 'document' && msg.message_type !== 'image' && msg.content && (
                               <p className={`${b}__message-text`}>{msg.content || msg.text}</p>
                             )}
                             <div className={`${b}__message-meta`}>
@@ -2195,6 +2207,27 @@ const Inbox = () => {
 
               <input type="file" ref={fileInputDocRef} style={{ display: 'none' }} accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onChange={(e) => handleFileUpload(e, 'document')} />
               <input type="file" ref={fileInputImgRef} style={{ display: 'none' }} accept="image/*,video/*" onChange={(e) => handleFileUpload(e, 'image')} />
+
+              {/* Attachment preview bar */}
+              {attachedFile && (
+                <div className={`${b}__attach-preview`}>
+                  {attachedFile.type === 'image' && attachedFile.preview ? (
+                    <img src={attachedFile.preview} alt="" className={`${b}__attach-preview-img`} />
+                  ) : (
+                    <div className={`${b}__attach-preview-doc`}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                  )}
+                  <div className={`${b}__attach-preview-info`}>
+                    <span className={`${b}__attach-preview-name`}>{attachedFile.file.name}</span>
+                    <span className={`${b}__attach-preview-size`}>{(attachedFile.file.size / 1024).toFixed(0)} KB</span>
+                  </div>
+                  <button className={`${b}__attach-preview-remove`} onClick={clearAttachment} title="Quitar">
+                    {Icons.close}
+                  </button>
+                </div>
+              )}
+
               <button className={`${b}__input-action ${showAttachMenu ? `${b}__input-action--active` : ''}`} onClick={() => { setShowAttachMenu(!showAttachMenu); setShowEmojiPicker(false); setShowQuickReplies(false); }} title="Adjuntar archivo" disabled={sendingMedia}>
                 {sendingMedia ? <svg className={`${b}__spinner`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> : Icons.attach}
               </button>
@@ -2205,15 +2238,19 @@ const Inbox = () => {
                 <textarea
                   ref={inputRef}
                   className={`${b}__input`}
-                  placeholder={isAiActive ? 'Lina IA activa... escribe para intervenir' : 'Escribe un mensaje...'}
+                  placeholder={attachedFile ? 'Escribe un mensaje para adjuntar...' : isAiActive ? 'Lina IA activa... escribe para intervenir' : 'Escribe un mensaje...'}
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); attachedFile ? handleSendMedia() : handleSendMessage(); } }}
                   rows={1}
                 />
               </div>
-              <button className={`${b}__send-btn ${messageInput.trim() ? `${b}__send-btn--active` : ''}`} onClick={handleSendMessage} disabled={sendingMessage || !messageInput.trim()}>
-                {Icons.send}
+              <button
+                className={`${b}__send-btn ${(messageInput.trim() || attachedFile) ? `${b}__send-btn--active` : ''}`}
+                onClick={attachedFile ? handleSendMedia : handleSendMessage}
+                disabled={sendingMessage || sendingMedia || (!messageInput.trim() && !attachedFile)}
+              >
+                {sendingMedia ? <svg className={`${b}__spinner`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> : Icons.send}
               </button>
             </div>
           </>
