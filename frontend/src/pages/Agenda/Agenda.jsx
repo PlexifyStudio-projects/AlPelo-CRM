@@ -167,6 +167,21 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [productSearch, setProductSearch] = useState('');
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [inventory, setInventory] = useState([]);
+  const autoSaveRef = useRef(null);
+
+  useEffect(() => {
+    if (!editingApt || !showModal) return;
+    if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+    autoSaveRef.current = setTimeout(async () => {
+      try {
+        const notes = serializeProducts(productItems, formData.notes);
+        if (notes !== editingApt.notes) {
+          await appointmentService.update(editingApt.id, { notes: notes || null });
+        }
+      } catch {}
+    }, 800);
+    return () => { if (autoSaveRef.current) clearTimeout(autoSaveRef.current); };
+  }, [productItems, editingApt, showModal, formData.notes]);
 
   const { addNotification } = useNotification();
   const scrollRef = useRef(null);
