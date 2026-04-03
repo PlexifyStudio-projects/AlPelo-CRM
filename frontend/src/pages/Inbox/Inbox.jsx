@@ -1118,23 +1118,27 @@ const Inbox = () => {
   };
 
   const handleFileUpload = async (e, type) => {
+    console.log('[MEDIA] handleFileUpload called, type:', type);
     const file = e.target.files?.[0];
-    if (!file || !selectedConvId) return;
+    if (!file) { console.log('[MEDIA] No file selected'); return; }
+    if (!selectedConvId) { console.log('[MEDIA] No conversation selected'); return; }
     e.target.value = '';
 
     const conv = conversations.find(c => c.id === selectedConvId);
-    if (!conv) return;
+    if (!conv) { console.log('[MEDIA] Conv not found'); return; }
 
-    // Size limit: 10MB for docs, 2MB for images (will be compressed)
-    if (file.size > 10 * 1024 * 1024) {
-      addNotification('Archivo muy grande (max 10MB)', 'error');
+    console.log('[MEDIA] File:', file.name, 'Size:', (file.size / 1024).toFixed(0) + 'KB', 'Type:', file.type);
+    console.log('[MEDIA] Phone:', conv.wa_contact_phone);
+
+    if (file.size > 16 * 1024 * 1024) {
+      addNotification('Archivo muy grande (max 16MB)', 'error');
       return;
     }
 
     setSendingMedia(true);
-    addNotification(`Subiendo ${type === 'image' ? 'imagen' : 'documento'}...`, 'info');
+    addNotification(`Subiendo ${file.name} (${(file.size / 1024).toFixed(0)}KB)...`, 'info');
+
     try {
-      // Use multipart/form-data — much faster than base64 JSON
       const formData = new FormData();
       formData.append('file', file);
       formData.append('phone', conv.wa_contact_phone);
@@ -1142,8 +1146,11 @@ const Inbox = () => {
       formData.append('name', conv.wa_contact_name || '');
       formData.append('type', type);
 
+      console.log('[MEDIA] Sending FormData to /whatsapp/send-media...');
+      const t0 = Date.now();
+
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 60000);
+      const timeout = setTimeout(() => { console.log('[MEDIA] TIMEOUT after 60s'); controller.abort(); }, 60000);
 
       const res = await fetch(`${API_BASE}/whatsapp/send-media`, {
         method: 'POST', credentials: 'include',
@@ -1152,10 +1159,18 @@ const Inbox = () => {
       });
       clearTimeout(timeout);
 
+      console.log('[MEDIA] Response:', res.status, 'in', Date.now() - t0, 'ms');
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(typeof err.detail === 'string' ? err.detail : 'Error enviando archivo');
+        const errBody = await res.text().catch(() => '');
+        console.log('[MEDIA] Error body:', errBody);
+        let detail = 'Error enviando archivo';
+        try { detail = JSON.parse(errBody).detail || detail; } catch {}
+        throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
       }
+
+      const result = await res.json();
+      console.log('[MEDIA] Success:', result);
 
       setMessageInput('');
       addNotification(type === 'image' ? 'Imagen enviada' : 'Documento enviado', 'success');
@@ -1166,12 +1181,14 @@ const Inbox = () => {
         if (el) el.scrollTop = el.scrollHeight;
       }, 100);
     } catch (err) {
+      console.error('[MEDIA] ERROR:', err.name, err.message);
       if (err.name === 'AbortError') {
-        addNotification('Timeout — archivo muy pesado o conexion lenta', 'error');
+        addNotification('Timeout — el servidor no respondio en 60 segundos', 'error');
       } else {
         addNotification('Error: ' + err.message, 'error');
       }
     } finally {
+      console.log('[MEDIA] Done, clearing spinner');
       setSendingMedia(false);
     }
   };
