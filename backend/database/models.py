@@ -996,6 +996,7 @@ class Checkout(Base):
     status = Column(String(20), nullable=False, default="completed")  # completed, voided, refunded
     notes = Column(Text, nullable=True)
     receipt_sent = Column(Boolean, default=False)  # receipt sent via WhatsApp
+    receipt_url = Column(Text, nullable=True)  # base64 data URI of receipt photo/pdf
 
     # Links
     invoice_id = Column(Integer, ForeignKey("public.invoice.id"), nullable=True)

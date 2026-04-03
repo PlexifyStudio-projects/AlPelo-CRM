@@ -47,6 +47,7 @@ class CheckoutCreate(BaseModel):
     payment_method: str = "efectivo"
     payment_details: Optional[dict | list] = None  # for mixto or efectivo
     notes: Optional[str] = None
+    receipt_url: Optional[str] = None  # base64 data URI of receipt photo
 
 
 class CashRegisterOpen(BaseModel):
@@ -249,6 +250,7 @@ def create_checkout(
         payment_details=data.payment_details,
         status="completed",
         notes=data.notes,
+        receipt_url=data.receipt_url,
         created_by=getattr(current_user, "username", None),
         created_at=now_colombia(),
     )

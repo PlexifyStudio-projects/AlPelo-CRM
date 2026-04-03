@@ -292,6 +292,19 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         send_whatsapp_receipt: false,
       };
 
+      // Convert receipt file to base64 if present
+      if (receiptFile) {
+        try {
+          const dataUri = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(receiptFile);
+          });
+          payload.receipt_url = dataUri;
+        } catch {}
+      }
+
       const res = await fetch(`${API_URL}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

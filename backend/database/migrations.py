@@ -137,6 +137,8 @@ def run_migrations(engine):
         ("message_template", "header_text", "VARCHAR(200)"),
         # Tenant IVA config
         ("tenant", "default_tax_rate", "FLOAT NOT NULL DEFAULT 0"),
+        # Checkout receipt photo
+        ("checkout", "receipt_url", "TEXT"),
     ]
 
     for table, column, col_type in migrations:
