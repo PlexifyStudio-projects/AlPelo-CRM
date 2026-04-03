@@ -596,18 +596,18 @@ async def send_text_to_phone(body: dict, db: Session = Depends(get_db), user=Dep
 
     tid = safe_tid(user, db)
 
-    # Find or create conversation
-    conv = db.query(WhatsAppConversation).filter(
-        WhatsAppConversation.wa_contact_phone == phone
-    ).first()
+    # Find or create conversation (tenant-isolated)
+    conv_q = db.query(WhatsAppConversation).filter(
+        WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone])
+    )
+    if tid:
+        conv_q = conv_q.filter(WhatsAppConversation.tenant_id == tid)
+    conv = conv_q.first()
     if not conv:
-        conv = db.query(WhatsAppConversation).filter(
-            WhatsAppConversation.wa_contact_phone == clean_phone
-        ).first()
-    if not conv:
-        client = db.query(Client).filter(Client.phone == phone).first()
-        if not client:
-            client = db.query(Client).filter(Client.phone == clean_phone).first()
+        client_q = db.query(Client).filter(Client.phone.in_([phone, clean_phone]))
+        if tid:
+            client_q = client_q.filter(Client.tenant_id == tid)
+        client = client_q.first()
         conv = WhatsAppConversation(
             tenant_id=tid,
             wa_contact_phone=phone,
@@ -768,11 +768,15 @@ async def send_document_to_phone(body: dict, db: Session = Depends(get_db), user
         raise HTTPException(status_code=500, detail=f"Error de conexion: {str(e)}")
 
     # Step 3: Store in conversation
-    conv = db.query(WhatsAppConversation).filter(
-        WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone])
-    ).first()
+    conv_q = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone]))
+    if tid:
+        conv_q = conv_q.filter(WhatsAppConversation.tenant_id == tid)
+    conv = conv_q.first()
     if not conv:
-        client_obj = db.query(Client).filter(Client.phone.in_([phone, clean_phone])).first()
+        client_q = db.query(Client).filter(Client.phone.in_([phone, clean_phone]))
+        if tid:
+            client_q = client_q.filter(Client.tenant_id == tid)
+        client_obj = client_q.first()
         conv = WhatsAppConversation(
             tenant_id=tid,
             wa_contact_phone=phone,
@@ -876,11 +880,15 @@ async def send_image_to_phone(body: dict, db: Session = Depends(get_db), user=De
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
     # Store
-    conv = db.query(WhatsAppConversation).filter(
-        WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone])
-    ).first()
+    conv_q = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone]))
+    if tid:
+        conv_q = conv_q.filter(WhatsAppConversation.tenant_id == tid)
+    conv = conv_q.first()
     if not conv:
-        client_obj = db.query(Client).filter(Client.phone.in_([phone, clean_phone])).first()
+        client_q = db.query(Client).filter(Client.phone.in_([phone, clean_phone]))
+        if tid:
+            client_q = client_q.filter(Client.tenant_id == tid)
+        client_obj = client_q.first()
         conv = WhatsAppConversation(
             tenant_id=tid, wa_contact_phone=phone,
             wa_contact_name=body.get("name") or (client_obj.name if client_obj else None),
@@ -967,11 +975,15 @@ async def send_media_file(
         raise HTTPException(status_code=500, detail=f"Conexion: {str(e)}")
 
     # Store in conversation
-    conv = db.query(WhatsAppConversation).filter(
-        WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone])
-    ).first()
+    conv_q = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone]))
+    if tid:
+        conv_q = conv_q.filter(WhatsAppConversation.tenant_id == tid)
+    conv = conv_q.first()
     if not conv:
-        client_obj = db.query(Client).filter(Client.phone.in_([phone, clean_phone])).first()
+        client_q = db.query(Client).filter(Client.phone.in_([phone, clean_phone]))
+        if tid:
+            client_q = client_q.filter(Client.tenant_id == tid)
+        client_obj = client_q.first()
         conv = WhatsAppConversation(
             tenant_id=tid, wa_contact_phone=phone,
             wa_contact_name=name or (client_obj.name if client_obj else None),
