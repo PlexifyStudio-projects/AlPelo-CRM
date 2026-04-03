@@ -242,6 +242,44 @@ def run_migrations(engine):
     except Exception as e:
         print(f"[MIGRATION] campaign table: {e}")
 
+    # --- Staff Payment table ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='staff_payment'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.staff_payment (
+                        id SERIAL PRIMARY KEY,
+                        tenant_id INTEGER NOT NULL,
+                        staff_id INTEGER NOT NULL REFERENCES public.staff(id),
+                        amount INTEGER NOT NULL,
+                        period_from DATE NOT NULL,
+                        period_to DATE NOT NULL,
+                        concept VARCHAR(300) NOT NULL,
+                        payment_method VARCHAR(30) NOT NULL,
+                        reference VARCHAR(200),
+                        receipt_url TEXT,
+                        commission_total INTEGER NOT NULL DEFAULT 0,
+                        tips_total INTEGER NOT NULL DEFAULT 0,
+                        product_commissions INTEGER NOT NULL DEFAULT 0,
+                        deductions INTEGER NOT NULL DEFAULT 0,
+                        notes TEXT,
+                        paid_by VARCHAR(100),
+                        paid_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        status VARCHAR(20) NOT NULL DEFAULT 'paid',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_staff_payment_tenant ON public.staff_payment(tenant_id)"))
+                conn.execute(text("CREATE INDEX idx_staff_payment_staff ON public.staff_payment(staff_id)"))
+                print("[MIGRATION] Created staff_payment table with indexes")
+    except Exception as e:
+        print(f"[MIGRATION] staff_payment table: {e}")
+
     # --- Index for tenant isolation on client and conversation tables ---
     try:
         with engine.begin() as conn:

@@ -1150,3 +1150,34 @@ class InventoryMovement(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     product = relationship("Product", back_populates="movements")
+
+
+# ============================================================================
+# STAFF PAYMENTS — Payroll / Commission Payments
+# ============================================================================
+
+class StaffPayment(Base):
+    __tablename__ = "staff_payment"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
+    amount = Column(Integer, nullable=False)  # COP paid
+    period_from = Column(Date, nullable=False)
+    period_to = Column(Date, nullable=False)
+    concept = Column(String(300), nullable=False)  # "Comisiones Semana 1-7 Abr"
+    payment_method = Column(String(30), nullable=False)  # efectivo, nequi, bancolombia, daviplata
+    reference = Column(String(200), nullable=True)  # transfer number, receipt ref
+    receipt_url = Column(Text, nullable=True)  # uploaded proof photo/pdf
+    commission_total = Column(Integer, nullable=False, default=0)  # total commissions in period
+    tips_total = Column(Integer, nullable=False, default=0)  # total tips in period
+    product_commissions = Column(Integer, nullable=False, default=0)  # product sale commissions
+    deductions = Column(Integer, nullable=False, default=0)  # advances, penalties, etc
+    notes = Column(Text, nullable=True)
+    paid_by = Column(String(100), nullable=True)  # admin who made the payment
+    paid_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String(20), nullable=False, default='paid')  # paid, pending, cancelled
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    staff = relationship("Staff", foreign_keys=[staff_id])
