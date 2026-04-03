@@ -302,6 +302,7 @@ def create_checkout(
         status="paid",
         issued_date=now_colombia().date(),
         paid_at=now_colombia(),
+        notes=getattr(data, 'notes', None),
     )
     db.add(invoice)
     db.flush()
