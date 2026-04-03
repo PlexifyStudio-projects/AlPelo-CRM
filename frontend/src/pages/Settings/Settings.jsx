@@ -1528,13 +1528,19 @@ const PRESET_COLORS = [
 
 function TaxPanel({ addNotification }) {
   const [ivaEnabled, setIvaEnabled] = useState(false);
+  const [taxRate, setTaxRate] = useState(19);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch(`${API_URL}/settings/tax`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setIvaEnabled(d.iva_enabled); })
+      .then(d => {
+        if (d) {
+          setIvaEnabled(d.iva_enabled);
+          setTaxRate(d.default_tax_rate > 0 ? Math.round(d.default_tax_rate * 100) : 19);
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -1542,13 +1548,14 @@ function TaxPanel({ addNotification }) {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const rate = ivaEnabled ? (taxRate / 100) : 0;
       const res = await fetch(`${API_URL}/settings/tax`, {
         method: 'PUT', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ iva_enabled: ivaEnabled }),
+        body: JSON.stringify({ default_tax_rate: rate }),
       });
       if (!res.ok) throw new Error('Error');
-      addNotification(ivaEnabled ? 'IVA 19% activado para cobros y facturas' : 'IVA desactivado', 'success');
+      addNotification(ivaEnabled ? `IVA ${taxRate}% activado` : 'IVA desactivado', 'success');
     } catch { addNotification('Error guardando', 'error'); }
     finally { setSaving(false); }
   };
@@ -1558,13 +1565,13 @@ function TaxPanel({ addNotification }) {
   return (
     <div style={{ padding: '24px 32px' }}>
       <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Impuestos</h3>
-      <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 24 }}>Configura el IVA que se aplica automaticamente en los cobros y facturas del checkout.</p>
+      <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 24 }}>El IVA ya esta incluido en el precio de los servicios. El sistema lo descompone internamente para contabilidad.</p>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px', background: 'rgba(0,0,0,0.02)', borderRadius: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px', background: 'rgba(0,0,0,0.02)', borderRadius: 12, marginBottom: 16 }}>
         <div style={{ flex: 1 }}>
-          <strong style={{ fontSize: 15 }}>IVA 19%</strong>
+          <strong style={{ fontSize: 15 }}>IVA incluido en precios</strong>
           <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', marginTop: 2 }}>
-            {ivaEnabled ? 'Activo — se cobra IVA 19% en cada checkout automaticamente' : 'Desactivado — los cobros no incluyen IVA'}
+            {ivaEnabled ? `Activo — el sistema descompone el ${taxRate}% de IVA de cada cobro` : 'Desactivado — no se calcula IVA'}
           </p>
         </div>
         <label style={{ position: 'relative', width: 48, height: 26, cursor: 'pointer' }}>
@@ -1581,6 +1588,15 @@ function TaxPanel({ addNotification }) {
           }} />
         </label>
       </div>
+
+      {ivaEnabled && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <label style={{ fontSize: 13, fontWeight: 600, color: 'rgba(0,0,0,0.5)' }}>Porcentaje IVA:</label>
+          <input type="number" min="1" max="50" value={taxRate} onChange={e => setTaxRate(parseInt(e.target.value) || 0)}
+            style={{ width: 70, padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.12)', fontSize: 15, fontWeight: 700, textAlign: 'center', fontFamily: 'inherit' }} />
+          <span style={{ fontSize: 15, fontWeight: 700 }}>%</span>
+        </div>
+      )}
 
       <button onClick={handleSave} disabled={saving} style={{
         padding: '10px 24px', borderRadius: 10, border: 'none', cursor: 'pointer',
