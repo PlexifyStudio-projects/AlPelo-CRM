@@ -2217,6 +2217,31 @@
     font-weight: 500;
   }
 
+  &__sale-receipt {
+    margin: 8px 0;
+  }
+
+  &__sale-receipt-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: rgba(0, 0, 0, 0.35);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  &__sale-receipt-img {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: opacity 150ms ease;
+
+    &:hover { opacity: 0.85; }
+  }
+
   &__sale-detail-actions {
     display: flex;
     gap: 8px;

@@ -312,8 +312,12 @@ def list_invoices(
         # Get tip from linked checkout
         checkout = db.query(Checkout).filter(Checkout.invoice_id == inv.id).first()
         data["tip"] = checkout.tip if checkout else 0
-        data["discount_amount"] = checkout.discount_amount if checkout else 0
-        data["discount_type"] = checkout.discount_type if checkout else None
+        if not data.get("discount_amount"):
+            data["discount_amount"] = checkout.discount_amount if checkout else 0
+        if not data.get("discount_type"):
+            data["discount_type"] = checkout.discount_type if checkout else None
+        data["receipt_url"] = checkout.receipt_url if checkout and getattr(checkout, 'receipt_url', None) else None
+        data["payment_details"] = checkout.payment_details if checkout and getattr(checkout, 'payment_details', None) else None
 
         # Get real commission rate for staff
         staff_name = None

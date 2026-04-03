@@ -208,9 +208,13 @@ const RECURRING_OPTIONS = [
 const PAYMENT_METHODS = [
   { value: 'efectivo', label: 'Efectivo' },
   { value: 'transferencia', label: 'Transferencia' },
+  { value: 'bancolombia', label: 'Bancolombia' },
   { value: 'tarjeta', label: 'Tarjeta' },
+  { value: 'tarjeta_debito', label: 'Tarjeta Debito' },
+  { value: 'tarjeta_credito', label: 'Tarjeta Credito' },
   { value: 'nequi', label: 'Nequi' },
   { value: 'daviplata', label: 'Daviplata' },
+  { value: 'mixto', label: 'Mixto' },
 ];
 
 const TAB_OPTIONS = [
@@ -2115,6 +2119,12 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         {inv.client_document && <span>{inv.client_document_type || 'CC'}: {inv.client_document}</span>}
                         {inv.client_email && <span>{inv.client_email}</span>}
                       </div>
+                      {inv.receipt_url && (
+                        <div className="finances__sale-receipt">
+                          <span className="finances__sale-receipt-label">Comprobante adjunto</span>
+                          <img src={inv.receipt_url} alt="Comprobante" className="finances__sale-receipt-img" onClick={() => window.open(inv.receipt_url, '_blank')} />
+                        </div>
+                      )}
                       <div className="finances__sale-detail-actions">
                         {(inv.status === 'draft' || inv.status === 'sent') && (
                           <button className="finances__btn-primary" style={{ padding: '6px 14px', fontSize: '12px' }} onClick={() => handleStatusChange(inv.id, 'paid')}>
