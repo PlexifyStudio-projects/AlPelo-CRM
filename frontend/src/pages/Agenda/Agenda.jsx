@@ -1533,8 +1533,10 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                                   updateAssignment(aIdx, { staffId: String(s.id), time: keepTime });
                                 }}
                                 disabled={freeSlots === 0}>
-                                <span className={`${b}__avail-avatar`} style={{ background: color }}>
-                                  {s.name.split(' ').map(w => w[0]).join('').substring(0, 2)}
+                                <span className={`${b}__avail-avatar`} style={{ background: s.photo_url ? 'transparent' : color }}>
+                                  {s.photo_url
+                                    ? <img src={s.photo_url} alt={s.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                    : s.name.split(' ').map(w => w[0]).join('').substring(0, 2)}
                                 </span>
                                 <span className={`${b}__avail-name`}>{s.name.split(' ')[0]}</span>
                                 <span className={`${b}__avail-role`}>{s.role}</span>
