@@ -3425,27 +3425,81 @@
 
 .agenda__walkin-modal {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 20px;
   width: 100%;
-  max-width: 460px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15);
+  max-width: 600px;
+  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.18);
   overflow: hidden;
-  animation: scaleIn 200ms ease;
+  animation: scaleIn 250ms cubic-bezier(0.2, 0, 0, 1);
 }
 
 .agenda__walkin-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
+  align-items: flex-start;
+  padding: 24px 32px 20px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 
-  h2 { font-size: 18px; font-weight: 700; margin: 0; }
-  button { background: none; border: none; font-size: 24px; cursor: pointer; color: rgba(0,0,0,0.3); }
+  h2 { font-size: 20px; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
 }
 
-.agenda__walkin-form {
-  padding: 20px 24px;
+.agenda__walkin-subtitle {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.4);
+  margin: 2px 0 0;
+}
+
+.agenda__walkin-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.25);
+  line-height: 1;
+
+  &:hover { color: rgba(0, 0, 0, 0.5); }
+}
+
+.agenda__walkin-body {
+  padding: 24px 32px 20px;
+}
+
+.agenda__walkin-mode-toggle {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.agenda__walkin-mode-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 150ms ease;
+
+  &--active {
+    background: #fff;
+    color: #1a1a1a;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.agenda__walkin-section {
+  margin-bottom: 16px;
+}
+
+.agenda__walkin-row {
+  display: flex;
+  gap: 12px;
 }
 
 .agenda__walkin-field {
@@ -3476,11 +3530,41 @@
 .agenda__walkin-selected-client {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: rgba(#F59E0B, 0.06);
-  border: 1px solid rgba(#F59E0B, 0.2);
-  border-radius: 10px;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(#F59E0B, 0.05);
+  border: 1.5px solid rgba(#F59E0B, 0.2);
+  border-radius: 12px;
+
+  div {
+    flex: 1;
+    strong { display: block; font-size: 14px; }
+    small { font-size: 12px; color: rgba(0, 0, 0, 0.4); }
+  }
+}
+
+.agenda__walkin-selected-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #F59E0B;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.agenda__walkin-selected-clear {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+  &:hover { color: rgba(0, 0, 0, 0.5); }
 }
 
 .agenda__walkin-client-dropdown {
@@ -3498,8 +3582,8 @@
 
 .agenda__walkin-client-option {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
   width: 100%;
   padding: 10px 14px;
   border: none;
@@ -3509,10 +3593,26 @@
   font-size: 13px;
   text-align: left;
 
-  &:hover { background: rgba(0, 0, 0, 0.03); }
+  &:hover { background: rgba(#F59E0B, 0.04); }
 
-  strong { font-weight: 600; }
-  span { font-size: 12px; color: rgba(0, 0, 0, 0.4); }
+  div {
+    strong { display: block; font-weight: 600; }
+    small { font-size: 11px; color: rgba(0, 0, 0, 0.4); }
+  }
+}
+
+.agenda__walkin-client-option-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(#F59E0B, 0.12);
+  color: #92400E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
 }
 
 .agenda__walkin-queue-preview {
@@ -3541,6 +3641,21 @@
     color: #92400E;
     font-weight: 700;
   }
+}
+
+.agenda__walkin-queue-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.agenda__walkin-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 32px 24px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  margin-top: 8px;
 }
 
 .agenda__walkin-actions {
@@ -3589,17 +3704,31 @@
 .agenda__walkin-result-service {
   font-size: 14px;
   color: rgba(0, 0, 0, 0.5);
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
-.agenda__walkin-result-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 14px;
-  margin: 16px 0 24px;
+.agenda__walkin-result-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 20px 0 28px;
+}
 
-  strong { color: #92400E; }
+.agenda__walkin-result-card {
+  padding: 14px;
+  background: rgba(#F59E0B, 0.05);
+  border-radius: 12px;
+  text-align: center;
+
+  strong { display: block; font-size: 16px; color: #92400E; margin-top: 4px; }
+}
+
+.agenda__walkin-result-card-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.35);
 }
 
 .agenda__walkin-done-btn {

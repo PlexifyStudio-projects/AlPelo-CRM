@@ -159,6 +159,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [walkinResult, setWalkinResult] = useState(null);
   const [walkinClientResults, setWalkinClientResults] = useState([]);
   const [walkinSelectedClient, setWalkinSelectedClient] = useState(null);
+  const [walkinMode, setWalkinMode] = useState('existing'); // 'existing' or 'new'
   const [queueData, setQueueData] = useState([]);
   const [waitingList, setWaitingList] = useState([]);
 
@@ -1867,31 +1868,42 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
       {/* Walk-in Modal */}
       {showWalkinModal && createPortal(
-        <div className={`${b}__walkin-overlay`} onClick={() => { setShowWalkinModal(false); setWalkinResult(null); setWalkinForm({ client_name: '', client_phone: '', service_id: '', staff_id: '' }); }}>
+        <div className={`${b}__walkin-overlay`} onClick={() => { setShowWalkinModal(false); setWalkinResult(null); setWalkinForm({ client_name: '', client_phone: '', service_id: '', staff_id: '', client_id: null }); setWalkinSelectedClient(null); setWalkinMode('existing'); }}>
           <div className={`${b}__walkin-modal`} onClick={e => e.stopPropagation()}>
             <div className={`${b}__walkin-header`}>
-              <h2>Walk-in</h2>
-              <button onClick={() => { setShowWalkinModal(false); setWalkinResult(null); }}>&times;</button>
+              <div>
+                <h2>Cola de espera</h2>
+                <p className={`${b}__walkin-subtitle`}>Registrar cliente sin cita previa</p>
+              </div>
+              <button className={`${b}__walkin-close`} onClick={() => { setShowWalkinModal(false); setWalkinResult(null); setWalkinMode('existing'); }}>&times;</button>
             </div>
 
             {walkinResult ? (
               <div className={`${b}__walkin-result`}>
                 <div className={`${b}__walkin-result-icon`}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </div>
                 <h3>{walkinResult.client_name}</h3>
                 <p className={`${b}__walkin-result-service`}>{walkinResult.service_name}</p>
-                <div className={`${b}__walkin-result-info`}>
-                  <span>Profesional: <strong>{walkinResult.staff_name}</strong></span>
-                  <span>Hora: <strong>{walkinResult.time}</strong></span>
-                  <span>Espera: <strong>~{walkinResult.wait_minutes} min</strong></span>
+                <div className={`${b}__walkin-result-cards`}>
+                  <div className={`${b}__walkin-result-card`}>
+                    <span className={`${b}__walkin-result-card-label`}>Profesional</span>
+                    <strong>{walkinResult.staff_name}</strong>
+                  </div>
+                  <div className={`${b}__walkin-result-card`}>
+                    <span className={`${b}__walkin-result-card-label`}>Hora estimada</span>
+                    <strong>{walkinResult.time}</strong>
+                  </div>
+                  <div className={`${b}__walkin-result-card`}>
+                    <span className={`${b}__walkin-result-card-label`}>Espera aprox.</span>
+                    <strong>~{walkinResult.wait_minutes} min</strong>
+                  </div>
                 </div>
-                <button className={`${b}__walkin-done-btn`} onClick={() => { setShowWalkinModal(false); setWalkinResult(null); setWalkinForm({ client_name: '', client_phone: '', service_id: '', staff_id: '', client_id: null }); setWalkinSelectedClient(null); }}>
-                  Listo
+                <button className={`${b}__walkin-done-btn`} onClick={() => { setShowWalkinModal(false); setWalkinResult(null); setWalkinForm({ client_name: '', client_phone: '', service_id: '', staff_id: '', client_id: null }); setWalkinSelectedClient(null); setWalkinMode('existing'); }}>
+                  Entendido
                 </button>
               </div>
             ) : (() => {
-              // Filter staff by selected service
               const selectedService = services.find(s => String(s.id) === String(walkinForm.service_id));
               const serviceStaffIds = selectedService?.staff_ids || selectedService?.staffIds || [];
               const filteredStaff = walkinForm.service_id
@@ -1899,84 +1911,115 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 : [];
 
               return (
-              <div className={`${b}__walkin-form`}>
-                <div className={`${b}__walkin-field`} style={{ position: 'relative' }}>
-                  <label>Nombre del cliente *</label>
-                  {walkinSelectedClient ? (
-                    <div className={`${b}__walkin-selected-client`}>
-                      <strong>{walkinSelectedClient.name}</strong>
-                      <span style={{ color: 'rgba(0,0,0,0.4)', fontSize: 12 }}>{walkinSelectedClient.phone || ''}</span>
-                      <button onClick={() => { setWalkinSelectedClient(null); setWalkinForm(f => ({ ...f, client_name: '', client_phone: '', client_id: null })); setWalkinClientResults([]); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(0,0,0,0.3)', fontSize: 18 }}>&times;</button>
-                    </div>
-                  ) : (
-                    <>
-                      <input value={walkinForm.client_name} onChange={e => {
-                        const v = e.target.value;
-                        setWalkinForm(f => ({ ...f, client_name: v, client_id: null }));
-                        if (v.length >= 2) {
-                          fetch(`${API_WK}/clients/?search=${encodeURIComponent(v)}&limit=5`, { credentials: 'include' })
-                            .then(r => r.ok ? r.json() : [])
-                            .then(data => setWalkinClientResults(Array.isArray(data) ? data.slice(0, 5) : []))
-                            .catch(() => setWalkinClientResults([]));
-                        } else { setWalkinClientResults([]); }
-                      }} placeholder="Buscar o escribir nombre..." autoFocus />
-                      {walkinClientResults.length > 0 && (
-                        <div className={`${b}__walkin-client-dropdown`}>
-                          {walkinClientResults.map(c => (
-                            <button key={c.id} className={`${b}__walkin-client-option`} onClick={() => {
-                              setWalkinSelectedClient(c);
-                              setWalkinForm(f => ({ ...f, client_name: c.name, client_phone: c.phone || '', client_id: c.id }));
-                              setWalkinClientResults([]);
-                            }}>
-                              <strong>{c.name}</strong>
-                              <span>{c.phone || ''}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-                {!walkinSelectedClient && (
-                  <div className={`${b}__walkin-field`}>
-                    <label>Telefono (opcional)</label>
-                    <input value={walkinForm.client_phone} onChange={e => setWalkinForm(f => ({ ...f, client_phone: e.target.value }))} placeholder="57 (300) 123-4567" />
-                  </div>
-                )}
-                <div className={`${b}__walkin-field`}>
-                  <label>Servicio *</label>
-                  <select value={walkinForm.service_id} onChange={e => setWalkinForm(f => ({ ...f, service_id: e.target.value, staff_id: '' }))}>
-                    <option value="">Seleccionar servicio</option>
-                    {services.map(s => <option key={s.id} value={s.id}>{s.name} — ${s.price?.toLocaleString('es-CO')} ({s.duration || 30}min)</option>)}
-                  </select>
+              <div className={`${b}__walkin-body`}>
+                {/* Mode toggle */}
+                <div className={`${b}__walkin-mode-toggle`}>
+                  <button className={`${b}__walkin-mode-btn ${walkinMode === 'existing' ? `${b}__walkin-mode-btn--active` : ''}`}
+                    onClick={() => { setWalkinMode('existing'); setWalkinForm(f => ({ ...f, client_name: '', client_phone: '', client_id: null })); setWalkinSelectedClient(null); setWalkinClientResults([]); }}>
+                    Cliente existente
+                  </button>
+                  <button className={`${b}__walkin-mode-btn ${walkinMode === 'new' ? `${b}__walkin-mode-btn--active` : ''}`}
+                    onClick={() => { setWalkinMode('new'); setWalkinSelectedClient(null); setWalkinForm(f => ({ ...f, client_name: '', client_phone: '', client_id: null })); setWalkinClientResults([]); }}>
+                    Cliente nuevo
+                  </button>
                 </div>
 
-                {walkinForm.service_id && (
+                {walkinMode === 'existing' ? (
+                  <div className={`${b}__walkin-section`}>
+                    <div className={`${b}__walkin-field`} style={{ position: 'relative' }}>
+                      <label>Buscar cliente *</label>
+                      {walkinSelectedClient ? (
+                        <div className={`${b}__walkin-selected-client`}>
+                          <div className={`${b}__walkin-selected-avatar`}>{walkinSelectedClient.name?.split(' ').map(w => w[0]).join('').slice(0, 2)}</div>
+                          <div>
+                            <strong>{walkinSelectedClient.name}</strong>
+                            <small>{walkinSelectedClient.phone || 'Sin telefono'}</small>
+                          </div>
+                          <button className={`${b}__walkin-selected-clear`} onClick={() => { setWalkinSelectedClient(null); setWalkinForm(f => ({ ...f, client_name: '', client_phone: '', client_id: null })); setWalkinClientResults([]); }}>&times;</button>
+                        </div>
+                      ) : (
+                        <>
+                          <input value={walkinForm.client_name} onChange={e => {
+                            const v = e.target.value;
+                            setWalkinForm(f => ({ ...f, client_name: v, client_id: null }));
+                            if (v.length >= 2) {
+                              fetch(`${API_WK}/clients/?search=${encodeURIComponent(v)}&limit=5`, { credentials: 'include' })
+                                .then(r => r.ok ? r.json() : [])
+                                .then(data => setWalkinClientResults(Array.isArray(data) ? data.slice(0, 5) : []))
+                                .catch(() => setWalkinClientResults([]));
+                            } else { setWalkinClientResults([]); }
+                          }} placeholder="Nombre, telefono o ID del cliente..." />
+                          {walkinClientResults.length > 0 && (
+                            <div className={`${b}__walkin-client-dropdown`}>
+                              {walkinClientResults.map(c => (
+                                <button key={c.id} className={`${b}__walkin-client-option`} onClick={() => {
+                                  setWalkinSelectedClient(c);
+                                  setWalkinForm(f => ({ ...f, client_name: c.name, client_phone: c.phone || '', client_id: c.id }));
+                                  setWalkinClientResults([]);
+                                }}>
+                                  <div className={`${b}__walkin-client-option-avatar`}>{c.name?.split(' ').map(w => w[0]).join('').slice(0, 2)}</div>
+                                  <div><strong>{c.name}</strong><small>{c.phone || ''}{c.client_id ? ` · ${c.client_id}` : ''}</small></div>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`${b}__walkin-section`}>
+                    <div className={`${b}__walkin-row`}>
+                      <div className={`${b}__walkin-field`} style={{ flex: 1 }}>
+                        <label>Nombre completo *</label>
+                        <input value={walkinForm.client_name} onChange={e => setWalkinForm(f => ({ ...f, client_name: e.target.value }))} placeholder="Nombre del cliente" autoFocus />
+                      </div>
+                      <div className={`${b}__walkin-field`} style={{ flex: 1 }}>
+                        <label>Telefono *</label>
+                        <input value={walkinForm.client_phone} onChange={e => setWalkinForm(f => ({ ...f, client_phone: e.target.value }))} placeholder="57 (300) 123-4567" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className={`${b}__walkin-section`}>
                   <div className={`${b}__walkin-field`}>
-                    <label>Profesional</label>
-                    <select value={walkinForm.staff_id} onChange={e => setWalkinForm(f => ({ ...f, staff_id: e.target.value }))}>
-                      <option value="">Siguiente en turno (automatico)</option>
-                      {filteredStaff.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
+                    <label>Servicio *</label>
+                    <select value={walkinForm.service_id} onChange={e => setWalkinForm(f => ({ ...f, service_id: e.target.value, staff_id: '' }))}>
+                      <option value="">Seleccionar servicio</option>
+                      {services.map(s => <option key={s.id} value={s.id}>{s.name} — ${s.price?.toLocaleString('es-CO')} ({s.duration_minutes || s.duration || 30}min)</option>)}
                     </select>
                   </div>
-                )}
 
-                {/* Queue preview — only after service selected */}
+                  {walkinForm.service_id && (
+                    <div className={`${b}__walkin-field`}>
+                      <label>Profesional</label>
+                      <select value={walkinForm.staff_id} onChange={e => setWalkinForm(f => ({ ...f, staff_id: e.target.value }))}>
+                        <option value="">Siguiente en turno (automatico)</option>
+                        {filteredStaff.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
                 {walkinForm.service_id && queueData.length > 0 && !walkinForm.staff_id && (
                   <div className={`${b}__walkin-queue-preview`}>
                     <span className={`${b}__walkin-queue-label`}>Siguiente en turno:</span>
-                    {queueData.filter(q => q.is_available).slice(0, 3).map((q, i) => (
-                      <span key={q.staff_id} className={`${b}__walkin-queue-item ${i === 0 ? `${b}__walkin-queue-item--next` : ''}`}>
-                        {i + 1}. {q.staff_name}
-                      </span>
-                    ))}
+                    <div className={`${b}__walkin-queue-chips`}>
+                      {queueData.filter(q => q.is_available).slice(0, 3).map((q, i) => (
+                        <span key={q.staff_id} className={`${b}__walkin-queue-item ${i === 0 ? `${b}__walkin-queue-item--next` : ''}`}>
+                          {i + 1}. {q.staff_name}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                <div className={`${b}__walkin-actions`}>
-                  <button className={`${b}__walkin-cancel`} onClick={() => { setShowWalkinModal(false); setWalkinSelectedClient(null); setWalkinClientResults([]); }}>Cancelar</button>
-                  <button className={`${b}__walkin-submit`} onClick={handleWalkinSubmit} disabled={walkinSubmitting || !walkinForm.client_name || !walkinForm.service_id}>
-                    {walkinSubmitting ? 'Asignando...' : 'Agregar a la cola'}
+                <div className={`${b}__walkin-footer`}>
+                  <button className={`${b}__walkin-cancel`} onClick={() => { setShowWalkinModal(false); setWalkinSelectedClient(null); setWalkinClientResults([]); setWalkinMode('existing'); }}>Cancelar</button>
+                  <button className={`${b}__walkin-submit`} onClick={handleWalkinSubmit}
+                    disabled={walkinSubmitting || !walkinForm.client_name || !walkinForm.service_id || (walkinMode === 'new' && !walkinForm.client_phone)}>
+                    {walkinSubmitting ? 'Asignando turno...' : 'Agregar a la cola'}
                   </button>
                 </div>
               </div>
