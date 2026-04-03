@@ -331,6 +331,9 @@ async def create_template(data: dict, user=Depends(get_current_user)):
             variables=list(set(variables)),
             status="draft",
             language=data.get("language", "es"),
+            header_type=data.get("header_type") or None,
+            header_media_url=data.get("header_media_url") or None,
+            header_text=data.get("header_text") or None,
         )
         db.add(tpl)
         db.commit()

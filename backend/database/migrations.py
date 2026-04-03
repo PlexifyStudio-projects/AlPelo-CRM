@@ -131,6 +131,10 @@ def run_migrations(engine):
         ("invoice", "client_document_type", "VARCHAR(5)"),
         ("invoice", "client_email", "VARCHAR(200)"),
         ("invoice", "client_address", "TEXT"),
+        # Campaign template media header
+        ("message_template", "header_type", "VARCHAR(10)"),
+        ("message_template", "header_media_url", "TEXT"),
+        ("message_template", "header_text", "VARCHAR(200)"),
     ]
 
     for table, column, col_type in migrations:

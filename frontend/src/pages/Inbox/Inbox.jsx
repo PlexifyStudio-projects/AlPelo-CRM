@@ -1082,6 +1082,31 @@ const Inbox = () => {
     else if (type === 'image') fileInputImgRef.current?.click();
   };
 
+  const compressImage = (file, maxSizeKB = 500) => {
+    return new Promise((resolve) => {
+      if (file.size <= maxSizeKB * 1024) {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        const maxDim = 1200;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleFileUpload = async (e, type) => {
     const file = e.target.files?.[0];
     if (!file || !selectedConvId) return;
@@ -1090,13 +1115,24 @@ const Inbox = () => {
     const conv = conversations.find(c => c.id === selectedConvId);
     if (!conv) return;
 
+    // Size limit: 10MB for docs, 2MB for images (will be compressed)
+    if (file.size > 10 * 1024 * 1024) {
+      addNotification('Archivo muy grande (max 10MB)', 'error');
+      return;
+    }
+
     setSendingMedia(true);
     try {
-      const reader = new FileReader();
-      const dataUri = await new Promise((resolve) => {
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
+      let dataUri;
+      if (type === 'image') {
+        dataUri = await compressImage(file);
+      } else {
+        dataUri = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+        });
+      }
 
       const endpoint = type === 'image' ? '/whatsapp/send-image' : '/whatsapp/send-document';
       const body = {
@@ -1107,11 +1143,16 @@ const Inbox = () => {
       };
       if (type === 'document') body.filename = file.name;
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
       const res = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -1119,7 +1160,7 @@ const Inbox = () => {
       }
 
       setMessageInput('');
-      // Reload messages
+      addNotification(type === 'image' ? 'Imagen enviada' : 'Documento enviado', 'success');
       const msgs = await whatsappService.getMessages(selectedConvId);
       setMessages(msgs);
       setTimeout(() => {
@@ -1127,7 +1168,11 @@ const Inbox = () => {
         if (el) el.scrollTop = el.scrollHeight;
       }, 100);
     } catch (err) {
-      addNotification('Error: ' + err.message, 'error');
+      if (err.name === 'AbortError') {
+        addNotification('Timeout — archivo muy pesado o conexion lenta', 'error');
+      } else {
+        addNotification('Error: ' + err.message, 'error');
+      }
     } finally {
       setSendingMedia(false);
     }

@@ -564,6 +564,9 @@ class MessageTemplate(Base):
     times_sent = Column(Integer, default=0)
     response_rate = Column(Float, default=0)
     last_sent_at = Column(DateTime, nullable=True)
+    header_type = Column(String(10), nullable=True)  # IMAGE, VIDEO, TEXT, or null (no header)
+    header_media_url = Column(Text, nullable=True)  # base64 data URI or URL for image/video
+    header_text = Column(String(200), nullable=True)  # Text header content
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
