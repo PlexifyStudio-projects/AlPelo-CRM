@@ -1888,16 +1888,17 @@
   &__sale-table {
     background: $color-white;
     border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 14px;
+    border-radius: 16px;
     overflow: hidden;
     margin-bottom: $spacing-lg;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
   }
 
   &__sale-thead {
     display: flex;
     align-items: center;
-    padding: 10px 20px;
-    background: #FAFBFC;
+    padding: 12px 24px;
+    background: linear-gradient(180deg, #F8F9FB 0%, #F3F4F6 100%);
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
 
@@ -1905,13 +1906,13 @@
     font-size: 10px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: rgba(0, 0, 0, 0.35);
+    letter-spacing: 0.08em;
+    color: rgba(0, 0, 0, 0.4);
   }
 
   &__sale-row-wrap {
     &--expanded {
-      background: #FAFBFC;
+      background: linear-gradient(180deg, rgba($color-primary, 0.015) 0%, rgba($color-primary, 0.03) 100%);
     }
 
     & + & {
@@ -1922,110 +1923,131 @@
   &__sale-row {
     display: flex;
     align-items: center;
-    padding: 14px 20px;
+    padding: 16px 24px;
     cursor: pointer;
-    transition: background 120ms ease;
+    transition: all 150ms ease;
 
-    &:hover { background: rgba(0, 0, 0, 0.015); }
+    &:hover {
+      background: rgba(0, 0, 0, 0.01);
+
+      .finances__sale-amount { transform: scale(1.03); }
+    }
   }
 
   &__sale-td {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
 
     strong { color: $color-secondary; }
-    small { font-size: 11px; color: rgba(0, 0, 0, 0.35); }
+    small { font-size: 11px; color: rgba(0, 0, 0, 0.3); }
   }
 
   &__sale-td--time {
-    gap: 1px;
+    gap: 2px;
   }
 
   &__sale-time {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     color: $color-secondary;
+    letter-spacing: -0.01em;
   }
 
   &__sale-invnum {
-    font-size: 10px;
-    color: rgba(0, 0, 0, 0.3);
-    font-weight: 500;
+    font-size: 9px;
+    color: rgba(0, 0, 0, 0.25);
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
 
   &__sale-td--client {
     strong {
       font-size: 13px;
       font-weight: 600;
+      letter-spacing: -0.01em;
     }
   }
 
   &__sale-td--services {
-    gap: 4px;
+    gap: 5px;
   }
 
   &__sale-svc-line {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
   &__sale-svc-name {
     font-size: 12px;
     font-weight: 600;
     color: $color-secondary;
+    letter-spacing: -0.01em;
   }
 
   &__sale-svc-staff {
-    font-size: 10px;
-    color: rgba(0, 0, 0, 0.35);
-    padding: 1px 8px;
-    background: rgba(0, 0, 0, 0.03);
-    border-radius: 8px;
+    font-size: 9px;
+    color: rgba(0, 0, 0, 0.4);
+    padding: 2px 8px;
+    background: rgba($color-primary, 0.06);
+    border-radius: 10px;
+    font-weight: 500;
   }
 
   &__sale-amount {
-    font-size: 14px;
-    font-weight: 700;
-    color: $color-primary !important;
+    font-size: 15px;
+    font-weight: 800;
+    color: $color-secondary !important;
+    letter-spacing: -0.02em;
+    transition: transform 150ms ease;
   }
 
   // Expanded detail
   &__sale-detail {
-    padding: 0 20px 20px;
-    animation: fadeInUp 200ms ease;
+    padding: 4px 24px 24px;
+    animation: saleDetailIn 250ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  @keyframes saleDetailIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   &__sale-detail-grid {
     display: grid;
     grid-template-columns: 1.2fr 1fr;
-    gap: 20px;
-    margin-bottom: 16px;
+    gap: 24px;
+    margin-bottom: 20px;
   }
 
   &__sale-detail-col {
     h4 {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: rgba(0, 0, 0, 0.35);
-      margin: 0 0 10px;
+      letter-spacing: 0.08em;
+      color: rgba(0, 0, 0, 0.3);
+      margin: 0 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid rgba(0, 0, 0, 0.04);
     }
   }
 
   &__sale-detail-items {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   &__sale-detail-item {
-    padding: 10px 14px;
+    padding: 12px 16px;
     background: $color-white;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    transition: border-color 150ms ease;
+
+    &:hover { border-color: rgba($color-primary, 0.15); }
   }
 
   &__sale-detail-item-main {
@@ -2038,99 +2060,118 @@
     font-size: 13px;
     font-weight: 600;
     color: $color-secondary;
+    letter-spacing: -0.01em;
   }
 
   &__sale-detail-item-price {
-    font-size: 13px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 800;
     color: $color-primary;
+    letter-spacing: -0.02em;
   }
 
   &__sale-detail-item-meta {
     display: flex;
-    gap: 12px;
-    margin-top: 4px;
+    gap: 14px;
+    margin-top: 6px;
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.4);
+    color: rgba(0, 0, 0, 0.35);
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
   }
 
   &__sale-detail-summary {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 12px 14px;
+    gap: 6px;
+    padding: 14px 16px;
     background: $color-white;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 10px;
-    margin-bottom: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
+    margin-bottom: 12px;
   }
 
   &__sale-summary-line {
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.5);
-    padding: 2px 0;
+    color: rgba(0, 0, 0, 0.45);
+    padding: 3px 0;
+
+    span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
 
     &--discount { color: #DC2626; }
     &--total {
-      font-size: 14px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 800;
       color: $color-secondary;
-      padding-top: 6px;
-      margin-top: 4px;
-      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      padding-top: 10px;
+      margin-top: 6px;
+      border-top: 2px solid rgba(0, 0, 0, 0.06);
+      letter-spacing: -0.02em;
     }
   }
 
   &__sale-detail-commission {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    padding: 12px 16px;
+    background: $color-white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 12px;
   }
 
   &__sale-commission-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-size: 12px;
     color: rgba(0, 0, 0, 0.5);
 
     strong {
       margin-left: auto;
       color: $color-secondary;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
     }
   }
 
   &__sale-commission-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
-    &--staff { background: #10B981; }
-    &--biz { background: #3B82F6; }
+    &--staff { background: linear-gradient(135deg, #10B981, #059669); }
+    &--biz { background: linear-gradient(135deg, #3B82F6, #2563EB); }
   }
 
   &__sale-detail-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 14px;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    padding-top: 16px;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
   }
 
   &__sale-detail-meta {
     display: flex;
-    gap: 16px;
+    gap: 20px;
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.35);
+    color: rgba(0, 0, 0, 0.3);
     flex-wrap: wrap;
+    font-weight: 500;
   }
 
   &__sale-detail-actions {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
   }
 
