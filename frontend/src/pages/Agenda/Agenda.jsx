@@ -859,7 +859,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             </button>
           )}
         </div>
-        {searchOpen && !isStaffView && searchResults.length > 0 && (
+        {searchOpen && searchResults.length > 0 && (
           <div className={`${b}__search-results`}>
             <div className={`${b}__search-results-header`}>
               <span>{searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}</span>
@@ -905,7 +905,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             })}
           </div>
         )}
-        {searchOpen && !isStaffView && searchQuery.length >= 2 && searchResults.length === 0 && (
+        {searchOpen && searchQuery.length >= 2 && searchResults.length === 0 && (
           <div className={`${b}__search-results`}>
             <div className={`${b}__search-empty`}>No se encontraron citas para "{searchQuery}"</div>
           </div>
