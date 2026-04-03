@@ -1581,21 +1581,19 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                           for (let m = HOURS_START * 60; m < HOURS_END * 60; m += 15) {
                             const staffOverlap = busyRanges.find(r => m >= r.s && m < r.e);
                             const clientOverlap = clientBusyRanges.find(r => m >= r.s && m < r.e);
-                            const visualOverlap = staffOverlap || clientOverlap;
                             const isAvailable = slots.includes(m) && !clientOverlap;
                             const isCurrent = staffOverlap?.isCurrent || false;
-                            const isBusy = !!staffOverlap && !isCurrent;
-                            const isClientBusy = !!clientOverlap;
-                            allSlots.push({ m, isAvailable, isBusy, isCurrent, isClientBusy, busyClient: visualOverlap?.clientName });
+                            if (isAvailable || isCurrent) {
+                              allSlots.push({ m, isAvailable: true, isBusy: false, isCurrent, isClientBusy: false, busyClient: null });
+                            }
                           }
-                          const availCount = allSlots.filter(s => s.isAvailable || s.isCurrent).length;
-                          const busyCount = allSlots.filter(s => s.isBusy).length;
+                          const availCount = allSlots.length;
 
                           return (
                             <div className={`${b}__slots`}>
                               <span className={`${b}__slots-label`}>
-                                Horarios — {selStaff?.name}
-                                {busyCount > 0 && <span className={`${b}__slots-count`}> ({availCount} libres, {busyCount} ocupados)</span>}
+                                Horarios disponibles — {selStaff?.name}
+                                <span className={`${b}__slots-count`}> ({availCount} disponibles)</span>
                               </span>
                               {allSlots.length > 0 ? (
                                 <div className={`${b}__slots-grid`}>
