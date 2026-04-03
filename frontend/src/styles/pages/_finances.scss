@@ -2356,39 +2356,64 @@
   &__visit-list {
     display: flex;
     flex-direction: column;
+    gap: 6px;
+  }
+
+  &__visit-search {
+    input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 8px;
+      font-size: 12px;
+      outline: none;
+      font-family: inherit;
+      &:focus { border-color: $color-primary; }
+      &::placeholder { color: rgba(0, 0, 0, 0.3); }
+    }
+  }
+
+  &__visit-scroll {
+    display: flex;
+    flex-direction: column;
     gap: 4px;
-    max-height: 400px;
+    max-height: 350px;
     overflow-y: auto;
     scrollbar-width: thin;
   }
 
   &__visit-item {
-    padding: 8px 12px;
+    padding: 10px 12px;
     background: $color-white;
     border: 1px solid rgba(0, 0, 0, 0.05);
     border-radius: 8px;
     transition: border-color 120ms ease;
 
-    &:hover { border-color: rgba(0, 0, 0, 0.1); }
+    &:hover { border-color: rgba(0, 0, 0, 0.12); }
   }
 
   &__visit-top {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+  }
+
+  &__visit-id {
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.25);
+    font-variant-numeric: tabular-nums;
   }
 
   &__visit-date {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     color: $color-secondary;
-    min-width: 50px;
   }
 
   &__visit-time {
     font-size: 11px;
     color: rgba(0, 0, 0, 0.35);
-    min-width: 45px;
   }
 
   &__visit-client {
@@ -2396,25 +2421,37 @@
     font-weight: 600;
     color: $color-secondary;
     flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &__visit-amount {
     font-size: 13px;
     font-weight: 700;
     color: $color-primary;
+    font-variant-numeric: tabular-nums;
   }
 
-  &__visit-bottom {
+  &__visit-mid {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-top: 3px;
+    gap: 8px;
+    margin-top: 4px;
   }
 
   &__visit-service {
-    font-size: 10px;
-    color: rgba(0, 0, 0, 0.4);
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.45);
     flex: 1;
+  }
+
+  &__visit-dur {
+    font-size: 10px;
+    color: rgba(0, 0, 0, 0.3);
+    padding: 1px 6px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 6px;
   }
 
   &__visit-commission {
@@ -2423,26 +2460,62 @@
     font-weight: 600;
   }
 
-  &__visit-paid-tag {
+  &__visit-status {
     font-size: 9px;
     font-weight: 600;
-    padding: 1px 6px;
+    padding: 2px 7px;
     border-radius: 8px;
-    background: rgba(#3B82F6, 0.08);
-    color: #3B82F6;
+
+    &--paid { background: rgba(#3B82F6, 0.08); color: #3B82F6; }
+    &--completed { background: rgba(#10B981, 0.08); color: #059669; }
+  }
+
+  &__visit-products {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 5px;
+  }
+
+  &__visit-product-tag {
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 8px;
+    background: rgba(#D97706, 0.06);
+    color: #92400E;
+    border-radius: 6px;
   }
 
   &__visit-summary {
     display: flex;
-    gap: 16px;
-    padding: 8px 12px;
-    margin-top: 4px;
-    background: rgba($color-primary, 0.03);
-    border: 1px solid rgba($color-primary, 0.08);
-    border-radius: 8px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    margin-top: 6px;
+    background: #FAFBFC;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+  }
+
+  &__visit-summary-row {
+    display: flex;
+    justify-content: space-between;
     font-size: 11px;
-    font-weight: 600;
     color: rgba(0, 0, 0, 0.5);
+    font-weight: 500;
+
+    span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
+  }
+
+  &__visit-summary-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 700;
+    color: $color-secondary;
+    padding-top: 6px;
+    margin-top: 4px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
   }
 
   &__pay-overlay {

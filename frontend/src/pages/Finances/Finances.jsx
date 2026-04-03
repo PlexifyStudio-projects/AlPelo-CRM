@@ -2678,9 +2678,21 @@ const TabForecast = () => {
     </div>
   );
 };
+const PRODUCTS_TAG = '<!--PRODUCTS:';
+const PRODUCTS_TAG_END = ':PRODUCTS-->';
+const parseProducts = (notes) => {
+  if (!notes) return [];
+  const s = notes.indexOf(PRODUCTS_TAG);
+  if (s === -1) return [];
+  const e = notes.indexOf(PRODUCTS_TAG_END);
+  if (e === -1) return [];
+  try { return JSON.parse(notes.substring(s + PRODUCTS_TAG.length, e)); } catch { return []; }
+};
+
 const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
   useEffect(() => {
@@ -2698,30 +2710,59 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
   if (loading) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Cargando visitas...</p>;
   if (!visits.length) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Sin servicios completados en este periodo</p>;
 
+  const filtered = search ? visits.filter(v => {
+    const q = search.toLowerCase();
+    return [v.client_name, v.service_name, String(v.id), String(v.price), v.date].some(x => x?.toLowerCase().includes(q));
+  }) : visits;
+
+  const totalRevenue = filtered.reduce((s, v) => s + (v.price || 0), 0);
+  const totalCommission = Math.round(totalRevenue * commissionRate);
+  const totalProducts = filtered.reduce((s, v) => {
+    const prods = parseProducts(v.notes);
+    return s + prods.reduce((ps, p) => ps + ((p.sale || 0) * (p.qty || 1)), 0);
+  }, 0);
+
   return (
     <div className="finances__visit-list">
-      {visits.map(v => {
-        const commission = Math.round((v.price || 0) * commissionRate);
-        return (
-          <div key={v.id} className="finances__visit-item">
-            <div className="finances__visit-top">
-              <span className="finances__visit-date">{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}</span>
-              <span className="finances__visit-time">{v.time}</span>
-              <span className="finances__visit-client">{v.client_name}</span>
-              <span className="finances__visit-amount">{formatCOP(v.price || 0)}</span>
+      <div className="finances__visit-search">
+        <input type="text" placeholder="Buscar por cliente, servicio, ID..." value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
+      <div className="finances__visit-scroll">
+        {filtered.map(v => {
+          const commission = Math.round((v.price || 0) * commissionRate);
+          const products = parseProducts(v.notes);
+          const dur = v.duration_minutes;
+          return (
+            <div key={v.id} className="finances__visit-item">
+              <div className="finances__visit-top">
+                <span className="finances__visit-id">#{v.id}</span>
+                <span className="finances__visit-date">{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                <span className="finances__visit-time">{v.time}</span>
+                <span className="finances__visit-client">{v.client_name}</span>
+                <span className="finances__visit-amount">{formatCOP(v.price || 0)}</span>
+              </div>
+              <div className="finances__visit-mid">
+                <span className="finances__visit-service">{v.service_name}</span>
+                {dur && <span className="finances__visit-dur">{dur}min</span>}
+                <span className="finances__visit-commission">{formatCOP(commission)}</span>
+                <span className={`finances__visit-status finances__visit-status--${v.status}`}>{v.status === 'paid' ? 'Cobrada' : 'Completada'}</span>
+              </div>
+              {products.length > 0 && (
+                <div className="finances__visit-products">
+                  {products.map((p, i) => (
+                    <span key={i} className="finances__visit-product-tag">{p.name} x{p.qty} {formatCOP((p.sale || 0) * (p.qty || 1))}{p.comm ? ` (com: ${formatCOP(p.comm)})` : ''}</span>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="finances__visit-bottom">
-              <span className="finances__visit-service">{v.service_name}</span>
-              <span className="finances__visit-commission">Comision: {formatCOP(commission)}</span>
-              {v.status === 'paid' && <span className="finances__visit-paid-tag">Cobrada</span>}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
       <div className="finances__visit-summary">
-        <span>Total: {visits.length} servicios</span>
-        <span>Revenue: {formatCOP(visits.reduce((s, v) => s + (v.price || 0), 0))}</span>
-        <span>Comisiones: {formatCOP(Math.round(visits.reduce((s, v) => s + (v.price || 0), 0) * commissionRate))}</span>
+        <div className="finances__visit-summary-row"><span>{filtered.length} servicios</span><span>{formatCOP(totalRevenue)}</span></div>
+        <div className="finances__visit-summary-row"><span>Comisiones ({(commissionRate * 100).toFixed(0)}%)</span><span style={{ color: '#059669' }}>{formatCOP(totalCommission)}</span></div>
+        {totalProducts > 0 && <div className="finances__visit-summary-row"><span>Productos vendidos</span><span style={{ color: '#D97706' }}>{formatCOP(totalProducts)}</span></div>}
+        <div className="finances__visit-summary-total"><span>Total a pagar</span><span>{formatCOP(totalCommission)}</span></div>
       </div>
     </div>
   );
