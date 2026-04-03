@@ -948,6 +948,23 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             conv.last_message_at = datetime.utcnow()
             db.commit()
 
+            # Auto-pause detection: if Lina's response indicates handoff to human
+            _pause_phrases = [
+                "permitame un momento",
+                "permiteme un momento",
+                "un profesional revise",
+                "un asesor le atendera",
+                "un asesor lo atendera",
+                "atencion personalizada",
+                "verificamos disponibilidad",
+            ]
+            _resp_lower = clean_response.lower()
+            if any(phrase in _resp_lower for phrase in _pause_phrases):
+                conv.is_ai_active = False
+                db.commit()
+                log_event("alerta", f"⏸️ IA pausada automaticamente — handoff a humano", detail=f"Respuesta de Lina contiene frase de pausa. Conversacion {conv_id} en modo manual.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
+                print(f"[Lina IA] AUTO-PAUSED conv {conv_id} — handoff phrase detected")
+
             # Track in global rate limiter
             _ai_reply_timestamps.append(time.time())
 
