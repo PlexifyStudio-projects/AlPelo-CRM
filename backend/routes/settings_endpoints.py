@@ -822,6 +822,31 @@ def _booking_response(tenant):
     }
 
 
+@router.get("/settings/tax")
+def get_tax_settings(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    return {
+        "default_tax_rate": getattr(tenant, 'default_tax_rate', 0) or 0,
+        "iva_enabled": (getattr(tenant, 'default_tax_rate', 0) or 0) > 0,
+    }
+
+
+@router.put("/settings/tax")
+def update_tax_settings(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    if not tenant:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+    if "iva_enabled" in data:
+        tenant.default_tax_rate = 0.19 if data["iva_enabled"] else 0
+    elif "default_tax_rate" in data:
+        tenant.default_tax_rate = float(data["default_tax_rate"])
+    db.commit()
+    return {"success": True, "default_tax_rate": tenant.default_tax_rate}
+
+
 @router.get("/settings/booking")
 def get_booking_settings(db: Session = Depends(get_db), user=Depends(get_current_user)):
     return _booking_response(_booking_tenant(db, user))
