@@ -160,13 +160,18 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const servicesTotal = useMemo(() => items.reduce((s, i) => s + (i.price || 0), 0), [items]);
   const productsTotal = useMemo(() => productItems.reduce((s, p) => s + (p.salePrice || 0) * (p.qty || 1), 0), [productItems]);
   const subtotal = useMemo(() => servicesTotal + productsTotal, [servicesTotal, productsTotal]);
-  const [staffCommissionRate, setStaffCommissionRate] = useState(50);
+  const [staffCommissionRate, setStaffCommissionRate] = useState(40);
 
   useEffect(() => {
     if (!appointment?.staff_id) return;
-    fetch(`${API_URL}/finances/commissions/config/${appointment.staff_id}`, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (data?.base_percent) setStaffCommissionRate(data.base_percent); })
+    fetch(`${API_URL}/finances/commissions/config`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        const staffConfig = data.find(c => c.staff_id === appointment.staff_id);
+        if (staffConfig?.default_rate) {
+          setStaffCommissionRate(Math.round(staffConfig.default_rate * 100));
+        }
+      })
       .catch(() => {});
   }, [appointment?.staff_id]);
 
