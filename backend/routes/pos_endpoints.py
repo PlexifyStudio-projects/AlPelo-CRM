@@ -233,6 +233,7 @@ def create_checkout(
     total = subtotal - discount_amount + data.tip
 
     # ---- Create Checkout ----
+    print(f"[CHECKOUT] receipt_url present: {bool(data.receipt_url)}, length: {len(data.receipt_url) if data.receipt_url else 0}")
     checkout = Checkout(
         tenant_id=tid,
         appointment_id=data.appointment_id,
