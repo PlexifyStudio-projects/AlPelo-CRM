@@ -1960,6 +1960,8 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
             const staffNames = [...new Set((inv.items || []).filter(it => it.staff_name).map(it => it.staff_name))];
             const primaryStaff = staffNames.length > 0 ? staffNames[0] : null;
             const paidTime = inv.paid_at ? new Date(inv.paid_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+            const visitCodeMatch = (inv.notes || '').match(/\[CODIGO:([^\]]+)\]/);
+            const visitCode = visitCodeMatch ? visitCodeMatch[1] : null;
             const methodLabel = PAYMENT_METHODS.find(p => p.value === inv.payment_method)?.label || inv.payment_method || '—';
 
             return (
@@ -2049,6 +2051,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                     <div className="finances__sale-detail-footer">
                       <div className="finances__sale-detail-meta">
                         <span>Factura: {inv.invoice_number}</span>
+                        {visitCode && <span style={{ fontWeight: 700, color: '#2D5A3D' }}>Codigo: {visitCode}</span>}
                         <span>Fecha: {new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         <span>Pago: {methodLabel}</span>
                         {inv.client_document && <span>CC/NIT: {inv.client_document}</span>}
@@ -2100,7 +2103,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             .footer{margin-top:32px;padding-top:16px;border-top:1px dashed #d1d5db;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8}
                             @media print{body{padding:24px}}
                           </style></head><body>`);
-                          win.document.write(`<div class="header"><div><h1>Factura ${inv.invoice_number}</h1><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — ' + timeStr : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}</div></div>`);
+                          win.document.write(`<div class="header"><div><h1>Factura ${inv.invoice_number}</h1><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — ' + timeStr : ''}${visitCode ? ' — Codigo: ' + visitCode : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}</div></div>`);
                           win.document.write(`<div class="client"><div><strong>${inv.client_name}</strong><span>Cliente</span></div>${inv.client_phone ? `<div><strong>${inv.client_phone}</strong><span>Telefono</span></div>` : ''}${inv.client_document ? `<div><strong>${inv.client_document}</strong><span>CC/NIT</span></div>` : ''}</div>`);
                           win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
                           (inv.items || []).forEach(it => {
