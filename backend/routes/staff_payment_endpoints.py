@@ -235,6 +235,7 @@ def create_payment(
 
     # Link appointments to this payment
     if data.appointment_ids:
+        # Specific appointments selected by the user
         for aid in data.appointment_ids:
             apt = db.query(Appointment).filter(
                 Appointment.id == aid,
@@ -245,8 +246,21 @@ def create_payment(
             apt = apt.first()
             if apt:
                 apt.staff_payment_id = payment.id
+    else:
+        # No specific selection → auto-link ALL unpaid appointments in the period
+        unpaid_q = db.query(Appointment).filter(
+            Appointment.staff_id == data.staff_id,
+            Appointment.date >= data.period_from,
+            Appointment.date <= data.period_to,
+            Appointment.status.in_(["completed", "paid"]),
+            Appointment.staff_payment_id.is_(None),
+        )
+        if tid:
+            unpaid_q = unpaid_q.filter(Appointment.tenant_id == tid)
+        for apt in unpaid_q.all():
+            apt.staff_payment_id = payment.id
 
-    # Link visit_history records too (if provided)
+    # Link visit_history records too
     if data.visit_ids:
         for vid in data.visit_ids:
             visit = db.query(VisitHistory).filter(
@@ -258,6 +272,19 @@ def create_payment(
             visit = visit.first()
             if visit:
                 visit.payment_id = payment.id
+    else:
+        # Auto-link all unpaid visits in the period
+        unpaid_visits = db.query(VisitHistory).filter(
+            VisitHistory.staff_id == data.staff_id,
+            VisitHistory.visit_date >= data.period_from,
+            VisitHistory.visit_date <= data.period_to,
+            VisitHistory.status == "completed",
+            VisitHistory.payment_id.is_(None),
+        )
+        if tid:
+            unpaid_visits = unpaid_visits.filter(VisitHistory.tenant_id == tid)
+        for v in unpaid_visits.all():
+            v.payment_id = payment.id
 
     db.commit()
     db.refresh(payment)
