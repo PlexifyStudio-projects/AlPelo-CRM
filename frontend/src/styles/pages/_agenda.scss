@@ -1444,6 +1444,55 @@
     gap: 8px;
   }
 
+  &__code-notes-row {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 16px !important;
+    align-items: flex-start;
+  }
+
+  &__code-field {
+    width: 180px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__code-input {
+    padding: 10px 14px !important;
+    border: 2px solid rgba($color-primary, 0.2) !important;
+    border-radius: 10px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em;
+    color: $color-primary !important;
+    text-transform: uppercase;
+
+    &::placeholder {
+      font-weight: 400;
+      color: rgba(0, 0, 0, 0.25);
+      text-transform: none;
+    }
+
+    &:focus {
+      border-color: $color-primary !important;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
+  }
+
+  &__notes-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__notes-input {
+    resize: vertical;
+    min-height: 44px;
+  }
+
   &__modal-save {
     padding: 7px 20px;
     border-radius: 9px;

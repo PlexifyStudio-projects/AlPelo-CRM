@@ -179,14 +179,6 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
               value={form.birthday}
               onChange={handleChange}
             />
-            <Input
-              label="ID del cliente"
-              name="client_id"
-              value={form.client_id}
-              onChange={handleChange}
-              placeholder="Opcional (ej: M20201)"
-              disabled={!!editingClient}
-            />
           </div>
         </div>
 

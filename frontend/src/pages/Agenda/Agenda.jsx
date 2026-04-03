@@ -147,7 +147,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   const [showModal, setShowModal] = useState(false);
   const [editingApt, setEditingApt] = useState(null);
-  const [formData, setFormData] = useState({ date: toISO(new Date()), notes: '', status: 'confirmed' });
+  const [formData, setFormData] = useState({ date: toISO(new Date()), notes: '', status: 'confirmed', visit_code: '' });
   const [submitting, setSubmitting] = useState(false);
 
   const [clientSearch, setClientSearch] = useState('');
@@ -625,7 +625,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const openCreate = (date, time) => {
     setEditingApt(null);
     resetModal();
-    setFormData({ date: date ? toISO(date) : toISO(currentDate), notes: '', status: 'confirmed' });
+    setFormData({ date: date ? toISO(date) : toISO(currentDate), notes: '', status: 'confirmed', visit_code: '' });
     setShowModal(true);
   };
 
@@ -635,7 +635,10 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setSelectedClient({ id: apt.client_id, name: apt.client_name, phone: apt.client_phone });
     setServiceAssignments([{ serviceId: apt.service_id, staffId: String(apt.staff_id), time: apt.time, clientPrice: apt.price || serviceMap[apt.service_id]?.price || 0 }]);
     const { userNotes, products } = deserializeProducts(apt.notes);
-    setFormData({ date: apt.date, notes: userNotes, status: apt.status });
+    const codeMatch = userNotes.match(/\[CODIGO:([^\]]+)\]/);
+    const visitCode = codeMatch ? codeMatch[1] : '';
+    const cleanNotes = userNotes.replace(/\[CODIGO:[^\]]+\]\s*/g, '').trim();
+    setFormData({ date: apt.date, notes: cleanNotes, status: apt.status, visit_code: visitCode });
     setProductItems(products);
     setShowModal(true);
   };
@@ -694,7 +697,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         if (first.serviceId !== editingApt.service_id) updateData.service_id = first.serviceId;
         if (formData.date !== editingApt.date) updateData.date = formData.date;
         if (first.time !== editingApt.time) updateData.time = first.time;
-        const serializedNotes = serializeProducts(productItems, formData.notes);
+        const userNotesWithCode = (formData.visit_code ? `[CODIGO:${formData.visit_code}] ` : '') + (formData.notes || '');
+          const serializedNotes = serializeProducts(productItems, userNotesWithCode.trim());
         if ((serializedNotes || null) !== (editingApt.notes || null)) updateData.notes = serializedNotes || null;
         if (formData.status !== editingApt.status) updateData.status = formData.status;
         const firstPrice = first.clientPrice ?? serviceMap[first.serviceId]?.price;
@@ -715,7 +719,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       } else {
         for (const a of serviceAssignments) {
           const svcPrice = a.clientPrice ?? serviceMap[a.serviceId]?.price;
-          const serializedNotes = serializeProducts(productItems, formData.notes);
+          const userNotesWithCode = (formData.visit_code ? `[CODIGO:${formData.visit_code}] ` : '') + (formData.notes || '');
+          const serializedNotes = serializeProducts(productItems, userNotesWithCode.trim());
           await appointmentService.create({
             client_name: clientName, client_phone: clientPhone, client_id: clientId || null,
             staff_id: parseInt(a.staffId), service_id: a.serviceId,
@@ -1650,10 +1655,17 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 </div>
               )}
 
-              <div className={`${b}__section`}>
-                <span className={`${b}__section-label`}>Notas (opcional)</span>
-                <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Preferencias, indicaciones especiales..." rows={2} />
+              <div className={`${b}__section ${b}__code-notes-row`}>
+                <div className={`${b}__code-field`}>
+                  <span className={`${b}__section-label`}>Codigo de visita *</span>
+                  <input type="text" value={formData.visit_code || ''} onChange={e => setFormData({ ...formData, visit_code: e.target.value })}
+                    placeholder="Ej: M20202" className={`${b}__code-input`} />
+                </div>
+                <div className={`${b}__notes-field`}>
+                  <span className={`${b}__section-label`}>Notas (opcional)</span>
+                  <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Preferencias, indicaciones especiales..." rows={2} className={`${b}__notes-input`} />
+                </div>
               </div>
 
               {(() => {
