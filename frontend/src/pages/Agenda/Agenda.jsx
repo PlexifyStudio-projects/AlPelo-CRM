@@ -1237,7 +1237,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                   {editingApt && <span className={`${b}__modal-head-sub`}>ID: {editingApt.id}</span>}
                 </div>
               </div>
-              <button className={`${b}__modal-x`} onClick={() => setShowModal(false)}><CloseIcon /></button>
+              <div className={`${b}__modal-head-actions`}>
+                <button type="submit" className={`${b}__modal-save`} disabled={submitting}>
+                  {submitting ? 'Guardando...' : 'Guardar'}
+                </button>
+                <button type="button" className={`${b}__modal-x`} onClick={() => setShowModal(false)}><CloseIcon /></button>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className={`${b}__modal-body`}>
