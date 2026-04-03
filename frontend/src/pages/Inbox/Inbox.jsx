@@ -1131,12 +1131,12 @@ const Inbox = () => {
     console.log('[MEDIA] Phone:', conv.wa_contact_phone);
 
     if (file.size > 16 * 1024 * 1024) {
-      addNotification('Archivo muy grande (max 16MB)', 'error');
+      alert('Archivo muy grande (max 16MB)');
       return;
     }
 
     setSendingMedia(true);
-    addNotification(`Subiendo ${file.name} (${(file.size / 1024).toFixed(0)}KB)...`, 'info');
+    console.log(`[MEDIA] Subiendo ${file.name} (${(file.size / 1024).toFixed(0)}KB)...`);
 
     try {
       const formData = new FormData();
@@ -1173,7 +1173,7 @@ const Inbox = () => {
       console.log('[MEDIA] Success:', result);
 
       setMessageInput('');
-      addNotification(type === 'image' ? 'Imagen enviada' : 'Documento enviado', 'success');
+      console.log('[MEDIA] Enviado OK!');
       const msgs = await whatsappService.getMessages(selectedConvId);
       setMessages(msgs);
       setTimeout(() => {
@@ -1183,9 +1183,9 @@ const Inbox = () => {
     } catch (err) {
       console.error('[MEDIA] ERROR:', err.name, err.message);
       if (err.name === 'AbortError') {
-        addNotification('Timeout — el servidor no respondio en 60 segundos', 'error');
+        alert('Timeout — el servidor no respondio en 60 segundos');
       } else {
-        addNotification('Error: ' + err.message, 'error');
+        alert('Error enviando: ' + err.message);
       }
     } finally {
       console.log('[MEDIA] Done, clearing spinner');
