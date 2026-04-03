@@ -556,6 +556,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     return appointments
       .filter(a => {
         const haystack = [
+          String(a.id), `#${a.id}`,
           a.client_name, a.service_name, a.staff_name,
           formatCOP(a.price), a.status, STATUS_META[a.status]?.label,
           a.time, formatTime12(a.time), a.date, a.notes,

@@ -739,6 +739,11 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         <div className={`${b}__receipt-header`}>
           <span className={`${b}__receipt-title`}>Resumen de cobro</span>
           <span className={`${b}__receipt-client`}>{clientName}</span>
+          {(() => {
+            const codeMatch = (appointment?.notes || '').match(/\[CODIGO:([^\]]+)\]/);
+            const code = codeMatch ? codeMatch[1] : `#${appointment?.id || ''}`;
+            return <span className={`${b}__receipt-code`}>ID: {code}</span>;
+          })()}
         </div>
 
         <div className={`${b}__receipt-items`}>
