@@ -2016,8 +2016,11 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
             const isExpanded = expandedId === inv.id;
             const commissionRate = inv.staff_commission_rate || 0.5;
             const tipAmount = inv.tip || 0;
-            const staffEarnings = Math.round(inv.subtotal * commissionRate) + tipAmount;
-            const businessEarnings = inv.subtotal - Math.round(inv.subtotal * commissionRate);
+            // Commission based on full service price (total), NOT base gravable (subtotal)
+            // IVA is the business's responsibility, not the staff's
+            const serviceRevenue = inv.total - tipAmount;
+            const staffEarnings = Math.round(serviceRevenue * commissionRate) + tipAmount;
+            const businessEarnings = serviceRevenue - Math.round(serviceRevenue * commissionRate);
             const staffNames = [...new Set((inv.items || []).filter(it => it.staff_name).map(it => it.staff_name))];
             const primaryStaff = staffNames.length > 0 ? staffNames[0] : null;
             const paidTime = inv.paid_at ? new Date(inv.paid_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
