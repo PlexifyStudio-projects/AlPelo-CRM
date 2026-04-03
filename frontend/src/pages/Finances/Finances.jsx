@@ -2738,7 +2738,7 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate }) => {
           return (
             <div key={v.id} className="finances__visit-item">
               <div className="finances__visit-top">
-                <span className="finances__visit-id">#{v.id}</span>
+                <span className="finances__visit-id">{(() => { const cm = (v.notes || '').match(/\[CODIGO:([^\]]+)\]/); return cm ? cm[1] : `#${v.id}`; })()}</span>
                 <span className="finances__visit-date">{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                 <span className="finances__visit-time">{v.time}</span>
                 <span className="finances__visit-client">{v.client_name}</span>
