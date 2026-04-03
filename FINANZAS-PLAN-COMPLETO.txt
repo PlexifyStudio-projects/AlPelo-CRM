@@ -527,8 +527,17 @@ PRIORIDAD: BAJA (el negocio necesita RUT activo ante Wompi)
     4.2  Backend: Vincular caja ↔ facturas
     4.3  Backend+Frontend: TenantBillingConfig
 
-  FASE 5 — DIAN                                Prioridad: BAJA (futuro)
-  FASE 6 — WOMPI                               Prioridad: BAJA (futuro)
+  FASE 5 — WHATSAPP MEDIA (PDF + IMAGENES)      Prioridad: ALTA
+    5.1  Backend: Generar PDF de factura (weasyprint/reportlab)
+    5.2  Backend: Upload PDF a Meta Media API
+    5.3  Backend: POST /whatsapp/send-document (envia PDF + texto)
+    5.4  Frontend: Boton "Enviar PDF" en facturas
+    5.5  Backend: POST /whatsapp/send-image (envia imagen + caption)
+    5.6  Frontend: Campañas con imagen adjunta
+    5.7  Frontend: Nomina comprobante PDF por WA al staff
+
+  FASE 6 — DIAN                                Prioridad: BAJA (futuro)
+  FASE 7 — WOMPI                               Prioridad: BAJA (futuro)
 
 
 ================================================================================
