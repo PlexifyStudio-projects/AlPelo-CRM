@@ -292,18 +292,47 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         send_whatsapp_receipt: false,
       };
 
-      // Convert receipt file to base64 if present
+      // Convert receipt file to compressed base64 if present
       if (receiptFile) {
         try {
-          const dataUri = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(new Error('Error leyendo comprobante'));
-            reader.readAsDataURL(receiptFile);
-          });
+          let dataUri;
+          if (receiptFile.type?.startsWith('image/')) {
+            // Compress image: max 800px, JPEG 60%
+            dataUri = await new Promise((resolve, reject) => {
+              const img = new Image();
+              const url = URL.createObjectURL(receiptFile);
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let w = img.width, h = img.height;
+                const max = 800;
+                if (w > max || h > max) {
+                  if (w > h) { h = Math.round(h * max / w); w = max; }
+                  else { w = Math.round(w * max / h); h = max; }
+                }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                URL.revokeObjectURL(url);
+                resolve(canvas.toDataURL('image/jpeg', 0.6));
+              };
+              img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Error')); };
+              img.src = url;
+            });
+          } else {
+            // PDF/doc: read as-is (but limit to 2MB)
+            if (receiptFile.size > 2 * 1024 * 1024) {
+              console.warn('Receipt file too large, skipping');
+            } else {
+              dataUri = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error('Error'));
+                reader.readAsDataURL(receiptFile);
+              });
+            }
+          }
           if (dataUri) payload.receipt_url = dataUri;
         } catch (e) {
-          console.error('Receipt read error:', e);
+          console.error('Receipt error:', e);
         }
       }
 
