@@ -668,6 +668,248 @@ async def send_text_to_phone(body: dict, db: Session = Depends(get_db), user=Dep
 
 
 # ============================================================================
+# SEND MEDIA — Upload to Meta + send as document or image
+# ============================================================================
+
+@router.post("/send-document")
+async def send_document_to_phone(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Send a document (PDF, etc.) to a phone via WhatsApp. Expects media_url (base64 data URI or URL) or invoice_id."""
+    phone = body.get("phone", "").strip()
+    caption = body.get("caption", "").strip()
+    filename = body.get("filename", "documento.pdf")
+    invoice_id = body.get("invoice_id")
+    media_bytes = None
+
+    if not phone:
+        raise HTTPException(status_code=400, detail="Numero de telefono requerido")
+
+    clean_phone = normalize_phone(phone)
+    if not clean_phone:
+        raise HTTPException(status_code=400, detail="Numero de telefono invalido")
+
+    tid = safe_tid(user, db)
+
+    # If invoice_id provided, generate PDF
+    if invoice_id:
+        from database.models import Invoice, InvoiceItem
+        inv = db.query(Invoice).filter(Invoice.id == invoice_id)
+        if tid:
+            inv = inv.filter(Invoice.tenant_id == tid)
+        inv = inv.first()
+        if not inv:
+            raise HTTPException(status_code=404, detail="Factura no encontrada")
+
+        items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == inv.id).all()
+        tenant = db.query(Tenant).filter(Tenant.id == (tid or inv.tenant_id)).first()
+
+        from services.pdf_invoice import generate_invoice_pdf
+        media_bytes = generate_invoice_pdf(inv, items, tenant)
+        filename = f"Factura-{inv.invoice_number}.pdf"
+        if not caption:
+            caption = f"Hola {inv.client_name.split(' ')[0]}, aqui le compartimos su factura {inv.invoice_number} por {_fmt_cop_simple(inv.total)}. Esperamos que vuelva pronto!"
+    else:
+        # Expect base64 data URI
+        media_data = body.get("media_data", "")
+        if media_data and media_data.startswith("data:"):
+            import base64
+            _, encoded = media_data.split(",", 1)
+            media_bytes = base64.b64decode(encoded)
+        elif body.get("media_url"):
+            # Download from URL
+            async with httpx.AsyncClient(timeout=15) as c:
+                resp = await c.get(body["media_url"])
+                if resp.status_code == 200:
+                    media_bytes = resp.content
+
+    if not media_bytes:
+        raise HTTPException(status_code=400, detail="No se pudo obtener el documento")
+
+    # Step 1: Upload to Meta Media API
+    try:
+        upload_url = f"{_get_wa_base_url(db)}/media"
+        mime = "application/pdf" if filename.endswith(".pdf") else "application/octet-stream"
+        async with httpx.AsyncClient(timeout=30) as c:
+            headers = wa_headers(db)
+            resp = await c.post(
+                upload_url,
+                headers={k: v for k, v in headers.items() if k != "Content-Type"},
+                files={"file": (filename, media_bytes, mime)},
+                data={"messaging_product": "whatsapp", "type": mime},
+            )
+            data = resp.json()
+            if resp.status_code not in (200, 201) or "id" not in data:
+                raise HTTPException(status_code=400, detail=f"Error subiendo a Meta: {data.get('error', {}).get('message', str(data))}")
+            media_id = data["id"]
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=f"Error de conexion: {str(e)}")
+
+    # Step 2: Send document message
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            resp = await c.post(
+                f"{_get_wa_base_url(db)}/messages",
+                headers=wa_headers(db),
+                json={
+                    "messaging_product": "whatsapp",
+                    "to": clean_phone,
+                    "type": "document",
+                    "document": {
+                        "id": media_id,
+                        "filename": filename,
+                        "caption": caption,
+                    },
+                },
+            )
+            data = resp.json()
+            if resp.status_code != 200 or "messages" not in data:
+                raise HTTPException(status_code=400, detail=f"Error enviando: {data.get('error', {}).get('message', str(data))}")
+            wa_msg_id = data["messages"][0].get("id")
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=f"Error de conexion: {str(e)}")
+
+    # Step 3: Store in conversation
+    conv = db.query(WhatsAppConversation).filter(
+        WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone])
+    ).first()
+    if not conv:
+        client_obj = db.query(Client).filter(Client.phone.in_([phone, clean_phone])).first()
+        conv = WhatsAppConversation(
+            tenant_id=tid,
+            wa_contact_phone=phone,
+            wa_contact_name=body.get("name") or (client_obj.name if client_obj else None),
+            client_id=client_obj.id if client_obj else None,
+            is_ai_active=False,
+            unread_count=0,
+        )
+        db.add(conv)
+        db.flush()
+
+    msg = WhatsAppMessage(
+        conversation_id=conv.id,
+        wa_message_id=wa_msg_id,
+        direction="outbound",
+        content=f"[Documento: {filename}] {caption}",
+        message_type="document",
+        status="sent",
+        sent_by="admin",
+    )
+    db.add(msg)
+    conv.last_message_at = datetime.utcnow()
+    db.commit()
+    track_message_sent()
+
+    return {"success": True, "wa_message_id": wa_msg_id, "filename": filename}
+
+
+@router.post("/send-image")
+async def send_image_to_phone(body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Send an image to a phone via WhatsApp. Expects media_data (base64) or media_url."""
+    phone = body.get("phone", "").strip()
+    caption = body.get("caption", "").strip()
+
+    if not phone:
+        raise HTTPException(status_code=400, detail="Numero de telefono requerido")
+
+    clean_phone = normalize_phone(phone)
+    if not clean_phone:
+        raise HTTPException(status_code=400, detail="Numero de telefono invalido")
+
+    tid = safe_tid(user, db)
+
+    # Get image bytes
+    media_bytes = None
+    mime = "image/jpeg"
+    media_data = body.get("media_data", "")
+    if media_data and "," in media_data:
+        import base64
+        header, encoded = media_data.split(",", 1)
+        if "png" in header:
+            mime = "image/png"
+        media_bytes = base64.b64decode(encoded)
+    elif body.get("media_url"):
+        async with httpx.AsyncClient(timeout=15) as c:
+            resp = await c.get(body["media_url"])
+            if resp.status_code == 200:
+                media_bytes = resp.content
+                ct = resp.headers.get("content-type", "")
+                if "png" in ct:
+                    mime = "image/png"
+
+    if not media_bytes:
+        raise HTTPException(status_code=400, detail="No se pudo obtener la imagen")
+
+    # Upload to Meta
+    try:
+        async with httpx.AsyncClient(timeout=30) as c:
+            headers = wa_headers(db)
+            resp = await c.post(
+                f"{_get_wa_base_url(db)}/media",
+                headers={k: v for k, v in headers.items() if k != "Content-Type"},
+                files={"file": ("image.jpg", media_bytes, mime)},
+                data={"messaging_product": "whatsapp", "type": mime},
+            )
+            data = resp.json()
+            if "id" not in data:
+                raise HTTPException(status_code=400, detail=f"Error subiendo: {data.get('error', {}).get('message', str(data))}")
+            media_id = data["id"]
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+    # Send image
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            resp = await c.post(
+                f"{_get_wa_base_url(db)}/messages",
+                headers=wa_headers(db),
+                json={
+                    "messaging_product": "whatsapp",
+                    "to": clean_phone,
+                    "type": "image",
+                    "image": {"id": media_id, "caption": caption},
+                },
+            )
+            data = resp.json()
+            if "messages" not in data:
+                raise HTTPException(status_code=400, detail=f"Error: {data.get('error', {}).get('message', str(data))}")
+            wa_msg_id = data["messages"][0].get("id")
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+    # Store
+    conv = db.query(WhatsAppConversation).filter(
+        WhatsAppConversation.wa_contact_phone.in_([phone, clean_phone])
+    ).first()
+    if not conv:
+        client_obj = db.query(Client).filter(Client.phone.in_([phone, clean_phone])).first()
+        conv = WhatsAppConversation(
+            tenant_id=tid, wa_contact_phone=phone,
+            wa_contact_name=body.get("name") or (client_obj.name if client_obj else None),
+            client_id=client_obj.id if client_obj else None,
+            is_ai_active=False, unread_count=0,
+        )
+        db.add(conv)
+        db.flush()
+
+    msg = WhatsAppMessage(
+        conversation_id=conv.id, wa_message_id=wa_msg_id,
+        direction="outbound", content=f"[Imagen] {caption}",
+        message_type="image", status="sent", sent_by="admin",
+    )
+    db.add(msg)
+    conv.last_message_at = datetime.utcnow()
+    db.commit()
+    track_message_sent()
+
+    return {"success": True, "wa_message_id": wa_msg_id}
+
+
+def _fmt_cop_simple(v):
+    if not v:
+        return "$0"
+    return f"${v:,.0f}".replace(",", ".")
+
+
+# ============================================================================
 # WEBHOOK — Meta sends messages here
 # ============================================================================
 @router.get("/webhook")

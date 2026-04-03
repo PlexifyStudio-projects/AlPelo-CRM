@@ -2888,6 +2888,15 @@
   }
 }
 
+@keyframes inboxSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.inbox__spinner {
+  animation: inboxSpin 1s linear infinite;
+}
+
 @keyframes inboxFadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }

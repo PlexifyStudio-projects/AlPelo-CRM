@@ -849,6 +849,7 @@ Finanzas:
   get_financial_summary — Resumen del mes: ingresos, gastos, ganancia neta, numero de visitas
   create_expense: description, amount, category? (nomina/servicios/productos/arriendo/marketing/general) — Registra un gasto
   list_expenses — Lista ultimos 20 gastos
+  send_invoice_pdf: client_phone, invoice_number? — Envia la factura del cliente como PDF por WhatsApp. Si no se da numero de factura, envia la mas reciente.
 
 Config:
   update_personality: system_prompt

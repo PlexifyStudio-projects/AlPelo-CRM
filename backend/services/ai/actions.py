@@ -1872,6 +1872,121 @@ def _execute_action(action: dict, db: Session) -> str:
         total = sum(e.amount for e in expenses)
         return f"{len(expenses)} gastos recientes (total: ${total:,.0f} COP):\n" + "\n".join(lines)
 
+    # ---- SEND INVOICE PDF VIA WHATSAPP ----
+    if action_type == "send_invoice_pdf":
+        client_phone = action.get("client_phone", action.get("phone", "")).strip()
+        invoice_number = action.get("invoice_number", "").strip()
+
+        if not client_phone:
+            return "ERROR: Necesito el numero de telefono del cliente para enviar la factura."
+
+        from database.models import Invoice, InvoiceItem, Tenant
+        from routes._helpers import normalize_phone
+
+        # Find the invoice: by number if provided, else last invoice for this client
+        inv = None
+        if invoice_number:
+            inv_q = db.query(Invoice).filter(Invoice.invoice_number == invoice_number)
+            if _tid:
+                inv_q = inv_q.filter(Invoice.tenant_id == _tid)
+            inv = inv_q.first()
+
+        if not inv:
+            # Search by client phone
+            from database.models import Client
+            clean = normalize_phone(client_phone)
+            client = db.query(Client).filter(
+                (Client.phone == client_phone) | (Client.phone == clean)
+            ).first()
+            if client:
+                inv_q = db.query(Invoice).filter(Invoice.client_id == client.id)
+                if _tid:
+                    inv_q = inv_q.filter(Invoice.tenant_id == _tid)
+                inv = inv_q.order_by(Invoice.issued_date.desc()).first()
+
+        if not inv:
+            return "No encontre facturas para este cliente. Puede crear una desde Finanzas > Facturas."
+
+        # Generate PDF
+        items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == inv.id).all()
+        tenant = db.query(Tenant).filter(Tenant.id == (inv.tenant_id or _tid)).first()
+
+        try:
+            from services.pdf_invoice import generate_invoice_pdf
+            pdf_bytes = generate_invoice_pdf(inv, items, tenant)
+        except Exception as e:
+            return f"ERROR: No se pudo generar el PDF: {str(e)}"
+
+        # Upload to Meta and send
+        try:
+            import httpx
+            from services.whatsapp.helpers import wa_headers, _get_wa_base_url
+
+            clean_phone = normalize_phone(client_phone)
+            filename = f"Factura-{inv.invoice_number}.pdf"
+            total_fmt = f"${inv.total:,.0f}".replace(",", ".") if inv.total else "$0"
+            caption = f"Hola {inv.client_name.split(' ')[0]}, aqui le compartimos su factura {inv.invoice_number} por {total_fmt}. Esperamos que vuelva pronto!"
+
+            # Upload PDF
+            upload_url = f"{_get_wa_base_url(db)}/media"
+            headers = wa_headers(db)
+            upload_headers = {k: v for k, v in headers.items() if k != "Content-Type"}
+
+            import asyncio
+            async def _send():
+                async with httpx.AsyncClient(timeout=30) as c:
+                    resp = await c.post(
+                        upload_url, headers=upload_headers,
+                        files={"file": (filename, pdf_bytes, "application/pdf")},
+                        data={"messaging_product": "whatsapp", "type": "application/pdf"},
+                    )
+                    data = resp.json()
+                    if "id" not in data:
+                        raise Exception(f"Upload failed: {data}")
+                    media_id = data["id"]
+
+                    # Send document
+                    resp2 = await c.post(
+                        f"{_get_wa_base_url(db)}/messages",
+                        headers=headers,
+                        json={
+                            "messaging_product": "whatsapp",
+                            "to": clean_phone,
+                            "type": "document",
+                            "document": {"id": media_id, "filename": filename, "caption": caption},
+                        },
+                    )
+                    data2 = resp2.json()
+                    if "messages" not in data2:
+                        raise Exception(f"Send failed: {data2}")
+                    return data2["messages"][0].get("id")
+
+            # Run async in sync context
+            loop = asyncio.new_event_loop()
+            wa_msg_id = loop.run_until_complete(_send())
+            loop.close()
+
+            # Store in conversation
+            from database.models import WhatsAppConversation, WhatsAppMessage
+            conv = db.query(WhatsAppConversation).filter(
+                WhatsAppConversation.wa_contact_phone.contains(client_phone[-10:])
+            ).first()
+            if conv:
+                msg = WhatsAppMessage(
+                    conversation_id=conv.id, wa_message_id=wa_msg_id,
+                    direction="outbound", content=f"[Factura PDF: {inv.invoice_number}] {caption}",
+                    message_type="document", status="sent", sent_by="lina_ia",
+                )
+                db.add(msg)
+                from datetime import datetime as _dt
+                conv.last_message_at = _dt.utcnow()
+                db.commit()
+
+            return f"OK: Factura {inv.invoice_number} ({total_fmt}) enviada como PDF a {inv.client_name} por WhatsApp."
+
+        except Exception as e:
+            return f"ERROR: No se pudo enviar el PDF: {str(e)}"
+
     return f"ERROR: Accion desconocida '{action_type}'"
 
 

@@ -396,7 +396,7 @@ const EmojiPicker = ({ onSelect, onClose }) => {
   );
 };
 
-const AttachmentMenu = ({ onClose }) => {
+const AttachmentMenu = ({ onClose, onSelectType }) => {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -408,18 +408,15 @@ const AttachmentMenu = ({ onClose }) => {
   }, [onClose]);
 
   const items = [
-    { icon: Icons.doc, label: 'Documento', color: '#7C3AED' },
-    { icon: Icons.image, label: 'Fotos y videos', color: '#2563EB' },
-    { icon: Icons.camera, label: 'Camara', color: '#EC4899' },
-    { icon: Icons.contact, label: 'Contacto', color: '#0891B2' },
-    { icon: Icons.poll, label: 'Encuesta', color: '#F59E0B' },
-    { icon: Icons.template, label: 'Plantilla', color: '#10B981' },
+    { icon: Icons.doc, label: 'Documento', color: '#7C3AED', type: 'document' },
+    { icon: Icons.image, label: 'Fotos y videos', color: '#2563EB', type: 'image' },
   ];
 
   return (
     <div className={`${b}__attach-menu`} ref={menuRef}>
       {items.map((item, i) => (
-        <button key={i} className={`${b}__attach-item`} style={{ animationDelay: `${i * 40}ms` }}>
+        <button key={i} className={`${b}__attach-item`} style={{ animationDelay: `${i * 40}ms` }}
+          onClick={() => { onSelectType(item.type); onClose(); }}>
           <span className={`${b}__attach-icon`} style={{ background: item.color }}>{item.icon}</span>
           <span className={`${b}__attach-label`}>{item.label}</span>
         </button>
@@ -820,6 +817,9 @@ const Inbox = () => {
   const [showLabelPicker, setShowLabelPicker] = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [sendingMedia, setSendingMedia] = useState(false);
+  const fileInputDocRef = useRef(null);
+  const fileInputImgRef = useRef(null);
   const [convStatuses, setConvStatuses] = useState(() => loadJson(LS_CONV_STATUSES, {}));
   const [showStatusPicker, setShowStatusPicker] = useState(null);
 
@@ -1075,6 +1075,62 @@ const Inbox = () => {
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
+  };
+
+  const handleAttachSelect = (type) => {
+    if (type === 'document') fileInputDocRef.current?.click();
+    else if (type === 'image') fileInputImgRef.current?.click();
+  };
+
+  const handleFileUpload = async (e, type) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedConvId) return;
+    e.target.value = '';
+
+    const conv = conversations.find(c => c.id === selectedConvId);
+    if (!conv) return;
+
+    setSendingMedia(true);
+    try {
+      const reader = new FileReader();
+      const dataUri = await new Promise((resolve) => {
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+
+      const endpoint = type === 'image' ? '/whatsapp/send-image' : '/whatsapp/send-document';
+      const body = {
+        phone: conv.wa_contact_phone,
+        caption: messageInput.trim() || '',
+        name: conv.wa_contact_name || '',
+        media_data: dataUri,
+      };
+      if (type === 'document') body.filename = file.name;
+
+      const res = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(typeof err.detail === 'string' ? err.detail : 'Error enviando archivo');
+      }
+
+      setMessageInput('');
+      // Reload messages
+      const msgs = await whatsappService.getMessages(selectedConvId);
+      setMessages(msgs);
+      setTimeout(() => {
+        const el = document.querySelector(`.${b}__messages`);
+        if (el) el.scrollTop = el.scrollHeight;
+      }, 100);
+    } catch (err) {
+      addNotification('Error: ' + err.message, 'error');
+    } finally {
+      setSendingMedia(false);
+    }
   };
 
   const toggleAiMode = async () => {
@@ -2055,7 +2111,7 @@ const Inbox = () => {
                 <EmojiPicker onSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
               )}
               {showAttachMenu && (
-                <AttachmentMenu onClose={() => setShowAttachMenu(false)} />
+                <AttachmentMenu onClose={() => setShowAttachMenu(false)} onSelectType={handleAttachSelect} />
               )}
               {showQuickReplies && (
                 <div className={`${b}__quick-replies`}>
@@ -2076,6 +2132,11 @@ const Inbox = () => {
                 </div>
               )}
 
+              <input type="file" ref={fileInputDocRef} style={{ display: 'none' }} accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" onChange={(e) => handleFileUpload(e, 'document')} />
+              <input type="file" ref={fileInputImgRef} style={{ display: 'none' }} accept="image/*,video/*" onChange={(e) => handleFileUpload(e, 'image')} />
+              <button className={`${b}__input-action ${showAttachMenu ? `${b}__input-action--active` : ''}`} onClick={() => { setShowAttachMenu(!showAttachMenu); setShowEmojiPicker(false); setShowQuickReplies(false); }} title="Adjuntar archivo" disabled={sendingMedia}>
+                {sendingMedia ? <svg className={`${b}__spinner`} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> : Icons.attach}
+              </button>
               <button className={`${b}__input-action ${showEmojiPicker ? `${b}__input-action--active` : ''}`} onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowAttachMenu(false); setShowQuickReplies(false); }} title="Emojis">
                 {Icons.smiley}
               </button>
