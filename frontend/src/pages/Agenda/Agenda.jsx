@@ -1668,7 +1668,15 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                       <>
                         <button type="button" className={`${b}__btn--danger`} onClick={handleDelete}><TrashIcon /> Eliminar</button>
                         {editingApt.status === 'confirmed' || editingApt.status === 'completed' ? (
-                          <button type="button" className={`${b}__btn--primary`} style={{ background: '#059669' }} onClick={() => { setShowModal(false); setCheckoutApt(editingApt); }}>
+                          <button type="button" className={`${b}__btn--primary`} style={{ background: '#059669' }} onClick={async () => {
+                            setShowModal(false);
+                            try {
+                              const fresh = await appointmentService.get(editingApt.id);
+                              setCheckoutApt(fresh);
+                            } catch {
+                              setCheckoutApt({ ...editingApt, notes: serializeProducts(productItems, formData.notes) });
+                            }
+                          }}>
                             Cobrar
                           </button>
                         ) : null}
