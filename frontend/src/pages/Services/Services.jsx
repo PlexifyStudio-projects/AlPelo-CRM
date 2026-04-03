@@ -128,6 +128,7 @@ const Services = () => {
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [editingService, setEditingService] = useState(null);
   const { tenant } = useTenant();
   const [formData, setFormData] = useState({
@@ -245,11 +246,14 @@ const Services = () => {
     }
   };
 
-  const handleDelete = async (svc) => {
-    if (!window.confirm(`¿Eliminar "${svc.name}"? Esta acción no se puede deshacer.`)) return;
+  const handleDelete = (svc) => setDeleteConfirm(svc);
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
     try {
-      await servicesService.delete(svc.id);
+      await servicesService.delete(deleteConfirm.id);
       addNotification('Servicio eliminado', 'success');
+      setDeleteConfirm(null);
       loadData();
     } catch (err) {
       addNotification(err.message, 'error');
@@ -422,6 +426,26 @@ const Services = () => {
           })
         )}
       </div>
+      {deleteConfirm && createPortal(
+        <div className={`${b}__confirm-overlay`} onClick={() => setDeleteConfirm(null)}>
+          <div className={`${b}__confirm`} onClick={e => e.stopPropagation()}>
+            <div className={`${b}__confirm-icon`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </div>
+            <h3 className={`${b}__confirm-title`}>Eliminar servicio</h3>
+            <p className={`${b}__confirm-text`}>
+              ¿Estás seguro de eliminar <strong>{deleteConfirm.name}</strong>? Esta acción no se puede deshacer.
+            </p>
+            <div className={`${b}__confirm-actions`}>
+              <button className={`${b}__confirm-cancel`} onClick={() => setDeleteConfirm(null)}>Cancelar</button>
+              <button className={`${b}__confirm-delete`} onClick={confirmDelete}>Eliminar</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       {showModal && createPortal(
         <div className={`${b}__modal-overlay`} onClick={() => setShowModal(false)}>
           <div className={`${b}__modal`} onClick={(e) => e.stopPropagation()}>
