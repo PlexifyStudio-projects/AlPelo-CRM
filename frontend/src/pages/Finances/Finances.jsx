@@ -2031,7 +2031,44 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             {Icons.trash}
                           </button>
                         )}
-                        <button className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => window.print()} title="Imprimir">
+                        <button className="finances__btn-ghost finances__btn-ghost--sm" onClick={() => {
+                          const el = document.getElementById(`invoice-print-${inv.id}`);
+                          if (!el) return;
+                          const win = window.open('', '_blank', 'width=800,height=600');
+                          win.document.write(`<html><head><title>Factura ${inv.invoice_number}</title><style>
+                            body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:40px;color:#1a1a1a;max-width:700px;margin:0 auto}
+                            h2{margin:0 0 4px;font-size:20px}
+                            .sub{color:#888;font-size:12px;margin-bottom:24px}
+                            table{width:100%;border-collapse:collapse;margin:16px 0}
+                            th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#888;padding:8px 0;border-bottom:2px solid #e5e7eb}
+                            td{padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:13px}
+                            .r{text-align:right}
+                            .total-row td{font-weight:700;font-size:16px;border-top:2px solid #1a1a1a;border-bottom:none}
+                            .meta{margin-top:24px;font-size:11px;color:#888;display:flex;gap:20px;flex-wrap:wrap}
+                            .commission{margin-top:16px;padding:12px;background:#f8f9fb;border-radius:8px;font-size:12px}
+                            .commission div{display:flex;justify-content:space-between;padding:3px 0}
+                          </style></head><body>`);
+                          win.document.write(`<h2>Factura ${inv.invoice_number}</h2>`);
+                          win.document.write(`<div class="sub">${new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })} — ${inv.client_name}${inv.client_phone ? ' — ' + inv.client_phone : ''}${inv.client_document ? ' — CC/NIT: ' + inv.client_document : ''}</div>`);
+                          win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
+                          (inv.items || []).forEach(it => {
+                            win.document.write(`<tr><td>${it.service_name}</td><td>${it.staff_name || '—'}</td><td>${it.quantity}</td><td class="r">${formatCOP(it.unit_price)}</td><td class="r">${formatCOP(it.total)}</td></tr>`);
+                          });
+                          win.document.write(`<tr><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
+                          if (inv.discount_amount > 0) win.document.write(`<tr><td colspan="4">Descuento</td><td class="r">-${formatCOP(inv.discount_amount)}</td></tr>`);
+                          if (inv.tax_amount > 0) win.document.write(`<tr><td colspan="4">IVA (${(inv.tax_rate*100).toFixed(0)}%)</td><td class="r">${formatCOP(inv.tax_amount)}</td></tr>`);
+                          if (inv.tip > 0) win.document.write(`<tr><td colspan="4">Propina</td><td class="r">+${formatCOP(inv.tip)}</td></tr>`);
+                          win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr>`);
+                          win.document.write('</table>');
+                          if (primaryStaff) {
+                            win.document.write(`<div class="commission"><div><span>Profesional: ${primaryStaff} (${(commissionRate*100).toFixed(0)}%)</span><span>${formatCOP(staffEarnings)}</span></div><div><span>Ganancia negocio</span><span>${formatCOP(businessEarnings)}</span></div></div>`);
+                          }
+                          const ml = PAYMENT_METHODS.find(p => p.value === inv.payment_method)?.label || inv.payment_method;
+                          win.document.write(`<div class="meta"><span>Pago: ${ml}</span><span>Factura: ${inv.invoice_number}</span></div>`);
+                          win.document.write('</body></html>');
+                          win.document.close();
+                          setTimeout(() => { win.print(); }, 300);
+                        }} title="Imprimir">
                           {Icons.fileText} Imprimir
                         </button>
                       </div>
