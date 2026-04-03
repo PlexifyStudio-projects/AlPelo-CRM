@@ -378,6 +378,60 @@
     margin: 4px 0;
   }
 
+  &__error-msg {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(#EF4444, 0.06);
+    border: 1px solid rgba(#EF4444, 0.15);
+    border-radius: 10px;
+    font-size: 13px;
+    color: #DC2626;
+    font-weight: 500;
+    margin-bottom: 8px;
+
+    button {
+      color: #DC2626;
+      opacity: 0.5;
+      cursor: pointer;
+      flex-shrink: 0;
+      &:hover { opacity: 1; }
+    }
+  }
+
+  &__receipt-breakdown {
+    border-top: 1px dashed rgba(0, 0, 0, 0.1);
+    margin-top: 14px;
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__receipt-breakdown-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba(0, 0, 0, 0.35);
+    margin-bottom: 4px;
+  }
+
+  &__receipt-breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: rgba(0, 0, 0, 0.5);
+  }
+
+  &__receipt-breakdown-value {
+    font-weight: 600;
+    color: $color-secondary;
+  }
+
   &__subtotal {
     @include flex-between;
     padding-top: $spacing-md;

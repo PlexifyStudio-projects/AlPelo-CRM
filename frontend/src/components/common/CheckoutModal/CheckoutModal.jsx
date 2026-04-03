@@ -111,6 +111,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const [mixedRows, setMixedRows] = useState([{ method: '', amount: '' }]);
 
   const [submitting, setSubmitting] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const [receiptFile, setReceiptFile] = useState(null);
   const [productItems, setProductItems] = useState([]);
 
@@ -292,8 +293,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       const result = await res.json();
       onCompleted?.(result);
     } catch (err) {
-      const msg = typeof err.message === 'string' ? err.message : JSON.stringify(err.message);
-      alert(msg || 'Error al procesar el cobro');
+      setCheckoutError(typeof err.message === 'string' ? err.message : 'Error al procesar el cobro');
     }
     setSubmitting(false);
   }, [appointment, selectedClientId, clientName, items, subtotal, discountType, discountPercent, discountFixed, discountAmount, tip, total, paymentMethod, cashReceived, cashChange, mixedRows, onCompleted]);
@@ -724,17 +724,35 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           </div>
         )}
 
-        <div className={`${b}__receipt-staff`} style={{ borderTop: '1px dashed #E2E8F0', marginTop: '12px', paddingTop: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748B' }}>
-            <span>Profesional:</span>
-            <span style={{ fontWeight: 600, color: '#1E293B' }}>{appointment.staff_name}</span>
+        <div className={`${b}__receipt-breakdown`}>
+          <div className={`${b}__receipt-breakdown-title`}>Desglose</div>
+          <div className={`${b}__receipt-breakdown-row`}>
+            <span>Profesional</span>
+            <span className={`${b}__receipt-breakdown-value`}>{appointment.staff_name}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#64748B', marginTop: '4px' }}>
-            <span>Comision ({staffCommissionRate}%):</span>
-            <span style={{ fontWeight: 600, color: '#059669' }}>{fmt(commissionAmount)}</span>
+          <div className={`${b}__receipt-breakdown-row`}>
+            <span>Comision staff ({staffCommissionRate}%)</span>
+            <span className={`${b}__receipt-breakdown-value`} style={{ color: '#059669' }}>{fmt(commissionAmount)}</span>
           </div>
+          <div className={`${b}__receipt-breakdown-row`}>
+            <span>Ganancia negocio</span>
+            <span className={`${b}__receipt-breakdown-value`} style={{ color: '#2563EB' }}>{fmt(total - commissionAmount)}</span>
+          </div>
+          {productItems.length > 0 && productItems.some(p => p.commission > 0) && (
+            <div className={`${b}__receipt-breakdown-row`}>
+              <span>Comision productos</span>
+              <span className={`${b}__receipt-breakdown-value`} style={{ color: '#D97706' }}>{fmt(productItems.reduce((s, p) => s + (p.commission || 0), 0))}</span>
+            </div>
+          )}
         </div>
       </div>
+
+      {checkoutError && (
+        <div className={`${b}__error-msg`}>
+          {checkoutError}
+          <button type="button" onClick={() => setCheckoutError('')}><CloseIcon /></button>
+        </div>
+      )}
 
       <button
         className={`${b}__cta`}
