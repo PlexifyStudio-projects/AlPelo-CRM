@@ -590,17 +590,40 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         <div className={`${b}__receipt-section`}>
           <label className={`${b}__section-label`}>Comprobante de pago (opcional)</label>
           <div className={`${b}__receipt-upload`}>
-            {receiptFile ? (
-              <div className={`${b}__receipt-preview`}>
-                <img src={URL.createObjectURL(receiptFile)} alt="Comprobante" />
-                <button type="button" className={`${b}__receipt-remove`} onClick={() => setReceiptFile(null)}>
-                  <CloseIcon />
-                </button>
-              </div>
-            ) : (
+            {receiptFile ? (() => {
+              const isImage = receiptFile.type?.startsWith('image/');
+              const ext = receiptFile.name?.split('.').pop() || 'jpg';
+              const today = new Date();
+              const dateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+              const methodLabel = PAYMENT_METHODS.find(p => p.id === paymentMethod)?.label || paymentMethod;
+              const docName = `${clientName} - ${dateStr} - ${methodLabel}.${ext}`;
+              return (
+                <div className={`${b}__receipt-file`}>
+                  {isImage ? (
+                    <div className={`${b}__receipt-thumb`}>
+                      <img src={URL.createObjectURL(receiptFile)} alt="Comprobante" />
+                    </div>
+                  ) : (
+                    <div className={`${b}__receipt-icon`}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className={`${b}__receipt-info`}>
+                    <span className={`${b}__receipt-name`}>{docName}</span>
+                    <span className={`${b}__receipt-size`}>{(receiptFile.size / 1024).toFixed(0)} KB</span>
+                  </div>
+                  <button type="button" className={`${b}__receipt-remove`} onClick={() => setReceiptFile(null)}>
+                    <CloseIcon />
+                  </button>
+                </div>
+              );
+            })() : (
               <label className={`${b}__receipt-drop`}>
                 <input type="file" accept="image/*,.pdf" onChange={(e) => setReceiptFile(e.target.files?.[0] || null)} hidden />
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="17 8 12 3 7 8" />
                   <line x1="12" y1="3" x2="12" y2="15" />
