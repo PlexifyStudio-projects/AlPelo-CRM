@@ -14,7 +14,6 @@ const MENU_ITEMS = [
   { id: 'team', label: 'Equipo' },
   { id: 'automations', label: 'Automatizaciones' },
   { id: 'inbox', label: 'WhatsApp' },
-  { id: 'instagram', label: 'Instagram' },
 ];
 
 const MOBILE_BREAKPOINT = 1024;

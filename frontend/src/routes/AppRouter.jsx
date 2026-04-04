@@ -14,7 +14,6 @@ import Finances from '../pages/Finances/Finances';
 import Campaigns from '../pages/Campaigns/Campaigns';
 import ContentStudio from '../pages/ContentStudio/ContentStudio';
 import Automations from '../pages/Automations/AutomationStudio';
-import InstagramInbox from '../pages/Instagram/InstagramInbox';
 import AdminProfile from '../pages/AdminProfile/AdminProfile';
 import Settings from '../pages/Settings/Settings';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -48,7 +47,6 @@ const AppRouter = () => {
       case 'inventory': return <Inventory />;
       case 'finances': return <Finances />;
       case 'inbox': return <Inbox />;
-      case 'instagram': return <InstagramInbox />;
       case 'messaging': return null;
       case 'team': return <Team />;
       case 'profile': return <AdminProfile user={user} onUpdate={updateProfile} />;
