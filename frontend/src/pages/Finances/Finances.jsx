@@ -226,6 +226,7 @@ const TAB_OPTIONS = [
   { value: 'comisiones', label: 'Comisiones' },
   { value: 'facturas', label: 'Facturas' },
   { value: 'nomina', label: 'Nómina' },
+  { value: 'dian', label: 'DIAN' },
 ];
 
 const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
@@ -3210,6 +3211,159 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
   );
 };
 
+// ============================================================================
+// TAB DIAN — Electronic invoicing status and operations
+// ============================================================================
+const TabDian = () => {
+  const [config, setConfig] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const API_D = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+  useEffect(() => {
+    fetch(`${API_D}/settings/dian`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setConfig(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="finances__comm-skeleton"><SkeletonBlock width="100%" height="200px" /></div>;
+
+  const completeness = config?.completeness || 0;
+  const isConfigured = completeness >= 80;
+  const hasProvider = !!config?.billing_provider;
+  const hasResolution = !!config?.dian_resolution_number;
+
+  return (
+    <>
+      {/* Status overview */}
+      <div className="finances__kpis">
+        <div className={`finances__kpi-card ${isConfigured ? '' : 'finances__kpi-card--warning'}`}>
+          <div className="finances__kpi-icon" style={{ background: isConfigured ? 'rgba(5,150,105,0.1)' : 'rgba(217,119,6,0.1)', color: isConfigured ? '#059669' : '#D97706' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value">{completeness}%</span>
+            <span className="finances__kpi-label">Config fiscal</span>
+          </div>
+        </div>
+        <div className="finances__kpi-card">
+          <div className="finances__kpi-icon" style={{ background: hasResolution ? 'rgba(5,150,105,0.1)' : 'rgba(0,0,0,0.05)', color: hasResolution ? '#059669' : '#999' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          </div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value">{hasResolution ? 'Activa' : 'Pendiente'}</span>
+            <span className="finances__kpi-label">Resolucion DIAN</span>
+          </div>
+        </div>
+        <div className="finances__kpi-card">
+          <div className="finances__kpi-icon" style={{ background: hasProvider ? 'rgba(59,130,246,0.1)' : 'rgba(0,0,0,0.05)', color: hasProvider ? '#3B82F6' : '#999' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value">{config?.billing_provider || 'Ninguno'}</span>
+            <span className="finances__kpi-label">Proveedor</span>
+          </div>
+        </div>
+        <div className="finances__kpi-card">
+          <div className="finances__kpi-icon" style={{ background: 'rgba(0,0,0,0.05)', color: '#999' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value">Proximo</span>
+            <span className="finances__kpi-label">Facturas electronicas</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Config summary */}
+      <div className="finances__card" style={{ marginBottom: 16 }}>
+        <div className="finances__card-header">
+          <h2 className="finances__card-title">Estado de configuracion</h2>
+        </div>
+        <div style={{ padding: '16px 20px' }}>
+          {/* Progress bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ flex: 1, height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 4 }}>
+              <div style={{ width: `${completeness}%`, height: '100%', borderRadius: 4, background: completeness === 100 ? '#059669' : completeness >= 60 ? '#D97706' : '#DC2626', transition: 'width 400ms' }} />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: completeness === 100 ? '#059669' : '#D97706' }}>{completeness}%</span>
+          </div>
+
+          {/* Checklist */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {[
+              { label: 'NIT', done: !!config?.nit },
+              { label: 'Razon social', done: !!config?.legal_name },
+              { label: 'Regimen fiscal', done: !!config?.tax_regime },
+              { label: 'Direccion fiscal', done: !!config?.fiscal_address },
+              { label: 'Email fiscal', done: !!config?.fiscal_email },
+              { label: 'Resolucion DIAN', done: !!config?.dian_resolution_number },
+              { label: 'Prefijo facturacion', done: !!config?.invoice_prefix },
+              { label: 'Proveedor tecnologico', done: !!config?.billing_provider },
+            ].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: item.done ? 'rgba(5,150,105,0.04)' : 'rgba(0,0,0,0.02)' }}>
+                {item.done ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>
+                )}
+                <span style={{ fontSize: 13, fontWeight: item.done ? 600 : 400, color: item.done ? '#059669' : 'rgba(0,0,0,0.45)' }}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.35)', marginTop: 16 }}>
+            Configura los datos fiscales en <strong>Settings → Facturacion / DIAN</strong>. Una vez completo, podras emitir facturas electronicas validas ante la DIAN.
+          </p>
+        </div>
+      </div>
+
+      {/* Info cards */}
+      {config?.nit && (
+        <div className="finances__card" style={{ marginBottom: 16 }}>
+          <div className="finances__card-header">
+            <h2 className="finances__card-title">Datos del negocio</h2>
+          </div>
+          <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+            <div><span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(0,0,0,0.3)', display: 'block' }}>NIT</span><strong style={{ fontSize: 15 }}>{config.nit}</strong></div>
+            <div><span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(0,0,0,0.3)', display: 'block' }}>Razon social</span><strong style={{ fontSize: 15 }}>{config.legal_name || '—'}</strong></div>
+            <div><span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(0,0,0,0.3)', display: 'block' }}>Regimen</span><strong style={{ fontSize: 15 }}>{config.tax_regime === 'rst' ? 'RST' : config.tax_regime === 'responsable_iva' ? 'Responsable IVA' : config.tax_regime === 'no_responsable' ? 'No responsable' : '—'}</strong></div>
+            {config.invoice_prefix && <div><span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(0,0,0,0.3)', display: 'block' }}>Prefijo</span><strong style={{ fontSize: 15 }}>{config.invoice_prefix}</strong></div>}
+            {config.invoice_range_from && <div><span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(0,0,0,0.3)', display: 'block' }}>Rango</span><strong style={{ fontSize: 15 }}>{config.invoice_range_from} — {config.invoice_range_to}</strong></div>}
+            {config.billing_provider && <div><span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'rgba(0,0,0,0.3)', display: 'block' }}>Proveedor</span><strong style={{ fontSize: 15, textTransform: 'capitalize' }}>{config.billing_provider} ({config.billing_environment || 'test'})</strong></div>}
+          </div>
+        </div>
+      )}
+
+      {/* What's next */}
+      <div className="finances__card">
+        <div className="finances__card-header">
+          <h2 className="finances__card-title">Proximos pasos</h2>
+        </div>
+        <div style={{ padding: '16px 20px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              { step: 1, title: 'Completar datos fiscales', desc: 'NIT, razon social, regimen, direccion fiscal en Settings', done: completeness >= 80 },
+              { step: 2, title: 'Obtener resolucion DIAN', desc: 'Tramitar habilitacion como facturador electronico ante la DIAN', done: hasResolution },
+              { step: 3, title: 'Conectar proveedor tecnologico', desc: 'Dataico o Alegra — ellos generan el XML, firman y envian a la DIAN', done: hasProvider },
+              { step: 4, title: 'Emitir primera factura electronica', desc: 'El sistema genera factura DIAN-valida con CUFE y QR automaticamente', done: false },
+            ].map(s => (
+              <div key={s.step} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 16px', borderRadius: 10, background: s.done ? 'rgba(5,150,105,0.03)' : 'rgba(0,0,0,0.02)' }}>
+                <span style={{ width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0, background: s.done ? '#059669' : 'rgba(0,0,0,0.08)', color: s.done ? '#fff' : 'rgba(0,0,0,0.35)' }}>{s.done ? '✓' : s.step}</span>
+                <div>
+                  <strong style={{ fontSize: 14, display: 'block', color: s.done ? '#059669' : '#1a1a1a' }}>{s.title}</strong>
+                  <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)' }}>{s.desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
 const NOMINA_PERIODS = [
   { value: 'month', label: 'Este Mes' },
   { value: 'last_month', label: 'Mes Anterior' },
@@ -3959,6 +4113,7 @@ const Finances = () => {
       {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'nomina' && <TabNomina />}
+      {activeTab === 'dian' && <TabDian />}
     </div>
   );
 };
