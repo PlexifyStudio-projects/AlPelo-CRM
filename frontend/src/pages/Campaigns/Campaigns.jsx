@@ -566,13 +566,9 @@ const Campaigns = () => {
         ))}
       </div>
       <div className={`${B}__tabs`}>
-        <button className={`${B}__tab ${mainTab === 'templates' ? `${B}__tab--active` : ''}`} onClick={() => { setMainTab('templates'); resetSendFlow(); }}>
+        <button className={`${B}__tab ${B}__tab--active`}>
           <TemplateIcon /> Plantillas
           <span className={`${B}__tab-badge`}>{templates.length}</span>
-        </button>
-        <button className={`${B}__tab ${mainTab === 'send' ? `${B}__tab--active` : ''}`} onClick={() => { setMainTab('send'); resetSendFlow(); }}>
-          <RocketIcon /> Enviar campaña
-          <span className={`${B}__tab-badge`}>{stats.approved}</span>
         </button>
       </div>
       {mainTab === 'templates' && (
