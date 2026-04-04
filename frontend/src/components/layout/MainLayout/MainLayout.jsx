@@ -96,13 +96,16 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
       />
       <div className="main-layout__content">
         {isMobile && (
-          <button className="main-layout__mobile-trigger" onClick={handleOpenMobileMenu} aria-label="Abrir menu">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
+          <div className="main-layout__mobile-header">
+            <button className="main-layout__mobile-trigger" onClick={handleOpenMobileMenu} aria-label="Abrir menu">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+            <span className="main-layout__mobile-title">{MENU_ITEMS.find(i => i.id === activeSection)?.label || ''}</span>
+          </div>
         )}
         <AIPauseBanner />
         <main className="main-layout__main">
