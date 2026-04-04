@@ -101,9 +101,68 @@ const META_STATUS = {
   rejected: { label: 'Rechazada por Meta', color: '#EF4444', bg: 'rgba(239,68,68,0.08)', icon: XIcon },
 };
 
+const MARKETPLACE_PACKS = [
+  {
+    id: 'barberia', name: 'Pack Barberia', icon: '💈', color: '#2D5A3D',
+    desc: '10 automatizaciones para peluquerias y barberias',
+    templates: [
+      { name: 'Recordatorio 24h', trigger_type: 'hours_before_appt', trigger_config: { hours: 24 }, action_config: { message: 'Hola {{nombre}}, le recordamos su cita manana a las {{hora}} con {{profesional}}. Confirme respondiendo SI. Si necesita reprogramar, diganos y con gusto le ayudamos.' }, cooldown_days: 1, max_per_day: 50 },
+      { name: 'Recordatorio 1h', trigger_type: 'hours_before_appt', trigger_config: { hours: 1 }, action_config: { message: 'Hola {{nombre}}, su cita es en 1 hora con {{profesional}}. Le esperamos!' }, cooldown_days: 1, max_per_day: 50 },
+      { name: 'Bienvenida nuevo cliente', trigger_type: 'new_client', trigger_config: {}, action_config: { message: 'Bienvenido/a a {{negocio}}, {{nombre}}! Gracias por su primera visita. Esperamos que la experiencia haya sido excelente. Para su proxima cita, escribanos aqui.' }, cooldown_days: 30, max_per_day: 20 },
+      { name: 'Feliz cumpleanos', trigger_type: 'birthday', trigger_config: {}, action_config: { message: 'Feliz cumpleanos, {{nombre}}! 🎂 De parte de todo el equipo de {{negocio}} le deseamos un excelente dia. Tiene un regalo especial esperandole en su proxima visita.' }, cooldown_days: 365, max_per_day: 20, eval_hour: 9 },
+      { name: 'Seguimiento post-visita', trigger_type: 'hours_after_complete', trigger_config: { hours: 3 }, action_config: { message: 'Hola {{nombre}}, gracias por visitarnos hoy. Esperamos que haya quedado satisfecho/a con su {{servicio}}. Si tiene alguna sugerencia, nos encantaria escucharla.' }, cooldown_days: 7, max_per_day: 20 },
+      { name: 'Reactivacion 30 dias', trigger_type: 'days_since_visit', trigger_config: { days: 30 }, action_config: { message: 'Hola {{nombre}}, hace un mes que no le vemos por {{negocio}}. Le tenemos un espacio reservado con {{profesional}}. Cuando quiera agendar, escribanos aqui.' }, cooldown_days: 30, max_per_day: 10, eval_hour: 10 },
+      { name: 'Reactivacion 60 dias', trigger_type: 'days_since_visit', trigger_config: { days: 60 }, action_config: { message: 'Hola {{nombre}}, le extranamos en {{negocio}}! Han pasado 2 meses. Nos encantaria verle de nuevo. Tiene disponibilidad esta semana?' }, cooldown_days: 60, max_per_day: 10, eval_hour: 10 },
+      { name: 'No-show seguimiento', trigger_type: 'no_show', trigger_config: {}, action_config: { message: 'Hola {{nombre}}, notamos que no pudo asistir a su cita de hoy. Esperamos que todo este bien. Si desea reprogramar, con gusto le ayudamos.' }, cooldown_days: 7, max_per_day: 10 },
+      { name: 'Encuesta satisfaccion', trigger_type: 'satisfaction_survey', trigger_config: { hours_after: 24 }, action_config: { message: 'Hola {{nombre}}, como calificaria su ultima visita a {{negocio}}? Del 1 al 5 (siendo 5 excelente). Su opinion nos ayuda a mejorar.' }, cooldown_days: 14, max_per_day: 15, eval_hour: 11 },
+      { name: 'Pedir resena Google', trigger_type: 'review_request', trigger_config: { min_satisfaction: 4, days_after: 2 }, action_config: { message: 'Hola {{nombre}}, nos alegra que su experiencia haya sido positiva! Nos ayudaria mucho si nos deja una resena en Google. Solo toma 30 segundos: {{google_link}}' }, cooldown_days: 90, max_per_day: 5, eval_hour: 14 },
+    ],
+  },
+  {
+    id: 'spa', name: 'Pack Spa & Bienestar', icon: '🧖', color: '#7C3AED',
+    desc: '8 automatizaciones para spas, esteticas y centros de bienestar',
+    templates: [
+      { name: 'Recordatorio de sesion', trigger_type: 'hours_before_appt', trigger_config: { hours: 24 }, action_config: { message: 'Hola {{nombre}}, le recordamos su sesion manana a las {{hora}}. Recuerde llegar 10 minutos antes para prepararse. Le esperamos!' }, cooldown_days: 1, max_per_day: 50 },
+      { name: 'Bienvenida spa', trigger_type: 'new_client', trigger_config: {}, action_config: { message: 'Bienvenido/a a {{negocio}}, {{nombre}}! Gracias por confiar en nosotros para su bienestar. Cualquier consulta sobre nuestros tratamientos, escribanos aqui.' }, cooldown_days: 30, max_per_day: 20 },
+      { name: 'Post-tratamiento', trigger_type: 'hours_after_complete', trigger_config: { hours: 4 }, action_config: { message: 'Hola {{nombre}}, esperamos que haya disfrutado su {{servicio}}. Recuerde beber mucha agua y descansar. Para agendar su proxima sesion, escribanos.' }, cooldown_days: 7, max_per_day: 20 },
+      { name: 'Cumpleanos spa', trigger_type: 'birthday', trigger_config: {}, action_config: { message: 'Feliz cumpleanos, {{nombre}}! 🎂 Le regalamos un descuento especial en su tratamiento favorito. Valido este mes. Reserva aqui!' }, cooldown_days: 365, max_per_day: 20, eval_hour: 9 },
+      { name: 'Reactivacion bienestar', trigger_type: 'days_since_visit', trigger_config: { days: 45 }, action_config: { message: 'Hola {{nombre}}, su bienestar es importante. Hace mas de un mes que no le vemos. Tenemos nuevos tratamientos que le encantaran. Quiere conocerlos?' }, cooldown_days: 45, max_per_day: 10, eval_hour: 10 },
+      { name: 'Membresia por vencer', trigger_type: 'membership_expiring', trigger_config: { days_before: 7 }, action_config: { message: 'Hola {{nombre}}, su membresia vence en 7 dias. Renueve ahora y siga disfrutando de todos los beneficios. Necesita ayuda con la renovacion?' }, cooldown_days: 30, max_per_day: 10 },
+      { name: 'Encuesta post-sesion', trigger_type: 'satisfaction_survey', trigger_config: { hours_after: 24 }, action_config: { message: 'Hola {{nombre}}, como se sintio despues de su {{servicio}}? Del 1 al 5, como calificaria la experiencia?' }, cooldown_days: 14, max_per_day: 15, eval_hour: 11 },
+      { name: 'VIP exclusivo', trigger_type: 'vip_exclusive', trigger_config: {}, action_config: { message: 'Hola {{nombre}}, como cliente VIP tiene acceso exclusivo a nuestro nuevo tratamiento antes que nadie. Quiere ser de los primeros en probarlo?' }, cooldown_days: 60, max_per_day: 5, eval_hour: 11 },
+    ],
+  },
+  {
+    id: 'clinica', name: 'Pack Clinica', icon: '🏥', color: '#0891B2',
+    desc: '7 automatizaciones para consultorios y clinicas',
+    templates: [
+      { name: 'Recordatorio consulta', trigger_type: 'hours_before_appt', trigger_config: { hours: 24 }, action_config: { message: 'Hola {{nombre}}, le recordamos su consulta manana a las {{hora}}. Por favor traiga sus documentos y examenes recientes.' }, cooldown_days: 1, max_per_day: 50 },
+      { name: 'Bienvenida paciente', trigger_type: 'new_client', trigger_config: {}, action_config: { message: 'Bienvenido/a a {{negocio}}, {{nombre}}! Gracias por confiar en nosotros. Si tiene alguna pregunta antes de su consulta, no dude en escribirnos.' }, cooldown_days: 30, max_per_day: 20 },
+      { name: 'Seguimiento post-consulta', trigger_type: 'hours_after_complete', trigger_config: { hours: 24 }, action_config: { message: 'Hola {{nombre}}, esperamos que su consulta haya sido util. Recuerde seguir las indicaciones. Si tiene alguna duda, estamos aqui para ayudarle.' }, cooldown_days: 7, max_per_day: 20 },
+      { name: 'Control periodico', trigger_type: 'days_since_visit', trigger_config: { days: 90 }, action_config: { message: 'Hola {{nombre}}, han pasado 3 meses desde su ultima consulta. Es momento de su control periodico. Quiere agendar?' }, cooldown_days: 90, max_per_day: 10, eval_hour: 9 },
+      { name: 'Cumpleanos', trigger_type: 'birthday', trigger_config: {}, action_config: { message: 'Feliz cumpleanos, {{nombre}}! 🎂 De parte de todo el equipo de {{negocio}}. Que tenga un excelente dia!' }, cooldown_days: 365, max_per_day: 20, eval_hour: 9 },
+      { name: 'No asistio', trigger_type: 'no_show', trigger_config: {}, action_config: { message: 'Hola {{nombre}}, no pudimos atenderle hoy. Si necesita reprogramar su cita, estamos a su disposicion.' }, cooldown_days: 7, max_per_day: 10 },
+      { name: 'Encuesta calidad', trigger_type: 'satisfaction_survey', trigger_config: { hours_after: 48 }, action_config: { message: 'Hola {{nombre}}, su opinion es importante. Como calificaria la atencion recibida? Del 1 al 5 (5 = excelente).' }, cooldown_days: 30, max_per_day: 10, eval_hour: 10 },
+    ],
+  },
+  {
+    id: 'gym', name: 'Pack Gimnasio', icon: '💪', color: '#DC2626',
+    desc: '6 automatizaciones para gimnasios y fitness',
+    templates: [
+      { name: 'Bienvenida miembro', trigger_type: 'new_client', trigger_config: {}, action_config: { message: 'Bienvenido/a a {{negocio}}, {{nombre}}! Estamos emocionados de tenerle. Cualquier duda sobre horarios, clases o su plan, escribanos aqui.' }, cooldown_days: 30, max_per_day: 20 },
+      { name: 'Motivacion inactividad', trigger_type: 'days_since_visit', trigger_config: { days: 7 }, action_config: { message: 'Hola {{nombre}}, hace una semana que no le vemos en {{negocio}}. Cada dia cuenta para sus objetivos. Le esperamos!' }, cooldown_days: 7, max_per_day: 15, eval_hour: 8 },
+      { name: 'Membresia por vencer', trigger_type: 'membership_expiring', trigger_config: { days_before: 5 }, action_config: { message: 'Hola {{nombre}}, su membresia en {{negocio}} vence en 5 dias. Renueve ahora para seguir entrenando sin interrupciones.' }, cooldown_days: 30, max_per_day: 10 },
+      { name: 'Cumpleanos fitness', trigger_type: 'birthday', trigger_config: {}, action_config: { message: 'Feliz cumpleanos, {{nombre}}! 🎂 Celebrelo con una sesion especial. Le regalamos una clase extra este mes!' }, cooldown_days: 365, max_per_day: 20, eval_hour: 8 },
+      { name: 'Milestone visitas', trigger_type: 'visit_milestone', trigger_config: { visits: 50 }, action_config: { message: 'Felicitaciones {{nombre}}! Ha completado 50 visitas a {{negocio}}. Su constancia es admirable. Siga asi!' }, cooldown_days: 365, max_per_day: 5 },
+      { name: 'Reactivacion 30 dias', trigger_type: 'days_since_visit', trigger_config: { days: 30 }, action_config: { message: 'Hola {{nombre}}, le extranamos en {{negocio}}. Ha pasado un mes. Volver es el primer paso. Le esperamos!' }, cooldown_days: 30, max_per_day: 10, eval_hour: 9 },
+    ],
+  },
+];
+
 export default function AutomationStudio() {
   const { addNotification } = useNotification();
   const [view, setView] = useState('list');
+  const [mainTab, setMainTab] = useState('automations');
   const [automations, setAutomations] = useState([]);
   const [stats, setStats] = useState(null);
   const [triggers, setTriggers] = useState([]);
@@ -113,6 +172,7 @@ export default function AutomationStudio() {
   const [deleteModal, setDeleteModal] = useState(null);
   const [planLimit, setPlanLimit] = useState(999);
   const [limitModal, setLimitModal] = useState(false);
+  const [installingPack, setInstallingPack] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -242,6 +302,60 @@ export default function AutomationStudio() {
           <PlusIcon size={18} /><span>Nueva automatización</span>
         </button>
       </div>
+
+      {/* Tabs: Mis automatizaciones / Marketplace */}
+      <div className={`${B}__tabs`}>
+        <button className={`${B}__tab ${mainTab === 'automations' ? `${B}__tab--active` : ''}`} onClick={() => setMainTab('automations')}>
+          <ZapIcon size={16} /> Mis automatizaciones ({automations.length})
+        </button>
+        <button className={`${B}__tab ${mainTab === 'marketplace' ? `${B}__tab--active` : ''}`} onClick={() => setMainTab('marketplace')}>
+          <GiftIcon size={16} /> Marketplace
+        </button>
+      </div>
+
+      {mainTab === 'marketplace' && (
+        <div className={`${B}__marketplace`}>
+          <p className={`${B}__marketplace-desc`}>Packs de automatizaciones pre-escritas por tipo de negocio. Instala con un click y personaliza.</p>
+          <div className={`${B}__marketplace-grid`}>
+            {MARKETPLACE_PACKS.map(pack => (
+              <div key={pack.id} className={`${B}__pack-card`} style={{ '--pack-color': pack.color }}>
+                <div className={`${B}__pack-icon`}>{pack.icon}</div>
+                <h3 className={`${B}__pack-name`}>{pack.name}</h3>
+                <p className={`${B}__pack-desc`}>{pack.desc}</p>
+                <div className={`${B}__pack-count`}>{pack.templates.length} automatizaciones</div>
+                <div className={`${B}__pack-list`}>
+                  {pack.templates.map((t, i) => (
+                    <span key={i} className={`${B}__pack-item`}>{t.name}</span>
+                  ))}
+                </div>
+                <button
+                  className={`${B}__pack-install`}
+                  disabled={installingPack === pack.id}
+                  onClick={async () => {
+                    if (!window.confirm(`Instalar ${pack.templates.length} automatizaciones del ${pack.name}? Se crearan como borradores (debera enviarlas a Meta para activar).`)) return;
+                    setInstallingPack(pack.id);
+                    let ok = 0, fail = 0;
+                    for (const t of pack.templates) {
+                      try {
+                        await svc.create({ ...t, action_type: 'send_whatsapp' });
+                        ok++;
+                      } catch { fail++; }
+                    }
+                    addNotification(`${ok} automatizaciones instaladas${fail ? `, ${fail} errores` : ''}`, ok > 0 ? 'success' : 'error');
+                    setInstallingPack(null);
+                    load();
+                    setMainTab('automations');
+                  }}
+                >
+                  {installingPack === pack.id ? 'Instalando...' : 'Instalar pack'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {mainTab === 'automations' && (<>
       {stats && (
         <div className={`${B}__metrics`}>
           {[
@@ -314,6 +428,8 @@ export default function AutomationStudio() {
           </div>
         </div>
       )}
+
+      </>)}
 
       {limitModal && (
         <div className={`${B}__overlay`} onClick={() => setLimitModal(false)}>

@@ -13,7 +13,8 @@ const MENU_ITEMS = [
   { id: 'finances', label: 'Finanzas' },
   { id: 'team', label: 'Equipo' },
   { id: 'automations', label: 'Automatizaciones' },
-  { id: 'inbox', label: 'Inbox' },
+  { id: 'inbox', label: 'WhatsApp' },
+  { id: 'instagram', label: 'Instagram' },
 ];
 
 const MOBILE_BREAKPOINT = 1024;

@@ -1,0 +1,124 @@
+@use '../abstracts/variables' as *;
+
+.instagram-inbox {
+  padding: $spacing-xl $spacing-2xl;
+  min-height: 100vh;
+
+  &__header {
+    margin-bottom: $spacing-xl;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    color: $color-gray-900;
+
+    svg { color: #E1306C; }
+  }
+
+  &__connect {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 560px;
+    margin: $spacing-2xl auto;
+    padding: $spacing-2xl;
+    background: $color-white;
+    border-radius: $border-radius-xl;
+    box-shadow: $shadow-sm;
+  }
+
+  &__connect-icon {
+    margin-bottom: $spacing-lg;
+    color: #E1306C;
+    opacity: 0.3;
+  }
+
+  &__connect-title {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-gray-900;
+    margin-bottom: $spacing-xs;
+  }
+
+  &__connect-desc {
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    line-height: 1.6;
+    margin-bottom: $spacing-xl;
+  }
+
+  &__connect-steps {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+    width: 100%;
+    text-align: left;
+    margin-bottom: $spacing-xl;
+  }
+
+  &__connect-step {
+    display: flex;
+    align-items: flex-start;
+    gap: $spacing-md;
+    padding: $spacing-md;
+    background: rgba(225, 48, 108, 0.03);
+    border-radius: $border-radius-md;
+    border: 1px solid rgba(225, 48, 108, 0.08);
+
+    strong {
+      display: block;
+      font-size: $font-size-sm;
+      color: $color-gray-800;
+      margin-bottom: 2px;
+    }
+
+    p {
+      font-size: $font-size-xs;
+      color: $color-gray-500;
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+
+  &__step-num {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: $border-radius-full;
+    background: linear-gradient(135deg, #833AB4, #E1306C, #F77737);
+    color: #fff;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-bold;
+  }
+
+  &__connect-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm $spacing-xl;
+    background: linear-gradient(135deg, #833AB4, #E1306C, #F77737);
+    color: #fff;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-bold;
+    border-radius: $border-radius-full;
+    text-decoration: none;
+    transition: opacity $transition-fast;
+
+    &:hover { opacity: 0.9; }
+  }
+
+  &__connect-note {
+    margin-top: $spacing-md;
+    font-size: $font-size-2xs;
+    color: $color-gray-400;
+  }
+}
