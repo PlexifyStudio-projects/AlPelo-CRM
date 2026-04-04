@@ -479,16 +479,16 @@
     }
   }
 
-  // --- Mobile icon ---
+  // --- Mobile icon — color psychology per section ---
   &__mobile-icon {
     @include flex-center;
-    width: 36px;
-    height: 36px;
-    border-radius: $border-radius-md;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
     background: rgba($color-black, 0.03);
     color: $text-muted;
     flex-shrink: 0;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
 
     svg {
       width: 18px;
@@ -497,14 +497,73 @@
 
     &--animated {
       animation: mobile-icon-glow 2.5s ease-in-out infinite;
-      background: rgba($color-primary, 0.08);
-      color: $color-primary;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(236, 72, 153, 0.08));
+      color: #8B5CF6;
+    }
+  }
+
+  // Color psychology: each nav item gets a semantic color
+  &__mobile-link, &__mobile-accordion-trigger {
+    // Inicio — green (confianza, hogar)
+    &:nth-child(1) .site-header__mobile-icon {
+      background: rgba(16, 185, 129, 0.1);
+      color: #059669;
+    }
+    &:nth-child(1):hover, &:nth-child(1).site-header__mobile-link--active {
+      border-left-color: #059669;
+      .site-header__mobile-icon { background: rgba(16, 185, 129, 0.15); color: #059669; }
+    }
+
+    // Producto — blue (profesionalismo, estructura)
+    &:nth-child(2) .site-header__mobile-icon {
+      background: rgba(59, 130, 246, 0.1);
+      color: #2563EB;
+    }
+    &:nth-child(2):hover {
+      border-left-color: #2563EB;
+      color: #2563EB;
+      .site-header__mobile-icon { background: rgba(59, 130, 246, 0.15); }
+    }
+
+    // Lina IA — purple (innovación, tecnología)
+    &:nth-child(3) .site-header__mobile-icon {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(236, 72, 153, 0.08));
+      color: #7C3AED;
+    }
+    &:nth-child(3):hover {
+      border-left-color: #7C3AED;
+      color: #7C3AED;
+      .site-header__mobile-icon { background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(236, 72, 153, 0.12)); }
+    }
+
+    // Precios — amber (valor, claridad)
+    &:nth-child(4) .site-header__mobile-icon {
+      background: rgba(245, 158, 11, 0.1);
+      color: #D97706;
+    }
+    &:nth-child(4):hover {
+      border-left-color: #D97706;
+      color: #D97706;
+      .site-header__mobile-icon { background: rgba(245, 158, 11, 0.15); }
+    }
+  }
+
+  // Nosotros section — Contacto (warm teal)
+  &__mobile-section-links .site-header__mobile-link {
+    .site-header__mobile-icon {
+      background: rgba(20, 184, 166, 0.1);
+      color: #0D9488;
+    }
+    &:hover {
+      border-left-color: #0D9488;
+      color: #0D9488;
+      .site-header__mobile-icon { background: rgba(20, 184, 166, 0.15); }
     }
   }
 
   @keyframes mobile-icon-glow {
-    0%, 100% { box-shadow: 0 0 0 rgba($color-primary, 0); }
-    50% { box-shadow: 0 0 12px rgba($color-primary, 0.2); }
+    0%, 100% { box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
+    50% { box-shadow: 0 0 14px rgba(139, 92, 246, 0.25); }
   }
 
   // --- Mobile label ---
