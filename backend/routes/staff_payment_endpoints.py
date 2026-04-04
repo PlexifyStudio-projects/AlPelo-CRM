@@ -478,3 +478,80 @@ def update_bank_info(
         "staff_id": staff.id,
         "message": f"Bank info updated for {staff.name}",
     }
+
+
+# ============================================================================
+# WOMPI DISPERSIONS — Real payouts to staff bank accounts
+# ============================================================================
+
+@router.post("/disburse/{payment_id}")
+async def disburse_payment(payment_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Create a real Wompi disbursement for an existing staff payment record.
+    Requires: Wompi credentials configured + staff bank info filled."""
+    tid = _tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="Tenant no identificado")
+
+    payment = db.query(StaffPayment).filter(
+        StaffPayment.id == payment_id,
+        StaffPayment.tenant_id == tid,
+    ).first()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Pago no encontrado")
+
+    if getattr(payment, 'disbursement_status', None) == 'APPROVED':
+        raise HTTPException(status_code=400, detail="Este pago ya fue dispersado exitosamente")
+
+    staff = db.query(Staff).filter(Staff.id == payment.staff_id).first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff no encontrado")
+
+    reference = f"NOM-{tid}-{payment_id}-{staff.id}"
+
+    from services.payments.wompi_payouts import create_disbursement
+    result = await create_disbursement(
+        db=db,
+        tenant_id=tid,
+        staff=staff,
+        amount=int(payment.amount),
+        reference=reference,
+        concept=payment.concept or "Pago de nomina",
+    )
+
+    if result.get("ok"):
+        # Update payment record with disbursement info
+        payment.reference = result.get("payout_id", payment.reference)
+        payment.notes = (payment.notes or '') + f"\n[WOMPI] {result['environment']}: {result['payout_id']} — {result['status']}"
+        db.commit()
+
+    return result
+
+
+@router.get("/disburse/{payment_id}/status")
+async def check_disbursement_status(payment_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Check Wompi disbursement status for a payment."""
+    tid = _tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="Tenant no identificado")
+
+    payment = db.query(StaffPayment).filter(
+        StaffPayment.id == payment_id,
+        StaffPayment.tenant_id == tid,
+    ).first()
+    if not payment or not payment.reference:
+        raise HTTPException(status_code=404, detail="Pago o referencia no encontrado")
+
+    from services.payments.wompi_payouts import check_payout_status
+    return await check_payout_status(db, tid, payment.reference)
+
+
+@router.get("/wompi/banks")
+async def list_wompi_banks(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """List available banks from Wompi for dispersions."""
+    tid = _tid(user, db)
+    if not tid:
+        raise HTTPException(status_code=400, detail="Tenant no identificado")
+
+    from services.payments.wompi_payouts import get_wompi_banks
+    banks = await get_wompi_banks(db, tid)
+    return {"banks": banks}
