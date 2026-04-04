@@ -322,6 +322,12 @@ class Tenant(Base):
     billing_provider = Column(String(30), nullable=True)  # dataico, ninguno
     billing_provider_api_key = Column(Text, nullable=True)  # Encrypted
     billing_environment = Column(String(15), nullable=True)  # test, production
+    # Wompi / Payment dispersions
+    wompi_public_key = Column(String(200), nullable=True)
+    wompi_private_key = Column(Text, nullable=True)  # Encrypted
+    wompi_events_key = Column(String(200), nullable=True)
+    wompi_environment = Column(String(15), nullable=True)  # sandbox, production
+    payments_enabled = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     ai_is_paused = Column(Boolean, default=False)
 

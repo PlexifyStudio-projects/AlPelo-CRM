@@ -156,6 +156,12 @@ def run_migrations(engine):
         ("tenant", "billing_provider", "VARCHAR(30)"),
         ("tenant", "billing_provider_api_key", "TEXT"),
         ("tenant", "billing_environment", "VARCHAR(15)"),
+        # Wompi payment config
+        ("tenant", "wompi_public_key", "VARCHAR(200)"),
+        ("tenant", "wompi_private_key", "TEXT"),
+        ("tenant", "wompi_events_key", "VARCHAR(200)"),
+        ("tenant", "wompi_environment", "VARCHAR(15)"),
+        ("tenant", "payments_enabled", "BOOLEAN DEFAULT FALSE"),
         # Tenant IVA config
         ("tenant", "default_tax_rate", "FLOAT NOT NULL DEFAULT 0"),
         # Checkout receipt photo

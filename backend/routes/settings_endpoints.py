@@ -903,6 +903,38 @@ def update_dian_settings(data: dict, db: Session = Depends(get_db), user=Depends
     return {"success": True}
 
 
+@router.get("/settings/wompi")
+def get_wompi_settings(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    if not tenant:
+        return {}
+    return {
+        "wompi_public_key": getattr(tenant, 'wompi_public_key', None),
+        "wompi_private_key": '****' + (getattr(tenant, 'wompi_private_key', '') or '')[-8:] if getattr(tenant, 'wompi_private_key', None) else None,
+        "wompi_events_key": getattr(tenant, 'wompi_events_key', None),
+        "wompi_environment": getattr(tenant, 'wompi_environment', None),
+        "payments_enabled": getattr(tenant, 'payments_enabled', False),
+        "is_configured": bool(getattr(tenant, 'wompi_private_key', None)),
+    }
+
+
+@router.put("/settings/wompi")
+def update_wompi_settings(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    if not tenant:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+
+    allowed = ['wompi_public_key', 'wompi_private_key', 'wompi_events_key', 'wompi_environment', 'payments_enabled']
+    for f in allowed:
+        if f in data:
+            setattr(tenant, f, data[f])
+    db.commit()
+    return {"success": True}
+
+
 @router.get("/settings/booking")
 def get_booking_settings(db: Session = Depends(get_db), user=Depends(get_current_user)):
     return _booking_response(_booking_tenant(db, user))

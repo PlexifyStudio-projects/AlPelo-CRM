@@ -596,6 +596,7 @@ const Settings = () => {
     { id: 'brand', title: 'Marca y Logo', desc: 'Logo, nombre y colores de tu negocio', color1: '#8B5CF6', color2: '#A78BFA' },
     { id: 'tax', title: 'Impuestos / IVA', desc: 'Configura el IVA para facturas y cobros', color1: '#059669', color2: '#34D399' },
     { id: 'dian', title: 'Facturacion / DIAN', desc: 'Datos fiscales, NIT, resolucion y proveedor tecnologico', color1: '#DC2626', color2: '#F87171' },
+    { id: 'wompi', title: 'Wompi / Pagos', desc: 'Dispersiones al staff via Nequi, Bancolombia o Daviplata', color1: '#1E40AF', color2: '#3B82F6' },
   ];
 
   const [usageStats, setUsageStats] = useState(null);
@@ -621,6 +622,7 @@ const Settings = () => {
       booking: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<rect x="3" y="4" width="18" height="17" rx="2" fill={`url(#${gid})`} opacity=".15"/><rect x="3" y="4" width="18" height="17" rx="2" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M16 2v4M8 2v4M3 9h18" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="15" r="2" fill={`url(#${gid})`}/></svg>,
       tax: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<rect x="2" y="3" width="20" height="18" rx="2" fill={`url(#${gid})`} opacity=".15"/><rect x="2" y="3" width="20" height="18" rx="2" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M8 7v10M16 7v10M6 12h12" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="8" r="1.5" fill={`url(#${gid})`}/><circle cx="12" cy="16" r="1.5" fill={`url(#${gid})`}/></svg>,
       dian: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill={`url(#${gid})`} opacity=".15"/><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke={`url(#${gid})`} strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M9 15l2 2 4-4" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+      wompi: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<rect x="2" y="5" width="20" height="14" rx="2" fill={`url(#${gid})`} opacity=".15"/><rect x="2" y="5" width="20" height="14" rx="2" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M2 10h20" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M6 15h4" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/></svg>,
     };
     return icons[id] || null;
   };
@@ -1406,6 +1408,10 @@ const Settings = () => {
             <DianPanel addNotification={addNotification} />
           )}
 
+          {openSection === 'wompi' && (
+            <WompiPanel addNotification={addNotification} />
+          )}
+
         </div>
       )}
       {!openSection && (
@@ -1531,6 +1537,106 @@ const PRESET_COLORS = [
   { name: 'Esmeralda', color: '#059669' },
   { name: 'Slate Oscuro', color: '#334155' },
 ];
+
+function WompiPanel({ addNotification }) {
+  const [data, setData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_URL}/settings/wompi`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : {})
+      .then(d => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const update = (f, v) => setData(prev => ({ ...prev, [f]: v }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/settings/wompi`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Error');
+      addNotification('Configuracion de Wompi guardada', 'success');
+    } catch { addNotification('Error guardando', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <p style={{ padding: 20, color: 'rgba(0,0,0,0.4)' }}>Cargando...</p>;
+
+  return (
+    <div style={{ padding: '24px 32px' }}>
+      <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Wompi — Dispersiones al staff</h3>
+      <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 24 }}>Paga a tus profesionales directamente desde Nomina via Nequi, Bancolombia o Daviplata.</p>
+
+      {/* Enable toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px', background: 'rgba(0,0,0,0.02)', borderRadius: 12, marginBottom: 20 }}>
+        <div style={{ flex: 1 }}>
+          <strong style={{ fontSize: 15 }}>Pagos habilitados</strong>
+          <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', marginTop: 2 }}>
+            {data.payments_enabled ? 'Activo — puedes dispersar pagos desde Nomina' : 'Desactivado — los pagos se registran manualmente'}
+          </p>
+        </div>
+        <label style={{ position: 'relative', width: 48, height: 26, cursor: 'pointer' }}>
+          <input type="checkbox" checked={data.payments_enabled || false} onChange={e => update('payments_enabled', e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+          <span style={{ position: 'absolute', inset: 0, borderRadius: 13, background: data.payments_enabled ? '#1E40AF' : 'rgba(0,0,0,0.15)', transition: 'background 200ms' }} />
+          <span style={{ position: 'absolute', top: 3, left: data.payments_enabled ? 25 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 200ms' }} />
+        </label>
+      </div>
+
+      {/* API Keys */}
+      <h4 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.3)', marginBottom: 12 }}>Credenciales Wompi</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Llave publica</label>
+          <input value={data.wompi_public_key || ''} onChange={e => update('wompi_public_key', e.target.value)} placeholder="pub_test_xxx o pub_prod_xxx" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Llave privada</label>
+          <input type="password" value={data.wompi_private_key || ''} onChange={e => update('wompi_private_key', e.target.value)} placeholder="prv_test_xxx o prv_prod_xxx" style={inputStyle} />
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Llave de eventos (webhooks)</label>
+          <input value={data.wompi_events_key || ''} onChange={e => update('wompi_events_key', e.target.value)} placeholder="Para verificar webhooks" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Ambiente</label>
+          <select value={data.wompi_environment || ''} onChange={e => update('wompi_environment', e.target.value)} style={inputStyle}>
+            <option value="">Seleccionar</option>
+            <option value="sandbox">Sandbox (pruebas)</option>
+            <option value="production">Produccion</option>
+          </select>
+        </div>
+      </div>
+
+      {/* How it works */}
+      <div style={{ padding: 16, background: 'rgba(30,64,175,0.03)', borderRadius: 12, marginBottom: 24, border: '1px solid rgba(30,64,175,0.08)' }}>
+        <strong style={{ fontSize: 13, color: '#1E40AF', display: 'block', marginBottom: 8 }}>Como funciona</strong>
+        <ol style={{ fontSize: 12, color: 'rgba(0,0,0,0.5)', paddingLeft: 18, margin: 0, lineHeight: 1.8 }}>
+          <li>Registrate en <strong>wompi.com</strong> con el RUT del negocio</li>
+          <li>Wompi verifica y activa la cuenta (1-3 dias)</li>
+          <li>Copia las API keys aqui</li>
+          <li>Configura los datos bancarios de cada profesional en Equipo</li>
+          <li>Desde Nomina, al pagar → el dinero va directo a su cuenta/Nequi</li>
+        </ol>
+      </div>
+
+      <button onClick={handleSave} disabled={saving} style={{
+        padding: '12px 32px', borderRadius: 10, border: 'none', cursor: 'pointer',
+        background: '#1E40AF', color: '#fff', fontWeight: 700, fontSize: 14, fontFamily: 'inherit',
+      }}>
+        {saving ? 'Guardando...' : 'Guardar configuracion'}
+      </button>
+    </div>
+  );
+}
 
 function DianPanel({ addNotification }) {
   const [data, setData] = useState({});
