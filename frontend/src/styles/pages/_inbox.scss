@@ -3,11 +3,22 @@
 
 .inbox {
   display: flex;
-  height: calc(100vh - #{$header-height} - #{$spacing-xl});
+  height: calc(100vh - #{$header-height} - #{$spacing-xl} - 28px);
   background: $color-gray-50;
   border-radius: $border-radius-xl;
   overflow: hidden;
   box-shadow: $shadow-xl, 0 0 0 1px rgba(0, 0, 0, 0.02);
+
+  @media (max-width: 1024px) {
+    height: calc(100vh - #{$header-height} - #{$spacing-md} - 28px);
+  }
+
+  @media (max-width: 480px) {
+    height: calc(100dvh - 56px);
+    border-radius: 0;
+    box-shadow: none;
+    margin: -#{$spacing-sm} -#{$spacing-xs} 0;
+  }
   
   &__list-panel {
     width: 380px;
@@ -750,7 +761,8 @@
   &__messages {
     flex: 1;
     overflow-y: auto;
-    padding: $spacing-md 60px;
+    overflow-x: hidden;
+    padding: $spacing-md $spacing-xl;
     @include custom-scrollbar;
     min-width: 0;
 
@@ -1751,11 +1763,14 @@
     display: flex;
     align-items: flex-end;
     gap: 6px;
-    padding: $spacing-sm $spacing-md;
-    background: $color-white;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 6px $spacing-md;
+    background: #F0F2F5;
+    border-top: none;
     flex-shrink: 0;
     position: relative;
+    min-height: 50px;
+
+    @media (max-width: 480px) { padding: 4px $spacing-sm; min-height: 46px; }
   }
 
   &__input-action {
@@ -1776,14 +1791,14 @@
   &__input-wrapper {
     flex: 1;
     background: $color-white;
-    border-radius: $border-radius-xl;
-    border: 1.5px solid $color-gray-200;
+    border-radius: 24px;
+    border: none;
     overflow: hidden;
     transition: all 250ms $ease-out-quart;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
 
     &:focus-within {
-      border-color: $color-gray-300;
-      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
   }
 
@@ -2862,10 +2877,6 @@
 // ===== MOBILE (480px) =====
 @media (max-width: 480px) {
   .inbox {
-    border-radius: 0;
-    height: calc(100vh - #{$header-height});
-    box-shadow: none;
-    margin: 0 -#{$spacing-md};
 
     &__list-header {
       padding: $spacing-sm $spacing-sm $spacing-xs;
