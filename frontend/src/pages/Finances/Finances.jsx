@@ -221,6 +221,7 @@ const TAB_OPTIONS = [
   { value: 'resumen', label: 'Resumen' },
   { value: 'forecast', label: 'Proyección' },
   { value: 'reportes', label: 'Reportes' },
+  { value: 'rendimiento', label: 'Rendimiento' },
   { value: 'gastos', label: 'Gastos' },
   { value: 'comisiones', label: 'Comisiones' },
   { value: 'facturas', label: 'Facturas' },
@@ -2993,6 +2994,132 @@ const openPaymentReceipt = (paymentId, apiBase) => {
     .catch(() => { w.document.body.innerHTML = '<p style="color:red;text-align:center">Error cargando comprobante</p>'; });
 };
 
+// ============================================================================
+// TAB RENDIMIENTO — Staff Performance Dashboard
+// ============================================================================
+const TabRendimiento = ({ period, dateFrom, dateTo }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const API_R = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+  useEffect(() => {
+    setLoading(true);
+    const params = period === 'custom' && dateFrom && dateTo
+      ? `?period=custom&date_from=${dateFrom}&date_to=${dateTo}`
+      : `?period=${period || 'month'}`;
+
+    Promise.all([
+      fetch(`${API_R}/finances/commissions/payouts${params}`, { credentials: 'include' }).then(r => r.ok ? r.json() : []),
+      fetch(`${API_R}/finances/analytics${params}`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
+    ]).then(([payouts, analytics]) => {
+      const staffData = (Array.isArray(payouts) ? payouts : []).map(s => ({
+        ...s,
+        avg_ticket: s.services_count > 0 ? Math.round(s.total_revenue / s.services_count) : 0,
+      })).sort((a, b) => b.total_revenue - a.total_revenue);
+
+      const totalRevenue = staffData.reduce((s, st) => s + st.total_revenue, 0);
+      const totalServices = staffData.reduce((s, st) => s + st.services_count, 0);
+
+      setData({ staff: staffData, totalRevenue, totalServices, analytics });
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, [period, dateFrom, dateTo]);
+
+  if (loading) return <div className="finances__comm-skeleton">{[...Array(3)].map((_, i) => <div key={i} className="finances__card" style={{ padding: 20 }}><SkeletonBlock width="100%" height="80px" /></div>)}</div>;
+  if (!data || !data.staff.length) return <div className="finances__empty">Sin datos de rendimiento para este periodo</div>;
+
+  const maxRev = data.staff[0]?.total_revenue || 1;
+  const medals = ['🥇', '🥈', '🥉'];
+
+  return (
+    <>
+      {/* KPIs */}
+      <div className="finances__kpis">
+        <div className="finances__kpi-card finances__kpi-card--primary">
+          <div className="finances__kpi-icon finances__kpi-icon--primary">{Icons.users}</div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value">{data.staff.length}</span>
+            <span className="finances__kpi-label">Profesionales activos</span>
+          </div>
+        </div>
+        <div className="finances__kpi-card">
+          <div className="finances__kpi-icon finances__kpi-icon--success">{Icons.dollar}</div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value"><AnimatedNumber value={data.totalRevenue} prefix="$" /></span>
+            <span className="finances__kpi-label">Revenue total</span>
+          </div>
+        </div>
+        <div className="finances__kpi-card">
+          <div className="finances__kpi-icon finances__kpi-icon--accent">{Icons.receipt}</div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value"><AnimatedNumber value={data.totalServices} /></span>
+            <span className="finances__kpi-label">Servicios realizados</span>
+          </div>
+        </div>
+        <div className="finances__kpi-card">
+          <div className="finances__kpi-icon finances__kpi-icon--info">{Icons.chart}</div>
+          <div className="finances__kpi-info">
+            <span className="finances__kpi-value"><AnimatedNumber value={data.totalServices > 0 ? Math.round(data.totalRevenue / data.totalServices) : 0} prefix="$" /></span>
+            <span className="finances__kpi-label">Ticket promedio</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Leaderboard */}
+      <div className="finances__card" style={{ marginBottom: 20 }}>
+        <div className="finances__card-header">
+          <h2 className="finances__card-title">{Icons.star} Ranking de profesionales</h2>
+        </div>
+        <div className="finances__perf-list">
+          {data.staff.map((st, i) => {
+            const pct = Math.round((st.total_revenue / maxRev) * 100);
+            const sharePct = data.totalRevenue > 0 ? Math.round((st.total_revenue / data.totalRevenue) * 100) : 0;
+            return (
+              <div key={st.staff_id || i} className={`finances__perf-item ${i < 3 ? 'finances__perf-item--top' : ''}`}>
+                <span className="finances__perf-pos">{i < 3 ? medals[i] : i + 1}</span>
+                <div className="finances__perf-info">
+                  <div className="finances__perf-header">
+                    <strong className="finances__perf-name">{st.staff_name}</strong>
+                    <div className="finances__perf-stats">
+                      <span className="finances__perf-revenue">{formatCOP(st.total_revenue)}</span>
+                      <span className="finances__perf-share">{sharePct}%</span>
+                    </div>
+                  </div>
+                  <div className="finances__perf-bar-bg">
+                    <div className="finances__perf-bar" style={{ width: `${pct}%`, background: i === 0 ? '#F59E0B' : i === 1 ? '#94A3B8' : i === 2 ? '#CD7F32' : '#2D5A3D' }} />
+                  </div>
+                  <div className="finances__perf-meta">
+                    <span>{st.services_count} servicios</span>
+                    <span>Ticket prom: {formatCOP(st.avg_ticket)}</span>
+                    <span>Comision ({(st.rate * 100).toFixed(0)}%): {formatCOP(st.commission_amount)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bar chart */}
+      <div className="finances__card">
+        <div className="finances__card-header">
+          <h2 className="finances__card-title">{Icons.chart} Revenue por profesional</h2>
+        </div>
+        <div className="finances__recharts-container">
+          <ResponsiveContainer width="100%" height={Math.max(200, data.staff.length * 50)}>
+            <BarChart data={data.staff} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#8E8E85' }} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} />
+              <YAxis type="category" dataKey="staff_name" tick={{ fontSize: 12, fill: '#1a1a1a', fontWeight: 600 }} width={120} />
+              <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+              <Bar dataKey="total_revenue" name="Revenue" fill="#2D5A3D" radius={[0, 6, 6, 0]} maxBarSize={32} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </>
+  );
+};
+
 const NOMINA_PERIODS = [
   { value: 'month', label: 'Este Mes' },
   { value: 'last_month', label: 'Mes Anterior' },
@@ -3737,6 +3864,7 @@ const Finances = () => {
       {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'forecast' && <TabForecast />}
       {activeTab === 'reportes' && <TabReportes period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'rendimiento' && <TabRendimiento period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
