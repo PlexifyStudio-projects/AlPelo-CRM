@@ -1566,7 +1566,7 @@ function DianPanel({ addNotification }) {
   const completeness = data.completeness || 0;
 
   return (
-    <div style={{ padding: '24px 32px', maxWidth: 720 }}>
+    <div style={{ padding: '24px 32px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Facturacion Electronica</h3>
