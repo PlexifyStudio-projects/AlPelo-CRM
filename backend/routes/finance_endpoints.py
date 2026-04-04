@@ -973,6 +973,149 @@ def get_finance_analytics(
 # ============================================================================
 # EXPORT TRANSACTIONS
 # ============================================================================
+# STAFF PERFORMANCE — Detailed metrics per staff
+# ============================================================================
+
+@router.get("/finances/staff-performance")
+def get_staff_performance(
+    period: str = Query("month"),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    tid = safe_tid(current_user, db)
+    today = date.today()
+
+    if date_from and date_to:
+        start = date.fromisoformat(date_from)
+        end = date.fromisoformat(date_to)
+    elif period == "today":
+        start = end = today
+    elif period == "week":
+        start = today - timedelta(days=today.weekday())
+        end = today
+    elif period == "year":
+        start = date(today.year, 1, 1)
+        end = today
+    else:
+        start = date(today.year, today.month, 1)
+        end = today
+
+    # Previous period
+    days = (end - start).days + 1
+    prev_end = start - timedelta(days=1)
+    prev_start = prev_end - timedelta(days=days - 1)
+
+    # All staff
+    staff_q = db.query(Staff).filter(Staff.is_active == True)
+    if tid:
+        staff_q = staff_q.filter(Staff.tenant_id == tid)
+    all_staff = staff_q.all()
+
+    # Service catalog for categories
+    svc_catalog = {}
+    svc_q = db.query(Service)
+    if tid:
+        svc_q = svc_q.filter(Service.tenant_id == tid)
+    for s in svc_q.all():
+        svc_catalog[s.name.lower().strip()] = {"category": s.category or "Otros", "id": s.id}
+
+    result = []
+    for s in all_staff:
+        # Current period visits
+        vq = db.query(VisitHistory).filter(
+            VisitHistory.staff_id == s.id,
+            VisitHistory.status == "completed",
+            VisitHistory.visit_date >= start,
+            VisitHistory.visit_date <= end,
+        )
+        if tid:
+            vq = vq.filter(VisitHistory.tenant_id == tid)
+        visits = vq.all()
+
+        # Previous period visits
+        pvq = db.query(VisitHistory).filter(
+            VisitHistory.staff_id == s.id,
+            VisitHistory.status == "completed",
+            VisitHistory.visit_date >= prev_start,
+            VisitHistory.visit_date <= prev_end,
+        )
+        if tid:
+            pvq = pvq.filter(VisitHistory.tenant_id == tid)
+        prev_visits = pvq.all()
+
+        # Commission
+        comm = db.query(StaffCommission).filter(StaffCommission.staff_id == s.id).first()
+        rate = comm.default_rate if comm else 0.40
+
+        # Metrics
+        revenue = sum(v.amount or 0 for v in visits)
+        prev_revenue = sum(v.amount or 0 for v in prev_visits)
+        services_count = len(visits)
+        prev_services = len(prev_visits)
+        unique_clients = len(set(v.client_id for v in visits if v.client_id))
+        avg_ticket = round(revenue / services_count) if services_count > 0 else 0
+        commission_amount = round(revenue * rate)
+
+        # Revenue by service category
+        cat_breakdown = {}
+        for v in visits:
+            names = v.service_name.split(',') if v.service_name else ['Otros']
+            per_service = (v.amount or 0) / max(len(names), 1)
+            for name in names:
+                name = name.strip()
+                if name.startswith('[Producto]'):
+                    cat = 'Productos'
+                else:
+                    cat = svc_catalog.get(name.lower().strip(), {}).get("category", "Otros")
+                cat_breakdown[cat] = cat_breakdown.get(cat, 0) + int(per_service)
+
+        # Revenue by day
+        day_revenue = {}
+        for v in visits:
+            d = v.visit_date.isoformat()
+            day_revenue[d] = day_revenue.get(d, 0) + (v.amount or 0)
+
+        # Top services
+        svc_counts = {}
+        for v in visits:
+            for name in (v.service_name or '').split(','):
+                name = name.strip()
+                if name and not name.startswith('[Producto]'):
+                    svc_counts[name] = svc_counts.get(name, 0) + 1
+        top_services = sorted(svc_counts.items(), key=lambda x: -x[1])[:5]
+
+        # Growth
+        rev_growth = round(((revenue - prev_revenue) / prev_revenue) * 100, 1) if prev_revenue > 0 else (100.0 if revenue > 0 else 0)
+        svc_growth = round(((services_count - prev_services) / prev_services) * 100, 1) if prev_services > 0 else (100.0 if services_count > 0 else 0)
+
+        # Best day
+        best_day = max(day_revenue.items(), key=lambda x: x[1]) if day_revenue else (None, 0)
+
+        result.append({
+            "staff_id": s.id,
+            "staff_name": s.name,
+            "staff_role": s.role or "",
+            "photo_url": getattr(s, 'photo_url', None),
+            "commission_rate": rate,
+            "revenue": revenue,
+            "prev_revenue": prev_revenue,
+            "revenue_growth": rev_growth,
+            "services_count": services_count,
+            "prev_services": prev_services,
+            "services_growth": svc_growth,
+            "unique_clients": unique_clients,
+            "avg_ticket": avg_ticket,
+            "commission_amount": commission_amount,
+            "category_breakdown": cat_breakdown,
+            "top_services": [{"name": n, "count": c} for n, c in top_services],
+            "daily_revenue": [{"date": d, "revenue": r} for d, r in sorted(day_revenue.items())],
+            "best_day": {"date": best_day[0], "revenue": best_day[1]} if best_day[0] else None,
+        })
+
+    return sorted(result, key=lambda x: -x["revenue"])
+
 
 @router.get("/finances/export")
 def export_transactions(

@@ -2995,11 +2995,14 @@ const openPaymentReceipt = (paymentId, apiBase) => {
 };
 
 // ============================================================================
-// TAB RENDIMIENTO — Staff Performance Dashboard
+// TAB RENDIMIENTO — Staff Performance Dashboard v2
 // ============================================================================
 const TabRendimiento = ({ period, dateFrom, dateTo }) => {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState(null);
+  const [filterStaff, setFilterStaff] = useState('');
+  const [sortBy, setSortBy] = useState('revenue');
   const API_R = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
   useEffect(() => {
@@ -3008,80 +3011,109 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
       ? `?period=custom&date_from=${dateFrom}&date_to=${dateTo}`
       : `?period=${period || 'month'}`;
 
-    Promise.all([
-      fetch(`${API_R}/finances/commissions/payouts${params}`, { credentials: 'include' }).then(r => r.ok ? r.json() : []),
-      fetch(`${API_R}/finances/analytics${params}`, { credentials: 'include' }).then(r => r.ok ? r.json() : null),
-    ]).then(([payouts, analytics]) => {
-      const staffData = (Array.isArray(payouts) ? payouts : []).map(s => ({
-        ...s,
-        avg_ticket: s.services_count > 0 ? Math.round(s.total_revenue / s.services_count) : 0,
-      })).sort((a, b) => b.total_revenue - a.total_revenue);
-
-      const totalRevenue = staffData.reduce((s, st) => s + st.total_revenue, 0);
-      const totalServices = staffData.reduce((s, st) => s + st.services_count, 0);
-
-      setData({ staff: staffData, totalRevenue, totalServices, analytics });
-    }).catch(() => {}).finally(() => setLoading(false));
+    fetch(`${API_R}/finances/staff-performance${params}`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setData(Array.isArray(d) ? d : []))
+      .catch(() => setData([]))
+      .finally(() => setLoading(false));
   }, [period, dateFrom, dateTo]);
 
   if (loading) return <div className="finances__comm-skeleton">{[...Array(3)].map((_, i) => <div key={i} className="finances__card" style={{ padding: 20 }}><SkeletonBlock width="100%" height="80px" /></div>)}</div>;
-  if (!data || !data.staff.length) return <div className="finances__empty">Sin datos de rendimiento para este periodo</div>;
+  if (!data.length) return <div className="finances__empty">Sin datos de rendimiento para este periodo</div>;
 
-  const maxRev = data.staff[0]?.total_revenue || 1;
+  const filtered = filterStaff ? data.filter(s => s.staff_name.toLowerCase().includes(filterStaff.toLowerCase())) : data;
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'services') return b.services_count - a.services_count;
+    if (sortBy === 'clients') return b.unique_clients - a.unique_clients;
+    if (sortBy === 'ticket') return b.avg_ticket - a.avg_ticket;
+    if (sortBy === 'growth') return b.revenue_growth - a.revenue_growth;
+    return b.revenue - a.revenue;
+  });
+
+  const totalRevenue = data.reduce((s, st) => s + st.revenue, 0);
+  const totalServices = data.reduce((s, st) => s + st.services_count, 0);
+  const totalClients = data.reduce((s, st) => s + st.unique_clients, 0);
+  const maxRev = sorted[0]?.revenue || 1;
   const medals = ['🥇', '🥈', '🥉'];
 
   return (
     <>
-      {/* KPIs */}
       <div className="finances__kpis">
         <div className="finances__kpi-card finances__kpi-card--primary">
           <div className="finances__kpi-icon finances__kpi-icon--primary">{Icons.users}</div>
           <div className="finances__kpi-info">
-            <span className="finances__kpi-value">{data.staff.length}</span>
-            <span className="finances__kpi-label">Profesionales activos</span>
+            <span className="finances__kpi-value">{data.length}</span>
+            <span className="finances__kpi-label">Profesionales</span>
           </div>
         </div>
         <div className="finances__kpi-card">
           <div className="finances__kpi-icon finances__kpi-icon--success">{Icons.dollar}</div>
           <div className="finances__kpi-info">
-            <span className="finances__kpi-value"><AnimatedNumber value={data.totalRevenue} prefix="$" /></span>
-            <span className="finances__kpi-label">Revenue total</span>
+            <span className="finances__kpi-value"><AnimatedNumber value={totalRevenue} prefix="$" /></span>
+            <span className="finances__kpi-label">Ingresos totales</span>
           </div>
         </div>
         <div className="finances__kpi-card">
           <div className="finances__kpi-icon finances__kpi-icon--accent">{Icons.receipt}</div>
           <div className="finances__kpi-info">
-            <span className="finances__kpi-value"><AnimatedNumber value={data.totalServices} /></span>
-            <span className="finances__kpi-label">Servicios realizados</span>
+            <span className="finances__kpi-value"><AnimatedNumber value={totalServices} /></span>
+            <span className="finances__kpi-label">Servicios</span>
           </div>
         </div>
         <div className="finances__kpi-card">
-          <div className="finances__kpi-icon finances__kpi-icon--info">{Icons.chart}</div>
+          <div className="finances__kpi-icon finances__kpi-icon--info">{Icons.users}</div>
           <div className="finances__kpi-info">
-            <span className="finances__kpi-value"><AnimatedNumber value={data.totalServices > 0 ? Math.round(data.totalRevenue / data.totalServices) : 0} prefix="$" /></span>
-            <span className="finances__kpi-label">Ticket promedio</span>
+            <span className="finances__kpi-value"><AnimatedNumber value={totalClients} /></span>
+            <span className="finances__kpi-label">Clientes unicos</span>
           </div>
         </div>
       </div>
 
-      {/* Leaderboard */}
-      <div className="finances__card" style={{ marginBottom: 20 }}>
-        <div className="finances__card-header">
-          <h2 className="finances__card-title">{Icons.star} Ranking de profesionales</h2>
+      {/* Filters */}
+      <div className="finances__perf-filters">
+        <input className="finances__input" style={{ maxWidth: 220 }} placeholder="Buscar profesional..." value={filterStaff} onChange={e => setFilterStaff(e.target.value)} />
+        <div className="finances__perf-sort">
+          {[
+            { value: 'revenue', label: 'Ingresos' },
+            { value: 'services', label: 'Servicios' },
+            { value: 'clients', label: 'Clientes' },
+            { value: 'ticket', label: 'Ticket' },
+            { value: 'growth', label: 'Crecimiento' },
+          ].map(opt => (
+            <button key={opt.value} className={`finances__visit-filter-chip ${sortBy === opt.value ? 'finances__visit-filter-chip--active' : ''}`} onClick={() => setSortBy(opt.value)}>
+              {opt.label}
+            </button>
+          ))}
         </div>
-        <div className="finances__perf-list">
-          {data.staff.map((st, i) => {
-            const pct = Math.round((st.total_revenue / maxRev) * 100);
-            const sharePct = data.totalRevenue > 0 ? Math.round((st.total_revenue / data.totalRevenue) * 100) : 0;
-            return (
-              <div key={st.staff_id || i} className={`finances__perf-item ${i < 3 ? 'finances__perf-item--top' : ''}`}>
+      </div>
+
+      {/* Leaderboard */}
+      <div className="finances__perf-list">
+        {sorted.map((st, i) => {
+          const pct = Math.round((st.revenue / maxRev) * 100);
+          const sharePct = totalRevenue > 0 ? Math.round((st.revenue / totalRevenue) * 100) : 0;
+          const isExpanded = expandedId === st.staff_id;
+          return (
+            <div key={st.staff_id} className={`finances__perf-card ${isExpanded ? 'finances__perf-card--expanded' : ''}`}>
+              <div className="finances__perf-item" onClick={() => setExpandedId(isExpanded ? null : st.staff_id)}>
                 <span className="finances__perf-pos">{i < 3 ? medals[i] : i + 1}</span>
+                <div className="finances__perf-avatar" style={{ background: st.photo_url ? 'transparent' : '#2D5A3D' }}>
+                  {st.photo_url ? <img src={st.photo_url} alt="" /> : st.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                </div>
                 <div className="finances__perf-info">
                   <div className="finances__perf-header">
-                    <strong className="finances__perf-name">{st.staff_name}</strong>
+                    <div>
+                      <strong className="finances__perf-name">{st.staff_name}</strong>
+                      <span className="finances__perf-role">{st.staff_role}</span>
+                    </div>
                     <div className="finances__perf-stats">
-                      <span className="finances__perf-revenue">{formatCOP(st.total_revenue)}</span>
+                      <span className="finances__perf-revenue">{formatCOP(st.revenue)}</span>
                       <span className="finances__perf-share">{sharePct}%</span>
+                      {st.revenue_growth !== 0 && (
+                        <span className={`finances__perf-growth ${st.revenue_growth > 0 ? 'finances__perf-growth--up' : 'finances__perf-growth--down'}`}>
+                          {st.revenue_growth > 0 ? '↑' : '↓'}{Math.abs(st.revenue_growth)}%
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="finances__perf-bar-bg">
@@ -3089,32 +3121,90 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
                   </div>
                   <div className="finances__perf-meta">
                     <span>{st.services_count} servicios</span>
-                    <span>Ticket prom: {formatCOP(st.avg_ticket)}</span>
-                    <span>Comision ({(st.rate * 100).toFixed(0)}%): {formatCOP(st.commission_amount)}</span>
+                    <span>{st.unique_clients} clientes</span>
+                    <span>Ticket: {formatCOP(st.avg_ticket)}</span>
+                    <span>Comision ({(st.commission_rate * 100).toFixed(0)}%): {formatCOP(st.commission_amount)}</span>
                   </div>
                 </div>
+                <svg className={`finances__inv-chevron ${isExpanded ? 'finances__inv-chevron--open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
               </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Bar chart */}
-      <div className="finances__card">
-        <div className="finances__card-header">
-          <h2 className="finances__card-title">{Icons.chart} Revenue por profesional</h2>
-        </div>
-        <div className="finances__recharts-container">
-          <ResponsiveContainer width="100%" height={Math.max(200, data.staff.length * 50)}>
-            <BarChart data={data.staff} layout="vertical" margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#EDEDEB" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#8E8E85' }} tickFormatter={v => v >= 1000 ? `${Math.round(v/1000)}k` : v} />
-              <YAxis type="category" dataKey="staff_name" tick={{ fontSize: 12, fill: '#1a1a1a', fontWeight: 600 }} width={120} />
-              <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
-              <Bar dataKey="total_revenue" name="Revenue" fill="#2D5A3D" radius={[0, 6, 6, 0]} maxBarSize={32} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+              {isExpanded && (
+                <div className="finances__perf-detail">
+                  <div className="finances__perf-detail-grid">
+                    {/* Comparison cards */}
+                    <div className="finances__perf-compare">
+                      <h4>Comparacion vs periodo anterior</h4>
+                      <div className="finances__perf-compare-cards">
+                        <div className="finances__perf-compare-card">
+                          <span className="finances__perf-compare-label">Ingresos</span>
+                          <strong>{formatCOP(st.revenue)}</strong>
+                          <small>Anterior: {formatCOP(st.prev_revenue)}</small>
+                          <span className={st.revenue_growth >= 0 ? 'finances__perf-growth--up' : 'finances__perf-growth--down'}>{st.revenue_growth > 0 ? '+' : ''}{st.revenue_growth}%</span>
+                        </div>
+                        <div className="finances__perf-compare-card">
+                          <span className="finances__perf-compare-label">Servicios</span>
+                          <strong>{st.services_count}</strong>
+                          <small>Anterior: {st.prev_services}</small>
+                          <span className={st.services_growth >= 0 ? 'finances__perf-growth--up' : 'finances__perf-growth--down'}>{st.services_growth > 0 ? '+' : ''}{st.services_growth}%</span>
+                        </div>
+                        <div className="finances__perf-compare-card">
+                          <span className="finances__perf-compare-label">Clientes unicos</span>
+                          <strong>{st.unique_clients}</strong>
+                        </div>
+                        <div className="finances__perf-compare-card">
+                          <span className="finances__perf-compare-label">Mejor dia</span>
+                          <strong>{st.best_day ? formatCOP(st.best_day.revenue) : '—'}</strong>
+                          {st.best_day && <small>{new Date(st.best_day.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</small>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Category breakdown */}
+                    <div className="finances__perf-categories">
+                      <h4>Ingresos por categoria</h4>
+                      {Object.entries(st.category_breakdown || {}).sort((a, b) => b[1] - a[1]).map(([cat, rev]) => (
+                        <div key={cat} className="finances__perf-cat-row">
+                          <span className="finances__perf-cat-name" style={{ color: CATEGORY_COLORS[cat] || '#666' }}>{cat}</span>
+                          <div className="finances__perf-cat-bar-bg">
+                            <div className="finances__perf-cat-bar" style={{ width: `${Math.round((rev / st.revenue) * 100)}%`, background: CATEGORY_COLORS[cat] || '#999' }} />
+                          </div>
+                          <span className="finances__perf-cat-value">{formatCOP(rev)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Top services */}
+                  {st.top_services && st.top_services.length > 0 && (
+                    <div className="finances__perf-top-services">
+                      <h4>Servicios mas realizados</h4>
+                      <div className="finances__perf-service-chips">
+                        {st.top_services.map((svc, j) => (
+                          <span key={j} className="finances__perf-service-chip">{svc.name} <strong>{svc.count}</strong></span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mini daily chart */}
+                  {st.daily_revenue && st.daily_revenue.length > 1 && (
+                    <div className="finances__perf-daily">
+                      <h4>Ingresos por dia</h4>
+                      <ResponsiveContainer width="100%" height={120}>
+                        <BarChart data={st.daily_revenue.map(d => ({ ...d, label: new Date(d.date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) }))}>
+                          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#999' }} tickLine={false} axisLine={false} />
+                          <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+                          <Bar dataKey="revenue" name="Ingresos" fill={i === 0 ? '#F59E0B' : '#2D5A3D'} radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </>
   );
