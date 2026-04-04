@@ -422,6 +422,13 @@ async def send_one_message(
                 MessageTemplate.slug == template_slug,
                 MessageTemplate.tenant_id == tid,
             ).first()
+            if not tpl_obj:
+                # Try by name too
+                tpl_obj = db.query(MessageTemplate).filter(
+                    MessageTemplate.name == template_slug,
+                    MessageTemplate.tenant_id == tid,
+                ).first()
+            print(f"[CAMPAIGN] template_slug={template_slug}, found={bool(tpl_obj)}, header_type={getattr(tpl_obj, 'header_type', None) if tpl_obj else 'N/A'}, has_media={bool(getattr(tpl_obj, 'header_media_url', None)) if tpl_obj else False}")
             if tpl_obj and getattr(tpl_obj, 'header_type', None) in ('IMAGE', 'VIDEO'):
                 header_media = getattr(tpl_obj, 'header_media_url', None)
                 if header_media and header_media.startswith('data:'):
