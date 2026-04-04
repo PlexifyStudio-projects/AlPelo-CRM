@@ -847,6 +847,62 @@ def update_tax_settings(data: dict, db: Session = Depends(get_db), user=Depends(
     return {"success": True, "default_tax_rate": tenant.default_tax_rate}
 
 
+@router.get("/settings/dian")
+def get_dian_settings(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    if not tenant:
+        return {}
+    fields = [
+        'nit', 'legal_name', 'person_type', 'tax_regime', 'ciiu_code',
+        'fiscal_address', 'municipality_code', 'department_code', 'fiscal_phone',
+        'fiscal_email', 'dian_resolution_number', 'invoice_prefix',
+        'invoice_range_from', 'invoice_range_to', 'billing_provider',
+        'billing_environment',
+    ]
+    result = {}
+    for f in fields:
+        result[f] = getattr(tenant, f, None)
+    # Dates as string
+    for df in ['dian_resolution_date', 'resolution_valid_from', 'resolution_valid_to']:
+        v = getattr(tenant, df, None)
+        result[df] = v.isoformat() if v else None
+    # Completeness
+    required = ['nit', 'legal_name', 'tax_regime', 'fiscal_address', 'fiscal_email']
+    filled = sum(1 for r in required if getattr(tenant, r, None))
+    result['completeness'] = round(filled / len(required) * 100)
+    return result
+
+
+@router.put("/settings/dian")
+def update_dian_settings(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first() if tid else None
+    if not tenant:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Tenant no encontrado")
+
+    allowed = [
+        'nit', 'legal_name', 'person_type', 'tax_regime', 'ciiu_code',
+        'fiscal_address', 'municipality_code', 'department_code', 'fiscal_phone',
+        'fiscal_email', 'dian_resolution_number', 'invoice_prefix',
+        'invoice_range_from', 'invoice_range_to', 'billing_provider',
+        'billing_provider_api_key', 'billing_environment',
+    ]
+    date_fields = ['dian_resolution_date', 'resolution_valid_from', 'resolution_valid_to']
+
+    for f in allowed:
+        if f in data:
+            setattr(tenant, f, data[f])
+    for f in date_fields:
+        if f in data:
+            from datetime import date as dt_date
+            setattr(tenant, f, dt_date.fromisoformat(data[f]) if data[f] else None)
+
+    db.commit()
+    return {"success": True}
+
+
 @router.get("/settings/booking")
 def get_booking_settings(db: Session = Depends(get_db), user=Depends(get_current_user)):
     return _booking_response(_booking_tenant(db, user))

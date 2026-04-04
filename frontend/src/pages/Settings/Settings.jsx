@@ -595,6 +595,7 @@ const Settings = () => {
     { id: 'booking', title: 'Reservas Online', desc: 'Pagina publica para que tus clientes agenden citas', color1: '#F59E0B', color2: '#FBBF24' },
     { id: 'brand', title: 'Marca y Logo', desc: 'Logo, nombre y colores de tu negocio', color1: '#8B5CF6', color2: '#A78BFA' },
     { id: 'tax', title: 'Impuestos / IVA', desc: 'Configura el IVA para facturas y cobros', color1: '#059669', color2: '#34D399' },
+    { id: 'dian', title: 'Facturacion / DIAN', desc: 'Datos fiscales, NIT, resolucion y proveedor tecnologico', color1: '#DC2626', color2: '#F87171' },
   ];
 
   const [usageStats, setUsageStats] = useState(null);
@@ -619,6 +620,7 @@ const Settings = () => {
       google: <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>,
       booking: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<rect x="3" y="4" width="18" height="17" rx="2" fill={`url(#${gid})`} opacity=".15"/><rect x="3" y="4" width="18" height="17" rx="2" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M16 2v4M8 2v4M3 9h18" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="15" r="2" fill={`url(#${gid})`}/></svg>,
       tax: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<rect x="2" y="3" width="20" height="18" rx="2" fill={`url(#${gid})`} opacity=".15"/><rect x="2" y="3" width="20" height="18" rx="2" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M8 7v10M16 7v10M6 12h12" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="8" r="1.5" fill={`url(#${gid})`}/><circle cx="12" cy="16" r="1.5" fill={`url(#${gid})`}/></svg>,
+      dian: <svg width="28" height="28" viewBox="0 0 24 24" fill="none">{grad}<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill={`url(#${gid})`} opacity=".15"/><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke={`url(#${gid})`} strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" stroke={`url(#${gid})`} strokeWidth="1.5"/><path d="M9 15l2 2 4-4" stroke={`url(#${gid})`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
     };
     return icons[id] || null;
   };
@@ -1400,6 +1402,10 @@ const Settings = () => {
             <TaxPanel addNotification={addNotification} />
           )}
 
+          {openSection === 'dian' && (
+            <DianPanel addNotification={addNotification} />
+          )}
+
         </div>
       )}
       {!openSection && (
@@ -1525,6 +1531,187 @@ const PRESET_COLORS = [
   { name: 'Esmeralda', color: '#059669' },
   { name: 'Slate Oscuro', color: '#334155' },
 ];
+
+function DianPanel({ addNotification }) {
+  const [data, setData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_URL}/settings/dian`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : {})
+      .then(d => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const update = (field, value) => setData(prev => ({ ...prev, [field]: value }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/settings/dian`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Error');
+      addNotification('Configuracion fiscal guardada', 'success');
+    } catch { addNotification('Error guardando', 'error'); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <p style={{ padding: 20, color: 'rgba(0,0,0,0.4)' }}>Cargando...</p>;
+
+  const completeness = data.completeness || 0;
+
+  return (
+    <div style={{ padding: '24px 32px', maxWidth: 720 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+        <div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Facturacion Electronica</h3>
+          <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)' }}>Datos fiscales del negocio para facturacion DIAN</p>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: completeness === 100 ? '#059669' : '#D97706' }}>{completeness}%</span>
+          <p style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)' }}>completado</p>
+        </div>
+      </div>
+
+      <div style={{ width: '100%', height: 4, background: 'rgba(0,0,0,0.06)', borderRadius: 2, marginBottom: 28 }}>
+        <div style={{ width: `${completeness}%`, height: '100%', borderRadius: 2, background: completeness === 100 ? '#059669' : '#D97706', transition: 'width 300ms' }} />
+      </div>
+
+      {/* Datos del negocio */}
+      <h4 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.3)', marginBottom: 12 }}>Datos del negocio</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>NIT (con digito de verificacion)</label>
+          <input value={data.nit || ''} onChange={e => update('nit', e.target.value)} placeholder="901234567-8" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Razon social</label>
+          <input value={data.legal_name || ''} onChange={e => update('legal_name', e.target.value)} placeholder="AlPelo Peluqueria S.A.S." style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Tipo de persona</label>
+          <select value={data.person_type || ''} onChange={e => update('person_type', e.target.value)} style={inputStyle}>
+            <option value="">Seleccionar</option>
+            <option value="natural">Persona Natural</option>
+            <option value="juridica">Persona Juridica</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Regimen fiscal</label>
+          <select value={data.tax_regime || ''} onChange={e => update('tax_regime', e.target.value)} style={inputStyle}>
+            <option value="">Seleccionar</option>
+            <option value="responsable_iva">Responsable de IVA</option>
+            <option value="no_responsable">No responsable de IVA</option>
+            <option value="rst">Regimen Simple de Tributacion (RST)</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Actividad economica (CIIU)</label>
+          <input value={data.ciiu_code || ''} onChange={e => update('ciiu_code', e.target.value)} placeholder="9602" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Email fiscal</label>
+          <input type="email" value={data.fiscal_email || ''} onChange={e => update('fiscal_email', e.target.value)} placeholder="contabilidad@negocio.com" style={inputStyle} />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12, marginBottom: 24 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Direccion fiscal</label>
+          <input value={data.fiscal_address || ''} onChange={e => update('fiscal_address', e.target.value)} placeholder="Cra 33 #52-10, Cabecera" style={inputStyle} />
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 28 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Municipio (DANE)</label>
+          <input value={data.municipality_code || ''} onChange={e => update('municipality_code', e.target.value)} placeholder="68001" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Departamento</label>
+          <input value={data.department_code || ''} onChange={e => update('department_code', e.target.value)} placeholder="68 (Santander)" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Telefono fiscal</label>
+          <input value={data.fiscal_phone || ''} onChange={e => update('fiscal_phone', e.target.value)} placeholder="+57 607 6XXXXXX" style={inputStyle} />
+        </div>
+      </div>
+
+      {/* Resolucion DIAN */}
+      <h4 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.3)', marginBottom: 12 }}>Resolucion de facturacion DIAN</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Numero de resolucion</label>
+          <input value={data.dian_resolution_number || ''} onChange={e => update('dian_resolution_number', e.target.value)} placeholder="18764000000123" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Fecha de resolucion</label>
+          <input type="date" value={data.dian_resolution_date || ''} onChange={e => update('dian_resolution_date', e.target.value)} style={inputStyle} />
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Prefijo</label>
+          <input value={data.invoice_prefix || ''} onChange={e => update('invoice_prefix', e.target.value)} placeholder="FV" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Rango desde</label>
+          <input type="number" value={data.invoice_range_from || ''} onChange={e => update('invoice_range_from', parseInt(e.target.value) || null)} placeholder="1" style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Rango hasta</label>
+          <input type="number" value={data.invoice_range_to || ''} onChange={e => update('invoice_range_to', parseInt(e.target.value) || null)} placeholder="5000" style={inputStyle} />
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 28 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Vigencia desde</label>
+          <input type="date" value={data.resolution_valid_from || ''} onChange={e => update('resolution_valid_from', e.target.value)} style={inputStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Vigencia hasta</label>
+          <input type="date" value={data.resolution_valid_to || ''} onChange={e => update('resolution_valid_to', e.target.value)} style={inputStyle} />
+        </div>
+      </div>
+
+      {/* Proveedor tecnologico */}
+      <h4 style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.3)', marginBottom: 12 }}>Proveedor tecnologico</h4>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 28 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Proveedor</label>
+          <select value={data.billing_provider || ''} onChange={e => update('billing_provider', e.target.value)} style={inputStyle}>
+            <option value="">Ninguno (no integrado)</option>
+            <option value="dataico">Dataico</option>
+            <option value="saphety">Saphety</option>
+            <option value="alegra">Alegra</option>
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Ambiente</label>
+          <select value={data.billing_environment || ''} onChange={e => update('billing_environment', e.target.value)} style={inputStyle}>
+            <option value="">Seleccionar</option>
+            <option value="test">Pruebas</option>
+            <option value="production">Produccion</option>
+          </select>
+        </div>
+      </div>
+
+      <button onClick={handleSave} disabled={saving} style={{
+        padding: '12px 32px', borderRadius: 10, border: 'none', cursor: 'pointer',
+        background: '#2D5A3D', color: '#fff', fontWeight: 700, fontSize: 14, fontFamily: 'inherit',
+      }}>
+        {saving ? 'Guardando...' : 'Guardar configuracion fiscal'}
+      </button>
+    </div>
+  );
+}
+
+const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(0,0,0,0.1)', fontSize: 14, fontFamily: 'inherit', outline: 'none' };
 
 function TaxPanel({ addNotification }) {
   const [ivaEnabled, setIvaEnabled] = useState(false);

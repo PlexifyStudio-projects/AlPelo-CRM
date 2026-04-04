@@ -301,6 +301,27 @@ class Tenant(Base):
     monthly_price = Column(Integer, nullable=False, default=0)
     paid_until = Column(Date, nullable=True)  # Service paid until this date
     default_tax_rate = Column(Float, nullable=False, default=0)  # 0 = no IVA, 0.19 = 19% IVA
+    # DIAN / Fiscal config
+    nit = Column(String(20), nullable=True)  # NIT con dígito verificación: 901234567-8
+    legal_name = Column(String(300), nullable=True)  # Razón social
+    person_type = Column(String(20), nullable=True)  # natural, juridica
+    tax_regime = Column(String(30), nullable=True)  # responsable_iva, no_responsable, rst
+    ciiu_code = Column(String(10), nullable=True)  # Actividad económica: 9602
+    fiscal_address = Column(Text, nullable=True)
+    municipality_code = Column(String(10), nullable=True)  # Código DANE: 68001
+    department_code = Column(String(5), nullable=True)  # 68 = Santander
+    fiscal_phone = Column(String(30), nullable=True)
+    fiscal_email = Column(String(200), nullable=True)
+    dian_resolution_number = Column(String(50), nullable=True)
+    dian_resolution_date = Column(Date, nullable=True)
+    invoice_prefix = Column(String(10), nullable=True)  # FV, PLXF, etc.
+    invoice_range_from = Column(Integer, nullable=True)
+    invoice_range_to = Column(Integer, nullable=True)
+    resolution_valid_from = Column(Date, nullable=True)
+    resolution_valid_to = Column(Date, nullable=True)
+    billing_provider = Column(String(30), nullable=True)  # dataico, ninguno
+    billing_provider_api_key = Column(Text, nullable=True)  # Encrypted
+    billing_environment = Column(String(15), nullable=True)  # test, production
     is_active = Column(Boolean, default=True)
     ai_is_paused = Column(Boolean, default=False)
 
