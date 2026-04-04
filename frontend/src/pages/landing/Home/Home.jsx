@@ -13,10 +13,10 @@ export default function Home() {
   return (
     <>
       <SEO
-        title="Software para Peluquerias y Salones de Belleza"
-        description="Gestiona tu peluqueria, barberia o salon con agenda online, WhatsApp marketing, CRM de clientes y automatizaciones con IA. Planes desde $190.000 COP/mes."
+        title="Software para Peluquerias en Colombia — CRM con WhatsApp e IA"
+        description="El mejor software para peluquerias en Colombia. CRM con WhatsApp Business integrado, sistema de citas, agenda online e inteligencia artificial. Gestione su peluqueria, barberia, salon o spa desde una sola plataforma. Planes desde $190.000 COP/mes."
         url="/"
-        keywords="software para peluquerias, sistema de citas para salon, agenda online barberia, CRM para salones de belleza, programa para administrar peluqueria, app de citas para spa"
+        keywords="software para peluquerias colombia, crm para negocios de servicios, sistema de citas colombia, whatsapp business crm, software gestion spa, sistema de agenda online, mejor software para barberia en colombia, crm con whatsapp integrado"
       />
       {/* Hero se carga eagerly — es above-the-fold y define el LCP */}
       <Hero />

@@ -7,17 +7,17 @@ export default function FeaturesPage() {
   return (
     <>
       <SEO
-        title="Funcionalidades — 14 Modulos en Una Plataforma"
-        description="Agenda online, CRM de clientes, WhatsApp marketing, finanzas, automatizaciones y Lina IA. 14 modulos para gestionar tu peluqueria, salon de belleza o spa."
+        title="Funcionalidades del Software para Peluquerias y Negocios de Servicios"
+        description="Sistema de citas, agenda online, CRM de clientes, WhatsApp Business integrado, finanzas, automatizaciones, inventario, booking online y Lina IA. Software completo para peluquerias, salones, barberias y spas en Colombia."
         url="/features"
-        keywords="funcionalidades software peluqueria, que incluye un CRM para salon, modulos sistema de gestion barberia, herramientas para administrar spa"
+        keywords="funcionalidades software peluqueria colombia, que incluye un CRM para salon, modulos sistema de gestion barberia, herramientas para administrar spa, sistema de citas colombia"
       />
 
-      <section className="page-hero" aria-label="Características de PlexifyStudio">
+      <section className="page-hero" aria-label="Funcionalidades del software para peluquerias y negocios de servicios">
         <div className="page-hero__container">
-          <h1 className="page-hero__title">Características</h1>
+          <h1 className="page-hero__title">Funcionalidades del Software para Negocios de Servicios</h1>
           <p className="page-hero__subtitle">
-            Todo lo que necesitas para gestionar, automatizar y hacer crecer tu negocio en una sola plataforma.
+            Todo lo que necesita para gestionar, automatizar y hacer crecer su negocio de servicios en una sola plataforma.
           </p>
         </div>
       </section>

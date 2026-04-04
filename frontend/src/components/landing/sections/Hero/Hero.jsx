@@ -51,7 +51,7 @@ export default function Hero() {
   }, []);
 
   return (
-    <section className="hero" ref={heroRef} aria-label="Sección principal">
+    <section className="hero" ref={heroRef} aria-label="Software para peluquerias y negocios de servicios en Colombia">
       <div className="hero__ambient" aria-hidden="true">
         <div className="hero__ambient-blob hero__ambient-blob--1" />
         <div className="hero__ambient-blob hero__ambient-blob--2" />
@@ -66,22 +66,23 @@ export default function Hero() {
           </div>
 
           <h1 className="hero__title">
-            La plataforma que hace{' '}
+            El software que hace{' '}
             <span className="hero__title--highlight">crecer su negocio</span>
           </h1>
 
           <p className="hero__subtitle">
-            Agenda, CRM, WhatsApp y una IA que atiende por usted 24/7
-            — todo en una sola plataforma.
+            Sistema de citas, CRM de clientes, WhatsApp Business integrado
+            y una IA que atiende por usted 24/7 — todo en una sola plataforma
+            para peluquerias, salones, barberias y spas en Colombia.
           </p>
 
           <div className="hero__actions">
             <Link to="/register" className="hero__cta hero__cta--primary">
-              Crear cuenta gratis
+              Empiece gratis hoy
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </Link>
             <Link to="/lina-ia" className="hero__cta hero__cta--outline">
-              Ver Lina IA en acción
+              Conozca a Lina IA en accion
             </Link>
           </div>
 

@@ -5,10 +5,10 @@ export default function Finanzas() {
   return (
     <>
       <SEO
-        title="Finanzas y Reportes para tu Negocio"
-        description="Controla ingresos, gastos, comisiones y facturacion de tu peluqueria o salon. Reportes en tiempo real, P&L automatico y KPIs financieros en una sola vista."
+        title="Finanzas y Reportes para Peluquerias y Negocios de Servicios"
+        description="Controle ingresos, gastos, nomina, comisiones y facturacion de su peluqueria o negocio de servicios. Reportes en tiempo real, P&L automatico, IVA y KPIs financieros en una sola vista. Software financiero en COP."
         url="/finanzas"
-        keywords="control financiero peluqueria, reportes de ventas salon de belleza, comisiones empleados barberia, facturacion spa, como controlar gastos de mi negocio"
+        keywords="control financiero peluqueria, reportes de ventas negocio, comisiones empleados salon, facturacion colombia, como controlar gastos de mi negocio, nomina automatica"
       />
 
       <main className="product-page">
@@ -17,10 +17,10 @@ export default function Finanzas() {
           <div className="product-hero__container">
             <span className="product-hero__badge">Finanzas</span>
             <h1 className="product-hero__title">
-              Finanzas y Reportes para <span className="product-hero__title-accent">Peluquerías y Salones</span>
+              Finanzas y Reportes para <span className="product-hero__title-accent">su Negocio</span>
             </h1>
             <p className="product-hero__subtitle">
-              5 módulos financieros integrados: resumen ejecutivo, reportes comparativos, control de gastos con P&L automático, comisiones por profesional y facturación. Todo en tiempo real.
+              Módulos financieros integrados: resumen ejecutivo, reportes comparativos, control de gastos con P&L automático, nómina y comisiones por profesional, facturación, IVA y rendimiento del equipo. Todo en tiempo real.
             </p>
 
             <div className="product-hero__stats">
@@ -43,7 +43,7 @@ export default function Finanzas() {
         {/* ── 5 Sub-módulos — Feature Cards ── */}
         <section className="product-features">
           <div className="product-features__container">
-            <h2 className="product-features__heading">Todo el control financiero de tu negocio</h2>
+            <h2 className="product-features__heading">Todo el control financiero de su negocio</h2>
 
             <div className="product-features__grid product-features__grid--five">
               {/* 1 — Resumen */}
@@ -226,15 +226,6 @@ export default function Finanzas() {
                   Toma decisiones basadas en P&L real, comisiones calculadas y reportes comparativos. No más intuición.
                 </p>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Mockup Placeholder ── */}
-        <section className="product-mockup">
-          <div className="product-mockup__container">
-            <div className="product-mockup__placeholder" aria-label="Vista previa del módulo de finanzas">
-              <span className="product-mockup__label">Finanzas — Vista Previa</span>
             </div>
           </div>
         </section>

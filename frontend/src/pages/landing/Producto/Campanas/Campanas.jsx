@@ -42,10 +42,10 @@ export default function Campanas() {
   return (
     <>
       <SEO
-        title="Campanas WhatsApp para tu Negocio"
-        description="Envia mensajes masivos por WhatsApp con plantillas aprobadas por Meta. Campanas de reactivacion y segmentacion para peluquerias, salones de belleza y spas."
+        title="Campanas WhatsApp Business para Peluquerias y Negocios"
+        description="Envie mensajes masivos por WhatsApp Business con plantillas aprobadas por Meta. Campanas de reactivacion, segmentacion y marketing para peluquerias, salones y negocios de servicios en Colombia."
         url="/producto/campanas"
-        keywords="enviar mensajes masivos WhatsApp negocio, WhatsApp marketing peluqueria, campanas salon de belleza, software WhatsApp para negocios, promociones por WhatsApp"
+        keywords="enviar mensajes masivos WhatsApp negocio, whatsapp business crm, campanas WhatsApp Business, software WhatsApp para peluquerias, promociones por WhatsApp colombia"
         breadcrumbs={[
           { name: 'Inicio', url: '/' },
           { name: 'Producto', url: '/features' },

@@ -36,10 +36,10 @@ export default function Clientes() {
   return (
     <>
       <SEO
-        title="CRM y Gestion de Clientes"
-        description="Base de datos inteligente con perfil completo del cliente, historial de visitas y estados automaticos. Conoce mejor a los clientes de tu peluqueria, salon o spa."
+        title="CRM para Peluquerias y Negocios de Servicios — Gestion de Clientes"
+        description="CRM para negocios de servicios con perfil 360 del cliente, historial de visitas, estados automaticos e importacion/exportacion. Software para gestionar los clientes de su peluqueria, salon o barberia en Colombia."
         url="/producto/clientes"
-        keywords="gestion de clientes peluqueria, base de datos clientes salon de belleza, CRM para barberia, historial de clientes spa, como organizar clientes de mi negocio"
+        keywords="crm para negocios de servicios, gestion de clientes peluqueria, base de datos clientes negocio, CRM para salones de belleza, historial de clientes, software para peluquerias colombia"
         breadcrumbs={[
           { name: 'Inicio', url: '/' },
           { name: 'Producto', url: '/features' },
@@ -54,11 +54,11 @@ export default function Clientes() {
             <span className="p-clientes__badge">👤 Módulo CRM</span>
             <h1 className="p-clientes__title">
               CRM y Gestión de Clientes para<br />
-              <span className="p-clientes__title--accent">Peluquerías y Salones</span>
+              <span className="p-clientes__title--accent">Negocios de Servicios</span>
             </h1>
             <p className="p-clientes__subtitle">
               Perfil 360°, estados inteligentes automáticos, KPIs en tiempo real
-              y todo lo que necesitas para fidelizar y nunca perder un cliente.
+              y todo lo que necesita para fidelizar y nunca perder un cliente.
             </p>
             <div className="p-clientes__hero-actions">
               <Link to="/pricing" className="p-clientes__cta p-clientes__cta--primary">Ver Precios →</Link>
@@ -232,8 +232,8 @@ export default function Clientes() {
         <div className="p-clientes__section-container">
           <div className="p-clientes__section-header">
             <span className="p-clientes__section-badge">📊 Panel de Control</span>
-            <h2>6 KPIs que te dicen todo sobre tu negocio</h2>
-            <p>De un vistazo sabes exactamente cómo está tu cartera de clientes. Sin buscar, sin calcular, sin Excel.</p>
+            <h2>6 KPIs que le dicen todo sobre su negocio</h2>
+            <p>De un vistazo sabe exactamente como esta su cartera de clientes. Sin buscar, sin calcular, sin Excel.</p>
           </div>
           <div className="p-clientes__kpi-explain">
             <div className="p-clientes__kpi-card">

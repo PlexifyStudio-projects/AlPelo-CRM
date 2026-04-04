@@ -7,9 +7,9 @@ const IMG_BUSINESS = 'https://images.unsplash.com/photo-1521791136064-7986c29202
 
 const NUMBERS = [
   { value: '2026', label: 'Año de fundación' },
-  { value: '21+', label: 'Países de habla hispana' },
-  { value: '14', label: 'Módulos integrados' },
-  { value: '29+', label: 'Acciones de Lina IA' },
+  { value: '20+', label: 'Tipos de negocio' },
+  { value: '10+', label: 'Módulos integrados' },
+  { value: '48', label: 'Acciones de Lina IA' },
 ];
 
 const VALUES = [
@@ -24,18 +24,18 @@ const VALUES = [
 const TIMELINE = [
   { year: '2026 Q1', title: 'Nacimiento', desc: 'Idea, investigación de mercado y primer prototipo funcional del CRM.' },
   { year: '2026 Q2', title: 'Lina IA', desc: 'Integración de inteligencia artificial con pipeline de 4 fases de verificación.' },
-  { year: '2026 Q3', title: 'Lanzamiento', desc: 'Apertura al público con 14 módulos, WhatsApp Business y booking system.' },
-  { year: '2026 Q4', title: 'Expansión LATAM', desc: 'Disponible en 21 países de habla hispana con pagos locales y soporte regional.' },
+  { year: '2026 Q3', title: 'Lanzamiento', desc: 'Apertura al público con 10+ módulos, WhatsApp Business, booking online y Automation Studio.' },
+  { year: '2026 Q4', title: 'Expansión', desc: 'Crecimiento en Colombia y preparación para mercados de habla hispana.' },
 ];
 
 export default function About() {
   return (
     <>
       <SEO
-        title="Sobre Nosotros — Tecnologia para tu Negocio"
-        description="Plexify Studio nacio para que peluquerias, salones y spas gestionen todo en un solo lugar. CRM con IA diseñado en Colombia para Latinoamerica."
+        title="Sobre Nosotros — Software para Peluquerias Hecho en Colombia"
+        description="PlexifyStudio nacio para que peluquerias, salones de belleza, barberias y spas gestionen todo en un solo lugar. CRM con inteligencia artificial y WhatsApp Business integrado, disenado en Colombia para Latinoamerica."
         url="/about"
-        keywords="software colombiano para negocios, CRM hecho en latinoamerica, tecnologia para peluquerias, sistema de gestion para salones de belleza"
+        keywords="software colombiano para negocios, CRM hecho en colombia, tecnologia para peluquerias colombia, sistema de gestion para salones de belleza, software para negocios de servicios latinoamerica"
       />
 
       <div className="abt">
@@ -100,7 +100,7 @@ export default function About() {
               <div className="abt__mission-features">
                 <div className="abt__mission-feature">
                   <span>📋</span>
-                  <div><strong>14 módulos</strong><span>Todo conectado</span></div>
+                  <div><strong>10+ módulos</strong><span>Todo conectado</span></div>
                 </div>
                 <div className="abt__mission-feature">
                   <span>🤖</span>

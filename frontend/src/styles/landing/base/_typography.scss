@@ -1,5 +1,5 @@
 // ============================================
-// TYPOGRAPHY — Base typographic styles
+// TYPOGRAPHY — 2026 Bold Variable-Weight System
 // ============================================
 
 @use '../abstracts' as *;
@@ -10,6 +10,8 @@ body {
   font-weight: $font-weight-regular;
   line-height: $line-height-base;
   color: $text-primary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -17,11 +19,12 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: $font-weight-bold;
   line-height: $line-height-tight;
   color: $text-primary;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
-h1 { font-size: $font-size-6xl; font-weight: $font-weight-extrabold; }
-h2 { font-size: $font-size-5xl; font-weight: $font-weight-bold; }
+h1 { font-size: $font-size-6xl; font-weight: $font-weight-black; }
+h2 { font-size: $font-size-5xl; font-weight: $font-weight-extrabold; }
 h3 { font-size: $font-size-4xl; }
 h4 { font-size: $font-size-3xl; }
 h5 { font-size: $font-size-xl; }
@@ -33,11 +36,11 @@ p {
 }
 
 a {
-  color: $color-primary-light;
-  @include transition(color);
+  color: $color-primary;
+  transition: color $transition-fast;
 
   &:hover {
-    color: $color-primary;
+    color: $color-primary-dark;
   }
 }
 
@@ -49,7 +52,7 @@ small {
   font-size: $font-size-sm;
 }
 
-// Responsive typography
+// Responsive typography — larger base sizes for 2026
 @include respond-to('md') {
   h1 { font-size: $font-size-5xl; }
   h2 { font-size: $font-size-4xl; }

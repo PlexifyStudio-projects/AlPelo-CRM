@@ -1,7 +1,7 @@
 @use '../abstracts' as *;
 
 // ============================================
-// FAQ SECTION — VIBRANT DARK THEME
+// FAQ SECTION — 2026 Modernized
 // ============================================
 
 @keyframes faq-slide-down {
@@ -17,12 +17,28 @@
 
 .faq {
   @include section-padding;
-  background-color: $color-bg-primary;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba($color-primary, 0.03) 0%, transparent 50%),
+    $color-bg-primary;
   position: relative;
+
+  // Grain
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.015;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+  }
 
   &__container {
     @include container;
-    max-width: 840px;
+    max-width: 860px;
+    position: relative;
+    z-index: 1;
   }
 
   &__header {
@@ -38,6 +54,8 @@
     @include heading($font-size-4xl);
     margin-bottom: $spacing-md;
     color: $text-primary;
+    font-weight: $font-weight-extrabold;
+    letter-spacing: -0.035em;
 
     @include respond-to('md') {
       font-size: $font-size-3xl;
@@ -70,24 +88,24 @@
   // ---------- Item ----------
   &__item {
     border-bottom: 1px solid $border-color;
-    @include transition(border-color);
     border-left: 3px solid transparent;
     border-radius: 2px 0 0 2px;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease, border-left-color 0.3s ease;
+    transition: border-color 0.35s ease, box-shadow 0.35s ease, border-left-color 0.35s ease, background-color 0.35s ease;
 
     &:first-child {
       border-top: 1px solid $border-color;
     }
 
     &:hover {
-      background-color: rgba(37, 99, 235, 0.02);
+      background-color: rgba($color-primary, 0.015);
     }
 
     &--active {
       border-left: 3px solid $color-primary;
+      background-color: rgba($color-primary, 0.02);
 
       .faq__question {
-        color: $color-primary-light;
+        color: $color-primary;
       }
 
       .faq__icon-vertical {
@@ -96,13 +114,13 @@
       }
 
       .faq__icon {
-        background: rgba($color-primary, 0.15);
-        color: $color-primary-light;
+        background: rgba($color-primary, 0.12);
+        color: $color-primary;
         transform: rotate(90deg);
       }
 
       .faq__answer-inner {
-        animation: faq-slide-down 0.35s ease-out forwards;
+        animation: faq-slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
     }
   }
@@ -114,16 +132,16 @@
     @include flex-between;
     width: 100%;
     padding: $spacing-lg $spacing-xl;
-    min-height: 44px;
+    min-height: 48px;
     font-size: $font-size-base;
     font-weight: $font-weight-semibold;
     color: $text-primary;
     text-align: left;
-    @include transition;
     gap: $spacing-md;
+    transition: color 0.3s ease, background-color 0.3s ease;
 
     &:hover {
-      background: rgba(37, 99, 235, 0.02);
+      background: rgba($color-primary, 0.015);
     }
 
     @include respond-to('sm') {
@@ -133,7 +151,7 @@
 
     @include respond-to('xs') {
       padding: $spacing-sm $spacing-md;
-      min-height: 48px; // maintain touch target at xs
+      min-height: 48px;
     }
   }
 
@@ -146,26 +164,26 @@
   &__icon {
     flex-shrink: 0;
     @include flex-center;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: $border-radius-full;
-    background-color: rgba(15, 23, 42, 0.06);
+    background-color: rgba($color-primary, 0.05);
     color: $text-secondary;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 
     .faq__item--active & {
-      background: rgba($color-primary, 0.15);
-      color: $color-primary-light;
+      background: rgba($color-primary, 0.12);
+      color: $color-primary;
       transform: rotate(90deg);
     }
   }
 
   &__icon-svg {
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   &__icon-vertical {
-    transition: opacity 0.35s ease, transform 0.35s ease;
+    transition: opacity 0.4s ease, transform 0.4s ease;
     transform-origin: center;
 
     .faq__item--active & {
@@ -178,11 +196,11 @@
   &__answer {
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: max-height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   &__answer--open {
-    max-height: 500px; // allow longer answers on mobile without clipping
+    max-height: 500px;
   }
 
   &__answer-inner {
@@ -190,7 +208,7 @@
     opacity: 0;
 
     .faq__item--active & {
-      animation: faq-slide-down 0.35s ease-out 0.1s forwards;
+      animation: faq-slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
     }
 
     @include respond-to('sm') {

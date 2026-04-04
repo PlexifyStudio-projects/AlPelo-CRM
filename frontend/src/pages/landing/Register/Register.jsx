@@ -452,10 +452,10 @@ export default function Register() {
   return (
     <>
       <SEO
-        title="Registrar mi Negocio — Cuenta Gratis"
-        description="Crea tu cuenta en Plexify Studio en minutos. Configura agenda online, WhatsApp y CRM para tu peluqueria, salon de belleza, barberia o spa. Sin tarjeta de credito."
+        title="Registrar su Negocio — Cuenta Gratis"
+        description="Cree su cuenta en PlexifyStudio en minutos. Configure agenda online, WhatsApp Business y CRM para su peluqueria, salon de belleza, barberia o spa en Colombia. Sin tarjeta de credito."
         url="/register"
-        keywords="registrar negocio software peluqueria, crear cuenta CRM salon, registro sistema de citas gratis"
+        keywords="registrar negocio software peluqueria colombia, crear cuenta CRM salon, registro sistema de citas gratis"
         noindex
       />
 

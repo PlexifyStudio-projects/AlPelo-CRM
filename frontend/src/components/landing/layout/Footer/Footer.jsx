@@ -9,11 +9,11 @@ export default function Footer() {
       <div className="footer__cta-strip">
         <div className="footer__cta-inner">
           <div>
-            <h3 className="footer__cta-title">¿Listo para organizar su <span className="footer__cta-highlight">negocio</span>?</h3>
-            <p className="footer__cta-desc">Cree su cuenta en 5 minutos y vea todo funcionando.</p>
+            <h3 className="footer__cta-title">¿Listo para hacer crecer su <span className="footer__cta-highlight">negocio</span>?</h3>
+            <p className="footer__cta-desc">Cree su cuenta en 5 minutos. Sin tarjeta de credito. CRM, citas, WhatsApp e IA desde el primer dia.</p>
           </div>
           <Link className="footer__cta-btn" to="/register">
-            Crear cuenta gratis
+            Empiece gratis hoy
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </Link>
         </div>
@@ -35,7 +35,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="footer__description">
-              CRM con inteligencia artificial que gestiona clientes, automatiza WhatsApp y le ayuda a retener más clientes.
+              Software para peluquerias y negocios de servicios en Colombia. CRM con inteligencia artificial, sistema de citas, WhatsApp Business integrado y automatizaciones.
             </p>
             <div className="footer__social">
               <a href="https://wa.me/573151573329" className="footer__social-link" aria-label="WhatsApp" target="_blank" rel="noopener noreferrer">
@@ -77,6 +77,7 @@ export default function Footer() {
               <li><Link to="/producto/equipo" className="footer__link">Equipo</Link></li>
               <li><Link to="/automatizaciones" className="footer__link">Automatizaciones</Link></li>
               <li><Link to="/finanzas" className="footer__link">Finanzas</Link></li>
+              <li><Link to="/producto/lealtad" className="footer__link">Programa de Lealtad</Link></li>
             </ul>
           </div>
 

@@ -39,10 +39,10 @@ export default function Contact() {
   return (
     <>
       <SEO
-        title="Contacto — Habla con Nuestro Equipo"
-        description="Escribenos y resolvemos tus dudas sobre Plexify Studio. Soporte en español para peluquerias, salones de belleza, barberias y spas. Respuesta en menos de 24 horas."
+        title="Contacto — Soporte para Software de Peluquerias y Negocios"
+        description="Escribanos y resolvemos sus dudas sobre PlexifyStudio. Soporte en espanol para peluquerias, salones de belleza, barberias y spas en Colombia. Respuesta en menos de 24 horas."
         url="/contact"
-        keywords="contacto plexify studio, soporte software peluqueria, atencion al cliente CRM salon, ayuda sistema de citas"
+        keywords="contacto plexify studio, soporte software peluqueria colombia, atencion al cliente CRM salon, ayuda sistema de citas, software para negocios de servicios"
       />
 
       <section className="page-hero" aria-label="Contáctanos">

@@ -41,10 +41,10 @@ export default function LinaIA() {
   return (
     <>
       <SEO
-        title="Lina IA — Asistente Virtual para tu Negocio"
-        description="Lina responde WhatsApp, agenda citas y analiza tu negocio 24/7. Asistente con inteligencia artificial para peluquerias, salones de belleza, barberias y spas."
+        title="Lina IA — Asistente Virtual con 48 Acciones para su Negocio"
+        description="Lina responde WhatsApp Business, agenda citas, gestiona clientes y analiza su negocio 24/7. Asistente con IA y 48 acciones para negocios de servicios."
         url="/lina-ia"
-        keywords="asistente virtual para negocios, chatbot WhatsApp peluqueria, inteligencia artificial salon de belleza, bot de citas automatico, IA para barberia"
+        keywords="asistente virtual para negocios, chatbot WhatsApp negocio, inteligencia artificial CRM, bot de citas automatico, crm con whatsapp integrado, IA para negocios de servicios"
       />
 
       <div className="lina" ref={ref}>
@@ -68,7 +68,7 @@ export default function LinaIA() {
 
               <h1 className="lina__hero-title">
                 Asistente Virtual con IA para{' '}
-                <span className="lina__hero-title--glow">Peluquerías y Salones</span>
+                <span className="lina__hero-title--glow">su Negocio</span>
               </h1>
 
               <p className="lina__hero-sub">
@@ -85,7 +85,7 @@ export default function LinaIA() {
               </div>
 
               <div className="lina__hero-stats">
-                <div><strong>29+</strong><span>Acciones</span></div>
+                <div><strong>48</strong><span>Acciones</span></div>
                 <div><strong>4</strong><span>Fases</span></div>
                 <div><strong>24/7</strong><span>Activa</span></div>
                 <div><strong>4</strong><span>Validaciones</span></div>
@@ -145,7 +145,7 @@ export default function LinaIA() {
           <div className="lina__chat-inner">
             <div className="lina__chat-text">
               <h2 className="lina__section-title">
-                Así habla <span className="lina__glow">Lina</span> con tus clientes
+                Asi habla <span className="lina__glow">Lina</span> con sus clientes por WhatsApp
               </h2>
               <p className="lina__section-sub">
                 Natural, precisa, verificada. Sus clientes no notan que es IA.
@@ -173,7 +173,7 @@ export default function LinaIA() {
                   <div key={i} className={`lina__chat-msg lina__chat-msg--${m.from}`}>
                     {m.from === 'lina' && <span className="lina__chat-msg-badge">🤖 Lina IA</span>}
                     <p>{m.msg}</p>
-                    <span className="lina__chat-msg-time">{`${10 + i}:${i * 2}${i} a.m.`} {m.from === 'lina' ? '✓✓' : ''}</span>
+                    <span className="lina__chat-msg-time">{['10:00', '10:03', '10:04', '10:05', '10:06'][i] || '10:00'} a.m. {m.from === 'lina' ? '✓✓' : ''}</span>
                   </div>
                 ))}
               </div>
@@ -187,8 +187,8 @@ export default function LinaIA() {
             <div className="lina__trust-grid">
               <div className="lina__trust-card">
                 <span>🔒</span>
-                <h3>Datos Encriptados</h3>
-                <p>Comunicación cifrada de extremo a extremo</p>
+                <h3>Datos Protegidos</h3>
+                <p>Comunicación cifrada con SSL y aislamiento por negocio</p>
               </div>
               <div className="lina__trust-card">
                 <span>✅</span>

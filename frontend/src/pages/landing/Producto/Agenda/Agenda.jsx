@@ -40,10 +40,10 @@ export default function Agenda() {
   return (
     <>
       <SEO
-        title="Agenda Online y Sistema de Citas"
-        description="Calendario visual con recordatorios automaticos por WhatsApp, gestion de no-shows y reservas con IA. Organiza las citas de tu peluqueria, salon o spa facilmente."
+        title="Sistema de Citas y Agenda Online para Peluquerias en Colombia"
+        description="Sistema de citas con calendario visual, recordatorios automaticos por WhatsApp, deteccion de conflictos y reservas con IA. Agenda online para peluquerias, salones de belleza, barberias y spas en Colombia."
         url="/producto/agenda"
-        keywords="sistema de citas para salon, agenda online barberia, como organizar citas de mi peluqueria, calendario de citas para spa, software de reservas online"
+        keywords="sistema de citas colombia, sistema de agenda online, agenda online peluqueria, calendario de citas para negocios, software de reservas online colombia, sistema de citas para salon"
         breadcrumbs={[
           { name: 'Inicio', url: '/' },
           { name: 'Producto', url: '/features' },
@@ -58,7 +58,7 @@ export default function Agenda() {
             <span className="p-agenda__badge">📅 Módulo Agenda</span>
             <h1 className="p-agenda__title">
               Agenda Online y Sistema de Citas<br />
-              <span className="p-agenda__title--accent">para Peluquerías y Barberías</span>
+              <span className="p-agenda__title--accent">para su Negocio</span>
             </h1>
             <p className="p-agenda__subtitle">
               Calendario visual semanal, recordatorios automáticos por WhatsApp,
@@ -113,7 +113,7 @@ export default function Agenda() {
         <div className="p-agenda__section-container">
           <div className="p-agenda__section-header">
             <span className="p-agenda__section-badge">⚡ Funcionalidades</span>
-            <h2>Todo lo que necesitas para gestionar tu agenda</h2>
+            <h2>Todo lo que necesita para gestionar su agenda de citas</h2>
           </div>
           <div className="p-agenda__features-grid">
             {FEATURES.map((f) => (
@@ -405,8 +405,8 @@ export default function Agenda() {
             </div>
             <div>
               <span className="p-agenda__section-badge">🤖 IA Inteligente</span>
-              <h2>Lina IA optimiza tu agenda por ti</h2>
-              <p>La inteligencia artificial analiza patrones de tus clientes, la carga de cada profesional y los horarios vacíos para sugerirte la agenda perfecta. Menos huecos, más ingresos.</p>
+              <h2>Lina IA optimiza su agenda automaticamente</h2>
+              <p>La inteligencia artificial analiza patrones de sus clientes, la carga de cada profesional y los horarios vacios para sugerirle la agenda perfecta. Menos huecos, mas ingresos.</p>
               <ul className="p-agenda__check-list">
                 <li>✅ Sugiere horarios basados en preferencias del cliente</li>
                 <li>✅ Detecta espacios sin utilizar y propone promociones</li>

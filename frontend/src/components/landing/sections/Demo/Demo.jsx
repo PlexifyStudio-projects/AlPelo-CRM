@@ -16,7 +16,7 @@ const businessTypes = [
 ];
 
 const teamSizes = [
-  { value: '', label: '¿Cuántos profesionales tienes?' },
+  { value: '', label: '¿Cuantos profesionales tiene?' },
   { value: '1-3', label: '1-3 profesionales' },
   { value: '4-10', label: '4-10 profesionales' },
   { value: '11-25', label: '11-25 profesionales' },
@@ -46,7 +46,7 @@ const benefits = [
         <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
       </svg>
     ),
-    text: 'Te mostramos con datos de tu negocio',
+    text: 'Le mostramos con datos de su negocio',
   },
 ];
 
@@ -87,7 +87,7 @@ export default function Demo() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert('¡Gracias! Nos pondremos en contacto contigo pronto para agendar tu demo.');
+    alert('Gracias. Nos pondremos en contacto con usted pronto para agendar su demo.');
   };
 
   return (
@@ -98,10 +98,10 @@ export default function Demo() {
     >
       <div className="demo__container">
         <header className="demo__header">
-          <h2 className="demo__title">Agenda tu demo personalizada</h2>
+          <h2 className="demo__title">Agende su demo personalizada</h2>
           <p className="demo__subtitle">
             Uno de nuestros especialistas te mostrará cómo PlexifyStudio puede
-            transformar tu negocio en 30 minutos.
+            transformar su negocio en 30 minutos.
           </p>
         </header>
 
@@ -146,7 +146,7 @@ export default function Demo() {
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
               <span className="demo__trust-text">
-                Tu información está segura
+                Su informacion esta segura
               </span>
             </div>
           </div>
@@ -169,7 +169,7 @@ export default function Demo() {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                placeholder="Tu nombre completo"
+                placeholder="Su nombre completo"
               />
             </div>
 
@@ -243,7 +243,7 @@ export default function Demo() {
 
             <div className="demo__field">
               <label className="demo__label" htmlFor="demo-team-size">
-                ¿Cuántos profesionales tienes?
+                ¿Cuantos profesionales tiene?
               </label>
               <select
                 className="demo__select"
@@ -273,7 +273,7 @@ export default function Demo() {
                 value={formData.message}
                 onChange={handleChange}
                 rows="3"
-                placeholder="Cuéntanos sobre tus necesidades..."
+                placeholder="Cuentenos sobre sus necesidades..."
               />
             </div>
 

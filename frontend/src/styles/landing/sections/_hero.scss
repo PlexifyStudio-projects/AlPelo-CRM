@@ -1,75 +1,128 @@
 @use '../abstracts' as *;
 
-@keyframes hero-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes hero-image-in { from { opacity: 0; transform: translateY(30px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@keyframes hero-lina-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes hero-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-@keyframes hero-blob { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30px, -20px) scale(1.08); } }
+// ============================================
+// HERO — 2026 Modernized with Glassmorphism
+// ============================================
+
+@keyframes hero-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-image-in {
+  from { opacity: 0; transform: translateY(32px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes hero-lina-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes hero-blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -30px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes hero-grain {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5%, -10%); }
+  30% { transform: translate(3%, -15%); }
+  50% { transform: translate(12%, 9%); }
+  70% { transform: translate(9%, 4%); }
+  90% { transform: translate(-1%, 7%); }
+}
 
 .hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, #ffffff 60%, #fef7f0 85%, #fdf2e9 100%);
-  padding: calc(#{$header-height} + 48px) 0 48px;
+  // Mesh gradient background with warm-to-cool transition
+  background:
+    radial-gradient(ellipse at 25% 20%, rgba($color-primary, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 80%, rgba($color-primary-light, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba($color-accent, 0.02) 0%, transparent 60%),
+    linear-gradient(180deg, #ffffff 0%, #ffffff 50%, $color-bg-secondary 85%, #e8f2ec 100%);
+  padding: calc(#{$header-height} + 64px) 0 64px;
 
-  @include respond-to('md') { padding: calc(#{$header-height} + 32px) 0 32px; }
-  @include respond-to('sm') { padding: calc(#{$header-height} + 24px) 0 24px; }
-  @include respond-to('xs') { padding: calc(#{$header-height} + 16px) 0 16px; }
+  @include respond-to('md') { padding: calc(#{$header-height} + 40px) 0 40px; }
+  @include respond-to('sm') { padding: calc(#{$header-height} + 28px) 0 28px; }
+  @include respond-to('xs') { padding: calc(#{$header-height} + 20px) 0 20px; }
 
-  // Ambient blobs
+  // Grain texture overlay
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+    animation: hero-grain 8s steps(10) infinite;
+  }
+
+  // Ambient blobs — gradient mesh feel
   &__ambient {
     position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
   }
 
   &__ambient-blob {
-    position: absolute; border-radius: 50%; filter: blur(70px); will-change: transform;
+    position: absolute; border-radius: 50%; filter: blur(80px); will-change: transform;
 
     &--1 {
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba($color-primary, 0.15) 0%, transparent 70%);
-      top: -20%; right: 10%;
-      animation: hero-blob 18s ease-in-out infinite;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba($color-primary, 0.12) 0%, transparent 70%);
+      top: -25%; right: 5%;
+      animation: hero-blob 20s ease-in-out infinite;
 
-      @include respond-to('sm') { width: 350px; height: 350px; }
+      @include respond-to('sm') { width: 400px; height: 400px; }
     }
 
     &--2 {
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, rgba($color-secondary, 0.1) 0%, transparent 70%);
-      bottom: -15%; left: -5%;
-      animation: hero-blob 22s ease-in-out infinite reverse;
+      width: 550px; height: 550px;
+      background: radial-gradient(circle, rgba($color-primary-light, 0.08) 0%, transparent 70%);
+      bottom: -20%; left: -8%;
+      animation: hero-blob 25s ease-in-out infinite reverse;
 
-      @include respond-to('sm') { width: 280px; height: 280px; }
+      @include respond-to('sm') { width: 300px; height: 300px; }
     }
   }
 
-  // Subtle grid pattern
+  // Subtle grid pattern with mask
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(circle, rgba($color-primary, 0.04) 1px, transparent 1px);
-    background-size: 32px 32px;
+    background-image: radial-gradient(circle, rgba($color-primary, 0.035) 1px, transparent 1px);
+    background-size: 40px 40px;
     pointer-events: none;
     z-index: 0;
-    mask-image: radial-gradient(ellipse 60% 50% at 70% 40%, rgba(0,0,0,0.5) 0%, transparent 70%);
-    -webkit-mask-image: radial-gradient(ellipse 60% 50% at 70% 40%, rgba(0,0,0,0.5) 0%, transparent 70%);
+    mask-image: radial-gradient(ellipse 60% 55% at 70% 40%, rgba(0,0,0,0.4) 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse 60% 55% at 70% 40%, rgba(0,0,0,0.4) 0%, transparent 70%);
   }
 
-  // ========== CONTAINER — Split layout ==========
+  // ========== CONTAINER ==========
   &__container {
     @include container;
     display: grid;
     grid-template-columns: 1fr 1.2fr;
-    gap: 40px;
+    gap: 56px;
     align-items: center;
     position: relative;
     z-index: 1;
 
-    @include respond-to('lg') { gap: 40px; }
-    @include respond-to('md') { grid-template-columns: 1fr; gap: 48px; text-align: center; }
-    @include respond-to('sm') { gap: 32px; }
-    @include respond-to('xs') { gap: 24px; }
+    @include respond-to('lg') { gap: 44px; }
+    @include respond-to('md') { grid-template-columns: 1fr; gap: 52px; text-align: center; }
+    @include respond-to('sm') { gap: 36px; }
+    @include respond-to('xs') { gap: 28px; }
   }
 
   // ========== LEFT — Text ==========
@@ -81,35 +134,45 @@
   }
 
   &__badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 6px 16px 6px 12px;
-    border-radius: 100px;
-    background: rgba($color-primary, 0.08);
-    border: 1px solid rgba($color-primary, 0.18);
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 20px 8px 14px;
+    border-radius: $border-radius-full;
+    background: rgba($color-primary, 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba($color-primary, 0.12);
     color: $color-primary;
-    font-size: 0.8rem; font-weight: 500;
-    margin-bottom: 24px;
+    font-size: 0.8rem; font-weight: $font-weight-semibold;
+    margin-bottom: 28px;
     width: fit-content;
     opacity: 0;
-    .hero--visible & { animation: hero-in 0.6s ease forwards; }
+    transition: transform $transition-base, box-shadow $transition-base;
 
-    @include respond-to('sm') { font-size: 0.7rem; padding: 5px 12px 5px 10px; margin-bottom: 16px; }
+    .hero--visible & { animation: hero-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba($color-primary, 0.1);
+    }
+
+    @include respond-to('sm') { font-size: 0.7rem; padding: 6px 14px 6px 12px; margin-bottom: 20px; }
   }
 
   &__badge-dot {
-    width: 6px; height: 6px; border-radius: 50%;
+    width: 7px; height: 7px; border-radius: 50%;
     background: $color-primary;
-    box-shadow: 0 0 8px rgba($color-primary, 0.6);
+    box-shadow: 0 0 10px rgba($color-primary, 0.5), 0 0 20px rgba($color-primary, 0.2);
+    animation: hero-float 2s ease-in-out infinite;
   }
 
   &__title {
     font-family: $font-family-heading;
-    font-size: 4.2rem; font-weight: 800;
-    letter-spacing: -0.035em; line-height: 1.08;
+    font-size: $font-size-6xl; font-weight: $font-weight-black;
+    letter-spacing: -0.04em; line-height: $line-height-tight;
     color: $text-primary;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     opacity: 0;
-    .hero--visible & { animation: hero-in 0.7s ease forwards 0.1s; }
+    .hero--visible & { animation: hero-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.1s; }
 
     &--highlight {
       background: $gradient-text;
@@ -117,64 +180,91 @@
       background-clip: text;
     }
 
-    @include respond-to('lg') { font-size: 3.2rem; }
-    @include respond-to('md') { font-size: 2.8rem; }
-    @include respond-to('sm') { font-size: 2.2rem; letter-spacing: -0.03em; }
-    @include respond-to('xs') { font-size: 1.8rem; }
+    @include respond-to('lg') { font-size: $font-size-5xl; }
+    @include respond-to('md') { font-size: $font-size-4xl; }
+    @include respond-to('sm') { font-size: $font-size-3xl; letter-spacing: -0.035em; }
+    @include respond-to('xs') { font-size: $font-size-2xl; }
   }
 
   &__subtitle {
-    font-size: 1.15rem; color: $text-secondary;
-    line-height: 1.7; max-width: 480px;
-    margin-bottom: 36px;
+    font-size: $font-size-lg; color: $text-secondary;
+    line-height: $line-height-relaxed; max-width: 500px;
+    margin-bottom: 40px;
     opacity: 0;
-    .hero--visible & { animation: hero-in 0.7s ease forwards 0.2s; }
-    @include respond-to('md') { max-width: 560px; margin-inline: auto; }
-    @include respond-to('sm') { font-size: 1rem; margin-bottom: 24px; }
-    @include respond-to('xs') { font-size: 0.925rem; }
+    .hero--visible & { animation: hero-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.2s; }
+    @include respond-to('md') { max-width: 580px; margin-inline: auto; }
+    @include respond-to('sm') { font-size: $font-size-base; margin-bottom: 28px; }
+    @include respond-to('xs') { font-size: $font-size-sm; }
   }
 
   &__actions {
-    display: flex; align-items: center; gap: 14px;
-    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 28px;
     opacity: 0;
-    .hero--visible & { animation: hero-in 0.7s ease forwards 0.3s; }
+    .hero--visible & { animation: hero-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.3s; }
     @include respond-to('sm') { flex-direction: column; width: 100%; }
   }
 
   &__cta {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-family: $font-family-primary; font-weight: 600; font-size: 1rem;
-    border-radius: 12px; padding: 16px 32px;
-    min-height: 52px;
-    transition: all 0.3s ease; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: $font-family-primary; font-weight: $font-weight-semibold; font-size: $font-size-base;
+    border-radius: $border-radius-lg; padding: 18px 36px;
+    min-height: 56px;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1); text-decoration: none;
+    position: relative; overflow: hidden;
+
+    // Shimmer on hover
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+      transition: left 0.6s ease;
+    }
+
+    &:hover::after { left: 100%; }
 
     &--primary {
-      background: linear-gradient(135deg, $color-primary, $color-primary-light);
-      color: white; box-shadow: 0 4px 20px rgba($color-primary, 0.35);
-      &:hover { box-shadow: 0 8px 30px rgba($color-primary, 0.5); transform: translateY(-2px); }
-      svg { transition: transform 0.3s ease; }
-      &:hover svg { transform: translateX(4px); }
+      background: $gradient-primary;
+      color: white;
+      box-shadow: 0 4px 24px rgba($color-primary, 0.3), 0 1px 3px rgba($color-primary, 0.2);
+
+      &:hover {
+        box-shadow: 0 8px 36px rgba($color-primary, 0.45), 0 2px 6px rgba($color-primary, 0.2);
+        transform: translateY(-3px);
+      }
+
+      svg { transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+      &:hover svg { transform: translateX(5px); }
     }
 
     &--outline {
       color: $text-secondary;
       border: 1px solid $glass-border;
       background: $glass-bg;
-      backdrop-filter: blur(12px);
-      &:hover { color: $text-primary; border-color: rgba($color-primary, 0.15); background: $glass-bg-hover; }
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+
+      &:hover {
+        color: $color-primary;
+        border-color: rgba($color-primary, 0.2);
+        background: $glass-bg-hover;
+        transform: translateY(-2px);
+        box-shadow: $shadow-float;
+      }
     }
 
     @include respond-to('sm') { width: 100%; justify-content: center; }
   }
 
   &__proof {
-    display: flex; align-items: center; gap: 16px;
-    font-size: 0.8rem; color: $text-muted;
+    display: flex; align-items: center; gap: 18px;
+    font-size: 0.82rem; color: $text-muted;
     opacity: 0;
-    .hero--visible & { animation: hero-in 0.6s ease forwards 0.4s; }
-    @include respond-to('sm') { flex-wrap: wrap; justify-content: center; gap: 10px; font-size: 0.75rem; }
-    @include respond-to('xs') { font-size: 0.7rem; gap: 8px; flex-direction: column; align-items: center; text-align: center; }
+    .hero--visible & { animation: hero-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.45s; }
+    @include respond-to('sm') { flex-wrap: wrap; justify-content: center; gap: 12px; font-size: 0.78rem; }
+    @include respond-to('xs') { font-size: 0.72rem; gap: 8px; flex-direction: column; align-items: center; text-align: center; }
   }
 
   // ========== RIGHT — Dashboard Preview ==========
@@ -182,69 +272,77 @@
     position: relative;
     opacity: 0;
     overflow: hidden;
-    border-radius: 16px;
-    max-height: 480px;
+    border-radius: $border-radius-2xl;
+    max-height: 500px;
+
     .hero--visible & {
       animation:
-        hero-image-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.4s,
-        hero-float 6s ease-in-out infinite 1.3s;
+        hero-image-in 1s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.4s,
+        hero-float 7s ease-in-out infinite 1.4s;
     }
 
-    // ── Floating WhatsApp labels ──
+    // Floating labels
     .hero__float-label {
       position: absolute;
       z-index: 10;
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 14px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba($color-primary, 0.1);
-      border-radius: 10px;
+      gap: 10px;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba($color-primary, 0.08);
+      border-radius: $border-radius-lg;
       font-size: 11px;
       color: $text-secondary;
       white-space: nowrap;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      box-shadow: $shadow-float;
       opacity: 0;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
 
-      b { color: $text-primary; font-weight: 600; }
+      b { color: $text-primary; font-weight: $font-weight-bold; }
+
+      &:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: $shadow-float-hover;
+      }
 
       .hero--visible & {
-        animation: hero-in 0.6s ease forwards;
+        animation: hero-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
       }
 
       &--1 {
-        top: -12px;
-        right: 20%;
-        .hero--visible & { animation-delay: 1.2s; }
+        top: -14px;
+        right: 18%;
+        .hero--visible & { animation-delay: 1.3s; }
       }
 
       &--2 {
         bottom: 15%;
-        left: -10px;
-        .hero--visible & { animation-delay: 1.6s; }
+        left: -12px;
+        .hero--visible & { animation-delay: 1.7s; }
       }
 
       &--3 {
-        bottom: -8px;
-        right: 10%;
-        .hero--visible & { animation-delay: 2.0s; }
+        bottom: -10px;
+        right: 8%;
+        .hero--visible & { animation-delay: 2.1s; }
       }
 
       @include respond-to('md') { display: none; }
     }
 
     .hero__float-label-icon {
-      font-size: 14px;
+      font-size: 15px;
       flex-shrink: 0;
     }
 
-    // Scale the inner preview down so it looks like a real app screenshot
+    // Scale the inner preview
     .features__preview-frame {
       transform: scale(0.50);
       transform-origin: top left;
-      width: 200%; // 1/0.50 to fill the container
+      width: 200%;
       transition: none;
       pointer-events: none;
 
@@ -255,7 +353,7 @@
     }
 
     @include respond-to('lg') {
-      max-height: 420px;
+      max-height: 440px;
 
       .features__preview-frame {
         transform: scale(0.48);
@@ -266,7 +364,7 @@
     @include respond-to('md') {
       width: 100%;
       max-width: 100%;
-      max-height: 400px;
+      max-height: 420px;
       margin: 0 auto;
 
       .features__preview-frame {
@@ -276,7 +374,7 @@
     }
 
     @include respond-to('sm') {
-      max-height: 320px;
+      max-height: 340px;
 
       .features__preview-frame {
         transform: scale(0.45);
@@ -285,7 +383,7 @@
     }
 
     @include respond-to('xs') {
-      max-height: 260px;
+      max-height: 270px;
 
       .features__preview-frame {
         transform: scale(0.38);
@@ -296,8 +394,8 @@
 
   &__image-glow {
     position: absolute;
-    inset: -60px;
-    background: radial-gradient(ellipse, rgba($color-primary, 0.08) 0%, transparent 65%);
+    inset: -80px;
+    background: radial-gradient(ellipse, rgba($color-primary, 0.07) 0%, transparent 65%);
     pointer-events: none;
     z-index: 0;
   }
@@ -305,16 +403,14 @@
   .features__preview-frame {
     position: relative;
     z-index: 1;
-    border-radius: 20px;
+    border-radius: $border-radius-2xl;
     overflow: hidden;
     box-shadow:
-      0 30px 80px rgba(0, 0, 0, 0.1),
-      0 0 0 1px rgba($color-primary, 0.08);
-    // sin hover effects
+      0 32px 80px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba($color-primary, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
 
-    // No hover effect — keep it clean
-
-    @include respond-to('md') { border-radius: 16px; }
-    @include respond-to('sm') { border-radius: 12px; }
+    @include respond-to('md') { border-radius: $border-radius-xl; }
+    @include respond-to('sm') { border-radius: $border-radius-lg; }
   }
 }

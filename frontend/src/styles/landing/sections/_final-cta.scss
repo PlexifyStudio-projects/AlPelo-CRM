@@ -1,25 +1,42 @@
 @use '../abstracts' as *;
 
 // ============================================
-// FINAL CTA SECTION — VIBRANT DARK THEME
+// FINAL CTA SECTION — 2026 Modernized
 // ============================================
 
 .final-cta {
   @include section-padding;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, #f0f7ff 30%, #e8f1fd 60%, #f0f7ff 100%);
+  // Mesh gradient background
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba($color-primary, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba($color-primary-light, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba($color-accent, 0.02) 0%, transparent 60%),
+    linear-gradient(180deg, #ffffff 0%, $color-bg-secondary 30%, $color-bg-secondary 70%, #ffffff 100%);
 
-  // Vibrant gradient burst behind content
+  // Grain texture
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+  }
+
+  // Large gradient glow behind content
   &::before {
     content: '';
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 120%;
-    height: 120%;
-    background: radial-gradient(ellipse at center, rgba(14, 165, 233, 0.08) 0%, rgba(37, 99, 235, 0.06) 30%, transparent 60%);
+    width: 140%;
+    height: 140%;
+    background: radial-gradient(ellipse at center, rgba($color-primary, 0.06) 0%, rgba($color-primary-light, 0.04) 25%, transparent 55%);
     pointer-events: none;
   }
 
@@ -43,78 +60,81 @@
   &__shape {
     position: absolute;
     border-radius: 50%;
-    opacity: 0.15;
+    opacity: 0.12;
+    filter: blur(60px);
 
     &--1 {
-      width: 400px;
-      height: 400px;
+      width: 450px;
+      height: 450px;
       background: radial-gradient(circle, $color-primary, transparent 70%);
-      top: -100px;
-      left: -100px;
-      animation: final-cta-float 8s ease-in-out infinite;
+      top: -120px;
+      left: -120px;
+      animation: final-cta-float 10s ease-in-out infinite;
     }
 
     &--2 {
-      width: 300px;
-      height: 300px;
-      background: radial-gradient(circle, $color-secondary, transparent 70%);
-      bottom: -80px;
-      right: -60px;
-      animation: final-cta-float 10s ease-in-out infinite reverse;
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, $color-primary-light, transparent 70%);
+      bottom: -100px;
+      right: -80px;
+      animation: final-cta-float 12s ease-in-out infinite reverse;
     }
   }
 
   &__dots {
     position: absolute;
-    width: 120px;
-    height: 120px;
-    opacity: 0.06;
+    width: 140px;
+    height: 140px;
+    opacity: 0.04;
     background-image: radial-gradient(
       circle,
-      rgba(15, 23, 42, 0.15) 1.5px,
+      rgba($color-primary, 0.2) 1.5px,
       transparent 1.5px
     );
-    background-size: 16px 16px;
+    background-size: 18px 18px;
 
     &--1 {
-      top: 15%;
-      right: 10%;
+      top: 12%;
+      right: 8%;
     }
 
     &--2 {
-      bottom: 20%;
-      left: 8%;
+      bottom: 18%;
+      left: 6%;
     }
   }
 
   &__ring {
     position: absolute;
     border-radius: 50%;
-    border: 2px solid rgba(15, 23, 42, 0.06);
+    border: 1.5px solid rgba($color-primary, 0.06);
 
     &--1 {
-      width: 200px;
-      height: 200px;
-      top: 10%;
-      left: 20%;
-      animation: final-cta-spin 20s linear infinite;
+      width: 220px;
+      height: 220px;
+      top: 8%;
+      left: 18%;
+      animation: final-cta-spin 24s linear infinite;
     }
 
     &--2 {
-      width: 140px;
-      height: 140px;
-      bottom: 15%;
-      right: 20%;
-      animation: final-cta-spin 15s linear infinite reverse;
+      width: 160px;
+      height: 160px;
+      bottom: 12%;
+      right: 18%;
+      animation: final-cta-spin 18s linear infinite reverse;
     }
   }
 
   // ---------- Content ----------
   &__title {
     @include heading($font-size-4xl);
-    margin-bottom: $spacing-md;
-    max-width: 680px;
+    margin-bottom: $spacing-lg;
+    max-width: 720px;
     color: $text-primary;
+    font-weight: $font-weight-extrabold;
+    letter-spacing: -0.035em;
 
     @include respond-to('md') {
       font-size: $font-size-3xl;
@@ -132,7 +152,7 @@
   &__subtitle {
     @include body-text($font-size-lg);
     color: $text-secondary;
-    max-width: 560px;
+    max-width: 580px;
     margin-bottom: $spacing-2xl;
 
     @include respond-to('sm') {
@@ -150,7 +170,7 @@
     @include respond-to('sm') {
       flex-direction: column;
       width: 100%;
-      max-width: 320px;
+      max-width: 360px;
     }
 
     @include respond-to('xs') {
@@ -162,13 +182,27 @@
     @include button-reset;
     @include focus-visible;
     padding: $spacing-md $spacing-2xl;
-    min-height: 48px;
+    min-height: 52px;
     font-size: $font-size-base;
     font-weight: $font-weight-semibold;
     border-radius: $border-radius-lg;
-    @include transition;
     cursor: pointer;
     white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+    // Shimmer effect
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.6s ease;
+    }
+
+    &:hover::after { left: 100%; }
 
     @include respond-to('sm') {
       width: 100%;
@@ -179,23 +213,26 @@
     &--primary {
       color: $color-white;
       background: $gradient-primary;
-      box-shadow: 0 4px 14px rgba($color-primary, 0.4);
+      box-shadow: 0 4px 20px rgba($color-primary, 0.3), 0 2px 6px rgba($color-primary, 0.15);
 
       &:hover {
-        box-shadow: 0 8px 24px rgba($color-primary, 0.5);
-        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba($color-primary, 0.4), 0 4px 10px rgba($color-primary, 0.2);
+        transform: translateY(-3px);
       }
     }
 
     &--outline {
-      color: $color-primary-light;
-      background-color: transparent;
-      border: 2px solid rgba($color-primary, 0.4);
+      color: $color-primary;
+      background-color: rgba(#ffffff, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 2px solid rgba($color-primary, 0.2);
 
       &:hover {
-        background-color: rgba($color-primary, 0.1);
-        border-color: $color-primary;
-        transform: translateY(-2px);
+        background-color: rgba(#ffffff, 0.95);
+        border-color: rgba($color-primary, 0.35);
+        transform: translateY(-3px);
+        box-shadow: $shadow-float;
       }
     }
   }
@@ -213,14 +250,14 @@
   }
 
   &__link {
-    color: $color-primary-light;
+    color: $color-primary;
     text-decoration: none;
     font-weight: $font-weight-medium;
-    @include transition(color);
-    word-break: break-all; // ensure long emails wrap on narrow screens
+    transition: color $transition-fast;
+    word-break: break-all;
 
     &:hover {
-      color: $color-primary;
+      color: $color-primary-dark;
       text-decoration: underline;
     }
   }
@@ -233,7 +270,7 @@
     transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateY(-20px) scale(1.05);
+    transform: translateY(-24px) scale(1.06);
   }
 }
 

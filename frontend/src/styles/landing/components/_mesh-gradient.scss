@@ -1,66 +1,71 @@
+// ============================================
+// MESH GRADIENT — 2026 Ambient Background
+// ============================================
+
 .mesh-gradient {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background: linear-gradient(180deg, #ffffff 0%, #f0f7ff 50%, #ffffff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f0f7f3 50%, #ffffff 100%);
 
   &__blob {
     position: absolute;
     border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.12;
+    filter: blur(90px);
+    opacity: 0.1;
     will-change: transform;
-    animation: mesh-float 20s ease-in-out infinite;
+    animation: mesh-float 22s ease-in-out infinite;
 
     &--1 {
-      width: 600px;
-      height: 600px;
-      background: #2563eb;
+      width: 650px;
+      height: 650px;
+      background: #2D5A3D;
       top: -10%;
       left: -10%;
       animation-delay: 0s;
     }
 
     &--2 {
-      width: 500px;
-      height: 500px;
-      background: #0ea5e9;
+      width: 550px;
+      height: 550px;
+      background: #3D7A52;
       top: 40%;
       right: -10%;
-      animation-delay: -7s;
+      animation-delay: -8s;
     }
 
     &--3 {
-      width: 450px;
-      height: 450px;
-      background: #10b981;
+      width: 480px;
+      height: 480px;
+      background: #8B6914;
       bottom: -10%;
       left: 30%;
-      animation-delay: -14s;
+      animation-delay: -16s;
+      opacity: 0.06;
     }
   }
 
-  // Reduce blob sizes on mobile to prevent overflow
+  // Reduce blob sizes on mobile
   @media (max-width: 768px) {
     &__blob {
-      filter: blur(60px);
-      opacity: 0.08;
+      filter: blur(70px);
+      opacity: 0.07;
 
       &--1 {
-        width: 300px;
-        height: 300px;
+        width: 320px;
+        height: 320px;
       }
 
       &--2 {
-        width: 250px;
-        height: 250px;
+        width: 270px;
+        height: 270px;
       }
 
       &--3 {
-        width: 220px;
-        height: 220px;
+        width: 240px;
+        height: 240px;
       }
     }
   }
@@ -68,7 +73,7 @@
 
 @keyframes mesh-float {
   0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(50px, -30px) scale(1.1); }
-  50% { transform: translate(-20px, 40px) scale(0.95); }
-  75% { transform: translate(30px, 20px) scale(1.05); }
+  25% { transform: translate(60px, -40px) scale(1.08); }
+  50% { transform: translate(-30px, 50px) scale(0.95); }
+  75% { transform: translate(40px, 25px) scale(1.04); }
 }

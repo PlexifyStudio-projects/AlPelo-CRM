@@ -92,24 +92,41 @@ const IconMail = () => (
 );
 
 // Dropdown child icons map
+const IconDollar = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+  </svg>
+);
+
+const IconHeart = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
 const DROPDOWN_ICONS = {
   'Gestión de Clientes': IconUsers,
   'Agenda y Citas': IconCalendar,
   'Campañas WhatsApp': IconSend,
   'Servicios y Catálogo': IconList,
-  'Equipo': IconTeam,
+  'Gestión de Equipo': IconTeam,
   'Automatizaciones': IconStar,
+  'Finanzas': IconDollar,
+  'Programa de Lealtad': IconHeart,
 };
 
 const NAV_ITEMS = [
   { label: 'Inicio', path: '/', icon: IconHome },
   { label: 'Producto', icon: IconGrid, children: [
     { label: 'Gestión de Clientes', path: '/producto/clientes', desc: 'Perfil 360°, estados automáticos y alertas' },
-    { label: 'Agenda y Citas', path: '/producto/agenda', desc: 'Calendario visual y recordatorios por WhatsApp' },
+    { label: 'Agenda y Citas', path: '/producto/agenda', desc: 'Drag-and-drop, conflictos y smart search' },
     { label: 'Campañas WhatsApp', path: '/producto/campanas', desc: 'Envío masivo y reactivación de inactivos' },
     { label: 'Servicios y Catálogo', path: '/producto/servicios', desc: 'Precios, duración y reservas automáticas' },
     { label: 'Gestión de Equipo', path: '/producto/equipo', desc: 'Comisiones, ratings y rendimiento' },
-    { label: 'Automatizaciones', path: '/automatizaciones', desc: 'Mensajes automáticos que trabajan por usted' },
+    { label: 'Automatizaciones', path: '/automatizaciones', desc: '29 triggers con marketplace de packs' },
+    { label: 'Finanzas', path: '/finanzas', desc: 'P&L, nómina, facturas, IVA y reportes' },
+    { label: 'Programa de Lealtad', path: '/producto/lealtad', desc: 'Niveles, puntos, referidos y bonos' },
   ]},
   { label: 'Lina IA', path: '/lina-ia', icon: IconSparkle, animated: true },
   { label: 'Precios', path: '/pricing', icon: IconTag },

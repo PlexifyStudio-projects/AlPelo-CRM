@@ -9,47 +9,47 @@ const faqItems = [
   {
     question: '¿Cuánto cuesta PlexifyStudio?',
     answer:
-      'Ofrecemos 3 planes mensuales en pesos colombianos (COP): Starter a $190.000/mes (ideal para negocios que comienzan), Pro a $350.000/mes (para negocios en crecimiento, incluye finanzas avanzadas y programa de lealtad completo) y Business a $490.000/mes (para negocios consolidados con campañas masivas ilimitadas y soporte dedicado). Todos incluyen CRM completo, WhatsApp Business y Lina IA.',
+      'Ofrecemos 3 planes mensuales en pesos colombianos (COP): Starter a $190.000/mes (ideal para negocios que comienzan), Pro a $390.000/mes (para negocios en crecimiento con más mensajes de IA y automatizaciones) y Business a $590.000/mes (máxima capacidad de IA y soporte dedicado). Todos los planes incluyen todas las funcionalidades: CRM completo, WhatsApp Business, Lina IA, finanzas, automatizaciones, programa de lealtad, inventario y booking online. La diferencia entre planes es solo el límite de mensajes de IA y automatizaciones activas.',
   },
   {
-    question: '¿Necesito conocimientos técnicos para usarlo?',
+    question: '¿Necesito conocimientos tecnicos para usarlo?',
     answer:
-      'No. PlexifyStudio está diseñado para ser intuitivo. La configuración inicial toma minutos y Lina IA te guía en cada paso. No necesitas saber de tecnología para gestionar clientes, enviar campañas o ver tus finanzas.',
+      'No. PlexifyStudio esta disenado para ser intuitivo. La configuracion inicial toma minutos y Lina IA le guia en cada paso. No necesita saber de tecnologia para gestionar clientes, enviar campanas o ver sus finanzas.',
   },
   {
-    question: '¿Cómo funciona la integración con WhatsApp?',
+    question: '¿Como funciona la integracion con WhatsApp Business?',
     answer:
-      'Conectamos tu WhatsApp Business a través de la API oficial de Meta. Desde PlexifyStudio puedes enviar mensajes automáticos, campañas masivas con plantillas aprobadas, recibir y responder mensajes en un inbox unificado, y Lina IA puede responder a tus clientes automáticamente 24/7.',
+      'Conectamos su WhatsApp Business a traves de la API oficial de Meta. Desde PlexifyStudio puede enviar mensajes automaticos, campanas masivas con plantillas aprobadas, recibir y responder mensajes en un inbox unificado, y Lina IA puede responder a sus clientes automaticamente 24/7.',
   },
   {
     question: '¿Qué es Lina IA?',
     answer:
-      'Lina es tu asistente ejecutiva con inteligencia artificial integrada en PlexifyStudio. Responde mensajes de WhatsApp, genera campañas de marketing, analiza métricas de tu negocio, predice demanda en tu agenda, diagnostica la salud de tu negocio y sugiere estrategias de crecimiento y retención.',
+      'Lina es su asistente ejecutiva con inteligencia artificial integrada en PlexifyStudio. Cuenta con 48 acciones: responde mensajes de WhatsApp, gestiona la agenda completa (crear, mover, cancelar citas), administra clientes y servicios, genera campañas de marketing, analiza métricas del negocio, predice demanda, detecta clientes en riesgo y sugiere estrategias de crecimiento. Cada mensaje pasa por un pipeline de 4 fases de verificación antes de enviarse.',
   },
   {
     question: '¿Qué módulos incluye la plataforma?',
     answer:
-      'PlexifyStudio incluye: Dashboard ejecutivo con KPIs, Agenda y calendario de citas, Gestión de clientes con estados y segmentación, Campañas WhatsApp masivas, Catálogo de servicios, Finanzas (reportes, gastos, comisiones, facturas), Automatizaciones inteligentes, Inbox WhatsApp en tiempo real, Plantillas WhatsApp aprobadas por Meta, Lina IA, Programa de Lealtad con niveles y referidos, y Gestión de equipo con rendimiento.',
+      'PlexifyStudio incluye: Dashboard ejecutivo con KPIs, Agenda con drag-and-drop y detección de conflictos, CRM de clientes con perfil 360° y estados automáticos, Campañas WhatsApp masivas, Catálogo de servicios, Finanzas completas (ingresos, gastos, P&L, facturas, nómina, IVA y rendimiento por profesional), Automation Studio con 29 triggers y marketplace de packs, Inbox WhatsApp en tiempo real, Lina IA con 48 acciones, Programa de Lealtad con niveles y referidos, Gestión de equipo con comisiones, Inventario con alertas de stock, Booking online con micrositio premium, y soporte multi-sede.',
   },
   {
     question: '¿Puedo migrar mis datos desde otro sistema?',
     answer:
-      'Sí. Ofrecemos importación de clientes desde Excel, CSV y otros CRMs. Nuestro equipo te asiste durante la migración sin costo adicional.',
+      'Si. Ofrecemos importacion de clientes desde Excel, CSV y otros CRMs. Nuestro equipo le asiste durante la migracion sin costo adicional.',
   },
   {
     question: '¿Hay contrato de permanencia?',
     answer:
-      'No. Todos los planes son mensuales. Puedes cancelar en cualquier momento sin penalizaciones ni letra pequeña.',
+      'No. Todos los planes son mensuales. Puede cancelar en cualquier momento sin penalizaciones ni letra pequena.',
   },
   {
-    question: '¿Mis datos están seguros?',
+    question: '¿Mis datos estan seguros?',
     answer:
-      'Sí. Usamos encriptación de nivel bancario, servidores seguros y cumplimos con las regulaciones de protección de datos. Tu información y la de tus clientes están protegidas.',
+      'Si. Usamos encriptacion SSL, servidores seguros y cumplimos con las politicas de Meta. Cada negocio tiene sus datos completamente aislados y nunca se comparten con terceros.',
   },
   {
-    question: '¿Ofrecen soporte en español?',
+    question: '¿Ofrecen soporte en espanol?',
     answer:
-      'Sí. Todo nuestro equipo de soporte habla español. Además, Lina IA te asiste en español las 24 horas. Puedes contactarnos en contact@plexifystudio.com.',
+      'Si. Todo nuestro equipo de soporte habla espanol. Ademas, Lina IA le asiste en espanol las 24 horas. Puede contactarnos en contact@plexifystudio.com.',
   },
 ];
 
@@ -74,12 +74,12 @@ export default function FAQ() {
   };
 
   return (
-    <section className="faq" id="faq" aria-label="Preguntas frecuentes">
+    <section className="faq" id="faq" aria-label="Preguntas frecuentes sobre el software para peluquerias y negocios de servicios">
       <div className="faq__container">
         <div className="faq__header">
-          <h2 className="faq__title">Preguntas Frecuentes</h2>
+          <h2 className="faq__title">Preguntas Frecuentes sobre PlexifyStudio</h2>
           <p className="faq__subtitle">
-            Todo lo que necesitas saber antes de comenzar.
+            Todo lo que necesita saber antes de comenzar a gestionar su negocio con nuestra plataforma.
           </p>
         </div>
 

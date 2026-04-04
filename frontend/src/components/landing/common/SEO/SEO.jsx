@@ -2,9 +2,9 @@ import { Helmet } from 'react-helmet-async';
 
 const DEFAULT_SEO = {
   siteName: 'Plexify Studio',
-  defaultTitle: 'Plexify Studio | Software para Peluquerias y Salones de Belleza',
+  defaultTitle: 'Plexify Studio | Software para Peluquerias y Negocios de Servicios en Colombia',
   defaultDescription:
-    'Software de gestion para peluquerias, barberias, salones de belleza y spas. Agenda online, WhatsApp marketing, CRM de clientes y automatizaciones con inteligencia artificial.',
+    'Software para peluquerias en Colombia con CRM, sistema de citas, WhatsApp Business integrado e inteligencia artificial. Agenda online, automatizaciones y gestion de clientes para salones de belleza, barberias y spas. Planes desde $190.000 COP/mes.',
   defaultImage: '/AlPelo-CRM/icon-192.svg',
   siteUrl: 'https://plexifystudio-projects.github.io/AlPelo-CRM',
   twitterHandle: '@plexifystudio',
@@ -18,7 +18,7 @@ const defaultStructuredData = {
     "name": "Plexify Studio",
     "url": "https://plexifystudio-projects.github.io/AlPelo-CRM",
     "logo": "https://plexifystudio-projects.github.io/AlPelo-CRM/icon-192.svg",
-    "description": "Software de gestion con inteligencia artificial para negocios de servicios en Colombia y Latinoamerica.",
+    "description": "Software para peluquerias y negocios de servicios en Colombia. CRM con inteligencia artificial, sistema de citas, WhatsApp Business integrado y automatizaciones.",
     "foundingDate": "2026",
     "contactPoint": {
       "@type": "ContactPoint",
@@ -40,7 +40,7 @@ const defaultStructuredData = {
     "applicationCategory": "BusinessApplication",
     "applicationSubCategory": "CRM Software",
     "operatingSystem": "Web",
-    "description": "Software de gestion integral para peluquerias, salones de belleza, barberias y spas. Agenda online, CRM de clientes, campanas WhatsApp y automatizaciones con IA.",
+    "description": "Software CRM para negocios de servicios con agenda online, WhatsApp Business integrado, Lina IA con 48 acciones, automatizaciones, finanzas, inventario y booking online.",
     "url": "https://plexifystudio-projects.github.io/AlPelo-CRM",
     "inLanguage": "es",
     "offers": [
@@ -51,7 +51,7 @@ const defaultStructuredData = {
         "priceCurrency": "COP",
         "priceValidUntil": "2026-12-31",
         "availability": "https://schema.org/InStock",
-        "description": "CRM completo, agenda, inbox WhatsApp, Lina IA y 5 automatizaciones"
+        "description": "CRM completo, agenda online, sistema de citas, inbox WhatsApp, Lina IA 1.000 mensajes y 10 automatizaciones"
       },
       {
         "@type": "Offer",
@@ -60,7 +60,7 @@ const defaultStructuredData = {
         "priceCurrency": "COP",
         "priceValidUntil": "2026-12-31",
         "availability": "https://schema.org/InStock",
-        "description": "Todo Starter + finanzas avanzadas, comisiones, lealtad y 12 automatizaciones"
+        "description": "Todo Starter + Lina IA 3.000 mensajes, 25 automatizaciones, campanas masivas ilimitadas y soporte prioritario"
       },
       {
         "@type": "Offer",
@@ -69,10 +69,10 @@ const defaultStructuredData = {
         "priceCurrency": "COP",
         "priceValidUntil": "2026-12-31",
         "availability": "https://schema.org/InStock",
-        "description": "Todo Pro + campanas ilimitadas, soporte dedicado y 20 automatizaciones"
+        "description": "Todo Pro + Lina IA 5.000 mensajes, 50 automatizaciones, soporte dedicado 24/7 y onboarding personalizado"
       }
     ],
-    "featureList": "CRM de clientes, Agenda online, WhatsApp Business, Automatizaciones, Lina IA, Finanzas, Programa de lealtad, Campanas masivas"
+    "featureList": "CRM de clientes, Agenda con drag-and-drop, WhatsApp Business integrado, Automation Studio con 29 triggers, Lina IA con 48 acciones, Finanzas con P&L y nomina, Programa de lealtad, Campanas masivas WhatsApp, Gestion de equipo y comisiones, Inventario, Booking online, Soporte multi-sede, Analisis de sentimiento"
   },
   website: {
     "@context": "https://schema.org",
@@ -80,7 +80,7 @@ const defaultStructuredData = {
     "name": "Plexify Studio",
     "url": "https://plexifystudio-projects.github.io/AlPelo-CRM",
     "inLanguage": "es",
-    "description": "Software de gestion para peluquerias, salones de belleza, barberias y spas en Colombia y Latinoamerica."
+    "description": "Software para peluquerias, salones de belleza, barberias y spas en Colombia. CRM con WhatsApp Business integrado, sistema de citas e inteligencia artificial."
   }
 };
 

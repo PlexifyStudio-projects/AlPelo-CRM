@@ -11,9 +11,9 @@ export default function Equipo() {
     <>
       <SEO
         title="Gestion de Equipo y Comisiones"
-        description="Administra tu equipo, calcula comisiones automaticas y mide el rendimiento de cada profesional. Ideal para peluquerias, salones de belleza y spas con varios empleados."
+        description="Administre su equipo, calcule comisiones automaticas y mida el rendimiento de cada profesional. Para negocios de servicios con varios empleados."
         url="/producto/equipo"
-        keywords="gestion de empleados peluqueria, comisiones barberos, rendimiento equipo salon de belleza, control de horarios spa, como pagar comisiones a mis empleados"
+        keywords="gestion de empleados negocio, comisiones profesionales, rendimiento equipo, control de horarios, como pagar comisiones a mis empleados"
         breadcrumbs={[
           { name: 'Inicio', url: '/' },
           { name: 'Producto', url: '/features' },

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const features = [
   {
     title: 'Gestión de Clientes',
-    highlight: '1.247 clientes organizados en un clic',
+    highlight: 'Perfil 360° con estados automáticos',
     description: 'Historial completo, estados VIP, métricas por cliente, seguimiento inteligente y alertas automáticas de riesgo.',
     link: '/producto/clientes',
     color: '#4f46e5',
@@ -19,9 +19,9 @@ const features = [
     ),
   },
   {
-    title: 'Agenda y Citas',
-    highlight: '95% de citas confirmadas automáticamente',
-    description: 'Calendario visual, reservas online, recordatorios por WhatsApp y gestión inteligente de no-shows.',
+    title: 'Sistema de Citas y Agenda Online',
+    highlight: 'Drag-and-drop con detección de conflictos',
+    description: 'Calendario visual, reservas online 24/7, recordatorios por WhatsApp y gestion inteligente de no-shows.',
     link: '/producto/agenda',
     color: '#0ea5e9',
     colorLight: 'rgba(14, 165, 233, 0.1)',
@@ -38,8 +38,8 @@ const features = [
   {
     title: 'Finanzas Completas',
     highlight: 'Control total de ingresos y gastos',
-    description: 'Dashboard financiero con P&L, comisiones automáticas, facturas y reportes comparativos en tiempo real.',
-    link: '/producto/finanzas',
+    description: 'Dashboard financiero con P&L, nómina, facturas, IVA, rendimiento por profesional y reportes comparativos en tiempo real.',
+    link: '/finanzas',
     color: '#10b981',
     colorLight: 'rgba(16, 185, 129, 0.1)',
     icon: (
@@ -50,10 +50,10 @@ const features = [
     ),
   },
   {
-    title: 'WhatsApp Integrado',
-    highlight: '847 mensajes gestionados hoy por Lina IA',
-    description: 'Inbox en tiempo real, respuestas automáticas con IA, envío masivo de campañas y plantillas aprobadas por Meta.',
-    link: '/producto/whatsapp',
+    title: 'WhatsApp Business Integrado',
+    highlight: 'CRM con WhatsApp integrado y respuesta automatica',
+    description: 'Inbox unificado, respuestas automaticas con Lina IA, envio masivo de campanas y plantillas aprobadas por Meta.',
+    link: '/producto/campanas',
     color: '#25d366',
     colorLight: 'rgba(37, 211, 102, 0.1)',
     icon: (
@@ -66,10 +66,10 @@ const features = [
     ),
   },
   {
-    title: 'Automatizaciones',
-    highlight: 'Configura una vez, funciona para siempre',
-    description: 'Workflows inteligentes: recordatorios de citas, follow-ups, cumpleaños, reactivación de inactivos y más.',
-    link: '/producto/automatizaciones',
+    title: 'Automation Studio',
+    highlight: '29 triggers en 5 categorías',
+    description: 'Motor de automatizaciones con marketplace de packs: recordatorios, cumpleaños, reactivación, post-visita y más. Plantillas aprobadas por Meta.',
+    link: '/automatizaciones',
     color: '#f59e0b',
     colorLight: 'rgba(245, 158, 11, 0.1)',
     icon: (
@@ -81,7 +81,7 @@ const features = [
   {
     title: 'Equipo y Comisiones',
     highlight: 'Cada profesional sabe cuánto gana',
-    description: 'Gestiona profesionales, calcula comisiones automáticas, mide rendimiento y ratings del equipo.',
+    description: 'Gestione profesionales, calcule comisiones automaticas, mida rendimiento y ratings del equipo.',
     link: '/producto/equipo',
     color: '#0ea5e9',
     colorLight: 'rgba(14, 165, 233, 0.1)',
@@ -108,7 +108,7 @@ const features = [
   },
   {
     title: 'Servicios y Catálogo',
-    highlight: 'Tu catálogo profesional en minutos',
+    highlight: 'Su catálogo profesional en minutos',
     description: 'Catálogo completo con categorías, precios, duración, profesionales asignados y reservas directas.',
     link: '/producto/servicios',
     color: '#4f46e5',
@@ -119,6 +119,36 @@ const features = [
         <rect x="14" y="3" width="7" height="7" rx="1" />
         <rect x="3" y="14" width="7" height="7" rx="1" />
         <rect x="14" y="14" width="7" height="7" rx="1" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Inventario',
+    highlight: 'Control de stock en tiempo real',
+    description: 'Gestión de productos, movimientos de entrada y salida, alertas de stock bajo y reportes de inventario.',
+    link: '/features',
+    color: '#dc2626',
+    colorLight: 'rgba(220, 38, 38, 0.1)',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+        <line x1="12" y1="22.08" x2="12" y2="12" />
+      </svg>
+    ),
+  },
+  {
+    title: 'Booking Online',
+    highlight: 'Micrositio premium para sus clientes',
+    description: 'Reservas 24/7 desde un micrositio con su marca: galería, equipo, servicios, horarios y reseñas.',
+    link: '/features',
+    color: '#0d9488',
+    colorLight: 'rgba(13, 148, 136, 0.1)',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
       </svg>
     ),
   },
@@ -168,17 +198,17 @@ function Features() {
   }, []);
 
   return (
-    <section className="features" ref={sectionRef} aria-label="Funcionalidades principales">
+    <section className="features" ref={sectionRef} aria-label="Funcionalidades del software para negocios de servicios">
       <div className="features__container">
         <div className="features__header">
-          <span className="features__badge">🚀 Todo incluido</span>
+          <span className="features__badge">Todo incluido en todos los planes</span>
           <h2 className="features__title">
-            Todo lo que necesitas.{' '}
+            Todo lo que necesita su negocio.{' '}
             <span className="features__title--highlight">En una sola plataforma.</span>
           </h2>
           <p className="features__subtitle">
-            8 módulos que trabajan juntos para que tu negocio funcione en piloto automático.
-            Cada uno diseñado para ahorrarte tiempo y hacerte ganar más.
+            10 modulos integrados que trabajan juntos para que su negocio funcione en piloto automatico.
+            Cada uno disenado para ahorrarle tiempo y hacerle ganar mas.
           </p>
         </div>
 

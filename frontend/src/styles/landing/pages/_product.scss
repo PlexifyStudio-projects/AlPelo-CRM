@@ -977,11 +977,11 @@
 .product-features__card {
   &--blue {
     &::before {
-      background: linear-gradient(90deg, #3b82f6, #60a5fa) !important;
+      background: linear-gradient(90deg, $color-primary-light, $color-primary-light) !important;
     }
 
     &:hover .product-features__card-icon {
-      background: linear-gradient(135deg, #3b82f6, #60a5fa) !important;
+      background: linear-gradient(135deg, $color-primary-light, $color-primary-light) !important;
     }
   }
 
@@ -1007,11 +1007,11 @@
 
   &--purple {
     &::before {
-      background: linear-gradient(90deg, #2563eb, #3b82f6) !important;
+      background: linear-gradient(90deg, $color-primary, $color-primary-light) !important;
     }
 
     &:hover .product-features__card-icon {
-      background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+      background: linear-gradient(135deg, $color-primary, $color-primary-light) !important;
     }
   }
 
@@ -1508,17 +1508,17 @@
 
     // Color variants
     &--blue {
-      &::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-      &:hover { border-color: rgba(#3b82f6, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba(#3b82f6, 0.12); }
-      .product-strategy__card-icon { background: linear-gradient(135deg, rgba(#3b82f6, 0.15), rgba(#60a5fa, 0.15)); color: #60a5fa; }
-      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, #3b82f6, #60a5fa); color: #fff; }
+      &::before { background: linear-gradient(90deg, $color-primary-light, $color-primary-light); }
+      &:hover { border-color: rgba($color-primary-light, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba($color-primary-light, 0.12); }
+      .product-strategy__card-icon { background: linear-gradient(135deg, rgba($color-primary-light, 0.15), rgba($color-primary-light, 0.15)); color: $color-primary-light; }
+      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, $color-primary-light, $color-primary-light); color: #fff; }
     }
 
     &--purple {
-      &::before { background: linear-gradient(90deg, #2563eb, #3b82f6); }
-      &:hover { border-color: rgba(#2563eb, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba(#2563eb, 0.12); }
-      .product-strategy__card-icon { background: linear-gradient(135deg, rgba(#2563eb, 0.15), rgba(#3b82f6, 0.15)); color: #3b82f6; }
-      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff; }
+      &::before { background: linear-gradient(90deg, $color-primary, $color-primary-light); }
+      &:hover { border-color: rgba($color-primary, 0.3); box-shadow: $shadow-lg, 0 0 20px rgba($color-primary, 0.12); }
+      .product-strategy__card-icon { background: linear-gradient(135deg, rgba($color-primary, 0.15), rgba($color-primary-light, 0.15)); color: $color-primary-light; }
+      &:hover .product-strategy__card-icon { background: linear-gradient(135deg, $color-primary, $color-primary-light); color: #fff; }
     }
 
     &--green {
@@ -1906,12 +1906,12 @@
     }
 
     &--blue {
-      background: rgba(#3b82f6, 0.25);
-      border-left: 3px solid #3b82f6;
-      box-shadow: 0 0 8px rgba(#3b82f6, 0.15);
+      background: rgba($color-primary-light, 0.25);
+      border-left: 3px solid $color-primary-light;
+      box-shadow: 0 0 8px rgba($color-primary-light, 0.15);
 
       &:hover {
-        box-shadow: 0 0 16px rgba(#3b82f6, 0.3);
+        box-shadow: 0 0 16px rgba($color-primary-light, 0.3);
       }
     }
 
@@ -1926,12 +1926,12 @@
     }
 
     &--purple {
-      background: rgba(#2563eb, 0.25);
-      border-left: 3px solid #2563eb;
-      box-shadow: 0 0 8px rgba(#2563eb, 0.15);
+      background: rgba($color-primary, 0.25);
+      border-left: 3px solid $color-primary;
+      box-shadow: 0 0 8px rgba($color-primary, 0.15);
 
       &:hover {
-        box-shadow: 0 0 16px rgba(#2563eb, 0.3);
+        box-shadow: 0 0 16px rgba($color-primary, 0.3);
       }
     }
 

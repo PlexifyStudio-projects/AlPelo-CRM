@@ -1,9 +1,9 @@
 @use '../abstracts' as *;
 
-$sv: #2563eb;
-$sv-light: #3b82f6;
+$sv: $color-primary;
+$sv-light: $color-primary-light;
 $sv-bg: #eff6ff;
-$sv-dark: #1d4ed8;
+$sv-dark: $color-primary-dark;
 
 @keyframes p-sv-float {
   0%, 100% { transform: translateY(0); }

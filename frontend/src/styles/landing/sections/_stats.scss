@@ -1,18 +1,53 @@
 @use '../abstracts' as *;
 
 // ============================================
-// STATS — Pain + Gain (Wall Street impact)
+// STATS — 2026 Pain + Gain with Floating Cards
 // ============================================
+
+@keyframes stats-counter-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  60% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes stats-card-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .stats {
   @include section-padding;
   margin-top: -60px;
   padding-top: calc(#{$spacing-4xl} + 60px);
   position: relative;
-  background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.4) 8%, rgba(255,255,255,0.7) 16%, rgba(255,255,255,0.9) 25%, #ffffff 40%, #f0f7ff 70%, #f0f7ff 100%);
+  // Mesh gradient transition
+  background:
+    radial-gradient(ellipse at 20% 80%, rgba($color-primary, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba($color-primary-light, 0.03) 0%, transparent 50%),
+    linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.4) 8%, rgba(255,255,255,0.7) 16%, rgba(255,255,255,0.9) 25%, #ffffff 40%, $color-bg-secondary 70%, $color-bg-secondary 100%);
+
+  // Grain overlay
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.02;
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+  }
 
   &__container {
     @include container;
+    position: relative;
+    z-index: 1;
   }
 
   // ═══════════════════════════════
@@ -31,26 +66,31 @@
   }
 
   &__badge {
-    display: inline-block;
-    padding: 8px 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 22px;
     border-radius: $border-radius-full;
     font-size: $font-size-sm;
     font-weight: $font-weight-bold;
     margin-bottom: $spacing-lg;
     letter-spacing: 0.02em;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 
     &--red {
-      background: rgba(#dc2626, 0.08);
+      background: rgba(#dc2626, 0.06);
       color: #dc2626;
-      border: 1px solid rgba(#dc2626, 0.12);
+      border: 1px solid rgba(#dc2626, 0.1);
     }
   }
 
   &__pain-title {
     @include heading($font-size-4xl);
-    letter-spacing: -0.03em;
+    letter-spacing: -0.035em;
     color: $text-primary;
     margin-bottom: $spacing-md;
+    font-weight: $font-weight-extrabold;
 
     &--red {
       color: #dc2626;
@@ -63,17 +103,17 @@
   &__pain-sub {
     @include body-text($font-size-lg);
     color: $text-muted;
-    max-width: 500px;
+    max-width: 520px;
     margin-inline: auto;
 
     @include respond-to('sm') { font-size: $font-size-base; }
   }
 
-  // ── Pain Cards ──
+  // ── Pain Cards — floating glass ──
   &__pain-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: $spacing-lg;
+    gap: $spacing-xl;
 
     @include respond-to('lg') { grid-template-columns: repeat(2, 1fr); }
     @include respond-to('sm') { grid-template-columns: 1fr; gap: $spacing-md; }
@@ -82,10 +122,13 @@
   &__pain-card {
     text-align: center;
     padding: $spacing-2xl $spacing-lg;
-    border-radius: $border-radius-xl;
-    background: #ffffff;
-    border: 1px solid rgba(#dc2626, 0.08);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: $border-radius-2xl;
+    background: rgba(#ffffff, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(#dc2626, 0.06);
+    box-shadow: $shadow-float;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
     position: relative;
     overflow: hidden;
 
@@ -98,11 +141,23 @@
       right: 0;
       height: 3px;
       background: linear-gradient(90deg, #dc2626, #ea580c);
+      border-radius: 3px 3px 0 0;
     }
 
     &:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 20px 40px rgba(#dc2626, 0.08);
+      transform: translateY(-8px);
+      box-shadow: 0 24px 48px rgba(#dc2626, 0.1), 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+
+    // Stagger animation when visible
+    &--visible {
+      animation: stats-card-reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+      @for $i from 1 through 4 {
+        &:nth-child(#{$i}) {
+          animation-delay: #{$i * 0.12}s;
+        }
+      }
     }
 
     @include respond-to('sm') {
@@ -112,27 +167,36 @@
 
   &__pain-number {
     font-family: $font-family-heading;
-    font-size: 4rem;
-    font-weight: $font-weight-extrabold;
+    font-size: $font-size-5xl;
+    font-weight: $font-weight-black;
     line-height: 1;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.05em;
     margin-bottom: $spacing-sm;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 8px rgba(#dc2626, 0.1);
 
-    @include respond-to('md') { font-size: 3.2rem; }
-    @include respond-to('sm') { font-size: 2.8rem; }
+    @include respond-to('md') { font-size: $font-size-4xl; }
+    @include respond-to('sm') { font-size: $font-size-3xl; }
+    @include respond-to('xs') { font-size: $font-size-2xl; }
   }
 
   &__pain-headline {
-    font-size: $font-size-base;
-    font-weight: $font-weight-bold;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-extrabold;
     color: $text-primary;
     margin-bottom: $spacing-xs;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+
+    @include respond-to('sm') { font-size: $font-size-xs; }
   }
 
   &__pain-desc {
     font-size: $font-size-sm;
     color: $text-muted;
     line-height: $line-height-relaxed;
+
+    @include respond-to('sm') { font-size: $font-size-xs; }
   }
 
   // ═══════════════════════════════
@@ -151,7 +215,7 @@
   &__divider-line {
     flex: 1;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba($color-primary, 0.15), transparent);
+    background: linear-gradient(90deg, transparent, rgba($color-primary, 0.12), transparent);
   }
 
   &__divider-text {
@@ -160,10 +224,12 @@
     font-weight: $font-weight-bold;
     color: $color-primary;
     white-space: nowrap;
-    padding: $spacing-sm $spacing-lg;
+    padding: $spacing-sm $spacing-xl;
     background: rgba($color-primary, 0.04);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: $border-radius-full;
-    border: 1px solid rgba($color-primary, 0.1);
+    border: 1px solid rgba($color-primary, 0.08);
     text-align: center;
 
     @include respond-to('sm') { font-size: $font-size-sm; padding: $spacing-xs $spacing-md; }
@@ -189,10 +255,13 @@
     align-items: center;
     gap: $spacing-sm;
     padding: $spacing-lg;
-    border-radius: $border-radius-lg;
-    background: rgba($color-primary, 0.03);
-    border: 1px solid rgba($color-primary, 0.08);
-    transition: transform 0.3s ease, background 0.3s ease;
+    border-radius: $border-radius-xl;
+    background: rgba($color-primary, 0.02);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba($color-primary, 0.06);
+    box-shadow: $shadow-sm;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, box-shadow 0.3s ease;
 
     // Green top accent
     position: relative;
@@ -201,13 +270,14 @@
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 3px;
-      background: linear-gradient(90deg, #10b981, #2563eb);
+      background: linear-gradient(90deg, $color-success, $color-primary);
       border-radius: 3px 3px 0 0;
     }
 
     &:hover {
-      transform: translateY(-4px);
-      background: rgba($color-primary, 0.06);
+      transform: translateY(-6px);
+      background: rgba($color-primary, 0.05);
+      box-shadow: $shadow-float;
     }
 
     @include respond-to('sm') {
@@ -222,9 +292,10 @@
 
   &__gain-text {
     font-size: $font-size-sm;
-    font-weight: $font-weight-semibold;
+    font-weight: $font-weight-bold;
     color: $text-primary;
     line-height: $line-height-base;
+    letter-spacing: -0.01em;
   }
 
   // ═══════════════════════════════
@@ -238,28 +309,42 @@
   &__cta {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 18px 40px;
+    gap: 10px;
+    padding: 20px 44px;
     background: linear-gradient(135deg, #dc2626, #ea580c);
     color: white;
     font-size: $font-size-lg;
     font-weight: $font-weight-bold;
     border-radius: $border-radius-full;
     text-decoration: none;
-    box-shadow: 0 6px 24px rgba(#dc2626, 0.3);
-    transition: all 0.3s ease;
+    box-shadow: 0 6px 28px rgba(#dc2626, 0.25);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     letter-spacing: -0.01em;
+    position: relative;
+    overflow: hidden;
+
+    // Shimmer
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+      transition: left 0.6s ease;
+    }
+
+    &:hover::after { left: 100%; }
 
     &:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 10px 36px rgba(#dc2626, 0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(#dc2626, 0.35);
     }
 
     @include respond-to('sm') {
       width: 100%;
       justify-content: center;
       font-size: $font-size-base;
-      padding: 16px 32px;
+      padding: 18px 36px;
     }
   }
 
@@ -267,5 +352,7 @@
     margin-top: $spacing-md;
     font-size: $font-size-sm;
     color: $text-muted;
+
+    @include respond-to('sm') { font-size: $font-size-xs; }
   }
 }

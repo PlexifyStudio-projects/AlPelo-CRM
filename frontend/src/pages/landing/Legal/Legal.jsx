@@ -53,12 +53,12 @@ export default function Legal() {
 
             <h3 className="legal__subheading">3. Finalidad del Tratamiento</h3>
             <p className="legal__text">
-              Utilizamos tus datos para: gestionar tu cuenta y prestarte el servicio CRM, enviarte comunicaciones relacionadas con el servicio, mejorar la plataforma y cumplir obligaciones legales.
+              Utilizamos sus datos para: gestionar su cuenta y prestarle el servicio CRM, enviarle comunicaciones relacionadas con el servicio, mejorar la plataforma y cumplir obligaciones legales.
             </p>
 
-            <h3 className="legal__subheading">4. Tus Derechos</h3>
+            <h3 className="legal__subheading">4. Sus Derechos</h3>
             <p className="legal__text">
-              Puedes ejercer tus derechos de acceso, rectificaci&oacute;n, supresi&oacute;n, portabilidad y oposici&oacute;n escribiendo a{' '}
+              Puede ejercer sus derechos de acceso, rectificaci&oacute;n, supresi&oacute;n, portabilidad y oposici&oacute;n escribiendo a{' '}
               <a href="mailto:contact@plexifystudio.com" className="legal__link">contact@plexifystudio.com</a>.
             </p>
           </article>

@@ -1,5 +1,5 @@
 // ============================================
-// BUTTON — BEM Component (VIBRANT DARK THEME)
+// BUTTON — 2026 Modernized BEM Component
 // ============================================
 
 @use '../abstracts' as *;
@@ -11,27 +11,47 @@
   gap: $spacing-sm;
   font-family: $font-family-primary;
   font-weight: $font-weight-semibold;
-  border-radius: $border-radius-md;
-  @include transition(all);
-  @include focus-visible;
+  border-radius: $border-radius-lg;
   cursor: pointer;
   white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  @include focus-visible;
+
+  // Shimmer effect on hover
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.6s ease;
+    pointer-events: none;
+  }
+
+  &:hover::after {
+    left: 100%;
+  }
 
   // Sizes
   &--sm {
-    height: 36px;
+    height: 38px;
     padding-inline: $spacing-md;
     font-size: $font-size-sm;
+    border-radius: $border-radius-md;
   }
 
   &--md {
-    height: 44px;
+    height: 46px;
     padding-inline: $spacing-xl;
     font-size: $font-size-sm;
   }
 
   &--lg {
-    height: 52px;
+    height: 54px;
     padding-inline: $spacing-2xl;
     font-size: $font-size-base;
   }
@@ -40,24 +60,31 @@
   &--primary {
     background: $gradient-primary;
     color: $color-white;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 4px 16px rgba($color-primary, 0.25);
 
     &:hover {
-      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
-      transform: translateY(-1px);
+      box-shadow: 0 8px 28px rgba($color-primary, 0.35);
+      transform: translateY(-2px);
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba($color-primary, 0.2);
     }
   }
 
   &--secondary {
     background: $glass-bg;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur($glass-blur);
+    -webkit-backdrop-filter: blur($glass-blur);
     color: $text-primary;
     border: $border-width solid $glass-border;
 
     &:hover {
       background: $glass-bg-hover;
-      border-color: rgba(15, 23, 42, 0.12);
+      border-color: rgba($color-primary, 0.12);
+      transform: translateY(-1px);
+      box-shadow: $shadow-float;
     }
   }
 
@@ -66,8 +93,8 @@
     color: $text-secondary;
 
     &:hover {
-      background-color: rgba(37, 99, 235, 0.04);
-      color: $text-primary;
+      background-color: rgba($color-primary, 0.04);
+      color: $color-primary;
     }
   }
 
@@ -84,8 +111,8 @@
     justify-content: center;
   }
 
-  // Mobile touch targets — enforce 44px min-height
+  // Mobile touch targets
   @include respond-to('sm') {
-    min-height: 44px;
+    min-height: 46px;
   }
 }

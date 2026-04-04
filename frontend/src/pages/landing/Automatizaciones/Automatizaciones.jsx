@@ -5,10 +5,10 @@ export default function Automatizaciones() {
   return (
     <>
       <SEO
-        title="Automatizaciones WhatsApp para tu Negocio"
-        description="Envia recordatorios de citas, felicitaciones de cumpleanos y mensajes de reactivacion por WhatsApp automaticamente. Ideal para peluquerias, salones y spas."
+        title="Automatizaciones WhatsApp Business para Peluquerias y Negocios"
+        description="Automation Studio con 29 triggers y 5 categorias. Envie recordatorios de citas, felicitaciones de cumpleanos y mensajes de reactivacion por WhatsApp Business automaticamente. Para peluquerias, salones y negocios de servicios en Colombia."
         url="/automatizaciones"
-        keywords="recordatorios automaticos citas WhatsApp, automatizar mensajes peluqueria, mensajes automaticos salon de belleza, como recuperar clientes inactivos"
+        keywords="recordatorios automaticos citas WhatsApp, whatsapp business crm, mensajes automaticos WhatsApp Business, como recuperar clientes inactivos, automatizaciones para peluquerias"
       />
 
       <main className="product-page">
@@ -25,8 +25,8 @@ export default function Automatizaciones() {
 
             <div className="product-hero__stats">
               <div className="product-hero__stat">
-                <span className="product-hero__stat-value">10+</span>
-                <span className="product-hero__stat-label">Workflows pre-diseñados</span>
+                <span className="product-hero__stat-value">29</span>
+                <span className="product-hero__stat-label">Triggers disponibles</span>
               </div>
               <div className="product-hero__stat">
                 <span className="product-hero__stat-value">Meta</span>
@@ -293,15 +293,6 @@ export default function Automatizaciones() {
                   Una vez aprobada por Meta, activa el workflow con un toggle. Se ejecuta automáticamente sin intervención.
                 </p>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Mockup Placeholder ── */}
-        <section className="product-mockup">
-          <div className="product-mockup__container">
-            <div className="product-mockup__placeholder" aria-label="Vista previa del módulo de automatizaciones">
-              <span className="product-mockup__label">Automatizaciones — Vista Previa</span>
             </div>
           </div>
         </section>

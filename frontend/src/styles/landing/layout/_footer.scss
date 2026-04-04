@@ -1,15 +1,15 @@
 @use '../abstracts' as *;
 
 // ============================================
-// FOOTER — Dark Premium 2026
+// FOOTER — Dark Premium 2026 (Forest Green Brand)
 // ============================================
 
-$ft-dark: #0a0a14;
-$ft-surface: #12121e;
-$ft-border: rgba(255, 255, 255, 0.06);
-$ft-muted: #475569;
-$ft-text: #94a3b8;
-$ft-white: #e2e8f0;
+$ft-dark: #080d0a;
+$ft-surface: #0f1a13;
+$ft-border: rgba(61, 122, 82, 0.08);
+$ft-muted: #5a7366;
+$ft-text: #b0c4b8;
+$ft-white: #dce6df;
 
 .footer {
   background: $ft-dark;
@@ -18,15 +18,36 @@ $ft-white: #e2e8f0;
   position: relative;
   overflow: hidden;
 
-  // Subtle gradient glow at top
+  // Gradient divider at top — rainbow/brand accent line
   &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      $color-primary 15%,
+      $color-secondary 35%,
+      $color-accent 50%,
+      $color-secondary 65%,
+      $color-primary 85%,
+      transparent 100%
+    );
+    opacity: 0.7;
+  }
+
+  // Subtle gradient glow at top (behind divider)
+  &::after {
     content: '';
     position: absolute;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 600px;
-    height: 300px;
+    height: 200px;
     background: radial-gradient(ellipse, rgba($color-primary, 0.06) 0%, transparent 70%);
     pointer-events: none;
   }
@@ -37,6 +58,15 @@ $ft-white: #e2e8f0;
     border-top: 1px solid $ft-border;
     border-bottom: 1px solid $ft-border;
     margin-bottom: $spacing-3xl;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba($color-primary, 0.03) 0%, transparent 50%, rgba($color-secondary, 0.02) 100%);
+      pointer-events: none;
+    }
 
     @include respond-to('sm') {
       margin-bottom: $spacing-2xl;
@@ -50,6 +80,8 @@ $ft-white: #e2e8f0;
     justify-content: space-between;
     gap: $spacing-xl;
     padding-block: $spacing-2xl;
+    position: relative;
+    z-index: 1;
 
     @include respond-to('md') {
       flex-direction: column;
@@ -215,6 +247,25 @@ $ft-white: #e2e8f0;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: $spacing-lg;
+    position: relative;
+    padding-bottom: $spacing-sm;
+
+    // Small accent underline
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 24px;
+      height: 2px;
+      background: linear-gradient(90deg, $color-primary, $color-secondary);
+      border-radius: 1px;
+    }
+
+    @include respond-to('sm') {
+      &::after { left: 50%; transform: translateX(-50%); }
+      text-align: center;
+    }
   }
 
   &__link {
@@ -235,6 +286,10 @@ $ft-white: #e2e8f0;
       min-height: 44px;
       display: flex;
       align-items: center;
+      justify-content: center;
+      text-align: center;
+
+      &:hover { transform: none; }
     }
   }
 
@@ -255,7 +310,7 @@ $ft-white: #e2e8f0;
     border-radius: 14px;
     text-decoration: none;
     transition: all 0.3s ease;
-    min-width: 0; // allow flex children to shrink below content size
+    min-width: 0;
 
     &:hover {
       background: rgba(255, 255, 255, 0.04);
@@ -265,7 +320,7 @@ $ft-white: #e2e8f0;
 
     svg { color: $color-primary-light; flex-shrink: 0; }
 
-    div { min-width: 0; } // allow text truncation
+    div { min-width: 0; }
   }
 
   &__contact-label {
@@ -287,15 +342,33 @@ $ft-white: #e2e8f0;
     overflow-wrap: break-word;
   }
 
-  // ── Bottom ──
+  // ── Bottom — Gradient divider ──
   &__bottom {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding-top: $spacing-xl;
-    border-top: 1px solid $ft-border;
+    position: relative;
     flex-wrap: wrap;
     gap: $spacing-md;
+
+    // Gradient divider line replacing plain border
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba($color-primary, 0.2) 20%,
+        rgba($color-secondary, 0.15) 50%,
+        rgba($color-primary, 0.2) 80%,
+        transparent 100%
+      );
+    }
 
     @include respond-to('sm') {
       flex-direction: column;

@@ -85,9 +85,9 @@ export default function Lealtad() {
     <>
       <SEO
         title="Programa de Lealtad y Fidelizacion"
-        description="Fideliza a tus clientes con puntos, recompensas y niveles automaticos. Programa de lealtad para peluquerias, salones de belleza, barberias y spas."
+        description="Fidelice a sus clientes con puntos, recompensas, niveles automaticos y referidos. Programa de lealtad para negocios de servicios."
         url="/producto/lealtad"
-        keywords="programa de fidelizacion peluqueria, puntos de lealtad salon de belleza, como retener clientes barberia, recompensas para clientes spa"
+        keywords="programa de fidelizacion negocio, puntos de lealtad clientes, como retener clientes, recompensas para clientes, programa de referidos"
         breadcrumbs={[
           { name: 'Inicio', url: '/' },
           { name: 'Producto', url: '/features' },

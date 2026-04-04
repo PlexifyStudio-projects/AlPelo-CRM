@@ -66,12 +66,19 @@ function LinaTyping() {
 }
 
 const capabilities = [
-  'Responde WhatsApp automáticamente 24/7',
-  'Genera campañas de marketing personalizadas',
-  'Analiza métricas y sugiere mejoras',
-  'Diagnostica la salud de tu negocio',
-  'Predice demanda y optimiza tu agenda',
-  'Rescata clientes inactivos automáticamente',
+  'Responde WhatsApp Business automaticamente 24/7',
+  'Gestiona la agenda completa: crear, mover, cancelar citas',
+  'Administra clientes, servicios y equipo',
+  'Analiza metricas y genera reportes de su negocio',
+  'Detecta clientes en riesgo y los reactiva automaticamente',
+  '48 acciones verificadas con pipeline de 4 fases',
+];
+
+const HOW_IT_WORKS = [
+  { step: '01', title: 'Conecte', desc: 'Vincule su WhatsApp Business en 5 minutos' },
+  { step: '02', title: 'Configure', desc: 'Lina aprende su negocio, servicios y equipo' },
+  { step: '03', title: 'Automatice', desc: 'Respuestas, citas y campanas en piloto automatico' },
+  { step: '04', title: 'Crezca', desc: 'Mas clientes, menos trabajo manual, mejores resultados' },
 ];
 
 function CheckIcon() {
@@ -115,7 +122,7 @@ export default function LinaAI() {
   }, []);
 
   return (
-    <section className="lina-ai" ref={sectionRef} aria-label="Lina IA — Asistente inteligente" style={{ position: 'relative' }}>
+    <section className="lina-ai" ref={sectionRef} aria-label="Lina IA — Asistente virtual con inteligencia artificial para negocios de servicios" style={{ position: 'relative' }}>
       <LightBurst position="center" color="purple" intensity="medium" />
       {/* Tech grid background */}
       <div className="lina-ai__grid-bg" aria-hidden="true" />
@@ -125,15 +132,15 @@ export default function LinaAI() {
         <div className="lina-ai__content">
           <span className="lina-ai__badge">
             <SparkleIcon />
-            Inteligencia Artificial
+            Inteligencia Artificial para su Negocio
           </span>
 
           <h2 className="lina-ai__title">
-            Conoce a <span className="lina-ai__title--highlight">Lina</span>, tu asistente ejecutiva con IA
+            Conozca a <span className="lina-ai__title--highlight">Lina</span>, su asistente ejecutiva con IA
           </h2>
 
           <p className="lina-ai__description">
-            Lina IA entiende tu negocio, responde a tus clientes por WhatsApp, genera campañas de marketing, analiza tus métricas y toma decisiones inteligentes — todo en tiempo real.
+            Lina IA entiende su negocio, responde a sus clientes por WhatsApp, gestiona la agenda, administra clientes y servicios, analiza métricas y ejecuta 48 acciones verificadas — todo en tiempo real.
           </p>
 
           <ul className="lina-ai__capabilities" aria-label="Capacidades de Lina IA">
@@ -144,6 +151,27 @@ export default function LinaAI() {
               </li>
             ))}
           </ul>
+
+          {/* How it works — Step indicators with connecting lines */}
+          <div className="lina-ai__steps" aria-label="Cómo funciona">
+            <h3 className="lina-ai__steps-title">Cómo funciona</h3>
+            <div className="lina-ai__steps-track">
+              {HOW_IT_WORKS.map((item, idx) => (
+                <div className="lina-ai__step" key={item.step}>
+                  <div className="lina-ai__step-indicator">
+                    <span className="lina-ai__step-number">{item.step}</span>
+                    {idx < HOW_IT_WORKS.length - 1 && (
+                      <div className="lina-ai__step-line" aria-hidden="true" />
+                    )}
+                  </div>
+                  <div className="lina-ai__step-content">
+                    <span className="lina-ai__step-title">{item.title}</span>
+                    <span className="lina-ai__step-desc">{item.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           <Link className="lina-ai__cta" to="/lina-ia" aria-label="Descubrir más sobre Lina IA">
             Descubre Lina IA

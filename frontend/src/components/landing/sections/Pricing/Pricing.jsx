@@ -20,6 +20,9 @@ const plans = [
       { text: 'Programa de lealtad', included: true },
       { text: 'Campañas de WhatsApp', included: true },
       { text: 'Google Reviews integrado', included: true },
+      { text: 'Inventario y control de stock', included: true },
+      { text: 'Booking online con micrositio', included: true },
+      { text: 'Soporte multi-sede', included: true },
       { text: 'Soporte por email', included: true },
     ],
     highlighted: false,
@@ -66,7 +69,7 @@ const FAQ = [
   { q: '¿Existe algún tipo de permanencia o contrato?', a: 'No. Todos los planes son mensuales sin permanencia. Puede cancelar en cualquier momento sin costos adicionales.' },
   { q: '¿La integración con WhatsApp Business está incluida?', a: 'Sí. Todos los planes incluyen conexión completa con la API oficial de WhatsApp Business a través de Meta.' },
   { q: '¿Cómo funciona la demo personalizada?', a: 'Agendamos una sesión donde configuramos el sistema con los datos reales de su negocio. Ve todo funcionando antes de tomar una decisión.' },
-  { q: '¿Mis datos están seguros?', a: 'Absolutamente. Utilizamos encriptación de extremo a extremo, cumplimos con las políticas de Meta y nunca compartimos su información con terceros.' },
+  { q: '¿Mis datos están seguros?', a: 'Sí. Utilizamos encriptación SSL, cumplimos con las políticas de Meta y nunca compartimos su información con terceros. Cada negocio tiene sus datos completamente aislados.' },
 ];
 
 export default function Pricing({ isPage = false }) {
@@ -80,10 +83,10 @@ export default function Pricing({ isPage = false }) {
         <div className="pr__hero-inner">
           <p className="pr__hero-eyebrow">Precios</p>
           <HeadingTag className="pr__hero-title">
-            Precios y Planes para <span className="pr__hero-title--accent">Peluquerías y Salones</span>
+            Planes de Software para <span className="pr__hero-title--accent">Negocios de Servicios</span>
           </HeadingTag>
           <p className="pr__hero-sub">
-            Sin contratos. Sin costos ocultos. Cancele cuando quiera.
+            Sin contratos. Sin costos ocultos. Cancele cuando quiera. Todas las funcionalidades incluidas en todos los planes.
           </p>
         </div>
       </section>
@@ -107,7 +110,7 @@ export default function Pricing({ isPage = false }) {
               </div>
 
               <Link to="/register" className={`pr__card-cta ${plan.highlighted ? 'pr__card-cta--primary' : 'pr__card-cta--outline'}`}>
-                Empezar ahora
+                Empiece gratis ahora
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
               </Link>
 
@@ -207,7 +210,7 @@ export default function Pricing({ isPage = false }) {
             </div>
             <div className="pr__payments-trust-item">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              <span>PCI DSS Nivel 1 certificado</span>
+              <span>Pagos procesados por Bold (PCI DSS)</span>
             </div>
             <div className="pr__payments-trust-item">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>

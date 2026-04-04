@@ -32,7 +32,11 @@ function Counter({ end, prefix = '', suffix = '', decimals = 0, delay = 0 }) {
     ? val.toFixed(decimals)
     : Math.floor(val).toLocaleString('es');
 
-  return <span ref={ref}>{prefix}{display}{suffix}</span>;
+  return (
+    <span ref={ref} className="stats__counter">
+      {prefix}{display}{suffix}
+    </span>
+  );
 }
 
 const LOSSES = [
@@ -46,7 +50,7 @@ const LOSSES = [
   {
     value: 23, suffix: '%', prefix: '',
     headline: 'Clientes no regresan',
-    sub: 'después de su primera visita — nunca los vuelves a ver',
+    sub: 'despues de su primera visita — nunca los vuelve a ver',
     color: '#ea580c',
     delay: 150,
   },
@@ -67,10 +71,10 @@ const LOSSES = [
 ];
 
 const GAINS = [
-  { icon: '⚡', text: '95% de citas confirmadas automáticamente' },
-  { icon: '💰', text: '3x más clientes recurrentes con seguimiento IA' },
-  { icon: '📈', text: '+40% de ingresos en los primeros 90 días' },
-  { icon: '🕐', text: '12 horas semanales recuperadas con automatización' },
+  { icon: '⚡', text: 'Confirmación automática de citas por WhatsApp' },
+  { icon: '💰', text: 'Reactivación automática de clientes inactivos' },
+  { icon: '📈', text: 'Métricas en tiempo real para tomar mejores decisiones' },
+  { icon: '🕐', text: 'Automatizaciones que eliminan tareas repetitivas' },
 ];
 
 // memo: contenido estático, evita re-renders innecesarios
@@ -89,18 +93,18 @@ function Stats() {
   }, []);
 
   return (
-    <section className="stats" ref={ref} aria-label="Estadísticas del problema">
+    <section className="stats" ref={ref} aria-label="Por que necesita un CRM para su negocio de servicios">
       <div className="stats__container">
         {/* ── PAIN SECTION ── */}
         <div className="stats__pain">
           <div className="stats__pain-header">
-            <span className="stats__badge stats__badge--red">📊 ¿Sabías esto?</span>
+            <span className="stats__badge stats__badge--red">¿Sabia esto?</span>
             <h2 className="stats__pain-title">
               Los negocios sin CRM<br />
-              <span className="stats__pain-title--red">dejan esto sobre la mesa</span>
+              <span className="stats__pain-title--red">pierden clientes e ingresos cada dia</span>
             </h2>
             <p className="stats__pain-sub">
-              Estos son los números reales de negocios que aún no automatizan su gestión.
+              Estos son los numeros reales de negocios de servicios que aun no automatizan su gestion.
             </p>
           </div>
 
@@ -136,10 +140,10 @@ function Stats() {
           </div>
 
           <div className="stats__cta-wrap">
-            <Link to="/pricing" className="stats__cta">
-              Quiero dejar de perder clientes →
+            <Link to="/register" className="stats__cta">
+              Deje de perder clientes — empiece gratis hoy →
             </Link>
-            <p className="stats__cta-note">Setup en 5 minutos · Sin tarjeta de crédito · Soporte 24/7</p>
+            <p className="stats__cta-note">Listo en 5 minutos · Sin tarjeta de credito · Cancele cuando quiera</p>
           </div>
         </div>
       </div>

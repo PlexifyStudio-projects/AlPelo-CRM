@@ -111,9 +111,9 @@ export default function Servicios() {
     <>
       <SEO
         title="Catalogo de Servicios y Precios"
-        description="Organiza tu catalogo de servicios con categorias, precios en COP y duracion. Tus clientes reservan directo por WhatsApp. Para peluquerias, salones, spas y clinicas."
+        description="Organice su catalogo de servicios con categorias, precios en COP y duracion. Sus clientes reservan directo por WhatsApp o booking online."
         url="/producto/servicios"
-        keywords="catalogo de servicios peluqueria, lista de precios salon de belleza, como organizar servicios de mi spa, gestion de precios barberia"
+        keywords="catalogo de servicios negocio, lista de precios servicios, como organizar servicios, gestion de precios negocio"
         breadcrumbs={[
           { name: 'Inicio', url: '/' },
           { name: 'Producto', url: '/features' },
