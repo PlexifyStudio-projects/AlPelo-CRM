@@ -1579,50 +1579,63 @@
     margin-top: $spacing-xl;
   }
 
-  // Bank info section
+  // Bank info section — Premium
   &__bank-view {
     display: flex;
     flex-direction: column;
   }
 
   &__bank-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
   }
 
   &__bank-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 10px 14px;
     background: rgba(0, 0, 0, 0.02);
-    border-radius: 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    transition: background 120ms;
+
+    &:hover { background: rgba(0, 0, 0, 0.035); }
   }
 
   &__bank-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(0, 0, 0, 0.4);
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(0, 0, 0, 0.35);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
   }
 
   &__bank-value {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     color: $color-secondary;
+    font-variant-numeric: tabular-nums;
 
     &--highlight {
       color: $color-primary;
       text-transform: capitalize;
+      background: rgba($color-primary, 0.06);
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 12px;
     }
   }
 
   &__bank-form {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.015);
+    border-radius: 14px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
   }
 
   &__bank-form-row {
@@ -1634,14 +1647,38 @@
   &__bank-field {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 
     label {
       font-size: 10px;
-      font-weight: 600;
+      font-weight: 700;
       color: rgba(0, 0, 0, 0.4);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
+    }
+
+    input, select {
+      padding: 10px 14px;
+      border: 1.5px solid rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      outline: none;
+      background: #fff;
+      transition: border-color 150ms;
+
+      &:focus { border-color: $color-primary; }
+      &::placeholder { color: rgba(0, 0, 0, 0.25); }
+    }
+
+    select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
     }
   }
 
@@ -1649,7 +1686,9 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    margin-top: 4px;
+    margin-top: 6px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
   }
 }
 

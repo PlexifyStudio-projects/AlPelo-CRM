@@ -528,7 +528,16 @@ const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="no
 const DAY_NAMES = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
 const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
-const BANKS = ['Bancolombia', 'Davivienda', 'BBVA', 'Banco de Bogota', 'Scotiabank', 'Banco Popular', 'Banco de Occidente', 'AV Villas', 'Banco Agrario', 'Banco Caja Social', 'Nequi', 'Daviplata', 'Otro'];
+const BANKS = [
+  'Bancolombia', 'Nequi', 'Daviplata', 'Davivienda',
+  'BBVA Colombia', 'Banco de Bogota', 'Banco de Occidente',
+  'Scotiabank Colpatria', 'Banco Popular', 'AV Villas',
+  'Banco Agrario', 'Banco Caja Social', 'Banco Falabella',
+  'Banco GNB Sudameris', 'Banco Pichincha', 'Banco Itau',
+  'Banco W', 'Bancoomeva', 'Banco Serfinanza',
+  'Lulo Bank', 'Ualá', 'RappiPay', 'Nu Colombia',
+  'Otro',
+];
 const DOC_TYPES = [{ value: 'CC', label: 'Cedula de Ciudadania' }, { value: 'CE', label: 'Cedula de Extranjeria' }, { value: 'NIT', label: 'NIT' }];
 const PAY_METHODS = [{ value: 'nequi', label: 'Nequi' }, { value: 'daviplata', label: 'Daviplata' }, { value: 'bancolombia', label: 'Bancolombia' }, { value: 'efectivo', label: 'Efectivo' }];
 
