@@ -1023,6 +1023,26 @@
   }
 }
 
+@media (max-width: $breakpoint-lg) {
+  .dashboard {
+    &__title {
+      font-size: $font-size-2xl;
+    }
+
+    &__subtitle {
+      font-size: $font-size-sm;
+    }
+
+    &__section-title {
+      font-size: $font-size-base;
+    }
+
+    &__alert-item {
+      flex-wrap: wrap;
+    }
+  }
+}
+
 @media (max-width: $breakpoint-md) {
   .dashboard {
     &__header {
@@ -1031,7 +1051,7 @@
     }
 
     &__title {
-      font-size: $font-size-2xl;
+      font-size: $font-size-xl;
     }
 
     &__kpi-card {
@@ -1044,7 +1064,7 @@
     }
 
     &__kpi-value {
-      font-size: $font-size-xl;
+      font-size: $font-size-lg;
     }
 
     &__agenda,
@@ -1060,13 +1080,96 @@
     &__agenda-row {
       min-width: 500px;
     }
+
+    &__alert-item {
+      padding: $spacing-sm;
+    }
+
+    &__task-item {
+      gap: $spacing-xs;
+    }
+
+    &__task-actions {
+      flex-wrap: wrap;
+    }
+
+    &__top-services {
+      flex-wrap: wrap;
+      gap: $spacing-xs;
+    }
+
+    &__error {
+      padding: $spacing-xl;
+    }
+
+    &__error-text {
+      font-size: $font-size-base;
+    }
+
+    &__error-detail {
+      max-width: 100%;
+    }
   }
 }
 
 @media (max-width: $breakpoint-sm) {
   .dashboard {
+    &__header {
+      margin-bottom: $spacing-lg;
+    }
+
+    &__title {
+      font-size: $font-size-lg;
+    }
+
+    &__header-right {
+      padding: 4px $spacing-sm;
+    }
+
+    &__kpis {
+      margin-bottom: $spacing-lg;
+    }
+
+    &__kpi-card {
+      padding: $spacing-sm;
+      gap: $spacing-sm;
+    }
+
+    &__kpi-icon {
+      width: 36px;
+      height: 36px;
+    }
+
+    &__kpi-value {
+      font-size: $font-size-base;
+    }
+
+    &__kpi-label {
+      font-size: $font-size-xs;
+    }
+
+    &__chart-section,
+    &__body {
+      margin-bottom: $spacing-lg;
+    }
+
     &__lina-stats {
       grid-template-columns: 1fr;
+    }
+
+    &__lina-wa {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-xs;
+    }
+
+    &__agenda,
+    &__lina,
+    &__tasks,
+    &__payment-alerts,
+    &__revenue-chart,
+    &__status-chart {
+      padding: $spacing-sm;
     }
 
     &__agenda-header-row,
@@ -1078,6 +1181,20 @@
     &__agenda-header-row > :nth-child(5),
     &__agenda-row > :nth-child(5) {
       display: none;
+    }
+
+    &__payment-alerts,
+    &__tasks {
+      margin-bottom: $spacing-lg;
+    }
+
+    &__task-countdown {
+      font-size: $font-size-2xs;
+      padding: 2px 6px;
+    }
+
+    &__error {
+      padding: $spacing-lg;
     }
   }
 }

@@ -15,14 +15,6 @@ const fetchApi = async (url, options = {}) => {
   return resp.json();
 };
 
-const MOVEMENT_LABELS = {
-  purchase: { label: 'Compra', color: '#059669', icon: '+' },
-  sale: { label: 'Venta', color: '#DC2626', icon: '-' },
-  adjustment: { label: 'Ajuste', color: '#2563EB', icon: '~' },
-  return: { label: 'Devolución', color: '#D97706', icon: '↩' },
-  loss: { label: 'Pérdida', color: '#7C3AED', icon: '!' },
-};
-
 const formatCOP = (n) => `$${Math.round(n || 0).toLocaleString('es-CO')}`;
 
 const Inventory = () => {
@@ -37,7 +29,6 @@ const Inventory = () => {
   const [showModal, setShowModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [showStockModal, setShowStockModal] = useState(null);
-  const [showDetail, setShowDetail] = useState(null);
 
   const loadProducts = useCallback(async () => {
     try {

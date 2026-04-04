@@ -61,7 +61,7 @@
     flex-shrink: 0;
     flex-wrap: wrap;
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       flex-shrink: 1;
       width: 100%;
       justify-content: flex-end;
@@ -104,7 +104,7 @@
     max-width: 100%;
     box-shadow: $shadow-xs;
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       border-radius: $border-radius-md;
     }
   }
@@ -1448,7 +1448,7 @@
   }
 
   &__hide-mobile {
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       display: none !important;
     }
   }
@@ -2410,7 +2410,7 @@
     grid-template-columns: 1.3fr 1fr;
     gap: 20px;
 
-    @media (max-width: 900px) {
+    @media (max-width: $breakpoint-lg) {
       grid-template-columns: 1fr;
     }
   }
@@ -2589,7 +2589,7 @@
     align-items: center;
     margin-bottom: 8px;
 
-    @media (max-width: 600px) {
+    @media (max-width: $breakpoint-sm) {
       flex-direction: column;
       align-items: stretch;
     }
@@ -3029,7 +3029,7 @@
     gap: 20px;
     margin-bottom: 16px;
 
-    @media (max-width: 768px) { grid-template-columns: 1fr; }
+    @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
 
     h4 {
       font-size: 10px;
@@ -3865,7 +3865,7 @@
     gap: 8px;
     animation: fin-fadeIn 200ms $ease-out-expo;
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       width: 100%;
       justify-content: flex-end;
     }
@@ -3903,7 +3903,7 @@
     margin-bottom: $spacing-xl;
     box-shadow: $shadow-md, 0 0 0 1px rgba(30, 64, 175, 0.03);
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       grid-template-columns: 1fr;
       border-radius: $border-radius-xl;
     }
@@ -3941,7 +3941,7 @@
       pointer-events: none;
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       padding: 28px 24px;
     }
   }
@@ -3971,7 +3971,7 @@
       text-shadow: 0 2px 20px rgba(252, 165, 165, 0.2);
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       font-size: 32px;
     }
   }
@@ -4013,7 +4013,7 @@
     justify-content: center;
     gap: 0;
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       padding: 20px 24px;
     }
   }
@@ -4454,7 +4454,7 @@
     gap: $spacing-2xl;
     padding: $spacing-md $spacing-sm;
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       flex-direction: column;
       gap: $spacing-lg;
     }
@@ -4649,7 +4649,7 @@
     border-top: 1px solid $color-gray-100;
     margin-top: $spacing-sm;
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-md) {
       grid-template-columns: repeat(4, 1fr);
     }
   }
@@ -5417,12 +5417,201 @@
     margin-top: 0.25rem;
   }
 
-  @media (max-width: 768px) {
+  @media (max-width: $breakpoint-md) {
     &__fc-hero { flex-direction: column; align-items: flex-start; padding: 1.25rem; }
     &__fc-hero-amount { font-size: 2rem; }
     &__fc-hero-right { flex-direction: column; width: 100%; }
     &__fc-hero-card { min-width: 0; }
     &__fc-days { grid-template-columns: repeat(4, 1fr); }
     &__fc-kpis { grid-template-columns: 1fr; }
+  }
+
+  // ===== RESPONSIVE: TABLET (max-width: 1024px) =====
+  @media (max-width: $breakpoint-lg) {
+    &__pnl-card {
+      max-width: 100%;
+    }
+
+    &__form-grid {
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+
+    &__staff-cards {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+
+    &__comm-skeleton {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+
+    &__comparison-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    &__report-summary {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  // ===== RESPONSIVE: MOBILE additions (max-width: 768px) =====
+  @media (max-width: $breakpoint-md) {
+    &__title {
+      font-size: $font-size-xl;
+    }
+
+    &__form-grid {
+      grid-template-columns: 1fr;
+
+      &--4 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    &__form-actions {
+      flex-direction: column-reverse;
+
+      button { width: 100%; }
+    }
+
+    &__invoice-item-row {
+      flex-wrap: wrap;
+    }
+
+    &__invoice-totals {
+      max-width: 100%;
+      margin-left: 0;
+    }
+
+    &__table-wrap {
+      -webkit-overflow-scrolling: touch;
+    }
+
+    &__sc-financials {
+      flex-wrap: wrap;
+      gap: $spacing-sm;
+    }
+
+    &__sc-fin-divider {
+      display: none;
+    }
+
+    &__sc-fin-item {
+      min-width: calc(45% - #{$spacing-sm});
+    }
+
+    &__staff-cards {
+      grid-template-columns: 1fr;
+    }
+
+    &__comm-skeleton {
+      grid-template-columns: 1fr;
+    }
+
+    &__donut-wrap {
+      flex-direction: column;
+      gap: $spacing-md;
+    }
+
+    &__donut-chart {
+      width: 180px;
+      height: 180px;
+
+      &::before {
+        width: 140px;
+        height: 140px;
+      }
+    }
+
+    &__donut-legend {
+      max-width: 100%;
+    }
+
+    &__comparison-grid {
+      grid-template-columns: 1fr;
+    }
+
+    &__weekday-stats {
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    &__report-summary {
+      grid-template-columns: repeat(2, 1fr);
+      padding: $spacing-md;
+    }
+
+    &__nomina-detail-grid {
+      grid-template-columns: 1fr;
+    }
+
+    &__pay-actions {
+      flex-direction: column;
+      padding: $spacing-md;
+
+      button { width: 100%; }
+    }
+
+    &__perf-detail {
+      padding: 4px $spacing-md $spacing-md;
+    }
+
+    &__perf-compare-cards {
+      grid-template-columns: 1fr;
+    }
+
+    &__caja-summary {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    &__caja-card-value {
+      font-size: $font-size-lg;
+    }
+  }
+
+  // ===== RESPONSIVE: SMALL MOBILE (max-width: 576px) =====
+  @media (max-width: $breakpoint-sm) {
+    &__title {
+      font-size: $font-size-lg;
+    }
+
+    &__date-range {
+      font-size: $font-size-2xs;
+      padding: 3px 8px;
+    }
+
+    &__weekday-stats {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    &__report-summary {
+      grid-template-columns: 1fr;
+    }
+
+    &__owner-hero {
+      padding: 20px $spacing-md;
+    }
+
+    &__owner-big {
+      font-size: 28px;
+    }
+
+    &__owner-breakdown {
+      padding: $spacing-md;
+    }
+
+    &__caja-summary {
+      grid-template-columns: 1fr;
+    }
+
+    &__caja-card-value {
+      font-size: $font-size-md;
+    }
+
+    &__fc-days {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    &__input--date {
+      width: 120px;
+    }
   }
 }

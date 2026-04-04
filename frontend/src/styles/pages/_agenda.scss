@@ -3934,3 +3934,123 @@
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+// ============================================================================
+// RESPONSIVE — Walk-in, Queue, Staff Complete (flat BEM selectors)
+// ============================================================================
+
+@media (max-width: $breakpoint-md) {
+  .agenda__staff-complete {
+    max-width: 100%;
+    width: 100%;
+    border-radius: $border-radius-lg;
+  }
+
+  .agenda__staff-complete-header {
+    padding: $spacing-md;
+
+    h3 { font-size: $font-size-base; }
+  }
+
+  .agenda__staff-complete-body {
+    padding: 0 $spacing-md $spacing-md;
+  }
+
+  .agenda__staff-complete-foot {
+    padding: $spacing-sm $spacing-md;
+    flex-direction: column-reverse;
+    gap: $spacing-sm;
+
+    button { width: 100%; }
+  }
+
+  .agenda__walkin-overlay {
+    padding: $spacing-sm;
+    align-items: flex-end;
+  }
+
+  .agenda__walkin-modal {
+    max-width: 100%;
+    border-radius: $border-radius-xl $border-radius-xl 0 0;
+    max-height: 92vh;
+  }
+
+  .agenda__walkin-header {
+    padding: $spacing-md;
+
+    h2 { font-size: $font-size-lg; }
+  }
+
+  .agenda__walkin-body {
+    padding: $spacing-md;
+  }
+
+  .agenda__walkin-row {
+    flex-direction: column;
+    gap: $spacing-sm;
+  }
+
+  .agenda__walkin-footer {
+    padding: $spacing-sm $spacing-md $spacing-md;
+    flex-direction: column-reverse;
+
+    button { width: 100%; text-align: center; }
+  }
+
+  .agenda__walkin-result-cards {
+    grid-template-columns: 1fr;
+    gap: $spacing-sm;
+  }
+
+  .agenda__queue-panel {
+    width: calc(100vw - #{$spacing-xl});
+    right: $spacing-sm;
+    bottom: 70px;
+    max-height: 60vh;
+  }
+
+  .agenda__queue-fab {
+    right: $spacing-sm;
+    bottom: $spacing-sm;
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+  }
+
+  .agenda__search-box {
+    padding: $spacing-sm $spacing-md;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .agenda__walkin-modal {
+    max-height: 95vh;
+  }
+
+  .agenda__walkin-header {
+    padding: $spacing-sm $spacing-md;
+
+    h2 { font-size: $font-size-base; }
+  }
+
+  .agenda__walkin-body {
+    padding: $spacing-sm $spacing-md;
+  }
+
+  .agenda__walkin-result {
+    padding: $spacing-lg $spacing-md;
+
+    h3 { font-size: $font-size-lg; }
+  }
+
+  .agenda__queue-panel {
+    width: calc(100vw - #{$spacing-md});
+    right: $spacing-xs;
+  }
+
+  .agenda__staff-complete-field {
+    input {
+      font-size: $font-size-sm;
+      padding: $spacing-sm;
+    }
+  }
+}

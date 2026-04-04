@@ -194,12 +194,6 @@ const Services = () => {
     };
   }, [services]);
 
-  const staffMap = useMemo(() => {
-    const map = {};
-    staff.forEach(s => { map[s.id] = s; });
-    return map;
-  }, [staff]);
-
   const openCreateModal = () => {
     setEditingService(null);
     setFormData({ name: '', category: '', service_type: 'cita', price: '', duration_minutes: '', description: '', staff_ids: [] });

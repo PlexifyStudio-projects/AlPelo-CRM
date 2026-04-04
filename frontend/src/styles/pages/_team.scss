@@ -1742,6 +1742,23 @@
       gap: $spacing-md;
     }
 
+    &__title {
+      font-size: $font-size-2xl;
+    }
+
+    &__search {
+      input {
+        font-size: $font-size-sm;
+      }
+    }
+
+    &__sched-header,
+    &__sched-row {
+      grid-template-columns: 100px repeat(4, 1fr);
+      gap: $spacing-xs;
+      font-size: $font-size-xs;
+    }
+
     &__kpis {
       gap: $spacing-xs;
     }
@@ -1853,6 +1870,60 @@
       width: 100%;
       justify-content: center;
     }
+
+    &__title {
+      font-size: $font-size-xl;
+
+      &::after { width: 40px; }
+    }
+
+    &__kpi {
+      min-width: 100%;
+    }
+
+    &__card-photo {
+      width: 64px;
+      height: 64px;
+    }
+
+    &__card-name {
+      font-size: $font-size-sm;
+    }
+
+    &__sched-header,
+    &__sched-row {
+      grid-template-columns: 80px repeat(4, 1fr);
+      gap: $spacing-xs;
+      padding: 6px $spacing-sm;
+      font-size: $font-size-2xs;
+    }
+
+    &__sched-hcol {
+      font-size: 9px;
+    }
+
+    &__sched-day-name {
+      font-size: $font-size-2xs;
+    }
+
+    &__creds-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-xs;
+    }
+
+    &__creds-value {
+      flex-wrap: wrap;
+    }
+  }
+
+  .team__admins-item {
+    flex-wrap: wrap;
+    gap: $spacing-sm;
+  }
+
+  .team__admins-form-grid {
+    grid-template-columns: 1fr;
   }
 }
 

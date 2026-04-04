@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { useNotification } from '../../context/NotificationContext';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
 import campaignService from '../../services/campaignService';
-import clientService from '../../services/clientService';
 import staffService from '../../services/staffService';
 import servicesService from '../../services/servicesService';
 import templateService from '../../services/templateService';
