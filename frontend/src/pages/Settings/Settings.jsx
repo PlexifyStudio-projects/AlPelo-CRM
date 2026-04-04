@@ -735,65 +735,6 @@ const Settings = () => {
             </button>
           </div>
           <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '16px', marginTop: '12px' }}>
-            <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '8px' }}>Notificaciones Push</h4>
-            <div id="push-debug" style={{ fontSize: '12px', color: '#64748B', marginBottom: '10px', lineHeight: 1.6 }}>
-              Cargando estado...
-            </div>
-            <button
-              className={`${b}__ai-save`}
-              onClick={async () => {
-                const dbg = document.getElementById('push-debug');
-                const lines = [];
-
-                lines.push(`Notification API: ${'Notification' in window ? 'SI' : 'NO'}`);
-                lines.push(`Service Worker: ${'serviceWorker' in navigator ? 'SI' : 'NO'}`);
-                lines.push(`PushManager: ${'PushManager' in window ? 'SI' : 'NO'}`);
-
-                if ('Notification' in window) {
-                  lines.push(`Permiso actual: ${Notification.permission}`);
-                  if (Notification.permission === 'default') {
-                    const result = await Notification.requestPermission();
-                    lines.push(`Permiso solicitado: ${result}`);
-                  }
-                }
-
-                if ('serviceWorker' in navigator) {
-                  const reg = await navigator.serviceWorker.getRegistration('/AlPelo-CRM/');
-                  lines.push(`SW registrado: ${reg ? 'SI' : 'NO'}`);
-                  if (reg) {
-                    const sub = await reg.pushManager?.getSubscription();
-                    lines.push(`Push suscrito: ${sub ? 'SI' : 'NO'}`);
-                  }
-                }
-
-                if ('Notification' in window && Notification.permission === 'granted') {
-                  try {
-                    const reg = await navigator.serviceWorker?.getRegistration('/AlPelo-CRM/');
-                    if (reg) {
-                      await reg.showNotification('Plexify Studio', {
-                        body: 'Las notificaciones funcionan correctamente!',
-                        icon: '/AlPelo-CRM/icon-192.svg',
-                        badge: '/AlPelo-CRM/badge-72.svg',
-                        tag: 'test-' + Date.now(),
-                      });
-                      lines.push('Test: Notificacion enviada via SW');
-                    } else {
-                      new Notification('Plexify Studio', { body: 'Test de notificacion!' });
-                      lines.push('Test: Notificacion enviada via API');
-                    }
-                  } catch (e) {
-                    lines.push(`Test ERROR: ${e.message}`);
-                  }
-                } else {
-                  lines.push('Test: No se puede enviar (sin permiso)');
-                }
-
-                lines.push(`User Agent: ${navigator.userAgent.slice(0, 80)}...`);
-                dbg.innerHTML = lines.join('<br>');
-              }}
-            >
-              Probar notificaciones
-            </button>
           </div>
             </div>
           )}
@@ -1607,11 +1548,11 @@ function WompiPanel({ addNotification }) {
           <input value={data.wompi_events_key || ''} onChange={e => update('wompi_events_key', e.target.value)} placeholder="Para verificar webhooks" style={inputStyle} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Ambiente</label>
+          <label style={{ fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.4)' }}>Modo</label>
           <select value={data.wompi_environment || ''} onChange={e => update('wompi_environment', e.target.value)} style={inputStyle}>
             <option value="">Seleccionar</option>
-            <option value="sandbox">Sandbox (pruebas)</option>
-            <option value="production">Produccion</option>
+            <option value="sandbox">Pruebas (sandbox)</option>
+            <option value="production">Real (produccion)</option>
           </select>
         </div>
       </div>
