@@ -36,6 +36,10 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const [loyalty, setLoyalty] = useState(null);
   const [subscriptions, setSubscriptions] = useState([]);
   const [subsLoaded, setSubsLoaded] = useState(false);
+  const [showRedeem, setShowRedeem] = useState(false);
+  const [redeemPoints, setRedeemPoints] = useState('');
+  const [redeemDesc, setRedeemDesc] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
   const statusBtnRef = useRef(null);
   const b = 'client-detail';
 
@@ -352,7 +356,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                           );
                         })()}
                         {loyalty.account.available_points > 0 && (
-                          <button className={`${b}__loyalty-redeem`}>
+                          <button className={`${b}__loyalty-redeem`} onClick={() => { setShowRedeem(true); setRedeemPoints(''); setRedeemDesc(''); }}>
                             Canjear puntos
                           </button>
                         )}
@@ -379,6 +383,58 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                       </div>
                     )}
                   </div>
+
+                  {showRedeem && (
+                    <div className={`${b}__loyalty-redeem-panel`}>
+                      <div className={`${b}__loyalty-redeem-header`}>
+                        <strong>Canjear puntos</strong>
+                        <span>Disponibles: {(loyalty.account.available_points ?? 0).toLocaleString('es-CO')}</span>
+                      </div>
+                      <div className={`${b}__loyalty-redeem-form`}>
+                        <input
+                          type="number"
+                          min="1"
+                          max={loyalty.account.available_points}
+                          placeholder="Puntos a canjear"
+                          value={redeemPoints}
+                          onChange={e => setRedeemPoints(e.target.value)}
+                          className={`${b}__input`}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Motivo (ej: Descuento en servicio)"
+                          value={redeemDesc}
+                          onChange={e => setRedeemDesc(e.target.value)}
+                          className={`${b}__input`}
+                        />
+                      </div>
+                      <div className={`${b}__loyalty-redeem-actions`}>
+                        <button className={`${b}__btn-ghost`} onClick={() => setShowRedeem(false)}>Cancelar</button>
+                        <button
+                          className={`${b}__btn-primary`}
+                          disabled={redeeming || !redeemPoints || parseInt(redeemPoints) <= 0 || parseInt(redeemPoints) > loyalty.account.available_points}
+                          onClick={async () => {
+                            setRedeeming(true);
+                            try {
+                              const res = await fetch(`${_API}/loyalty/redeem`, {
+                                method: 'POST', credentials: 'include',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ client_id: client.id, points: parseInt(redeemPoints), description: redeemDesc || 'Canje de puntos' }),
+                              });
+                              if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
+                              setShowRedeem(false);
+                              loadLoyalty(client.id);
+                            } catch (err) {
+                              alert(err.message);
+                            }
+                            setRedeeming(false);
+                          }}
+                        >
+                          {redeeming ? 'Canjeando...' : `Canjear ${redeemPoints || 0} puntos`}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

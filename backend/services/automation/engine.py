@@ -573,6 +573,23 @@ def _eval_birthday(db, rule, tenant, preview_mode=False):
     for c in clients:
         if c.birthday and c.birthday.month == today.month and c.birthday.day == today.day:
             results.append((c, None))
+            # Award birthday loyalty bonus (if not already given this year)
+            try:
+                from routes.loyalty_endpoints import _get_or_create_config, _get_or_create_account, LoyaltyTransaction
+                config = _get_or_create_config(db, tenant.id)
+                if config.is_active and config.birthday_bonus > 0:
+                    account = _get_or_create_account(db, c.id, tenant.id)
+                    if account.birthday_bonus_year != today.year:
+                        account.available_points += config.birthday_bonus
+                        account.total_points += config.birthday_bonus
+                        account.birthday_bonus_year = today.year
+                        db.add(LoyaltyTransaction(
+                            tenant_id=tenant.id, client_id=c.id, type="earn_birthday",
+                            points=config.birthday_bonus, description=f"Bonus cumpleanos {today.year}",
+                        ))
+                        db.flush()
+            except Exception as e:
+                print(f"[LOYALTY] Birthday bonus error for client {c.id}: {e}")
     return results
 
 
