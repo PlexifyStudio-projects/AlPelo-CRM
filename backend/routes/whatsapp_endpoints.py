@@ -28,7 +28,7 @@ from services.whatsapp.helpers import (
     _is_off_hours, _off_hours_greeting, _wa_token_paused,
     _is_token_error, _trigger_token_pause, _trigger_token_resume,
     _get_wa_config_cached, wa_headers, _get_wa_base_url,
-    _transcribe_audio, _download_media_base64, _fetch_profile_photo,
+    _transcribe_audio, _download_media_base64, _fetch_profile_photo, _cache_media_locally,
     _in_flight_convs, WA_API_VERSION, WA_BUSINESS_ID, WA_WEBHOOK_VERIFY_TOKEN,
 )
 
@@ -1063,9 +1063,10 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks, d
                         media_data = msg_data.get(msg_type, {})
                         media_id = media_data.get("id")
                         content = media_data.get("caption", "")
-                        # Store media_id directly — frontend will use proxy endpoint
+                        # Store media_id + cache file locally so it survives Meta expiry
                         if media_id:
                             media_url = media_id
+                            background_tasks.add_task(_cache_media_locally, media_id, tenant_id)
                         if not content:
                             type_labels = {"image": "Foto", "video": "Video", "audio": "Audio", "document": "Documento", "sticker": "Sticker"}
                             content = f"📎 {type_labels.get(msg_type, msg_type)}"
@@ -1423,31 +1424,51 @@ def delete_all_conversations(db: Session = Depends(get_db), user=Depends(get_cur
 # ============================================================================
 # MEDIA PROXY — Proxy media from Meta API (requires auth token)
 # ============================================================================
+_MEDIA_CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "media_cache")
+os.makedirs(_MEDIA_CACHE_DIR, exist_ok=True)
+
+_MIME_TO_EXT = {
+    "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp",
+    "video/mp4": ".mp4", "audio/ogg": ".ogg", "audio/mpeg": ".mp3",
+    "application/pdf": ".pdf", "image/gif": ".gif",
+}
+
 @router.get("/media/{media_id}")
 async def proxy_media(media_id: str, db: Session = Depends(get_db)):
-    """Proxy media from Meta API (requires auth token that the frontend doesn't have)."""
+    """Proxy media from Meta API with local disk cache. Survives Meta ID expiry."""
     from fastapi.responses import Response
+    import glob as _glob
 
-    # Get token from tenant DB (preferred) or env var fallback
+    # Check local cache first (any extension)
+    cached = _glob.glob(os.path.join(_MEDIA_CACHE_DIR, f"{media_id}.*"))
+    if cached:
+        cached_path = cached[0]
+        ext = os.path.splitext(cached_path)[1]
+        ext_to_mime = {v: k for k, v in _MIME_TO_EXT.items()}
+        mime = ext_to_mime.get(ext, "application/octet-stream")
+        with open(cached_path, "rb") as f:
+            return Response(content=f.read(), media_type=mime)
+
+    # Not cached — fetch from Meta
     token, _ = _get_wa_config_cached(db)
     if not token:
         raise HTTPException(status_code=500, detail="WhatsApp token not configured")
 
-    # Step 1: Get the download URL from Meta
+    # Step 1: Get download URL from Meta
     async with httpx.AsyncClient(timeout=15) as client:
         meta_resp = await client.get(
             f"https://graph.facebook.com/{WA_API_VERSION}/{media_id}",
             headers={"Authorization": f"Bearer {token}"},
         )
         if meta_resp.status_code != 200:
-            raise HTTPException(status_code=404, detail="Media not found")
+            raise HTTPException(status_code=404, detail="Media expired or not found on Meta")
         download_url = meta_resp.json().get("url")
         mime_type = meta_resp.json().get("mime_type", "application/octet-stream")
 
     if not download_url:
         raise HTTPException(status_code=404, detail="No download URL returned")
 
-    # Step 2: Download the actual file
+    # Step 2: Download the file
     async with httpx.AsyncClient(timeout=30) as client:
         file_resp = await client.get(
             download_url,
@@ -1455,6 +1476,15 @@ async def proxy_media(media_id: str, db: Session = Depends(get_db)):
         )
         if file_resp.status_code != 200:
             raise HTTPException(status_code=404, detail="Media download failed")
+
+    # Step 3: Cache locally
+    ext = _MIME_TO_EXT.get(mime_type, ".bin")
+    cache_path = os.path.join(_MEDIA_CACHE_DIR, f"{media_id}{ext}")
+    try:
+        with open(cache_path, "wb") as f:
+            f.write(file_resp.content)
+    except Exception as e:
+        print(f"[MEDIA CACHE] Failed to cache {media_id}: {e}")
 
     return Response(content=file_resp.content, media_type=mime_type)
 

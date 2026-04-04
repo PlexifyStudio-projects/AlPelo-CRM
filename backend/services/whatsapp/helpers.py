@@ -273,6 +273,56 @@ async def _download_media_base64(media_id: str, db=None) -> tuple[bytes | None, 
 
 
 
+async def _cache_media_locally(media_id: str, tenant_id: int = None):
+    """Download media from Meta and cache to disk so it survives ID expiry."""
+    import os, glob as _glob
+    cache_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "media_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+
+    # Skip if already cached
+    if _glob.glob(os.path.join(cache_dir, f"{media_id}.*")):
+        return
+
+    db_temp = SessionLocal()
+    try:
+        token, _ = _get_wa_config_cached(db_temp, tenant_id=tenant_id)
+    finally:
+        db_temp.close()
+    if not token:
+        return
+
+    mime_to_ext = {
+        "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp",
+        "video/mp4": ".mp4", "audio/ogg": ".ogg", "audio/mpeg": ".mp3",
+        "application/pdf": ".pdf", "image/gif": ".gif",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            meta_resp = await client.get(
+                f"https://graph.facebook.com/{WA_API_VERSION}/{media_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            if meta_resp.status_code != 200:
+                return
+            url = meta_resp.json().get("url")
+            mime = meta_resp.json().get("mime_type", "application/octet-stream")
+            if not url:
+                return
+
+        async with httpx.AsyncClient(timeout=30) as client:
+            file_resp = await client.get(url, headers={"Authorization": f"Bearer {token}"})
+            if file_resp.status_code != 200:
+                return
+
+        ext = mime_to_ext.get(mime, ".bin")
+        with open(os.path.join(cache_dir, f"{media_id}{ext}"), "wb") as f:
+            f.write(file_resp.content)
+        print(f"[MEDIA CACHE] Cached {media_id}{ext} ({len(file_resp.content)} bytes)")
+    except Exception as e:
+        print(f"[MEDIA CACHE] Error caching {media_id}: {e}")
+
+
 async def _fetch_profile_photo(conv_id: int, wa_phone: str):
     """Try to fetch WhatsApp profile photo URL from Meta Cloud API.
 

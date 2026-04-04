@@ -15,7 +15,11 @@ from datetime import datetime
 from database.connection import SessionLocal
 from database.models import ClientMemory, WhatsAppConversation, WhatsAppMessage, Client
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+def _get_api_key(db=None):
+    """Get Anthropic API key from DB (preferred) or env var (fallback)."""
+    from routes._helpers import get_anthropic_key
+    key, _model = get_anthropic_key(db)
+    return key
 
 
 def _safe_parse_embedding(emb) -> Optional[list]:
@@ -69,11 +73,12 @@ def extract_memories_from_conversation(conv_id: int) -> List[Dict]:
 
     Returns list of dicts: [{"type": str, "content": str, "confidence": float}]
     """
-    if not ANTHROPIC_API_KEY:
-        print("[MEMORY EXTRACTOR] No ANTHROPIC_API_KEY — skipping")
-        return []
-
     db = SessionLocal()
+    api_key = _get_api_key(db)
+    if not api_key:
+        print("[MEMORY EXTRACTOR] No API key in DB or env — skipping")
+        db.close()
+        return []
     try:
         # Get conversation with client info
         conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
@@ -108,7 +113,7 @@ def extract_memories_from_conversation(conv_id: int) -> List[Dict]:
                 resp = client.post(
                     "https://api.anthropic.com/v1/messages",
                     headers={
-                        "x-api-key": ANTHROPIC_API_KEY,
+                        "x-api-key": api_key,
                         "anthropic-version": "2023-06-01",
                         "content-type": "application/json",
                     },
