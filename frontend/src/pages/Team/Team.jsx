@@ -539,7 +539,8 @@ const BANKS = [
   'Otro',
 ];
 const DOC_TYPES = [{ value: 'CC', label: 'Cedula de Ciudadania' }, { value: 'CE', label: 'Cedula de Extranjeria' }, { value: 'NIT', label: 'NIT' }];
-const PAY_METHODS = [{ value: 'nequi', label: 'Nequi' }, { value: 'daviplata', label: 'Daviplata' }, { value: 'bancolombia', label: 'Bancolombia' }, { value: 'efectivo', label: 'Efectivo' }];
+const PAY_METHODS = [{ value: 'nequi', label: 'Nequi' }, { value: 'daviplata', label: 'Daviplata' }, { value: 'transferencia', label: 'Transferencia bancaria' }, { value: 'efectivo', label: 'Efectivo' }];
+const WALLET_BANKS = new Set(['Nequi', 'Daviplata', 'RappiPay', 'Ualá', 'Nu Colombia', 'Lulo Bank']);
 
 const BankInfoEditor = ({ staffId, onUpdated }) => {
   const { addNotification } = useNotification();
@@ -602,15 +603,17 @@ const BankInfoEditor = ({ staffId, onUpdated }) => {
   if (loading) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Cargando...</p>;
 
   if (!editing) {
+    const method = data?.preferred_payment_method || 'efectivo';
+    const methodLabel = PAY_METHODS.find(m => m.value === method)?.label || method;
     return (
       <div className={`${b}__bank-view`}>
         {hasBankData ? (
           <div className={`${b}__bank-grid`}>
-            {data.document_type && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Documento</span><span className={`${b}__bank-value`}>{data.document_type} {mask(data.document_number)}</span></div>}
-            {data.bank_name && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Banco</span><span className={`${b}__bank-value`}>{data.bank_name} · {data.bank_account_type} · {mask(data.bank_account_number)}</span></div>}
-            {data.nequi_phone && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Nequi</span><span className={`${b}__bank-value`}>{mask(data.nequi_phone)}</span></div>}
-            {data.daviplata_phone && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Daviplata</span><span className={`${b}__bank-value`}>{mask(data.daviplata_phone)}</span></div>}
-            {data.preferred_payment_method && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Metodo preferido</span><span className={`${b}__bank-value ${b}__bank-value--highlight`}>{data.preferred_payment_method}</span></div>}
+            <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Metodo</span><span className={`${b}__bank-value ${b}__bank-value--highlight`}>{methodLabel}</span></div>
+            {data.document_type && data.document_number && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Documento</span><span className={`${b}__bank-value`}>{data.document_type} {mask(data.document_number)}</span></div>}
+            {method === 'nequi' && data.nequi_phone && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Nequi</span><span className={`${b}__bank-value`}>{mask(data.nequi_phone)}</span></div>}
+            {method === 'daviplata' && data.daviplata_phone && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Daviplata</span><span className={`${b}__bank-value`}>{mask(data.daviplata_phone)}</span></div>}
+            {method === 'transferencia' && data.bank_name && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Cuenta</span><span className={`${b}__bank-value`}>{data.bank_name} · {data.bank_account_type} · {mask(data.bank_account_number)}</span></div>}
           </div>
         ) : (
           <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.35)', padding: '4px 0' }}>Sin datos bancarios configurados</p>
@@ -622,56 +625,83 @@ const BankInfoEditor = ({ staffId, onUpdated }) => {
     );
   }
 
+  const isWallet = form.preferred_payment_method === 'nequi' || form.preferred_payment_method === 'daviplata';
+  const isTransfer = form.preferred_payment_method === 'transferencia';
+  const isCash = form.preferred_payment_method === 'efectivo';
+
   return (
     <div className={`${b}__bank-form`}>
-      <div className={`${b}__bank-form-row`}>
-        <div className={`${b}__bank-field`}>
-          <label>Tipo documento</label>
-          <select value={form.document_type} onChange={e => setForm(f => ({ ...f, document_type: e.target.value }))} className={`${b}__input`}>
-            {DOC_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-          </select>
-        </div>
-        <div className={`${b}__bank-field`}>
-          <label>Numero documento</label>
-          <input value={form.document_number} onChange={e => setForm(f => ({ ...f, document_number: e.target.value }))} className={`${b}__input`} placeholder="1098765432" />
-        </div>
-      </div>
-      <div className={`${b}__bank-form-row`}>
-        <div className={`${b}__bank-field`}>
-          <label>Banco</label>
-          <select value={form.bank_name} onChange={e => setForm(f => ({ ...f, bank_name: e.target.value }))} className={`${b}__input`}>
-            <option value="">— Seleccionar —</option>
-            {BANKS.map(b2 => <option key={b2} value={b2}>{b2}</option>)}
-          </select>
-        </div>
-        <div className={`${b}__bank-field`}>
-          <label>Tipo cuenta</label>
-          <select value={form.bank_account_type} onChange={e => setForm(f => ({ ...f, bank_account_type: e.target.value }))} className={`${b}__input`}>
-            <option value="Ahorros">Ahorros</option>
-            <option value="Corriente">Corriente</option>
-          </select>
-        </div>
-      </div>
-      <div className={`${b}__bank-field`}>
-        <label>Numero de cuenta</label>
-        <input value={form.bank_account_number} onChange={e => setForm(f => ({ ...f, bank_account_number: e.target.value }))} className={`${b}__input`} placeholder="0000 0000 0000" />
-      </div>
-      <div className={`${b}__bank-form-row`}>
-        <div className={`${b}__bank-field`}>
-          <label>Nequi</label>
-          <input value={form.nequi_phone} onChange={e => setForm(f => ({ ...f, nequi_phone: e.target.value }))} className={`${b}__input`} placeholder="300 123 4567" />
-        </div>
-        <div className={`${b}__bank-field`}>
-          <label>Daviplata</label>
-          <input value={form.daviplata_phone} onChange={e => setForm(f => ({ ...f, daviplata_phone: e.target.value }))} className={`${b}__input`} placeholder="300 123 4567" />
-        </div>
-      </div>
+      {/* Metodo preferido PRIMERO — controla qué campos se muestran */}
       <div className={`${b}__bank-field`}>
         <label>Metodo preferido de pago</label>
         <select value={form.preferred_payment_method} onChange={e => setForm(f => ({ ...f, preferred_payment_method: e.target.value }))} className={`${b}__input`}>
           {PAY_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
       </div>
+
+      {/* Documento — siempre visible excepto efectivo */}
+      {!isCash && (
+        <div className={`${b}__bank-form-row`}>
+          <div className={`${b}__bank-field`}>
+            <label>Tipo documento</label>
+            <select value={form.document_type} onChange={e => setForm(f => ({ ...f, document_type: e.target.value }))} className={`${b}__input`}>
+              {DOC_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+            </select>
+          </div>
+          <div className={`${b}__bank-field`}>
+            <label>Numero documento</label>
+            <input value={form.document_number} onChange={e => setForm(f => ({ ...f, document_number: e.target.value }))} className={`${b}__input`} placeholder="1098765432" />
+          </div>
+        </div>
+      )}
+
+      {/* Nequi — solo teléfono */}
+      {form.preferred_payment_method === 'nequi' && (
+        <div className={`${b}__bank-field`}>
+          <label>Numero Nequi</label>
+          <input value={form.nequi_phone} onChange={e => setForm(f => ({ ...f, nequi_phone: e.target.value }))} className={`${b}__input`} placeholder="300 123 4567" />
+        </div>
+      )}
+
+      {/* Daviplata — solo teléfono */}
+      {form.preferred_payment_method === 'daviplata' && (
+        <div className={`${b}__bank-field`}>
+          <label>Numero Daviplata</label>
+          <input value={form.daviplata_phone} onChange={e => setForm(f => ({ ...f, daviplata_phone: e.target.value }))} className={`${b}__input`} placeholder="300 123 4567" />
+        </div>
+      )}
+
+      {/* Transferencia — banco + tipo cuenta + numero */}
+      {isTransfer && (
+        <>
+          <div className={`${b}__bank-form-row`}>
+            <div className={`${b}__bank-field`}>
+              <label>Banco</label>
+              <select value={form.bank_name} onChange={e => setForm(f => ({ ...f, bank_name: e.target.value }))} className={`${b}__input`}>
+                <option value="">— Seleccionar —</option>
+                {BANKS.filter(bk => !WALLET_BANKS.has(bk)).map(b2 => <option key={b2} value={b2}>{b2}</option>)}
+              </select>
+            </div>
+            <div className={`${b}__bank-field`}>
+              <label>Tipo cuenta</label>
+              <select value={form.bank_account_type} onChange={e => setForm(f => ({ ...f, bank_account_type: e.target.value }))} className={`${b}__input`}>
+                <option value="Ahorros">Ahorros</option>
+                <option value="Corriente">Corriente</option>
+              </select>
+            </div>
+          </div>
+          <div className={`${b}__bank-field`}>
+            <label>Numero de cuenta</label>
+            <input value={form.bank_account_number} onChange={e => setForm(f => ({ ...f, bank_account_number: e.target.value }))} className={`${b}__input`} placeholder="0000 0000 0000" />
+          </div>
+        </>
+      )}
+
+      {/* Efectivo — solo mensaje */}
+      {isCash && (
+        <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', padding: '8px 0' }}>Pago en efectivo — no requiere datos bancarios.</p>
+      )}
+
       <div className={`${b}__bank-actions`}>
         <button className={`${b}__btn ${b}__btn--outline-sm`} onClick={() => setEditing(false)}>Cancelar</button>
         <button className={`${b}__btn ${b}__btn--primary-sm`} onClick={handleSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>

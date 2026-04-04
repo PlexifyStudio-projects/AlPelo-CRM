@@ -62,7 +62,7 @@ def _build_business_context(db: Session, tenant_id: int = None, location_id: int
             ctx = BUSINESS_CONTEXT.get(btype, f'Tipo de negocio: {btype}. Adapte las respuestas al contexto de este negocio.')
             sections.append(f"=== TIPO DE NEGOCIO ===\n{ctx}\n")
 
-    # --- Location + schedule ---
+    # --- Location + schedule + open/closed status ---
     opening = '08:00'
     closing = '19:00'
     if location_id:
@@ -76,7 +76,25 @@ def _build_business_context(db: Session, tenant_id: int = None, location_id: int
         if first_loc:
             opening = first_loc.opening_time or '08:00'
             closing = first_loc.closing_time or '19:00'
-    sections.append(f"=== HORARIO DEL NEGOCIO ===\nAbre: {opening} | Cierra: {closing}\nSi faltan 15 min o menos para {closing}, informa que estan cerrando y ofrece cita para manana.")
+
+    # Compute open/closed status with code (NOT left to AI reasoning)
+    from routes._helpers import now_colombia as _now_col
+    _now = _now_col()
+    _current_min = _now.hour * 60 + _now.minute
+    _oh, _om = map(int, opening.split(":"))
+    _ch, _cm = map(int, closing.split(":"))
+    _open_min = _oh * 60 + _om
+    _close_min = _ch * 60 + _cm
+    _mins_to_close = _close_min - _current_min
+
+    if _current_min < _open_min or _current_min >= _close_min:
+        _status_line = f"*** ESTADO ACTUAL: CERRADO *** El negocio esta CERRADO ahora ({_now.strftime('%I:%M %p')}). Horario: {opening} - {closing}. NO digas que estan abiertos. Ofrece agendar para el proximo dia habil."
+    elif _mins_to_close <= 15:
+        _status_line = f"*** ESTADO ACTUAL: CERRANDO *** Faltan {_mins_to_close} minutos para cerrar ({closing}). Informa que estan por cerrar y ofrece cita para manana."
+    else:
+        _status_line = f"ESTADO ACTUAL: ABIERTO. Horario: {opening} - {closing}. Hora actual: {_now.strftime('%I:%M %p')}."
+
+    sections.append(f"=== HORARIO DEL NEGOCIO ===\nAbre: {opening} | Cierra: {closing}\n{_status_line}")
 
     # --- KPIs ---
     clients_q = db.query(Client).filter(Client.is_active == True)

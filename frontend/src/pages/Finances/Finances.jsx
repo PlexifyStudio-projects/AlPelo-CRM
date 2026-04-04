@@ -3822,14 +3822,14 @@ const TabNomina = () => {
               <div className="finances__pay-bank">
                 <span className="finances__pay-bank-label">Cuenta destino</span>
                 <div className="finances__pay-bank-info">
-                  {bankInfo.preferred_payment_method === 'nequi' && bankInfo.nequi_phone ? (
+                  {(bankInfo.preferred_payment_method === 'nequi' && bankInfo.nequi_phone) ? (
                     <span>Nequi: <strong>{bankInfo.nequi_phone.replace(/(\d{3})(\d+)(\d{4})/, '$1-***-$3')}</strong></span>
-                  ) : bankInfo.preferred_payment_method === 'daviplata' && bankInfo.daviplata_phone ? (
+                  ) : (bankInfo.preferred_payment_method === 'daviplata' && bankInfo.daviplata_phone) ? (
                     <span>Daviplata: <strong>{bankInfo.daviplata_phone.replace(/(\d{3})(\d+)(\d{4})/, '$1-***-$3')}</strong></span>
-                  ) : bankInfo.bank_name && bankInfo.bank_account_number ? (
+                  ) : ((bankInfo.preferred_payment_method === 'transferencia' || bankInfo.preferred_payment_method === 'bancolombia') && bankInfo.bank_name && bankInfo.bank_account_number) ? (
                     <span>{bankInfo.bank_name} · {bankInfo.bank_account_type} · <strong>****{bankInfo.bank_account_number.slice(-4)}</strong></span>
                   ) : (
-                    <span style={{ color: '#999' }}>Metodo preferido: {bankInfo.preferred_payment_method || '—'}</span>
+                    <span style={{ color: '#999' }}>Metodo: {bankInfo.preferred_payment_method || '—'}</span>
                   )}
                   {bankInfo.document_type && bankInfo.document_number && (
                     <small style={{ display: 'block', color: 'rgba(0,0,0,0.4)', fontSize: 11, marginTop: 2 }}>
@@ -3865,7 +3865,7 @@ const TabNomina = () => {
                   <option value="efectivo">Efectivo</option>
                   <option value="nequi">Nequi</option>
                   <option value="daviplata">Daviplata</option>
-                  <option value="bancolombia">Bancolombia</option>
+                  <option value="transferencia">Transferencia bancaria</option>
                 </select>
               </div>
               <div className="finances__pay-field">

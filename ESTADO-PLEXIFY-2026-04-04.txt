@@ -1,0 +1,418 @@
+================================================================================
+  PLEXIFY STUDIO — ESTADO COMPLETO DEL PROYECTO
+  Fecha: 4 de Abril de 2026
+  Autor: Luis (Plexify Studio)
+================================================================================
+
+
+================================================================================
+SECCION 1: LO QUE TENEMOS (construido y funcional)
+================================================================================
+
+
+--- CORE CRM ---
+
+1. Agenda
+   - Vista semana/dia, drag-and-drop, slots 15min
+   - Multi-servicio por cita, deteccion de conflictos
+   - Busqueda inteligente (cliente, servicio, precio, estado)
+   - Filtro por staff, estados con colores
+   - Tracking de quien creo la cita (admin, lina_ia, client)
+
+2. CRM Clientes
+   - Perfiles 360 grados con historial completo
+   - Estados automaticos: VIP, activo, en riesgo, inactivo, nuevo
+   - Import/export CSV, tags personalizados
+   - Dias desde ultima visita, ticket promedio, total gastado
+   - WhatsApp opt-in/opt-out flag
+   - Override manual de estado
+
+3. Equipo
+   - Perfiles completos, comisiones por servicio
+   - Portal staff (dashboard, agenda read-only, finanzas)
+   - Fotos de staff, info bancaria
+   - Active/inactive toggle
+
+4. Servicios
+   - CRUD con categorias dinamicas por tipo de negocio
+   - Colores por servicio (visual en agenda)
+   - Assignment de staff por servicio
+   - 20 tipos de negocio con templates de servicios
+
+
+--- FINANZAS (v2 completa) ---
+
+5. Revenue + Gastos + P&L
+   - Rango de fechas personalizado
+   - Metodos de pago: efectivo, transferencia, tarjeta, Nequi, Daviplata, Bancolombia
+
+6. Nomina v2
+   - Seleccion de visitas con checkboxes
+   - Comprobantes CP-XXXX imprimibles
+   - Info bancaria del staff en Team drawer
+   - Liquidacion bulk ("Liquidar nomina")
+   - Filtros pagado/no pagado
+
+7. Facturas v2
+   - Descuentos (% y fijo), contado/credito con fecha de vencimiento
+   - Campos fiscales: tipo documento (CC/NIT/CE), email, direccion
+   - Impresion con logo/nombre/NIT/direccion del tenant
+   - Envio de PDF por WhatsApp
+   - Numero de factura thread-safe (SELECT FOR UPDATE)
+
+8. IVA configurable
+   - Incluido en precio (estandar colombiano)
+   - Toggle por tenant (AlPelo es RST, sin IVA)
+   - Comision staff sobre precio FULL, IVA es costo del negocio
+
+9. Staff Performance Dashboard
+   - Tab "Rendimiento" en Finanzas
+   - Leaderboard con medallas, badges de crecimiento
+   - Desglose por categoria, top servicios, grafico diario
+
+10. Revenue Forecasting
+    - Proyeccion semanal + mensual
+    - Tab "Proyeccion" en Finanzas
+
+11. DIAN
+    - 21 campos fiscales en modelo Tenant
+    - Settings: panel de configuracion fiscal
+    - Finanzas: tab operacional con checklist, progreso, roadmap
+
+12. Bold (Pagos)
+    - Config en Settings (public_key, private_key, events_key, environment)
+    - Toggle habilitado/deshabilitado
+    - Guia de configuracion integrada
+
+
+--- WHATSAPP + COMUNICACION ---
+
+13. Meta API nativa
+    - Envio/recepcion, templates, media (imagen/video/audio/docs)
+    - POST /whatsapp/send-text, send-media, send-document, send-image
+
+14. Inbox
+    - Conversaciones en tiempo real
+    - Adjuntos (paperclip menu, preview, send on Enter)
+    - Vista de sentimiento por conversacion
+    - Documentos/imagenes con iconos en chat
+
+15. Campanas
+    - 11 segmentos de audiencia
+    - Envio masivo por WhatsApp
+    - Templates con header IMAGE/VIDEO/TEXT
+    - Media upload optimizado (una vez para bulk, no por cliente)
+
+16. Envio de facturas PDF por WhatsApp
+
+
+--- IA (LINA) — 47 ACCIONES ---
+
+17. Chat admin
+    - Asistente contextual con conocimiento completo del negocio
+    - 7 botones estrategicos: campanas, diagnostico, recuperacion,
+      precios, forecasting, crecimiento, retencion
+
+18. WhatsApp auto-reply
+    - Agendamiento autonomo, reprogramacion, consultas
+    - Continuation flow: buscar > ejecutar > segunda llamada IA >
+      ejecutar de nuevo > conflictos > tercera llamada si necesario
+
+19. Seguridad IA
+    - Memory extraction (pgvector)
+    - Prompt injection protection (37 patrones)
+    - Core safety (11 reglas)
+    - Privacidad: agenda muestra [Ocupado] a otros clientes
+
+20. Scheduler
+    - Recordatorios 24h/1h antes de cita
+    - Sweep diario, morning review
+    - Briefings pre-cita (30min antes)
+    - Rate limiter: 3 msg/hora, 6/dia por conversacion
+
+21. Inteligencia
+    - Sentiment Analysis (rule-based, zero AI tokens)
+    - No-Show Prediction (scoring + alertas)
+    - Precision Scheduling (horarios optimos sugeridos)
+    - Progressive Learning (tracking de outcomes)
+    - Token optimization (15 msgs historial, max 800 tokens, caching)
+
+
+--- AUTOMATIZACIONES ---
+
+22. Automation Studio
+    - 29 tipos de trigger, 5 categorias
+    - Wizard de 4 pasos, mensajes Meta-compliant
+    - 31 automaciones creadas para AlPelo (pendiente aprobacion Meta)
+    - Limites por plan: 10/25/50 automaciones
+
+
+--- MULTI-TENANT SAAS ---
+
+23. Dev Panel (Plexify Studio)
+    - 12 modulos: Dashboard, Tenants, Billing, WhatsApp, Performance,
+      System, Activity, Clients, Usage, Profile, AI Prospector, Error Logging
+
+24. Tenants
+    - 6+ tenants en produccion
+    - Self-service register: wizard 7 pasos
+    - Crea tenant + admin + servicios + staff automaticamente
+
+25. Planes
+    - Starter $190K COP (1,000 msgs AI, 10 automaciones)
+    - Pro $390K COP (3,000 msgs AI, 25 automaciones)
+    - Business $590K COP (5,000 msgs AI, 50 automaciones)
+    - TODAS las features incluidas en todos los planes
+
+26. Multi-Location
+    - Modelo Location, StaffLocation
+    - location_id en 11 modelos
+    - Selector en sidebar, queries filtradas
+    - API interceptor
+
+27. 20 tipos de negocio
+    - Cada uno con SERVICE_TEMPLATES + service_type (cita/paquete/reserva)
+    - Lina tiene BUSINESS_CONTEXT por tipo
+
+
+--- BOOKING ONLINE ---
+
+28. Micrositio premium
+    - Glassmorphism, carrusel, equipo horizontal
+    - Servicios 4 columnas con busqueda
+    - Resenas manuales (admin ingresa reviews sin API)
+
+29. Full-stack dinamico
+    - 11 columnas nuevas en Tenant
+    - Editor admin: cover, galeria, contacto, redes, tags, horario, resenas
+
+
+--- LANDING PAGE ---
+
+30. Integrada en el repo
+    - Landing publica + CRM autenticado en un solo deploy
+    - CSS -76% optimizado, dependencias muertas eliminadas
+    - SEO: 17 paginas, JSON-LD, sitemap, robots.txt
+    - Service Worker cache-first
+
+
+--- INFRAESTRUCTURA ---
+
+31. Backend: FastAPI en Railway, PostgreSQL, SQLAlchemy, Alembic
+32. Frontend: React 19 + Vite, SCSS BEM, GitHub Pages
+33. Auth: JWT + cookies httponly, single-device sessions
+34. Backend refactored: 8/10 fases (services/ + schemas/ separados)
+35. AI Model: claude-sonnet-4-20250514 via AIProvider DB
+
+
+================================================================================
+SECCION 2: LO QUE NOS FALTA (por prioridad)
+================================================================================
+
+
+--- URGENTE / ALTA PRIORIDAD ---
+
+1. POS / Smart Checkout
+   - Checkout inteligente al completar cita
+   - Itemizado, split payments, tips, descuentos, recibo por WA
+   - TODA la competencia lo tiene (Fresha, Square, Vagaro, GlossGenius)
+
+2. Bold API real (dispersiones)
+   - Necesita RUT del negocio para activar
+   - Dispersiones reales desde Nomina
+   - Actualmente simulado
+
+3. App Movil / PWA
+   - Toda la competencia tiene app nativa
+   - Minimo: PWA con Service Worker, push notifications, offline
+   - Staff vive en el celular
+
+4. Caja Registradora
+   - Apertura/cierre diario, movimientos, conciliacion
+   - Reporte diario de caja
+   - Feature operativo basico que falta
+
+5. Programa de Lealtad (completo)
+   - Puntos por visita/gasto, tiers (Bronce/Plata/Oro/VIP)
+   - Referidos con bonos, cumpleanos bonus
+   - Redencion de puntos por descuentos
+   - Parcialmente construido, falta backend completo
+
+6. Backend refactor fases 9-10
+   - 57+ proxies pendientes de eliminar
+   - Bajo riesgo pero pendiente
+
+
+--- MEDIA PRIORIDAD ---
+
+7. Gift Cards digitales
+   - Compra, balance, redencion
+   - Envio por WhatsApp
+
+8. Paquetes prepagados / Membresias
+   - ClientSubscription existe en DB pero falta UI completa
+   - Ej: "10 Cortes por $200,000" con tracking de balance
+
+9. Google Calendar sync
+   - 2-way sync para staff
+   - Bloqueos en Google bloquean en Plexify
+
+10. Email campaigns
+    - Complemento a WhatsApp
+    - Para clientes que prefieren email
+
+11. Campaign analytics
+    - Open rates, conversiones
+    - A/B testing de mensajes
+
+12. Reportes exportables
+    - PDF/Excel para finanzas y CRM
+    - Los duenos necesitan compartir con contadores
+
+13. Formularios de consentimiento
+    - Para spas, clinicas, estetica
+    - Intake forms digitales
+
+14. Custom domains por tenant
+    - booking.minegocio.com en vez de plexifystudio.com/booking/slug
+
+15. DIAN Dataico integracion
+    - Facturacion electronica real
+    - Requerido para negocios sobre cierto umbral
+
+
+--- BAJA PRIORIDAD / FUTURO ---
+
+16. Instagram DM / Facebook Messenger
+    - Canal adicional al inbox omnicanal
+
+17. Recurring appointments
+    - Citas repetidas automaticas (cada 3 semanas, etc.)
+
+18. Merge duplicados de clientes
+    - Deteccion y fusion de perfiles duplicados
+
+19. 2FA / OAuth
+    - Seguridad adicional de login
+
+20. Marketplace de templates
+    - Templates de campana pre-hechos
+    - Catalogos por tipo de negocio
+
+21. Client Self-Service Portal
+    - Historial, puntos, rebooking desde link
+    - Accesible via WhatsApp
+
+22. Promotions / Codigos de descuento
+    - Crear cupones con limite de uso y vigencia
+
+23. Social media post scheduling
+    - Programar posts desde Plexify
+
+24. Staff goals / targets
+    - Metas mensuales por staff
+
+25. Resource/room booking
+    - Reservar salas/equipos ademas de staff
+
+
+================================================================================
+SECCION 3: LO QUE NECESITAMOS PARA LANZAR
+================================================================================
+
+
+--- PARA ALPELO (primer cliente) ---
+
+- Bold con RUT real para dispersiones de nomina
+- Aprobacion de Meta para 31 automaciones pendientes
+- Verificacion Meta Business para token permanente WhatsApp
+- Testing en produccion de Lina WhatsApp
+- Fix bug de horarios (Lina dice "abiertos" cuando esta cerrado)
+
+
+--- PARA ESCALAR A MAS CLIENTES ---
+
+- POS (feature #1 que toda la competencia tiene)
+- App movil (PWA minimo — duenos viven en el celular)
+- Onboarding post-registro mas fluido
+- Documentacion para admins (como usar cada modulo)
+
+
+--- PARA COMPETIR CON FRESHA / AGENDAPRO ---
+
+- Programa de lealtad completo
+- Caja registradora
+- Staff scheduling con turnos
+- Reportes PDF exportables
+
+
+================================================================================
+SECCION 4: VENTAJA COMPETITIVA (lo que NADIE tiene junto)
+================================================================================
+
+1. WhatsApp Business API NATIVO (no terceros)
+   - En LATAM, 95%+ de comunicacion es por WhatsApp
+   - Competidores USA (Fresha, Vagaro) son email-first
+   - Competidores LATAM (AgendaPro, BEWE) tienen WA basico
+
+2. Lina IA CONTEXTUAL con 47 acciones
+   - Continuation flow (buscar > ejecutar > segunda llamada > conflictos)
+   - Agendamiento autonomo por WhatsApp
+   - Aprende reglas del admin en tiempo real
+   - NADIE tiene un asistente IA asi integrado
+
+3. Disenado para LATAM
+   - COP, Nequi, Daviplata, efectivo, transferencia
+   - Espanol colombiano, formato de fechas/moneda colombiano
+   - Entiende dinamica de negocios informales de la region
+
+
+================================================================================
+SECCION 5: BUGS CONOCIDOS PENDIENTES
+================================================================================
+
+1. Lina dice "estamos abiertos" fuera de horario (off-hours detection rota)
+2. Bank info dynamic fields (Nequi=telefono, Bancolombia=cuenta+tipo)
+3. Campaign IMAGE template — verificar envio correcto
+4. Lina a veces crea cliente nuevo en vez de buscar existente
+5. Inbox images — algunos media IDs de Meta expiran
+6. Memory extractor — posible API key incorrecta en AIProvider
+7. Push notifications — error de deserializacion de clave VAPID
+
+
+================================================================================
+SECCION 6: LISTA DE TRABAJO (1 por 1)
+================================================================================
+
+ORDEN SUGERIDO:
+
+ 1. [BUG]     Fix horarios de Lina (dice "abiertos" cuando cerrado)
+ 2. [BUG]     Bank info dynamic fields (Nequi vs Bancolombia)
+ 3. [BUG]     Campaign IMAGE template verification
+ 4. [BUG]     Lina buscar cliente antes de crear nuevo
+ 5. [BUG]     Inbox images (media IDs expiran)
+ 6. [BUG]     Memory extractor API key
+ 7. [FEATURE] POS / Smart Checkout
+ 8. [FEATURE] Caja Registradora
+ 9. [FEATURE] Programa de Lealtad completo
+10. [FEATURE] Reportes exportables (PDF/Excel)
+11. [FEATURE] Gift Cards digitales
+12. [FEATURE] Paquetes prepagados / Membresias UI
+13. [FEATURE] PWA (Service Worker, push, offline)
+14. [FEATURE] Google Calendar sync
+15. [FEATURE] Recurring appointments
+16. [FEATURE] Email campaigns
+17. [FEATURE] Campaign analytics
+18. [FEATURE] Formularios de consentimiento
+19. [FEATURE] Custom domains
+20. [FEATURE] DIAN Dataico integracion
+21. [FEATURE] Client Self-Service Portal
+22. [FEATURE] Instagram DM / Facebook Messenger
+23. [FEATURE] Promotions / Cupones
+24. [REFACTOR] Backend fases 9-10 (proxies)
+25. [FEATURE] Marketplace de templates
+
+
+================================================================================
+FIN DEL DOCUMENTO
+================================================================================
