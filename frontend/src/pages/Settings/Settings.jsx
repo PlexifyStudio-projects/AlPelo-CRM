@@ -596,7 +596,7 @@ const Settings = () => {
     { id: 'brand', title: 'Marca y Logo', desc: 'Logo, nombre y colores de tu negocio', color1: '#8B5CF6', color2: '#A78BFA' },
     { id: 'tax', title: 'Impuestos / IVA', desc: 'Configura el IVA para facturas y cobros', color1: '#059669', color2: '#34D399' },
     { id: 'dian', title: 'Facturacion / DIAN', desc: 'Datos fiscales, NIT, resolucion y proveedor tecnologico', color1: '#DC2626', color2: '#F87171' },
-    { id: 'wompi', title: 'Wompi / Pagos', desc: 'Dispersiones al staff via Nequi, Bancolombia o Daviplata', color1: '#1E40AF', color2: '#3B82F6' },
+    { id: 'wompi', title: 'Bold / Pagos', desc: 'Dispersiones al staff via Nequi, Bancolombia o Daviplata', color1: '#1E40AF', color2: '#3B82F6' },
   ];
 
   const [usageStats, setUsageStats] = useState(null);
@@ -1503,7 +1503,7 @@ function WompiPanel({ addNotification }) {
         body: JSON.stringify(data),
       });
       if (!res.ok) throw new Error('Error');
-      addNotification('Configuracion de Wompi guardada', 'success');
+      addNotification('Configuracion de Bold guardada', 'success');
     } catch { addNotification('Error guardando', 'error'); }
     finally { setSaving(false); }
   };
@@ -1512,7 +1512,7 @@ function WompiPanel({ addNotification }) {
 
   return (
     <div style={{ padding: '24px 32px' }}>
-      <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Wompi — Dispersiones al staff</h3>
+      <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Bold — Dispersiones al staff</h3>
       <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)', marginBottom: 24 }}>Paga a tus profesionales directamente desde Nomina via Nequi, Bancolombia o Daviplata.</p>
 
       {/* Enable toggle */}
@@ -1559,10 +1559,10 @@ function WompiPanel({ addNotification }) {
 
       {/* How it works */}
       <div style={{ padding: 16, background: 'rgba(30,64,175,0.03)', borderRadius: 12, marginBottom: 24, border: '1px solid rgba(30,64,175,0.08)' }}>
-        <strong style={{ fontSize: 13, color: '#1E40AF', display: 'block', marginBottom: 8 }}>Como funciona</strong>
+        <strong style={{ fontSize: 13, color: '#1E40AF', display: 'block', marginBottom: 8 }}>Como funciona Bold</strong>
         <ol style={{ fontSize: 12, color: 'rgba(0,0,0,0.5)', paddingLeft: 18, margin: 0, lineHeight: 1.8 }}>
-          <li>Registrate en <strong>wompi.com</strong> con el RUT del negocio</li>
-          <li>Wompi verifica y activa la cuenta (1-3 dias)</li>
+          <li>Registrate en <strong>bold.co</strong> con el RUT del negocio</li>
+          <li>Bold verifica y activa la cuenta (1-3 dias)</li>
           <li>Copia las API keys aqui</li>
           <li>Configura los datos bancarios de cada profesional en Equipo</li>
           <li>Desde Nomina, al pagar → el dinero va directo a su cuenta/Nequi</li>
