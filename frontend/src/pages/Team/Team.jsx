@@ -1459,9 +1459,11 @@ function AdminsPanel() {
               <span>{a.username} · {a.email}</span>
             </div>
             <span className={`${b}__admins-role`}>{a.role}</span>
-            <button className={`${b}__admins-deactivate`} onClick={() => handleDeactivate(a.id, a.name)} title="Desactivar">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-            </button>
+            {admins.length > 1 && (
+              <button className={`${b}__admins-deactivate`} onClick={() => handleDeactivate(a.id, a.name)} title="Desactivar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            )}
           </div>
         ))}
       </div>
