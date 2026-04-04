@@ -1159,6 +1159,47 @@ def export_transactions(
     )
 
 
+@router.get("/finances/export-excel")
+def export_finance_excel(
+    period: str = Query("month"),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    """Export multi-sheet Excel financial report (Resumen, Ingresos, Gastos, Comisiones, Nomina)."""
+    tid = safe_tid(current_user, db)
+    start, end = _parse_period(period, date_from, date_to)
+
+    from services.reports.excel_export import generate_finance_report
+    buffer = generate_finance_report(db, tid, start, end)
+
+    filename = f"Finanzas_{start}_{end}.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/clients/export-excel")
+def export_clients_excel(
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    """Export all clients as Excel with full data."""
+    tid = safe_tid(current_user, db)
+
+    from services.reports.excel_export import generate_clients_report
+    buffer = generate_clients_report(db, tid)
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=Clientes.xlsx"},
+    )
+
+
 # ============================================================================
 # REVENUE FORECAST — Projection based on confirmed appointments + history
 # ============================================================================

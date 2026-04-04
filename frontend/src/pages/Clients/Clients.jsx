@@ -185,6 +185,20 @@ const Clients = () => {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B579A" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     Word (DOC)
                   </button>
+                  <button className={`${b}__export-option`} onClick={async () => {
+                    try {
+                      const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+                      const res = await fetch(`${API}/clients/export-excel`, { credentials: 'include' });
+                      if (!res.ok) throw new Error('Error');
+                      const blob = await res.blob();
+                      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Clientes.xlsx'; a.click();
+                      addNotification('Excel descargado', 'success');
+                    } catch { addNotification('Error exportando Excel', 'error'); }
+                    setShowExportMenu(false);
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#217346" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                    Excel (XLSX)
+                  </button>
                   <button className={`${b}__export-option`} onClick={() => {
                     const lines = clients.map(c => `${c.name} | ${c.phone} | ${c.email || 'Sin email'} | ${c.status || ''} | ${c.total_visits || 0} visitas | $${(c.total_spent || 0).toLocaleString('es-CO')}`);
                     const txt = `CLIENTES (${clients.length})\n${'='.repeat(50)}\n\n${lines.join('\n')}`;

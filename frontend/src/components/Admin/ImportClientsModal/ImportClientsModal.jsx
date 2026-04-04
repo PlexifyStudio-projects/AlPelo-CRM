@@ -131,6 +131,19 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
 
         {!result && (
           <>
+            <div className={`${b}__instructions`}>
+              <p><strong>Columnas requeridas:</strong> Nombre, Telefono</p>
+              <p><strong>Opcionales:</strong> Email, Cumpleanos (AAAA-MM-DD), Tags</p>
+              <p>Si el telefono ya existe, el cliente se salta (no se duplica). Soporta CSV y Excel (.xlsx).</p>
+              <button type="button" className={`${b}__template-btn`} onClick={() => {
+                const csv = 'Nombre,Telefono,Email,Cumpleanos,Tags\nJuan Perez,3105551234,juan@email.com,1990-05-15,VIP\nMaria Garcia,3209998877,,,Nuevo';
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plantilla_clientes.csv'; a.click();
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Descargar plantilla CSV
+              </button>
+            </div>
             <div
               className={`${b}__dropzone ${file ? `${b}__dropzone--has-file` : ''}`}
               onClick={() => fileRef.current?.click()}

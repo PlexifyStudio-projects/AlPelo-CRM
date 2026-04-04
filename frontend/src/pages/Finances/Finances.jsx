@@ -871,6 +871,21 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
         <button className="finances__action-btn" onClick={handleExport}>
           {Icons.download} Exportar CSV
         </button>
+        <button className="finances__action-btn" onClick={async () => {
+          try {
+            const params = new URLSearchParams({ period });
+            if (period === 'custom' && dateFrom && dateTo) { params.set('date_from', dateFrom); params.set('date_to', dateTo); }
+            const res = await fetch(`${API}/finances/export-excel?${params}`, { credentials: 'include' });
+            if (!res.ok) throw new Error('Error');
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `Finanzas_${period}.xlsx`; a.click();
+            URL.revokeObjectURL(url);
+            addNotification('Excel descargado', 'success');
+          } catch (err) { addNotification('Error al exportar Excel: ' + err.message, 'error'); }
+        }}>
+          {Icons.download} Exportar Excel
+        </button>
       </div>
       <div className="finances__comparison-grid">
         {comparisonItems.map((item, i) => {
