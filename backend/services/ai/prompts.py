@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 
 from database.connection import SessionLocal
+from services.ai.context import _build_business_context
 from database.models import (
     Client, Staff, Service, Appointment, VisitHistory, ClientNote,
     WhatsAppConversation, WhatsAppMessage, Tenant, AIConfig,
@@ -653,6 +654,9 @@ def _build_system_prompt(db: Session, is_whatsapp: bool = False, conv_id: int = 
     if is_whatsapp:
         wa_context = _build_whatsapp_context(db, conv_id=conv_id)
 
+        # Build real-time business data (services, staff, schedule, OPEN/CLOSED status)
+        live_business_ctx = _build_business_context(db, tenant_id=tenant_id, location_id=location_id)
+
         # Core safety prompt (immutable, controlled by Plexify — NOT editable by tenants)
         from ai_security import CORE_SAFETY_PROMPT
 
@@ -665,6 +669,10 @@ HOY: {_fecha_colombia_str(db)} ({_today_colombia(db).strftime('%Y-%m-%d')}) | Ho
 === NEGOCIO ===
 {business_ctx}
 === FIN NEGOCIO ===
+
+=== DATOS EN TIEMPO REAL ===
+{live_business_ctx}
+=== FIN DATOS ===
 
 === REGLAS CRITICAS ===
 
