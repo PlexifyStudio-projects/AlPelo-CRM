@@ -3,6 +3,7 @@ Business Context Builder — Feeds real DB data to the AI.
 Extracted from ai_endpoints.py during Phase 6 refactor.
 """
 from datetime import datetime, timedelta, date
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from database.models import (
     Client, Staff, Service, Appointment, VisitHistory, ClientNote,
