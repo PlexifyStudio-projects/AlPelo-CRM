@@ -21,7 +21,7 @@ def _today_colombia(db=None) -> date:
     return _orig(db)
 
 def compute_client_list_item(c, db):
-    from routes.search_endpoints import compute_client_list_item as _orig
+    from routes._helpers import compute_client_list_item as _orig
     return _orig(c, db)
 
 
