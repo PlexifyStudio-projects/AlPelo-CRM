@@ -1,0 +1,512 @@
+================================================================================
+  PLEXIFY STUDIO — INFORME TECNICO COMPLETO
+  Fecha: 4 de Abril de 2026
+  Total: 144,628 lineas de codigo (109,060 frontend + 35,568 backend)
+  Archivos: 370 (164 JSX/JS + 102 SCSS + 104 Python)
+================================================================================
+
+
+================================================================================
+SECCION 1: ARQUITECTURA GENERAL
+================================================================================
+
+El sistema tiene 3 capas:
+
+   [FRONTEND]              [BACKEND]               [BASE DE DATOS]
+   React 19 + Vite    →    FastAPI (Python)    →    PostgreSQL
+   GitHub Pages             Railway                  Railway
+   SCSS BEM                 SQLAlchemy ORM           40 tablas
+   164 archivos             104 archivos             pgvector
+
+Flujo de datos:
+1. Usuario abre el sitio → GitHub Pages sirve el SPA (React)
+2. Si es ruta publica (/, /pricing, /lina-ia) → Landing Page
+3. Si tiene token JWT → CRM Shell (app autenticada)
+4. Frontend hace fetch a Railway API → FastAPI procesa → PostgreSQL
+5. WhatsApp webhook → Meta envia mensajes → Backend procesa → Lina IA responde
+
+
+================================================================================
+SECCION 2: FRONTEND — ESTRUCTURA COMPLETA
+================================================================================
+
+frontend/src/
+├── App.jsx                     # Switch: Landing (publico) vs CRM (autenticado)
+├── main.jsx                    # Entry point + React render
+│
+├── components/
+│   ├── landing/                # ===== LANDING PAGE (publico) =====
+│   │   ├── common/
+│   │   │   ├── Button/         # Boton reutilizable landing
+│   │   │   ├── LightBurst/     # Efecto visual
+│   │   │   ├── MeshGradient/   # Fondo gradiente mesh
+│   │   │   ├── ParticleRing/   # Anillo de particulas 3D
+│   │   │   ├── ScrollTop/      # Boton volver arriba
+│   │   │   └── SEO/            # Meta tags, JSON-LD, Open Graph
+│   │   ├── layout/
+│   │   │   ├── Header/         # Navbar sticky con blur, menu mobile
+│   │   │   ├── Footer/         # Footer con gradiente, links
+│   │   │   └── Layout.jsx      # Wrapper de landing
+│   │   └── sections/
+│   │       ├── Hero/           # Seccion principal con CTA
+│   │       ├── Features/       # 10 modulos del CRM
+│   │       ├── Stats/          # Estadisticas de dolor/ganancia
+│   │       ├── LinaAI/         # Seccion de Lina IA
+│   │       ├── Testimonials/   # Resenas con glassmorphism
+│   │       ├── Pricing/        # 3 planes con comparacion
+│   │       ├── Demo/           # Demo interactiva
+│   │       ├── FAQ/            # Preguntas frecuentes
+│   │       └── FinalCTA/       # CTA final
+│   │
+│   ├── layout/                 # ===== CRM LAYOUT =====
+│   │   ├── MainLayout/         # Contenedor principal + mobile header
+│   │   └── Sidebar/            # Sidebar con navegacion, badges, collapse
+│   │       └── LocationSelector/ # Selector multi-sede
+│   │
+│   ├── common/                 # ===== COMPONENTES REUTILIZABLES =====
+│   │   ├── Button/             # Boton con variantes
+│   │   ├── Card/               # Tarjeta generica
+│   │   ├── CheckoutModal/      # POS/Checkout de 4 pasos (949 lineas)
+│   │   ├── EmptyState/         # Estado vacio
+│   │   ├── Input/              # Input con validacion
+│   │   ├── Modal/              # Modal generico
+│   │   ├── Notification/       # Toast de notificacion
+│   │   └── UsageMeter/         # Barra de uso
+│   │
+│   ├── Admin/                  # ===== COMPONENTES ADMIN =====
+│   │   ├── AddClientModal/     # Crear cliente
+│   │   ├── AddVisitModal/      # Registrar visita
+│   │   ├── BarberRating/       # [HUERFANO - no se importa]
+│   │   ├── ClientDetail/       # Perfil 360° del cliente + lealtad
+│   │   ├── ClientFilters/      # Filtros CRM
+│   │   ├── ClientTable/        # Tabla de clientes
+│   │   ├── ImportClientsModal/  # Import CSV/Excel + plantilla
+│   │   └── ReviewsPipeline/    # Pipeline de resenas
+│   │
+│   ├── Staff/                  # ===== PORTAL STAFF =====
+│   │   ├── StaffRouter/        # Router del portal staff
+│   │   ├── StaffDashboard/     # Dashboard del barbero
+│   │   ├── StaffAgenda/        # Agenda personal (read-only)
+│   │   └── StaffFinances/      # Comisiones del barbero
+│   │
+│   └── Developer/              # ===== PANEL PLEXIFY STUDIO (dev) =====
+│       ├── DevRouter/          # Router del dev panel
+│       ├── DevLayout/          # Layout con sidebar dev
+│       ├── DevDashboard/       # KPIs globales, MRR, tokens
+│       ├── DevTenants/         # CRUD de tenants
+│       ├── DevBilling/         # Facturacion por tenant
+│       ├── DevUsage/           # Consumo de mensajes
+│       ├── DevWhatsApp/        # Estado de WhatsApp
+│       ├── DevSystem/          # Salud del sistema
+│       ├── DevProfile/         # Perfil del dev
+│       └── DevProspector/      # Prospector IA
+│
+├── pages/
+│   ├── landing/                # ===== PAGINAS LANDING =====
+│   │   ├── Home/               # Pagina principal
+│   │   ├── About/              # Nosotros
+│   │   ├── Features/           # Features detalladas
+│   │   ├── Pricing/            # Precios
+│   │   ├── Contact/            # Contacto
+│   │   ├── FAQ/                # FAQ
+│   │   ├── Legal/              # Privacidad y terminos
+│   │   ├── Register/           # Registro 7 pasos
+│   │   ├── LinaIA/             # Pagina dedicada a Lina
+│   │   ├── Finanzas/           # Pagina de finanzas
+│   │   ├── Automatizaciones/   # Pagina de automatizaciones
+│   │   └── Producto/           # Sub-paginas de producto
+│   │       ├── Agenda/
+│   │       ├── Campanas/
+│   │       ├── Clientes/
+│   │       ├── Equipo/
+│   │       ├── Lealtad/
+│   │       └── Servicios/
+│   │
+│   └── [CRM Pages]            # ===== PAGINAS CRM =====
+│       ├── Dashboard/          # KPIs, graficos, alertas, Lina panel
+│       ├── Agenda/             # Calendario semana/dia, drag-drop, checkout
+│       ├── Clients/            # CRM tabla + filtros + export/import
+│       ├── Campaigns/          # Campanas + templates Meta
+│       ├── Services/           # Catalogo CRUD
+│       ├── Inventory/          # Productos, stock, movimientos
+│       ├── Finances/           # 9 tabs: Revenue, Gastos, P&L, Facturas,
+│       │                       #   Nomina, Comisiones, Rendimiento, DIAN,
+│       │                       #   Proyeccion (4,156 lineas)
+│       ├── Team/               # Staff, horarios, bank info, admins
+│       ├── Inbox/              # WhatsApp inbox real-time (2,286 lineas)
+│       ├── Automations/        # Automation Studio + Marketplace
+│       ├── Settings/           # 8 paneles de config
+│       ├── AdminProfile/       # Perfil del admin
+│       └── Login/              # Login branded
+│
+├── context/                    # React Context
+│   ├── AuthContext.jsx         # JWT, login, logout, refresh
+│   ├── NotificationContext.jsx # Toast notifications
+│   └── TenantContext.jsx       # Config del tenant actual
+│
+├── services/                   # API Services (14 archivos)
+│   ├── api.js                  # Fetch wrapper con JWT interceptor
+│   ├── aiService.js            # Chat IA, estrategia
+│   ├── appointmentService.js   # CRUD citas
+│   ├── authService.js          # Login, register, profile
+│   ├── automationService.js    # Automation Studio
+│   ├── chatService.js          # Chat admin
+│   ├── clientService.js        # CRUD clientes
+│   ├── contentGeneratorService.js # Content Studio
+│   ├── financeService.js       # Finanzas, export
+│   ├── messagingService.js     # Campanas masivas
+│   ├── reviewService.js        # Resenas
+│   ├── servicesService.js      # Servicios CRUD
+│   ├── staffService.js         # Staff CRUD
+│   └── whatsappService.js      # WhatsApp inbox
+│
+├── routes/
+│   ├── AppRouter.jsx           # Router CRM (switch por seccion)
+│   └── LandingRouter.jsx       # Router Landing (React Router, lazy loading)
+│
+├── styles/                     # ===== SCSS (102 archivos) =====
+│   ├── abstracts/              # Variables, mixins, funciones
+│   ├── base/                   # Reset, tipografia
+│   ├── components/             # 24 archivos BEM de componentes
+│   ├── layout/                 # Main layout, sidebar
+│   ├── pages/                  # 19 archivos de paginas CRM
+│   ├── landing/                # 20+ archivos de landing
+│   └── main.scss               # Entry point SCSS
+│
+├── utils/                      # Helpers
+│   ├── formatters.js           # COP, fechas, telefonos
+│   └── clientStatus.js         # Motor de estados de cliente
+│
+└── data/
+    └── mockData.js             # Mock data (solo usado por BarberRating huerfano)
+
+
+================================================================================
+SECCION 3: BACKEND — ESTRUCTURA COMPLETA
+================================================================================
+
+backend/
+├── main.py                     # Entry point FastAPI (285 lineas)
+├── scheduler.py                # Loop principal: cada 2min ejecuta tareas
+│
+├── auth/                       # ===== AUTENTICACION =====
+│   ├── auth_endpoints.py       # Login, register, refresh, change password
+│   ├── jwt_handler.py          # Crear/verificar JWT tokens
+│   └── security.py             # Hashing bcrypt
+│
+├── database/                   # ===== BASE DE DATOS =====
+│   ├── connection.py           # SQLAlchemy engine, SessionLocal
+│   ├── models.py               # 40 modelos SQLAlchemy (la tabla de la BD)
+│   └── migrations.py           # Auto-migrations (ALTER TABLE)
+│
+├── middleware/                  # ===== MIDDLEWARE =====
+│   ├── auth_middleware.py       # get_current_user dependency
+│   └── cors.py                 # CORS config
+│
+├── routes/                     # ===== 27 ARCHIVOS DE ENDPOINTS =====
+│   ├── _helpers.py             # Utilidades: normalize_phone, find_client,
+│   │                           #   now_colombia, compute_client_fields,
+│   │                           #   get_anthropic_key, safe_tid
+│   ├── _usage_tracker.py       # Tracking de mensajes por tenant
+│   ├── ai_endpoints.py         # Chat admin + WhatsApp AI context
+│   ├── ai_strategy_endpoints.py # 7 botones estrategicos IA
+│   ├── automation_studio_endpoints.py # Automation Studio CRUD + triggers
+│   ├── booking_endpoints.py    # Booking publico (micrositio)
+│   ├── campaign_endpoints.py   # Campanas masivas WhatsApp
+│   ├── content_studio.py       # Content Studio (oculto)
+│   ├── create_endpoints.py     # POST para crear entidades
+│   ├── delete_endpoints.py     # DELETE endpoints
+│   ├── dev_endpoints.py        # Panel Plexify Studio (2,687 lineas)
+│   ├── finance_endpoints.py    # Finanzas: analytics, export, forecast
+│   ├── inventory_endpoints.py  # Inventario CRUD + stock
+│   ├── lina_endpoints.py       # Lina activity, learnings
+│   ├── location_endpoints.py   # Multi-location CRUD
+│   ├── loyalty_endpoints.py    # Programa de lealtad completo
+│   ├── notification_endpoints.py # Notificaciones CRUD
+│   ├── pos_endpoints.py        # Checkout/POS
+│   ├── push_endpoints.py       # Push notifications (VAPID)
+│   ├── register_endpoints.py   # Self-service register
+│   ├── review_endpoints.py     # Resenas pipeline
+│   ├── schedule_endpoints.py   # Horarios de staff + precision scheduling
+│   ├── search_endpoints.py     # Busqueda + dashboard stats
+│   ├── settings_endpoints.py   # Config del tenant (DIAN, Wompi, booking)
+│   ├── staff_endpoints.py      # Staff portal
+│   ├── staff_payment_endpoints.py # Nomina + Wompi dispersiones
+│   ├── template_endpoints.py   # Templates Meta WhatsApp
+│   ├── update_endpoints.py     # PUT para actualizar entidades
+│   ├── walkin_endpoints.py     # Walk-in (desactivado)
+│   └── whatsapp_endpoints.py   # Webhook + inbox + media proxy
+│
+├── schemas/                    # ===== VALIDACION PYDANTIC (10 modulos) =====
+│   ├── ai.py, appointment.py, auth.py, campaign.py, client.py,
+│   │   dashboard.py, finance.py, service.py, staff.py, staff_payment.py,
+│   └── whatsapp.py
+│
+├── services/                   # ===== LOGICA DE NEGOCIO =====
+│   ├── ai/                     # Lina IA
+│   │   ├── actions.py          # 48 acciones ejecutables (1,900+ lineas)
+│   │   ├── prompts.py          # System prompts WhatsApp + admin
+│   │   ├── context.py          # Builder de contexto del negocio
+│   │   ├── client.py           # Logica de cliente para IA
+│   │   ├── memory.py           # Memory extractor (pgvector)
+│   │   ├── embeddings.py       # Embeddings para memoria
+│   │   ├── security.py         # Prompt injection protection
+│   │   ├── task_detector.py    # Deteccion automatica de tareas
+│   │   └── task_worker.py      # Procesador de tareas bulk
+│   │
+│   ├── whatsapp/               # WhatsApp
+│   │   ├── ai_handler.py       # Auto-reply handler (1,000+ lineas)
+│   │   ├── helpers.py          # Config, token, media, transcripcion
+│   │   ├── health.py           # Token health monitoring
+│   │   └── template_sender.py  # Envio de templates Meta
+│   │
+│   ├── automation/             # Motor de automatizaciones
+│   │   ├── engine.py           # 29 evaluadores de triggers
+│   │   ├── helpers.py          # Rate limiter, dedup
+│   │   ├── reminders.py        # Recordatorios de citas
+│   │   ├── noshow.py           # Seguimiento no-show
+│   │   ├── daily.py            # Jobs diarios (morning review, sweep)
+│   │   └── tasks.py            # Procesador de tareas pendientes
+│   │
+│   ├── intelligence/           # Inteligencia predictiva
+│   │   ├── client.py           # Risk score, ciclo de visitas
+│   │   ├── no_show.py          # Prediccion de no-show
+│   │   └── sentiment.py        # Analisis de sentimiento
+│   │
+│   ├── notifications/          # Notificaciones
+│   │   ├── activity.py         # Feed de actividad
+│   │   ├── push.py             # Push notifications
+│   │   └── service.py          # Servicio de notificaciones
+│   │
+│   ├── payments/               # Pagos
+│   │   └── wompi_payouts.py    # Wompi Payouts API (dispersiones)
+│   │
+│   ├── reports/                # Reportes
+│   │   └── excel_export.py     # Excel multi-hoja (openpyxl)
+│   │
+│   └── pdf_invoice.py          # Generador de facturas PDF (fpdf2)
+│
+├── [Proxy files]               # 12 archivos proxy de 3-6 lineas
+│   ├── activity_log.py, ai_embeddings.py, ai_memory_extractor.py,
+│   │   ai_security.py, ai_task_detector.py, automation_engine.py,
+│   │   client_intelligence.py, lina_task_worker.py, no_show_predictor.py,
+│   └── notifications.py, push_sender.py, sentiment_analyzer.py
+│
+└── media_cache/                # Cache local de media WhatsApp
+
+
+================================================================================
+SECCION 4: BASE DE DATOS — 40 TABLAS
+================================================================================
+
+CORE:
+- Admin           → Usuarios del sistema (dev, admin, staff)
+- Tenant          → Negocios (multi-tenant). 300+ columnas.
+- Location        → Sedes por tenant (multi-location)
+- PlatformConfig  → Config global de la plataforma
+
+CLIENTES:
+- Client          → Perfil del cliente (nombre, tel, email, tags, estado)
+- ClientNote      → Notas del admin sobre el cliente
+- ClientMemory    → Memorias de Lina (pgvector embeddings)
+- ClientSubscription → Paquetes/membresias por cliente
+
+AGENDA:
+- Appointment     → Citas (fecha, hora, staff, servicio, precio, estado)
+- Service         → Catalogo de servicios (nombre, precio, duracion, categoria)
+- VisitHistory    → Historial de visitas completadas
+
+EQUIPO:
+- Staff           → Miembros del equipo (nombre, rol, foto, bank info)
+- StaffLocation   → Staff asignado a ubicaciones
+- StaffCommission → Tasas de comision por staff
+- StaffSchedule   → Horarios de trabajo
+- StaffDayOff     → Dias libres
+
+FINANZAS:
+- Expense         → Gastos (categoria, monto, proveedor)
+- Invoice         → Facturas (numero, items, estado, PDF)
+- InvoiceItem     → Lineas de factura
+- StaffPayment    → Pagos de nomina + referencia Wompi
+- BillingRecord   → Facturacion por tenant (SaaS)
+
+WHATSAPP:
+- WhatsAppConversation → Hilos de conversacion (telefono, cliente, sentimiento)
+- WhatsAppMessage      → Mensajes individuales (texto, media, direccion)
+- MessageTemplate      → Templates para Meta API
+- Campaign             → Campanas masivas
+
+AUTOMATIZACIONES:
+- AutomationRule       → Reglas del Automation Studio (29 triggers)
+- AutomationExecution  → Historial de ejecuciones
+- WorkflowTemplate     → Templates de workflow (legacy)
+- WorkflowExecution    → Ejecuciones de workflow (legacy)
+
+IA:
+- AIConfig             → Config de IA por tenant (modelo, temperatura)
+- LinaLearning         → Reglas ensenadas por el admin
+- LinaTask             → Tareas pendientes de Lina
+- LinaActivityEvent    → Feed de actividad de Lina
+
+LEALTAD:
+- LoyaltyConfig       → Config del programa (puntos, tiers, bonos)
+- LoyaltyAccount      → Cuenta por cliente (puntos, tier)
+- LoyaltyTransaction  → Historial de puntos (earn/redeem)
+
+INVENTARIO:
+- Product (via inventory_endpoints) → Productos con stock
+
+OTROS:
+- Notification         → Notificaciones del sistema
+- PushSubscription     → Suscripciones push (VAPID)
+- BrandKit             → Branding por tenant
+- GeneratedContent     → Contenido generado por IA
+- UsageMetrics         → Metricas de uso por tenant
+
+
+================================================================================
+SECCION 5: COMO FUNCIONA — FLUJOS PRINCIPALES
+================================================================================
+
+
+--- FLUJO 1: CLIENTE AGENDA POR WHATSAPP ---
+
+1. Cliente envia "Quiero un corte para manana" por WhatsApp
+2. Meta webhook → POST /api/whatsapp/webhook
+3. Backend identifica tenant por wa_phone_number_id
+4. Crea/actualiza WhatsAppConversation + WhatsAppMessage
+5. Analiza sentimiento (rule-based, zero tokens)
+6. Lanza ai_auto_reply() en background:
+   a. Prompt injection check (37 patrones)
+   b. Construye contexto: negocio, cliente, servicios, agenda 3 dias
+   c. Inyecta estado ABIERTO/CERRADO (calculado por codigo)
+   d. Inyecta memorias del cliente (pgvector)
+   e. Llama Claude Sonnet con 48 acciones disponibles
+   f. Claude responde + ejecuta create_appointment con conflicto check
+   g. Si conflicto → segunda llamada IA con alternativas
+   h. Envia respuesta por WhatsApp (Meta API)
+   i. Guarda mensaje outbound en DB
+   j. Extrae memorias de la conversacion (background)
+   k. Detecta tareas pendientes (follow-up, confirmacion)
+7. Cliente recibe respuesta en 3-5 segundos
+
+
+--- FLUJO 2: ADMIN COBRA UN SERVICIO (CHECKOUT) ---
+
+1. Admin va a Agenda → click en cita → "Cobrar"
+2. CheckoutModal se abre (wizard 4 pasos)
+3. Paso 1: Servicios (auto-llenado desde la cita, puede agregar mas)
+4. Paso 2: Descuento (% o fijo) + propina
+5. Paso 3: Metodo de pago (efectivo/Nequi/Daviplata/tarjeta/mixto)
+6. Paso 4: Confirmar → POST /api/checkout
+7. Backend crea:
+   - Checkout record
+   - VisitHistory (1 por staff)
+   - Invoice + InvoiceItems
+   - Appointment.status = "paid"
+   - Puntos de lealtad al cliente
+8. Frontend muestra confirmacion
+
+
+--- FLUJO 3: NUEVO NEGOCIO SE REGISTRA ---
+
+1. Dueno va al landing → "Empiece gratis"
+2. Wizard de 7 pasos:
+   - Tipo de negocio (20 opciones)
+   - Datos del negocio (nombre, direccion, telefono)
+   - Plan (Starter/Pro/Business)
+   - Servicios (templates por tipo de negocio)
+   - Staff (agregar miembros)
+   - Datos del admin (usuario, password)
+   - Resumen y confirmar
+3. POST /api/public/register
+4. Backend crea: Tenant + Admin + Services + Staff + Location + AIConfig
+5. Admin puede hacer login inmediatamente
+
+
+--- FLUJO 4: SCHEDULER (cada 2 minutos) ---
+
+1. scheduler.py loop infinito
+2. Cada 2 min:
+   - Ejecuta automation_engine: evalua 29 triggers para cada tenant
+   - Recordatorios de citas (24h, 1h antes)
+   - Birthday check → bonus de lealtad
+   - Sweep de tareas pendientes
+   - Morning review (9am)
+   - No-show follow-up
+   - Token health check
+   - Daily analytics
+
+
+================================================================================
+SECCION 6: INTEGRACIONES EXTERNAS
+================================================================================
+
+1. Meta/WhatsApp Business API
+   - Webhook bidireccional (enviar/recibir)
+   - Templates con approval workflow
+   - Media: imagenes, video, audio, docs, stickers
+   - OAuth self-service para token
+
+2. Anthropic Claude API (Sonnet 4)
+   - Chat admin (Lina)
+   - WhatsApp auto-reply
+   - Memory extraction
+   - Content generation
+   - API key desde AIProvider DB (no env var)
+
+3. Wompi Payouts API
+   - Dispersiones a staff (Nequi, Daviplata, banco)
+   - Config en Settings, listo para activar con RUT
+
+4. Groq Whisper API
+   - Transcripcion de audios de WhatsApp
+
+5. GitHub Pages
+   - Deploy automatico con npx gh-pages
+
+6. Railway
+   - Backend + PostgreSQL hosting
+
+
+================================================================================
+SECCION 7: SEGURIDAD
+================================================================================
+
+- JWT con cookies httponly (no localStorage)
+- Single-device sessions (refresh token actualiza DB)
+- Tenant isolation en TODAS las queries (safe_tid)
+- Prompt injection protection (37 patrones)
+- Core safety prompt inmutable (11 reglas)
+- Client privacy: agenda muestra [Ocupado] a otros clientes
+- Rate limiter: 3 msgs/hora, 6/dia por conversacion
+- Private keys mascaradas en GET responses
+- CORS configurado por dominio
+- Password policy en registro
+
+
+================================================================================
+SECCION 8: PLANES Y MONETIZACION
+================================================================================
+
+Starter: $190,000 COP/mes
+- 1,000 mensajes IA/mes
+- 10 automatizaciones
+- TODAS las features
+
+Pro: $390,000 COP/mes
+- 3,000 mensajes IA/mes
+- 25 automatizaciones
+- TODAS las features
+
+Business: $590,000 COP/mes
+- 5,000 mensajes IA/mes
+- 50 automatizaciones
+- TODAS las features
+
+Margen estimado con Sonnet: 51-66%
+
+
+================================================================================
+FIN DEL INFORME
+================================================================================
