@@ -68,7 +68,7 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
       }
     };
     fetchUnread();
-    unreadIntervalRef.current = setInterval(fetchUnread, 10000);
+    unreadIntervalRef.current = setInterval(fetchUnread, 30000);
     return () => { if (unreadIntervalRef.current) clearInterval(unreadIntervalRef.current); };
   }, []);
 

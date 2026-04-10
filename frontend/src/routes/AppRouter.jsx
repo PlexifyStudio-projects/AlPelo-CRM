@@ -1,25 +1,51 @@
+import { lazy, Suspense, useState, useEffect, useRef, useCallback, memo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import MainLayout from '../components/layout/MainLayout/MainLayout';
-import DevRouter from '../components/Developer/DevRouter/DevRouter';
-import StaffRouter from '../components/Staff/StaffRouter/StaffRouter';
-import Login from '../pages/Login/Login';
-import Dashboard from '../pages/Dashboard/Dashboard';
-import Clients from '../pages/Clients/Clients';
-import Team from '../pages/Team/Team';
-import Inbox from '../pages/Inbox/Inbox';
-import Services from '../pages/Services/Services';
-import Inventory from '../pages/Inventory/Inventory';
-import Agenda from '../pages/Agenda/Agenda';
-import Finances from '../pages/Finances/Finances';
-import Campaigns from '../pages/Campaigns/Campaigns';
-import ContentStudio from '../pages/ContentStudio/ContentStudio';
-import Automations from '../pages/Automations/AutomationStudio';
-import AdminProfile from '../pages/AdminProfile/AdminProfile';
-import Settings from '../pages/Settings/Settings';
-import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNotification } from '../context/NotificationContext';
+import MainLayout from '../components/layout/MainLayout/MainLayout';
+import Login from '../pages/Login/Login';
+
+const Dashboard = lazy(() => import('../pages/Dashboard/Dashboard'));
+const Clients = lazy(() => import('../pages/Clients/Clients'));
+const Team = lazy(() => import('../pages/Team/Team'));
+const Inbox = lazy(() => import('../pages/Inbox/Inbox'));
+const Services = lazy(() => import('../pages/Services/Services'));
+const Inventory = lazy(() => import('../pages/Inventory/Inventory'));
+const Agenda = lazy(() => import('../pages/Agenda/Agenda'));
+const Finances = lazy(() => import('../pages/Finances/Finances'));
+const Campaigns = lazy(() => import('../pages/Campaigns/Campaigns'));
+const ContentStudio = lazy(() => import('../pages/ContentStudio/ContentStudio'));
+const Automations = lazy(() => import('../pages/Automations/AutomationStudio'));
+const AdminProfile = lazy(() => import('../pages/AdminProfile/AdminProfile'));
+const Settings = lazy(() => import('../pages/Settings/Settings'));
+const DevRouter = lazy(() => import('../components/Developer/DevRouter/DevRouter'));
+const StaffRouter = lazy(() => import('../components/Staff/StaffRouter/StaffRouter'));
 
 const DEV_ROLES = ['dev', 'super_admin'];
+
+const PageLoader = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', opacity: 0.5 }}>
+    <div style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }} />
+  </div>
+);
+
+const SectionRenderer = memo(({ section, user, updateProfile }) => {
+  switch (section) {
+    case 'dashboard': return <Dashboard />;
+    case 'agenda': return <Agenda />;
+    case 'clients': return <Clients />;
+    case 'campaigns': return <Campaigns />;
+    case 'automations': return <Automations />;
+    case 'content-studio': return <ContentStudio />;
+    case 'services': return <Services />;
+    case 'inventory': return <Inventory />;
+    case 'finances': return <Finances />;
+    case 'inbox': return <Inbox />;
+    case 'team': return <Team />;
+    case 'profile': return <AdminProfile user={user} onUpdate={updateProfile} />;
+    case 'settings': return <Settings />;
+    default: return <Dashboard />;
+  }
+});
 
 const AppRouter = () => {
   const { isAuthenticated, loading, user, login, logout, updateProfile } = useAuth();
@@ -35,30 +61,24 @@ const AppRouter = () => {
     prevUserId.current = currentId;
   }, [user?.id, clearAll]);
 
-  const renderSection = useCallback(() => {
-    switch (activeSection) {
-      case 'dashboard': return <Dashboard onNavigate={setActiveSection} />;
-      case 'agenda': return <Agenda />;
-      case 'clients': return <Clients />;
-      case 'campaigns': return <Campaigns />;
-      case 'automations': return <Automations />;
-      case 'content-studio': return <ContentStudio />;
-      case 'services': return <Services />;
-      case 'inventory': return <Inventory />;
-      case 'finances': return <Finances />;
-      case 'inbox': return <Inbox />;
-      case 'messaging': return null;
-      case 'team': return <Team />;
-      case 'profile': return <AdminProfile user={user} onUpdate={updateProfile} />;
-      case 'settings': return <Settings />;
-      default: return <Dashboard />;
-    }
-  }, [activeSection, user, updateProfile]);
-
   if (loading) return null;
   if (!isAuthenticated) return <Login onLogin={login} />;
-  if (DEV_ROLES.includes(user?.role)) return <DevRouter user={user} onLogout={logout} />;
-  if (user?.role === 'staff') return <StaffRouter user={user} onLogout={logout} />;
+
+  if (DEV_ROLES.includes(user?.role)) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <DevRouter user={user} onLogout={logout} />
+      </Suspense>
+    );
+  }
+
+  if (user?.role === 'staff') {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <StaffRouter user={user} onLogout={logout} />
+      </Suspense>
+    );
+  }
 
   return (
     <MainLayout
@@ -67,7 +87,9 @@ const AppRouter = () => {
       onNavigate={setActiveSection}
       onLogout={logout}
     >
-      {renderSection()}
+      <Suspense fallback={<PageLoader />}>
+        <SectionRenderer section={activeSection} user={user} updateProfile={updateProfile} />
+      </Suspense>
     </MainLayout>
   );
 };

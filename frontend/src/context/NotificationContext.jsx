@@ -89,7 +89,7 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     requestNotificationPermission();
     fetchNotifications();
-    intervalRef.current = setInterval(fetchNotifications, 10000);
+    intervalRef.current = setInterval(fetchNotifications, 30000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchNotifications]);
 

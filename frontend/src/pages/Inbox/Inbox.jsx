@@ -944,7 +944,7 @@ const Inbox = () => {
           clearInterval(convIntervalRef.current); convIntervalRef.current = null;
         }
       }
-    }, 5000);
+    }, 10000);
     return () => { if (convIntervalRef.current) clearInterval(convIntervalRef.current); };
   }, [playNotificationSound]);
 
@@ -992,7 +992,7 @@ const Inbox = () => {
           clearInterval(msgIntervalRef.current); msgIntervalRef.current = null;
         }
       }
-    }, 3000);
+    }, 5000);
     return () => { if (msgIntervalRef.current) clearInterval(msgIntervalRef.current); };
   }, [selectedConvId, playNotificationSound]);
 
