@@ -415,6 +415,43 @@
     &:focus { border-color: $color-primary-light; box-shadow: 0 0 0 3px $color-primary-ghost; }
     &::placeholder { color: $color-gray-300; }
   }
+  &__editor-field {
+    display: flex; flex-direction: column; gap: $spacing-xs;
+  }
+  &__editor-select {
+    width: 100%; padding: 10px 14px; border: 1px solid $border-color; border-radius: $border-radius-sm;
+    font-size: $font-size-sm; color: $color-gray-700; background: white; font-family: $font-primary;
+    outline: none; cursor: pointer;
+    &:focus { border-color: $color-primary-light; box-shadow: 0 0 0 3px $color-primary-ghost; }
+  }
+  &__editor-input {
+    width: 100%; padding: 10px 14px; border: 1px solid $border-color; border-radius: $border-radius-sm;
+    font-size: $font-size-sm; color: $color-gray-700; background: white; font-family: $font-primary; outline: none;
+    &:focus { border-color: $color-primary-light; box-shadow: 0 0 0 3px $color-primary-ghost; }
+  }
+  &__editor-media {
+    margin-top: $spacing-xs;
+  }
+  &__editor-media-upload {
+    display: flex; align-items: center; justify-content: center; padding: $spacing-lg;
+    border: 2px dashed $border-color; border-radius: $border-radius-lg; cursor: pointer;
+    transition: all $transition-fast; background: $color-gray-50;
+    span { font-size: $font-size-xs; color: $color-gray-400; }
+    &:hover { border-color: $color-primary-light; background: $color-primary-ghost; }
+  }
+  &__editor-media-preview {
+    position: relative; display: inline-block; width: 100%;
+    img { width: 100%; max-height: 160px; object-fit: cover; border-radius: $border-radius-lg; }
+  }
+  &__editor-media-remove {
+    position: absolute; top: 8px; right: 8px; width: 28px; height: 28px;
+    border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: white;
+    font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    &:hover { background: rgba(0,0,0,0.8); }
+  }
+  &__editor-media-warn {
+    font-size: $font-size-2xs; color: $color-warning-dark; margin: 4px 0 0; line-height: $line-height-snug;
+  }
   &__editor-bar {
     display: flex; justify-content: space-between; font-size: $font-size-2xs; color: $color-gray-400;
   }
@@ -599,7 +636,39 @@
 .auto-studio__marketplace-desc {
   font-size: 14px;
   color: rgba(0,0,0,0.45);
+  margin-bottom: 12px;
+}
+
+.auto-studio__marketplace-limit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: $font-size-xs;
+  color: $color-gray-500;
   margin-bottom: 24px;
+  padding: 10px 16px;
+  background: $color-gray-50;
+  border-radius: $border-radius-lg;
+  border: 1px solid $border-color;
+
+  strong { color: $color-gray-700; }
+}
+
+.auto-studio__marketplace-limit-bar {
+  flex: 1;
+  max-width: 160px;
+  height: 6px;
+  background: $color-gray-100;
+  border-radius: $border-radius-full;
+  overflow: hidden;
+
+  > span {
+    display: block;
+    height: 100%;
+    background: $color-primary;
+    border-radius: $border-radius-full;
+    transition: width 0.3s ease;
+  }
 }
 
 .auto-studio__marketplace-grid {

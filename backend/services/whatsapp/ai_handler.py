@@ -727,7 +727,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         f"Si hay conflicto de horario, sugiere horarios alternativos disponibles. "
                         f"Responde en maximo 2 oraciones, de forma natural y calida.]\n\n{inbound_text}"
                     )
-                    friendly_response = await _call_ai(system_prompt, history, friendly_msg, tenant_id=_conv_tid, max_tokens=300)
+                    friendly_response = await _call_ai(system_prompt, history, friendly_msg, tenant_id=_conv_tid, max_tokens=300, model_override="claude-haiku-4-5-20251001")
                     if friendly_response and friendly_response.strip():
                         # Strip any action blocks from the friendly response
                         friendly_response = re.sub(r'`{1,3}\s*action.*', '', friendly_response, flags=re.DOTALL | re.IGNORECASE)

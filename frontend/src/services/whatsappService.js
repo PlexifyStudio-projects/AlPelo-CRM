@@ -4,10 +4,17 @@ const headers = { 'Content-Type': 'application/json' };
 
 const authFetch = (url, opts = {}) => fetch(url, { ...opts, credentials: 'include' });
 
+class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
 const handleResponse = async (res) => {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Error de servidor' }));
-    throw new Error(err.detail || `HTTP ${res.status}`);
+    throw new ApiError(err.detail || `HTTP ${res.status}`, res.status);
   }
   return res.json();
 };

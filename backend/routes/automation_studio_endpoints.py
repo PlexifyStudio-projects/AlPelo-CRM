@@ -16,6 +16,7 @@ from database.models import (
 from datetime import datetime, timedelta
 from sqlalchemy import func
 from routes._helpers import safe_tid, normalize_phone, now_colombia
+from routes._media_helpers import upload_media_to_meta
 from middleware.auth_middleware import get_current_user
 from automation_engine import (
     PLAN_LIMITS, get_plan_limit, TRIGGER_EVALUATORS, preview_audience,
@@ -554,13 +555,50 @@ async def submit_to_meta(rule_id: int, db: Session = Depends(get_db), user=Depen
     }
     meta_category = category_map.get(trigger_def["category"], "UTILITY") if trigger_def else "UTILITY"
 
-    # Build Meta payload
-    components = [{
+    # Build Meta payload — BODY component first
+    body_component = {
         "type": "BODY",
         "text": converted_body,
-    }]
+    }
     if variables and example_params:
-        components[0]["example"] = {"body_text": [example_params]}
+        body_component["example"] = {"body_text": [example_params]}
+
+    components = []
+
+    # Add HEADER component if media/text header exists in action_config
+    header_type = action_config.get("header_type")
+    header_media_url = action_config.get("header_media_url")
+    header_text_val = action_config.get("header_text")
+
+    if header_type in ("IMAGE", "VIDEO") and header_media_url:
+        default_mime = "image/jpeg" if header_type == "IMAGE" else "video/mp4"
+        try:
+            handle = upload_media_to_meta(
+                header_media_url, default_mime,
+                wa_token=tenant.wa_access_token,
+                phone_id=tenant.wa_phone_number_id,
+            )
+            if handle:
+                components.append({
+                    "type": "HEADER",
+                    "format": header_type,
+                    "example": {"header_handle": [handle]},
+                })
+                print(f"[AUTO-STUDIO META] Header {header_type} with handle: {str(handle)[:30]}...")
+            else:
+                print(f"[AUTO-STUDIO META] No handle returned, submitting {header_type} header without example")
+                components.append({"type": "HEADER", "format": header_type})
+        except Exception as e:
+            print(f"[AUTO-STUDIO META] Header upload error: {e}")
+            components.append({"type": "HEADER", "format": header_type})
+    elif header_type == "TEXT" and header_text_val:
+        components.append({
+            "type": "HEADER",
+            "format": "TEXT",
+            "text": header_text_val,
+        })
+
+    components.append(body_component)
 
     payload = {
         "name": slug,

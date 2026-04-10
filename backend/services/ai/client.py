@@ -196,17 +196,19 @@ async def call_ai(system_prompt: str, history: list, user_message: str, image_b6
         return None
 
 
-def call_ai_sync(system_prompt: str, history: list, user_message: str) -> str:
-    """Synchronous AI call for scheduler morning review (runs in background thread)."""
-    anthropic_key, model = _get_anthropic_credentials()
+def call_ai_sync(system_prompt: str, history: list, user_message: str, use_haiku: bool = False, max_tokens: int = 800) -> str:
+    """Synchronous AI call for scheduler morning review (runs in background thread).
+    use_haiku=True for follow-up/sweep messages (10x cheaper, quality sufficient)."""
+    anthropic_key, sonnet_model = _get_anthropic_credentials()
     if not anthropic_key:
         return None
 
+    model = HAIKU_MODEL if use_haiku else sonnet_model
     messages = list(history) + [{"role": "user", "content": user_message}]
 
     payload = {
         "model": model,
-        "max_tokens": 2048,
+        "max_tokens": max_tokens,
         "system": [{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
         "messages": messages,
         "temperature": 0.4,

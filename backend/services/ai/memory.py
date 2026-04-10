@@ -8,6 +8,7 @@ These memories are stored with embeddings in client_memory for semantic search.
 """
 
 import os
+import re
 import json
 import httpx
 from typing import List, Dict, Optional
@@ -98,6 +99,16 @@ def extract_memories_from_conversation(conv_id: int) -> List[Dict]:
         if len(messages) < 3:
             return []  # Too short to extract anything meaningful
 
+        # Skip trivial conversations — only extract when clients reveal real info
+        # Count inbound messages with substantial content (not just "ok", "si", "gracias")
+        _trivial = re.compile(r'^(ok|si|no|listo|dale|bien|gracias|perfecto|bueno|vale|hola|chao|adios|bye|genial|excelente|👍|👌|🙏|😊)[\s!?.]*$', re.IGNORECASE)
+        meaningful_inbound = sum(
+            1 for m in messages
+            if m.direction == "inbound" and m.content and len(m.content.strip()) > 20 and not _trivial.match(m.content.strip())
+        )
+        if meaningful_inbound < 2:
+            return []  # Conversation is too trivial to extract memories from
+
         # Build conversation text
         conv_text = ""
         for m in messages:
@@ -118,7 +129,7 @@ def extract_memories_from_conversation(conv_id: int) -> List[Dict]:
                         "content-type": "application/json",
                     },
                     json={
-                        "model": "claude-sonnet-4-20250514",  # Same model Lina uses — precise extraction matters
+                        "model": "claude-haiku-4-5-20251001",  # Haiku handles structured JSON extraction perfectly — 10x cheaper than Sonnet
                         "max_tokens": 500,
                         "temperature": 0.1,
                         "messages": [{"role": "user", "content": prompt}],

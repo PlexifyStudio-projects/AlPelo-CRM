@@ -105,8 +105,10 @@ def _was_already_executed(db, automation_id, client_id=None, appointment_id=None
     return q.first() is not None
 
 
-def _send_template_sync(phone, template_name, language_code="es", parameters=None, db=None, tenant_id=None):
-    """Send an approved WhatsApp template message synchronously."""
+def _send_template_sync(phone, template_name, language_code="es", parameters=None, db=None, tenant_id=None, header_config=None):
+    """Send an approved WhatsApp template message synchronously.
+    header_config: optional dict with header_type, header_media_url for IMAGE/VIDEO headers.
+    """
     from routes._helpers import get_wa_token, get_wa_phone_id
 
     token = get_wa_token(db, tenant_id) if db else os.getenv("WHATSAPP_ACCESS_TOKEN", "")
@@ -129,14 +131,36 @@ def _send_template_sync(phone, template_name, language_code="es", parameters=Non
         "language": {"code": language_code},
     }
 
+    components = []
+
+    # Add header component if media exists
+    if header_config and header_config.get("header_type") in ("IMAGE", "VIDEO"):
+        media_url = header_config.get("header_media_url")
+        if media_url and media_url.startswith("data:"):
+            try:
+                from routes._media_helpers import upload_media_for_send
+                default_mime = "image/jpeg" if header_config["header_type"] == "IMAGE" else "video/mp4"
+                media_id = upload_media_for_send(media_url, default_mime, token, phone_id)
+                if media_id:
+                    media_type = "image" if header_config["header_type"] == "IMAGE" else "video"
+                    components.append({
+                        "type": "header",
+                        "parameters": [{"type": media_type, media_type: {"id": media_id}}],
+                    })
+                    print(f"[AUTO-ENGINE] Header {media_type} media_id: {media_id}")
+            except Exception as e:
+                print(f"[AUTO-ENGINE] Header upload error: {e}")
+
     if parameters and len(parameters) > 0:
         clean_params = [p for p in parameters if p and str(p).strip()]
         if clean_params:
-            components = [{
+            components.append({
                 "type": "body",
                 "parameters": [{"type": "text", "text": str(p)} for p in clean_params],
-            }]
-            template_obj["components"] = components
+            })
+
+    if components:
+        template_obj["components"] = components
 
     try:
         with httpx.Client(timeout=15) as client:
@@ -250,10 +274,16 @@ def _send_and_log(db, rule, client, phone, message, appointment_id=None, is_chai
     if not conv and client and client.phone:
         conv = _create_conversation_for_client(db, client)
 
+    # Build header config from action_config if media exists
+    action_cfg = rule.action_config or {}
+    hdr_cfg = None
+    if action_cfg.get("header_type") in ("IMAGE", "VIDEO") and action_cfg.get("header_media_url"):
+        hdr_cfg = {"header_type": action_cfg["header_type"], "header_media_url": action_cfg["header_media_url"]}
+
     # Send
     wa_sent = False
     if can_send_template:
-        wa_sent = _send_template_sync(phone, template_name, template_lang, template_params, db=db, tenant_id=rule.tenant_id)
+        wa_sent = _send_template_sync(phone, template_name, template_lang, template_params, db=db, tenant_id=rule.tenant_id, header_config=hdr_cfg)
         if not wa_sent and can_send_freetext:
             wa_sent = _send_whatsapp_sync(phone, message, db=db)
     elif can_send_freetext:

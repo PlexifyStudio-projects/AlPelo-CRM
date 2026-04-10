@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import Sidebar from '../Sidebar/Sidebar';
 import { useTenant } from '../../../context/TenantContext';
 import whatsappService from '../../../services/whatsappService';
@@ -55,16 +55,21 @@ const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const unreadIntervalRef = useRef(null);
   useEffect(() => {
     const fetchUnread = async () => {
       try {
         const data = await whatsappService.getUnreadCount();
         setInboxUnread(data.total_unread || 0);
-      } catch {}
+      } catch (err) {
+        if (err.status === 401) {
+          if (unreadIntervalRef.current) { clearInterval(unreadIntervalRef.current); unreadIntervalRef.current = null; }
+        }
+      }
     };
     fetchUnread();
-    const interval = setInterval(fetchUnread, 10000);
-    return () => clearInterval(interval);
+    unreadIntervalRef.current = setInterval(fetchUnread, 10000);
+    return () => { if (unreadIntervalRef.current) clearInterval(unreadIntervalRef.current); };
   }, []);
 
   const handleNavigate = useCallback((section) => {

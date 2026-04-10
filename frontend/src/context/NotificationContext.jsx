@@ -55,9 +55,15 @@ export const NotificationProvider = ({ children }) => {
   const lastSeenIdRef = useRef(0);
   const initialLoadRef = useRef(true);
 
+  const intervalRef = useRef(null);
+
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/notifications?limit=30`, { credentials: 'include' });
+      if (res.status === 401) {
+        if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+        return;
+      }
       if (!res.ok) return;
       const data = await res.json();
       const items = data.notifications || [];
@@ -83,8 +89,8 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     requestNotificationPermission();
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 10000);
-    return () => clearInterval(interval);
+    intervalRef.current = setInterval(fetchNotifications, 10000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchNotifications]);
 
   const addNotification = useCallback((message, type = 'info') => {

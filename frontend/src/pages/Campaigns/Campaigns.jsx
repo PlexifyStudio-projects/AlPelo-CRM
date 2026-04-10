@@ -70,17 +70,17 @@ const FILTER_GROUPS = [
         { value: 'en_riesgo', label: 'En riesgo' },
         { value: 'inactivo', label: 'Inactivos' },
       ]},
-      { key: 'rfm_segment', type: 'select', label: 'Segmento RFM', options: [
+      { key: 'rfm_segment', type: 'select', label: 'Tipo de cliente', options: [
         { value: '', label: 'Todos' },
-        { value: 'vip', label: 'VIP — Frecuente, reciente, alto gasto' },
-        { value: 'leal', label: 'Leal — Viene seguido y hace poco' },
-        { value: 'potencial', label: 'Potencial — Alto gasto, puede ser mas frecuente' },
+        { value: 'vip', label: 'Estrella — Viene seguido, gasto alto, reciente' },
+        { value: 'leal', label: 'Fiel — Viene seguido y hace poco' },
+        { value: 'potencial', label: 'Potencial — Gasta bien, puede venir mas' },
         { value: 'reciente', label: 'Reciente — Visito hace poco' },
-        { value: 'prioritario', label: 'Prioritario — Frecuente y valioso, pero ausente' },
-        { value: 'frecuente', label: 'Frecuente — Viene seguido, gasto bajo' },
-        { value: 'valioso', label: 'Valioso — Alto gasto pero ausente' },
-        { value: 'inactivo', label: 'Inactivo — Bajo en todo' },
-        { value: 'nuevo', label: 'Nuevo — Sin historial' },
+        { value: 'prioritario', label: 'Se nos va — Era frecuente pero dejo de venir' },
+        { value: 'frecuente', label: 'Constante — Viene seguido, gasto bajo' },
+        { value: 'valioso', label: 'Dormido — Gastaba bien pero desaparecio' },
+        { value: 'inactivo', label: 'Frio — Poco movimiento' },
+        { value: 'nuevo', label: 'Nuevo — Sin historial aun' },
       ]},
     ],
   },
@@ -158,21 +158,82 @@ const FILTER_GROUPS = [
 ];
 
 const QUICK_SEGMENTS = [
-  { label: 'Todos los clientes', filters: {} },
-  { label: 'Clientes VIP', filters: { status: 'vip' } },
-  { label: 'En riesgo', filters: { status: 'en_riesgo' } },
-  { label: 'Inactivos +30 dias', filters: { days_inactive: 30 } },
-  { label: 'Inactivos +60 dias', filters: { days_inactive: 60 } },
-  { label: 'Inactivos +90 dias', filters: { days_inactive: 90 } },
-  { label: 'Nuevos (1 visita)', filters: { max_visits: 1 } },
-  { label: 'Frecuentes (5+)', filters: { min_visits: 5 } },
-  { label: 'Cumpleaneros', filters: { birthday_month: true } },
-  { label: 'Alto valor (top 20%)', filters: { top_spenders_pct: 20 } },
-  { label: 'RFM: VIP', filters: { rfm_segment: 'vip' } },
-  { label: 'RFM: Leales', filters: { rfm_segment: 'leal' } },
-  { label: 'RFM: Prioritarios', filters: { rfm_segment: 'prioritario' } },
-  { label: 'RFM: Potenciales', filters: { rfm_segment: 'potencial' } },
+  { label: 'Todos los clientes', filters: {}, desc: 'Sin filtros, todos los contactos' },
+  { label: 'Clientes VIP', filters: { status: 'vip' }, desc: 'Tus mejores clientes por frecuencia y gasto' },
+  { label: 'En riesgo', filters: { status: 'en_riesgo' }, desc: 'Pueden dejar de venir pronto' },
+  { label: 'Inactivos +30 dias', filters: { days_inactive: 30 }, desc: 'No han venido en el ultimo mes' },
+  { label: 'Inactivos +60 dias', filters: { days_inactive: 60 }, desc: 'No han venido en 2 meses' },
+  { label: 'Inactivos +90 dias', filters: { days_inactive: 90 }, desc: 'No han venido en 3 meses' },
+  { label: 'Nuevos (1 visita)', filters: { max_visits: 1 }, desc: 'Solo han venido una vez' },
+  { label: 'Frecuentes (5+)', filters: { min_visits: 5 }, desc: 'Han venido 5 o mas veces' },
+  { label: 'Cumpleaneros', filters: { birthday_month: true }, desc: 'Cumplen anos este mes' },
+  { label: 'Alto valor (top 20%)', filters: { top_spenders_pct: 20 }, desc: 'El 20% que mas gasta' },
+  { label: 'Mejores clientes', filters: { rfm_segment: 'vip' }, desc: 'Frecuentes, recientes y alto gasto' },
+  { label: 'Clientes fieles', filters: { rfm_segment: 'leal' }, desc: 'Vienen seguido y hace poco' },
+  { label: 'Se nos estan yendo', filters: { rfm_segment: 'prioritario' }, desc: 'Eran frecuentes pero dejaron de venir' },
+  { label: 'Pueden gastar mas', filters: { rfm_segment: 'potencial' }, desc: 'Gastan bien, pueden venir mas seguido' },
 ];
+
+const SendDetailCollapsible = ({ sendLog, sendingActive, sendCurrent, logEndRef }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`${B}__sending-detail`}>
+      <button className={`${B}__sending-detail-toggle`} onClick={() => setOpen(!open)}>
+        {open ? <ChevronDown /> : <ChevronRight />}
+        {open ? 'Ocultar detalle' : 'Ver detalle'}
+        {sendLog.length > 0 && <span className={`${B}__sending-detail-count`}>{sendLog.length}</span>}
+      </button>
+      {open && (
+        <div className={`${B}__sending-log-entries`}>
+          {sendLog.map((entry, i) => (
+            <div key={i} className={`${B}__log-entry ${B}__log-entry--${entry.status}`}>
+              <span className={`${B}__log-icon`}>
+                {entry.status === 'sent' ? <CheckCircleIcon /> : <XCircleIcon />}
+              </span>
+              <span className={`${B}__log-name`}>{entry.name}</span>
+              {entry.status === 'sent' ? (
+                <span className={`${B}__log-result ${B}__log-result--ok`}>Enviado</span>
+              ) : (
+                <span className={`${B}__log-result ${B}__log-result--fail`}>No se pudo enviar</span>
+              )}
+            </div>
+          ))}
+          {sendingActive && sendCurrent && (
+            <div className={`${B}__log-entry ${B}__log-entry--active`}>
+              <div className={`${B}__queue-spinner`} />
+              <span className={`${B}__log-name`}>{sendCurrent.name}</span>
+              <span className={`${B}__log-result ${B}__log-result--sending`}>Enviando...</span>
+            </div>
+          )}
+          <div ref={logEndRef} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ConfirmWithCountdown = ({ modal, onClose }) => {
+  const [countdown, setCountdown] = useState(modal.countdown || 0);
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
+  const label = modal.confirmLabel || 'Confirmar';
+  return (
+    <div className={`${B}__overlay`} onClick={onClose}>
+      <div className={`${B}__confirm`} onClick={e => e.stopPropagation()}>
+        <p>{modal.message}</p>
+        <div className={`${B}__confirm-actions`}>
+          <button className={`${B}__btn-secondary`} onClick={onClose}>Cancelar</button>
+          <button className={`${B}__btn-primary`} disabled={countdown > 0} onClick={() => { onClose(); modal.onConfirm(); }}>
+            {countdown > 0 ? `${label} (${countdown})` : label}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const formatCOP = (n) => {
   if (!n) return '$0';
@@ -204,7 +265,7 @@ const Campaigns = () => {
   const [sendStep, setSendStep] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [filters, setFilters] = useState({});
-  const [expandedGroups, setExpandedGroups] = useState(['status', 'activity', 'service', 'financial', 'personal', 'dates', 'payment']);
+  const [expandedGroups, setExpandedGroups] = useState(['status']);
   const [audienceResults, setAudienceResults] = useState(null);
   const [audienceLoading, setAudienceLoading] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState(new Set());
@@ -220,6 +281,16 @@ const Campaigns = () => {
   const logEndRef = useRef(null);
 
   const [confirmModal, setConfirmModal] = useState(null);
+  const editBodyRef = useRef(null);
+
+  const insertEditVar = (v) => {
+    const ta = editBodyRef.current;
+    const ins = `{{${v}}}`;
+    if (!ta) { setEditBody(prev => prev + ins); return; }
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    setEditBody(editBody.slice(0, s) + ins + editBody.slice(e));
+    setTimeout(() => { ta.selectionStart = ta.selectionEnd = s + ins.length; ta.focus(); }, 0);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -669,6 +740,12 @@ const Campaigns = () => {
                           </button>
                         </>
                       )}
+                      <span className={`${B}__tpl-card-hint ${B}__tpl-card-hint--${t.status}`}>
+                        {t.status === 'draft' && 'Envia a Meta para revision (tarda 1-24 horas)'}
+                        {t.status === 'pending' && 'Meta esta revisando tu plantilla. Puede tardar 1-24 horas'}
+                        {t.status === 'rejected' && 'Meta rechazo esta plantilla. Edita el mensaje y reintenta'}
+                        {t.status === 'approved' && 'Lista para enviar a tus clientes'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -747,6 +824,7 @@ const Campaigns = () => {
                           key={i}
                           className={`${B}__quick-seg-btn ${JSON.stringify(filters) === JSON.stringify(seg.filters) ? `${B}__quick-seg-btn--active` : ''}`}
                           onClick={() => handleApplyQuickSegment(seg)}
+                          title={seg.desc}
                         >
                           {seg.label}
                         </button>
@@ -918,7 +996,12 @@ const Campaigns = () => {
                 <button
                   className={`${B}__btn-primary ${B}__btn-primary--send`}
                   disabled={selectedContacts.size === 0}
-                  onClick={() => startSending()}
+                  onClick={() => setConfirmModal({
+                    message: `Esto enviara un mensaje de WhatsApp a ${selectedContacts.size} persona${selectedContacts.size === 1 ? '' : 's'}. Esta accion no se puede deshacer.`,
+                    confirmLabel: 'Si, enviar',
+                    countdown: 3,
+                    onConfirm: () => startSending(),
+                  })}
                 >
                   <SendIcon /> Enviar a {selectedContacts.size} contactos
                 </button>
@@ -985,69 +1068,50 @@ const Campaigns = () => {
           )}
           {sendStep === 3 && (
             <div className={`${B}__sending-screen`}>
-              <div className={`${B}__sending-header`}>
-                <h2>{sendingActive ? 'Enviando campaña...' : 'Envio finalizado'}</h2>
-                <div className={`${B}__sending-stats`}>
-                  <span className={`${B}__sending-stat ${B}__sending-stat--total`}>{sendStats.total} total</span>
-                  <span className={`${B}__sending-stat ${B}__sending-stat--sent`}>{sendStats.sent} enviados</span>
-                  <span className={`${B}__sending-stat ${B}__sending-stat--failed`}>{sendStats.failed} fallidos</span>
-                </div>
-                {sendingActive && (
-                  <div className={`${B}__sending-progress`}>
-                    <div className={`${B}__sending-progress-bar`} style={{ width: `${((sendStats.sent + sendStats.failed) / sendStats.total) * 100}%` }} />
+              <div className={`${B}__sending-hero`}>
+                {sendingActive ? (
+                  <div className={`${B}__sending-hero-icon ${B}__sending-hero-icon--active`}>
+                    <div className={`${B}__queue-spinner ${B}__queue-spinner--lg`} />
+                  </div>
+                ) : (
+                  <div className={`${B}__sending-hero-icon ${B}__sending-hero-icon--done`}>
+                    {sendStats.failed === 0 ? <CheckCircleIcon /> : <AlertIcon />}
                   </div>
                 )}
+                <h2>{sendingActive ? 'Enviando campaña...' : (sendStats.failed === 0 ? 'Campaña enviada' : 'Envio completado')}</h2>
+                <p className={`${B}__sending-hero-counter`}>
+                  {sendingActive
+                    ? `${sendStats.sent + sendStats.failed} de ${sendStats.total}`
+                    : `${sendStats.sent} mensaje${sendStats.sent !== 1 ? 's' : ''} enviado${sendStats.sent !== 1 ? 's' : ''}`
+                  }
+                </p>
+                <div className={`${B}__sending-progress`}>
+                  <div
+                    className={`${B}__sending-progress-bar ${!sendingActive ? `${B}__sending-progress-bar--done` : ''}`}
+                    style={{ width: sendStats.total > 0 ? `${((sendStats.sent + sendStats.failed) / sendStats.total) * 100}%` : '0%' }}
+                  />
+                </div>
               </div>
 
-              <div className={`${B}__sending-layout`}>
-                <div className={`${B}__sending-queue`}>
-                  <h3>Cola de envio</h3>
-                  <div className={`${B}__sending-queue-list`}>
-                    {sendQueue.map((q, i) => (
-                      <div key={q.id} className={`${B}__sending-queue-item ${B}__sending-queue-item--${q.status}`}>
-                        <div className={`${B}__sending-queue-status`}>
-                          {q.status === 'pending' && <span className={`${B}__queue-dot`} />}
-                          {q.status === 'sending' && <div className={`${B}__queue-spinner`} />}
-                          {q.status === 'sent' && <CheckCircleIcon />}
-                          {q.status === 'failed' && <XCircleIcon />}
-                        </div>
-                        <span className={`${B}__sending-queue-name`}>{q.name}</span>
-                        <span className={`${B}__sending-queue-phone`}>{formatPhone(q.phone)}</span>
-                      </div>
-                    ))}
-                  </div>
+              <div className={`${B}__sending-cards`}>
+                <div className={`${B}__sending-card ${B}__sending-card--sent`}>
+                  <CheckCircleIcon />
+                  <span className={`${B}__sending-card-num`}>{sendStats.sent}</span>
+                  <span className={`${B}__sending-card-label`}>Enviados</span>
                 </div>
-                <div className={`${B}__sending-log`}>
-                  <h3>Registro en vivo</h3>
-                  <div className={`${B}__sending-log-entries`}>
-                    {sendLog.map((entry, i) => (
-                      <div key={i} className={`${B}__log-entry ${B}__log-entry--${entry.status}`}>
-                        <span className={`${B}__log-time`}>{entry.time}</span>
-                        <span className={`${B}__log-icon`}>
-                          {entry.status === 'sent' ? <CheckCircleIcon /> : <XCircleIcon />}
-                        </span>
-                        <span className={`${B}__log-name`}>{entry.name}</span>
-                        <span className={`${B}__log-phone`}>{formatPhone(entry.phone)}</span>
-                        {entry.status === 'sent' ? (
-                          <span className={`${B}__log-result ${B}__log-result--ok`}>Enviado</span>
-                        ) : (
-                          <span className={`${B}__log-result ${B}__log-result--fail`}>Fallido</span>
-                        )}
-                      </div>
-                    ))}
-                    {sendingActive && sendCurrent && (
-                      <div className={`${B}__log-entry ${B}__log-entry--active`}>
-                        <span className={`${B}__log-time`}>{new Date().toLocaleTimeString('es-CO')}</span>
-                        <div className={`${B}__queue-spinner`} />
-                        <span className={`${B}__log-name`}>{sendCurrent.name}</span>
-                        <span className={`${B}__log-phone`}>{sendCurrent.phone}</span>
-                        <span className={`${B}__log-result ${B}__log-result--sending`}>Enviando...</span>
-                      </div>
-                    )}
-                    <div ref={logEndRef} />
-                  </div>
+                <div className={`${B}__sending-card ${B}__sending-card--failed`}>
+                  <XCircleIcon />
+                  <span className={`${B}__sending-card-num`}>{sendStats.failed}</span>
+                  <span className={`${B}__sending-card-label`}>Fallidos</span>
+                </div>
+                <div className={`${B}__sending-card ${B}__sending-card--total`}>
+                  <UsersIcon />
+                  <span className={`${B}__sending-card-num`}>{sendStats.total}</span>
+                  <span className={`${B}__sending-card-label`}>Total</span>
                 </div>
               </div>
+
+              <SendDetailCollapsible sendLog={sendLog} sendingActive={sendingActive} sendCurrent={sendCurrent} logEndRef={logEndRef} />
 
               <div className={`${B}__send-actions`}>
                 {sendingActive ? (
@@ -1055,7 +1119,7 @@ const Campaigns = () => {
                     Detener envio
                   </button>
                 ) : (
-                  <button className={`${B}__btn-secondary`} onClick={() => { resetSendFlow(); }}>
+                  <button className={`${B}__btn-primary`} onClick={() => { resetSendFlow(); }}>
                     Nueva campaña
                   </button>
                 )}
@@ -1158,13 +1222,27 @@ const Campaigns = () => {
               <div className={`${B}__editor-field`}>
                 <label>Mensaje</label>
                 <textarea
+                  ref={editBodyRef}
                   value={editBody}
                   onChange={e => setEditBody(e.target.value)}
                   placeholder="Hola {{nombre}}, te esperamos en..."
                   rows={6}
                 />
+                <div className={`${B}__editor-vars`}>
+                  {[
+                    { key: 'nombre', tip: 'Primer nombre del cliente' },
+                    { key: 'servicio', tip: 'Servicio favorito' },
+                    { key: 'dias', tip: 'Dias sin venir' },
+                    { key: 'negocio', tip: 'Nombre de tu negocio' },
+                    { key: 'profesional', tip: 'Profesional preferido' },
+                  ].map(v => (
+                    <button key={v.key} type="button" className={`${B}__editor-var-pill`} onClick={() => insertEditVar(v.key)} title={v.tip}>
+                      {`{{${v.key}}}`}
+                    </button>
+                  ))}
+                </div>
                 <div className={`${B}__editor-hint`}>
-                  <span>Variables disponibles: {'{{nombre}}'}, {'{{servicio}}'}, {'{{dias}}'}, {'{{negocio}}'}, {'{{profesional}}'}</span>
+                  <span>Haz clic en una variable para insertarla en el mensaje</span>
                   <span>{editBody.length} caracteres</span>
                 </div>
               </div>
@@ -1202,15 +1280,7 @@ const Campaigns = () => {
         document.body
       )}
       {confirmModal && createPortal(
-        <div className={`${B}__overlay`} onClick={() => setConfirmModal(null)}>
-          <div className={`${B}__confirm`} onClick={e => e.stopPropagation()}>
-            <p>{confirmModal.message}</p>
-            <div className={`${B}__confirm-actions`}>
-              <button className={`${B}__btn-secondary`} onClick={() => setConfirmModal(null)}>Cancelar</button>
-              <button className={`${B}__btn-primary`} onClick={confirmModal.onConfirm}>Confirmar</button>
-            </div>
-          </div>
-        </div>,
+        <ConfirmWithCountdown modal={confirmModal} onClose={() => setConfirmModal(null)} />,
         document.body
       )}
     </div>

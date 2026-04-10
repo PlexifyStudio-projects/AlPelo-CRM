@@ -180,9 +180,8 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
         config = db.query(AIConfig).filter(AIConfig.tenant_id == _tid, AIConfig.is_active == True).first()
     else:
         config = db.query(AIConfig).filter(AIConfig.is_active == True).first()
-    model = (config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-20250514")
+    sonnet_model = (config.model if config and config.model and "claude" in (config.model or "") else "claude-sonnet-4-20250514")
     temperature = config.temperature if config else 0.4
-    max_tokens = max(config.max_tokens if config else 4096, 4096)  # Minimum 4096 for bulk operations
 
     # Build system prompt with live business data — scoped to tenant
     system_prompt = _build_system_prompt(db, tenant_id=_tid)
@@ -206,8 +205,19 @@ async def ai_chat(data: AIChatRequest, db: Session = Depends(get_db), user: Admi
             {"type": "text", "text": data.message or "El admin envio esta imagen. Describe lo que ves."},
         ]
         messages.append({"role": "user", "content": user_content})
+        model = sonnet_model  # Vision always needs Sonnet
+        max_tokens = max(config.max_tokens if config else 4096, 4096)
     else:
         messages.append({"role": "user", "content": data.message})
+        # Smart routing for admin chat — Haiku for simple queries, Sonnet for actions/bulk ops
+        from services.ai.client import classify_message_complexity, HAIKU_MODEL
+        complexity = classify_message_complexity(data.message, [m for m in messages[:-1]])
+        if complexity == "haiku":
+            model = HAIKU_MODEL
+            max_tokens = 2048  # Haiku doesn't need 4096
+        else:
+            model = sonnet_model
+            max_tokens = max(config.max_tokens if config else 4096, 4096)  # Full power for bulk/complex ops
 
     # Call Claude
     try:

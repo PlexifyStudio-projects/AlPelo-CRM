@@ -920,8 +920,9 @@ const Inbox = () => {
 
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
+  const convIntervalRef = useRef(null);
   useEffect(() => {
-    const interval = setInterval(async () => {
+    convIntervalRef.current = setInterval(async () => {
       try {
         const data = await whatsappService.getConversations();
         if (initialLoadDoneRef.current) {
@@ -938,9 +939,13 @@ const Inbox = () => {
         lastKnownMsgCountRef.current = counts;
         initialLoadDoneRef.current = true;
         setConversations(data);
-      } catch { /* silent */ }
+      } catch (err) {
+        if (err.status === 401 && convIntervalRef.current) {
+          clearInterval(convIntervalRef.current); convIntervalRef.current = null;
+        }
+      }
     }, 5000);
-    return () => clearInterval(interval);
+    return () => { if (convIntervalRef.current) clearInterval(convIntervalRef.current); };
   }, [playNotificationSound]);
 
   const loadMessages = useCallback(async (convId) => {
@@ -967,9 +972,10 @@ const Inbox = () => {
   }, [selectedConvId, loadMessages]);
 
   const lastMsgIdRef = useRef(null);
+  const msgIntervalRef = useRef(null);
   useEffect(() => {
     if (!selectedConvId) return;
-    const interval = setInterval(async () => {
+    msgIntervalRef.current = setInterval(async () => {
       try {
         const data = await whatsappService.getMessages(selectedConvId);
         if (data.length > 0) {
@@ -981,9 +987,13 @@ const Inbox = () => {
           lastMsgIdRef.current = lastMsg.id;
         }
         setMessages(data);
-      } catch { /* silent */ }
+      } catch (err) {
+        if (err.status === 401 && msgIntervalRef.current) {
+          clearInterval(msgIntervalRef.current); msgIntervalRef.current = null;
+        }
+      }
     }, 3000);
-    return () => clearInterval(interval);
+    return () => { if (msgIntervalRef.current) clearInterval(msgIntervalRef.current); };
   }, [selectedConvId, playNotificationSound]);
 
   useEffect(() => {

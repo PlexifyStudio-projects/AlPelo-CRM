@@ -103,58 +103,123 @@ const META_STATUS = {
 
 const MARKETPLACE_PACKS = [
   {
-    id: 'barberia', name: 'Pack Barberia', icon: '💈', color: '#2D5A3D',
-    desc: '10 automatizaciones para peluquerias y barberias',
+    id: 'bienvenida', name: 'Bienvenida', icon: '👋', color: '#2D5A3D',
+    desc: 'Primera impresion perfecta. Mensaje automatico al registrar un nuevo cliente y al confirmar su primera cita.',
     templates: [
-      { name: 'Recordatorio 24h', trigger_type: 'hours_before_appt', trigger_config: { hours: 24 }, action_config: { message: 'Hola {{nombre}}, le recordamos su cita manana a las {{hora}} con {{profesional}}. Confirme respondiendo SI. Si necesita reprogramar, diganos y con gusto le ayudamos.' }, cooldown_days: 1, max_per_day: 50 },
-      { name: 'Recordatorio 1h', trigger_type: 'hours_before_appt', trigger_config: { hours: 1 }, action_config: { message: 'Hola {{nombre}}, su cita es en 1 hora con {{profesional}}. Le esperamos!' }, cooldown_days: 1, max_per_day: 50 },
-      { name: 'Bienvenida nuevo cliente', trigger_type: 'new_client', trigger_config: {}, action_config: { message: 'Bienvenido/a a {{negocio}}, {{nombre}}! Gracias por su primera visita. Esperamos que la experiencia haya sido excelente. Para su proxima cita, escribanos aqui.' }, cooldown_days: 30, max_per_day: 20 },
-      { name: 'Feliz cumpleanos', trigger_type: 'birthday', trigger_config: {}, action_config: { message: 'Feliz cumpleanos, {{nombre}}! 🎂 De parte de todo el equipo de {{negocio}} le deseamos un excelente dia. Tiene un regalo especial esperandole en su proxima visita.' }, cooldown_days: 365, max_per_day: 20, eval_hour: 9 },
-      { name: 'Seguimiento post-visita', trigger_type: 'hours_after_complete', trigger_config: { hours: 3 }, action_config: { message: 'Hola {{nombre}}, gracias por visitarnos hoy. Esperamos que haya quedado satisfecho/a con su {{servicio}}. Si tiene alguna sugerencia, nos encantaria escucharla.' }, cooldown_days: 7, max_per_day: 20 },
-      { name: 'Reactivacion 30 dias', trigger_type: 'days_since_visit', trigger_config: { days: 30 }, action_config: { message: 'Hola {{nombre}}, hace un mes que no le vemos por {{negocio}}. Le tenemos un espacio reservado con {{profesional}}. Cuando quiera agendar, escribanos aqui.' }, cooldown_days: 30, max_per_day: 10, eval_hour: 10 },
-      { name: 'Reactivacion 60 dias', trigger_type: 'days_since_visit', trigger_config: { days: 60 }, action_config: { message: 'Hola {{nombre}}, le extranamos en {{negocio}}! Han pasado 2 meses. Nos encantaria verle de nuevo. Tiene disponibilidad esta semana?' }, cooldown_days: 60, max_per_day: 10, eval_hour: 10 },
-      { name: 'No-show seguimiento', trigger_type: 'no_show', trigger_config: {}, action_config: { message: 'Hola {{nombre}}, notamos que no pudo asistir a su cita de hoy. Esperamos que todo este bien. Si desea reprogramar, con gusto le ayudamos.' }, cooldown_days: 7, max_per_day: 10 },
-      { name: 'Encuesta satisfaccion', trigger_type: 'satisfaction_survey', trigger_config: { hours_after: 24 }, action_config: { message: 'Hola {{nombre}}, como calificaria su ultima visita a {{negocio}}? Del 1 al 5 (siendo 5 excelente). Su opinion nos ayuda a mejorar.' }, cooldown_days: 14, max_per_day: 15, eval_hour: 11 },
-      { name: 'Pedir resena Google', trigger_type: 'review_request', trigger_config: { min_satisfaction: 4, days_after: 2 }, action_config: { message: 'Hola {{nombre}}, nos alegra que su experiencia haya sido positiva! Nos ayudaria mucho si nos deja una resena en Google. Solo toma 30 segundos: {{google_link}}' }, cooldown_days: 90, max_per_day: 5, eval_hour: 14 },
+      {
+        name: 'Bienvenida al nuevo cliente',
+        trigger_type: 'new_client', trigger_config: {}, cooldown_days: 30, max_per_day: 20,
+        action_config: { message: 'Hola {{nombre}}, bienvenido a {{negocio}}! Gracias por confiar en nosotros. A partir de ahora puede agendar citas, recibir recordatorios y acceder a promociones exclusivas por este medio. Cualquier cosa que necesite, escribanos.' },
+      },
+      {
+        name: 'Confirmacion de cita nueva',
+        trigger_type: 'appointment_created', trigger_config: {}, cooldown_days: 1, max_per_day: 50,
+        action_config: { message: 'Hola {{nombre}}, su cita en {{negocio}} quedo confirmada para el {{fecha}} a las {{hora}} con {{profesional}}. Si necesita hacer algun cambio, escribanos con tiempo. Le esperamos!' },
+      },
     ],
   },
   {
-    id: 'spa', name: 'Pack Spa & Bienestar', icon: '🧖', color: '#7C3AED',
-    desc: '8 automatizaciones para spas, esteticas y centros de bienestar',
+    id: 'recordatorios', name: 'Recordatorios', icon: '🔔', color: '#1E40AF',
+    desc: 'Reduce inasistencias hasta un 70%. Recordatorios a 24h y 1h antes, seguimiento de no-shows y cancelaciones.',
     templates: [
-      { name: 'Recordatorio de sesion', trigger_type: 'hours_before_appt', trigger_config: { hours: 24 }, action_config: { message: 'Hola {{nombre}}, le recordamos su sesion manana a las {{hora}}. Recuerde llegar 10 minutos antes para prepararse. Le esperamos!' }, cooldown_days: 1, max_per_day: 50 },
-      { name: 'Bienvenida spa', trigger_type: 'new_client', trigger_config: {}, action_config: { message: 'Bienvenido/a a {{negocio}}, {{nombre}}! Gracias por confiar en nosotros para su bienestar. Cualquier consulta sobre nuestros tratamientos, escribanos aqui.' }, cooldown_days: 30, max_per_day: 20 },
-      { name: 'Post-tratamiento', trigger_type: 'hours_after_complete', trigger_config: { hours: 4 }, action_config: { message: 'Hola {{nombre}}, esperamos que haya disfrutado su {{servicio}}. Recuerde beber mucha agua y descansar. Para agendar su proxima sesion, escribanos.' }, cooldown_days: 7, max_per_day: 20 },
-      { name: 'Cumpleanos spa', trigger_type: 'birthday', trigger_config: {}, action_config: { message: 'Feliz cumpleanos, {{nombre}}! 🎂 Le regalamos un descuento especial en su tratamiento favorito. Valido este mes. Reserva aqui!' }, cooldown_days: 365, max_per_day: 20, eval_hour: 9 },
-      { name: 'Reactivacion bienestar', trigger_type: 'days_since_visit', trigger_config: { days: 45 }, action_config: { message: 'Hola {{nombre}}, su bienestar es importante. Hace mas de un mes que no le vemos. Tenemos nuevos tratamientos que le encantaran. Quiere conocerlos?' }, cooldown_days: 45, max_per_day: 10, eval_hour: 10 },
-      { name: 'Membresia por vencer', trigger_type: 'membership_expiring', trigger_config: { days_before: 7 }, action_config: { message: 'Hola {{nombre}}, su membresia vence en 7 dias. Renueve ahora y siga disfrutando de todos los beneficios. Necesita ayuda con la renovacion?' }, cooldown_days: 30, max_per_day: 10 },
-      { name: 'Encuesta post-sesion', trigger_type: 'satisfaction_survey', trigger_config: { hours_after: 24 }, action_config: { message: 'Hola {{nombre}}, como se sintio despues de su {{servicio}}? Del 1 al 5, como calificaria la experiencia?' }, cooldown_days: 14, max_per_day: 15, eval_hour: 11 },
-      { name: 'VIP exclusivo', trigger_type: 'vip_exclusive', trigger_config: {}, action_config: { message: 'Hola {{nombre}}, como cliente VIP tiene acceso exclusivo a nuestro nuevo tratamiento antes que nadie. Quiere ser de los primeros en probarlo?' }, cooldown_days: 60, max_per_day: 5, eval_hour: 11 },
+      {
+        name: 'Recordatorio — 24 horas antes',
+        trigger_type: 'hours_before_appt', trigger_config: { hours: 24 }, cooldown_days: 1, max_per_day: 50,
+        action_config: { message: 'Hola {{nombre}}, le recordamos que tiene cita manana a las {{hora}} con {{profesional}} en {{negocio}}. Responda SI para confirmar o escribanos si necesita reprogramar. Le esperamos.' },
+      },
+      {
+        name: 'Recordatorio — 1 hora antes',
+        trigger_type: 'hours_before_appt', trigger_config: { hours: 1 }, cooldown_days: 1, max_per_day: 50,
+        action_config: { message: 'Hola {{nombre}}, su cita en {{negocio}} es en 1 hora. {{profesional}} ya esta preparando todo para recibirle. Le esperamos!' },
+      },
+      {
+        name: 'No asistio — reprogramar',
+        trigger_type: 'no_show', trigger_config: {}, cooldown_days: 7, max_per_day: 10,
+        action_config: { message: 'Hola {{nombre}}, notamos que no pudo asistir a su cita de hoy en {{negocio}}. Esperamos que todo este bien. Si desea reprogramar, con gusto le buscamos un horario que le funcione. Solo escribanos.' },
+      },
+      {
+        name: 'Cita cancelada — reagendar',
+        trigger_type: 'appointment_cancelled', trigger_config: {}, cooldown_days: 3, max_per_day: 15,
+        action_config: { message: 'Hola {{nombre}}, vimos que cancelo su cita en {{negocio}}. Esperamos que todo este bien. Si quiere reagendar para otro dia u hora, escribanos y le buscamos el mejor espacio.' },
+      },
     ],
   },
   {
-    id: 'clinica', name: 'Pack Clinica', icon: '🏥', color: '#0891B2',
-    desc: '7 automatizaciones para consultorios y clinicas',
+    id: 'seguimiento', name: 'Seguimiento', icon: '💬', color: '#0891B2',
+    desc: 'Mantente presente despues de cada visita. Agradecimiento automatico, encuesta de satisfaccion y confirmacion de pago.',
     templates: [
-      { name: 'Recordatorio consulta', trigger_type: 'hours_before_appt', trigger_config: { hours: 24 }, action_config: { message: 'Hola {{nombre}}, le recordamos su consulta manana a las {{hora}}. Por favor traiga sus documentos y examenes recientes.' }, cooldown_days: 1, max_per_day: 50 },
-      { name: 'Bienvenida paciente', trigger_type: 'new_client', trigger_config: {}, action_config: { message: 'Bienvenido/a a {{negocio}}, {{nombre}}! Gracias por confiar en nosotros. Si tiene alguna pregunta antes de su consulta, no dude en escribirnos.' }, cooldown_days: 30, max_per_day: 20 },
-      { name: 'Seguimiento post-consulta', trigger_type: 'hours_after_complete', trigger_config: { hours: 24 }, action_config: { message: 'Hola {{nombre}}, esperamos que su consulta haya sido util. Recuerde seguir las indicaciones. Si tiene alguna duda, estamos aqui para ayudarle.' }, cooldown_days: 7, max_per_day: 20 },
-      { name: 'Control periodico', trigger_type: 'days_since_visit', trigger_config: { days: 90 }, action_config: { message: 'Hola {{nombre}}, han pasado 3 meses desde su ultima consulta. Es momento de su control periodico. Quiere agendar?' }, cooldown_days: 90, max_per_day: 10, eval_hour: 9 },
-      { name: 'Cumpleanos', trigger_type: 'birthday', trigger_config: {}, action_config: { message: 'Feliz cumpleanos, {{nombre}}! 🎂 De parte de todo el equipo de {{negocio}}. Que tenga un excelente dia!' }, cooldown_days: 365, max_per_day: 20, eval_hour: 9 },
-      { name: 'No asistio', trigger_type: 'no_show', trigger_config: {}, action_config: { message: 'Hola {{nombre}}, no pudimos atenderle hoy. Si necesita reprogramar su cita, estamos a su disposicion.' }, cooldown_days: 7, max_per_day: 10 },
-      { name: 'Encuesta calidad', trigger_type: 'satisfaction_survey', trigger_config: { hours_after: 48 }, action_config: { message: 'Hola {{nombre}}, su opinion es importante. Como calificaria la atencion recibida? Del 1 al 5 (5 = excelente).' }, cooldown_days: 30, max_per_day: 10, eval_hour: 10 },
+      {
+        name: 'Gracias por su visita — 3 horas despues',
+        trigger_type: 'hours_after_complete', trigger_config: { hours: 3 }, cooldown_days: 7, max_per_day: 20,
+        action_config: { message: 'Hola {{nombre}}, fue un gusto atenderle hoy en {{negocio}}. Esperamos que haya quedado a gusto con su {{servicio}}. Si tiene alguna sugerencia o quiere ajustar algo la proxima vez, con toda confianza diganos.' },
+      },
+      {
+        name: 'Como le fue? — 24 horas despues',
+        trigger_type: 'hours_after_complete', trigger_config: { hours: 24 }, cooldown_days: 14, max_per_day: 15, eval_hour: 11,
+        action_config: { message: 'Hola {{nombre}}, queremos mejorar cada dia en {{negocio}}. Del 1 al 5, como calificaria su ultima visita? 5 = excelente, 1 = debemos mejorar. Su opinion nos importa mucho.' },
+      },
+      {
+        name: 'Pago recibido — gracias',
+        trigger_type: 'payment_received', trigger_config: {}, cooldown_days: 1, max_per_day: 30,
+        action_config: { message: 'Hola {{nombre}}, recibimos su pago en {{negocio}}. Gracias por su preferencia. Recuerde que puede agendar su proxima cita en cualquier momento por este medio. Que tenga excelente dia!' },
+      },
+      {
+        name: 'Pago pendiente — recordatorio',
+        trigger_type: 'payment_pending', trigger_config: {}, cooldown_days: 7, max_per_day: 10, eval_hour: 10,
+        action_config: { message: 'Hola {{nombre}}, le informamos que tiene un pago pendiente en {{negocio}} por su ultima visita. Si ya realizo el pago, ignore este mensaje. Si tiene alguna duda, escribanos y con gusto le ayudamos.' },
+      },
     ],
   },
   {
-    id: 'gym', name: 'Pack Gimnasio', icon: '💪', color: '#DC2626',
-    desc: '6 automatizaciones para gimnasios y fitness',
+    id: 'recuperacion', name: 'Recuperacion', icon: '🔄', color: '#E65100',
+    desc: 'Recupera clientes que dejaron de venir. Mensajes escalonados a los 25, 45, 60 y 90 dias de inactividad.',
     templates: [
-      { name: 'Bienvenida miembro', trigger_type: 'new_client', trigger_config: {}, action_config: { message: 'Bienvenido/a a {{negocio}}, {{nombre}}! Estamos emocionados de tenerle. Cualquier duda sobre horarios, clases o su plan, escribanos aqui.' }, cooldown_days: 30, max_per_day: 20 },
-      { name: 'Motivacion inactividad', trigger_type: 'days_since_visit', trigger_config: { days: 7 }, action_config: { message: 'Hola {{nombre}}, hace una semana que no le vemos en {{negocio}}. Cada dia cuenta para sus objetivos. Le esperamos!' }, cooldown_days: 7, max_per_day: 15, eval_hour: 8 },
-      { name: 'Membresia por vencer', trigger_type: 'membership_expiring', trigger_config: { days_before: 5 }, action_config: { message: 'Hola {{nombre}}, su membresia en {{negocio}} vence en 5 dias. Renueve ahora para seguir entrenando sin interrupciones.' }, cooldown_days: 30, max_per_day: 10 },
-      { name: 'Cumpleanos fitness', trigger_type: 'birthday', trigger_config: {}, action_config: { message: 'Feliz cumpleanos, {{nombre}}! 🎂 Celebrelo con una sesion especial. Le regalamos una clase extra este mes!' }, cooldown_days: 365, max_per_day: 20, eval_hour: 8 },
-      { name: 'Milestone visitas', trigger_type: 'visit_milestone', trigger_config: { visits: 50 }, action_config: { message: 'Felicitaciones {{nombre}}! Ha completado 50 visitas a {{negocio}}. Su constancia es admirable. Siga asi!' }, cooldown_days: 365, max_per_day: 5 },
-      { name: 'Reactivacion 30 dias', trigger_type: 'days_since_visit', trigger_config: { days: 30 }, action_config: { message: 'Hola {{nombre}}, le extranamos en {{negocio}}. Ha pasado un mes. Volver es el primer paso. Le esperamos!' }, cooldown_days: 30, max_per_day: 10, eval_hour: 9 },
+      {
+        name: 'Le esperamos — 25 dias sin venir',
+        trigger_type: 'days_since_visit', trigger_config: { days: 25 }, cooldown_days: 25, max_per_day: 15, eval_hour: 10,
+        action_config: { message: 'Hola {{nombre}}, ya van {{dias}} dias desde su ultima visita a {{negocio}}. Le apartamos un espacio con {{profesional}}? Escribanos y le agendamos rapido.' },
+      },
+      {
+        name: 'Le extranamos — 45 dias sin venir',
+        trigger_type: 'days_since_visit', trigger_config: { days: 45 }, cooldown_days: 45, max_per_day: 10, eval_hour: 10,
+        action_config: { message: 'Hola {{nombre}}, hace mas de un mes que no le vemos por {{negocio}} y le extranamos. {{profesional}} tiene disponibilidad esta semana. Quiere que le aparte un espacio?' },
+      },
+      {
+        name: 'Detalle especial — 60 dias sin venir',
+        trigger_type: 'days_since_visit', trigger_config: { days: 60 }, cooldown_days: 60, max_per_day: 10, eval_hour: 10,
+        action_config: { message: 'Hola {{nombre}}, hace 2 meses que no viene por {{negocio}}. Nos encantaria tenerle de vuelta. Tenemos un detalle especial reservado para usted en su proxima visita. Cuando quiera agendar, escribanos.' },
+      },
+      {
+        name: 'Ultimo intento — 90 dias sin venir',
+        trigger_type: 'days_since_visit', trigger_config: { days: 90 }, cooldown_days: 90, max_per_day: 10, eval_hour: 10,
+        action_config: { message: 'Hola {{nombre}}, han pasado 3 meses desde su ultima visita a {{negocio}}. Queremos saber si todo esta bien. Si hay algo que podamos mejorar, diganos. Su opinion nos importa. Le esperamos cuando guste.' },
+      },
+    ],
+  },
+  {
+    id: 'fidelizacion', name: 'Fidelizacion', icon: '⭐', color: '#8B6914',
+    desc: 'Premia a tus mejores clientes. Cumpleanos, aniversarios de visitas y reconocimiento por su lealtad.',
+    templates: [
+      {
+        name: 'Feliz cumpleanos',
+        trigger_type: 'birthday', trigger_config: {}, cooldown_days: 365, max_per_day: 20, eval_hour: 9,
+        action_config: { message: 'Feliz cumpleanos, {{nombre}}! De parte de todo el equipo de {{negocio}} le deseamos un dia increible. Tiene un detalle especial esperandole en su proxima visita este mes. Agende cuando guste!' },
+      },
+      {
+        name: 'Logro — 10 visitas',
+        trigger_type: 'visit_milestone', trigger_config: { milestone: 10 }, cooldown_days: 365, max_per_day: 10,
+        action_config: { message: 'Hola {{nombre}}, acaba de cumplir 10 visitas en {{negocio}}! Gracias por su fidelidad. Tiene un beneficio especial esperandole en su proxima cita.' },
+      },
+      {
+        name: 'Logro — 25 visitas',
+        trigger_type: 'visit_milestone', trigger_config: { milestone: 25 }, cooldown_days: 365, max_per_day: 5,
+        action_config: { message: 'Hola {{nombre}}, 25 visitas en {{negocio}}! Usted ya es de la casa. Gracias por la confianza de siempre. Pase por su regalo especial en su proxima cita.' },
+      },
+      {
+        name: 'Aniversario — 1 ano con nosotros',
+        trigger_type: 'client_anniversary', trigger_config: {}, cooldown_days: 365, max_per_day: 10, eval_hour: 10,
+        action_config: { message: 'Hola {{nombre}}, hoy se cumple un ano desde su primera visita a {{negocio}}! Gracias por acompanarnos. Tiene un detalle de aniversario esperandole. Agende cuando guste.' },
+      },
     ],
   },
 ];
@@ -315,7 +380,12 @@ export default function AutomationStudio() {
 
       {mainTab === 'marketplace' && (
         <div className={`${B}__marketplace`}>
-          <p className={`${B}__marketplace-desc`}>Packs de automatizaciones pre-escritas por tipo de negocio. Instala con un click y personaliza.</p>
+          <p className={`${B}__marketplace-desc`}>Packs de automatizaciones listas para usar. Instala con un click, personaliza los mensajes y activa.</p>
+          <div className={`${B}__marketplace-limit`}>
+            <span>Automatizaciones: <strong>{automations.length}</strong> de <strong>{planLimit}</strong></span>
+            <span className={`${B}__marketplace-limit-bar`}><span style={{ width: `${Math.min(100, (automations.length / planLimit) * 100)}%` }} /></span>
+            <span>{Math.max(0, planLimit - automations.length)} disponibles</span>
+          </div>
           <div className={`${B}__marketplace-grid`}>
             {MARKETPLACE_PACKS.map(pack => (
               <div key={pack.id} className={`${B}__pack-card`} style={{ '--pack-color': pack.color }}>
@@ -332,12 +402,21 @@ export default function AutomationStudio() {
                   className={`${B}__pack-install`}
                   disabled={installingPack === pack.id}
                   onClick={async () => {
-                    if (!window.confirm(`Instalar ${pack.templates.length} automatizaciones del ${pack.name}? Se crearan como borradores (debera enviarlas a Meta para activar).`)) return;
+                    const available = planLimit - automations.length;
+                    if (available <= 0) {
+                      setLimitModal(true);
+                      return;
+                    }
+                    const toInstall = Math.min(pack.templates.length, available);
+                    const msg = toInstall < pack.templates.length
+                      ? `Su plan permite ${planLimit} automatizaciones y ya tiene ${automations.length}. Solo se pueden instalar ${toInstall} de ${pack.templates.length}. Desea continuar?`
+                      : `Instalar ${toInstall} automatizaciones del pack ${pack.name}? Se crearan como borradores (debera enviarlas a Meta para activar).`;
+                    if (!window.confirm(msg)) return;
                     setInstallingPack(pack.id);
                     let ok = 0, fail = 0;
-                    for (const t of pack.templates) {
+                    for (let i = 0; i < toInstall; i++) {
                       try {
-                        await svc.create({ ...t, action_type: 'send_whatsapp' });
+                        await svc.create({ ...pack.templates[i], action_type: 'send_whatsapp' });
                         ok++;
                       } catch { fail++; }
                     }
@@ -347,7 +426,7 @@ export default function AutomationStudio() {
                     setMainTab('automations');
                   }}
                 >
-                  {installingPack === pack.id ? 'Instalando...' : 'Instalar pack'}
+                  {installingPack === pack.id ? 'Instalando...' : (planLimit - automations.length <= 0 ? 'Limite alcanzado' : `Instalar pack (${pack.templates.length})`)}
                 </button>
               </div>
             ))}
@@ -578,6 +657,9 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
   const [audience, setAudience] = useState(null);
   const [previewClients, setPreviewClients] = useState([]);
   const [previewIdx, setPreviewIdx] = useState(0);
+  const [headerType, setHeaderType] = useState('');
+  const [headerMedia, setHeaderMedia] = useState(null);
+  const [headerText, setHeaderText] = useState('');
 
   useEffect(() => {
     if (editingRule) {
@@ -586,10 +668,16 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
         setTriggerConfig(editingRule.trigger_config || {}); setFilterConfig(editingRule.filter_config || {});
         setMessage(editingRule.action_config?.message || ''); setEvalHour(editingRule.eval_hour);
         setCooldownDays(editingRule.cooldown_days || 7); setMaxPerDay(editingRule.max_per_day || 20);
+        setHeaderType(editingRule.action_config?.header_type || '');
+        setHeaderMedia(editingRule.action_config?.header_media_url ? { preview: editingRule.action_config.header_media_url } : null);
+        setHeaderText(editingRule.action_config?.header_text || '');
         if (editingRule.chain_config) { setChainEnabled(true); setChainDays(editingRule.chain_config.if_no_reply_days || 3); setChainMessage(editingRule.chain_config.then_message || ''); }
       } else {
         setName(editingRule.name || ''); setTriggerType(editingRule.trigger_type || '');
         setTriggerConfig(editingRule.trigger_config || {}); setMessage(editingRule.action_config?.message || '');
+        setHeaderType(editingRule.action_config?.header_type || '');
+        setHeaderMedia(editingRule.action_config?.header_media_url ? { preview: editingRule.action_config.header_media_url } : null);
+        setHeaderText(editingRule.action_config?.header_text || '');
         setEvalHour(editingRule.eval_hour || null); setCooldownDays(editingRule.cooldown_days || 7); setMaxPerDay(editingRule.max_per_day || 20);
       }
     }
@@ -625,9 +713,27 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
   const handleSave = async (goToMeta = false) => {
     setSaving(true);
     try {
+      let headerMediaUrl = null;
+      if ((headerType === 'IMAGE' || headerType === 'VIDEO') && headerMedia?.file) {
+        headerMediaUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(headerMedia.file);
+        });
+      } else if (headerMedia?.preview && !headerMedia?.file) {
+        headerMediaUrl = headerMedia.preview;
+      }
+
+      const actionConfig = { message };
+      if (headerType) {
+        actionConfig.header_type = headerType;
+        if (headerType === 'TEXT') actionConfig.header_text = headerText;
+        else if (headerMediaUrl) actionConfig.header_media_url = headerMediaUrl;
+      }
+
       const payload = {
         name, trigger_type: triggerType, trigger_config: triggerConfig, filter_config: filterConfig,
-        action_type: 'send_whatsapp', action_config: { message },
+        action_type: 'send_whatsapp', action_config: actionConfig,
         chain_config: chainEnabled ? { if_no_reply_days: chainDays, then_message: chainMessage } : null,
         cooldown_days: cooldownDays, max_per_day: maxPerDay, eval_hour: evalHour,
       };
@@ -771,6 +877,59 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
         {step === 3 && (
           <div className={`${B}__wz-split`}>
             <div className={`${B}__editor`}>
+              <div className={`${B}__editor-field`}>
+                <label className={`${B}__field-label`}>Encabezado (opcional)</label>
+                <select value={headerType} onChange={e => { setHeaderType(e.target.value); setHeaderMedia(null); setHeaderText(''); }} className={`${B}__editor-select`}>
+                  <option value="">Sin encabezado</option>
+                  <option value="IMAGE">Imagen</option>
+                  <option value="VIDEO">Video</option>
+                  <option value="TEXT">Texto</option>
+                </select>
+                {headerType === 'IMAGE' && (
+                  <div className={`${B}__editor-media`}>
+                    {headerMedia?.preview ? (
+                      <div className={`${B}__editor-media-preview`}>
+                        <img src={headerMedia.preview} alt="" />
+                        <button type="button" className={`${B}__editor-media-remove`} onClick={() => setHeaderMedia(null)}>✕</button>
+                      </div>
+                    ) : (
+                      <label className={`${B}__editor-media-upload`}>
+                        <input type="file" accept="image/*" onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (f && f.size <= 5 * 1024 * 1024) setHeaderMedia({ file: f, preview: URL.createObjectURL(f) });
+                          else if (f) addNotification('Imagen max 5MB', 'error');
+                        }} hidden />
+                        <span>Seleccionar imagen (max 5MB, JPG/PNG)</span>
+                      </label>
+                    )}
+                  </div>
+                )}
+                {headerType === 'VIDEO' && (
+                  <div className={`${B}__editor-media`}>
+                    {headerMedia?.preview ? (
+                      <div className={`${B}__editor-media-preview`}>
+                        <video src={headerMedia.preview} controls style={{ maxHeight: 140, width: '100%', borderRadius: 8 }} />
+                        <button type="button" className={`${B}__editor-media-remove`} onClick={() => setHeaderMedia(null)}>✕</button>
+                      </div>
+                    ) : (
+                      <label className={`${B}__editor-media-upload`}>
+                        <input type="file" accept="video/mp4" onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (f && f.size <= 16 * 1024 * 1024) setHeaderMedia({ file: f, preview: URL.createObjectURL(f) });
+                          else if (f) addNotification('Video max 16MB', 'error');
+                        }} hidden />
+                        <span>Seleccionar video (max 16MB, MP4)</span>
+                      </label>
+                    )}
+                  </div>
+                )}
+                {headerType === 'TEXT' && (
+                  <input type="text" value={headerText} onChange={e => setHeaderText(e.target.value)} placeholder="Texto del encabezado" maxLength={60} className={`${B}__editor-input`} />
+                )}
+                {(headerType === 'IMAGE' || headerType === 'VIDEO') && (
+                  <p className={`${B}__editor-media-warn`}>Las plantillas con imagen o video tienen revision mas estricta por Meta. Usa imagenes profesionales.</p>
+                )}
+              </div>
               <label className={`${B}__field-label`}>Mensaje WhatsApp</label>
               <textarea ref={textareaRef} value={message} onChange={e => setMessage(e.target.value)} rows={8}
                 placeholder="Escribe el mensaje que recibirán tus clientes..." className={`${B}__editor-ta`} />
@@ -795,6 +954,15 @@ function AutomationWizard({ triggers, editingRule, onClose, addNotification }) {
                 <div className={`${B}__phone-chat`}>
                   {message ? (
                     <div className={`${B}__phone-bubble`}>
+                      {headerType === 'IMAGE' && headerMedia?.preview && (
+                        <img src={headerMedia.preview} alt="" style={{ width: '100%', borderRadius: '8px 8px 0 0', maxHeight: 140, objectFit: 'cover', marginBottom: 6 }} />
+                      )}
+                      {headerType === 'VIDEO' && headerMedia?.preview && (
+                        <video src={headerMedia.preview} style={{ width: '100%', borderRadius: '8px 8px 0 0', maxHeight: 140, objectFit: 'cover', marginBottom: 6 }} />
+                      )}
+                      {headerType === 'TEXT' && headerText && (
+                        <p style={{ fontWeight: 700, marginBottom: 4 }}>{headerText}</p>
+                      )}
                       <p>{renderPreview()}</p>
                       <span className={`${B}__phone-time`}>10:00 AM ✓✓</span>
                     </div>

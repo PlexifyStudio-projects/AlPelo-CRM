@@ -122,7 +122,7 @@ def _morning_review(db):
                 db.query(WhatsAppMessage)
                 .filter(WhatsAppMessage.conversation_id == conv.id)
                 .order_by(WhatsAppMessage.created_at.desc())
-                .limit(40)
+                .limit(15)  # 15 msgs sufficient context — saves tokens vs 40
                 .all()
             )
             recent_msgs.reverse()
@@ -139,7 +139,12 @@ def _morning_review(db):
             # Prefix so Lina knows this is morning follow-up — ONLY respond to what was asked
             morning_context = f"[CONTEXTO: Es la manana siguiente. El cliente escribio anoche fuera de horario. Respondele amablemente, retomando su consulta. SOLO responde a lo que el cliente pregunto o pidio. NO inventes mensajes promocionales ni de reactivacion.]\n\n{latest_inbound}"
 
-            ai_response = _call_ai_sync(system_prompt, history, morning_context)
+            # Smart routing: Haiku for simple follow-ups, Sonnet if client asked for actions
+            from services.ai.client import classify_message_complexity
+            _complexity = classify_message_complexity(latest_inbound, history)
+            _use_haiku = (_complexity == "haiku")
+
+            ai_response = _call_ai_sync(system_prompt, history, morning_context, use_haiku=_use_haiku)
 
             if not ai_response or not ai_response.strip():
                 continue
@@ -291,7 +296,7 @@ def _sweep_missed_conversations(db):
                 db.query(WhatsAppMessage)
                 .filter(WhatsAppMessage.conversation_id == conv.id)
                 .order_by(desc(WhatsAppMessage.created_at))
-                .limit(20)
+                .limit(15)  # 15 msgs sufficient — saves tokens
                 .all()
             )
             recent_msgs.reverse()
@@ -320,7 +325,12 @@ def _sweep_missed_conversations(db):
             # CRITICAL: Only respond to what the client wrote — NO promotional/re-engagement messages
             safe_context = f"[INSTRUCCION CRITICA: SOLO responde al mensaje del cliente. NO inventes mensajes promocionales, de reactivacion, ni de seguimiento. Si el cliente dijo algo, respondele a ESO. Si no hay nada concreto que responder, NO envies nada.]\n\n{inbound_text}"
 
-            ai_response = _call_ai_sync(system_prompt, history, safe_context)
+            # Smart routing: Haiku for simple follow-ups, Sonnet if client asked for actions
+            from services.ai.client import classify_message_complexity
+            _complexity = classify_message_complexity(inbound_text, history)
+            _use_haiku = (_complexity == "haiku")
+
+            ai_response = _call_ai_sync(system_prompt, history, safe_context, use_haiku=_use_haiku, max_tokens=500)
 
             if not ai_response or not ai_response.strip():
                 continue
@@ -469,7 +479,7 @@ def _execute_pending_tasks(db):
                 db.query(WhatsAppMessage)
                 .filter(WhatsAppMessage.conversation_id == conv.id)
                 .order_by(desc(WhatsAppMessage.created_at))
-                .limit(20)
+                .limit(15)  # 15 msgs sufficient — saves tokens
                 .all()
             )
             recent_msgs.reverse()
@@ -516,7 +526,8 @@ def _execute_pending_tasks(db):
                     f"NO menciones que es una tarea programada.]"
                 )
 
-            ai_response = _call_ai_sync(system_prompt, history, context)
+            # Pending tasks are simple follow-up messages — Haiku is sufficient
+            ai_response = _call_ai_sync(system_prompt, history, context, use_haiku=True, max_tokens=500)
 
             if not ai_response or not ai_response.strip():
                 continue
@@ -667,7 +678,7 @@ def _detect_unresolved_messages(db):
                 db.query(WhatsAppMessage)
                 .filter(WhatsAppMessage.conversation_id == conv.id)
                 .order_by(desc(WhatsAppMessage.created_at))
-                .limit(20)
+                .limit(15)  # 15 msgs sufficient — saves tokens
                 .all()
             )
             recent_msgs.reverse()
@@ -694,7 +705,12 @@ def _detect_unresolved_messages(db):
             inbound_text = last_msg.content or ""
             safe_context = f"[INSTRUCCION CRITICA: SOLO responde al mensaje del cliente. NO inventes mensajes promocionales ni de seguimiento. Responde a lo que el cliente escribio.]\n\n{inbound_text}"
 
-            ai_response = _call_ai_sync(system_prompt, history, safe_context)
+            # Smart routing: Haiku for simple messages, Sonnet if client asked for actions
+            from services.ai.client import classify_message_complexity
+            _complexity = classify_message_complexity(inbound_text, history)
+            _use_haiku = (_complexity == "haiku")
+
+            ai_response = _call_ai_sync(system_prompt, history, safe_context, use_haiku=_use_haiku, max_tokens=500)
 
             if not ai_response or not ai_response.strip():
                 continue

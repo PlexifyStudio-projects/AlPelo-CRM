@@ -452,10 +452,23 @@ $_fg-payment: #14B8A6;
   &__tpl-card-footer {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     padding: $spacing-md $spacing-lg;
     background: $color-gray-50;
     border-top: 1px solid $border-color-light;
+  }
+
+  &__tpl-card-hint {
+    width: 100%;
+    font-size: $font-size-2xs;
+    line-height: $line-height-snug;
+    margin-top: 2px;
+
+    &--draft { color: $color-gray-400; }
+    &--pending { color: $color-warning-dark; }
+    &--rejected { color: $color-error; }
+    &--approved { color: $color-success-dark; }
   }
 
   &__tpl-btn {
@@ -1410,6 +1423,124 @@ $_fg-payment: #14B8A6;
     display: flex;
     flex-direction: column;
     gap: $spacing-xl;
+    align-items: center;
+    padding: $spacing-xl 0;
+  }
+
+  &__sending-hero {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-md;
+    width: 100%;
+    max-width: 480px;
+
+    h2 {
+      font-size: $font-size-xl;
+      font-weight: $font-weight-extrabold;
+      color: $color-gray-900;
+      margin: 0;
+    }
+  }
+
+  &__sending-hero-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg { width: 32px; height: 32px; }
+
+    &--active {
+      background: $color-primary-ghost;
+    }
+
+    &--done {
+      background: $color-success-bg;
+      svg { color: $color-success; }
+    }
+  }
+
+  &__sending-hero-counter {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-gray-500;
+    margin: 0;
+  }
+
+  &__sending-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $spacing-md;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  &__sending-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-xs;
+    padding: $spacing-lg;
+    border-radius: $border-radius-xl;
+    background: $color-white;
+    border: 1px solid $border-color;
+    box-shadow: $shadow-sm;
+
+    svg { width: 20px; height: 20px; }
+
+    &--sent { svg { color: $color-success; } }
+    &--failed { svg { color: $color-error; } }
+    &--total { svg { color: $color-gray-400; } }
+  }
+
+  &__sending-card-num {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-extrabold;
+    color: $color-gray-900;
+    line-height: 1;
+  }
+
+  &__sending-card-label {
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: $letter-spacing-caps;
+  }
+
+  &__sending-detail {
+    width: 100%;
+    max-width: 600px;
+  }
+
+  &__sending-detail-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    background: none;
+    border: none;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-500;
+    cursor: pointer;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-md;
+    font-family: $font-primary;
+    transition: all $transition-fast;
+
+    &:hover { color: $color-gray-700; background: $color-gray-50; }
+  }
+
+  &__sending-detail-count {
+    font-size: $font-size-2xs;
+    background: $color-gray-100;
+    color: $color-gray-500;
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
   }
 
   &__sending-header {
@@ -1467,6 +1598,12 @@ $_fg-payment: #14B8A6;
       inset: 0;
       background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
       animation: campaigns-shimmer 1.5s infinite;
+    }
+
+    &--done {
+      background: $_gradient-success;
+
+      &::after { animation: none; }
     }
   }
 
@@ -1571,6 +1708,12 @@ $_fg-payment: #14B8A6;
     border-top-color: $color-primary;
     border-radius: 50%;
     animation: campaigns-spin 0.6s linear infinite;
+
+    &--lg {
+      width: 36px;
+      height: 36px;
+      border-width: 3.5px;
+    }
   }
 
   &__sending-queue-name {
@@ -1627,8 +1770,13 @@ $_fg-payment: #14B8A6;
     flex: 1;
     overflow-y: auto;
     padding: $spacing-sm;
-    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-family: $font-primary;
     @include custom-scrollbar;
+    max-height: 360px;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-lg;
+    margin-top: $spacing-sm;
+    background: $color-white;
   }
 
   &__log-entry {
@@ -1674,7 +1822,7 @@ $_fg-payment: #14B8A6;
 
   &__log-name {
     font-size: $font-size-xs;
-    color: rgba(255, 255, 255, 0.85);
+    color: $color-gray-700;
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1972,6 +2120,34 @@ $_fg-payment: #14B8A6;
       border-color: #2D5A3D;
       color: #2D5A3D;
       background: rgba(#2D5A3D, 0.03);
+    }
+  }
+
+  &__editor-vars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: $spacing-xs;
+  }
+
+  &__editor-var-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    font-size: $font-size-2xs;
+    font-weight: $font-weight-semibold;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    color: $color-primary;
+    background: $color-primary-ghost;
+    border: 1px solid rgba($color-primary, 0.15);
+    border-radius: $border-radius-full;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+      background: rgba($color-primary, 0.12);
+      border-color: rgba($color-primary, 0.3);
+      transform: translateY(-1px);
     }
   }
 

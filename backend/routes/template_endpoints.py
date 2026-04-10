@@ -504,78 +504,24 @@ async def submit_to_meta(template_id: int, user=Depends(get_current_user), _db: 
         components = []
 
         # Add HEADER component if template has media or text header
+        from routes._media_helpers import upload_media_to_meta as _upload_media
+
         header_type = getattr(tpl, 'header_type', None)
         header_media = getattr(tpl, 'header_media_url', None)
         header_text = getattr(tpl, 'header_text', None)
 
-        def _upload_media_to_meta(data_uri, default_mime):
-            """Upload base64 data URI to Meta Resumable Upload API, return handle."""
-            import httpx as _httpx
-            import base64 as _b64
-
-            if not data_uri or not data_uri.startswith('data:'):
-                return None
-
-            # Parse data URI
-            header_part, encoded = data_uri.split(',', 1)
-            mime = header_part.split(';')[0].split(':')[1] if ':' in header_part else default_mime
-            file_bytes = _b64.b64decode(encoded)
-            file_len = len(file_bytes)
-
-            print(f"[META UPLOAD] Uploading {file_len} bytes, mime={mime}")
-
-            # Step 1: Create upload session
-            resp1 = _httpx.post(
-                f"https://graph.facebook.com/{WA_API_VERSION}/app/uploads",
-                headers={"Authorization": f"Bearer {wa_token}"},
-                params={"file_length": file_len, "file_type": mime},
-                timeout=30,
-            )
-            data1 = resp1.json()
-            print(f"[META UPLOAD] Session response: {data1}")
-
-            session_id = data1.get("id")
-            if not session_id:
-                print(f"[META UPLOAD] No session ID, trying direct upload...")
-                # Fallback: try direct file upload to phone number media endpoint
-                phone_id = tenant.wa_phone_number_id if tenant else None
-                if phone_id:
-                    resp_direct = _httpx.post(
-                        f"https://graph.facebook.com/{WA_API_VERSION}/{phone_id}/media",
-                        headers={k: v for k, v in {"Authorization": f"Bearer {wa_token}"}.items()},
-                        files={"file": ("media", file_bytes, mime)},
-                        data={"messaging_product": "whatsapp", "type": mime},
-                        timeout=30,
-                    )
-                    data_direct = resp_direct.json()
-                    print(f"[META UPLOAD] Direct upload response: {data_direct}")
-                    return data_direct.get("id")  # This is a media_id, not a handle
-                return None
-
-            # Step 2: Upload file bytes
-            resp2 = _httpx.post(
-                f"https://graph.facebook.com/{WA_API_VERSION}/{session_id}",
-                headers={"Authorization": f"OAuth {wa_token}", "file_offset": "0", "Content-Type": mime},
-                content=file_bytes,
-                timeout=60,
-            )
-            data2 = resp2.json()
-            print(f"[META UPLOAD] Upload response: {data2}")
-
-            return data2.get("h")  # The handle for template example
-
         if header_type in ('IMAGE', 'VIDEO') and header_media:
-            fmt = header_type  # IMAGE or VIDEO
+            fmt = header_type
             default_mime = 'image/jpeg' if fmt == 'IMAGE' else 'video/mp4'
             try:
-                handle = _upload_media_to_meta(header_media, default_mime)
+                handle = _upload_media(header_media, default_mime, wa_token=wa_token, phone_id=tenant.wa_phone_number_id if tenant else None)
                 if handle:
                     components.append({
                         "type": "HEADER",
                         "format": fmt,
                         "example": {"header_handle": [handle]},
                     })
-                    print(f"[META SUBMIT] Header {fmt} with handle: {handle[:30]}...")
+                    print(f"[META SUBMIT] Header {fmt} with handle: {str(handle)[:30]}...")
                 else:
                     print(f"[META SUBMIT] No handle returned, submitting {fmt} header without example")
                     components.append({"type": "HEADER", "format": fmt})
