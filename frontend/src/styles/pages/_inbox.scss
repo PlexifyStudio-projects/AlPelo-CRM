@@ -442,6 +442,85 @@
     &:hover { background: rgba($color-error, 0.06) !important; }
   }
 
+  &__delete-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: $z-modal;
+    background: rgba(0, 0, 0, 0.4);
+    @include flex-center;
+    animation: inboxFadeIn 150ms ease both;
+  }
+
+  &__delete-modal {
+    background: $color-white;
+    border-radius: $border-radius-lg;
+    padding: 28px 32px 24px;
+    max-width: 380px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    animation: inboxSlideUp 200ms $ease-out-expo both;
+
+    h3 {
+      margin: 12px 0 6px;
+      font-size: 16px;
+      font-weight: 600;
+      color: $color-gray-900;
+    }
+
+    p {
+      font-size: 13px;
+      color: $color-gray-500;
+      line-height: 1.5;
+      margin: 0 0 20px;
+    }
+  }
+
+  &__delete-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba($color-error, 0.08);
+    color: $color-error;
+  }
+
+  &__delete-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  &__delete-cancel {
+    padding: 9px 20px;
+    border: 1px solid $color-gray-200;
+    background: $color-white;
+    border-radius: $border-radius-md;
+    font-size: 13px;
+    font-weight: 500;
+    color: $color-gray-700;
+    cursor: pointer;
+    transition: all $duration-fast ease;
+
+    &:hover { background: $color-gray-50; border-color: $color-gray-300; }
+  }
+
+  &__delete-confirm {
+    padding: 9px 20px;
+    border: none;
+    background: $color-error;
+    border-radius: $border-radius-md;
+    font-size: 13px;
+    font-weight: 500;
+    color: $color-white;
+    cursor: pointer;
+    transition: all $duration-fast ease;
+
+    &:hover { background: darken($color-error, 8%); }
+  }
+
   &__label-picker {
     position: absolute;
     bottom: 60px;

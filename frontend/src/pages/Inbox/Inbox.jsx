@@ -814,6 +814,7 @@ const Inbox = () => {
   const [showSearchInChat, setShowSearchInChat] = useState(false);
   const [searchInChatQuery, setSearchInChatQuery] = useState('');
   const [showConvMenu, setShowConvMenu] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [showLabelPicker, setShowLabelPicker] = useState(null);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
@@ -1832,18 +1833,37 @@ const Inbox = () => {
             <button onClick={() => { togglePin(showConvMenu.id); setShowConvMenu(null); }}>
               {Icons.pin} {pinnedConvIds.includes(showConvMenu.id) ? 'Desfijar' : 'Fijar chat'}
             </button>
-            <button className={`${b}__conv-context-danger`} onClick={async () => {
-              const convId = showConvMenu.id;
+            <button className={`${b}__conv-context-danger`} onClick={() => {
+              setDeleteConfirmId(showConvMenu.id);
               setShowConvMenu(null);
-              if (!window.confirm('¿Eliminar esta conversación? Se borrarán todos los mensajes.')) return;
-              try {
-                await whatsappService.deleteConversation(convId);
-                setConversations((prev) => prev.filter((c) => c.id !== convId));
-                if (selectedConvId === convId) { setSelectedConvId(null); setMessages([]); }
-              } catch { }
             }}>
               {Icons.trash} Eliminar chat
             </button>
+          </div>
+        )}
+        {deleteConfirmId && (
+          <div className={`${b}__delete-overlay`} onClick={() => setDeleteConfirmId(null)}>
+            <div className={`${b}__delete-modal`} onClick={(e) => e.stopPropagation()}>
+              <div className={`${b}__delete-icon`}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </div>
+              <h3>Eliminar conversacion</h3>
+              <p>Se borraran todos los mensajes de este chat. Esta accion no se puede deshacer.</p>
+              <div className={`${b}__delete-actions`}>
+                <button className={`${b}__delete-cancel`} onClick={() => setDeleteConfirmId(null)}>Cancelar</button>
+                <button className={`${b}__delete-confirm`} onClick={async () => {
+                  const convId = deleteConfirmId;
+                  setDeleteConfirmId(null);
+                  try {
+                    await whatsappService.deleteConversation(convId);
+                    setConversations((prev) => prev.filter((c) => c.id !== convId));
+                    if (selectedConvId === convId) { setSelectedConvId(null); setMessages([]); }
+                  } catch { }
+                }}>Eliminar</button>
+              </div>
+            </div>
           </div>
         )}
         {showLabelPicker && (
