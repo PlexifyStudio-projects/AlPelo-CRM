@@ -791,28 +791,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const showNow = nowMin >= HOURS_START * 60 && nowMin < HOURS_END * 60;
   const nowTop = minToPx(nowMin);
 
-  if (loading) {
-    return (
-      <div className={b}>
-        <div className={`${b}__loading`}>
-          <div className={`${b}__loading-content`}>
-            <div className={`${b}__loading-icon`}>
-              <CalendarIcon />
-            </div>
-            <div className={`${b}__loading-skeleton`}>
-              <div className={`${b}__skeleton-bar ${b}__skeleton-bar--lg`} />
-              <div className={`${b}__skeleton-bar ${b}__skeleton-bar--sm`} />
-              <div className={`${b}__skeleton-bar ${b}__skeleton-bar--md`} />
-            </div>
-            <span className={`${b}__loading-text`}>Cargando agenda...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={`${b}${draggingApt ? ` ${b}--dragging` : ''}`}>
+      {loading && (
+        <div className={`${b}__loading-bar`}>
+          <div className={`${b}__loading-bar-fill`} />
+        </div>
+      )}
       <div className={`${b}__topbar`}>
         <div className={`${b}__topbar-left`}>
           <h1 className={`${b}__title`}>Agenda</h1>
