@@ -1,6 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import authService from '../services/authService';
 import { registerPush } from '../services/pushService';
+import staffService from '../services/staffService';
+import servicesService from '../services/servicesService';
+
+const warmupCache = () => {
+  staffService.list().catch(() => {});
+  servicesService.list().catch(() => {});
+};
 
 const AuthContext = createContext(null);
 
@@ -40,6 +47,7 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(restoredUser));
         registerPush().catch(() => {});
+        warmupCache();
       } else {
         localStorage.removeItem(STORAGE_KEY);
       }
@@ -98,6 +106,7 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(loggedUser));
     registerPush().catch(() => {});
+    warmupCache();
   }, []);
 
   const logout = useCallback(async () => {

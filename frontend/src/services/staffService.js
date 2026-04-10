@@ -1,8 +1,17 @@
 const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 const API_BASE = `${_API}/staff`;
 
+let _listCache = null;
+let _listCacheTime = 0;
+const CACHE_TTL = 120000;
+
 const staffService = {
   list: async (params = {}) => {
+    const hasFilters = params.role || params.skill || params.search || params.active !== undefined || params.sort_by;
+    if (!hasFilters && _listCache && (Date.now() - _listCacheTime < CACHE_TTL)) {
+      return _listCache;
+    }
+
     const query = new URLSearchParams();
     if (params.role) query.set('role', params.role);
     if (params.skill) query.set('skill', params.skill);
@@ -13,8 +22,13 @@ const staffService = {
     const url = query.toString() ? `${API_BASE}/?${query}` : `${API_BASE}/`;
     const res = await fetch(url, { credentials: 'include' });
     if (!res.ok) throw new Error('Error al cargar equipo');
-    return res.json();
+    const data = await res.json();
+
+    if (!hasFilters) { _listCache = data; _listCacheTime = Date.now(); }
+    return data;
   },
+
+  invalidateCache: () => { _listCache = null; _listCacheTime = 0; },
 
   get: async (id) => {
     const res = await fetch(`${API_BASE}/${id}`, { credentials: 'include' });
@@ -33,6 +47,7 @@ const staffService = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Error al crear staff');
     }
+    staffService.invalidateCache();
     return res.json();
   },
 
@@ -47,6 +62,7 @@ const staffService = {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || 'Error al actualizar staff');
     }
+    staffService.invalidateCache();
     return res.json();
   },
 
@@ -56,6 +72,7 @@ const staffService = {
       credentials: 'include',
     });
     if (!res.ok) throw new Error('Error al eliminar staff');
+    staffService.invalidateCache();
     return res.json();
   },
 
