@@ -1757,7 +1757,10 @@ const Inbox = () => {
                   onClick={() => handleSelectConv(conv.id)}
                   onContextMenu={(e) => {
                     e.preventDefault();
-                    setShowConvMenu({ id: conv.id, x: e.clientX, y: e.clientY });
+                    const menuW = 220, menuH = 260;
+                    const x = Math.min(e.clientX, window.innerWidth - menuW);
+                    const y = Math.min(e.clientY, window.innerHeight - menuH);
+                    setShowConvMenu({ id: conv.id, x, y });
                   }}
                 >
                   <div className={`${b}__conv-avatar ${isVip ? `${b}__conv-avatar--vip` : ''}`} style={!isVip && !conv.wa_profile_photo_url ? { background: getAvatarColor(name) } : undefined}>
