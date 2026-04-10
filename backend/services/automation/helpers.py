@@ -3,7 +3,7 @@ Extracted from scheduler.py Phase 8."""
 import os, httpx, json
 from datetime import datetime, timedelta, date
 from database.connection import SessionLocal
-from database.models import Tenant, WhatsAppConversation, WhatsAppMessage, Client
+from database.models import Tenant, WhatsAppConversation, WhatsAppMessage, Client, Staff, Service
 from routes._helpers import normalize_phone, now_colombia as _now_colombia
 
 WA_API_VERSION = os.getenv("WHATSAPP_API_VERSION", "v22.0")

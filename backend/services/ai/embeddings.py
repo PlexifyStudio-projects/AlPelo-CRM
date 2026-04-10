@@ -145,7 +145,7 @@ async def _openai_embedding_async(text: str) -> Optional[List[float]]:
 # ============================================================================
 
 HF_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-HF_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL}"
+HF_URL = f"https://router.huggingface.co/pipeline/feature-extraction/{HF_MODEL}"
 
 
 def _hf_embedding(text: str) -> Optional[List[float]]:
