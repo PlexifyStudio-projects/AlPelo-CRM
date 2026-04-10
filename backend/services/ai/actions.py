@@ -957,6 +957,15 @@ def _execute_action(action: dict, db: Session) -> str:
         q = db.query(Appointment)
         if _tid:
             q = q.filter(Appointment.tenant_id == _tid)
+
+        # PRIVACY: If request comes from WhatsApp (has wa_contact_phone), ONLY show that client's appointments
+        _wa_phone = action.get("wa_contact_phone")
+        _is_whatsapp = bool(_wa_phone)
+        if _is_whatsapp:
+            q = q.filter(Appointment.client_phone.ilike(f"%{_wa_phone[-10:]}%"))
+        elif action.get("client_name"):
+            q = q.filter(Appointment.client_name.ilike(f"%{action['client_name']}%"))
+
         if action.get("date"):
             q = q.filter(Appointment.date == action["date"])
         if action.get("date_from"):
@@ -972,8 +981,6 @@ def _execute_action(action: dict, db: Session) -> str:
                 q = q.filter(Appointment.staff_id == st.id)
         if action.get("status"):
             q = q.filter(Appointment.status == action["status"])
-        if action.get("client_name"):
-            q = q.filter(Appointment.client_name.ilike(f"%{action['client_name']}%"))
         apts = q.order_by(Appointment.date, Appointment.time).limit(action.get("limit", 30)).all()
         if not apts:
             return "No encontre citas con esos filtros."
@@ -981,7 +988,11 @@ def _execute_action(action: dict, db: Session) -> str:
         for a in apts:
             staff_obj = db.query(Staff).filter(Staff.id == a.staff_id).first()
             svc_obj = db.query(Service).filter(Service.id == a.service_id).first()
-            lines.append(f"- ID:{a.id} | {a.date} {a.time} | {a.client_name} ({a.client_phone}) | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | ${a.price or 0:,} | {a.status}")
+            if _is_whatsapp:
+                # PRIVACY: Don't expose phone numbers or other clients' data to WhatsApp users
+                lines.append(f"- ID:{a.id} | {a.date} {a.time} | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | ${a.price or 0:,} | {a.status}")
+            else:
+                lines.append(f"- ID:{a.id} | {a.date} {a.time} | {a.client_name} | {svc_obj.name if svc_obj else '?'} | {staff_obj.name if staff_obj else '?'} | ${a.price or 0:,} | {a.status}")
         return f"Encontre {len(apts)} cita(s):\n" + "\n".join(lines)
 
     elif action_type == "create_appointment":

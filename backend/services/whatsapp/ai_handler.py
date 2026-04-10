@@ -557,6 +557,11 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                             action_data["tenant_id"] = conv.tenant_id
 
                         # Client creation: use conv phone ONLY if creating the conversation's own contact
+                        # PRIVACY: Inject wa_contact_phone on ALL actions from WhatsApp
+                        # This is used by list_appointments to filter only THIS client's data
+                        if conv.wa_contact_phone:
+                            action_data["wa_contact_phone"] = conv.wa_contact_phone
+
                         # If creating a third party (primo, esposa), DON'T override their phone
                         if action_type == "create_client" and conv.wa_contact_phone:
                             client_name = (action_data.get("name") or "").strip().lower()
@@ -673,8 +678,10 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                                 ca_data = json.loads(ca_json.strip())
                                 ca_type = ca_data.get("action")
                                 if ca_type:
-                                    # Inject tenant_id
+                                    # Inject tenant_id + wa_contact_phone for privacy
                                     ca_data["tenant_id"] = _conv_tid
+                                    if conv.wa_contact_phone:
+                                        ca_data["wa_contact_phone"] = conv.wa_contact_phone
                                     if ca_type == "create_appointment" and not ca_data.get("client_phone"):
                                         ca_client = (ca_data.get("client_name") or "").lower().strip()
                                         ca_contact = (conv.wa_contact_name or "").lower().strip()
