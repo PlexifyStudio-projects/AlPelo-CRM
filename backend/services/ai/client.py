@@ -27,9 +27,9 @@ _COMPLEX_KEYWORDS = re.compile(
 )
 
 _SIMPLE_PATTERNS = re.compile(
-    r"^(hola|buenos?\s*(dias|tardes|noches)|hi|hey|gracias|ok|listo|dale|perfecto"
+    r"^(gracias|ok|listo|dale|perfecto"
     r"|si|no|bueno|vale|bien|genial|excelente"
-    r"|que tal|como estas|estas ahi"
+    r"|estas ahi"
     r"|cuanto (cuesta|sale|vale|es)"
     r"|que servicios|que horario|a que hora|cuando abren|cuando cierran"
     r"|tienen.*disponib|hay.*espacio"
@@ -41,9 +41,17 @@ _SIMPLE_PATTERNS = re.compile(
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
 
 
+_GREETING_OPENER = re.compile(
+    r"^(hola|buenos?\s*(dias|tardes|noches)|buenas\s*(tardes|noches)?|hi|hey|que tal|como estas)",
+    re.IGNORECASE,
+)
+
 def classify_message_complexity(user_message: str, history: list = None) -> str:
     """Classify whether a message needs Sonnet (complex) or Haiku (simple).
-    Returns 'sonnet' or 'haiku'."""
+    Returns 'sonnet' or 'haiku'.
+
+    Sonnet: actions, greetings (need warmth/personality), images, long/complex msgs.
+    Haiku: short replies (ok, si, gracias, dale), confirmations, one-word answers."""
     if not user_message:
         return "haiku"
 
@@ -67,7 +75,13 @@ def classify_message_complexity(user_message: str, history: list = None) -> str:
         if last_assistant and ("```action" in last_assistant or "CONFLICTO" in last_assistant or "PENDIENTE" in last_assistant):
             return "sonnet"
 
-    # Short simple messages → Haiku
+    # Greeting openers → Sonnet (need warmth, personality, proper saludo)
+    # "Hola, están abiertos?" needs Sonnet for proper greeting + answer
+    if _GREETING_OPENER.match(msg):
+        return "sonnet"
+
+    # Short simple replies (no greeting) → Haiku
+    # These are mid-conversation confirmations: "ok", "si", "gracias", "dale"
     if _SIMPLE_PATTERNS.match(msg):
         return "haiku"
 
@@ -78,7 +92,7 @@ def classify_message_complexity(user_message: str, history: list = None) -> str:
     if len(msg) > 300:
         return "sonnet"
 
-    # Default: Haiku for everything else (price checks, info, etc.)
+    # Default: Haiku for mid-conversation info queries without greeting
     return "haiku"
 
 
