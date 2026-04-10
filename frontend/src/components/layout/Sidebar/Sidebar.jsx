@@ -151,6 +151,26 @@ const getNotificationIcon = (type) => {
   }
 };
 
+const PREFETCH_MAP = {
+  dashboard: () => import('../../../pages/Dashboard/Dashboard'),
+  agenda: () => import('../../../pages/Agenda/Agenda'),
+  clients: () => import('../../../pages/Clients/Clients'),
+  campaigns: () => import('../../../pages/Campaigns/Campaigns'),
+  services: () => import('../../../pages/Services/Services'),
+  inventory: () => import('../../../pages/Inventory/Inventory'),
+  finances: () => import('../../../pages/Finances/Finances'),
+  team: () => import('../../../pages/Team/Team'),
+  automations: () => import('../../../pages/Automations/AutomationStudio'),
+  inbox: () => import('../../../pages/Inbox/Inbox'),
+  settings: () => import('../../../pages/Settings/Settings'),
+};
+const _prefetched = new Set();
+const prefetchPage = (id) => {
+  if (_prefetched.has(id) || !PREFETCH_MAP[id]) return;
+  _prefetched.add(id);
+  PREFETCH_MAP[id]();
+};
+
 const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onToggleCollapse, onLogout, isMobileOpen, onCloseMobile, badgeCounts = {}, onNavigate }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -249,6 +269,7 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
               key={item.id}
               className={`${b}__item ${activeItem === item.id ? `${b}__item--active` : ''} ${item.disabled ? `${b}__item--disabled` : ''}`}
               onClick={() => !item.disabled && onItemClick(item.id)}
+              onMouseEnter={() => prefetchPage(item.id)}
               data-tooltip={item.label}
               data-id={item.id}
               role="button"
