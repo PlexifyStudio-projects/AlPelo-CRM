@@ -65,15 +65,19 @@ def classify_message_complexity(user_message: str, history: list = None) -> str:
     if _COMPLEX_KEYWORDS.search(msg):
         return "sonnet"
 
-    # If history has recent action results or conflicts → Sonnet (continuation)
+    # If history has recent action results, conflicts, or scheduling context → Sonnet
     if history:
         last_assistant = None
         for entry in reversed(history):
             if entry.get("role") == "assistant":
                 last_assistant = entry.get("content", "")
                 break
-        if last_assistant and ("```action" in last_assistant or "CONFLICTO" in last_assistant or "PENDIENTE" in last_assistant):
-            return "sonnet"
+        if last_assistant:
+            if "```action" in last_assistant or "CONFLICTO" in last_assistant or "PENDIENTE" in last_assistant:
+                return "sonnet"
+            la = last_assistant.lower()
+            if any(kw in la for kw in ("agendar", "agendo", "agendarte", "cita", "horario", "disponib", "te puedo ofrecer", "qué hora", "a las")):
+                return "sonnet"
 
     # Greeting openers → Sonnet (need warmth, personality, proper saludo)
     # "Hola, están abiertos?" needs Sonnet for proper greeting + answer

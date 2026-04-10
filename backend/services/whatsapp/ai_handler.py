@@ -651,10 +651,12 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     results_summary = "\n".join(_successes)
                     continuation_msg = (
                         f"[SISTEMA: Ejecutaste estas acciones y obtuviste estos resultados:\n{results_summary}\n\n"
-                        f"Ahora RESPONDE al cliente Y ejecuta las acciones que falten. "
-                        f"Si buscaste un cliente y el cliente pidio agendar, AGENDA LA CITA con un bloque action create_appointment. "
+                        f"Ahora RESPONDE al cliente. "
+                        f"Si buscaste un cliente y el cliente pidio agendar CON FECHA Y HORA ESPECIFICAS, agenda con create_appointment. "
                         f"Si ya agendaste, confirma fecha, hora, profesional y servicio. "
-                        f"NO repitas 'dejame buscar'. Haz todo lo que falta en UNA sola respuesta.]\n\n{inbound_text}"
+                        f"REGLA CRITICA: Si el cliente pidio MULTIPLES servicios pero NO confirmo hora para alguno, NO lo agendes — PREGUNTA la hora primero. "
+                        f"Solo crea citas cuando el cliente haya dicho explicitamente la fecha y hora. "
+                        f"NO inventes horarios. NO repitas 'dejame buscar'.]\n\n{inbound_text}"
                     )
                     from routes.ai_endpoints import _call_ai, _execute_action
                     final_response = await _call_ai(system_prompt, history + [
