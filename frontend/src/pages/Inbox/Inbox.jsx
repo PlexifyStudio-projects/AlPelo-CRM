@@ -1757,10 +1757,11 @@ const Inbox = () => {
                   onClick={() => handleSelectConv(conv.id)}
                   onContextMenu={(e) => {
                     e.preventDefault();
-                    const menuW = 220, menuH = 260;
-                    const x = Math.min(e.clientX, window.innerWidth - menuW);
-                    const y = Math.min(e.clientY, window.innerHeight - menuH);
-                    setShowConvMenu({ id: conv.id, x, y });
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const menuW = 180;
+                    const x = Math.min(rect.left + rect.width / 2, rect.right - menuW);
+                    const y = rect.bottom;
+                    setShowConvMenu({ id: conv.id, x: Math.max(rect.left, x), y: Math.min(y, window.innerHeight - 120) });
                   }}
                 >
                   <div className={`${b}__conv-avatar ${isVip ? `${b}__conv-avatar--vip` : ''}`} style={!isVip && !conv.wa_profile_photo_url ? { background: getAvatarColor(name) } : undefined}>
@@ -1830,18 +1831,6 @@ const Inbox = () => {
           >
             <button onClick={() => { togglePin(showConvMenu.id); setShowConvMenu(null); }}>
               {Icons.pin} {pinnedConvIds.includes(showConvMenu.id) ? 'Desfijar' : 'Fijar chat'}
-            </button>
-            <button onClick={() => { toggleMute(showConvMenu.id); setShowConvMenu(null); }}>
-              {Icons.mute} {mutedConvIds.includes(showConvMenu.id) ? 'Activar sonido' : 'Silenciar'}
-            </button>
-            <button onClick={() => { setShowLabelPicker(showConvMenu.id); setShowConvMenu(null); }}>
-              {Icons.label} Etiquetar
-            </button>
-            <button onClick={() => { setShowStatusPicker(showConvMenu.id); setShowConvMenu(null); }}>
-              {Icons.lightning} Cambiar estado
-            </button>
-            <button onClick={() => { toggleArchive(showConvMenu.id); setShowConvMenu(null); }}>
-              {Icons.archive} {archivedConvIds.includes(showConvMenu.id) ? 'Desarchivar' : 'Archivar'}
             </button>
             <button className={`${b}__conv-context-danger`} onClick={async () => {
               const convId = showConvMenu.id;
