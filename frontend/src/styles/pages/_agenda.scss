@@ -2205,6 +2205,59 @@
     &:hover { opacity: 1; background: rgba($color-primary, 0.08); }
   }
 
+  &__preselect-banner {
+    background: rgba($color-primary, 0.03);
+    border: 1px solid rgba($color-primary, 0.12);
+    border-radius: $border-radius-md;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__preselect-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__preselect-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $color-white;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  &__preselect-time {
+    display: block;
+    font-size: 13px;
+    color: $color-primary;
+    font-weight: 600;
+  }
+
+  &__preselect-hint {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $color-gray-500;
+  }
+
+  &__preselect-services {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
   &__svc-search {
     display: flex;
     flex-direction: column;

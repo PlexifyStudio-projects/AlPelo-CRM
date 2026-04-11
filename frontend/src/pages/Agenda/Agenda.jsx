@@ -346,11 +346,25 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     );
   }, [services, serviceSearch]);
 
+  const [preselected, setPreselected] = useState(null);
+
   const filteredServicesByCategory = useMemo(() => {
     const groups = {};
     filteredServices.forEach(s => { if (!groups[s.category]) groups[s.category] = []; groups[s.category].push(s); });
     return groups;
   }, [filteredServices]);
+
+  const preselectedStaffServices = useMemo(() => {
+    if (!preselected || serviceAssignments.length > 0) return null;
+    const sid = parseInt(preselected.staffId);
+    const staffObj = staff.find(s => s.id === sid);
+    if (!staffObj) return null;
+    const staffSvcs = services.filter(s => s.staff_ids?.includes(sid));
+    if (!staffSvcs.length) return null;
+    const groups = {};
+    staffSvcs.forEach(s => { if (!groups[s.category]) groups[s.category] = []; groups[s.category].push(s); });
+    return { staff: staffObj, services: groups };
+  }, [preselected, serviceAssignments, staff, services]);
 
   const quickDates = useMemo(() => {
     const dates = [];
@@ -633,13 +647,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setShowProductDropdown(false);
   };
 
-  const preselectedRef = useRef(null);
-
   const openCreate = (date, time, staffId) => {
     setEditingApt(null);
     resetModal();
     setFormData({ date: date ? toISO(date) : toISO(currentDate), notes: '', status: 'confirmed', visit_code: '' });
-    preselectedRef.current = (time && staffId) ? { staffId: String(staffId), time } : null;
+    setPreselected((time && staffId) ? { staffId: String(staffId), time } : null);
     setShowModal(true);
   };
 
@@ -1388,6 +1400,43 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                     )}
                   </div>
                 )}
+                {preselectedStaffServices && (
+                  <div className={`${b}__preselect-banner`}>
+                    <div className={`${b}__preselect-info`}>
+                      <span className={`${b}__preselect-avatar`} style={{ background: preselectedStaffServices.staff.photo_url ? 'transparent' : (staffColorMap[preselectedStaffServices.staff.id] || '#6B6B63') }}>
+                        {preselectedStaffServices.staff.photo_url
+                          ? <img src={preselectedStaffServices.staff.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                          : preselectedStaffServices.staff.name.split(' ').map(w => w[0]).join('').substring(0, 2)}
+                      </span>
+                      <div>
+                        <strong>{preselectedStaffServices.staff.name}</strong>
+                        <span className={`${b}__preselect-time`}>{formatTime12(preselected.time)}</span>
+                      </div>
+                    </div>
+                    <span className={`${b}__preselect-hint`}>Selecciona un servicio:</span>
+                    <div className={`${b}__preselect-services`}>
+                      {Object.entries(preselectedStaffServices.services).map(([cat, svcs]) => (
+                        <div key={cat} className={`${b}__svc-group`}>
+                          <span className={`${b}__svc-group-label`}>{cat}</span>
+                          {svcs.map(s => (
+                            <button key={s.id} type="button" className={`${b}__svc-item`}
+                              onClick={() => {
+                                setServiceAssignments([{ serviceId: s.id, staffId: preselected.staffId, time: preselected.time, clientPrice: s.price }]);
+                                setPreselected(null);
+                              }}>
+                              <span className={`${b}__svc-item-name`}>{s.name}</span>
+                              <span className={`${b}__svc-item-detail`}>{formatDur(s.duration_minutes)} · {formatCOP(s.price)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className={`${b}__link-btn`} onClick={() => setPreselected(null)}>
+                      Buscar otro servicio
+                    </button>
+                  </div>
+                )}
+                {!preselectedStaffServices && (
                 <div className={`${b}__svc-search`}>
                   <div className={`${b}__search-wrap`}>
                     <SearchIcon />
@@ -1407,11 +1456,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                               return (
                                 <button key={s.id} type="button" className={`${b}__svc-item ${added ? `${b}__svc-item--added` : ''}`} disabled={added}
                                   onClick={() => {
-                                    const pre = preselectedRef.current;
-                                    const autoStaff = pre && s.staff_ids?.includes(parseInt(pre.staffId)) ? pre.staffId : '';
-                                    const autoTime = autoStaff ? (pre?.time || '') : '';
-                                    setServiceAssignments(prev => [...prev, { serviceId: s.id, staffId: autoStaff, time: autoTime, clientPrice: s.price }]);
-                                    if (autoStaff) preselectedRef.current = null;
+                                    setServiceAssignments(prev => [...prev, { serviceId: s.id, staffId: '', time: '', clientPrice: s.price }]);
                                     setServiceSearch('');
                                     setShowServiceDropdown(false);
                                   }}>
@@ -1428,6 +1473,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                     </div>
                   )}
                 </div>
+                )}
               </div>
               <div className={`${b}__section`}>
                 <span className={`${b}__section-label`}>
