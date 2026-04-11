@@ -148,13 +148,6 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
           </h4>
           <div className={`${b}__grid`}>
             <Input
-              label="Código / Ticket"
-              name="client_id"
-              value={form.client_id}
-              onChange={handleChange}
-              placeholder="Ej: 1213"
-            />
-            <Input
               label="Nombre completo"
               name="name"
               value={form.name}
