@@ -157,6 +157,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [newClientEmail, setNewClientEmail] = useState('');
   const [newClientDocType, setNewClientDocType] = useState('');
   const [newClientDocNumber, setNewClientDocNumber] = useState('');
+  const [newClientBirthday, setNewClientBirthday] = useState('');
 
   const [serviceAssignments, setServiceAssignments] = useState([]);
   const [serviceSearch, setServiceSearch] = useState('');
@@ -623,6 +624,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setNewClientEmail('');
     setNewClientDocType('');
     setNewClientDocNumber('');
+    setNewClientBirthday('');
     setServiceAssignments([]);
     setServiceSearch('');
     setShowServiceDropdown(false);
@@ -668,12 +670,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           return;
         }
         try {
-          const clientPayload = { name: newClientName.trim(), phone: newClientPhone.trim() };
+          const rawPhone = newClientPhone.trim().replace(/[\s()-]/g, '');
+          const clientPayload = { name: newClientName.trim(), phone: rawPhone };
           if (newClientEmail.trim()) clientPayload.email = newClientEmail.trim();
-          if (newClientDocType && newClientDocNumber.trim()) {
-            clientPayload.document_type = newClientDocType;
-            clientPayload.document_number = newClientDocNumber.trim();
-          }
+          if (newClientBirthday) clientPayload.birthday = newClientBirthday;
+          if (newClientDocType) clientPayload.document_type = newClientDocType;
+          if (newClientDocNumber.trim()) clientPayload.document_number = newClientDocNumber.trim();
           const created = await clientService.create(clientPayload);
           clientName = newClientName.trim();
           clientPhone = created.phone;
@@ -1289,7 +1291,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                       </div>
                     </div>
                     <div className={`${b}__row`}>
-                      <div className={`${b}__field`} style={{ flex: '0 0 140px' }}>
+                      <div className={`${b}__field`}>
                         <label>Tipo documento</label>
                         <select value={newClientDocType} onChange={e => setNewClientDocType(e.target.value)} className={`${b}__doc-select`}>
                           <option value="">Seleccionar</option>
@@ -1310,7 +1312,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                         <input type="text" value={newClientDocNumber} onChange={e => setNewClientDocNumber(e.target.value)} placeholder="Número de documento" />
                       </div>
                     </div>
-                    <button type="button" className={`${b}__link-btn`} onClick={() => { setIsNewClient(false); setNewClientName(''); setNewClientPhone(''); setNewClientEmail(''); setNewClientDocType(''); setNewClientDocNumber(''); }}>
+                    <div className={`${b}__row`}>
+                      <div className={`${b}__field`}>
+                        <label>Cumpleaños</label>
+                        <input type="date" value={newClientBirthday} onChange={e => setNewClientBirthday(e.target.value)} className={`${b}__date-input`} />
+                      </div>
+                    </div>
+                    <button type="button" className={`${b}__link-btn`} onClick={() => { setIsNewClient(false); setNewClientName(''); setNewClientPhone(''); setNewClientEmail(''); setNewClientDocType(''); setNewClientDocNumber(''); setNewClientBirthday(''); }}>
                       ← Buscar cliente existente
                     </button>
                   </div>

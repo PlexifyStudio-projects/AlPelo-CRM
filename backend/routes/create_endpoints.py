@@ -74,6 +74,19 @@ def create_client(data: ClientCreate, db: Session = Depends(get_db), user: Admin
         raise HTTPException(status_code=409, detail=f"Client ID '{client_data['client_id']}' ya existe")
 
     tid = safe_tid(user, db)
+
+    # Prevent duplicate by phone number within same tenant
+    if client_data.get("phone"):
+        phone_digits = ''.join(c for c in client_data["phone"] if c.isdigit())
+        if phone_digits and len(phone_digits) >= 7:
+            existing_clients = db.query(Client).filter(Client.is_active == True)
+            if tid:
+                existing_clients = existing_clients.filter(Client.tenant_id == tid)
+            for ec in existing_clients.all():
+                ec_digits = ''.join(c for c in (ec.phone or '') if c.isdigit())
+                if ec_digits and ec_digits[-7:] == phone_digits[-7:]:
+                    raise HTTPException(status_code=409, detail=f"Ya existe un cliente con ese teléfono: {ec.name}")
+
     client = Client(tenant_id=tid, **client_data)
     db.add(client)
     db.commit()

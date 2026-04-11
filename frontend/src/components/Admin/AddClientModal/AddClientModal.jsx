@@ -111,8 +111,11 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       return;
     }
 
+    // Store phone as clean digits only
+    const cleanPhone = form.phone.replace(/[\s()\-+]/g, '');
     const payload = {
       ...form,
+      phone: cleanPhone,
       birthday: form.birthday || null,
       email: form.email || null,
       document_type: form.document_type || null,
