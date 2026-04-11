@@ -157,6 +157,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [newClientEmail, setNewClientEmail] = useState('');
   const [newClientDocType, setNewClientDocType] = useState('');
   const [newClientDocNumber, setNewClientDocNumber] = useState('');
+  const [newClientTicket, setNewClientTicket] = useState('');
 
   const [serviceAssignments, setServiceAssignments] = useState([]);
   const [serviceSearch, setServiceSearch] = useState('');
@@ -623,6 +624,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setNewClientEmail('');
     setNewClientDocType('');
     setNewClientDocNumber('');
+    setNewClientTicket('');
     setServiceAssignments([]);
     setServiceSearch('');
     setShowServiceDropdown(false);
@@ -669,6 +671,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         }
         try {
           const clientPayload = { name: newClientName.trim(), phone: newClientPhone.trim() };
+          if (newClientTicket.trim()) clientPayload.client_id = newClientTicket.trim();
           if (newClientEmail.trim()) clientPayload.email = newClientEmail.trim();
           if (newClientDocType && newClientDocNumber.trim()) {
             clientPayload.document_type = newClientDocType;
@@ -1273,6 +1276,10 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                   <div className={`${b}__new-client`}>
                     <div className={`${b}__new-client-badge`}><UserPlusIcon /> Nuevo cliente</div>
                     <div className={`${b}__row`}>
+                      <div className={`${b}__field`} style={{ flex: '0 0 120px' }}>
+                        <label>Ticket</label>
+                        <input type="text" value={newClientTicket} onChange={e => setNewClientTicket(e.target.value)} placeholder="Ej: 1213" />
+                      </div>
                       <div className={`${b}__field`}>
                         <label>Nombre completo</label>
                         <input type="text" value={newClientName} onChange={e => setNewClientName(e.target.value)} required placeholder="Juan Perez" autoFocus />
@@ -1310,7 +1317,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                         <input type="text" value={newClientDocNumber} onChange={e => setNewClientDocNumber(e.target.value)} placeholder="Número de documento" />
                       </div>
                     </div>
-                    <button type="button" className={`${b}__link-btn`} onClick={() => { setIsNewClient(false); setNewClientName(''); setNewClientPhone(''); setNewClientEmail(''); setNewClientDocType(''); setNewClientDocNumber(''); }}>
+                    <button type="button" className={`${b}__link-btn`} onClick={() => { setIsNewClient(false); setNewClientName(''); setNewClientPhone(''); setNewClientEmail(''); setNewClientDocType(''); setNewClientDocNumber(''); setNewClientTicket(''); }}>
                       ← Buscar cliente existente
                     </button>
                   </div>
