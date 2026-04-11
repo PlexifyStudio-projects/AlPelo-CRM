@@ -2,7 +2,7 @@
 Manage weekly schedules, days off, and calculate available time slots."""
 
 from datetime import date, datetime
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
@@ -108,7 +108,7 @@ def get_staff_schedule(
 @router.put("/staff/{staff_id}/schedule")
 def update_staff_schedule(
     staff_id: int,
-    data: list,
+    data: List[dict] = Body(...),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
