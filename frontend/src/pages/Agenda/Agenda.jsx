@@ -633,13 +633,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setShowProductDropdown(false);
   };
 
+  const preselectedRef = useRef(null);
+
   const openCreate = (date, time, staffId) => {
     setEditingApt(null);
     resetModal();
     setFormData({ date: date ? toISO(date) : toISO(currentDate), notes: '', status: 'confirmed', visit_code: '' });
-    if (time && staffId) {
-      setServiceAssignments([{ serviceId: '', staffId: String(staffId), time, clientPrice: '' }]);
-    }
+    preselectedRef.current = (time && staffId) ? { staffId: String(staffId), time } : null;
     setShowModal(true);
   };
 
@@ -1407,7 +1407,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                               return (
                                 <button key={s.id} type="button" className={`${b}__svc-item ${added ? `${b}__svc-item--added` : ''}`} disabled={added}
                                   onClick={() => {
-                                    setServiceAssignments(prev => [...prev, { serviceId: s.id, staffId: '', time: '', clientPrice: s.price }]);
+                                    const pre = preselectedRef.current;
+                                    const autoStaff = pre && s.staff_ids?.includes(parseInt(pre.staffId)) ? pre.staffId : '';
+                                    const autoTime = autoStaff ? (pre?.time || '') : '';
+                                    setServiceAssignments(prev => [...prev, { serviceId: s.id, staffId: autoStaff, time: autoTime, clientPrice: s.price }]);
+                                    if (autoStaff) preselectedRef.current = null;
                                     setServiceSearch('');
                                     setShowServiceDropdown(false);
                                   }}>
