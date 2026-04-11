@@ -1099,6 +1099,31 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                               <div className={`${b}__now-line`} />
                             </div>
                           )}
+                          {(() => {
+                            const sched = staffSchedules[s.id];
+                            if (!sched) return null;
+                            const aptDate = new Date(toISO(currentDate) + 'T12:00:00');
+                            const dow = aptDate.getDay();
+                            const bdow = dow === 0 ? 6 : dow - 1;
+                            const ds = sched.find(x => x.day_of_week === bdow);
+                            if (!ds || !ds.is_working || !ds.break_start || !ds.break_end) return null;
+                            const [bsh, bsm] = ds.break_start.split(':').map(Number);
+                            const [beh, bem] = ds.break_end.split(':').map(Number);
+                            const bStartMin = bsh * 60 + bsm;
+                            const bEndMin = beh * 60 + bem;
+                            const bStartSlot = (bStartMin - HOURS_START * 60) / SLOT_MIN;
+                            const bEndSlot = (bEndMin - HOURS_START * 60) / SLOT_MIN;
+                            if (bStartSlot < 0 || bEndSlot < 0) return null;
+                            const topPx = slotTops[Math.floor(bStartSlot)] || 0;
+                            const bottomPx = slotTops[Math.floor(bEndSlot)] || topPx;
+                            const height = bottomPx - topPx;
+                            if (height <= 0) return null;
+                            return (
+                              <div className={`${b}__break-block`} style={{ top: `${topPx}px`, height: `${height}px` }}>
+                                <span>Descanso</span>
+                              </div>
+                            );
+                          })()}
                           {HOURS.map(h => {
                             const dt = toISO(currentDate);
                             return [0, 15, 30, 45].map((m) => {
