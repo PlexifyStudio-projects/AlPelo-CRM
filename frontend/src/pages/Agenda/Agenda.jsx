@@ -466,24 +466,34 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     const svc = serviceMap[serviceId];
     const dur = svc?.duration_minutes || 30;
 
-    // Staff schedule: check working hours for this day
+    // Staff schedule: check working hours + break for this day
     let schedStart = HOURS_START * 60;
     let schedEnd = HOURS_END * 60;
+    let breakStart = -1;
+    let breakEnd = -1;
     let isWorking = true;
     const schedules = staffSchedules[staffId];
     if (schedules && formData.date) {
       const aptDate = new Date(formData.date + 'T12:00:00');
-      const dow = aptDate.getDay(); // 0=Sun, but backend uses 0=Mon
-      const backendDow = dow === 0 ? 6 : dow - 1; // Convert to 0=Mon
+      const dow = aptDate.getDay();
+      const backendDow = dow === 0 ? 6 : dow - 1;
       const daySchedule = schedules.find(s => s.day_of_week === backendDow);
       if (daySchedule) {
         if (!daySchedule.is_working) {
           isWorking = false;
-        } else if (daySchedule.start_time && daySchedule.end_time) {
-          const [sh, sm] = daySchedule.start_time.split(':').map(Number);
-          const [eh, em] = daySchedule.end_time.split(':').map(Number);
-          schedStart = sh * 60 + sm;
-          schedEnd = eh * 60 + em;
+        } else {
+          if (daySchedule.start_time && daySchedule.end_time) {
+            const [sh, sm] = daySchedule.start_time.split(':').map(Number);
+            const [eh, em] = daySchedule.end_time.split(':').map(Number);
+            schedStart = sh * 60 + sm;
+            schedEnd = eh * 60 + em;
+          }
+          if (daySchedule.break_start && daySchedule.break_end) {
+            const [bsh, bsm] = daySchedule.break_start.split(':').map(Number);
+            const [beh, bem] = daySchedule.break_end.split(':').map(Number);
+            breakStart = bsh * 60 + bsm;
+            breakEnd = beh * 60 + bem;
+          }
         }
       }
     }
@@ -512,6 +522,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       if (isTodayDate && m < nowMin && m !== editOriginalMin) continue;
       const end = m + dur;
       if (end > schedEnd) break;
+      // Skip break time — slot can't overlap with break
+      if (breakStart >= 0 && m < breakEnd && end > breakStart) continue;
       if (!busy.some(b => m < b.e && end > b.s)) slots.push(m);
     }
     return slots;
