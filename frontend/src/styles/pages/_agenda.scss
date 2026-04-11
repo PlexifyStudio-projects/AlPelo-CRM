@@ -1509,14 +1509,9 @@
     }
   }
 
-  &__doc-inputs {
-    display: flex;
-    gap: 8px;
-  }
-
   &__doc-select {
-    width: 110px;
-    padding: 10px 12px;
+    width: 100%;
+    padding: 10px 14px;
     border: 2px solid $color-gray-100;
     border-radius: $border-radius-md;
     font-size: $font-size-xs;
@@ -1525,22 +1520,11 @@
     outline: none;
     color: $color-secondary;
     cursor: pointer;
-
-    &:focus {
-      border-color: $color-primary;
-      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
-    }
-  }
-
-  &__doc-number {
-    flex: 1;
-    padding: 10px 14px;
-    border: 2px solid $color-gray-100;
-    border-radius: $border-radius-md;
-    font-size: $font-size-xs;
-    font-family: $font-primary;
-    background: $color-white;
-    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
 
     &:focus {
       border-color: $color-primary;

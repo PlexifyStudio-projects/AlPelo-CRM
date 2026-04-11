@@ -1287,19 +1287,27 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                         <label>Correo electrónico</label>
                         <input type="email" value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} placeholder="cliente@email.com" />
                       </div>
-                      <div className={`${b}__field ${b}__field--doc-row`}>
-                        <label>Documento</label>
-                        <div className={`${b}__doc-inputs`}>
-                          <select value={newClientDocType} onChange={e => setNewClientDocType(e.target.value)} className={`${b}__doc-select`}>
-                            <option value="">Tipo</option>
-                            <option value="CC">CC</option>
-                            <option value="CE">CE</option>
-                            <option value="TI">TI</option>
-                            <option value="NIT">NIT</option>
-                            <option value="Pasaporte">Pasaporte</option>
-                          </select>
-                          <input type="text" value={newClientDocNumber} onChange={e => setNewClientDocNumber(e.target.value)} placeholder="Número de documento" className={`${b}__doc-number`} />
-                        </div>
+                    </div>
+                    <div className={`${b}__row`}>
+                      <div className={`${b}__field`} style={{ flex: '0 0 140px' }}>
+                        <label>Tipo documento</label>
+                        <select value={newClientDocType} onChange={e => setNewClientDocType(e.target.value)} className={`${b}__doc-select`}>
+                          <option value="">Seleccionar</option>
+                          <option value="CC">CC - Cédula de Ciudadanía</option>
+                          <option value="CE">CE - Cédula de Extranjería</option>
+                          <option value="TI">TI - Tarjeta de Identidad</option>
+                          <option value="RC">RC - Registro Civil</option>
+                          <option value="PA">PA - Pasaporte</option>
+                          <option value="NIT">NIT</option>
+                          <option value="PEP">PEP - Permiso Especial</option>
+                          <option value="PPT">PPT - Permiso Protección Temporal</option>
+                          <option value="DIE">DIE - Doc. Identificación Extranjero</option>
+                          <option value="NUIP">NUIP</option>
+                        </select>
+                      </div>
+                      <div className={`${b}__field`}>
+                        <label>Número de documento</label>
+                        <input type="text" value={newClientDocNumber} onChange={e => setNewClientDocNumber(e.target.value)} placeholder="Número de documento" />
                       </div>
                     </div>
                     <button type="button" className={`${b}__link-btn`} onClick={() => { setIsNewClient(false); setNewClientName(''); setNewClientPhone(''); setNewClientEmail(''); setNewClientDocType(''); setNewClientDocNumber(''); }}>

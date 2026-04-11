@@ -274,13 +274,8 @@
     color: $color-gray-600;
   }
 
-  &__doc-row {
-    display: flex;
-    gap: $spacing-sm;
-  }
-
   &__doc-select {
-    width: 120px;
+    width: 100%;
     padding: 10px $spacing-md;
     background: $color-white;
     border: 1.5px solid $color-gray-200;
@@ -291,26 +286,11 @@
     outline: none;
     cursor: pointer;
     transition: border-color $transition-fast, box-shadow $transition-fast;
-
-    &:focus {
-      border-color: $color-primary;
-      box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
-    }
-  }
-
-  &__doc-input {
-    flex: 1;
-    padding: 10px $spacing-md;
-    background: $color-white;
-    border: 1.5px solid $color-gray-200;
-    border-radius: $border-radius-md;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    color: $color-gray-700;
-    outline: none;
-    transition: border-color $transition-fast, box-shadow $transition-fast;
-
-    &::placeholder { color: $color-gray-400; }
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right $spacing-md center;
+    padding-right: 36px;
 
     &:focus {
       border-color: $color-primary;

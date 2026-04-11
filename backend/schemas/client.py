@@ -17,6 +17,7 @@ class ClientCreate(BaseModel):
     tags: List[str] = []
 
 class ClientUpdate(BaseModel):
+    client_id: Optional[str] = None  # Ticket number, editable
     name: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None

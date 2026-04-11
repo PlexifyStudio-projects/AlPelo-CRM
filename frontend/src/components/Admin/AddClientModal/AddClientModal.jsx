@@ -120,7 +120,7 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       client_id: form.client_id || null,
     };
 
-    if (editingClient) {
+    if (!editingClient && !payload.client_id) {
       delete payload.client_id;
     }
 
@@ -147,6 +147,13 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
             Datos personales
           </h4>
           <div className={`${b}__grid`}>
+            <Input
+              label="Código / Ticket"
+              name="client_id"
+              value={form.client_id}
+              onChange={handleChange}
+              placeholder="Ej: 1213"
+            />
             <Input
               label="Nombre completo"
               name="name"
@@ -179,20 +186,28 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
               error={touched.email ? errors.email : ''}
             />
             <div className={`${b}__doc-group`}>
-              <label className={`${b}__doc-label`}>Documento de identidad</label>
-              <div className={`${b}__doc-row`}>
-                <select name="document_type" value={form.document_type} onChange={handleChange} className={`${b}__doc-select`}>
-                  <option value="">Tipo</option>
-                  <option value="CC">CC</option>
-                  <option value="CE">CE</option>
-                  <option value="TI">TI</option>
-                  <option value="NIT">NIT</option>
-                  <option value="Pasaporte">Pasaporte</option>
-                </select>
-                <input name="document_number" value={form.document_number} onChange={handleChange}
-                  placeholder="Número de documento" className={`${b}__doc-input`} />
-              </div>
+              <label className={`${b}__doc-label`}>Tipo de documento</label>
+              <select name="document_type" value={form.document_type} onChange={handleChange} className={`${b}__doc-select`}>
+                <option value="">Seleccionar</option>
+                <option value="CC">CC - Cédula de Ciudadanía</option>
+                <option value="CE">CE - Cédula de Extranjería</option>
+                <option value="TI">TI - Tarjeta de Identidad</option>
+                <option value="RC">RC - Registro Civil</option>
+                <option value="PA">PA - Pasaporte</option>
+                <option value="NIT">NIT</option>
+                <option value="PEP">PEP - Permiso Especial</option>
+                <option value="PPT">PPT - Permiso Protección Temporal</option>
+                <option value="DIE">DIE - Doc. Identificación Extranjero</option>
+                <option value="NUIP">NUIP</option>
+              </select>
             </div>
+            <Input
+              label="Número de documento"
+              name="document_number"
+              value={form.document_number}
+              onChange={handleChange}
+              placeholder="Número de documento"
+            />
             <Input
               label="Cumpleaños"
               name="birthday"
