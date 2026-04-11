@@ -6,7 +6,7 @@
 from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
-from database.models import Client, VisitHistory, Staff, WhatsAppConversation
+from database.models import Client, VisitHistory, Staff, WhatsAppConversation, Appointment
 
 
 # ============================================================================

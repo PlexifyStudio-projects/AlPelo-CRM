@@ -24,6 +24,7 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
     document_number: '',
     birthday: '',
     accepts_whatsapp: true,
+    visit_code: '',
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -40,11 +41,12 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
         document_number: editingClient.document_number || '',
         birthday: editingClient.birthday || '',
         accepts_whatsapp: editingClient.accepts_whatsapp ?? true,
+        visit_code: editingClient.last_visit_code || '',
       });
     } else {
       setForm({
         client_id: '', name: '', phone: countryPrefix + ' ', email: '', document_type: '', document_number: '',
-        birthday: '', accepts_whatsapp: true,
+        birthday: '', accepts_whatsapp: true, visit_code: '',
       });
     }
     setErrors({});
@@ -127,7 +129,9 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       delete payload.client_id;
     }
 
-    onSave(payload);
+    const visitCode = payload.visit_code;
+    delete payload.visit_code;
+    onSave(payload, visitCode);
     onClose();
   }, [validate, form, editingClient, onSave, onClose]);
 
@@ -141,6 +145,18 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       className="modal--lg"
     >
       <form className={b} onSubmit={handleSubmit} noValidate>
+        <div className={`${b}__ticket-section`}>
+          <label className={`${b}__ticket-label`}>Ticket / Código de visita</label>
+          <input
+            type="text"
+            name="visit_code"
+            value={form.visit_code}
+            onChange={handleChange}
+            placeholder="Ej: 1213"
+            className={`${b}__ticket-input`}
+          />
+        </div>
+
         <div className={`${b}__section`}>
           <h4 className={`${b}__section-label`}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

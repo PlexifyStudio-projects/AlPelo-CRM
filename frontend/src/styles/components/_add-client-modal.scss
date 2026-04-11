@@ -5,6 +5,51 @@
   flex-direction: column;
   gap: $spacing-lg;
 
+  &__ticket-section {
+    background: rgba($color-primary, 0.04);
+    border: 1px dashed rgba($color-primary, 0.2);
+    border-radius: $border-radius-md;
+    padding: $spacing-md;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  &__ticket-label {
+    font-size: $font-size-2xs;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-gray-500;
+  }
+
+  &__ticket-input {
+    width: 160px;
+    padding: 10px 14px;
+    border: 2px solid rgba($color-primary, 0.25);
+    border-radius: $border-radius-md;
+    font-size: 20px;
+    font-weight: 800;
+    font-family: $font-primary;
+    letter-spacing: 0.08em;
+    color: $color-primary;
+    background: $color-white;
+    outline: none;
+    text-align: center;
+
+    &::placeholder {
+      font-weight: 400;
+      color: rgba(0, 0, 0, 0.2);
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    &:focus {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
+  }
+
   &__section {
     display: flex;
     flex-direction: column;

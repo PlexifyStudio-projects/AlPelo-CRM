@@ -10,6 +10,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
+import appointmentService from '../../services/appointmentService';
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
@@ -94,10 +95,20 @@ const Clients = () => {
     return result;
   }, [clients, searchQuery, statusFilter, sortConfig, rfmFilter, rfmData]);
 
-  const handleSaveClient = async (clientData) => {
+  const handleSaveClient = async (clientData, visitCode) => {
     try {
       if (editingClient) {
         await clientService.update(editingClient.id, clientData);
+        // If visit code changed, update the latest appointment
+        if (visitCode && visitCode !== editingClient.last_visit_code) {
+          try {
+            const apts = await appointmentService.list({ client_id: editingClient.id });
+            const latestApt = apts?.length ? apts.sort((a, b) => b.id - a.id)[0] : null;
+            if (latestApt) {
+              await appointmentService.update(latestApt.id, { visit_code: visitCode });
+            }
+          } catch (_) { /* non-blocking */ }
+        }
         addNotification('Cliente actualizado correctamente', 'success');
       } else {
         await clientService.create(clientData);
