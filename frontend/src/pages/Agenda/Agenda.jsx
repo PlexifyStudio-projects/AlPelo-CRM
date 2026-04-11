@@ -633,10 +633,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setShowProductDropdown(false);
   };
 
-  const openCreate = (date, time) => {
+  const openCreate = (date, time, staffId) => {
     setEditingApt(null);
     resetModal();
     setFormData({ date: date ? toISO(date) : toISO(currentDate), notes: '', status: 'confirmed', visit_code: '' });
+    if (time && staffId) {
+      setServiceAssignments([{ serviceId: '', staffId: String(staffId), time, clientPrice: '' }]);
+    }
     setShowModal(true);
   };
 
@@ -1035,7 +1038,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                                 <div key={`s${h}${m}`}
                                   className={`${b}__slot ${isDrop ? `${b}__slot--drop-target` : ''}`}
                                   style={{ top: `${slotTops[si]}px`, height: `${baseSlotH}px` }}
-                                  onClick={() => openCreate(currentDate, t)}
+                                  onClick={() => openCreate(currentDate, t, s.id)}
                                   onDragOver={(e) => handleDragOver(e, currentDate, t)}
                                   onDragLeave={() => setDropTarget(null)}
                                   onDrop={(e) => handleDrop(e, currentDate, t, s.id)}>
