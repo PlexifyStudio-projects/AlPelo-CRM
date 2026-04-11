@@ -761,15 +761,28 @@ const ScheduleEditor = ({ staffId }) => {
   const handleSaveSchedule = async () => {
     setSaving(true);
     try {
+      const cleanSchedule = schedule.map(day => ({
+        day_of_week: day.day_of_week,
+        is_working: day.is_working,
+        start_time: day.start_time || null,
+        end_time: day.end_time || null,
+        break_start: day.break_start || null,
+        break_end: day.break_end || null,
+      }));
       const res = await fetch(`${_API}/staff/${staffId}/schedule`, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(schedule),
+        body: JSON.stringify(cleanSchedule),
       });
-      if (!res.ok) throw new Error('Error al guardar horario');
-      addNotification('Horario guardado', 'success');
-    } catch (err) { addNotification(err.message, 'error'); }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Error ${res.status}`);
+      }
+      const data = await res.json();
+      if (data.schedule?.length === 7) setSchedule(data.schedule);
+      addNotification('Horario guardado correctamente', 'success');
+    } catch (err) { addNotification('Error: ' + err.message, 'error'); }
     finally { setSaving(false); }
   };
 
