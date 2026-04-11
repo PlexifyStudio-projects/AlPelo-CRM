@@ -2739,6 +2739,41 @@
     }
   }
 
+  &__modal-error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(220, 38, 38, 0.06);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    border-radius: $border-radius-md;
+    color: #b91c1c;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+
+    svg:first-child {
+      flex-shrink: 0;
+      color: #dc2626;
+    }
+
+    span {
+      flex: 1;
+    }
+
+    button {
+      background: none;
+      border: none;
+      color: #b91c1c;
+      cursor: pointer;
+      padding: 2px;
+      opacity: 0.6;
+      flex-shrink: 0;
+
+      &:hover { opacity: 1; }
+    }
+  }
+
   &__modal-foot {
     display: flex;
     align-items: center;

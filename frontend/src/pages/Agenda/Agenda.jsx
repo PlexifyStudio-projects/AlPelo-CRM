@@ -145,6 +145,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [editingApt, setEditingApt] = useState(null);
   const [formData, setFormData] = useState({ date: toISO(new Date()), notes: '', status: 'confirmed', visit_code: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [modalError, setModalError] = useState('');
+  const [staffSchedules, setStaffSchedules] = useState({});
 
 
   const [clientSearch, setClientSearch] = useState('');
@@ -441,9 +443,52 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     load();
   }, [showModal, formData.date, appointments]);
 
+  useEffect(() => {
+    if (!showModal || !staff.length) return;
+    const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+    const loadSchedules = async () => {
+      const schedMap = {};
+      await Promise.all(staff.map(async (s) => {
+        try {
+          const res = await fetch(`${API}/staff/${s.id}/schedule`, { credentials: 'include' });
+          if (res.ok) {
+            const data = await res.json();
+            schedMap[s.id] = data.schedule || [];
+          }
+        } catch { /* ignore */ }
+      }));
+      setStaffSchedules(schedMap);
+    };
+    loadSchedules();
+  }, [showModal, staff]);
+
   const computeSlots = useCallback((staffId, serviceId, assignmentIndex) => {
     const svc = serviceMap[serviceId];
     const dur = svc?.duration_minutes || 30;
+
+    // Staff schedule: check working hours for this day
+    let schedStart = HOURS_START * 60;
+    let schedEnd = HOURS_END * 60;
+    let isWorking = true;
+    const schedules = staffSchedules[staffId];
+    if (schedules && formData.date) {
+      const aptDate = new Date(formData.date + 'T12:00:00');
+      const dow = aptDate.getDay(); // 0=Sun, but backend uses 0=Mon
+      const backendDow = dow === 0 ? 6 : dow - 1; // Convert to 0=Mon
+      const daySchedule = schedules.find(s => s.day_of_week === backendDow);
+      if (daySchedule) {
+        if (!daySchedule.is_working) {
+          isWorking = false;
+        } else if (daySchedule.start_time && daySchedule.end_time) {
+          const [sh, sm] = daySchedule.start_time.split(':').map(Number);
+          const [eh, em] = daySchedule.end_time.split(':').map(Number);
+          schedStart = sh * 60 + sm;
+          schedEnd = eh * 60 + em;
+        }
+      }
+    }
+
+    if (!isWorking) return [];
 
     const busy = modalDayApts
       .filter(a => a.staff_id === staffId && (!editingApt || a.id !== editingApt.id))
@@ -463,14 +508,14 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     const editOriginalMin = editingApt ? timeToMin(editingApt.time) : null;
 
     const slots = [];
-    for (let m = HOURS_START * 60; m < HOURS_END * 60; m += 15) {
+    for (let m = Math.max(HOURS_START * 60, schedStart); m < Math.min(HOURS_END * 60, schedEnd); m += 15) {
       if (isTodayDate && m < nowMin && m !== editOriginalMin) continue;
       const end = m + dur;
-      if (end > HOURS_END * 60) break;
+      if (end > schedEnd) break;
       if (!busy.some(b => m < b.e && end > b.s)) slots.push(m);
     }
     return slots;
-  }, [modalDayApts, serviceMap, editingApt, serviceAssignments, formData.date]);
+  }, [modalDayApts, serviceMap, editingApt, serviceAssignments, formData.date, staffSchedules]);
 
   const getEligibleStaff = useCallback((serviceId) => {
     const svc = serviceMap[serviceId];
@@ -652,6 +697,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     resetModal();
     setFormData({ date: date ? toISO(date) : toISO(currentDate), notes: '', status: 'confirmed', visit_code: '' });
     setPreselected((time && staffId) ? { staffId: String(staffId), time } : null);
+    setModalError('');
     setShowModal(true);
   };
 
@@ -675,12 +721,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
+    setModalError('');
     try {
       let clientName, clientPhone, clientId;
 
       if (isNewClient) {
         if (!newClientName.trim() || !newClientPhone.trim()) {
-          addNotification('Completa nombre y teléfono del nuevo cliente', 'error');
+          setModalError('Completa nombre y teléfono del nuevo cliente');
           setSubmitting(false);
           return;
         }
@@ -697,7 +744,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           clientId = created.id;
           addNotification(`Cliente ${created.name} creado`, 'success');
         } catch (err) {
-          addNotification('Error creando cliente: ' + err.message, 'error');
+          setModalError('Error creando cliente: ' + err.message);
           setSubmitting(false);
           return;
         }
@@ -706,13 +753,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         clientPhone = selectedClient.phone;
         clientId = selectedClient.id;
       } else {
-        addNotification('Selecciona un cliente', 'error');
+        setModalError('Selecciona un cliente');
         setSubmitting(false);
         return;
       }
 
       if (!serviceAssignments.length || serviceAssignments.some(a => !a.staffId || !a.time)) {
-        addNotification('Completa profesional y horario para cada servicio', 'error');
+        setModalError('Completa profesional y horario para cada servicio');
         setSubmitting(false);
         return;
       }
@@ -801,7 +848,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       loadData();
     } catch (err) {
       const msg = typeof err?.message === 'string' ? err.message : 'Error al guardar cita';
-      addNotification(msg, 'error');
+      setModalError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -1734,6 +1781,14 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Preferencias, indicaciones especiales..." rows={2} className={`${b}__notes-input`} />
               </div>
+
+              {modalError && (
+                <div className={`${b}__modal-error`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  <span>{modalError}</span>
+                  <button type="button" onClick={() => setModalError('')}><CloseIcon /></button>
+                </div>
+              )}
 
               {(() => {
                 const missingClient = !selectedClient && !isNewClient;
