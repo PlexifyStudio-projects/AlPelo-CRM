@@ -66,6 +66,8 @@ class Client(Base):
     name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
     email = Column(String, nullable=True)
+    document_type = Column(String, nullable=True)  # CC, CE, TI, NIT, Pasaporte
+    document_number = Column(String, nullable=True)
     birthday = Column(Date, nullable=True)
     favorite_service = Column(String, nullable=True)
     preferred_barber_id = Column(Integer, ForeignKey("public.staff.id"), nullable=True)
@@ -187,6 +189,7 @@ class Appointment(Base):
     duration_minutes = Column(Integer, nullable=False)
     price = Column(Integer, nullable=False)  # COP
     status = Column(String, nullable=False, default="confirmed")  # confirmed, completed, cancelled, no_show
+    visit_code = Column(String, nullable=True, index=True)  # Auto-generated 4-digit visit code per day
     notes = Column(Text, nullable=True)
     staff_payment_id = Column(Integer, ForeignKey("staff_payment.id"), nullable=True)  # Links to payroll payment
     created_by = Column(String, nullable=True)  # admin, lina_ia, client

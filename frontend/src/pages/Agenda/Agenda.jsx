@@ -154,6 +154,9 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const [searchingClients, setSearchingClients] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientDocType, setNewClientDocType] = useState('');
+  const [newClientDocNumber, setNewClientDocNumber] = useState('');
 
   const [serviceAssignments, setServiceAssignments] = useState([]);
   const [serviceSearch, setServiceSearch] = useState('');
@@ -191,7 +194,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeChunk, setActiveChunk] = useState(0);
-  const [serviceFilter, setServiceFilter] = useState('');
+
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
 
@@ -263,11 +266,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
   const isStaffView = view === 'staff';
 
-  const serviceCategories = useMemo(() => {
-    const cats = new Set();
-    services.forEach(s => { if (s.category) cats.add(s.category); });
-    return Array.from(cats).sort();
-  }, [services]);
   const columns = useMemo(() => {
     if (isStaffView) return [currentDate];
     return view === 'week' ? weekDays : [currentDate];
@@ -276,15 +274,9 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     if (!isStaffView) return [];
     let result = staff;
 
-    if (serviceFilter) {
-      const catServices = services.filter(svc => svc.category === serviceFilter);
-      const eligibleStaffIds = new Set();
-      catServices.forEach(svc => { svc.staff_ids?.forEach(id => eligibleStaffIds.add(id)); });
-      result = result.filter(s => eligibleStaffIds.has(s.id));
-    }
-
     if (searchQuery && searchQuery.length >= 2) {
       const q = searchQuery.toLowerCase().trim();
+      const qDigits = q.replace(/\D/g, '');
       const dayStr = toISO(currentDate);
       const dayApts = appointments.filter(a => a.date === dayStr);
       result = result.filter(s => {
@@ -292,13 +284,21 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         const staffServices = services.filter(svc => svc.staff_ids?.includes(s.id));
         if (staffServices.some(svc => svc.name.toLowerCase().includes(q) || svc.category?.toLowerCase().includes(q))) return true;
         const staffApts = dayApts.filter(a => a.staff_id === s.id);
-        if (staffApts.some(a => a.client_name?.toLowerCase().includes(q) || a.service_name?.toLowerCase().includes(q))) return true;
+        if (staffApts.some(a => {
+          if (a.client_name?.toLowerCase().includes(q) || a.service_name?.toLowerCase().includes(q)) return true;
+          if (a.visit_code && a.visit_code.includes(q)) return true;
+          if (qDigits.length >= 4 && a.client_phone) {
+            const phoneDigits = a.client_phone.replace(/\D/g, '');
+            if (phoneDigits.includes(qDigits)) return true;
+          }
+          return false;
+        })) return true;
         return false;
       });
     }
 
     return result;
-  }, [isStaffView, staff, searchQuery, serviceFilter, currentDate, appointments, services]);
+  }, [isStaffView, staff, searchQuery, currentDate, appointments, services]);
   const STAFF_PER_ROW = 10;
   const staffChunks = useMemo(() => {
     if (!isStaffView) return [];
@@ -551,6 +551,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const searchResults = useMemo(() => {
     if (!searchQuery || searchQuery.length < 2) return [];
     const q = searchQuery.toLowerCase().trim();
+    const qDigits = q.replace(/\D/g, '');
     return appointments
       .filter(a => {
         const haystack = [
@@ -558,8 +559,14 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           a.client_name, a.service_name, a.staff_name,
           formatCOP(a.price), a.status, STATUS_META[a.status]?.label,
           a.time, formatTime12(a.time), a.date, a.notes,
+          a.client_phone, a.visit_code,
         ].filter(Boolean).join(' ').toLowerCase();
-        return haystack.includes(q);
+        if (haystack.includes(q)) return true;
+        if (qDigits.length >= 4 && a.client_phone) {
+          const phoneDigits = a.client_phone.replace(/\D/g, '');
+          if (phoneDigits.includes(qDigits)) return true;
+        }
+        return false;
       })
       .sort((a, b) => {
         const today = toISO(new Date());
@@ -613,6 +620,9 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setClientResults([]);
     setNewClientName('');
     setNewClientPhone('');
+    setNewClientEmail('');
+    setNewClientDocType('');
+    setNewClientDocNumber('');
     setServiceAssignments([]);
     setServiceSearch('');
     setShowServiceDropdown(false);
@@ -634,10 +644,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setSelectedClient({ id: apt.client_id, name: apt.client_name, phone: apt.client_phone });
     setServiceAssignments([{ serviceId: apt.service_id, staffId: String(apt.staff_id), time: apt.time, clientPrice: apt.price || serviceMap[apt.service_id]?.price || 0 }]);
     const { userNotes, products } = deserializeProducts(apt.notes);
-    const codeMatch = userNotes.match(/\[CODIGO:([^\]]+)\]/);
-    const visitCode = codeMatch ? codeMatch[1] : '';
     const cleanNotes = userNotes.replace(/\[CODIGO:[^\]]+\]\s*/g, '').trim();
-    setFormData({ date: apt.date, notes: cleanNotes, status: apt.status, visit_code: visitCode });
+    setFormData({ date: apt.date, notes: cleanNotes, status: apt.status, visit_code: apt.visit_code || '' });
     setProductItems(products);
     setShowModal(true);
   };
@@ -660,7 +668,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           return;
         }
         try {
-          const created = await clientService.create({ name: newClientName.trim(), phone: newClientPhone.trim() });
+          const clientPayload = { name: newClientName.trim(), phone: newClientPhone.trim() };
+          if (newClientEmail.trim()) clientPayload.email = newClientEmail.trim();
+          if (newClientDocType && newClientDocNumber.trim()) {
+            clientPayload.document_type = newClientDocType;
+            clientPayload.document_number = newClientDocNumber.trim();
+          }
+          const created = await clientService.create(clientPayload);
           clientName = newClientName.trim();
           clientPhone = created.phone;
           clientId = created.id;
@@ -696,9 +710,9 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         if (first.serviceId !== editingApt.service_id) updateData.service_id = first.serviceId;
         if (formData.date !== editingApt.date) updateData.date = formData.date;
         if (first.time !== editingApt.time) updateData.time = first.time;
-        const userNotesWithCode = (formData.visit_code ? `[CODIGO:${formData.visit_code}] ` : '') + (formData.notes || '');
-          const serializedNotes = serializeProducts(productItems, userNotesWithCode.trim());
+        const serializedNotes = serializeProducts(productItems, (formData.notes || '').trim());
         if ((serializedNotes || null) !== (editingApt.notes || null)) updateData.notes = serializedNotes || null;
+        if (formData.visit_code && formData.visit_code !== editingApt.visit_code) updateData.visit_code = formData.visit_code;
         if (formData.status !== editingApt.status) updateData.status = formData.status;
         const firstPrice = first.clientPrice ?? serviceMap[first.serviceId]?.price;
         if (firstPrice && firstPrice !== editingApt.price) updateData.price = firstPrice;
@@ -718,13 +732,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       } else {
         for (const a of serviceAssignments) {
           const svcPrice = a.clientPrice ?? serviceMap[a.serviceId]?.price;
-          const userNotesWithCode = (formData.visit_code ? `[CODIGO:${formData.visit_code}] ` : '') + (formData.notes || '');
-          const serializedNotes = serializeProducts(productItems, userNotesWithCode.trim());
+          const serializedNotes = serializeProducts(productItems, (formData.notes || '').trim());
           await appointmentService.create({
             client_name: clientName, client_phone: clientPhone, client_id: clientId || null,
             staff_id: parseInt(a.staffId), service_id: a.serviceId,
             date: formData.date, time: a.time,
             price: svcPrice || null,
+            visit_code: formData.visit_code || null,
             notes: serializedNotes || null, status: formData.status, created_by: 'admin',
           });
         }
@@ -862,6 +876,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                   <div className={`${b}__search-result-status`} style={{ background: sc }} />
                   <div className={`${b}__search-result-info`}>
                     <div className={`${b}__search-result-top`}>
+                      {apt.visit_code && <span className={`${b}__search-result-code`}>#{apt.visit_code}</span>}
                       <strong>{apt.client_name}</strong>
                       <span className={`${b}__search-result-badge`} style={{ color: sc, background: `${sc}15` }}>{sl}</span>
                     </div>
@@ -890,23 +905,6 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           </div>
         )}
       </div>
-      {isStaffView && serviceCategories.length > 0 && (
-        <div className={`${b}__service-filters`}>
-          <button
-            className={`${b}__sf-chip ${!serviceFilter ? `${b}__sf-chip--active` : ''}`}
-            onClick={() => { setServiceFilter(''); setActiveChunk(0); }}>
-            Todos
-          </button>
-          {serviceCategories.map(cat => (
-            <button
-              key={cat}
-              className={`${b}__sf-chip ${serviceFilter === cat ? `${b}__sf-chip--active` : ''}`}
-              onClick={() => { setServiceFilter(prev => prev === cat ? '' : cat); setActiveChunk(0); }}>
-              {cat}
-            </button>
-          ))}
-        </div>
-      )}
       {isStaffView ? (
         <div className={`${b}__calendar`}>
           <div className={`${b}__cal-scroll`} ref={scrollRef}>
@@ -1247,6 +1245,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             </div>
 
             <form onSubmit={handleSubmit} className={`${b}__modal-body`}>
+              <div className={`${b}__section ${b}__visit-code-section`}>
+                <span className={`${b}__section-label`}>Código de visita</span>
+                <input type="text" value={formData.visit_code || ''} onChange={e => setFormData({ ...formData, visit_code: e.target.value })}
+                  placeholder="Ej: 1213" className={`${b}__visit-code-input`} />
+              </div>
+
               <div className={`${b}__section`}>
                 <span className={`${b}__section-label`}>Cliente</span>
                 {selectedClient && !isNewClient ? (
@@ -1274,11 +1278,31 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                         <input type="text" value={newClientName} onChange={e => setNewClientName(e.target.value)} required placeholder="Juan Perez" autoFocus />
                       </div>
                       <div className={`${b}__field`}>
-                        <label>Telefono</label>
+                        <label>Teléfono</label>
                         <input type="text" value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} required placeholder="+573001234567" />
                       </div>
                     </div>
-                    <button type="button" className={`${b}__link-btn`} onClick={() => { setIsNewClient(false); setNewClientName(''); setNewClientPhone(''); }}>
+                    <div className={`${b}__row`}>
+                      <div className={`${b}__field`}>
+                        <label>Correo electrónico</label>
+                        <input type="email" value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} placeholder="cliente@email.com" />
+                      </div>
+                      <div className={`${b}__field ${b}__field--doc-row`}>
+                        <label>Documento</label>
+                        <div className={`${b}__doc-inputs`}>
+                          <select value={newClientDocType} onChange={e => setNewClientDocType(e.target.value)} className={`${b}__doc-select`}>
+                            <option value="">Tipo</option>
+                            <option value="CC">CC</option>
+                            <option value="CE">CE</option>
+                            <option value="TI">TI</option>
+                            <option value="NIT">NIT</option>
+                            <option value="Pasaporte">Pasaporte</option>
+                          </select>
+                          <input type="text" value={newClientDocNumber} onChange={e => setNewClientDocNumber(e.target.value)} placeholder="Número de documento" className={`${b}__doc-number`} />
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" className={`${b}__link-btn`} onClick={() => { setIsNewClient(false); setNewClientName(''); setNewClientPhone(''); setNewClientEmail(''); setNewClientDocType(''); setNewClientDocNumber(''); }}>
                       ← Buscar cliente existente
                     </button>
                   </div>
@@ -1636,17 +1660,10 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                 </div>
               )}
 
-              <div className={`${b}__section ${b}__code-notes-row`}>
-                <div className={`${b}__code-field`}>
-                  <span className={`${b}__section-label`}>Codigo de visita *</span>
-                  <input type="text" value={formData.visit_code || ''} onChange={e => setFormData({ ...formData, visit_code: e.target.value })}
-                    placeholder="Ej: M20202" className={`${b}__code-input`} />
-                </div>
-                <div className={`${b}__notes-field`}>
-                  <span className={`${b}__section-label`}>Notas (opcional)</span>
-                  <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Preferencias, indicaciones especiales..." rows={2} className={`${b}__notes-input`} />
-                </div>
+              <div className={`${b}__section`}>
+                <span className={`${b}__section-label`}>Notas (opcional)</span>
+                <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Preferencias, indicaciones especiales..." rows={2} className={`${b}__notes-input`} />
               </div>
 
               {(() => {

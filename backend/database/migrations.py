@@ -166,6 +166,11 @@ def run_migrations(engine):
         ("tenant", "default_tax_rate", "FLOAT NOT NULL DEFAULT 0"),
         # Checkout receipt photo
         ("checkout", "receipt_url", "TEXT"),
+        # Client document fields
+        ("client", "document_type", "VARCHAR(20)"),
+        ("client", "document_number", "VARCHAR(50)"),
+        # Appointment visit code
+        ("appointment", "visit_code", "VARCHAR(20)"),
     ]
 
     for table, column, col_type in migrations:

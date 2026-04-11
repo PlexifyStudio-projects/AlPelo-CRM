@@ -8,6 +8,8 @@ class ClientCreate(BaseModel):
     name: str
     phone: str
     email: Optional[str] = None
+    document_type: Optional[str] = None  # CC, CE, TI, NIT, Pasaporte
+    document_number: Optional[str] = None
     birthday: Optional[date] = None
     favorite_service: Optional[str] = None
     preferred_barber_id: Optional[int] = None
@@ -18,6 +20,8 @@ class ClientUpdate(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     email: Optional[str] = None
+    document_type: Optional[str] = None
+    document_number: Optional[str] = None
     birthday: Optional[date] = None
     favorite_service: Optional[str] = None
     preferred_barber_id: Optional[int] = None
@@ -32,6 +36,8 @@ class ClientResponse(BaseModel):
     name: str
     phone: str
     email: Optional[str] = None
+    document_type: Optional[str] = None
+    document_number: Optional[str] = None
     birthday: Optional[date] = None
     favorite_service: Optional[str] = None
     preferred_barber_id: Optional[int] = None
@@ -58,6 +64,8 @@ class ClientListResponse(BaseModel):
     name: str
     phone: str
     email: Optional[str] = None
+    document_type: Optional[str] = None
+    document_number: Optional[str] = None
     is_active: bool
     tags: List[str] = []
     total_visits: int = 0

@@ -20,6 +20,8 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
     name: '',
     phone: '',
     email: '',
+    document_type: '',
+    document_number: '',
     birthday: '',
     accepts_whatsapp: true,
   });
@@ -34,13 +36,15 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
         name: editingClient.name || '',
         phone: editingClient.phone || '',
         email: editingClient.email || '',
+        document_type: editingClient.document_type || '',
+        document_number: editingClient.document_number || '',
         birthday: editingClient.birthday || '',
         accepts_whatsapp: editingClient.accepts_whatsapp ?? true,
       });
     } else {
       setForm({
-        client_id: '', name: '', phone: countryPrefix + ' ', email: '', birthday: '',
-        accepts_whatsapp: true,
+        client_id: '', name: '', phone: countryPrefix + ' ', email: '', document_type: '', document_number: '',
+        birthday: '', accepts_whatsapp: true,
       });
     }
     setErrors({});
@@ -111,6 +115,8 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       ...form,
       birthday: form.birthday || null,
       email: form.email || null,
+      document_type: form.document_type || null,
+      document_number: form.document_number || null,
       client_id: form.client_id || null,
     };
 
@@ -172,8 +178,23 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
               placeholder="correo@email.com"
               error={touched.email ? errors.email : ''}
             />
+            <div className={`${b}__doc-group`}>
+              <label className={`${b}__doc-label`}>Documento de identidad</label>
+              <div className={`${b}__doc-row`}>
+                <select name="document_type" value={form.document_type} onChange={handleChange} className={`${b}__doc-select`}>
+                  <option value="">Tipo</option>
+                  <option value="CC">CC</option>
+                  <option value="CE">CE</option>
+                  <option value="TI">TI</option>
+                  <option value="NIT">NIT</option>
+                  <option value="Pasaporte">Pasaporte</option>
+                </select>
+                <input name="document_number" value={form.document_number} onChange={handleChange}
+                  placeholder="Número de documento" className={`${b}__doc-input`} />
+              </div>
+            </div>
             <Input
-              label="Cumpleanos"
+              label="Cumpleaños"
               name="birthday"
               type="date"
               value={form.birthday}
