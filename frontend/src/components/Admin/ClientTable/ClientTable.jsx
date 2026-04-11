@@ -83,7 +83,7 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
                 style={{ animationDelay: `${index * 0.03}s` }}
               >
                 <td className={`${b}__td ${b}__td--id`}>
-                  <span className={`${b}__client-id`}>{client.client_id}</span>
+                  <span className={`${b}__client-id`}>{client.last_visit_code || client.client_id}</span>
                 </td>
                 <td className={`${b}__td`}>
                   <div className={`${b}__client-cell`}>
@@ -152,7 +152,7 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
               </div>
               <div className={`${b}__card-info`}>
                 <span className={`${b}__client-name`}>{client.name}</span>
-                <span className={`${b}__client-phone`}>{client.client_id} &middot; {formatPhone(client.phone)}</span>
+                <span className={`${b}__client-phone`}>{client.last_visit_code || client.client_id} &middot; {formatPhone(client.phone)}</span>
               </div>
               <span className={`${b}__status ${b}__status--${client.status}`}>
                 {client.status === 'vip' && (

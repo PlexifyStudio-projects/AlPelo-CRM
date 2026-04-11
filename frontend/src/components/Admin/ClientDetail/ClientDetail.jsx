@@ -256,7 +256,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
             </div>
             <div className={`${b}__header-info`}>
               <h2 className={`${b}__name`}>{client.name}</h2>
-              {client.client_id && <span className={`${b}__client-id`}>{client.client_id}</span>}
+              {(client.last_visit_code || client.client_id) && <span className={`${b}__client-id`}>Ticket: {client.last_visit_code || client.client_id}</span>}
               <div className={`${b}__status-wrapper`}>
                 <button
                   ref={statusBtnRef}

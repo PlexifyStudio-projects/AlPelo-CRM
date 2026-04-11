@@ -54,6 +54,7 @@ class ClientResponse(BaseModel):
     last_visit: Optional[date] = None
     days_since_last_visit: Optional[int] = None
     no_show_count: int = 0
+    last_visit_code: Optional[str] = None
     status: str = "nuevo"
 
     class Config:
@@ -67,6 +68,7 @@ class ClientListResponse(BaseModel):
     email: Optional[str] = None
     document_type: Optional[str] = None
     document_number: Optional[str] = None
+    last_visit_code: Optional[str] = None
     is_active: bool
     tags: List[str] = []
     total_visits: int = 0
