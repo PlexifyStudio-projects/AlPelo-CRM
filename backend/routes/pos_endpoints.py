@@ -346,6 +346,15 @@ def create_checkout(
         db.flush()
         visit_ids.append(visit.id)
 
+    # Distribute tip evenly across staff visits
+    if data.tip and visit_ids:
+        tip_per_staff = data.tip // len(visit_ids)
+        remainder = data.tip - (tip_per_staff * len(visit_ids))
+        for idx, vid in enumerate(visit_ids):
+            v = db.query(VisitHistory).filter(VisitHistory.id == vid).first()
+            if v:
+                v.tip = tip_per_staff + (remainder if idx == 0 else 0)
+
     # Link checkout to first visit (backwards compat)
     if visit_ids:
         checkout.visit_id = visit_ids[0]

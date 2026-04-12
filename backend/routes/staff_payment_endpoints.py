@@ -192,6 +192,7 @@ def get_payroll_summary(
             services_count=len(visits),
             unpaid_services_count=unpaid_count,
             payment_count=payment_count,
+            tips_total=total_tips,
             fines_total=fines_total,
             fines_count=len(fines),
             fines=[

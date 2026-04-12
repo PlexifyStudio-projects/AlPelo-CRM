@@ -181,6 +181,8 @@ def run_migrations(engine):
         # Order service date/time
         ("order", "service_date", "DATE"),
         ("order", "service_time", "VARCHAR(5)"),
+        # Visit tip for Nómina
+        ("visit_history", "tip", "INTEGER NOT NULL DEFAULT 0"),
     ]
 
     for table, column, col_type in migrations:

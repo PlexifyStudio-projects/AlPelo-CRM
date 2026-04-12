@@ -2921,7 +2921,7 @@ const parseProducts = (notes) => {
   try { return JSON.parse(notes.substring(s + PRODUCTS_TAG.length, e)); } catch { return []; }
 };
 
-const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, commissionRate, finesTotal = 0, selectable = false, selectedIds, onSelectionChange, onVisitsLoaded }) => {
+const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, commissionRate, finesTotal = 0, tipsTotal = 0, selectable = false, selectedIds, onSelectionChange, onVisitsLoaded }) => {
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -2980,6 +2980,7 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
     const prods = parseProducts(v.notes);
     return s + prods.reduce((ps, p) => ps + ((p.sale || 0) * (p.qty || 1)), 0);
   }, 0);
+  const totalTips = tipsTotal;
 
   // Selection helpers
   const isSelected = (id) => selectedIds && selectedIds.includes(id);
@@ -3110,8 +3111,9 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
         <div className="finances__vl-summary-row"><span>{filtered.length} servicios</span><span>{formatCOP(totalRevenue)}</span></div>
         <div className="finances__vl-summary-row finances__vl-summary-row--accent"><span>Comisión del profesional</span><span>{formatCOP(totalCommission)}</span></div>
         {totalProducts > 0 && <div className="finances__vl-summary-row"><span>Productos vendidos</span><span>{formatCOP(totalProducts)}</span></div>}
+        {totalTips > 0 && <div className="finances__vl-summary-row" style={{ color: '#059669' }}><span>Propinas</span><span>+{formatCOP(totalTips)}</span></div>}
         {finesTotal > 0 && <div className="finances__vl-summary-row" style={{ color: '#DC2626' }}><span>Multas</span><span>-{formatCOP(finesTotal)}</span></div>}
-        <div className="finances__vl-summary-total"><span>Total a pagar</span><span>{formatCOP(totalCommission - finesTotal)}</span></div>
+        <div className="finances__vl-summary-total"><span>Total a pagar</span><span>{formatCOP(totalCommission + totalTips - finesTotal)}</span></div>
       </div>
 
       {voidConfirm && createPortal(
@@ -4109,6 +4111,7 @@ const TabNomina = () => {
           <span className="finances__nom-col-right" style={{ width: 110 }}>Comisiones</span>
           <span className="finances__nom-col-right" style={{ width: 90 }}>Multas</span>
           <span className="finances__nom-col-right" style={{ width: 110 }}>Pagado</span>
+          <span className="finances__nom-col-right" style={{ width: 80 }}>Propinas</span>
           <span className="finances__nom-col-right" style={{ width: 110 }}>Saldo</span>
           <span style={{ width: 140 }} />
         </div>
@@ -4142,6 +4145,9 @@ const TabNomina = () => {
                   {(st.fines_total || 0) > 0 ? `-${formatCOP(st.fines_total)}` : '$0'}
                 </span>
                 <span className="finances__nom-col-right finances__nom-cell finances__nom-cell--paid" style={{ width: 110 }}>{formatCOP(st.total_paid)}</span>
+                <span className="finances__nom-col-right finances__nom-cell" style={{ width: 80, color: (st.tips_total || 0) > 0 ? '#059669' : 'rgba(0,0,0,0.3)' }}>
+                  {(st.tips_total || 0) > 0 ? `+${formatCOP(st.tips_total)}` : '$0'}
+                </span>
                 <span className="finances__nom-col-right" style={{ width: 110 }}>
                   {st.balance > 0
                     ? <span className="finances__nom-balance-owed">{formatCOP(st.balance)}</span>
@@ -4183,6 +4189,7 @@ const TabNomina = () => {
                         dateTo={dateTo}
                         commissionRate={st.commission_rate}
                         finesTotal={st.fines_total || 0}
+                        tipsTotal={st.tips_total || 0}
                         selectable={true}
                         selectedIds={selectedVisitIds}
                         onSelectionChange={setSelectedVisitIds}

@@ -77,6 +77,8 @@ class StaffPayrollSummary(BaseModel):
     services_count: int = 0
     unpaid_services_count: int = 0  # Visits not yet linked to any payment
     payment_count: int = 0
+    # Tips
+    tips_total: int = 0
     # Fines
     fines_total: int = 0
     fines_count: int = 0

@@ -98,6 +98,7 @@ class VisitHistory(Base):
     status = Column(String, nullable=False, default="completed")  # completed, no_show, cancelled
     payment_method = Column(String, nullable=True)  # efectivo, transferencia, tarjeta, nequi, daviplata
     notes = Column(Text, nullable=True)
+    tip = Column(Integer, nullable=False, default=0)  # COP propina asignada a este staff
     is_invoiced = Column(Boolean, default=False)
     payment_id = Column(Integer, ForeignKey("staff_payment.id"), nullable=True)  # Links visit to staff payment
     created_at = Column(DateTime, default=datetime.utcnow)
