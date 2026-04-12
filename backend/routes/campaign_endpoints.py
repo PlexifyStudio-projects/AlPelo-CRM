@@ -90,7 +90,9 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
     days_inactive = filters.get("days_inactive")
     days_inactive_max = filters.get("days_inactive_max")
     staff_id = filters.get("staff_id")
+    staff_ids_filter = filters.get("staff_ids")  # multi-select: list of staff IDs
     service_name = filters.get("service_name")
+    service_names_filter = filters.get("service_names")  # multi-select: list of service names
     min_spent = filters.get("min_spent")
     max_spent = filters.get("max_spent")
     min_visits = filters.get("min_visits")
@@ -122,6 +124,17 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
         VisitHistory.client_id.in_(all_client_ids) if all_client_ids else False,
     ).all() if all_client_ids else []
 
+    # Also load appointments for staff/service tracking
+    all_appointments = db.query(Appointment).filter(
+        Appointment.client_id.in_(all_client_ids) if all_client_ids else False,
+        Appointment.status.in_(["completed", "paid", "confirmed"]),
+    ).all() if all_client_ids else []
+
+    # Group by client_id
+    apt_map = {}
+    for a in all_appointments:
+        apt_map.setdefault(a.client_id, []).append(a)
+
     # Group visits by client_id
     visits_map = {}
     for v in all_visits:
@@ -141,9 +154,21 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
         days_since = (date.today() - last_visit_date).days if last_visit_date else None
         computed = compute_status(total_visits, days_since, client.status_override)
 
-        # Collect staff and services used
-        staff_ids_used = list(set(v.staff_id for v in completed if v.staff_id))
-        services_used = list(set((v.service_name or "").lower() for v in completed if v.service_name))
+        # Collect staff and services used (from visits + appointments)
+        client_apts = apt_map.get(client.id, [])
+        staff_ids_used = list(set(
+            [v.staff_id for v in completed if v.staff_id] +
+            [a.staff_id for a in client_apts if a.staff_id]
+        ))
+        apt_service_names = []
+        for a in client_apts:
+            svc = db.query(Service).filter(Service.id == a.service_id).first()
+            if svc:
+                apt_service_names.append(svc.name.lower())
+        services_used = list(set(
+            [(v.service_name or "").lower() for v in completed if v.service_name] +
+            apt_service_names
+        ))
         payment_methods_used = list(set((v.payment_method or "").lower() for v in completed if v.payment_method))
 
         enriched.append({
@@ -216,8 +241,14 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
         if staff_id:
             if int(staff_id) not in e["staff_ids"]:
                 continue
+        if staff_ids_filter and isinstance(staff_ids_filter, list) and len(staff_ids_filter) > 0:
+            if not any(int(sid) in e["staff_ids"] for sid in staff_ids_filter):
+                continue
         if service_name:
             if not any(service_name.lower() in s for s in e["services"]):
+                continue
+        if service_names_filter and isinstance(service_names_filter, list) and len(service_names_filter) > 0:
+            if not any(sn.lower() in s for sn in service_names_filter for s in e["services"]):
                 continue
         if birthday_month:
             if not client.birthday:
