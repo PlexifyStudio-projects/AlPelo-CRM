@@ -12,7 +12,6 @@ from routes._helpers import safe_tid, now_colombia
 
 router = APIRouter(prefix="/api/orders", tags=["Orders"])
 
-
 # ─── Helpers ──────────────────────────────────────────────
 
 def _next_ticket(db: Session, tid: int) -> str:
@@ -43,6 +42,8 @@ def _order_to_dict(o: Order) -> dict:
         "staff_name": staff_name,
         "status": o.status,
         "arrival_time": o.arrival_time.isoformat() if o.arrival_time else None,
+        "service_date": o.service_date.isoformat() if o.service_date else None,
+        "service_time": o.service_time,
         "service_start_time": o.service_start_time.isoformat() if o.service_start_time else None,
         "service_end_time": o.service_end_time.isoformat() if o.service_end_time else None,
         "subtotal": o.subtotal,
@@ -194,6 +195,8 @@ def create_order(data: dict, db: Session = Depends(get_db), user=Depends(get_cur
         staff_id=data.get("staff_id"),
         status="pending",
         arrival_time=now_colombia(),
+        service_date=data.get("service_date"),
+        service_time=data.get("service_time"),
         notes=data.get("notes", ""),
         created_by=user.username if hasattr(user, 'username') else str(user.id),
     )
@@ -254,7 +257,7 @@ def update_order(order_id: int, data: dict, db: Session = Depends(get_db), user=
         raise HTTPException(404, "Orden no encontrada")
 
     # Update simple fields
-    for field in ["ticket_number", "client_name", "client_phone", "client_email", "client_doc_type",
+    for field in ["ticket_number", "service_date", "service_time", "client_name", "client_phone", "client_email", "client_doc_type",
                   "client_doc_number", "staff_id", "status", "notes", "payment_method",
                   "payment_status", "tip", "discount_type", "discount_value",
                   "commission_rate", "commission_amount"]:

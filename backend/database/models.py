@@ -1310,6 +1310,8 @@ class Order(Base):
 
     # Times
     arrival_time = Column(DateTime, nullable=False, default=datetime.utcnow)
+    service_date = Column(Date, nullable=True)  # Date of the service
+    service_time = Column(String(5), nullable=True)  # HH:MM of first service slot
     service_start_time = Column(DateTime, nullable=True)
     service_end_time = Column(DateTime, nullable=True)
 

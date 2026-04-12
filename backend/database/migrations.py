@@ -178,6 +178,9 @@ def run_migrations(engine):
         # Invoice item: service_id + staff_id for commission lookup
         ("invoice_item", "service_id", "INTEGER"),
         ("invoice_item", "staff_id", "INTEGER"),
+        # Order service date/time
+        ("order", "service_date", "DATE"),
+        ("order", "service_time", "VARCHAR(5)"),
     ]
 
     for table, column, col_type in migrations:

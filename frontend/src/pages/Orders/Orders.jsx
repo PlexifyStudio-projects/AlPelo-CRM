@@ -39,8 +39,21 @@ const formatCOP = (n) => {
 
 const fmtTime = (iso) => {
   if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+  // Parse without timezone conversion — backend stores in Colombia time
+  const s = String(iso);
+  const m = s.match(/(\d{2}):(\d{2})/);
+  if (!m) return '—';
+  const h = parseInt(m[1]), min = m[2];
+  const ampm = h >= 12 ? 'p. m.' : 'a. m.';
+  return `${h % 12 || 12}:${min} ${ampm}`;
+};
+const fmtDate = (iso) => {
+  if (!iso) return '—';
+  const s = String(iso);
+  const m = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '—';
+  const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parseInt(m[3])} ${MONTHS[parseInt(m[2]) - 1]} ${m[1]}`;
 };
 
 const SearchIcon = () => (
@@ -427,10 +440,13 @@ const Orders = () => {
     try {
       // Use first item's staff_id as order-level staff
       const mainStaff = formItems.find(it => it.staff_id)?.staff_id || null;
+      const firstTime = formItems.find(it => it.time)?.time || null;
       const payload = {
         ...form,
         client_id: selectedClient?.id || null,
         staff_id: mainStaff ? parseInt(mainStaff) : null,
+        service_date: orderDate,
+        service_time: firstTime,
         items: formItems.map(it => ({ ...it, staff_id: it.staff_id ? parseInt(it.staff_id) : null })),
         products: formProducts,
       };
@@ -707,12 +723,8 @@ const Orders = () => {
                 <div className={`${b}__card-footer`}>
                   <div className={`${b}__card-time`}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    {(() => {
-                      const d = o.arrival_time ? new Date(o.arrival_time) : null;
-                      if (!d) return '—';
-                      return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
-                    })()}
-                    <ClockIcon /> {fmtTime(o.arrival_time)}
+                    {fmtDate(o.service_date || o.arrival_time)}
+                    <ClockIcon /> {o.service_time ? fmtTime(`2000-01-01T${o.service_time}`) : fmtTime(o.arrival_time)}
                   </div>
                   <div className={`${b}__card-money`}>
                     <span className={`${b}__card-total`}>{formatCOP(o.total)}</span>
