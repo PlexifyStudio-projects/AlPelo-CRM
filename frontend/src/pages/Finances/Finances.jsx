@@ -3524,8 +3524,8 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
         })}
       </div>
 
-      {/* Fine modal */}
-      {fineModal && (
+      {/* Fine modal — portal to body */}
+      {fineModal && createPortal(
         <div className="finances__perf-fine-overlay" onClick={() => setFineModal(null)}>
           <div className="finances__perf-fine-modal" onClick={e => e.stopPropagation()}>
             <h3>Agregar multa</h3>
@@ -3573,7 +3573,8 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
