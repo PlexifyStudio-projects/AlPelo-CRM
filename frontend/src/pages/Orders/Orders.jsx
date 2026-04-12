@@ -131,13 +131,12 @@ const Orders = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const today = toISO(new Date());
       const [orderData, svcList, staffData, invData, aptList] = await Promise.all([
         orderService.list({ page, limit: 50 }),
         servicesService.list(),
         staffService.list(),
         fetch(`${API}/inventory/products`, { credentials: 'include' }).then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] })),
-        appointmentService.list({ date_from: today, date_to: today }).catch(() => []),
+        appointmentService.list({}).catch(() => []),
       ]);
       const orderList = orderData.orders || orderData || [];
       setTotalPages(orderData.pages || 1);
