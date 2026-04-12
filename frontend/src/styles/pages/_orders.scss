@@ -638,7 +638,7 @@
     border: none;
     transition: all 200ms;
 
-    &:focus-within { background: $color-off-white; box-shadow: 0 0 0 2px rgba($color-primary, 0.15); }
+    &:focus-within { background: white; }
 
     svg { color: $color-gray-300; flex-shrink: 0; }
 
@@ -1124,7 +1124,7 @@
       transition: all 200ms;
 
       &::placeholder { color: $color-gray-300; }
-      &:focus { background: $color-off-white; box-shadow: 0 0 0 2px rgba($color-primary, 0.15); }
+      &:focus { background: white; }
     }
   }
 
