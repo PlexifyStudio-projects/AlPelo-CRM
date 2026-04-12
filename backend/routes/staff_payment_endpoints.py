@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import Optional
 
 from database.connection import get_db
-from database.models import StaffPayment, Staff, VisitHistory, StaffCommission, Tenant, Client, Appointment
+from database.models import StaffPayment, Staff, VisitHistory, StaffCommission, Tenant, Client, Appointment, Service
 from schemas.staff_payment import (
     StaffPaymentCreate, StaffPaymentUpdate, StaffPaymentResponse,
     StaffPayrollSummary, StaffPaymentDetailResponse, VisitDetailItem,
