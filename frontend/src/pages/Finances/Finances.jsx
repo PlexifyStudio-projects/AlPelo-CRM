@@ -2796,15 +2796,19 @@ const parseProducts = (notes) => {
   try { return JSON.parse(notes.substring(s + PRODUCTS_TAG.length, e)); } catch { return []; }
 };
 
-const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable = false, selectedIds, onSelectionChange, onVisitsLoaded }) => {
+const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, commissionRate, selectable = false, selectedIds, onSelectionChange, onVisitsLoaded }) => {
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [localFrom, setLocalFrom] = useState(parentFrom);
+  const [localTo, setLocalTo] = useState(parentTo);
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
-  useEffect(() => {
+  useEffect(() => { setLocalFrom(parentFrom); setLocalTo(parentTo); }, [parentFrom, parentTo]);
+
+  const loadVisits = useCallback(() => {
     setLoading(true);
-    fetch(`${API}/appointments/?date_from=${dateFrom}&date_to=${dateTo}&staff_id=${staffId}`, { credentials: 'include' })
+    fetch(`${API}/appointments/?date_from=${localFrom}&date_to=${localTo}&staff_id=${staffId}`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const completed = (Array.isArray(data) ? data : []).filter(a => a.status === 'completed' || a.status === 'paid');
@@ -2814,7 +2818,9 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
       })
       .catch(() => setVisits([]))
       .finally(() => setLoading(false));
-  }, [staffId, dateFrom, dateTo]);
+  }, [staffId, localFrom, localTo]);
+
+  useEffect(() => { loadVisits(); }, [loadVisits]);
 
   const [filter, setFilter] = useState('all');
 
@@ -2833,7 +2839,7 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
 
   const filtered = search ? byStatus.filter(v => {
     const q = search.toLowerCase();
-    return [v.client_name, v.service_name, String(v.id), String(v.price), v.date].some(x => x?.toLowerCase().includes(q));
+    return [v.client_name, v.service_name, String(v.id), String(v.price), v.date, v.visit_code].some(x => x?.toLowerCase().includes(q));
   }) : byStatus;
 
   const totalRevenue = filtered.reduce((s, v) => s + (v.price || 0), 0);
@@ -2863,9 +2869,15 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
 
   return (
     <div className="finances__visit-list">
+      <div className="finances__visit-date-bar">
+        <span className="finances__visit-date-label">Periodo:</span>
+        <input type="date" value={localFrom} onChange={e => setLocalFrom(e.target.value)} className="finances__visit-date-input" />
+        <span style={{ color: 'rgba(0,0,0,0.3)' }}>—</span>
+        <input type="date" value={localTo} onChange={e => setLocalTo(e.target.value)} className="finances__visit-date-input" />
+      </div>
       <div className="finances__visit-toolbar">
         <div className="finances__visit-search">
-          <input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} />
+          <input type="text" placeholder="Buscar cliente, servicio, ticket..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="finances__visit-filters">
           {['all', 'unpaid', 'paid'].map(f => (

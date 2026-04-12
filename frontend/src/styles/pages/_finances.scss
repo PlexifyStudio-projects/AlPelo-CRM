@@ -2700,6 +2700,42 @@
   }
 
   // Visit toolbar with search + filters
+  &__visit-date-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba($color-primary, 0.03);
+    border: 1px solid rgba($color-primary, 0.1);
+    border-radius: $border-radius-md;
+    margin-bottom: 8px;
+  }
+
+  &__visit-date-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+  }
+
+  &__visit-date-input {
+    padding: 6px 10px;
+    border: 1.5px solid $color-gray-200;
+    border-radius: $border-radius-md;
+    font-size: 13px;
+    font-family: $font-primary;
+    color: $color-secondary;
+    outline: none;
+    background: $color-white;
+
+    &:focus {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
+    }
+  }
+
   &__visit-toolbar {
     display: flex;
     gap: 8px;
