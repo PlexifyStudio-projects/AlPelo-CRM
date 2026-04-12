@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNotification } from '../../context/NotificationContext';
+import { useTenant } from '../../context/TenantContext';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
 import campaignService from '../../services/campaignService';
 import staffService from '../../services/staffService';
@@ -197,6 +198,9 @@ const Campaigns = () => {
   const [audienceLoading, setAudienceLoading] = useState(false);
   const [selectedContacts, setSelectedContacts] = useState(new Set());
   const [contactSearch, setContactSearch] = useState('');
+
+  const { tenant } = useTenant();
+  const waConnected = !!(tenant?.wa_access_token);
 
   const [sendingActive, setSendingActive] = useState(false);
   const [sendQueue, setSendQueue] = useState([]);
@@ -540,17 +544,26 @@ const Campaigns = () => {
         </div>
         <div className={`${B}__header-actions`}>
           {mainTab === 'templates' && (
-            <button className={`${B}__btn-create`} onClick={openNewTemplate}>
+            <button className={`${B}__btn-create`} onClick={openNewTemplate} disabled={!waConnected}>
               <PlusIcon /> Nueva plantilla
             </button>
           )}
         </div>
       </div>
+      {!waConnected && (
+        <div className={`${B}__wa-disconnected`}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div>
+            <strong>WhatsApp no conectado</strong>
+            <p>Conecta tu cuenta de WhatsApp Business en Configuración para ver y enviar plantillas de campañas.</p>
+          </div>
+        </div>
+      )}
       <div className={`${B}__kpis`}>
         {[
-          { value: stats.total, label: 'Total plantillas', color: '#1E40AF' },
-          { value: stats.approved, label: 'Aprobadas', color: '#10B981' },
-          { value: stats.pending, label: 'En revision', color: '#F59E0B' },
+          { value: waConnected ? stats.total : 0, label: 'Total plantillas', color: '#1E40AF' },
+          { value: waConnected ? stats.approved : 0, label: 'Aprobadas', color: '#10B981' },
+          { value: waConnected ? stats.pending : 0, label: 'En revision', color: '#F59E0B' },
           { value: stats.totalSent, label: 'Mensajes enviados', color: '#6366F1' },
         ].map((kpi, i) => (
           <div key={i} className={`${B}__kpi`}>
@@ -604,7 +617,7 @@ const Campaigns = () => {
                 const st = STATUS_CONFIG[t.status] || STATUS_CONFIG.draft;
                 const StatusIcon = st.icon;
                 return (
-                  <div key={t.id} className={`${B}__tpl-card`}>
+                  <div key={t.id} className={`${B}__tpl-card ${!waConnected ? `${B}__tpl-card--disabled` : ''}`}>
                     <div className={`${B}__tpl-card-top`}>
                       <div className={`${B}__tpl-card-meta`}>
                         <span className={`${B}__tpl-card-category`}>{t.category || 'general'}</span>

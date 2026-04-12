@@ -247,13 +247,17 @@ async def list_templates(tenant_id: int = None, status: str = None, user=Depends
             raise HTTPException(status_code=404, detail="Tenant no encontrado")
 
 
+        # If no WA token configured, return empty — no templates without Meta connection
+        if not tenant.wa_access_token:
+            return []
+
         # Auto-sync with Meta every 60 seconds (non-blocking)
         now = _time.time()
         if _last_sync_time is None or (now - _last_sync_time) > 60:
             _last_sync_time = now
             try:
                 wa_business_id = tenant.wa_business_account_id or os.getenv("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
-                wa_token = tenant.wa_access_token or os.getenv("WHATSAPP_ACCESS_TOKEN", "")
+                wa_token = tenant.wa_access_token
                 print(f"[TEMPLATE SYNC] WABA={wa_business_id[:10] if wa_business_id else 'EMPTY'}... Token={'YES' if wa_token else 'EMPTY'}")
                 if wa_business_id and wa_token:
                     import httpx as _httpx

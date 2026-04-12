@@ -112,6 +112,34 @@ $_fg-payment: #14B8A6;
     }
   }
 
+  &__wa-disconnected {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background: rgba(#D97706, 0.06);
+    border: 1px solid rgba(#D97706, 0.15);
+    border-radius: 12px;
+    margin-bottom: 16px;
+
+    svg { flex-shrink: 0; }
+
+    div {
+      strong {
+        display: block;
+        font-size: 14px;
+        color: #92400E;
+        margin-bottom: 2px;
+      }
+      p {
+        font-size: 13px;
+        color: #A16207;
+        margin: 0;
+        line-height: 1.4;
+      }
+    }
+  }
+
   &__kpis {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -356,6 +384,17 @@ $_fg-payment: #14B8A6;
       box-shadow: $shadow-lg;
       transform: translateY(-3px);
       border-color: $border-color-medium;
+    }
+
+    &--disabled {
+      opacity: 0.45;
+      pointer-events: none;
+      filter: grayscale(0.6);
+
+      &:hover {
+        box-shadow: $shadow-sm;
+        transform: none;
+      }
     }
   }
 
