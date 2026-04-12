@@ -653,13 +653,37 @@ const Orders = () => {
             const svcCount = o.items?.length || 0;
             const prodCount = o.products?.length || 0;
             return (
-              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={() => {
-                if (o.payment_status === 'paid' && o.status === 'completed') {
-                  // For paid/completed: just show a simple info or do nothing editable
-                  openEdit(o);
-                } else {
-                  openEdit(o);
+              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={async () => {
+                if (o.payment_status === 'paid') {
+                  // Open invoice/receipt view
+                  try {
+                    const res = await fetch(`${API}/finances/invoices?search=${encodeURIComponent(o.client_name)}&limit=5`, { credentials: 'include' });
+                    if (res.ok) {
+                      const invoices = await res.json();
+                      const inv = Array.isArray(invoices) ? invoices.find(i => i.client_name === o.client_name && i.total === o.total) : null;
+                      if (inv) {
+                        // Navigate to Finanzas or open print
+                        const w = window.open('', '_blank', 'width=800,height=700');
+                        if (w) {
+                          const date = inv.paid_at ? new Date(inv.paid_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+                          const time = inv.paid_at ? new Date(inv.paid_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+                          w.document.write(`<html><head><title>Factura ${inv.invoice_number}</title><style>body{font-family:system-ui;padding:40px;max-width:700px;margin:0 auto}h2{margin:0}table{width:100%;border-collapse:collapse;margin:16px 0}th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #e2e8f0}th{font-size:11px;text-transform:uppercase;color:#64748b}.r{text-align:right}.total{font-size:1.2rem;font-weight:800}.client{background:#f8fafc;padding:12px;border-radius:8px;margin:12px 0;display:flex;gap:20px}.client div{display:flex;flex-direction:column}.client strong{font-size:13px}.client span{font-size:11px;color:#64748b}button{background:#1E40AF;color:#fff;border:none;padding:10px 28px;border-radius:8px;cursor:pointer;font-weight:600;margin-top:20px}@media print{button{display:none}}</style></head><body>`);
+                          w.document.write(`<h2>Factura ${inv.invoice_number}</h2><p style="color:#64748b">${date} — ${time}</p>`);
+                          w.document.write(`<div class="client"><div><strong>${inv.client_name}</strong><span>Cliente</span></div><div><strong>${inv.client_phone || 'N/A'}</strong><span>Teléfono</span></div><div><strong>${inv.client_document ? (inv.client_document_type||'CC')+' '+inv.client_document : 'N/A'}</strong><span>Documento</span></div><div><strong>${inv.client_email || 'N/A'}</strong><span>Email</span></div></div>`);
+                          w.document.write('<table><tr><th>Servicio</th><th>Profesional</th><th class="r">Precio</th></tr>');
+                          (inv.items||[]).forEach(it => w.document.write(`<tr><td>${it.service_name}</td><td>${it.staff_name||'—'}</td><td class="r">${formatCOP(it.total)}</td></tr>`));
+                          w.document.write(`<tr><td colspan="2"><strong>TOTAL</strong></td><td class="r total">${formatCOP(inv.total)}</td></tr></table>`);
+                          w.document.write(`<p>Pago: <strong>${inv.payment_method||'—'}</strong></p>`);
+                          w.document.write('<button onclick="window.print()">Imprimir</button></body></html>');
+                          w.document.close();
+                        }
+                        return;
+                      }
+                    }
+                  } catch {}
+                  addNotification('Factura no encontrada — abriendo detalle', 'info');
                 }
+                openEdit(o);
               }}>
                 {/* Header: status accent bar */}
                 <div className={`${b}__card-accent`} style={{ background: st.color }} />
