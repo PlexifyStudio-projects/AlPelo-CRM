@@ -152,10 +152,14 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     if (appointment._products?.length) {
       setProductItems(appointment._products.map(p => ({
         id: crypto.randomUUID(),
-        product_id: p.product_id,
+        productId: p.product_id || p.productId,
         name: p.product_name || p.name,
-        quantity: p.quantity || 1,
-        unit_price: p.unit_price || 0,
+        basePrice: p.unit_price || p.basePrice || 0,
+        salePrice: p.unit_price || p.salePrice || 0,
+        qty: p.quantity || p.qty || 1,
+        commission: p.commission || 0,
+        staff_id: p.staff_id || null,
+        staff_name: p.staff_name || null,
       })));
     } else {
       setProductItems(deserializeProducts(appointment.notes));
