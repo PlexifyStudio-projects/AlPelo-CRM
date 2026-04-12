@@ -422,11 +422,9 @@
     position: fixed;
     top: 0;
     right: 0;
-    bottom: 0;
     width: 520px;
     max-width: 96vw;
-    height: 100vh;
-    height: 100dvh;
+    height: 100%;
     background: white;
     display: flex;
     flex-direction: column;
@@ -619,13 +617,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 14px;
+    padding: 0 12px;
     border: 1px solid $color-gray-100;
-    border-radius: 10px;
-    background: white;
+    border-radius: 8px;
+    background: $color-off-white;
     transition: border-color 200ms;
 
-    &:focus-within { border-color: $color-primary-light; }
+    &:focus-within { border-color: $color-primary-light; background: white; }
 
     svg { color: $color-gray-300; flex-shrink: 0; }
 
@@ -633,8 +631,8 @@
       flex: 1;
       border: none;
       outline: none;
-      padding: 11px 0;
-      font-size: 0.88rem;
+      padding: 10px 0;
+      font-size: 0.85rem;
       color: $color-secondary;
       background: none;
 
@@ -1102,15 +1100,15 @@
     input {
       width: 100%;
       padding: 9px 12px;
-      border: 1px dashed $color-gray-200;
+      border: 1px solid $color-gray-100;
       border-radius: 8px;
       font-size: 0.85rem;
       outline: none;
       color: $color-secondary;
-      background: white;
+      background: $color-off-white;
 
       &::placeholder { color: $color-gray-300; }
-      &:focus { border-color: $color-primary-light; border-style: solid; }
+      &:focus { border-color: $color-primary-light; background: white; }
     }
   }
 
