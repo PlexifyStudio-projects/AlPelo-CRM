@@ -1278,3 +1278,88 @@ class StaffQueue(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     staff = relationship("Staff", foreign_keys=[staff_id])
+
+
+# ============================================================================
+# ORDERS — Walk-in / In-process service orders
+# ============================================================================
+
+class Order(Base):
+    __tablename__ = "order"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
+    location_id = Column(Integer, nullable=True)
+    ticket_number = Column(String(20), nullable=False, index=True)
+
+    # Client info
+    client_id = Column(Integer, ForeignKey("public.client.id"), nullable=True)
+    client_name = Column(String(200), nullable=False)
+    client_phone = Column(String(30), nullable=True)
+    client_email = Column(String(200), nullable=True)
+    client_doc_type = Column(String(10), nullable=True)
+    client_doc_number = Column(String(30), nullable=True)
+
+    # Staff (assigned later)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=True)
+
+    # Status
+    status = Column(String(20), nullable=False, default="pending")
+
+    # Times
+    arrival_time = Column(DateTime, nullable=False, default=datetime.utcnow)
+    service_start_time = Column(DateTime, nullable=True)
+    service_end_time = Column(DateTime, nullable=True)
+
+    # Financials
+    subtotal = Column(Integer, nullable=False, default=0)
+    discount_type = Column(String(10), nullable=True)
+    discount_value = Column(Float, nullable=True)
+    discount_amount = Column(Integer, nullable=False, default=0)
+    tip = Column(Integer, nullable=False, default=0)
+    total = Column(Integer, nullable=False, default=0)
+    payment_method = Column(String(30), nullable=True)
+    payment_status = Column(String(15), nullable=False, default="unpaid")
+    commission_rate = Column(Float, nullable=True)
+    commission_amount = Column(Integer, nullable=True)
+
+    notes = Column(Text, nullable=True)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    products = relationship("OrderProduct", back_populates="order", cascade="all, delete-orphan")
+
+
+class OrderItem(Base):
+    __tablename__ = "order_item"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False)
+    order_id = Column(Integer, ForeignKey("public.order.id", ondelete="CASCADE"), nullable=False)
+    service_id = Column(Integer, ForeignKey("public.service.id"), nullable=True)
+    service_name = Column(String(200), nullable=False)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=True)
+    price = Column(Integer, nullable=False, default=0)
+    duration_minutes = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    order = relationship("Order", back_populates="items")
+
+
+class OrderProduct(Base):
+    __tablename__ = "order_product"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False)
+    order_id = Column(Integer, ForeignKey("public.order.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("public.product.id"), nullable=True)
+    product_name = Column(String(200), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    unit_price = Column(Integer, nullable=False, default=0)
+    total = Column(Integer, nullable=False, default=0)
+    charged_to = Column(String(10), nullable=False, default="client")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    order = relationship("Order", back_populates="products")

@@ -12,6 +12,7 @@ const Services = lazy(() => import('../pages/Services/Services'));
 const Inventory = lazy(() => import('../pages/Inventory/Inventory'));
 const Agenda = lazy(() => import('../pages/Agenda/Agenda'));
 const Finances = lazy(() => import('../pages/Finances/Finances'));
+const Orders = lazy(() => import('../pages/Orders/Orders'));
 const Campaigns = lazy(() => import('../pages/Campaigns/Campaigns'));
 const ContentStudio = lazy(() => import('../pages/ContentStudio/ContentStudio'));
 const Automations = lazy(() => import('../pages/Automations/AutomationStudio'));
@@ -33,6 +34,7 @@ const SectionRenderer = memo(({ section, user, updateProfile }) => {
     case 'dashboard': return <Dashboard />;
     case 'agenda': return <Agenda />;
     case 'clients': return <Clients />;
+    case 'orders': return <Orders />;
     case 'campaigns': return <Campaigns />;
     case 'automations': return <Automations />;
     case 'content-studio': return <ContentStudio />;

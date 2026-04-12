@@ -126,6 +126,9 @@ app.include_router(automation_studio_router, prefix="/api", tags=["Automation St
 from routes.location_endpoints import router as location_router
 app.include_router(location_router, prefix="/api", tags=["Locations"])
 
+from routes.order_endpoints import router as order_router
+app.include_router(order_router, tags=["Orders"])
+
 
 # ============================================================================
 # FACTORY RESET — Dev-only endpoint to wipe all tenant data

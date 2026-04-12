@@ -48,6 +48,14 @@ const SVG_ICONS = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   ),
+  orders: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 3h5v5" /><path d="M8 3H3v5" />
+      <path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3" />
+      <path d="m15 9 6-6" />
+      <path d="M16 21h5v-5" /><path d="M8 21H3v-5" />
+    </svg>
+  ),
   team: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -155,6 +163,7 @@ const PREFETCH_MAP = {
   dashboard: () => import('../../../pages/Dashboard/Dashboard'),
   agenda: () => import('../../../pages/Agenda/Agenda'),
   clients: () => import('../../../pages/Clients/Clients'),
+  orders: () => import('../../../pages/Orders/Orders'),
   campaigns: () => import('../../../pages/Campaigns/Campaigns'),
   services: () => import('../../../pages/Services/Services'),
   inventory: () => import('../../../pages/Inventory/Inventory'),

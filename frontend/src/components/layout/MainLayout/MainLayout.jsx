@@ -7,6 +7,7 @@ const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'agenda', label: 'Agenda' },
   { id: 'clients', label: 'Clientes' },
+  { id: 'orders', label: 'Órdenes' },
   { id: 'campaigns', label: 'Campañas' },
   { id: 'services', label: 'Servicios' },
   { id: 'inventory', label: 'Inventario' },
