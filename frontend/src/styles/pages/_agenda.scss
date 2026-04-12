@@ -1182,7 +1182,7 @@
   }
 
   &__slot--blocked {
-    background: rgba($color-error, 0.08) !important;
+    background: rgba($color-gray-400, 0.06) !important;
     cursor: not-allowed !important;
     z-index: 4;
 
@@ -1193,9 +1193,9 @@
       background: repeating-linear-gradient(
         -45deg,
         transparent,
-        transparent 4px,
-        rgba($color-error, 0.12) 4px,
-        rgba($color-error, 0.12) 6px
+        transparent 5px,
+        rgba($color-gray-300, 0.18) 5px,
+        rgba($color-gray-300, 0.18) 7px
       );
       border-radius: 4px;
       pointer-events: none;
