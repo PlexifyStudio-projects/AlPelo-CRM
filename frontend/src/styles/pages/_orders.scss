@@ -867,16 +867,16 @@
     }
 
     input, select {
-      padding: 9px 12px;
-      border: 1px solid $color-gray-100;
+      padding: 10px 12px;
+      border: none;
       border-radius: 8px;
       font-size: 0.85rem;
       color: $color-secondary;
       outline: none;
-      transition: border-color 150ms;
-      background: white;
+      transition: all 150ms;
+      background: $color-gray-50;
 
-      &:focus { border-color: $color-primary-light; }
+      &:focus { background: white; box-shadow: 0 0 0 1.5px rgba($color-primary, 0.2); }
     }
   }
 
