@@ -21,7 +21,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 680px;
+  width: 860px;
   max-width: 100vw;
   height: 100vh;
   height: 100dvh;
@@ -1050,7 +1050,7 @@
 
   &__history-thead {
     display: grid;
-    grid-template-columns: 70px 1fr 110px 100px 120px 100px 90px;
+    grid-template-columns: 60px 1fr 120px 110px 140px 100px 90px;
     gap: 0;
     padding: 10px 14px;
     background: $color-gray-50;
@@ -1068,7 +1068,7 @@
 
   &__history-row {
     display: grid;
-    grid-template-columns: 70px 1fr 110px 100px 120px 100px 90px;
+    grid-template-columns: 60px 1fr 120px 110px 140px 100px 90px;
     gap: 0;
     padding: 10px 14px;
     border-bottom: 1px solid $color-gray-50;
