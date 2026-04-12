@@ -62,12 +62,17 @@ const Clients = () => {
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter((c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.phone.includes(q) ||
-        (c.email && c.email.toLowerCase().includes(q)) ||
-        c.client_id.toLowerCase().includes(q)
-      );
+      const qDigits = q.replace(/\D/g, '');
+      result = result.filter((c) => {
+        if (c.name.toLowerCase().includes(q)) return true;
+        if (c.email && c.email.toLowerCase().includes(q)) return true;
+        if (c.client_id.toLowerCase().includes(q)) return true;
+        if (qDigits && c.phone) {
+          const phoneDigits = c.phone.replace(/\D/g, '');
+          if (phoneDigits.includes(qDigits)) return true;
+        }
+        return false;
+      });
     }
 
     if (statusFilter !== 'all') {

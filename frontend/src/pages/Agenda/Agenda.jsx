@@ -197,6 +197,8 @@ const AgendaInner = ({ staffOnlyId = null }) => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeChunk, setActiveChunk] = useState(0);
+  const [backendSearchResults, setBackendSearchResults] = useState([]);
+  const [searchingBackend, setSearchingBackend] = useState(false);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef(null);
@@ -206,6 +208,20 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // Backend search for appointments by phone/name across all dates
+  useEffect(() => {
+    if (!searchQuery || searchQuery.length < 3) { setBackendSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      try {
+        setSearchingBackend(true);
+        const results = await appointmentService.list({ search: searchQuery });
+        setBackendSearchResults(results);
+      } catch { setBackendSearchResults([]); }
+      finally { setSearchingBackend(false); }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const [draggingApt, setDraggingApt] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
@@ -624,31 +640,36 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     if (!searchQuery || searchQuery.length < 2) return [];
     const q = searchQuery.toLowerCase().trim();
     const qDigits = q.replace(/\D/g, '');
-    return appointments
-      .filter(a => {
-        const haystack = [
-          String(a.id), `#${a.id}`,
-          a.client_name, a.service_name, a.staff_name,
-          formatCOP(a.price), a.status, STATUS_META[a.status]?.label,
-          a.time, formatTime12(a.time), a.date, a.notes,
-          a.client_phone, a.visit_code,
-        ].filter(Boolean).join(' ').toLowerCase();
-        if (haystack.includes(q)) return true;
-        if (qDigits.length >= 4 && a.client_phone) {
-          const phoneDigits = a.client_phone.replace(/\D/g, '');
-          if (phoneDigits.includes(qDigits)) return true;
-        }
-        return false;
-      })
+    const localMatches = appointments.filter(a => {
+      const haystack = [
+        String(a.id), `#${a.id}`,
+        a.client_name, a.service_name, a.staff_name,
+        formatCOP(a.price), a.status, STATUS_META[a.status]?.label,
+        a.time, formatTime12(a.time), a.date, a.notes,
+        a.client_phone, a.visit_code,
+      ].filter(Boolean).join(' ').toLowerCase();
+      if (haystack.includes(q)) return true;
+      if (qDigits.length >= 4 && a.client_phone) {
+        const phoneDigits = a.client_phone.replace(/\D/g, '');
+        if (phoneDigits.includes(qDigits)) return true;
+      }
+      return false;
+    });
+    // Merge backend results (avoids duplicates)
+    const localIds = new Set(localMatches.map(a => a.id));
+    const extra = backendSearchResults.filter(a => !localIds.has(a.id));
+    return [...localMatches, ...extra]
       .sort((a, b) => {
         const today = toISO(new Date());
-        const aToday = a.date === today ? 0 : a.date > today ? 1 : 2;
-        const bToday = b.date === today ? 0 : b.date > today ? 1 : 2;
+        const aDate = typeof a.date === 'string' ? a.date : toISO(a.date);
+        const bDate = typeof b.date === 'string' ? b.date : toISO(b.date);
+        const aToday = aDate === today ? 0 : aDate > today ? 1 : 2;
+        const bToday = bDate === today ? 0 : bDate > today ? 1 : 2;
         if (aToday !== bToday) return aToday - bToday;
-        return a.date.localeCompare(b.date) || a.time.localeCompare(b.time);
+        return aDate.localeCompare(bDate) || (a.time || '').localeCompare(b.time || '');
       })
-      .slice(0, 15);
-  }, [searchQuery, appointments]);
+      .slice(0, 20);
+  }, [searchQuery, appointments, backendSearchResults]);
 
   const navLabel = useMemo(() => {
     if (view === 'day' || isStaffView) {
@@ -922,7 +943,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); setActiveChunk(0); }}
             onFocus={() => searchQuery.length >= 2 && setSearchOpen(true)}
-            placeholder="Buscar cliente, servicio, precio, estado..."
+            placeholder="Buscar por teléfono, cliente, servicio..."
             className={`${b}__search-input`}
           />
           {searchQuery && (
@@ -931,22 +952,28 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             </button>
           )}
         </div>
+        {searchOpen && searchingBackend && searchResults.length === 0 && (
+          <div className={`${b}__search-results`}>
+            <div className={`${b}__search-empty`}>Buscando...</div>
+          </div>
+        )}
         {searchOpen && searchResults.length > 0 && (
           <div className={`${b}__search-results`}>
             <div className={`${b}__search-results-header`}>
-              <span>{searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}</span>
+              <span>{searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}{searchingBackend ? ' (buscando más...)' : ''}</span>
             </div>
             {searchResults.map((apt) => {
               const sc = STATUS_META[apt.status]?.color || '#6B6B63';
               const sl = STATUS_META[apt.status]?.label || apt.status;
-              const dayName = DAYS_SHORT[new Date(apt.date + 'T12:00:00').getDay()];
-              const dateShort = apt.date.split('-').slice(1).reverse().join('/');
+              const aptDate = typeof apt.date === 'string' ? apt.date : toISO(apt.date);
+              const dayName = DAYS_SHORT[new Date(aptDate + 'T12:00:00').getDay()];
+              const dateShort = aptDate.split('-').slice(1).reverse().join('/');
               return (
                 <button key={apt.id} className={`${b}__search-result`} onClick={() => {
                   setSearchOpen(false);
                   setSearchQuery('');
-                  const aptDate = new Date(apt.date + 'T12:00:00');
-                  setCurrentDate(aptDate);
+                  const d = new Date(aptDate + 'T12:00:00');
+                  setCurrentDate(d);
                   openEdit(apt);
                 }}>
                   <div className={`${b}__search-result-status`} style={{ background: sc }} />
@@ -954,6 +981,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                     <div className={`${b}__search-result-top`}>
                       {apt.visit_code && <span className={`${b}__search-result-code`}>#{apt.visit_code}</span>}
                       <strong>{apt.client_name}</strong>
+                      {apt.client_phone && <span className={`${b}__search-result-phone`}>{formatPhone(apt.client_phone)}</span>}
                       <span className={`${b}__search-result-badge`} style={{ color: sc, background: `${sc}15` }}>{sl}</span>
                     </div>
                     <div className={`${b}__search-result-bottom`}>
@@ -975,7 +1003,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
             })}
           </div>
         )}
-        {searchOpen && searchQuery.length >= 2 && searchResults.length === 0 && (
+        {searchOpen && searchQuery.length >= 2 && searchResults.length === 0 && !searchingBackend && (
           <div className={`${b}__search-results`}>
             <div className={`${b}__search-empty`}>No se encontraron citas para "{searchQuery}"</div>
           </div>

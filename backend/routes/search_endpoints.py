@@ -4,7 +4,7 @@ from collections import Counter
 
 from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from sqlalchemy.orm import Session
-from sqlalchemy import cast, String, func
+from sqlalchemy import cast, String, func, or_
 
 from database.connection import get_db
 from database.models import (
@@ -149,12 +149,18 @@ def list_clients(
 
     if search:
         term = f"%{search}%"
-        query = query.filter(
-            Client.name.ilike(term)
-            | Client.phone.ilike(term)
-            | Client.email.ilike(term)
-            | Client.client_id.ilike(term)
-        )
+        digits = ''.join(c for c in search if c.isdigit())
+        conditions = [
+            Client.name.ilike(term),
+            Client.email.ilike(term),
+            Client.client_id.ilike(term),
+        ]
+        if digits:
+            conditions.append(func.replace(func.replace(func.replace(func.replace(func.replace(
+                func.coalesce(Client.phone, ''), '+', ''), ' ', ''), '(', ''), ')', ''), '-', '').ilike(f"%{digits}%"))
+        else:
+            conditions.append(Client.phone.ilike(term))
+        query = query.filter(or_(*conditions))
 
     if tag:
         query = query.filter(cast(Client.tags, String).ilike(f"%{tag}%"))
@@ -625,6 +631,7 @@ def list_appointments(
     staff_id: Optional[int] = Query(None),
     client_id: Optional[int] = Query(None),
     status: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user: Admin = Depends(get_current_user),
 ):
@@ -635,6 +642,27 @@ def list_appointments(
     query = db.query(Appointment)
     if tid:
         query = query.filter(Appointment.tenant_id == tid)
+
+    if search:
+        term = f"%{search}%"
+        digits = ''.join(c for c in search if c.isdigit())
+        conditions = [
+            Appointment.client_name.ilike(term),
+            Appointment.visit_code.ilike(term),
+        ]
+        if digits:
+            client_q = db.query(Client.id, Client.phone)
+            if tid:
+                client_q = client_q.filter(Client.tenant_id == tid)
+            phone_ids = [
+                cid for cid, phone in client_q.all()
+                if phone and digits in ''.join(c for c in phone if c.isdigit())
+            ]
+            if phone_ids:
+                conditions.append(Appointment.client_id.in_(phone_ids))
+        else:
+            conditions.append(Appointment.client_phone.ilike(term))
+        query = query.filter(or_(*conditions))
 
     if date_from:
         query = query.filter(Appointment.date >= dt_date.fromisoformat(date_from))
@@ -647,7 +675,11 @@ def list_appointments(
     if status:
         query = query.filter(Appointment.status == status)
 
-    appointments = query.order_by(Appointment.date, Appointment.time).all()
+    if search and not date_from and not date_to:
+        query = query.order_by(Appointment.date.desc(), Appointment.time.desc())
+        appointments = query.limit(20).all()
+    else:
+        appointments = query.order_by(Appointment.date, Appointment.time).all()
 
     result = []
     staff_cache = {}

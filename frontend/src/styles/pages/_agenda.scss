@@ -3587,6 +3587,13 @@
   flex-shrink: 0;
 }
 
+.agenda__search-result-phone {
+  font-size: 11px;
+  color: $color-gray-400;
+  font-weight: $font-weight-medium;
+  flex-shrink: 0;
+}
+
 .agenda__search-result-badge {
   display: inline-block;
   padding: 2px 10px;

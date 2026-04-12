@@ -8,6 +8,7 @@ const appointmentService = {
     if (params.staff_id) query.append('staff_id', params.staff_id);
     if (params.client_id) query.append('client_id', params.client_id);
     if (params.status) query.append('status', params.status);
+    if (params.search) query.append('search', params.search);
     const qs = query.toString();
     const res = await fetch(`${API_URL}/appointments/${qs ? '?' + qs : ''}`, { credentials: 'include' });
     if (!res.ok) throw new Error('Error al cargar citas');
