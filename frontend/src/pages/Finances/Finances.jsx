@@ -2141,13 +2141,22 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           (inv.items || []).forEach(it => {
                             const name = it.staff_name || 'Sin asignar';
                             if (!byStaff[name]) byStaff[name] = { name, staffId: it.staff_id, items: [], total: 0, comm: 0 };
-                            const key = `${it.staff_id}-${it.service_id}`;
-                            const perSvcRate = it.service_id ? svcCommRates[key] : undefined;
-                            const defRate = staffDefaults[it.staff_id];
-                            const rate = perSvcRate > 0 ? perSvcRate : defRate > 0 ? defRate : 0;
-                            const c = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
-                            byStaff[name].items.push({ ...it, rate, commAmount: c });
-                            byStaff[name].total += (it.unit_price || 0) * (it.quantity || 1);
+                            const isProduct = (it.service_name || '').startsWith('[Producto]');
+                            const itemTotal = (it.unit_price || 0) * (it.quantity || 1);
+                            let rate = 0, c = 0;
+                            if (isProduct) {
+                              // Products use fixed commission, not percentage
+                              c = 0; // Fixed commission stored elsewhere, not in rate
+                              rate = 0;
+                            } else {
+                              const key = `${it.staff_id}-${it.service_id}`;
+                              const perSvcRate = it.service_id ? svcCommRates[key] : undefined;
+                              const defRate = staffDefaults[it.staff_id];
+                              rate = perSvcRate > 0 ? perSvcRate : defRate > 0 ? defRate : 0;
+                              c = Math.round(itemTotal * rate);
+                            }
+                            byStaff[name].items.push({ ...it, rate, commAmount: c, isProduct });
+                            byStaff[name].total += itemTotal;
                             byStaff[name].comm += c;
                           });
                           const entries = Object.values(byStaff);
@@ -2165,7 +2174,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                                   </div>
                                   {s.items.map((it, j) => (
                                     <div key={j} className="finances__sale-commission-row" style={{ paddingLeft: 20, fontSize: '0.78rem', color: '#64748B' }}>
-                                      <span>{it.service_name} ({(it.rate * 100).toFixed(0)}%)</span>
+                                      <span>{it.service_name}{it.isProduct ? '' : ` (${(it.rate * 100).toFixed(0)}%)`}</span>
                                       <strong style={{ color: '#059669' }}>{formatCOP(it.commAmount)}</strong>
                                     </div>
                                   ))}
@@ -2281,12 +2290,17 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             (inv.items || []).forEach(it => {
                               const name = it.staff_name || 'Sin asignar';
                               if (!byStaff[name]) byStaff[name] = { name, items: [], totalSvc: 0, totalComm: 0 };
-                              const pRate = it.service_id ? svcCommRates[`${it.staff_id}-${it.service_id}`] : undefined;
-                              const dRate = it.staff_id ? staffDefaults[it.staff_id] : undefined;
-                              const rate = (pRate !== undefined && pRate > 0) ? pRate : (dRate !== undefined && dRate > 0) ? dRate : 0;
-                              const comm = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
-                              byStaff[name].items.push({ svc: it.service_name, rate, comm });
-                              byStaff[name].totalSvc += (it.unit_price || 0) * (it.quantity || 1);
+                              const isProduct = (it.service_name || '').startsWith('[Producto]');
+                              const itemTotal = (it.unit_price || 0) * (it.quantity || 1);
+                              let rate = 0, comm = 0;
+                              if (!isProduct) {
+                                const pRate = it.service_id ? svcCommRates[`${it.staff_id}-${it.service_id}`] : undefined;
+                                const dRate = it.staff_id ? staffDefaults[it.staff_id] : undefined;
+                                rate = (pRate !== undefined && pRate > 0) ? pRate : (dRate !== undefined && dRate > 0) ? dRate : 0;
+                                comm = Math.round(itemTotal * rate);
+                              }
+                              byStaff[name].items.push({ svc: it.service_name, rate, comm, isProduct });
+                              byStaff[name].totalSvc += itemTotal;
                               byStaff[name].totalComm += comm;
                             });
                             const entries = Object.values(byStaff);
@@ -2296,7 +2310,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             entries.forEach(s => {
                               distHtml += `<div class="box-row" style="font-weight:700"><span>${s.name}</span><strong>${formatCOP(s.totalSvc)}</strong></div>`;
                               s.items.forEach(it => {
-                                distHtml += `<div class="box-row" style="font-size:11px;color:#64748b;padding-left:12px"><span>${it.svc} (${(it.rate * 100).toFixed(0)}%)</span><strong style="color:#059669">${formatCOP(it.comm)}</strong></div>`;
+                                distHtml += `<div class="box-row" style="font-size:11px;color:#64748b;padding-left:12px"><span>${it.svc}${it.isProduct ? '' : ` (${(it.rate * 100).toFixed(0)}%)`}</span><strong style="color:#059669">${formatCOP(it.comm)}</strong></div>`;
                               });
                             });
                             distHtml += `<div style="border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px"><div class="box-row green"><span>Total comisiones</span><strong>${formatCOP(totalComm)}</strong></div><div class="box-row blue"><span>Ganancia negocio</span><strong>${formatCOP(bizEarn)}</strong></div></div></div>`;
