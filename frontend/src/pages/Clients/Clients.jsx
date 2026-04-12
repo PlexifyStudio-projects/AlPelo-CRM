@@ -97,18 +97,21 @@ const Clients = () => {
 
   const handleSaveClient = async (clientData, visitCode) => {
     try {
+      let savedClientId = editingClient?.id;
       if (editingClient) {
         await clientService.update(editingClient.id, clientData);
-        // If visit code changed, update the latest appointment
+        // If visit code provided, update the latest appointment
         if (visitCode !== undefined && visitCode !== (editingClient.last_visit_code || '')) {
           try {
             const apts = await appointmentService.list({ client_id: editingClient.id });
             const latestApt = apts?.length ? apts.sort((a, b) => b.id - a.id)[0] : null;
             if (latestApt) {
               await appointmentService.update(latestApt.id, { visit_code: visitCode || null });
+            } else if (visitCode) {
+              addNotification('No hay citas para asignar el ticket. Crea una cita primero.', 'warning');
             }
           } catch (e) {
-            console.warn('Error actualizando ticket:', e.message);
+            addNotification('Error guardando ticket: ' + e.message, 'error');
           }
         }
         addNotification('Cliente actualizado correctamente', 'success');
@@ -117,7 +120,14 @@ const Clients = () => {
         addNotification('Cliente agregado correctamente', 'success');
       }
       setEditingClient(null);
-      loadClients();
+      await loadClients();
+      // Reopen client detail with fresh data
+      if (savedClientId) {
+        try {
+          const fresh = await clientService.get(savedClientId);
+          setSelectedClient(fresh);
+        } catch { /* ignore */ }
+      }
     } catch (err) {
       addNotification('Error: ' + err.message, 'error');
     }
