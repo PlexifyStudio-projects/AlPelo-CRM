@@ -579,29 +579,74 @@ def void_checkout(
     if checkout.status == "voided":
         raise HTTPException(status_code=400, detail="Este checkout ya fue anulado")
 
+    _void_checkout_cascade(checkout, db, tid)
+
+    db.commit()
+    db.refresh(checkout)
+    return _checkout_to_dict(checkout)
+
+
+def _void_checkout_cascade(checkout, db, tid):
+    """Full cascade: void checkout + cancel invoice + cancel visits + revert appointment + restore stock."""
     checkout.status = "voided"
 
-    # Also void the linked invoice
+    # Cancel linked invoice
     if checkout.invoice_id:
         invoice = db.query(Invoice).filter(Invoice.id == checkout.invoice_id).first()
         if invoice:
             invoice.status = "cancelled"
 
-    # Mark linked visit as cancelled
+    # Cancel ALL linked visits (there can be multiple, one per staff)
+    visits = db.query(VisitHistory).filter(
+        VisitHistory.tenant_id == tid,
+        VisitHistory.status == "completed",
+    ).all()
+    # Match by checkout — visits don't have checkout_id, but were created at same time
+    # Use the checkout's appointment_id or fall back to visit_id
     if checkout.visit_id:
         visit = db.query(VisitHistory).filter(VisitHistory.id == checkout.visit_id).first()
         if visit:
             visit.status = "cancelled"
-
-    # Revert appointment status back to confirmed
+    # Also cancel any visits created for this checkout (multi-staff)
     if checkout.appointment_id:
-        appt = db.query(Appointment).filter(Appointment.id == checkout.appointment_id).first()
-        if appt and appt.status == "paid":
-            appt.status = "confirmed"
+        from database.models import Appointment as Appt
+        appt = db.query(Appt).filter(Appt.id == checkout.appointment_id).first()
+        if appt:
+            # Find visits on same date, same client
+            related_visits = db.query(VisitHistory).filter(
+                VisitHistory.tenant_id == tid,
+                VisitHistory.client_id == appt.client_id,
+                VisitHistory.visit_date == appt.date,
+                VisitHistory.status == "completed",
+            ).all()
+            for v in related_visits:
+                v.status = "cancelled"
+            # Revert appointment status
+            if appt.status == "paid":
+                appt.status = "confirmed"
 
-    db.commit()
-    db.refresh(checkout)
-    return _checkout_to_dict(checkout)
+    # Restore product stock from InventoryMovement records
+    sale_movements = db.query(InventoryMovement).filter(
+        InventoryMovement.reference_id == checkout.id,
+        InventoryMovement.movement_type == "sale",
+    )
+    if tid:
+        sale_movements = sale_movements.filter(InventoryMovement.tenant_id == tid)
+    for mov in sale_movements.all():
+        product = db.query(Product).filter(Product.id == mov.product_id).first()
+        if product:
+            product.stock = product.stock + abs(mov.quantity)
+        # Create a reversal movement
+        db.add(InventoryMovement(
+            tenant_id=tid,
+            product_id=mov.product_id,
+            movement_type="adjustment",
+            quantity=abs(mov.quantity),
+            unit_cost=mov.unit_cost,
+            note=f"Devolucion checkout #{checkout.id}",
+            reference_id=checkout.id,
+            created_by="system",
+        ))
 
 
 # ============================================================================

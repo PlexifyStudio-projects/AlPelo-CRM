@@ -11,6 +11,7 @@ from database.connection import get_db
 from database.models import (
     Admin, Staff, Client, VisitHistory, Expense, Invoice, InvoiceItem,
     StaffCommission, StaffServiceCommission, Service, StaffFine,
+    Checkout, Appointment, Product, InventoryMovement,
 )
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
@@ -497,6 +498,10 @@ def update_invoice(invoice_id: int, data: InvoiceUpdate, db: Session = Depends(g
     if data.status == "paid" and not inv.paid_at:
         inv.paid_at = datetime.utcnow()
 
+    # If cancelling, cascade to checkout/visit/appointment/stock
+    if data.status == "cancelled":
+        _cancel_invoice_cascade(inv, db, tid)
+
     db.commit()
     db.refresh(inv)
     return inv
@@ -511,8 +516,21 @@ def cancel_invoice(invoice_id: int, db: Session = Depends(get_db), current_user:
     if not inv:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     inv.status = "cancelled"
+    _cancel_invoice_cascade(inv, db, tid)
     db.commit()
     return {"ok": True}
+
+
+def _cancel_invoice_cascade(inv, db, tid):
+    """When cancelling an invoice, find and void the linked checkout + cascade."""
+    from routes.pos_endpoints import _void_checkout_cascade
+    # Find checkout linked to this invoice
+    checkout_q = db.query(Checkout).filter(Checkout.invoice_id == inv.id)
+    if tid:
+        checkout_q = checkout_q.filter(Checkout.tenant_id == tid)
+    checkout = checkout_q.first()
+    if checkout and checkout.status != "voided":
+        _void_checkout_cascade(checkout, db, tid)
 
 
 # ============================================================================
