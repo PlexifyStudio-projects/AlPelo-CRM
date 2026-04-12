@@ -687,9 +687,47 @@ const Orders = () => {
                           win.document.write(`<tr class="subtotal-row"><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
                           if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4" style="color:#059669">Propina</td><td class="r" style="color:#059669">+${formatCOP(inv.tip)}</td></tr>`);
                           win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr></table>`);
+                          // Load commission rates for distribution
+                          let svcCommRates = {}, staffDefaults = {};
+                          try {
+                            const [cr, sd] = await Promise.all([
+                              fetch(`${API}/services/all-commissions`, { credentials: 'include' }).then(r => r.ok ? r.json() : {}),
+                              fetch(`${API}/finances/commissions/config`, { credentials: 'include' }).then(r => r.ok ? r.json() : []),
+                            ]);
+                            svcCommRates = cr.rates || {};
+                            sd.forEach(c => { staffDefaults[c.staff_id] = c.default_rate || 0; });
+                          } catch {}
+                          // Distribution + Payment details
+                          const byStaff = {};
+                          (inv.items||[]).forEach(it => {
+                            const n = it.staff_name || '—';
+                            if (!byStaff[n]) byStaff[n] = { items: [], total: 0 };
+                            byStaff[n].items.push(it);
+                            byStaff[n].total += it.total || 0;
+                          });
+                          let distHtml = '<div class="box"><h3>Distribucion por profesional</h3>';
+                          Object.entries(byStaff).forEach(([name, s]) => {
+                            distHtml += `<div class="box-row" style="font-weight:700"><span>${name}</span><strong>${formatCOP(s.total)}</strong></div>`;
+                            s.items.forEach(it => {
+                              const isProd = it.service_name?.startsWith('[Producto]');
+                              const rate = svcCommRates[`${it.staff_id}-${it.service_id}`] || staffDefaults[it.staff_id] || 0;
+                              const comm = isProd ? 0 : Math.round(it.total * rate);
+                              distHtml += `<div class="box-row" style="font-size:11px;color:#64748b;padding-left:12px"><span>${it.service_name}${isProd ? '' : ` (${Math.round(rate*100)}%)`}</span><strong style="color:#059669">${formatCOP(comm)}</strong></div>`;
+                            });
+                          });
+                          const totalComm = Object.values(byStaff).reduce((s, st) => s + st.items.reduce((ss, it) => {
+                            const isProd = it.service_name?.startsWith('[Producto]');
+                            const rate = isProd ? 0 : (svcCommRates[`${it.staff_id}-${it.service_id}`] || staffDefaults[it.staff_id] || 0);
+                            return ss + Math.round((it.total||0) * rate);
+                          }, 0), 0);
+                          distHtml += `<div style="border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px"><div class="box-row green"><span>Total comisiones</span><strong>${formatCOP(totalComm)}</strong></div><div class="box-row blue"><span>Ganancia negocio</span><strong>${formatCOP((inv.total||0)-(inv.tip||0)-totalComm)}</strong></div></div></div>`;
+                          let payHtml = `<div class="box"><h3>Detalles de pago</h3><div class="box-row"><span>Metodo</span><strong>${ml}</strong></div>`;
                           if (inv.payment_method === 'efectivo' && inv.payment_details?.received > 0) {
-                            win.document.write(`<p style="font-size:12px">Efectivo recibido: <strong>${formatCOP(inv.payment_details.received)}</strong>${inv.payment_details.change > 0 ? ` — <span style="color:#D97706">Cambio: ${formatCOP(inv.payment_details.change)}</span>` : ''}</p>`);
+                            payHtml += `<div class="box-row"><span>Efectivo recibido</span><strong>${formatCOP(inv.payment_details.received)}</strong></div>`;
+                            if (inv.payment_details.change > 0) payHtml += `<div class="box-row" style="color:#D97706"><span>Cambio entregado</span><strong>${formatCOP(inv.payment_details.change)}</strong></div>`;
                           }
+                          payHtml += `<div class="box-row"><span>Condicion</span><strong>Contado</strong></div><div class="box-row"><span>Estado</span><strong>Pagada</strong></div><div class="box-row"><span>Fecha</span><strong>${dateStr}</strong></div>${timeStr ? `<div class="box-row"><span>Hora</span><strong>${timeStr}</strong></div>` : ''}</div>`;
+                          win.document.write(`<div class="breakdown">${distHtml}${payHtml}</div>`);
                           win.document.write(`<div class="footer"><span>Factura ${inv.invoice_number} — ${dateStr}</span><span>Generado por Plexify Studio</span></div>`);
                           win.document.write('<div class="no-print"><button onclick="window.print()">Imprimir</button></div></body></html>');
                           win.document.close();
