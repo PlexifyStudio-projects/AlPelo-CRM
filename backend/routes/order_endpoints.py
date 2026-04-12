@@ -1,5 +1,5 @@
 from typing import List, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
@@ -42,8 +42,10 @@ def _order_to_dict(o: Order) -> dict:
         "staff_name": staff_name,
         "status": o.status,
         "arrival_time": o.arrival_time.isoformat() if o.arrival_time else None,
-        "service_date": o.service_date.isoformat() if o.service_date else None,
-        "service_time": o.service_time,
+        "service_date": (o.service_date.isoformat() if o.service_date
+                         else (o.arrival_time + timedelta(hours=-5)).strftime('%Y-%m-%d') if o.arrival_time and not o.service_date else None),
+        "service_time": (o.service_time if o.service_time
+                         else (o.arrival_time + timedelta(hours=-5)).strftime('%H:%M') if o.arrival_time and not o.service_time else None),
         "service_start_time": o.service_start_time.isoformat() if o.service_start_time else None,
         "service_end_time": o.service_end_time.isoformat() if o.service_end_time else None,
         "subtotal": o.subtotal,

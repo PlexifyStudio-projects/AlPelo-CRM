@@ -182,6 +182,8 @@ const Orders = () => {
           status: statusMap[a.status] || a.status,
           payment_status: a.status === 'paid' ? 'paid' : 'unpaid',
           arrival_time: `${a.date}T${a.time || '00:00'}`,
+          service_date: a.date,
+          service_time: a.time || null,
           total: a.price || 0,
           subtotal: a.price || 0,
           items: [{ service_id: a.service_id, service_name: a.service_name || 'Servicio', price: a.price || 0, duration_minutes: a.duration_minutes, staff_id: a.staff_id, staff_name: a.staff_name || '' }],
