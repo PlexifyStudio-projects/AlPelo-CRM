@@ -658,13 +658,16 @@ const Orders = () => {
                   // Find the real invoice and open Finanzas print view
                   try {
                     const res = await fetch(`${API}/finances/invoices/`, { credentials: 'include' });
+                    console.log('[INVOICE] fetch status:', res.status);
                     if (res.ok) {
                       const allInvoices = await res.json();
+                      console.log('[INVOICE] total invoices:', allInvoices.length, 'looking for client:', o.client_name);
                       // Match by client name — find most recent invoice for this client
                       const clientInvs = allInvoices
                         .filter(i => i.client_name === o.client_name && i.status === 'paid')
                         .sort((a, b) => (b.paid_at || b.issued_date || '').localeCompare(a.paid_at || a.issued_date || ''));
                       const inv = clientInvs[0];
+                      console.log('[INVOICE] matched:', inv?.invoice_number, 'client matches:', clientInvs.length);
                       if (inv) {
                         // Redirect to Finanzas with the invoice expanded — but simpler: just open the print
                         // Use the Finanzas print logic inline
@@ -692,8 +695,9 @@ const Orders = () => {
                         }
                       }
                     }
-                  } catch {}
+                  } catch (err) { console.error('[INVOICE] error:', err); }
                   // Fallback: open drawer with revert option
+                  console.log('[INVOICE] fallback to drawer');
                   openEdit(o);
                   return;
                 }
