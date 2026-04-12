@@ -3762,13 +3762,17 @@ const TabNomina = () => {
               </div>
 
               {isExpanded && (
-                <div className="finances__nomina-detail">
-                  <div className="finances__nomina-detail-grid">
-                    <div>
-                      <div className="finances__nomina-detail-header">
-                        <h4>Servicios realizados</h4>
+                <div className="finances__nom-expand">
+                  <div className="finances__nom-expand-grid">
+                    <div className="finances__nom-expand-col">
+                      <div className="finances__nom-expand-head">
+                        <div className="finances__nom-expand-title">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                          Servicios realizados
+                        </div>
                         {selectedVisitIds.length > 0 && (
-                          <button className="finances__btn-primary" style={{ padding: '4px 12px', fontSize: 11 }} onClick={() => openPayModal(st, true)}>
+                          <button className="finances__nom-pay-selected" onClick={() => openPayModal(st, true)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                             Pagar {selectedVisitIds.length} seleccionadas
                           </button>
                         )}
@@ -3784,39 +3788,52 @@ const TabNomina = () => {
                         onVisitsLoaded={(v) => setStaffVisitsMap(prev => ({ ...prev, [st.staff_id]: v }))}
                       />
                     </div>
-                    <div>
-                      <h4>Historial de pagos</h4>
+                    <div className="finances__nom-expand-col">
+                      <div className="finances__nom-expand-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Historial de pagos
+                        {staffPayments.length > 0 && <span className="finances__nom-expand-count">{staffPayments.length}</span>}
+                      </div>
                       {staffPayments.length > 0 ? (
-                        <div className="finances__nomina-payments">
+                        <div className="finances__nom-payments">
                           {staffPayments.map(p => (
-                            <div key={p.id} className="finances__nomina-payment">
-                              <div className="finances__nomina-payment-main">
-                                <span className="finances__nomina-payment-date">{new Date(p.paid_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                <span className="finances__nomina-payment-concept">{p.concept}</span>
-                                <span className={`finances__inv-method-tag finances__inv-method-tag--${p.payment_method}`}>{p.payment_method}</span>
-                                <strong className="finances__nomina-payment-amount">{formatCOP(p.amount)}</strong>
-                              </div>
-                              <div className="finances__nomina-payment-actions">
-                                {p.receipt_number && (
-                                  <button className="finances__icon-btn" onClick={() => openPaymentReceipt(p.id, API)} title="Ver comprobante">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                                  </button>
-                                )}
-                                <button className="finances__icon-btn finances__icon-btn--danger" onClick={() => handleDeletePayment(p.id)} title="Eliminar">{Icons.trash}</button>
-                              </div>
-                              {(p.reference || p.notes || p.receipt_number) && (
-                                <div className="finances__nomina-payment-meta">
-                                  {p.receipt_number && <span className="finances__nomina-receipt-badge">{p.receipt_number}</span>}
-                                  {p.reference && <span>Ref: {p.reference}</span>}
-                                  {p.notes && <span>{p.notes}</span>}
-                                  {p.paid_by && <span>Por: {p.paid_by}</span>}
+                            <div key={p.id} className="finances__nom-payment-card">
+                              <div className="finances__nom-payment-top">
+                                <div className="finances__nom-payment-info">
+                                  <span className="finances__nom-payment-date">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+                                    {new Date(p.paid_at + 'Z').toLocaleDateString('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </span>
+                                  <span className="finances__nom-payment-concept">{p.concept}</span>
                                 </div>
-                              )}
+                                <div className="finances__nom-payment-right">
+                                  <span className="finances__nom-payment-method">{p.payment_method}</span>
+                                  <span className="finances__nom-payment-amount">{formatCOP(p.amount)}</span>
+                                </div>
+                              </div>
+                              <div className="finances__nom-payment-bottom">
+                                {p.receipt_number && <span className="finances__nom-receipt-tag">{p.receipt_number}</span>}
+                                {p.paid_by && <span className="finances__nom-payment-by">Por: {p.paid_by}</span>}
+                                {p.reference && <span className="finances__nom-payment-ref">Ref: {p.reference}</span>}
+                                <div className="finances__nom-payment-actions">
+                                  {p.receipt_number && (
+                                    <button className="finances__nom-action-btn" onClick={() => openPaymentReceipt(p.id, API)} title="Ver comprobante">
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                    </button>
+                                  )}
+                                  <button className="finances__nom-action-btn finances__nom-action-btn--danger" onClick={() => handleDeletePayment(p.id)} title="Eliminar">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.4)', padding: '12px 0' }}>Sin pagos registrados en este periodo</p>
+                        <div className="finances__nom-empty-payments">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+                          <p>Sin pagos registrados</p>
+                        </div>
                       )}
                     </div>
                   </div>

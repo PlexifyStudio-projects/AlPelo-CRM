@@ -2765,89 +2765,14 @@
     margin-left: 4px;
   }
 
-  &__nomina-detail {
-    padding: 8px 28px 24px;
-
-    h4 {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: $color-gray-400;
-      margin: 0 0 12px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid $color-gray-100;
-    }
+  &__nom-expand {
+    padding: 0 28px 28px;
+    animation: fadeInUp 250ms ease both;
   }
 
-  &__nomina-payments {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  &__nomina-payment {
-    padding: 14px 18px;
-    background: $color-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 12px;
-    transition: box-shadow 150ms ease;
-
-    &:hover {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    }
-  }
-
-  &__nomina-payment-main {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  &__nomina-payment-date {
-    font-size: 13px;
-    font-weight: 700;
-    color: $color-secondary;
-    min-width: 100px;
-  }
-
-  &__nomina-payment-concept {
-    font-size: 12px;
-    color: $color-gray-400;
-    flex: 1;
-  }
-
-  &__nomina-payment-amount {
-    font-size: 16px;
-    font-weight: 800;
-    color: $color-primary;
-    letter-spacing: -0.02em;
-  }
-
-  &__nomina-payment-meta {
-    display: flex;
-    gap: 16px;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid $color-gray-50;
-    font-size: 11px;
-    color: $color-gray-400;
-  }
-
-  &__nomina-receipt-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    background: rgba($color-primary, 0.08);
-    color: $color-primary;
-    border-radius: $border-radius-sm;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.03em;
-  }
-
-  &__nomina-detail-grid {
+  &__nom-expand-grid {
     display: grid;
-    grid-template-columns: 1.3fr 1fr;
+    grid-template-columns: 1.4fr 1fr;
     gap: 24px;
 
     @media (max-width: $breakpoint-lg) {
@@ -2855,11 +2780,217 @@
     }
   }
 
-  &__nomina-detail-header {
+  &__nom-expand-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__nom-expand-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 8px;
+  }
+
+  &__nom-expand-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-gray-500;
+
+    svg { color: $color-gray-400; }
+  }
+
+  &__nom-expand-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    background: $color-primary;
+    color: $color-white;
+    border-radius: $border-radius-full;
+    font-size: 10px;
+    font-weight: 800;
+    margin-left: 4px;
+  }
+
+  &__nom-pay-selected {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, $color-primary, darken($color-primary, 8%));
+    color: $color-white;
+    border: none;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: $font-primary;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba($color-primary, 0.2);
+    transition: all 150ms ease;
+
+    &:hover {
+      box-shadow: 0 3px 10px rgba($color-primary, 0.3);
+      transform: translateY(-1px);
+    }
+  }
+
+  &__nom-payments {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__nom-payment-card {
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 14px;
+    padding: 16px 18px;
+    transition: all 200ms ease;
+
+    &:hover {
+      border-color: $color-gray-200;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  &__nom-payment-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__nom-payment-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  &__nom-payment-date {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: $color-secondary;
+
+    svg { color: $color-gray-400; }
+  }
+
+  &__nom-payment-concept {
+    font-size: 12px;
+    color: $color-gray-400;
+  }
+
+  &__nom-payment-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  &__nom-payment-method {
+    display: inline-block;
+    padding: 3px 10px;
+    background: rgba(#059669, 0.08);
+    color: #059669;
+    border-radius: $border-radius-full;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__nom-payment-amount {
+    font-size: 18px;
+    font-weight: 800;
+    color: $color-primary;
+    letter-spacing: -0.03em;
+  }
+
+  &__nom-payment-bottom {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid $color-gray-50;
+    font-size: 11px;
+    color: $color-gray-400;
+  }
+
+  &__nom-receipt-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: linear-gradient(135deg, rgba($color-primary, 0.06), rgba($color-primary, 0.12));
+    color: $color-primary;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  &__nom-payment-by,
+  &__nom-payment-ref {
+    font-size: 11px;
+    color: $color-gray-400;
+  }
+
+  &__nom-payment-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+  }
+
+  &__nom-action-btn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $color-gray-50;
+    border: 1px solid $color-gray-100;
+    border-radius: 8px;
+    cursor: pointer;
+    color: $color-gray-500;
+    transition: all 150ms ease;
+
+    &:hover {
+      background: $color-white;
+      border-color: $color-gray-200;
+      color: $color-secondary;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    &--danger:hover {
+      background: rgba(#DC2626, 0.04);
+      border-color: rgba(#DC2626, 0.2);
+      color: #DC2626;
+    }
+  }
+
+  &__nom-empty-payments {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 32px 0;
+    color: $color-gray-300;
+
+    p {
+      font-size: 13px;
+      font-weight: 500;
+      margin: 0;
+    }
   }
 
   &__visit-list {
