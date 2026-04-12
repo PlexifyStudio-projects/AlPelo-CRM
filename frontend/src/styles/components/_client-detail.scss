@@ -21,7 +21,7 @@
   position: fixed;
   top: 0;
   right: 0;
-  width: 520px;
+  width: 680px;
   max-width: 100vw;
   height: 100vh;
   height: 100dvh;
@@ -1022,6 +1022,22 @@
       background: linear-gradient(180deg, $color-gray-300 0%, $color-gray-200 70%, transparent 100%);
       border-radius: $border-radius-full;
     }
+  }
+
+  &__history-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  &__history-section-title {
+    font-size: $font-size-xs;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $color-gray-500;
+    padding: 0 0 $spacing-sm;
+    margin: 0;
   }
 
   &__history-item {

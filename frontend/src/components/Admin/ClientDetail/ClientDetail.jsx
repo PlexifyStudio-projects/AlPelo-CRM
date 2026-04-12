@@ -28,6 +28,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const [localClient, setLocalClient] = useState(clientProp);
   const [activeTab, setActiveTab] = useState('overview');
   const [visits, setVisits] = useState([]);
+  const [allAppointments, setAllAppointments] = useState([]);
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
@@ -65,6 +66,15 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       const data = await clientService.listVisits(client.id);
       setVisits(data);
     } catch { setVisits([]); }
+    // Also load all appointments for this client
+    try {
+      const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+      const res = await fetch(`${API}/appointments/?client_id=${client.id}`, { credentials: 'include' });
+      if (res.ok) {
+        const apts = await res.json();
+        setAllAppointments(apts.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time)));
+      }
+    } catch { setAllAppointments([]); }
   }, [client?.id]);
 
   const loadNotes = useCallback(async () => {
@@ -596,7 +606,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
 
           {activeTab === 'history' && (
             <div className={`${b}__history`}>
-              {visits.length === 0 ? (
+              {allAppointments.length === 0 && visits.length === 0 ? (
                 <div className={`${b}__empty`}>
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                     <circle cx="12" cy="12" r="10" />
@@ -605,43 +615,51 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                   <p>No hay historial disponible</p>
                 </div>
               ) : (
-                visits.map((visit, idx) => {
-                  const visitStatus = visit.status || 'completed';
-                  return (
-                    <div
-                      key={visit.id}
-                      className={`${b}__history-item`}
-                      style={{ animationDelay: `${idx * 0.05}s` }}
-                    >
-                      <div className={`${b}__history-dot ${b}__history-dot--${visitStatus}`} />
-                      <div className={`${b}__history-body`}>
-                        <div className={`${b}__history-top`}>
-                          <div className={`${b}__history-service-row`}>
-                            <span className={`${b}__history-service`}>{visit.service_name}</span>
-                            {visitStatus !== 'completed' && (
-                              <span className={`${b}__history-visit-status ${b}__history-visit-status--${visitStatus}`}>
-                                {visitStatusLabels[visitStatus]}
-                              </span>
-                            )}
+                <>
+                  {allAppointments.length > 0 && (
+                    <div className={`${b}__history-section`}>
+                      <h4 className={`${b}__history-section-title`}>Citas ({allAppointments.length})</h4>
+                      {allAppointments.map((apt, idx) => {
+                        const statusColors = { confirmed: '#3B82F6', completed: '#10B981', paid: '#8B5CF6', cancelled: '#EF4444', no_show: '#F59E0B' };
+                        const statusLabels = { confirmed: 'Confirmada', completed: 'Completada', paid: 'Pagada', cancelled: 'Cancelada', no_show: 'No asistió' };
+                        const sc = statusColors[apt.status] || '#6B7280';
+                        return (
+                          <div key={apt.id} className={`${b}__history-item`} style={{ animationDelay: `${idx * 0.03}s` }}>
+                            <div className={`${b}__history-dot`} style={{ background: sc }} />
+                            <div className={`${b}__history-body`}>
+                              <div className={`${b}__history-top`}>
+                                <div className={`${b}__history-service-row`}>
+                                  <span className={`${b}__history-service`}>{apt.service_name || 'Servicio'}</span>
+                                  <span className={`${b}__history-visit-status`} style={{ color: sc, background: `${sc}15` }}>
+                                    {statusLabels[apt.status] || apt.status}
+                                  </span>
+                                </div>
+                                <span className={`${b}__history-amount`}>{formatCurrency(apt.price)}</span>
+                              </div>
+                              <div className={`${b}__history-meta`}>
+                                <span className={`${b}__history-date`}>{formatDate(apt.date)}</span>
+                                <span className={`${b}__history-sep`}>&middot;</span>
+                                <span>{apt.time}</span>
+                                {apt.staff_name && (
+                                  <>
+                                    <span className={`${b}__history-sep`}>&middot;</span>
+                                    <span className={`${b}__history-barber`}>{apt.staff_name}</span>
+                                  </>
+                                )}
+                                {apt.visit_code && (
+                                  <>
+                                    <span className={`${b}__history-sep`}>&middot;</span>
+                                    <span style={{ fontWeight: 700, color: '#2D5A3D' }}>#{apt.visit_code}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <span className={`${b}__history-amount`}>{formatCurrency(visit.amount)}</span>
-                        </div>
-                        <div className={`${b}__history-meta`}>
-                          <span className={`${b}__history-date`}>{formatDate(visit.visit_date)}</span>
-                          {visit.staff_name && (
-                            <>
-                              <span className={`${b}__history-sep`}>&middot;</span>
-                              <span className={`${b}__history-barber`}>{visit.staff_name}</span>
-                            </>
-                          )}
-                        </div>
-                        {visit.notes && (
-                          <p className={`${b}__history-note`}>{visit.notes}</p>
-                        )}
-                      </div>
+                        );
+                      })}
                     </div>
-                  );
-                })
+                  )}
+                </>
               )}
             </div>
           )}
