@@ -259,39 +259,56 @@ def staff_commissions(
     default_rate = commission.default_rate if commission else 0.4
     overrides = commission.service_overrides if commission else {}
 
-    # Get completed visits in range
-    visits = db.query(VisitHistory).filter(
-        VisitHistory.staff_id == staff.id,
-        VisitHistory.visit_date >= d_from,
-        VisitHistory.visit_date <= d_to,
-        VisitHistory.status == "completed",
-        VisitHistory.tenant_id == tid,
-    ).order_by(VisitHistory.visit_date.desc()).all()
+    # Get completed/paid appointments in range
+    from database.models import StaffServiceCommission
+    apts = db.query(Appointment).filter(
+        Appointment.staff_id == staff.id,
+        Appointment.date >= d_from,
+        Appointment.date <= d_to,
+        Appointment.status.in_(["completed", "paid"]),
+        Appointment.tenant_id == tid,
+    ).order_by(Appointment.date.desc(), Appointment.time.desc()).all()
 
     items = []
     total_revenue = 0
     total_commission = 0
+    total_paid = 0
+    total_pending = 0
 
-    for v in visits:
-        # Find matching service for overrides
-        rate = default_rate
-        svc = db.query(Service).filter(Service.name == v.service_name, Service.tenant_id == tid).first()
-        if svc and str(svc.id) in overrides:
-            rate = overrides[str(svc.id)]
+    for apt in apts:
+        # Use locked commission if available, otherwise look up per-service rate
+        if getattr(apt, 'commission_rate', None) is not None:
+            rate = apt.commission_rate
+            commission_amount = getattr(apt, 'commission_amount', None) or int((apt.price or 0) * rate)
+        else:
+            svc_comm = db.query(StaffServiceCommission).filter(
+                StaffServiceCommission.staff_id == staff.id,
+                StaffServiceCommission.service_id == apt.service_id,
+            ).first()
+            rate = svc_comm.commission_rate if svc_comm else default_rate
+            commission_amount = int((apt.price or 0) * rate)
 
-        commission_amount = int(v.amount * rate)
-        total_revenue += v.amount
+        total_revenue += apt.price or 0
         total_commission += commission_amount
 
-        client = db.query(Client).filter(Client.id == v.client_id).first()
+        is_paid = apt.staff_payment_id is not None and apt.staff_payment_id > 0
+        if is_paid:
+            total_paid += commission_amount
+        else:
+            total_pending += commission_amount
+
+        svc = db.query(Service).filter(Service.id == apt.service_id).first()
         items.append({
-            "id": v.id,
-            "date": v.visit_date.isoformat(),
-            "client_name": client.name if client else "Cliente",
-            "service_name": v.service_name,
-            "amount": v.amount,
+            "id": apt.id,
+            "date": apt.date.isoformat(),
+            "time": apt.time,
+            "client_name": apt.client_name or "Cliente",
+            "service_name": svc.name if svc else "Servicio",
+            "visit_code": getattr(apt, 'visit_code', None),
+            "amount": apt.price or 0,
             "rate": rate,
             "commission": commission_amount,
+            "is_paid": is_paid,
         })
 
     return {
@@ -301,6 +318,8 @@ def staff_commissions(
         "default_rate": default_rate,
         "total_revenue": total_revenue,
         "total_commission": total_commission,
+        "total_paid": total_paid,
+        "total_pending": total_pending,
         "services_count": len(items),
         "items": items,
     }

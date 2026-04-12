@@ -596,7 +596,6 @@ const Settings = () => {
     { id: 'brand', title: 'Marca y Logo', desc: 'Logo, nombre y colores de tu negocio', color1: '#8B5CF6', color2: '#A78BFA' },
     { id: 'tax', title: 'Impuestos / IVA', desc: 'Configura el IVA para facturas y cobros', color1: '#059669', color2: '#34D399' },
     { id: 'dian', title: 'Facturacion / DIAN', desc: 'Datos fiscales, NIT, resolucion y proveedor tecnologico', color1: '#DC2626', color2: '#F87171' },
-    { id: 'wompi', title: 'Wompi / Pagos', desc: 'Dispersiones al staff via Nequi, Bancolombia o Daviplata', color1: '#1E40AF', color2: '#3B82F6' },
   ];
 
   const [usageStats, setUsageStats] = useState(null);
