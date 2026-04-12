@@ -277,6 +277,8 @@ def create_checkout(
     staff_items: dict[int, list] = {}
     for item in data.items:
         sid = item.staff_id or staff_id
+        if not sid:
+            continue  # Skip items with no staff (e.g. products without seller)
         if sid not in staff_items:
             staff_items[sid] = []
         staff_items[sid].append(item)
