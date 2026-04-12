@@ -262,6 +262,61 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       return;
     }
 
+    const targetStaffId = newStaffId || draggingApt.staff_id;
+    const dur = draggingApt.duration_minutes || 30;
+    const newStart = timeToMin(newTime);
+    const newEnd = newStart + dur;
+
+    // Validate staff schedule / break
+    const schedules = staffSchedules[targetStaffId];
+    if (schedules) {
+      const dayIdx = date.getDay();
+      const daySchedule = Array.isArray(schedules)
+        ? schedules.find(s => s.day_of_week === dayIdx)
+        : schedules[dayIdx];
+      if (daySchedule) {
+        if (daySchedule.is_off) {
+          addNotification('Este barbero descansa ese día', 'error');
+          setDraggingApt(null);
+          return;
+        }
+        if (daySchedule.break_start && daySchedule.break_end) {
+          const brkS = timeToMin(daySchedule.break_start);
+          const brkE = timeToMin(daySchedule.break_end);
+          if (newStart < brkE && newEnd > brkS) {
+            addNotification(`Conflicto con descanso (${daySchedule.break_start} - ${daySchedule.break_end})`, 'error');
+            setDraggingApt(null);
+            return;
+          }
+        }
+      }
+    }
+
+    // Validate conflicts with other appointments (same staff)
+    const staffConflict = appointments.find(a =>
+      a.id !== draggingApt.id && a.staff_id === targetStaffId && a.date === newDate
+      && a.status !== 'cancelled' && a.status !== 'no_show'
+      && newStart < timeToMin(a.time) + (a.duration_minutes || 30) && newEnd > timeToMin(a.time)
+    );
+    if (staffConflict) {
+      const sName = staff.find(s => s.id === targetStaffId)?.name?.split(' ')[0] || 'El barbero';
+      addNotification(`${sName} ya tiene una cita a las ${staffConflict.time} (${staffConflict.client_name})`, 'error');
+      setDraggingApt(null);
+      return;
+    }
+
+    // Validate conflicts with same client (different staff, same time)
+    const clientConflict = appointments.find(a =>
+      a.id !== draggingApt.id && a.client_id === draggingApt.client_id && a.date === newDate
+      && a.status !== 'cancelled' && a.status !== 'no_show'
+      && newStart < timeToMin(a.time) + (a.duration_minutes || 30) && newEnd > timeToMin(a.time)
+    );
+    if (clientConflict) {
+      addNotification(`${draggingApt.client_name} ya tiene cita a las ${clientConflict.time}`, 'error');
+      setDraggingApt(null);
+      return;
+    }
+
     try {
       const updateData = { date: newDate, time: newTime };
       if (newStaffId && newStaffId !== draggingApt.staff_id) {
@@ -280,7 +335,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       addNotification('Error al mover cita: ' + (err.message || 'Conflicto de horario'), 'error');
     }
     setDraggingApt(null);
-  }, [draggingApt, addNotification, staff]);
+  }, [draggingApt, addNotification, staff, appointments, staffSchedules]);
 
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
   const isStaffView = view === 'staff';
