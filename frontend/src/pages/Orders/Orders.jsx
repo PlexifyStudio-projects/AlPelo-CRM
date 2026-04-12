@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import orderService from '../../services/orderService';
 import servicesService from '../../services/servicesService';
 import staffService from '../../services/staffService';
@@ -471,7 +472,7 @@ const Orders = () => {
       )}
 
       {/* ─── DRAWER ────────────────────────────────────── */}
-      {showModal && (
+      {showModal && createPortal(
         <div className={`${b}__overlay`} onClick={() => setShowModal(false)}>
           <div className={`${b}__drawer`} onClick={e => e.stopPropagation()}>
 
@@ -691,7 +692,7 @@ const Orders = () => {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 };
