@@ -92,6 +92,7 @@ const Orders = () => {
 
   // Form state
   const [form, setForm] = useState({
+    ticket_number: '',
     client_name: '', client_phone: '', client_email: '',
     client_doc_type: '', client_doc_number: '', client_birthday: '',
     staff_id: '', notes: '',
@@ -191,7 +192,7 @@ const Orders = () => {
     setSelectedClient(null);
     setIsNewClient(false);
     setClientSearchQ('');
-    setForm({ client_name: '', client_phone: '', client_email: '', client_doc_type: '', client_doc_number: '', client_birthday: '', staff_id: '', notes: '' });
+    setForm({ ticket_number: '', client_name: '', client_phone: '', client_email: '', client_doc_type: '', client_doc_number: '', client_birthday: '', staff_id: '', notes: '' });
     setFormItems([]);
     setFormProducts([]);
     setSvcSearch('');
@@ -205,6 +206,7 @@ const Orders = () => {
     setIsNewClient(!o.client_id);
     setClientSearchQ('');
     setForm({
+      ticket_number: o.ticket_number || '',
       client_name: o.client_name || '', client_phone: o.client_phone || '',
       client_email: o.client_email || '', client_doc_type: o.client_doc_type || '',
       client_doc_number: o.client_doc_number || '', client_birthday: '', staff_id: o.staff_id || '',
@@ -479,6 +481,19 @@ const Orders = () => {
             </div>
 
             <div className={`${b}__modal-body`}>
+              {/* Ticket number */}
+              <div className={`${b}__ticket-section`}>
+                <div className={`${b}__ticket-icon`}><TicketIcon /></div>
+                <div className={`${b}__ticket-field`}>
+                  <label>N° Ticket</label>
+                  <input value={form.ticket_number}
+                    onChange={e => setForm(p => ({ ...p, ticket_number: e.target.value }))}
+                    placeholder={editOrder ? editOrder.ticket_number : 'Ej: 001, A-15 (auto si vacío)'}
+                  />
+                </div>
+                {editOrder && <span className={`${b}__ticket-auto`}>{editOrder.ticket_number}</span>}
+              </div>
+
               {/* Client search / selection */}
               <div className={`${b}__section`}>
                 <h3 className={`${b}__section-title`}>Cliente</h3>

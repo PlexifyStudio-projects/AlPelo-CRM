@@ -147,7 +147,7 @@ def create_order(data: dict, db: Session = Depends(get_db), user=Depends(get_cur
     if not tid:
         raise HTTPException(400, "Tenant requerido")
 
-    ticket = _next_ticket(db, tid)
+    ticket = data.get("ticket_number", "").strip() or _next_ticket(db, tid)
 
     # Find or create client
     client_id = data.get("client_id")
