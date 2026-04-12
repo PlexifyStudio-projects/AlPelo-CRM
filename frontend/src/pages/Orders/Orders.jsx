@@ -238,18 +238,75 @@ const Orders = () => {
     ? products.filter(p => p.name.toLowerCase().includes(prodSearch.toLowerCase()) && !formProducts.some(fp => fp.product_id === p.id))
     : [];
 
+  const revenue = useMemo(() => orders.filter(o => o.payment_status === 'paid').reduce((s, o) => s + (o.total || 0), 0), [orders]);
+  const avgTime = useMemo(() => {
+    const done = orders.filter(o => o.service_start_time && o.service_end_time);
+    if (!done.length) return 0;
+    return Math.round(done.reduce((s, o) => s + (new Date(o.service_end_time) - new Date(o.service_start_time)) / 60000, 0) / done.length);
+  }, [orders]);
+
   return (
     <div className={b}>
       <div className={`${b}__header`}>
         <div className={`${b}__header-left`}>
           <h1 className={`${b}__title`}>Órdenes</h1>
-          <span className={`${b}__subtitle`}>{orders.length} total</span>
+          <span className={`${b}__subtitle`}>Gestión de servicios en proceso</span>
         </div>
         <button className={`${b}__create-btn`} onClick={openCreate}>
           <PlusIcon /> Nueva orden
         </button>
       </div>
 
+      {/* ─── Metric Cards ────────────────────────────── */}
+      <div className={`${b}__metrics`}>
+        <div className={`${b}__metric`}>
+          <div className={`${b}__metric-icon ${b}__metric-icon--warn`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+          </div>
+          <div className={`${b}__metric-data`}>
+            <span className={`${b}__metric-val`}>{counts.pending}</span>
+            <span className={`${b}__metric-label`}>En espera</span>
+          </div>
+        </div>
+        <div className={`${b}__metric`}>
+          <div className={`${b}__metric-icon ${b}__metric-icon--info`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div className={`${b}__metric-data`}>
+            <span className={`${b}__metric-val`}>{counts.in_progress}</span>
+            <span className={`${b}__metric-label`}>En proceso</span>
+          </div>
+        </div>
+        <div className={`${b}__metric`}>
+          <div className={`${b}__metric-icon ${b}__metric-icon--ok`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div className={`${b}__metric-data`}>
+            <span className={`${b}__metric-val`}>{counts.completed}</span>
+            <span className={`${b}__metric-label`}>Completadas</span>
+          </div>
+        </div>
+        <div className={`${b}__metric`}>
+          <div className={`${b}__metric-icon ${b}__metric-icon--money`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div className={`${b}__metric-data`}>
+            <span className={`${b}__metric-val`}>{formatCOP(revenue)}</span>
+            <span className={`${b}__metric-label`}>Ingresos por órdenes</span>
+          </div>
+        </div>
+        <div className={`${b}__metric`}>
+          <div className={`${b}__metric-icon ${b}__metric-icon--neutral`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div className={`${b}__metric-data`}>
+            <span className={`${b}__metric-val`}>{orders.length}</span>
+            <span className={`${b}__metric-label`}>Total hoy</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Toolbar ─────────────────────────────────── */}
       <div className={`${b}__toolbar`}>
         <div className={`${b}__search`}>
           <SearchIcon />
@@ -273,12 +330,22 @@ const Orders = () => {
       </div>
 
       {loading ? (
-        <div className={`${b}__loading`}>Cargando órdenes...</div>
+        <div className={`${b}__loading`}>
+          <div className={`${b}__spinner`} />
+          <span>Cargando órdenes...</span>
+        </div>
       ) : filtered.length === 0 ? (
         <div className={`${b}__empty`}>
-          <TicketIcon />
-          <p>No hay órdenes{statusFilter !== 'all' ? ` ${STATUS_META[statusFilter]?.label?.toLowerCase() || ''}s` : ''}</p>
-          <button onClick={openCreate}><PlusIcon /> Crear primera orden</button>
+          <div className={`${b}__empty-visual`}>
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round">
+              <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+              <path d="M13 5v2" /><path d="M13 17v2" /><path d="M13 11v2" />
+            </svg>
+          </div>
+          <h3>No hay órdenes{statusFilter !== 'all' ? ` ${STATUS_META[statusFilter]?.label?.toLowerCase() || ''}s` : ''}</h3>
+          <p>Las órdenes te permiten gestionar clientes que llegan sin cita previa.</p>
+          <p>Asigna un ticket, registra servicios y productos, y procesa el pago al final.</p>
+          <button className={`${b}__empty-btn`} onClick={openCreate}><PlusIcon /> Crear nueva orden</button>
         </div>
       ) : (
         <div className={`${b}__grid`}>
