@@ -536,6 +536,27 @@
     }
   }
 
+  // ─── Load More ─────────────────────────────────────
+  &__load-more {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+
+    button {
+      padding: 10px 32px;
+      border: 1px solid $color-gray-200;
+      border-radius: $border-radius-full;
+      background: white;
+      font-size: 0.85rem;
+      font-weight: $font-weight-semibold;
+      color: $color-gray-500;
+      cursor: pointer;
+      transition: all 150ms;
+
+      &:hover { background: $color-gray-50; border-color: $color-primary; color: $color-primary; }
+    }
+  }
+
   // ─── Drawer ────────────────────────────────────────
   &__overlay {
     position: fixed;

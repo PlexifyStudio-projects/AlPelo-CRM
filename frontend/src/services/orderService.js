@@ -16,6 +16,8 @@ const orderService = {
     if (params.date_from) q.set('date_from', params.date_from);
     if (params.date_to) q.set('date_to', params.date_to);
     if (params.search) q.set('search', params.search);
+    if (params.page) q.set('page', params.page);
+    if (params.limit) q.set('limit', params.limit);
     const qs = q.toString();
     return handleRes(await fetch(`${API}/orders/${qs ? '?' + qs : ''}`, opts));
   },

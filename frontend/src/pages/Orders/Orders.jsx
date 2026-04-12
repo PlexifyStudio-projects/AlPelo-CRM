@@ -94,6 +94,8 @@ const Orders = () => {
   const [staffList, setStaffList] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
@@ -130,13 +132,15 @@ const Orders = () => {
     setLoading(true);
     try {
       const today = toISO(new Date());
-      const [orderList, svcList, staffData, invData, aptList] = await Promise.all([
-        orderService.list(),
+      const [orderData, svcList, staffData, invData, aptList] = await Promise.all([
+        orderService.list({ page, limit: 50 }),
         servicesService.list(),
         staffService.list(),
         fetch(`${API}/inventory/products`, { credentials: 'include' }).then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] })),
         appointmentService.list({ date_from: today, date_to: today }).catch(() => []),
       ]);
+      const orderList = orderData.orders || orderData || [];
+      setTotalPages(orderData.pages || 1);
       // Auto-mark stale pending/in_progress orders as no_show after 48h
       const now = Date.now();
       const stale = orderList.filter(o =>
@@ -703,6 +707,14 @@ const Orders = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {!loading && page < totalPages && (
+        <div className={`${b}__load-more`}>
+          <button onClick={() => { setPage(p => p + 1); loadData(); }}>
+            Cargar más ({page}/{totalPages})
+          </button>
         </div>
       )}
 

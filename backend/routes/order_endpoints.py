@@ -93,6 +93,8 @@ def list_orders(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
@@ -121,8 +123,9 @@ def list_orders(
             conditions.append(Order.client_phone.ilike(f"%{digits}%"))
         q = q.filter(or_(*conditions))
 
-    orders = q.order_by(Order.created_at.desc()).limit(100).all()
-    return [_order_to_dict(o) for o in orders]
+    total = q.count()
+    orders = q.order_by(Order.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
+    return {"orders": [_order_to_dict(o) for o in orders], "total": total, "page": page, "pages": (total + limit - 1) // limit}
 
 
 # ─── GET ──────────────────────────────────────────────────
