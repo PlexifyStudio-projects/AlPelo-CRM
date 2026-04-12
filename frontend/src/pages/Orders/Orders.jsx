@@ -2,7 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import orderService from '../../services/orderService';
 import servicesService from '../../services/servicesService';
 import staffService from '../../services/staffService';
+import clientService from '../../services/clientService';
 import { useNotification } from '../../context/NotificationContext';
+import { formatPhone } from '../../utils/formatters';
 
 const b = 'orders';
 
@@ -81,10 +83,17 @@ const Orders = () => {
   const [showModal, setShowModal] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
 
+  // Client search state
+  const [clientSearchQ, setClientSearchQ] = useState('');
+  const [clientResults, setClientResults] = useState([]);
+  const [searchingClients, setSearchingClients] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [isNewClient, setIsNewClient] = useState(false);
+
   // Form state
   const [form, setForm] = useState({
     client_name: '', client_phone: '', client_email: '',
-    client_doc_type: '', client_doc_number: '',
+    client_doc_type: '', client_doc_number: '', client_birthday: '',
     staff_id: '', notes: '',
   });
   const [formItems, setFormItems] = useState([]);
@@ -117,6 +126,41 @@ const Orders = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Client search debounce
+  useEffect(() => {
+    if (!clientSearchQ.trim() || isNewClient || selectedClient) { setClientResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearchingClients(true);
+      try {
+        const res = await clientService.list({ search: clientSearchQ });
+        setClientResults(Array.isArray(res) ? res.slice(0, 8) : []);
+      } catch { setClientResults([]); }
+      finally { setSearchingClients(false); }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [clientSearchQ, isNewClient, selectedClient]);
+
+  const selectClient = (c) => {
+    setSelectedClient(c);
+    setForm(p => ({
+      ...p,
+      client_name: c.name || '',
+      client_phone: c.phone || '',
+      client_email: c.email || '',
+      client_doc_type: c.doc_type || '',
+      client_doc_number: c.doc_number || '',
+    }));
+    setClientSearchQ('');
+    setClientResults([]);
+  };
+
+  const clearClient = () => {
+    setSelectedClient(null);
+    setIsNewClient(false);
+    setClientSearchQ('');
+    setForm(p => ({ ...p, client_name: '', client_phone: '', client_email: '', client_doc_type: '', client_doc_number: '' }));
+  };
+
   const filtered = useMemo(() => {
     let list = [...orders];
     if (statusFilter !== 'all') list = list.filter(o => o.status === statusFilter);
@@ -144,22 +188,32 @@ const Orders = () => {
 
   const openCreate = () => {
     setEditOrder(null);
-    setForm({ client_name: '', client_phone: '', client_email: '', client_doc_type: '', client_doc_number: '', staff_id: '', notes: '' });
+    setSelectedClient(null);
+    setIsNewClient(false);
+    setClientSearchQ('');
+    setForm({ client_name: '', client_phone: '', client_email: '', client_doc_type: '', client_doc_number: '', client_birthday: '', staff_id: '', notes: '' });
     setFormItems([]);
     setFormProducts([]);
+    setSvcSearch('');
+    setProdSearch('');
     setShowModal(true);
   };
 
   const openEdit = (o) => {
     setEditOrder(o);
+    setSelectedClient(o.client_id ? { id: o.client_id, name: o.client_name, phone: o.client_phone } : null);
+    setIsNewClient(!o.client_id);
+    setClientSearchQ('');
     setForm({
       client_name: o.client_name || '', client_phone: o.client_phone || '',
       client_email: o.client_email || '', client_doc_type: o.client_doc_type || '',
-      client_doc_number: o.client_doc_number || '', staff_id: o.staff_id || '',
+      client_doc_number: o.client_doc_number || '', client_birthday: '', staff_id: o.staff_id || '',
       notes: o.notes || '',
     });
     setFormItems(o.items?.map(i => ({ service_id: i.service_id, service_name: i.service_name, price: i.price, duration_minutes: i.duration_minutes, staff_id: i.staff_id })) || []);
     setFormProducts(o.products?.map(p => ({ product_id: p.product_id, product_name: p.product_name, quantity: p.quantity, unit_price: p.unit_price, charged_to: p.charged_to })) || []);
+    setSvcSearch('');
+    setProdSearch('');
     setShowModal(true);
   };
 
@@ -194,6 +248,7 @@ const Orders = () => {
     try {
       const payload = {
         ...form,
+        client_id: selectedClient?.id || null,
         staff_id: form.staff_id ? parseInt(form.staff_id) : null,
         items: formItems,
         products: formProducts,
@@ -424,38 +479,100 @@ const Orders = () => {
             </div>
 
             <div className={`${b}__modal-body`}>
-              {/* Client info */}
+              {/* Client search / selection */}
               <div className={`${b}__section`}>
                 <h3 className={`${b}__section-title`}>Cliente</h3>
-                <div className={`${b}__form-grid`}>
-                  <div className={`${b}__field`}>
-                    <label>Nombre completo *</label>
-                    <input value={form.client_name} onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))} />
+
+                {selectedClient && !isNewClient ? (
+                  /* ── Client selected chip ── */
+                  <div className={`${b}__client-chip`}>
+                    <div className={`${b}__client-chip-avatar`}>
+                      {selectedClient.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}
+                    </div>
+                    <div className={`${b}__client-chip-info`}>
+                      <span className={`${b}__client-chip-name`}>{selectedClient.name}</span>
+                      {selectedClient.phone && <span className={`${b}__client-chip-phone`}>{formatPhone(selectedClient.phone)}</span>}
+                    </div>
+                    <button className={`${b}__client-chip-x`} onClick={clearClient} title="Cambiar cliente">
+                      <XIcon />
+                    </button>
                   </div>
-                  <div className={`${b}__field`}>
-                    <label>Teléfono</label>
-                    <input value={form.client_phone} onChange={e => setForm(p => ({ ...p, client_phone: e.target.value }))} />
+                ) : isNewClient ? (
+                  /* ── New client form ── */
+                  <div className={`${b}__new-client`}>
+                    <div className={`${b}__new-client-header`}>
+                      <span className={`${b}__new-client-badge`}>Nuevo cliente</span>
+                      <button className={`${b}__new-client-cancel`} onClick={clearClient}>Buscar existente</button>
+                    </div>
+                    <div className={`${b}__form-grid`}>
+                      <div className={`${b}__field`}>
+                        <label>Nombre completo *</label>
+                        <input value={form.client_name} onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))} autoFocus />
+                      </div>
+                      <div className={`${b}__field`}>
+                        <label>Teléfono *</label>
+                        <input value={form.client_phone} onChange={e => setForm(p => ({ ...p, client_phone: e.target.value }))} placeholder="3XX XXX XXXX" />
+                      </div>
+                      <div className={`${b}__field`}>
+                        <label>Correo</label>
+                        <input type="email" value={form.client_email} onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))} />
+                      </div>
+                      <div className={`${b}__field`}>
+                        <label>Fecha de nacimiento</label>
+                        <input type="date" value={form.client_birthday} onChange={e => setForm(p => ({ ...p, client_birthday: e.target.value }))} />
+                      </div>
+                      <div className={`${b}__field`}>
+                        <label>Tipo de documento</label>
+                        <select value={form.client_doc_type} onChange={e => setForm(p => ({ ...p, client_doc_type: e.target.value }))}>
+                          <option value="">Seleccionar</option>
+                          <option value="CC">Cédula de ciudadanía</option>
+                          <option value="CE">Cédula de extranjería</option>
+                          <option value="TI">Tarjeta de identidad</option>
+                          <option value="PP">Pasaporte</option>
+                          <option value="NIT">NIT</option>
+                        </select>
+                      </div>
+                      <div className={`${b}__field`}>
+                        <label>Número de documento</label>
+                        <input value={form.client_doc_number} onChange={e => setForm(p => ({ ...p, client_doc_number: e.target.value }))} />
+                      </div>
+                    </div>
                   </div>
-                  <div className={`${b}__field`}>
-                    <label>Correo</label>
-                    <input value={form.client_email} onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))} />
+                ) : (
+                  /* ── Client search ── */
+                  <div className={`${b}__client-search`}>
+                    <div className={`${b}__client-search-box`}>
+                      <SearchIcon />
+                      <input value={clientSearchQ} onChange={e => setClientSearchQ(e.target.value)}
+                        placeholder="Buscar por nombre, teléfono o documento..." autoFocus />
+                      {searchingClients && <div className={`${b}__client-search-spin`} />}
+                    </div>
+                    {clientResults.length > 0 && (
+                      <div className={`${b}__client-results`}>
+                        {clientResults.map(c => (
+                          <button key={c.id} className={`${b}__client-result`} onClick={() => selectClient(c)}>
+                            <div className={`${b}__client-result-avatar`}>
+                              {c.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}
+                            </div>
+                            <div className={`${b}__client-result-info`}>
+                              <strong>{c.name}</strong>
+                              <span>{c.phone ? formatPhone(c.phone) : 'Sin teléfono'}{c.email ? ` · ${c.email}` : ''}</span>
+                            </div>
+                            {c.status && <span className={`${b}__client-result-tag ${b}__client-result-tag--${c.status}`}>{c.status}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {clientSearchQ.length >= 2 && clientResults.length === 0 && !searchingClients && (
+                      <div className={`${b}__client-no-result`}>
+                        <span>No se encontró el cliente</span>
+                      </div>
+                    )}
+                    <button className={`${b}__new-client-btn`} onClick={() => setIsNewClient(true)}>
+                      <PlusIcon /> Registrar nuevo cliente
+                    </button>
                   </div>
-                  <div className={`${b}__field ${b}__field--half`}>
-                    <label>Tipo doc.</label>
-                    <select value={form.client_doc_type} onChange={e => setForm(p => ({ ...p, client_doc_type: e.target.value }))}>
-                      <option value="">—</option>
-                      <option value="CC">CC</option>
-                      <option value="CE">CE</option>
-                      <option value="TI">TI</option>
-                      <option value="PP">Pasaporte</option>
-                      <option value="NIT">NIT</option>
-                    </select>
-                  </div>
-                  <div className={`${b}__field ${b}__field--half`}>
-                    <label>Documento</label>
-                    <input value={form.client_doc_number} onChange={e => setForm(p => ({ ...p, client_doc_number: e.target.value }))} />
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Staff */}
