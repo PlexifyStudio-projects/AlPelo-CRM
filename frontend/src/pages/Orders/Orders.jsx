@@ -663,8 +663,8 @@ const Orders = () => {
                 {formItems.map((item, i) => {
                   const eligible = item.staff_ids?.length
                     ? staffList.filter(s => item.staff_ids.includes(s.id))
-                    : [];
-                  const assigned = eligible.find(s => s.id == item.staff_id);
+                    : staffList;
+                  const assigned = staffList.find(s => s.id == item.staff_id);
                   return (
                     <div key={i} className={`${b}__svc-card`}>
                       <div className={`${b}__svc-card-top`}>
