@@ -684,12 +684,36 @@
     }
   }
 
-  // ─── Date tabs ────────────────────────────────────
+  // ─── Date nav ─────────────────────────────────────
+  &__date-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  &__date-arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: white;
+    color: $color-gray-400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 150ms;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+    &:hover { color: $color-primary; background: rgba($color-primary, 0.04); }
+  }
+
   &__date-tabs {
     display: flex;
     gap: 4px;
-    padding: 12px 0;
-    margin-bottom: 12px;
+    flex: 1;
     overflow-x: auto;
     scrollbar-width: none;
     &::-webkit-scrollbar { display: none; }
@@ -738,6 +762,16 @@
     color: $color-secondary;
     line-height: 1;
   }
+
+  &__date-tab-month {
+    font-size: 0.55rem;
+    font-weight: $font-weight-medium;
+    color: $color-gray-300;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  &__date-tab--on &__date-tab-month { color: rgba(white, 0.7); }
 
   // ─── Sections ─────────────────────────────────────
   &__section {

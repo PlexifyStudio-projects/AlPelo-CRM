@@ -102,6 +102,7 @@ const Orders = () => {
   const [staffSchedules, setStaffSchedules] = useState({});
   const [dayApts, setDayApts] = useState([]);
   const [orderDate, setOrderDate] = useState(toISO(new Date()));
+  const [dateOffset, setDateOffset] = useState(0);
 
   // Client search state
   const [clientSearchQ, setClientSearchQ] = useState('');
@@ -695,29 +696,39 @@ const Orders = () => {
               </div>
 
               {/* ── Fecha ── */}
-              <div className={`${b}__date-tabs`}>
-                {(() => {
-                  const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-                  const today = new Date(); today.setHours(0,0,0,0);
-                  const days = [];
-                  for (let i = -2; i <= 7; i++) {
-                    const d = new Date(today); d.setDate(d.getDate() + i);
-                    days.push(d);
-                  }
-                  return days.map(d => {
-                    const iso = toISO(d);
-                    const isActive = iso === orderDate;
-                    const isToday = iso === toISO(today);
-                    return (
-                      <button key={iso}
-                        className={`${b}__date-tab ${isActive ? `${b}__date-tab--on` : ''} ${isToday ? `${b}__date-tab--today` : ''}`}
-                        onClick={() => { setOrderDate(iso); formItems.forEach((_, idx) => updateItem(idx, 'time', '')); }}>
-                        <span className={`${b}__date-tab-day`}>{DAYS[d.getDay()]}</span>
-                        <span className={`${b}__date-tab-num`}>{d.getDate()}</span>
-                      </button>
-                    );
-                  });
-                })()}
+              <div className={`${b}__date-nav`}>
+                <button className={`${b}__date-arrow`} onClick={() => setDateOffset(p => p - 7)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <div className={`${b}__date-tabs`}>
+                  {(() => {
+                    const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                    const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const days = [];
+                    for (let i = dateOffset; i < dateOffset + 10; i++) {
+                      const d = new Date(today); d.setDate(d.getDate() + i);
+                      days.push(d);
+                    }
+                    return days.map(d => {
+                      const iso = toISO(d);
+                      const isActive = iso === orderDate;
+                      const isToday = iso === toISO(today);
+                      return (
+                        <button key={iso}
+                          className={`${b}__date-tab ${isActive ? `${b}__date-tab--on` : ''} ${isToday ? `${b}__date-tab--today` : ''}`}
+                          onClick={() => { setOrderDate(iso); formItems.forEach((_, idx) => updateItem(idx, 'time', '')); }}>
+                          <span className={`${b}__date-tab-day`}>{DAYS[d.getDay()]}</span>
+                          <span className={`${b}__date-tab-num`}>{d.getDate()}</span>
+                          <span className={`${b}__date-tab-month`}>{MONTHS[d.getMonth()]}</span>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+                <button className={`${b}__date-arrow`} onClick={() => setDateOffset(p => p + 7)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
               </div>
 
               {/* ── Cliente ── */}
