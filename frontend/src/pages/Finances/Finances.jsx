@@ -1576,29 +1576,13 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
       }).catch(() => {});
   }, []);
 
-  // Load ALL per-service commission rates at once for all invoices
+  // Load ALL commission rates from one endpoint
   useEffect(() => {
-    if (!invoices.length) return;
-    const allSvcIds = new Set();
-    invoices.forEach(inv => (inv.items || []).forEach(it => { if (it.service_id) allSvcIds.add(it.service_id); }));
-    if (!allSvcIds.size) return;
-    const loadAllRates = async () => {
-      const rates = {};
-      await Promise.all([...allSvcIds].map(async (svcId) => {
-        try {
-          const res = await fetch(`${API_URL}/services/${svcId}/commissions`, { credentials: 'include' });
-          if (res.ok) {
-            const data = await res.json();
-            (data.commissions || []).forEach(c => {
-              rates[`${c.staff_id}-${svcId}`] = c.commission_rate || 0;
-            });
-          }
-        } catch {}
-      }));
-      setSvcCommRates(rates);
-    };
-    loadAllRates();
-  }, [invoices]);
+    fetch(`${API_URL}/services/all-commissions`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : { rates: {} })
+      .then(data => setSvcCommRates(data.rates || {}))
+      .catch(() => {});
+  }, []);
 
   const handleClientSearch = (value) => {
     setClientSearch(value);

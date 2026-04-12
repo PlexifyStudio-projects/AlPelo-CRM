@@ -535,6 +535,21 @@ def get_service(service_id: int, db: Session = Depends(get_db), user: Admin = De
 # COMMISSION ENDPOINTS
 # ============================================================================
 
+@router.get("/services/all-commissions")
+def get_all_commissions(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Get ALL commission rates for all staff x service combinations."""
+    from database.models import StaffServiceCommission
+    tid = safe_tid(user, db)
+    q = db.query(StaffServiceCommission)
+    if tid:
+        q = q.filter(StaffServiceCommission.tenant_id == tid)
+    all_comms = q.all()
+    result = {}
+    for c in all_comms:
+        result[f"{c.staff_id}-{c.service_id}"] = c.commission_rate or 0
+    return {"rates": result}
+
+
 @router.get("/services/{service_id}/commissions")
 def get_service_commissions(service_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     """Get commission rates for all staff assigned to this service."""
