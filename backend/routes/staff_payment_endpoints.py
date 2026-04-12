@@ -315,21 +315,34 @@ def get_payment_detail(
 
     staff = db.query(Staff).filter(Staff.id == payment.staff_id).first()
 
-    # Get linked visits
-    visits_q = db.query(VisitHistory).filter(VisitHistory.payment_id == payment.id)
-    visits_raw = visits_q.all()
+    # Get linked appointments (primary source)
+    linked_apts = db.query(Appointment).filter(Appointment.staff_payment_id == payment.id).all()
     visits = []
-    for v in visits_raw:
-        client = db.query(Client).filter(Client.id == v.client_id).first()
+    for apt in linked_apts:
         visits.append(VisitDetailItem(
-            id=v.id,
-            client_name=client.name if client else "?",
-            service_name=v.service_name,
-            amount=v.amount or 0,
-            visit_date=v.visit_date,
-            payment_method=v.payment_method,
-            notes=v.notes,
+            id=apt.id,
+            client_name=apt.client_name or "?",
+            service_name=apt.service_name or (db.query(Service).filter(Service.id == apt.service_id).first() or type('', (), {'name': 'Servicio'})).name,
+            amount=apt.price or 0,
+            visit_date=apt.date,
+            payment_method=None,
+            notes=apt.visit_code,
         ))
+
+    # Fallback: if no appointments linked, check visit history
+    if not visits:
+        visits_q = db.query(VisitHistory).filter(VisitHistory.payment_id == payment.id)
+        for v in visits_q.all():
+            client = db.query(Client).filter(Client.id == v.client_id).first()
+            visits.append(VisitDetailItem(
+                id=v.id,
+                client_name=client.name if client else "?",
+                service_name=v.service_name,
+                amount=v.amount or 0,
+                visit_date=v.visit_date,
+                payment_method=v.payment_method,
+                notes=v.notes,
+            ))
 
     # Tenant info for receipt header
     tenant = db.query(Tenant).filter(Tenant.id == (tid or payment.tenant_id)).first()

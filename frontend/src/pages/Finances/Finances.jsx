@@ -2934,18 +2934,21 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
                 {dur && <span className="finances__visit-dur">{dur}min</span>}
                 <span className="finances__visit-commission">{formatCOP(commission)}</span>
                 {paid ? (
-                  <button className="finances__visit-status finances__visit-status--liquidada" onClick={(e) => {
-                    e.stopPropagation();
-                    fetch(`${API}/appointments/${v.id}`, {
-                      method: 'PUT', credentials: 'include',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ staff_payment_id: null }),
-                    }).then(() => {
-                      setVisits(prev => prev.map(x => x.id === v.id ? { ...x, staff_payment_id: null } : x));
-                    }).catch(() => {});
-                  }} title="Clic para retornar a pendiente">
-                    Liquidada ↩
-                  </button>
+                  <div className="finances__visit-status-wrap">
+                    <span className="finances__visit-status finances__visit-status--liquidada">Liquidada</span>
+                    <button className="finances__visit-return-btn" onClick={(e) => {
+                      e.stopPropagation();
+                      fetch(`${API}/appointments/${v.id}`, {
+                        method: 'PUT', credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ staff_payment_id: null }),
+                      }).then(() => {
+                        setVisits(prev => prev.map(x => x.id === v.id ? { ...x, staff_payment_id: null } : x));
+                      }).catch(() => {});
+                    }} title="Retornar a pendiente">
+                      Retornar
+                    </button>
+                  </div>
                 ) : (
                   <span className="finances__visit-status finances__visit-status--pendiente">Pendiente</span>
                 )}
@@ -2982,8 +2985,8 @@ const openPaymentReceipt = (paymentId, apiBase) => {
       const commRate = d.commission_total && visits.length ? (d.commission_total / visits.reduce((s, v) => s + (v.amount || 0), 0) || 0.4) : 0.4;
       const visitRows = visits.map(v => {
         const comm = Math.round((v.amount || 0) * commRate);
-        const code = (v.notes || '').match(/\[CODIGO:([^\]]+)\]/);
-        return `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${new Date(v.visit_date + 'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'})}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${v.service_name}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${v.client_name||''}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:center">${code?code[1]:'#'+v.id}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right">$${(v.amount||0).toLocaleString('es-CO')}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right">$${comm.toLocaleString('es-CO')}</td></tr>`;
+        const code = v.notes || (v.notes || '').match(/\[CODIGO:([^\]]+)\]/)?.[1] || `#${v.id}`;
+        return `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${new Date(v.visit_date + 'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'})}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${v.service_name}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${v.client_name||''}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:center">${code.startsWith('#') ? code : '#'+code}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right">$${(v.amount||0).toLocaleString('es-CO')}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right">$${comm.toLocaleString('es-CO')}</td></tr>`;
       }).join('');
       const bank = d.staff_bank;
       const bankLine = bank ? (bank.preferred_payment_method === 'nequi' && bank.nequi_phone_masked ? `Nequi ${bank.nequi_phone_masked}` : bank.preferred_payment_method === 'daviplata' && bank.daviplata_phone_masked ? `Daviplata ${bank.daviplata_phone_masked}` : bank.bank_name && bank.bank_account_number_masked ? `${bank.bank_name} ${bank.bank_account_type||''} ${bank.bank_account_number_masked}` : d.payment_method) : d.payment_method;
