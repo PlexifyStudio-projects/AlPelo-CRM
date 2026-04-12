@@ -151,115 +151,195 @@
     input { cursor: pointer; }
   }
 
-  &__table-wrap {
+  // ─── Product Card Grid ─────────────────────────────
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  &__card {
     background: white;
-    border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.06);
-    overflow-x: auto;
-  }
-
-  &__table {
-    width: 100%;
-    border-collapse: collapse;
-
-    th {
-      text-align: left;
-      padding: 0.75rem 1rem;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: $color-gray-400;
-      border-bottom: 1px solid #E5E7EB;
-      white-space: nowrap;
-    }
-
-    td {
-      padding: 0.75rem 1rem;
-      font-size: 0.9rem;
-      border-bottom: 1px solid #F3F4F6;
-      vertical-align: middle;
-    }
-
-    tbody tr:hover { background: #F9FAFB; }
-  }
-
-  &__row--low-stock {
-    background: #FEF2F2 !important;
-  }
-
-  &__product-name {
+    border-radius: 14px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03);
+    transition: all 200ms;
 
-    strong { font-weight: 600; }
+    &:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.07), 0 0 0 1px rgba($color-primary, 0.08); }
+    &--low { border-left: 3px solid #EF4444; }
   }
 
-  &__sku {
-    font-size: 0.75rem;
+  &__card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  &__card-info { flex: 1; min-width: 0; }
+
+  &__card-name {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    margin-bottom: 2px;
+  }
+
+  &__card-sku {
+    font-size: 0.7rem;
     color: $color-gray-400;
-    font-family: monospace;
+    font-family: 'SF Mono', monospace;
   }
 
-  &__category-chip {
-    background: #EFF6FF;
-    color: #1E40AF;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 500;
+  &__card-cat {
+    font-size: 0.68rem;
+    font-weight: $font-weight-semibold;
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
+    background: rgba($color-primary, 0.06);
+    color: $color-primary;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
-  &__margin {
-    font-weight: 600;
-    font-size: 0.85rem;
+  &__card-prices {
+    display: flex;
+    gap: 16px;
+  }
 
+  &__card-price {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  &__card-price-label {
+    font-size: 0.62rem;
+    font-weight: $font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: $color-gray-300;
+  }
+
+  &__card-price-val {
+    font-size: 0.88rem;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+
+    &--muted { color: $color-gray-400; font-weight: $font-weight-medium; }
     &--high { color: #059669; }
     &--mid { color: #D97706; }
     &--low { color: #DC2626; }
   }
 
-  &__stock {
-    font-weight: 700;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.9rem;
-
-    &--ok { color: #059669; background: #ECFDF5; }
-    &--low { color: #DC2626; background: #FEF2F2; }
-  }
-
-  &__stock-warning {
-    font-size: 0.7rem;
-    color: #DC2626;
-    margin-left: 0.4rem;
-  }
-
-  &__actions {
+  &__card-stock {
     display: flex;
-    gap: 0.35rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    background: $color-gray-50;
+    border-radius: 10px;
   }
 
-  &__action-btn {
-    background: none;
-    border: 1px solid #E5E7EB;
-    border-radius: 6px;
-    padding: 0.35rem;
-    cursor: pointer;
+  &__card-stock-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__card-stock-label {
+    font-size: 0.72rem;
+    font-weight: $font-weight-semibold;
     color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__card-stock-val {
+    font-size: 1.1rem;
+    font-weight: $font-weight-extrabold;
+    color: $color-secondary;
+
+    &--low { color: #EF4444; }
+  }
+
+  &__card-stock-alert {
+    font-size: 0.65rem;
+    color: #EF4444;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__card-stock-controls {
+    display: flex;
+    gap: 4px;
+  }
+
+  &__stock-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s;
+    transition: all 150ms;
+
+    &--minus {
+      background: rgba(#EF4444, 0.08);
+      color: #EF4444;
+      &:hover { background: rgba(#EF4444, 0.15); }
+    }
+    &--plus {
+      background: rgba(#10B981, 0.08);
+      color: #10B981;
+      &:hover { background: rgba(#10B981, 0.15); }
+    }
+    &--adjust {
+      background: rgba($color-primary, 0.08);
+      color: $color-primary;
+      &:hover { background: rgba($color-primary, 0.15); }
+    }
+  }
+
+  &__card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid $color-gray-50;
+  }
+
+  &__card-value {
+    font-size: 0.78rem;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  &__card-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  &__card-action {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid $color-gray-100;
+    background: white;
+    color: $color-gray-400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 150ms;
 
     &:hover { border-color: $color-primary; color: $color-primary; }
-
-    &--stock {
-      border-color: #059669;
-      color: #059669;
-
-      &:hover { background: #ECFDF5; }
-    }
+    &--del:hover { border-color: #EF4444; color: #EF4444; }
 
     &--delete:hover { border-color: #DC2626; color: #DC2626; }
   }
