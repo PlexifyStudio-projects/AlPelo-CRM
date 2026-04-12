@@ -606,7 +606,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
 
           {activeTab === 'history' && (
             <div className={`${b}__history`}>
-              {allAppointments.length === 0 && visits.length === 0 ? (
+              {allAppointments.length === 0 ? (
                 <div className={`${b}__empty`}>
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                     <circle cx="12" cy="12" r="10" />
@@ -615,51 +615,57 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                   <p>No hay historial disponible</p>
                 </div>
               ) : (
-                <>
-                  {allAppointments.length > 0 && (
-                    <div className={`${b}__history-section`}>
-                      <h4 className={`${b}__history-section-title`}>Citas ({allAppointments.length})</h4>
-                      {allAppointments.map((apt, idx) => {
-                        const statusColors = { confirmed: '#3B82F6', completed: '#10B981', paid: '#8B5CF6', cancelled: '#EF4444', no_show: '#F59E0B' };
-                        const statusLabels = { confirmed: 'Confirmada', completed: 'Completada', paid: 'Pagada', cancelled: 'Cancelada', no_show: 'No asistió' };
-                        const sc = statusColors[apt.status] || '#6B7280';
-                        return (
-                          <div key={apt.id} className={`${b}__history-item`} style={{ animationDelay: `${idx * 0.03}s` }}>
-                            <div className={`${b}__history-dot`} style={{ background: sc }} />
-                            <div className={`${b}__history-body`}>
-                              <div className={`${b}__history-top`}>
-                                <div className={`${b}__history-service-row`}>
-                                  <span className={`${b}__history-service`}>{apt.service_name || 'Servicio'}</span>
-                                  <span className={`${b}__history-visit-status`} style={{ color: sc, background: `${sc}15` }}>
-                                    {statusLabels[apt.status] || apt.status}
-                                  </span>
-                                </div>
-                                <span className={`${b}__history-amount`}>{formatCurrency(apt.price)}</span>
-                              </div>
-                              <div className={`${b}__history-meta`}>
-                                <span className={`${b}__history-date`}>{formatDate(apt.date)}</span>
-                                <span className={`${b}__history-sep`}>&middot;</span>
-                                <span>{apt.time}</span>
-                                {apt.staff_name && (
-                                  <>
-                                    <span className={`${b}__history-sep`}>&middot;</span>
-                                    <span className={`${b}__history-barber`}>{apt.staff_name}</span>
-                                  </>
-                                )}
-                                {apt.visit_code && (
-                                  <>
-                                    <span className={`${b}__history-sep`}>&middot;</span>
-                                    <span style={{ fontWeight: 700, color: '#2D5A3D' }}>#{apt.visit_code}</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                <div className={`${b}__history-section`}>
+                  <h4 className={`${b}__history-section-title`}>Todas las visitas ({allAppointments.length})</h4>
+                  <div className={`${b}__history-table`}>
+                    <div className={`${b}__history-thead`}>
+                      <span>Ticket</span>
+                      <span>Servicio</span>
+                      <span>Fecha</span>
+                      <span>Horario</span>
+                      <span>Profesional</span>
+                      <span>Estado</span>
+                      <span className={`${b}__history-thead-right`}>Valor</span>
                     </div>
-                  )}
-                </>
+                    {allAppointments.map((apt, idx) => {
+                      const statusColors = { confirmed: '#3B82F6', completed: '#10B981', paid: '#8B5CF6', cancelled: '#EF4444', no_show: '#F59E0B' };
+                      const statusLabels = { confirmed: 'Confirmada', completed: 'Completada', paid: 'Pagada', cancelled: 'Cancelada', no_show: 'No asistió' };
+                      const sc = statusColors[apt.status] || '#6B7280';
+                      const dur = apt.duration_minutes || 30;
+                      const [h, m] = (apt.time || '0:0').split(':').map(Number);
+                      const endMin = h * 60 + m + dur;
+                      const endTime = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`;
+                      return (
+                        <div key={apt.id} className={`${b}__history-row ${b}__history-row--${apt.status}`} style={{ animationDelay: `${idx * 0.02}s` }}>
+                          <span className={`${b}__history-cell ${b}__history-cell--code`}>
+                            {apt.visit_code ? `#${apt.visit_code}` : '—'}
+                          </span>
+                          <span className={`${b}__history-cell ${b}__history-cell--service`}>
+                            {apt.service_name || 'Servicio'}
+                          </span>
+                          <span className={`${b}__history-cell`}>
+                            {formatDate(apt.date)}
+                          </span>
+                          <span className={`${b}__history-cell ${b}__history-cell--time`}>
+                            {apt.time} — {endTime}
+                            <small>{dur} min</small>
+                          </span>
+                          <span className={`${b}__history-cell`}>
+                            {apt.staff_name || '—'}
+                          </span>
+                          <span className={`${b}__history-cell`}>
+                            <span className={`${b}__history-badge`} style={{ color: sc, background: `${sc}12` }}>
+                              {statusLabels[apt.status] || apt.status}
+                            </span>
+                          </span>
+                          <span className={`${b}__history-cell ${b}__history-cell--price`}>
+                            {formatCurrency(apt.price)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
           )}
