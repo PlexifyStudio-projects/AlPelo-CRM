@@ -1567,7 +1567,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
 
   // Load staff default rates once
   useEffect(() => {
-    fetch(`${API}/finances/commissions/config`, { credentials: 'include' })
+    fetch(`${API_URL}/finances/commissions/config`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const m = {};
@@ -1586,7 +1586,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
       const rates = {};
       await Promise.all(svcIds.map(async (svcId) => {
         try {
-          const res = await fetch(`${API}/services/${svcId}/commissions`, { credentials: 'include' });
+          const res = await fetch(`${API_URL}/services/${svcId}/commissions`, { credentials: 'include' });
           if (res.ok) {
             const data = await res.json();
             (data.commissions || []).forEach(c => {
@@ -2267,7 +2267,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           // Invoice header
                           win.document.write(`<div class="header"><div><h2>Factura ${inv.invoice_number}</h2><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — ' + timeStr : ''}${visitCode ? ' — Codigo: ' + visitCode : ''}${inv.payment_terms === 'credito' && inv.due_date ? ` — Vence: ${new Date(inv.due_date+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}` : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}${inv.payment_terms === 'credito' ? ' — Credito' : ''}</div></div>`);
                           // Client info
-                          win.document.write(`<div class="client"><div><strong>${inv.client_name}</strong><span>Cliente</span></div>${inv.client_phone ? `<div><strong>${inv.client_phone}</strong><span>Telefono</span></div>` : ''}${inv.client_document ? `<div><strong>${inv.client_document_type || 'CC'} ${inv.client_document}</strong><span>Documento</span></div>` : ''}${inv.client_email ? `<div><strong>${inv.client_email}</strong><span>Email</span></div>` : ''}${inv.client_address ? `<div><strong>${inv.client_address}</strong><span>Direccion</span></div>` : ''}</div>`);
+                          win.document.write(`<div class="client"><div><strong>${inv.client_name || 'No registrado'}</strong><span>Cliente</span></div><div><strong>${inv.client_phone || 'No registrado'}</strong><span>Telefono</span></div><div><strong>${inv.client_document ? `${inv.client_document_type || 'CC'} ${inv.client_document}` : 'No registrado'}</strong><span>Documento</span></div><div><strong>${inv.client_email || 'No registrado'}</strong><span>Email</span></div>${visitCode ? `<div><strong>${visitCode}</strong><span>Ticket</span></div>` : ''}</div>`);
                           // Items table
                           win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
                           (inv.items || []).forEach(it => {

@@ -115,6 +115,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const [receiptFile, setReceiptFile] = useState(null);
   const [productItems, setProductItems] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
+  const [allStaff, setAllStaff] = useState([]);
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
 
@@ -185,6 +186,10 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     fetch(`${API_URL}/inventory/products`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : { products: [] })
       .then(data => setAllProducts(data.products || []))
+      .catch(() => {});
+    fetch(`${API_URL}/staff/`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setAllStaff(Array.isArray(data) ? data.filter(s => s.is_active !== false) : []))
       .catch(() => {});
   }, []);
 
@@ -342,8 +347,8 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
             service_name: `[Producto] ${p.name}`,
             quantity: p.qty || 1,
             unit_price: p.salePrice || 0,
-            staff_id: null,
-            staff_name: p.commission ? `Comision: ${fmt(p.commission)}` : null,
+            staff_id: p.staff_id || null,
+            staff_name: p.staff_name || null,
           })),
         ],
         subtotal,
@@ -537,7 +542,14 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           <div key={i} className={`${b}__product-row`}>
             <div className={`${b}__product-info`}>
               <span className={`${b}__product-name`}>{p.name}</span>
-              <span className={`${b}__product-meta`}>{fmt(p.salePrice)} x{p.qty}{p.commission ? ` · Comision: ${fmt(p.commission)}` : ''}</span>
+              <span className={`${b}__product-meta`}>{fmt(p.salePrice)} x{p.qty}</span>
+              <select className={`${b}__product-staff`} value={p.staff_id || ''}
+                onChange={e => setProductItems(prev => prev.map((pp, j) => j === i ? { ...pp, staff_id: parseInt(e.target.value) || null, staff_name: allStaff.find(s => s.id === parseInt(e.target.value))?.name || null } : pp))}>
+                <option value="">Vendido por...</option>
+                {(allStaff.length ? allStaff : items.filter(it => it.staff_id).map(it => ({ id: it.staff_id, name: it.staff_name }))).map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
             </div>
             <span className={`${b}__product-total`}>{fmt(p.salePrice * p.qty)}</span>
             <button type="button" className={`${b}__product-remove`} onClick={() => setProductItems(prev => prev.filter((_, j) => j !== i))} title="Quitar producto">
