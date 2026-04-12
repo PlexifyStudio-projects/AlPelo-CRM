@@ -653,15 +653,17 @@ const Orders = () => {
             const svcCount = o.items?.length || 0;
             const prodCount = o.products?.length || 0;
             return (
-              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={async () => {
+              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={async (e) => {
                 if (o.payment_status === 'paid') {
-                  // Find the real invoice and open Finanzas print view
+                  const card = e.currentTarget;
+                  const loader = document.createElement('div');
+                  loader.className = `${b}__card-loading`;
+                  loader.innerHTML = `<div class="${b}__card-loading-spin"></div><span>Cargando factura...</span>`;
+                  card.appendChild(loader);
                   try {
-                    const res = await fetch(`${API}/finances/invoices/`, { credentials: 'include' });
-                    console.log('[INVOICE] fetch status:', res.status);
+                    const res = await fetch(`${API}/invoices/`, { credentials: 'include' });
                     if (res.ok) {
                       const allInvoices = await res.json();
-                      console.log('[INVOICE] total invoices:', allInvoices.length, 'looking for client:', o.client_name);
                       // Match by client name — find most recent invoice for this client
                       const clientInvs = allInvoices
                         .filter(i => i.client_name === o.client_name && i.status === 'paid')
@@ -691,13 +693,13 @@ const Orders = () => {
                           win.document.write(`<div class="footer"><span>Factura ${inv.invoice_number} — ${dateStr}</span><span>Generado por Plexify Studio</span></div>`);
                           win.document.write('<div class="no-print"><button onclick="window.print()">Imprimir</button></div></body></html>');
                           win.document.close();
+                          loader.remove();
                           return;
                         }
                       }
                     }
-                  } catch (err) { console.error('[INVOICE] error:', err); }
-                  // Fallback: open drawer with revert option
-                  console.log('[INVOICE] fallback to drawer');
+                  } catch (err) { console.error('[INVOICE]', err); }
+                  loader.remove();
                   openEdit(o);
                   return;
                 }
