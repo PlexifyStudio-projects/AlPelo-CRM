@@ -15,7 +15,7 @@ from sqlalchemy import func
 from database.connection import get_db, SessionLocal
 from database.models import (
     Campaign, Client, VisitHistory, Staff, Service, Tenant, MessageTemplate,
-    WhatsAppConversation, WhatsAppMessage,
+    WhatsAppConversation, WhatsAppMessage, Appointment,
 )
 from schemas import CampaignCreate, CampaignUpdate, CampaignResponse
 from routes._helpers import (
