@@ -3244,7 +3244,7 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
   const maxRev = sorted[0]?.revenue || 1;
   const medals = ['🥇', '🥈', '🥉'];
 
-  const getDetailTab = (staffId) => detailTab[staffId] || 'comisiones';
+  const getDetailTab = (staffId) => detailTab[staffId] || 'liquidacion';
 
   return (
     <>
@@ -3347,103 +3347,107 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
                 <div className="finances__perf-detail">
                   {/* Detail sub-tabs */}
                   <div className="finances__perf-tabs">
-                    {['comisiones', 'multas', 'metricas'].map(tab => (
+                    {['liquidacion', 'metricas'].map(tab => (
                       <button
                         key={tab}
                         className={`finances__perf-tab ${activeTab === tab ? 'finances__perf-tab--active' : ''}`}
                         onClick={() => setDetailTab(p => ({ ...p, [st.staff_id]: tab }))}
                       >
-                        {tab === 'comisiones' ? 'Comisiones' : tab === 'multas' ? `Multas (${st.fines_count || 0})` : 'Metricas'}
+                        {tab === 'liquidacion' ? 'Liquidacion' : 'Metricas'}
                       </button>
                     ))}
                   </div>
 
-                  {/* ── COMISIONES TAB ── */}
-                  {activeTab === 'comisiones' && (
+                  {/* ── LIQUIDACION TAB — unified: services + fines + totals ── */}
+                  {activeTab === 'liquidacion' && (
                     <div className="finances__perf-comm">
-                      <div className="finances__perf-comm-summary">
-                        <div className="finances__perf-comm-stat">
-                          <span className="finances__perf-comm-stat-label">Ingresos generados</span>
-                          <strong>{formatCOP(st.revenue)}</strong>
+                      {/* Services commission table */}
+                      <div className="finances__perf-comm-table">
+                        <div className="finances__perf-comm-row finances__perf-comm-row--header finances__perf-comm-row--7col">
+                          <span>Servicio</span>
+                          <span>Precio</span>
+                          <span>Cant.</span>
+                          <span>Ingreso</span>
+                          <span>Tasa</span>
+                          <span>Negocio</span>
+                          <span>Profesional</span>
                         </div>
-                        <div className="finances__perf-comm-stat">
-                          <span className="finances__perf-comm-stat-label">Total comisiones</span>
-                          <strong style={{ color: '#059669' }}>{formatCOP(st.commission_amount)}</strong>
-                        </div>
-                        <div className="finances__perf-comm-stat">
-                          <span className="finances__perf-comm-stat-label">Multas</span>
-                          <strong style={{ color: (st.fines_total || 0) > 0 ? '#DC2626' : 'inherit' }}>-{formatCOP(st.fines_total || 0)}</strong>
-                        </div>
-                        <div className="finances__perf-comm-stat finances__perf-comm-stat--net">
-                          <span className="finances__perf-comm-stat-label">Neto a pagar</span>
-                          <strong style={{ color: netEarnings >= 0 ? '#059669' : '#DC2626' }}>{formatCOP(netEarnings)}</strong>
-                        </div>
-                      </div>
-
-                      {/* Per-service commission table */}
-                      {st.commission_breakdown && st.commission_breakdown.length > 0 && (
-                        <div className="finances__perf-comm-table">
-                          <div className="finances__perf-comm-row finances__perf-comm-row--header">
-                            <span>Servicio</span>
-                            <span>Cant.</span>
-                            <span>Ingreso</span>
-                            <span>Tasa</span>
-                            <span>Comision</span>
-                          </div>
-                          {st.commission_breakdown.map((cb, j) => (
-                            <div key={j} className="finances__perf-comm-row">
+                        {(st.commission_breakdown || []).map((cb, j) => {
+                          const businessKeeps = cb.revenue - cb.commission;
+                          return (
+                            <div key={j} className={`finances__perf-comm-row finances__perf-comm-row--7col ${cb.count === 0 ? 'finances__perf-comm-row--inactive' : ''}`}>
                               <span className="finances__perf-comm-svc">{cb.service}</span>
-                              <span>{cb.count}</span>
-                              <span>{formatCOP(cb.revenue)}</span>
+                              <span>{formatCOP(cb.price)}</span>
+                              <span>{cb.count || '—'}</span>
+                              <span>{cb.count > 0 ? formatCOP(cb.revenue) : '—'}</span>
                               <span className="finances__perf-comm-rate">{(cb.rate * 100).toFixed(0)}%</span>
-                              <span className="finances__perf-comm-amount">{formatCOP(cb.commission)}</span>
+                              <span>{cb.count > 0 ? formatCOP(businessKeeps) : '—'}</span>
+                              <span className="finances__perf-comm-amount">{cb.count > 0 ? formatCOP(cb.commission) : '—'}</span>
                             </div>
-                          ))}
-                          <div className="finances__perf-comm-row finances__perf-comm-row--total">
-                            <span>Total</span>
-                            <span>{st.commission_breakdown.reduce((s, c) => s + c.count, 0)}</span>
-                            <span>{formatCOP(st.revenue)}</span>
-                            <span></span>
-                            <span className="finances__perf-comm-amount">{formatCOP(st.commission_amount)}</span>
-                          </div>
+                          );
+                        })}
+                        {/* Subtotal servicios */}
+                        <div className="finances__perf-comm-row finances__perf-comm-row--7col finances__perf-comm-row--subtotal">
+                          <span>Subtotal servicios</span>
+                          <span></span>
+                          <span>{(st.commission_breakdown || []).reduce((s, c) => s + c.count, 0)}</span>
+                          <span>{formatCOP(st.revenue)}</span>
+                          <span></span>
+                          <span>{formatCOP(st.revenue - st.commission_amount)}</span>
+                          <span className="finances__perf-comm-amount">{formatCOP(st.commission_amount)}</span>
                         </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ── MULTAS TAB ── */}
-                  {activeTab === 'multas' && (
-                    <div className="finances__perf-fines">
-                      <div className="finances__perf-fines-header">
-                        <h4>Registro de multas</h4>
-                        <button className="finances__perf-fine-add-btn" onClick={() => { setFineModal(st.staff_id); setFineForm({ reason: '', amount: '', notes: '' }); }}>
-                          + Agregar multa
-                        </button>
                       </div>
 
-                      {st.fines && st.fines.length > 0 ? (
-                        <div className="finances__perf-fines-list">
-                          {st.fines.map(f => (
-                            <div key={f.id} className="finances__perf-fine-item">
-                              <div className="finances__perf-fine-info">
-                                <strong>{f.reason}</strong>
-                                <span className="finances__perf-fine-date">
-                                  {new Date(f.date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                </span>
-                                {f.notes && <small className="finances__perf-fine-notes">{f.notes}</small>}
-                              </div>
-                              <div className="finances__perf-fine-actions">
-                                <span className="finances__perf-fine-amount">-{formatCOP(f.amount)}</span>
-                                <button className="finances__perf-fine-del" onClick={() => handleDeleteFine(f.id)} title="Eliminar">
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                      {/* Fines section */}
+                      <div className="finances__perf-fines-section">
+                        <div className="finances__perf-fines-header">
+                          <h4>Multas y descuentos</h4>
+                          <button className="finances__perf-fine-add-btn" onClick={() => { setFineModal(st.staff_id); setFineForm({ reason: '', amount: '', notes: '' }); }}>
+                            + Agregar multa
+                          </button>
                         </div>
-                      ) : (
-                        <div className="finances__perf-fines-empty">Sin multas en este periodo</div>
-                      )}
+                        {st.fines && st.fines.length > 0 ? (
+                          <div className="finances__perf-fines-list">
+                            {st.fines.map(f => (
+                              <div key={f.id} className="finances__perf-fine-item">
+                                <div className="finances__perf-fine-info">
+                                  <strong>{f.reason}</strong>
+                                  <span className="finances__perf-fine-date">
+                                    {new Date(f.date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </span>
+                                  {f.notes && <small className="finances__perf-fine-notes">{f.notes}</small>}
+                                </div>
+                                <div className="finances__perf-fine-actions">
+                                  <span className="finances__perf-fine-amount">-{formatCOP(f.amount)}</span>
+                                  <button className="finances__perf-fine-del" onClick={() => handleDeleteFine(f.id)} title="Eliminar">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="finances__perf-fines-empty">Sin multas en este periodo</div>
+                        )}
+                      </div>
+
+                      {/* Final totals */}
+                      <div className="finances__perf-comm-totals">
+                        <div className="finances__perf-comm-total-row">
+                          <span>Comisiones ganadas</span>
+                          <span style={{ color: '#059669', fontWeight: 700 }}>{formatCOP(st.commission_amount)}</span>
+                        </div>
+                        {(st.fines_total || 0) > 0 && (
+                          <div className="finances__perf-comm-total-row">
+                            <span>Multas ({st.fines_count})</span>
+                            <span style={{ color: '#DC2626', fontWeight: 700 }}>-{formatCOP(st.fines_total)}</span>
+                          </div>
+                        )}
+                        <div className="finances__perf-comm-total-row finances__perf-comm-total-row--final">
+                          <span>Neto a pagar</span>
+                          <span style={{ color: netEarnings >= 0 ? '#059669' : '#DC2626', fontWeight: 800, fontSize: 18 }}>{formatCOP(netEarnings)}</span>
+                        </div>
+                      </div>
                     </div>
                   )}
 

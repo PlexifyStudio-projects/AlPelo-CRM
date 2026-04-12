@@ -1053,13 +1053,15 @@ def get_staff_performance(
         staff_q = staff_q.filter(Staff.tenant_id == tid)
     all_staff = staff_q.all()
 
-    # Service catalog for categories
+    # Service catalog for categories + full objects for assignment lookup
     svc_catalog = {}
+    svc_objects = {}  # {service_id: Service object}
     svc_q = db.query(Service)
     if tid:
         svc_q = svc_q.filter(Service.tenant_id == tid)
     for s in svc_q.all():
         svc_catalog[s.name.lower().strip()] = {"category": s.category or "Otros", "id": s.id}
+        svc_objects[s.id] = s
 
     result = []
     for s in all_staff:
@@ -1103,8 +1105,31 @@ def get_staff_performance(
         unique_clients = len(set(v.client_id for v in visits if v.client_id))
         avg_ticket = round(revenue / services_count) if services_count > 0 else 0
 
-        # Per-service commission breakdown
-        commission_breakdown = {}  # {service_name: {revenue, rate, commission}}
+        # Build full service assignment list for this staff
+        # All services where this staff is in staff_ids OR has a StaffServiceCommission
+        assigned_services = {}  # {service_id: {name, price, rate}}
+        for svc_name_lower, svc_data in svc_catalog.items():
+            sid = svc_data.get("id")
+            if not sid:
+                continue
+            # Check if staff is assigned to this service
+            svc_obj = svc_objects.get(sid)
+            if not svc_obj:
+                continue
+            staff_ids_list = svc_obj.staff_ids or []
+            if s.id in staff_ids_list or sid in ssc_map:
+                rate = ssc_map.get(sid, default_rate)
+                assigned_services[sid] = {
+                    "name": svc_obj.name,
+                    "price": svc_obj.price or 0,
+                    "rate": rate,
+                    "count": 0,
+                    "revenue": 0,
+                    "commission": 0,
+                }
+
+        # Per-service commission breakdown from actual visits
+        commission_breakdown_extra = {}  # for services done but not in assigned list
         commission_amount = 0
         for v in visits:
             names = v.service_name.split(',') if v.service_name else ['Otros']
@@ -1112,23 +1137,32 @@ def get_staff_performance(
             for name in names:
                 name = name.strip()
                 is_product = name.startswith('[Producto]')
-                # Find service_id from catalog
                 svc_info = svc_catalog.get(name.lower().strip(), {})
                 svc_id = svc_info.get("id")
-                # Get rate: StaffServiceCommission > StaffCommission default > 0.40
                 if is_product:
-                    rate = 0  # Products use fixed $ commission, not %
+                    rate = 0
                 elif svc_id and svc_id in ssc_map:
                     rate = ssc_map[svc_id]
                 else:
                     rate = default_rate
                 svc_comm = round(per_svc_amount * rate)
                 commission_amount += svc_comm
-                if name not in commission_breakdown:
-                    commission_breakdown[name] = {"revenue": 0, "rate": rate, "commission": 0, "count": 0}
-                commission_breakdown[name]["revenue"] += int(per_svc_amount)
-                commission_breakdown[name]["commission"] += svc_comm
-                commission_breakdown[name]["count"] += 1
+                # Add to assigned_services if exists, else to extras
+                if svc_id and svc_id in assigned_services:
+                    assigned_services[svc_id]["count"] += 1
+                    assigned_services[svc_id]["revenue"] += int(per_svc_amount)
+                    assigned_services[svc_id]["commission"] += svc_comm
+                else:
+                    key = name
+                    if key not in commission_breakdown_extra:
+                        commission_breakdown_extra[key] = {"name": name, "price": 0, "rate": rate, "count": 0, "revenue": 0, "commission": 0}
+                    commission_breakdown_extra[key]["count"] += 1
+                    commission_breakdown_extra[key]["revenue"] += int(per_svc_amount)
+                    commission_breakdown_extra[key]["commission"] += svc_comm
+
+        # Merge: assigned first (sorted by commission desc), then extras
+        commission_breakdown = sorted(assigned_services.values(), key=lambda x: -x["commission"])
+        commission_breakdown += sorted(commission_breakdown_extra.values(), key=lambda x: -x["commission"])
 
         # Fines in this period
         fines_q = db.query(StaffFine).filter(
@@ -1193,8 +1227,8 @@ def get_staff_performance(
             "avg_ticket": avg_ticket,
             "commission_amount": commission_amount,
             "commission_breakdown": [
-                {"service": k, "revenue": v["revenue"], "rate": v["rate"], "commission": v["commission"], "count": v["count"]}
-                for k, v in sorted(commission_breakdown.items(), key=lambda x: -x[1]["commission"])
+                {"service": cb["name"], "price": cb["price"], "revenue": cb["revenue"], "rate": cb["rate"], "commission": cb["commission"], "count": cb["count"]}
+                for cb in commission_breakdown
             ],
             "fines_total": fines_total,
             "fines_count": fines_count,
