@@ -4503,6 +4503,88 @@
     &:hover { background: rgba(0, 0, 0, 0.03); }
   }
 
+  // ── Confirm modal ──
+  &__confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 24px;
+  }
+
+  &__confirm-modal {
+    background: $color-white;
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+    text-align: center;
+
+    h3 {
+      font-size: 17px;
+      font-weight: 700;
+      margin: 12px 0 8px;
+      color: $color-secondary;
+    }
+
+    p {
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.5);
+      line-height: 1.5;
+      margin: 0 0 24px;
+    }
+  }
+
+  &__confirm-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  &__confirm-btn {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 150ms;
+    border: none;
+
+    &--cancel {
+      background: rgba(0, 0, 0, 0.05);
+      color: rgba(0, 0, 0, 0.5);
+
+      &:hover { background: rgba(0, 0, 0, 0.08); }
+    }
+
+    &--danger {
+      background: #DC2626;
+      color: $color-white;
+
+      &:hover { background: darken(#DC2626, 8%); }
+    }
+
+    &--primary {
+      background: $color-primary;
+      color: $color-white;
+
+      &:hover { background: $color-primary-dark; }
+    }
+
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
   &__spinner {
     animation: fin-spin 1s linear infinite;
   }

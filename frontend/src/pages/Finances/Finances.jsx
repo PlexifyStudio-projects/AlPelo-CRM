@@ -2927,6 +2927,8 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
   const [search, setSearch] = useState('');
   const [localFrom, setLocalFrom] = useState(parentFrom);
   const [localTo, setLocalTo] = useState(parentTo);
+  const [voidConfirm, setVoidConfirm] = useState(null); // appointment id to void
+  const [voiding, setVoiding] = useState(false);
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
   useEffect(() => { setLocalFrom(parentFrom); setLocalTo(parentTo); }, [parentFrom, parentTo]);
@@ -3082,18 +3084,9 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
                   {paid ? (
                     <div className="finances__vl-status-wrap">
                       <span className="finances__vl-badge finances__vl-badge--paid">Pagada</span>
-                      <button className="finances__vl-return" title="Devolver / Anular pago" onClick={(e) => {
+                      <button className="finances__vl-return" title="Devolver a pendiente" onClick={(e) => {
                         e.stopPropagation();
-                        if (!confirm('¿Devolver este servicio? Se anulará la factura, el checkout y se restaurará el stock.')) return;
-                        // Void checkout cascade (invoice, visit, stock) + unlink payment
-                        Promise.all([
-                          fetch(`${API}/checkouts/void-by-appointment/${v.id}`, { method: 'POST', credentials: 'include' }).catch(() => {}),
-                          fetch(`${API}/appointments/${v.id}`, {
-                            method: 'PUT', credentials: 'include',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ staff_payment_id: null, status: 'confirmed' }),
-                          }).catch(() => {}),
-                        ]).then(() => loadVisits());
+                        setVoidConfirm(v.id);
                       }}>↩</button>
                     </div>
                   ) : (
@@ -3120,6 +3113,32 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
         {finesTotal > 0 && <div className="finances__vl-summary-row" style={{ color: '#DC2626' }}><span>Multas</span><span>-{formatCOP(finesTotal)}</span></div>}
         <div className="finances__vl-summary-total"><span>Total a pagar</span><span>{formatCOP(totalCommission - finesTotal)}</span></div>
       </div>
+
+      {voidConfirm && createPortal(
+        <div className="finances__confirm-overlay" onClick={() => !voiding && setVoidConfirm(null)}>
+          <div className="finances__confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="finances__confirm-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            </div>
+            <h3>Devolver a pendiente</h3>
+            <p>Este servicio volverá a aparecer como "Sin pagar" para que pueda ser incluido en un pago futuro.</p>
+            <div className="finances__confirm-actions">
+              <button className="finances__confirm-btn finances__confirm-btn--cancel" onClick={() => setVoidConfirm(null)} disabled={voiding}>Cancelar</button>
+              <button className="finances__confirm-btn finances__confirm-btn--primary" disabled={voiding} onClick={() => {
+                setVoiding(true);
+                fetch(`${API}/appointments/${voidConfirm}`, {
+                  method: 'PUT', credentials: 'include',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ staff_payment_id: null }),
+                }).then(() => { setVoidConfirm(null); setVoiding(false); loadVisits(); }).catch(() => { setVoiding(false); });
+              }}>
+                {voiding ? 'Procesando...' : 'Devolver'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
