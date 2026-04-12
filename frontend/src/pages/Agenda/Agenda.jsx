@@ -444,7 +444,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   }, [showModal, formData.date, appointments]);
 
   useEffect(() => {
-    if (!showModal || !staff.length) return;
+    if (!staff.length) return;
     const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
     const loadSchedules = async () => {
       const schedMap = {};
@@ -460,7 +460,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       setStaffSchedules(schedMap);
     };
     loadSchedules();
-  }, [showModal, staff]);
+  }, [staff]);
 
   const computeSlots = useCallback((staffId, serviceId, assignmentIndex) => {
     const svc = serviceMap[serviceId];
