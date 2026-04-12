@@ -653,23 +653,50 @@ const Orders = () => {
             const svcCount = o.items?.length || 0;
             const prodCount = o.products?.length || 0;
             return (
-              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={() => {
+              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={async () => {
                 if (o.payment_status === 'paid') {
-                  const staffNames = [...new Set([...(o.items||[]).filter(i=>i.staff_name).map(i=>i.staff_name), o.staff_name].filter(Boolean))];
-                  const w = window.open('', '_blank', 'width=800,height=700');
-                  if (w) {
-                    w.document.write(`<html><head><title>Orden ${o.ticket_number}</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:40px;max-width:700px;margin:0 auto;color:#0f172a}h2{margin:0 0 4px}.sub{color:#64748b;font-size:13px;margin-bottom:16px}table{width:100%;border-collapse:collapse;margin:16px 0}th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #e2e8f0}th{font-size:11px;text-transform:uppercase;color:#64748b;background:#f8fafc}.r{text-align:right}.total-row td{font-weight:800;font-size:1.1rem;border-top:2px solid #0f172a}.client{background:#f8fafc;padding:14px 16px;border-radius:10px;margin:12px 0;display:flex;flex-wrap:wrap;gap:6px 24px}.client div{display:flex;flex-direction:column}.client strong{font-size:13px}.client span{font-size:11px;color:#64748b}.badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700}.paid{background:#ecfdf5;color:#059669}.staff{color:#1e40af;font-size:13px;margin-top:8px}.footer{margin-top:30px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:11px;color:#94a3b8}button{background:#1E40AF;color:#fff;border:none;padding:12px 32px;border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;display:block;margin:24px auto 0}@media print{button,.no-print{display:none}}</style></head><body>`);
-                    w.document.write(`<h2>Orden ${o.ticket_number}</h2><p class="sub">${fmtDate(o.service_date||o.arrival_time)} — ${o.service_time ? fmtTime('2000-01-01T'+o.service_time) : fmtTime(o.arrival_time)} <span class="badge paid">Pagada</span></p>`);
-                    w.document.write(`<div class="client"><div><strong>${o.client_name}</strong><span>Cliente</span></div><div><strong>${o.client_phone||'N/A'}</strong><span>Teléfono</span></div></div>`);
-                    w.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th class="r">Precio</th></tr>');
-                    (o.items||[]).forEach(it => w.document.write(`<tr><td>${it.service_name}</td><td>${it.staff_name||staffNames[0]||'—'}</td><td class="r">${formatCOP(it.price)}</td></tr>`));
-                    (o.products||[]).forEach(p => w.document.write(`<tr><td>[Producto] ${p.product_name} x${p.quantity}</td><td>${p.staff_name||'—'}</td><td class="r">${formatCOP(p.unit_price*p.quantity)}</td></tr>`));
-                    w.document.write(`<tr class="total-row"><td colspan="2">TOTAL</td><td class="r">${formatCOP(o.total)}</td></tr></table>`);
-                    if (o.payment_method) w.document.write(`<p style="font-size:13px">Método de pago: <strong>${o.payment_method}</strong></p>`);
-                    w.document.write(`<div class="footer"><span>Orden ${o.ticket_number}</span><span>Generado por Plexify Studio</span></div>`);
-                    w.document.write('<button onclick="window.print()">Imprimir</button></body></html>');
-                    w.document.close();
-                  }
+                  // Find the real invoice and open Finanzas print view
+                  try {
+                    const res = await fetch(`${API}/finances/invoices/`, { credentials: 'include' });
+                    if (res.ok) {
+                      const allInvoices = await res.json();
+                      // Match by client name + similar total (within 1000 COP) + same date
+                      const svcDate = o.service_date || '';
+                      const inv = allInvoices.find(i =>
+                        i.client_name === o.client_name &&
+                        Math.abs((i.total || 0) - (o.total || 0)) < 1000 &&
+                        (i.issued_date === svcDate || i.issued_date === svcDate.split('T')[0])
+                      ) || allInvoices.find(i => i.client_name === o.client_name && Math.abs((i.total||0) - (o.total||0)) < 1000);
+                      if (inv) {
+                        // Redirect to Finanzas with the invoice expanded — but simpler: just open the print
+                        // Use the Finanzas print logic inline
+                        const dateStr = inv.issued_date ? new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+                        const timeStr = inv.paid_at ? new Date(inv.paid_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+                        const ml = inv.payment_method || '—';
+                        const win = window.open('', '_blank', 'width=900,height=700');
+                        if (win) {
+                          win.document.write(`<html><head><title>Factura ${inv.invoice_number}</title><style>*{box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;padding:40px;max-width:750px;margin:0 auto;color:#1a1a1a;font-size:13px}hr{border:none;border-top:2px solid #1E40AF;margin:12px 0 20px}.biz{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.biz-name{font-size:18px;font-weight:800}.biz-info{text-align:right;font-size:11px;color:#64748b}.header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}.header h2{font-size:16px;margin:0}.header-right{text-align:right}.header-right strong{font-size:20px;display:block}.client{display:flex;flex-wrap:wrap;gap:6px 24px;background:#f8fafc;padding:12px 16px;border-radius:8px;margin-bottom:16px}.client div{display:flex;flex-direction:column}.client strong{font-size:12px}.client span{font-size:10px;color:#64748b}table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:12px}th{text-align:left;padding:6px 10px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#1E40AF;border-bottom:2px solid #E5E7EB}td{padding:7px 10px;border-bottom:1px solid #F3F4F6}.r{text-align:right}.staff{color:#1E40AF;font-size:11px}.product{color:#D97706}.subtotal-row td{font-size:11px;color:#64748b;border-bottom:1px dashed #E5E7EB}.discount-row td{color:#059669}.total-row td{font-size:15px;font-weight:800;border-top:2px solid #1a1a1a;border-bottom:none}.breakdown{display:flex;gap:20px;margin-top:16px}.box{flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:12px}.box h3{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid #f1f1f1}.box-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px}.green strong{color:#059669}.blue strong{color:#2563EB}.footer{margin-top:24px;padding-top:10px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:10px;color:#94a3b8}.no-print{text-align:center;margin-top:16px}button{background:#2D5A3D;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600}@media print{.no-print{display:none}}</style></head><body>`);
+                          win.document.write(`<div class="biz-name">AlPelo</div><hr>`);
+                          win.document.write(`<div class="header"><div><h2>Factura ${inv.invoice_number}</h2><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — '+timeStr : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}</div></div>`);
+                          win.document.write(`<div class="client"><div><strong>${inv.client_name||'N/A'}</strong><span>Cliente</span></div><div><strong>${inv.client_phone||'No registrado'}</strong><span>Teléfono</span></div><div><strong>${inv.client_document?(inv.client_document_type||'CC')+' '+inv.client_document:'No registrado'}</strong><span>Documento</span></div><div><strong>${inv.client_email||'No registrado'}</strong><span>Email</span></div></div>`);
+                          win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
+                          (inv.items||[]).forEach(it => { const isProd = it.service_name?.startsWith('[Producto]'); win.document.write(`<tr class="${isProd?'product':''}"><td>${it.service_name}</td><td class="staff">${it.staff_name||'—'}</td><td>${it.quantity}</td><td class="r">${formatCOP(it.unit_price)}</td><td class="r">${formatCOP(it.total)}</td></tr>`); });
+                          win.document.write(`<tr class="subtotal-row"><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
+                          if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4" style="color:#059669">Propina</td><td class="r" style="color:#059669">+${formatCOP(inv.tip)}</td></tr>`);
+                          win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr></table>`);
+                          if (inv.payment_method === 'efectivo' && inv.payment_details?.received > 0) {
+                            win.document.write(`<p style="font-size:12px">Efectivo recibido: <strong>${formatCOP(inv.payment_details.received)}</strong>${inv.payment_details.change > 0 ? ` — <span style="color:#D97706">Cambio: ${formatCOP(inv.payment_details.change)}</span>` : ''}</p>`);
+                          }
+                          win.document.write(`<div class="footer"><span>Factura ${inv.invoice_number} — ${dateStr}</span><span>Generado por Plexify Studio</span></div>`);
+                          win.document.write('<div class="no-print"><button onclick="window.print()">Imprimir</button></div></body></html>');
+                          win.document.close();
+                          return;
+                        }
+                      }
+                    }
+                  } catch {}
+                  // Fallback: open drawer with revert option
+                  openEdit(o);
                   return;
                 }
                 openEdit(o);
