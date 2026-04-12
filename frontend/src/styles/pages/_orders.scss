@@ -565,6 +565,7 @@
 
     &--start { background: rgba(59, 130, 246, 0.1); color: #3B82F6; &:hover { background: rgba(59, 130, 246, 0.18); } }
     &--pay { background: rgba(16, 185, 129, 0.1); color: #10B981; &:hover { background: rgba(16, 185, 129, 0.18); } }
+    &--unpay { background: rgba(239, 68, 68, 0.08); color: #EF4444; &:hover { background: rgba(239, 68, 68, 0.14); } }
   }
 
   &__status-bar {

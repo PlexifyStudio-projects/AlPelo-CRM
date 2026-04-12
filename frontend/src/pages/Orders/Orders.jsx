@@ -39,7 +39,7 @@ const formatCOP = (n) => {
 const fmtTime = (iso) => {
   if (!iso) return '—';
   const d = new Date(iso);
-  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
 };
 
 const SearchIcon = () => (
@@ -291,7 +291,9 @@ const Orders = () => {
   const handleStatusChange = async (order, newStatus) => {
     try {
       await orderService.update(order.id, { status: newStatus });
-      addNotification(`Orden ${STATUS_META[newStatus]?.label || newStatus}`, 'success');
+      addNotification(`Orden: ${STATUS_META[newStatus]?.label || newStatus}`, 'success');
+      // Update local editOrder so drawer reflects immediately
+      if (editOrder?.id === order.id) setEditOrder(prev => ({ ...prev, status: newStatus }));
       loadData();
     } catch (err) { addNotification(err.message, 'error'); }
   };
@@ -532,10 +534,23 @@ const Orders = () => {
                 <h2>{editOrder ? `Orden ${editOrder.ticket_number}` : 'Nueva orden'}</h2>
                 {editOrder && <span className={`${b}__drawer-status`} style={{ color: STATUS_META[editOrder.status]?.color, background: STATUS_META[editOrder.status]?.bg }}>{STATUS_META[editOrder.status]?.label}</span>}
               </div>
-              {editOrder && editOrder.payment_status === 'unpaid' && editOrder.status !== 'cancelled' && (
+              {editOrder && editOrder.payment_status === 'unpaid' && editOrder.status !== 'cancelled' && editOrder.status !== 'no_show' && (
                 <button className={`${b}__drawer-action ${b}__drawer-action--pay`}
                   onClick={() => handlePay(editOrder)}>
                   Cobrar
+                </button>
+              )}
+              {editOrder && editOrder.payment_status === 'paid' && (
+                <button className={`${b}__drawer-action ${b}__drawer-action--unpay`}
+                  onClick={async () => {
+                    try {
+                      await orderService.update(editOrder.id, { payment_status: 'unpaid', status: 'in_progress' });
+                      addNotification('Pago revertido', 'success');
+                      setShowModal(false);
+                      loadData();
+                    } catch (err) { addNotification(err.message, 'error'); }
+                  }}>
+                  Revertir pago
                 </button>
               )}
             </div>
