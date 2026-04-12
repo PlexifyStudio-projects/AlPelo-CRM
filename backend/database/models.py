@@ -154,6 +154,22 @@ class Service(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class StaffServiceCommission(Base):
+    """Commission rate per staff member per service. Rate is 0.0 to 1.0 (e.g., 0.5 = 50%)."""
+    __tablename__ = "staff_service_commission"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("public.service.id"), nullable=False)
+    commission_rate = Column(Float, nullable=False, default=0.0)  # 0.0 to 1.0
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    staff = relationship("Staff", foreign_keys=[staff_id])
+    service = relationship("Service", foreign_keys=[service_id])
+
+
 class ClientSubscription(Base):
     __tablename__ = "client_subscription"
 
@@ -190,7 +206,9 @@ class Appointment(Base):
     duration_minutes = Column(Integer, nullable=False)
     price = Column(Integer, nullable=False)  # COP
     status = Column(String, nullable=False, default="confirmed")  # confirmed, completed, cancelled, no_show
-    visit_code = Column(String, nullable=True, index=True)  # Auto-generated 4-digit visit code per day
+    visit_code = Column(String, nullable=True, index=True)  # Ticket assigned at reception
+    commission_rate = Column(Float, nullable=True)  # Locked at payment time (0.0 - 1.0)
+    commission_amount = Column(Integer, nullable=True)  # Locked: price * commission_rate
     notes = Column(Text, nullable=True)
     staff_payment_id = Column(Integer, ForeignKey("staff_payment.id"), nullable=True)  # Links to payroll payment
     created_by = Column(String, nullable=True)  # admin, lina_ia, client

@@ -136,6 +136,47 @@ const Services = () => {
   });
   const [newCategoryMode, setNewCategoryMode] = useState(false);
   const { addNotification } = useNotification();
+  const [expandedCommission, setExpandedCommission] = useState(null); // service id
+  const [commissionData, setCommissionData] = useState([]); // [{staff_id, staff_name, commission_rate}]
+  const [commissionLoading, setCommissionLoading] = useState(false);
+  const [commissionSaving, setCommissionSaving] = useState(false);
+
+  const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+  const toggleCommission = async (svcId) => {
+    if (expandedCommission === svcId) {
+      setExpandedCommission(null);
+      return;
+    }
+    setExpandedCommission(svcId);
+    setCommissionLoading(true);
+    try {
+      const res = await fetch(`${API}/services/${svcId}/commissions`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setCommissionData(data.commissions || []);
+      }
+    } catch { setCommissionData([]); }
+    finally { setCommissionLoading(false); }
+  };
+
+  const updateCommissionRate = (staffId, rate) => {
+    setCommissionData(prev => prev.map(c => c.staff_id === staffId ? { ...c, commission_rate: rate } : c));
+  };
+
+  const saveCommissions = async () => {
+    setCommissionSaving(true);
+    try {
+      const res = await fetch(`${API}/services/${expandedCommission}/commissions`, {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(commissionData.map(c => ({ staff_id: c.staff_id, commission_rate: c.commission_rate }))),
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      addNotification('Comisiones guardadas', 'success');
+    } catch (err) { addNotification(err.message, 'error'); }
+    finally { setCommissionSaving(false); }
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -357,7 +398,8 @@ const Services = () => {
 
                 <div className={`${b}__list`}>
                   {items.map(svc => (
-                    <div key={svc.id} className={`${b}__row`} style={{ '--row-accent': meta.color }} onClick={() => openEditModal(svc)}>
+                    <div key={svc.id} className={`${b}__row-wrap`}>
+                    <div className={`${b}__row`} style={{ '--row-accent': meta.color }} onClick={() => openEditModal(svc)}>
                       <div className={`${b}__row-accent`} />
                       <div className={`${b}__row-main`}>
                         <div className={`${b}__row-name`}>
@@ -409,9 +451,61 @@ const Services = () => {
                         )}
                         {togglingAiMode === svc.id ? 'Cambiando...' : (svc.ai_mode || 'auto') === 'auto' ? 'Auto' : 'Manual'}
                       </button>
+                      <button className={`${b}__row-commission ${expandedCommission === svc.id ? `${b}__row-commission--active` : ''}`}
+                        onClick={(e) => { e.stopPropagation(); toggleCommission(svc.id); }}
+                        title="Comisiones por profesional">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        %
+                      </button>
                       <button className={`${b}__row-delete`} onClick={(e) => { e.stopPropagation(); handleDelete(svc); }} title="Eliminar">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                       </button>
+                    </div>
+                    {expandedCommission === svc.id && (
+                      <div className={`${b}__commission`} onClick={e => e.stopPropagation()}>
+                        <div className={`${b}__commission-header`}>
+                          <h4>Comisiones — {svc.name}</h4>
+                          <span className={`${b}__commission-hint`}>Precio base: {formatCurrency(svc.price)}</span>
+                        </div>
+                        {commissionLoading ? (
+                          <div className={`${b}__commission-loading`}>Cargando...</div>
+                        ) : commissionData.length === 0 ? (
+                          <div className={`${b}__commission-empty`}>No hay personal asignado a este servicio</div>
+                        ) : (
+                          <>
+                            <div className={`${b}__commission-grid`}>
+                              <div className={`${b}__commission-grid-head`}>
+                                <span>Profesional</span>
+                                <span>Tasa (%)</span>
+                                <span>Gana por servicio</span>
+                              </div>
+                              {commissionData.map(c => {
+                                const amount = Math.round(svc.price * c.commission_rate);
+                                return (
+                                  <div key={c.staff_id} className={`${b}__commission-row`}>
+                                    <span className={`${b}__commission-name`}>{c.staff_name}</span>
+                                    <div className={`${b}__commission-input-wrap`}>
+                                      <input
+                                        type="number"
+                                        min="0" max="100" step="1"
+                                        value={Math.round(c.commission_rate * 100)}
+                                        onChange={e => updateCommissionRate(c.staff_id, Math.min(100, Math.max(0, Number(e.target.value))) / 100)}
+                                        className={`${b}__commission-input`}
+                                      />
+                                      <span>%</span>
+                                    </div>
+                                    <span className={`${b}__commission-amount`}>{formatCurrency(amount)}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <button className={`${b}__commission-save`} onClick={saveCommissions} disabled={commissionSaving}>
+                              {commissionSaving ? 'Guardando...' : 'Guardar comisiones'}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                     </div>
                   ))}
                 </div>

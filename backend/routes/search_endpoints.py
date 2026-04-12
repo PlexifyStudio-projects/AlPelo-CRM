@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime, date, timedelta
 from collections import Counter
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import cast, String, func
 
@@ -523,6 +523,95 @@ def get_service(service_id: int, db: Session = Depends(get_db), user: Admin = De
         **{c.name: getattr(service, c.name) for c in service.__table__.columns},
         staff_names=staff_names,
     )
+
+
+# ============================================================================
+# COMMISSION ENDPOINTS
+# ============================================================================
+
+@router.get("/services/{service_id}/commissions")
+def get_service_commissions(service_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Get commission rates for all staff assigned to this service."""
+    from database.models import StaffServiceCommission
+    tid = safe_tid(user, db)
+
+    service = db.query(Service).filter(Service.id == service_id)
+    if tid:
+        service = service.filter(Service.tenant_id == tid)
+    service = service.first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    # Get existing commissions
+    commissions = db.query(StaffServiceCommission).filter(
+        StaffServiceCommission.service_id == service_id
+    )
+    if tid:
+        commissions = commissions.filter(StaffServiceCommission.tenant_id == tid)
+    commissions = commissions.all()
+    commission_map = {c.staff_id: c.commission_rate for c in commissions}
+
+    # Build response for all assigned staff
+    staff_ids = service.staff_ids or []
+    staff_list = db.query(Staff).filter(Staff.id.in_(staff_ids)).all() if staff_ids else []
+
+    return {
+        "service_id": service_id,
+        "service_name": service.name,
+        "service_price": service.price,
+        "commissions": [
+            {
+                "staff_id": s.id,
+                "staff_name": s.name,
+                "commission_rate": commission_map.get(s.id, 0.0),
+                "commission_amount": int(service.price * commission_map.get(s.id, 0.0)),
+            }
+            for s in staff_list
+        ],
+    }
+
+
+@router.put("/services/{service_id}/commissions")
+def update_service_commissions(service_id: int, data: list = Body(...), db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Update commission rates for staff on this service. data = [{staff_id, commission_rate}, ...]"""
+    from database.models import StaffServiceCommission
+    tid = safe_tid(user, db)
+
+    service = db.query(Service).filter(Service.id == service_id)
+    if tid:
+        service = service.filter(Service.tenant_id == tid)
+    service = service.first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    for item in data:
+        staff_id = item.get("staff_id")
+        rate = item.get("commission_rate", 0.0)
+        if staff_id is None:
+            continue
+        rate = max(0.0, min(1.0, float(rate)))
+
+        existing = db.query(StaffServiceCommission).filter(
+            StaffServiceCommission.staff_id == staff_id,
+            StaffServiceCommission.service_id == service_id,
+        )
+        if tid:
+            existing = existing.filter(StaffServiceCommission.tenant_id == tid)
+        existing = existing.first()
+
+        if existing:
+            existing.commission_rate = rate
+            existing.updated_at = datetime.utcnow()
+        else:
+            db.add(StaffServiceCommission(
+                tenant_id=tid,
+                staff_id=staff_id,
+                service_id=service_id,
+                commission_rate=rate,
+            ))
+
+    db.commit()
+    return {"status": "ok", "updated": len(data)}
 
 
 # ============================================================================

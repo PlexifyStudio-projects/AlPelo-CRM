@@ -268,6 +268,22 @@ def update_appointment(appointment_id: int, data: AppointmentUpdate, db: Session
     for field, value in update_data.items():
         setattr(appointment, field, value)
 
+    # Lock commission rate when status changes to completed/paid
+    _paid_statuses = ("completed", "paid")
+    if new_status in _paid_statuses and old_status not in _paid_statuses:
+        if not getattr(appointment, 'commission_rate', None):
+            try:
+                from database.models import StaffServiceCommission
+                comm = db.query(StaffServiceCommission).filter(
+                    StaffServiceCommission.staff_id == appointment.staff_id,
+                    StaffServiceCommission.service_id == appointment.service_id,
+                ).first()
+                if comm:
+                    appointment.commission_rate = comm.commission_rate
+                    appointment.commission_amount = int((appointment.price or 0) * comm.commission_rate)
+            except Exception:
+                pass
+
     db.commit()
     db.refresh(appointment)
 

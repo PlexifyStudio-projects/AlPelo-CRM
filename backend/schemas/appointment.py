@@ -47,6 +47,8 @@ class AppointmentResponse(BaseModel):
     price: Optional[int] = 0
     status: str
     visit_code: Optional[str] = None
+    commission_rate: Optional[float] = None
+    commission_amount: Optional[int] = None
     notes: Optional[str] = None
     staff_payment_id: Optional[int] = None  # Linked payroll payment
     created_by: Optional[str] = None

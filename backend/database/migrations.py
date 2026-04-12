@@ -172,6 +172,9 @@ def run_migrations(engine):
         # Visit code / ticket
         ("client", "visit_code", "VARCHAR(20)"),
         ("appointment", "visit_code", "VARCHAR(20)"),
+        # Commission fields on appointment (locked at payment)
+        ("appointment", "commission_rate", "FLOAT"),
+        ("appointment", "commission_amount", "INTEGER"),
     ]
 
     for table, column, col_type in migrations:
@@ -550,6 +553,30 @@ def run_migrations(engine):
                 print("[MIGRATION] Created automation_execution table")
     except Exception as e:
         print(f"[MIGRATION] automation_execution table: {e}")
+
+    # --- staff_service_commission table ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='staff_service_commission'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.staff_service_commission (
+                        id SERIAL PRIMARY KEY,
+                        tenant_id INTEGER,
+                        staff_id INTEGER NOT NULL REFERENCES public.staff(id),
+                        service_id INTEGER NOT NULL REFERENCES public.service(id),
+                        commission_rate FLOAT NOT NULL DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW(),
+                        UNIQUE(tenant_id, staff_id, service_id)
+                    )
+                """))
+                print("[MIGRATION] Created staff_service_commission table")
+    except Exception as e:
+        print(f"[MIGRATION] staff_service_commission table: {e}")
 
     # NOTE: Dev users, tenants, and admins are all created from the Developer panel — no seeds.
 
