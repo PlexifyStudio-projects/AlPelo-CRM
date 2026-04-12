@@ -170,7 +170,7 @@ const Orders = () => {
           arrival_time: `${a.date}T${a.time || '00:00'}`,
           total: a.price || 0,
           subtotal: a.price || 0,
-          items: [{ service_id: a.service_id, service_name: a.service_name || 'Servicio', price: a.price || 0, duration_minutes: a.duration_minutes, staff_id: a.staff_id }],
+          items: [{ service_id: a.service_id, service_name: a.service_name || 'Servicio', price: a.price || 0, duration_minutes: a.duration_minutes, staff_id: a.staff_id, staff_name: a.staff_name || '' }],
           products: [],
           created_at: a.created_at,
         };
@@ -662,13 +662,18 @@ const Orders = () => {
                   {svcCount > 2 && <span className={`${b}__card-tag ${b}__card-tag--more`}>+{svcCount - 2}</span>}
                 </div>
 
-                {/* Staff */}
+                {/* Staff — show all unique staff from items */}
                 <div className={`${b}__card-staff`}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                  {o.staff_name
-                    ? <span className={`${b}__card-staff-name`}>{o.staff_name}</span>
-                    : <span className={`${b}__card-staff-pending`}>Por asignar</span>
-                  }
+                  {(() => {
+                    const names = [...new Set([
+                      ...(o.items || []).filter(i => i.staff_name).map(i => i.staff_name),
+                      ...(o.staff_name ? [o.staff_name] : []),
+                    ].filter(Boolean))];
+                    return names.length > 0
+                      ? names.map((n, i) => <span key={i} className={`${b}__card-staff-name`}>{n}{i < names.length - 1 ? ', ' : ''}</span>)
+                      : <span className={`${b}__card-staff-pending`}>Por asignar</span>;
+                  })()}
                 </div>
 
                 {/* Footer: time + total + payment */}
