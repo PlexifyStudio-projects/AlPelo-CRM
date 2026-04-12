@@ -423,47 +423,72 @@ const Orders = () => {
           {filtered.map(o => {
             const st = STATUS_META[o.status] || STATUS_META.pending;
             const py = PAYMENT_META[o.payment_status] || PAYMENT_META.unpaid;
+            const initials = o.client_name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '?';
+            const svcCount = o.items?.length || 0;
+            const prodCount = o.products?.length || 0;
             return (
-              <div key={o.id} className={`${b}__card`} onClick={() => openEdit(o)}>
-                <div className={`${b}__card-top`}>
-                  <div className={`${b}__card-ticket`}>
-                    <TicketIcon /> {o.ticket_number}
-                  </div>
-                  <span className={`${b}__card-status`} style={{ color: st.color, background: st.bg }}>
-                    {st.label}
-                  </span>
+              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={() => openEdit(o)}>
+                {/* Header: status accent bar */}
+                <div className={`${b}__card-accent`} style={{ background: st.color }} />
+
+                {/* Ticket + Status */}
+                <div className={`${b}__card-header`}>
+                  <span className={`${b}__card-ticket`}>{o.ticket_number}</span>
+                  <span className={`${b}__card-status`} style={{ color: st.color, background: st.bg }}>{st.label}</span>
                 </div>
 
+                {/* Client */}
                 <div className={`${b}__card-client`}>
-                  <strong>{o.client_name}</strong>
-                  {o.client_phone && <span>{o.client_phone}</span>}
+                  <div className={`${b}__card-avatar`} style={{ background: st.color }}>{initials}</div>
+                  <div className={`${b}__card-client-info`}>
+                    <strong>{o.client_name}</strong>
+                    {o.client_phone && <span>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+                      {o.client_phone}
+                    </span>}
+                  </div>
                 </div>
 
-                <div className={`${b}__card-services`}>
-                  {o.items?.slice(0, 3).map((item, i) => (
-                    <span key={i} className={`${b}__card-svc`}>{item.service_name}</span>
+                {/* Services & Products summary */}
+                <div className={`${b}__card-items`}>
+                  <div className={`${b}__card-item-group`}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
+                    <span>{svcCount} servicio{svcCount !== 1 ? 's' : ''}</span>
+                  </div>
+                  {prodCount > 0 && (
+                    <div className={`${b}__card-item-group`}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg>
+                      <span>{prodCount} producto{prodCount !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Service tags */}
+                <div className={`${b}__card-tags`}>
+                  {o.items?.slice(0, 2).map((item, i) => (
+                    <span key={i} className={`${b}__card-tag`}>{item.service_name}</span>
                   ))}
-                  {(o.items?.length || 0) > 3 && <span className={`${b}__card-svc ${b}__card-svc--more`}>+{o.items.length - 3} más</span>}
+                  {svcCount > 2 && <span className={`${b}__card-tag ${b}__card-tag--more`}>+{svcCount - 2}</span>}
                 </div>
 
+                {/* Staff */}
                 <div className={`${b}__card-staff`}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
                   {o.staff_name
-                    ? <span className={`${b}__card-assigned`}>{o.staff_name}</span>
-                    : <span className={`${b}__card-unassigned`}>Sin asignar</span>
+                    ? <span className={`${b}__card-staff-name`}>{o.staff_name}</span>
+                    : <span className={`${b}__card-staff-pending`}>Por asignar</span>
                   }
                 </div>
 
-                <div className={`${b}__card-bottom`}>
+                {/* Footer: time + total + payment */}
+                <div className={`${b}__card-footer`}>
                   <div className={`${b}__card-time`}>
                     <ClockIcon /> {fmtTime(o.arrival_time)}
                   </div>
-                  <div className={`${b}__card-total`}>
-                    {formatCOP(o.total)}
+                  <div className={`${b}__card-money`}>
+                    <span className={`${b}__card-total`}>{formatCOP(o.total)}</span>
+                    <span className={`${b}__card-pay`} style={{ color: py.color }}>{py.label}</span>
                   </div>
-                </div>
-
-                <div className={`${b}__card-pay`} style={{ color: py.color }}>
-                  {py.label}
                 </div>
               </div>
             );

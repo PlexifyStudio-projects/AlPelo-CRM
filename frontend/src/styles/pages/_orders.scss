@@ -203,104 +203,167 @@
   // ─── Card ─────────────────────────────────────────
   &__card {
     background: white;
-    border-radius: 12px;
-    border: 1px solid $color-gray-100;
-    padding: 18px;
+    border-radius: 14px;
+    padding: 0;
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: all 250ms ease;
     display: flex;
     flex-direction: column;
-    gap: 12px;
     position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.03);
 
     &:hover {
-      border-color: $color-primary-light;
-      box-shadow: 0 4px 20px rgba($color-primary, 0.08);
-      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba($color-primary, 0.1), 0 0 0 1px rgba($color-primary, 0.1);
+      transform: translateY(-3px);
     }
   }
 
-  &__card-top {
+  &__card-accent {
+    height: 3px;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  &__card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 14px 16px 0;
   }
 
   &__card-ticket {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
-    font-weight: $font-weight-bold;
-    color: $color-primary;
-    letter-spacing: 0.02em;
-
-    svg { opacity: 0.6; }
+    font-size: 0.82rem;
+    font-weight: $font-weight-extrabold;
+    color: $color-secondary;
+    letter-spacing: 0.03em;
+    font-family: 'SF Mono', 'Fira Code', monospace;
   }
 
   &__card-status {
-    font-size: 0.7rem;
-    font-weight: $font-weight-semibold;
+    font-size: 0.65rem;
+    font-weight: $font-weight-bold;
     padding: 3px 10px;
     border-radius: $border-radius-full;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
 
   &__card-client {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px 0;
+  }
+
+  &__card-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: $font-weight-bold;
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+
+  &__card-client-info {
+    flex: 1;
+    min-width: 0;
 
     strong {
-      font-size: 0.9rem;
-      font-weight: $font-weight-semibold;
+      display: block;
+      font-size: 0.92rem;
+      font-weight: $font-weight-bold;
       color: $color-secondary;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     span {
-      font-size: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
       color: $color-gray-400;
+      margin-top: 1px;
+
+      svg { opacity: 0.5; }
     }
   }
 
-  &__card-services {
+  &__card-items {
+    display: flex;
+    gap: 14px;
+    padding: 10px 16px 0;
+  }
+
+  &__card-item-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    color: $color-gray-400;
+    font-weight: $font-weight-medium;
+
+    svg { opacity: 0.4; }
+  }
+
+  &__card-tags {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+    padding: 8px 16px 0;
   }
 
-  &__card-svc {
-    font-size: 0.7rem;
-    padding: 2px 8px;
-    border-radius: $border-radius-sm;
+  &__card-tag {
+    font-size: 0.65rem;
+    font-weight: $font-weight-semibold;
+    padding: 3px 8px;
+    border-radius: 6px;
     background: $color-gray-50;
     color: $color-gray-500;
-    font-weight: $font-weight-medium;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
 
     &--more {
-      background: rgba($color-primary, 0.08);
+      background: rgba($color-primary, 0.06);
       color: $color-primary;
     }
   }
 
   &__card-staff {
-    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px 0;
+    font-size: 0.75rem;
+
+    svg { color: $color-gray-300; }
   }
 
-  &__card-assigned {
-    color: $color-primary;
+  &__card-staff-name {
     font-weight: $font-weight-semibold;
+    color: $color-primary;
   }
 
-  &__card-unassigned {
+  &__card-staff-pending {
     color: $color-gray-300;
     font-style: italic;
   }
 
-  &__card-bottom {
+  &__card-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-top: 10px;
+    padding: 12px 16px;
+    margin-top: 10px;
     border-top: 1px solid $color-gray-50;
   }
 
@@ -308,20 +371,27 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: $color-gray-400;
+    font-weight: $font-weight-medium;
+  }
+
+  &__card-money {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
   }
 
   &__card-total {
-    font-size: 0.9rem;
-    font-weight: $font-weight-bold;
+    font-size: 1rem;
+    font-weight: $font-weight-extrabold;
     color: $color-secondary;
   }
 
   &__card-pay {
-    font-size: 0.7rem;
-    font-weight: $font-weight-semibold;
-    text-align: right;
+    font-size: 0.65rem;
+    font-weight: $font-weight-bold;
   }
 
   // ─── Loading ───────────────────────────────────────

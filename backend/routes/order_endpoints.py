@@ -251,7 +251,7 @@ def update_order(order_id: int, data: dict, db: Session = Depends(get_db), user=
         raise HTTPException(404, "Orden no encontrada")
 
     # Update simple fields
-    for field in ["client_name", "client_phone", "client_email", "client_doc_type",
+    for field in ["ticket_number", "client_name", "client_phone", "client_email", "client_doc_type",
                   "client_doc_number", "staff_id", "status", "notes", "payment_method",
                   "payment_status", "tip", "discount_type", "discount_value",
                   "commission_rate", "commission_amount"]:
