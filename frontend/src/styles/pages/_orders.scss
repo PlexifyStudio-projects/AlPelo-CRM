@@ -581,12 +581,28 @@
 
   // ─── Sections ─────────────────────────────────────
   &__section {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     background: white;
-    border-radius: 12px;
-    border: 1px solid $color-gray-100;
-    padding: 16px 18px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03);
+  }
+
+  &__section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+
+    svg { color: $color-primary; opacity: 0.7; flex-shrink: 0; }
+
+    h3 {
+      font-size: 0.82rem;
+      font-weight: $font-weight-bold;
+      color: $color-secondary;
+      margin: 0;
+      flex: 1;
+    }
   }
 
   &__section-title {
@@ -596,13 +612,11 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     margin: 0 0 14px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid $color-gray-50;
   }
 
   &__optional {
+    font-size: 0.68rem;
     font-weight: $font-weight-regular;
-    text-transform: none;
     color: $color-gray-300;
     letter-spacing: 0;
   }
@@ -618,13 +632,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 0 12px;
-    border: 1px solid $color-gray-100;
-    border-radius: 8px;
-    background: $color-off-white;
-    transition: border-color 200ms;
+    padding: 0 14px;
+    border-radius: 10px;
+    background: $color-gray-50;
+    border: none;
+    transition: all 200ms;
 
-    &:focus-within { border-color: $color-primary-light; background: white; }
+    &:focus-within { background: $color-off-white; box-shadow: 0 0 0 2px rgba($color-primary, 0.15); }
 
     svg { color: $color-gray-300; flex-shrink: 0; }
 
@@ -632,7 +646,7 @@
       flex: 1;
       border: none;
       outline: none;
-      padding: 10px 0;
+      padding: 11px 0;
       font-size: 0.85rem;
       color: $color-secondary;
       background: none;
@@ -1100,16 +1114,17 @@
 
     input {
       width: 100%;
-      padding: 9px 12px;
-      border: 1px solid $color-gray-100;
-      border-radius: 8px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
       font-size: 0.85rem;
       outline: none;
       color: $color-secondary;
-      background: $color-off-white;
+      background: $color-gray-50;
+      transition: all 200ms;
 
       &::placeholder { color: $color-gray-300; }
-      &:focus { border-color: $color-primary-light; background: white; }
+      &:focus { background: $color-off-white; box-shadow: 0 0 0 2px rgba($color-primary, 0.15); }
     }
   }
 

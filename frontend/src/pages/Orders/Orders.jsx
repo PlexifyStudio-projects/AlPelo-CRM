@@ -514,7 +514,10 @@ const Orders = () => {
 
               {/* ── Cliente ── */}
               <div className={`${b}__section`}>
-                <h3 className={`${b}__section-title`}>Cliente</h3>
+                <div className={`${b}__section-header`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                  <h3>Cliente</h3>
+                </div>
                 {selectedClient && !isNewClient ? (
                   <div className={`${b}__client-chip`}>
                     <div className={`${b}__client-chip-avatar`}>
@@ -549,7 +552,7 @@ const Orders = () => {
                   <div className={`${b}__client-search`}>
                     <div className={`${b}__client-search-box`}>
                       <SearchIcon />
-                      <input value={clientSearchQ} onChange={e => setClientSearchQ(e.target.value)} placeholder="Buscar por nombre, teléfono o documento..." autoFocus />
+                      <input value={clientSearchQ} onChange={e => setClientSearchQ(e.target.value)} placeholder="Nombre, teléfono o documento..." autoFocus />
                       {searchingClients && <div className={`${b}__client-search-spin`} />}
                     </div>
                     {clientResults.length > 0 && (
@@ -576,7 +579,10 @@ const Orders = () => {
 
               {/* ── Servicios ── */}
               <div className={`${b}__section`}>
-                <h3 className={`${b}__section-title`}>Servicios</h3>
+                <div className={`${b}__section-header`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
+                  <h3>Servicios</h3>
+                </div>
                 {formItems.map((item, i) => {
                   const eligible = item.staff_ids?.length
                     ? staffList.filter(s => item.staff_ids.includes(s.id))
@@ -638,7 +644,11 @@ const Orders = () => {
 
               {/* ── Productos ── */}
               <div className={`${b}__section`}>
-                <h3 className={`${b}__section-title`}>Productos <span className={`${b}__optional`}>(opcional)</span></h3>
+                <div className={`${b}__section-header`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" /></svg>
+                  <h3>Productos</h3>
+                  <span className={`${b}__optional`}>opcional</span>
+                </div>
                 {formProducts.map((prod, i) => (
                   <div key={i} className={`${b}__prod-card`}>
                     <div className={`${b}__prod-card-top`}>
@@ -674,7 +684,11 @@ const Orders = () => {
 
               {/* ── Notas ── */}
               <div className={`${b}__section`}>
-                <h3 className={`${b}__section-title`}>Notas <span className={`${b}__optional`}>(opcional)</span></h3>
+                <div className={`${b}__section-header`}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                  <h3>Notas</h3>
+                  <span className={`${b}__optional`}>opcional</span>
+                </div>
                 <textarea className={`${b}__notes`} rows="2" value={form.notes}
                   onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Indicaciones, preferencias..." />
               </div>
