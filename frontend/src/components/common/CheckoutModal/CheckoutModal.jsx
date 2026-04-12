@@ -488,7 +488,12 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
       </div>
 
       <div className={`${b}__items`}>
-        {items.map((item) => (
+        {items.map((item) => {
+          const svcDef = allServices.find(s => s.id === item.service_id);
+          const eligible = svcDef?.staff_ids?.length
+            ? allStaff.filter(s => svcDef.staff_ids.includes(s.id))
+            : allStaff;
+          return (
           <div key={item.id} className={`${b}__item`}>
             <div className={`${b}__item-info`}>
               <span className={`${b}__item-name`}>{item.service_name}</span>
@@ -499,7 +504,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
                   setItems(prev => prev.map(i => i.id === item.id ? { ...i, staff_id: sid, staff_name: sName } : i));
                 }}>
                 <option value="">Seleccionar profesional...</option>
-                {allStaff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {eligible.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
             <div className={`${b}__item-actions`}>
@@ -511,7 +516,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
               )}
             </div>
           </div>
-        ))}
+        );})}
       </div>
 
       {showAddService ? (
