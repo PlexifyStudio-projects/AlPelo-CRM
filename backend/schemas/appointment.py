@@ -31,6 +31,7 @@ class AppointmentUpdate(BaseModel):
     status: Optional[str] = None
     visit_code: Optional[str] = None
     notes: Optional[str] = None
+    staff_payment_id: Optional[int] = None
 
 class AppointmentResponse(BaseModel):
     id: int
