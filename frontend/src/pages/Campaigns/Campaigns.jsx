@@ -75,6 +75,15 @@ const FILTER_GROUPS = [
     ],
   },
   {
+    id: 'financial',
+    label: 'Gasto',
+    icon: 'financial',
+    filters: [
+      { key: 'min_spent', type: 'number', label: 'Gasto mínimo (COP)', placeholder: 'Ej: 100000' },
+      { key: 'max_spent', type: 'number', label: 'Gasto máximo (COP)', placeholder: 'Ej: 1000000' },
+    ],
+  },
+  {
     id: 'dates',
     label: 'Periodo',
     icon: 'dates',
