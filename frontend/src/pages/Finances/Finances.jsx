@@ -1345,24 +1345,23 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
     }
   };
 
-  const { totalCommissions, totalServices, avgRate, maxPayout, staffData } = useMemo(() => {
+  const { totalCommissions, totalRevenue, totalServices, avgRate, maxPayout, staffData } = useMemo(() => {
     const tc = payouts.reduce((s, p) => s + p.commission_amount, 0);
     const tr = payouts.reduce((s, p) => s + p.total_revenue, 0);
     const ts = payouts.reduce((s, p) => s + p.services_count, 0);
-    const ar = configs.length > 0 ? configs.reduce((s, c) => s + c.default_rate, 0) / configs.length : 0.40;
+    const ar = tr > 0 ? tc / tr : 0;
     const mp = Math.max(...payouts.map(p => p.commission_amount), 1);
-    const sd = configs.map((cfg, i) => {
-      const payout = payouts.find(p => p.staff_id === cfg.staff_id);
-      return {
-        ...cfg,
-        revenue: payout?.total_revenue || 0,
-        commission: payout?.commission_amount || 0,
-        services: payout?.services_count || 0,
-        color: STAFF_COLORS[i % STAFF_COLORS.length],
-      };
-    });
+    const sd = payouts.map((p, i) => ({
+      staff_id: p.staff_id,
+      staff_name: p.staff_name,
+      rate: p.rate,
+      revenue: p.total_revenue,
+      commission: p.commission_amount,
+      services: p.services_count,
+      color: STAFF_COLORS[i % STAFF_COLORS.length],
+    }));
     return { totalCommissions: tc, totalRevenue: tr, totalServices: ts, avgRate: ar, maxPayout: mp, staffData: sd };
-  }, [configs, payouts]);
+  }, [payouts]);
 
   if (loading) {
     return (
@@ -1442,88 +1441,58 @@ const TabComisiones = ({ period, dateFrom, dateTo }) => {
         </div>
       )}
       <div className="finances__section-header">
-        <h3 className="finances__section-title">Equipo y Comisiones</h3>
+        <h3 className="finances__section-title">Desglose por profesional</h3>
+        <span className="finances__section-hint">Las tasas se configuran en Servicios → botón %</span>
       </div>
 
-      <div className="finances__staff-cards">
-        {staffData.map((staff, i) => {
-          const isEditing = editingStaff === staff.staff_id;
-          const payoutPct = maxPayout > 0 ? (staff.commission / maxPayout) * 100 : 0;
-          const initials = staff.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
-          return (
-            <div key={staff.staff_id} className="finances__staff-card" style={{ animationDelay: `${0.05 + i * 0.06}s` }}>
-              <div className="finances__sc-header">
-                <div className="finances__sc-avatar" style={{ background: `${staff.color}18`, color: staff.color, borderColor: `${staff.color}30` }}>
-                  {initials}
+      {staffData.length > 0 ? (
+        <div className="finances__comm-table">
+          <div className="finances__comm-table-head">
+            <span>Profesional</span>
+            <span>Servicios</span>
+            <span>Ingresos generados</span>
+            <span>Tasa prom.</span>
+            <span>Comisión ganada</span>
+            <span>Negocio recibe</span>
+          </div>
+          {staffData.map((staff, i) => {
+            const payoutPct = maxPayout > 0 ? (staff.commission / maxPayout) * 100 : 0;
+            const negocio = staff.revenue - staff.commission;
+            return (
+              <div key={staff.staff_id} className="finances__comm-table-row" style={{ animationDelay: `${i * 0.04}s` }}>
+                <div className="finances__comm-table-staff">
+                  <div className="finances__comm-table-avatar" style={{ background: staff.color }}>
+                    {staff.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <span>{staff.staff_name}</span>
                 </div>
-                <div className="finances__sc-info">
-                  <span className="finances__sc-name">{staff.staff_name}</span>
-                  <span className="finances__sc-meta">
-                    {staff.services > 0
-                      ? `${staff.services} servicio${staff.services !== 1 ? 's' : ''} este periodo`
-                      : 'Sin servicios este periodo'
-                    }
-                  </span>
+                <span className="finances__comm-table-count">{staff.services}</span>
+                <span className="finances__comm-table-revenue">{formatCOP(staff.revenue)}</span>
+                <span className="finances__comm-table-rate">{(staff.rate * 100).toFixed(0)}%</span>
+                <div className="finances__comm-table-earned">
+                  <span style={{ color: staff.color, fontWeight: 700 }}>{formatCOP(staff.commission)}</span>
+                  <div className="finances__comm-table-bar">
+                    <div style={{ width: `${payoutPct}%`, background: staff.color }} />
+                  </div>
                 </div>
-                <div className="finances__sc-rate-wrap">
-                  {isEditing ? (
-                    <div className="finances__sc-rate-edit">
-                      <input
-                        className="finances__input finances__input--inline"
-                        type="number" step="1" min="0" max="100"
-                        value={editRate}
-                        onChange={(e) => setEditRate(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSaveRate(staff.staff_id)}
-                        autoFocus
-                      />
-                      <span className="finances__sc-rate-pct">%</span>
-                      <button className="finances__icon-btn" onClick={() => handleSaveRate(staff.staff_id)} title="Guardar">{Icons.check}</button>
-                      <button className="finances__icon-btn" onClick={() => setEditingStaff(null)} title="Cancelar">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      className="finances__sc-rate-badge"
-                      style={{ background: `${staff.color}12`, color: staff.color, borderColor: `${staff.color}25` }}
-                      onClick={() => { setEditingStaff(staff.staff_id); setEditRate((staff.default_rate * 100).toFixed(0)); }}
-                      title="Clic para editar tasa"
-                    >
-                      {(staff.default_rate * 100).toFixed(0)}%
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    </button>
-                  )}
-                </div>
+                <span className="finances__comm-table-negocio">{formatCOP(negocio)}</span>
               </div>
-              <div className="finances__sc-financials">
-                <div className="finances__sc-fin-item">
-                  <span className="finances__sc-fin-label">Ingresos generados</span>
-                  <span className="finances__sc-fin-value">{formatCOP(staff.revenue)}</span>
-                </div>
-                <div className="finances__sc-fin-divider" />
-                <div className="finances__sc-fin-item">
-                  <span className="finances__sc-fin-label">Comision</span>
-                  <span className="finances__sc-fin-value finances__sc-fin-value--highlight" style={{ color: staff.color }}>
-                    {formatCOP(staff.commission)}
-                  </span>
-                </div>
-              </div>
-              <div className="finances__sc-bar-wrap">
-                <div className="finances__sc-bar-bg">
-                  <div className="finances__sc-bar-fill" style={{ width: `${payoutPct}%`, background: staff.color }} />
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {configs.length === 0 && (
+            );
+          })}
+          <div className="finances__comm-table-total">
+            <span>Total</span>
+            <span>{totalServices}</span>
+            <span>{formatCOP(totalRevenue)}</span>
+            <span>{(avgRate * 100).toFixed(0)}%</span>
+            <span style={{ fontWeight: 700 }}>{formatCOP(totalCommissions)}</span>
+            <span style={{ fontWeight: 700 }}>{formatCOP(totalRevenue - totalCommissions)}</span>
+          </div>
+        </div>
+      ) : (
         <div className="finances__empty-state">
           <div className="finances__empty-state-icon">{Icons.users}</div>
-          <p className="finances__empty-state-title">No hay profesionales activos</p>
-          <p className="finances__empty-state-text">Agrega personal en la seccion de Equipo para configurar sus comisiones</p>
+          <p className="finances__empty-state-title">Sin comisiones en este periodo</p>
+          <p className="finances__empty-state-text">No hay citas completadas o pagadas. Configura las tasas en Servicios → botón %</p>
         </div>
       )}
     </>

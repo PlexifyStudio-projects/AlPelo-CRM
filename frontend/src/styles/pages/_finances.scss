@@ -1624,6 +1624,123 @@
     flex-shrink: 0;
   }
 
+  &__comm-table {
+    border: 1px solid $color-gray-100;
+    border-radius: $border-radius-lg;
+    overflow: hidden;
+    background: $color-white;
+  }
+
+  &__comm-table-head {
+    display: grid;
+    grid-template-columns: 1.5fr 80px 1fr 80px 1.2fr 1fr;
+    gap: 12px;
+    padding: 12px 20px;
+    background: $color-gray-50;
+    border-bottom: 1px solid $color-gray-100;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-gray-400;
+  }
+
+  &__comm-table-row {
+    display: grid;
+    grid-template-columns: 1.5fr 80px 1fr 80px 1.2fr 1fr;
+    gap: 12px;
+    padding: 14px 20px;
+    align-items: center;
+    border-bottom: 1px solid $color-gray-50;
+    font-size: 13px;
+    animation: fadeInUp 300ms ease both;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: rgba($color-primary, 0.015); }
+  }
+
+  &__comm-table-staff {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: $color-secondary;
+  }
+
+  &__comm-table-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $color-white;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  &__comm-table-count {
+    font-weight: 700;
+    color: $color-gray-500;
+    text-align: center;
+  }
+
+  &__comm-table-revenue {
+    font-weight: 600;
+    color: $color-secondary;
+  }
+
+  &__comm-table-rate {
+    font-weight: 800;
+    color: $color-primary;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  &__comm-table-earned {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__comm-table-bar {
+    width: 100%;
+    height: 4px;
+    background: $color-gray-100;
+    border-radius: 2px;
+    overflow: hidden;
+
+    > div {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+  }
+
+  &__comm-table-negocio {
+    font-weight: 600;
+    color: $color-gray-600;
+  }
+
+  &__comm-table-total {
+    display: grid;
+    grid-template-columns: 1.5fr 80px 1fr 80px 1.2fr 1fr;
+    gap: 12px;
+    padding: 14px 20px;
+    background: $color-gray-50;
+    border-top: 2px solid $color-gray-200;
+    font-size: 13px;
+    font-weight: 700;
+    color: $color-secondary;
+  }
+
+  &__section-hint {
+    font-size: 12px;
+    color: $color-gray-400;
+    font-weight: 400;
+  }
+
   &__staff-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));

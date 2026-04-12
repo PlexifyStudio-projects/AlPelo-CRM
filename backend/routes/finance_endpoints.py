@@ -213,26 +213,64 @@ def get_commission_payouts(
     q = _tenant_filter(q, VisitHistory, tid)
     visits = q.all()
 
-    # Group by staff
+    # Also get appointments with locked commissions in period
+    from database.models import StaffServiceCommission
+    apt_q = (
+        db.query(Appointment)
+        .filter(Appointment.status.in_(["completed", "paid"]))
+        .filter(Appointment.date >= start, Appointment.date <= end)
+    )
+    apt_q = _tenant_filter(apt_q, Appointment, tid)
+    paid_apts = apt_q.all()
+
+    # Group by staff — use locked commission from appointments, fallback to per-service config
     staff_rev = {}
+    for apt in paid_apts:
+        sid = apt.staff_id
+        if sid not in staff_rev:
+            staff_rev[sid] = {"revenue": 0, "count": 0, "commission": 0}
+        staff_rev[sid]["revenue"] += apt.price or 0
+        staff_rev[sid]["count"] += 1
+
+        if getattr(apt, 'commission_amount', None) is not None:
+            # Use locked commission from payment time
+            staff_rev[sid]["commission"] += apt.commission_amount
+        elif getattr(apt, 'commission_rate', None) is not None:
+            staff_rev[sid]["commission"] += int((apt.price or 0) * apt.commission_rate)
+        else:
+            # Lookup current per-service rate
+            svc_comm = db.query(StaffServiceCommission).filter(
+                StaffServiceCommission.staff_id == sid,
+                StaffServiceCommission.service_id == apt.service_id,
+            ).first()
+            if svc_comm:
+                staff_rev[sid]["commission"] += int((apt.price or 0) * svc_comm.commission_rate)
+            else:
+                # Fallback to old default_rate
+                comm = db.query(StaffCommission).filter(StaffCommission.staff_id == sid).first()
+                rate = comm.default_rate if comm else 0.0
+                staff_rev[sid]["commission"] += int((apt.price or 0) * rate)
+
+    # Also include visit history entries not covered by appointments
     for v in visits:
         if v.staff_id not in staff_rev:
-            staff_rev[v.staff_id] = {"revenue": 0, "count": 0}
-        staff_rev[v.staff_id]["revenue"] += v.amount
-        staff_rev[v.staff_id]["count"] += 1
+            staff_rev[v.staff_id] = {"revenue": 0, "count": 0, "commission": 0}
+            staff_rev[v.staff_id]["revenue"] += v.amount
+            staff_rev[v.staff_id]["count"] += 1
+            comm = db.query(StaffCommission).filter(StaffCommission.staff_id == v.staff_id).first()
+            rate = comm.default_rate if comm else 0.0
+            staff_rev[v.staff_id]["commission"] += int(v.amount * rate)
 
     result = []
     for sid, info in staff_rev.items():
         staff = db.query(Staff).filter(Staff.id == sid).first()
-        comm = db.query(StaffCommission).filter(StaffCommission.staff_id == sid).first()
-        rate = comm.default_rate if comm else 0.40
-        commission_amount = int(info["revenue"] * rate)
+        avg_rate = info["commission"] / info["revenue"] if info["revenue"] > 0 else 0.0
         result.append(CommissionPayoutItem(
             staff_id=sid,
             staff_name=staff.name if staff else "Desconocido",
-            rate=rate,
+            rate=round(avg_rate, 4),
             total_revenue=info["revenue"],
-            commission_amount=commission_amount,
+            commission_amount=info["commission"],
             services_count=info["count"],
         ))
 
