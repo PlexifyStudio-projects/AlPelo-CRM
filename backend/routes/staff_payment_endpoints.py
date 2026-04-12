@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import Optional
 
 from database.connection import get_db
-from database.models import StaffPayment, Staff, VisitHistory, StaffCommission, Tenant, Client, Appointment, Service
+from database.models import StaffPayment, Staff, VisitHistory, StaffCommission, StaffServiceCommission, StaffFine, Tenant, Client, Appointment, Service
 from schemas.staff_payment import (
     StaffPaymentCreate, StaffPaymentUpdate, StaffPaymentResponse,
     StaffPayrollSummary, StaffPaymentDetailResponse, VisitDetailItem,
@@ -97,11 +97,25 @@ def get_payroll_summary(
     else:
         d_to = date.today()
 
+    # Build service catalog for per-service commission lookup
+    svc_catalog = {}  # {service_name_lower: service_id}
+    svc_q = db.query(Service)
+    if tid:
+        svc_q = svc_q.filter(Service.tenant_id == tid)
+    for svc in svc_q.all():
+        svc_catalog[svc.name.lower().strip()] = svc.id
+
     results = []
     for s in all_staff:
         # Commission config
         comm = db.query(StaffCommission).filter(StaffCommission.staff_id == s.id).first()
-        rate = comm.default_rate if comm else 0.40
+        default_rate = comm.default_rate if comm else 0.40
+
+        # Per-service commission rates
+        ssc_rows = db.query(StaffServiceCommission).filter(
+            StaffServiceCommission.staff_id == s.id
+        ).all()
+        ssc_map = {r.service_id: r.commission_rate for r in ssc_rows}
 
         # Earnings from visits in period
         visits_q = db.query(VisitHistory).filter(
@@ -114,13 +128,39 @@ def get_payroll_summary(
             visits_q = visits_q.filter(VisitHistory.tenant_id == tid)
         visits = visits_q.all()
 
-        total_revenue = sum(v.amount or 0 for v in visits)
+        # Per-service commission calculation
+        commission_earned = 0
+        for v in visits:
+            names = v.service_name.split(',') if v.service_name else ['Otros']
+            per_svc_amount = (v.amount or 0) / max(len(names), 1)
+            for name in names:
+                name = name.strip()
+                is_product = name.startswith('[Producto]')
+                svc_id = svc_catalog.get(name.lower().strip())
+                if is_product:
+                    rate = 0
+                elif svc_id and svc_id in ssc_map:
+                    rate = ssc_map[svc_id]
+                else:
+                    rate = default_rate
+                commission_earned += round(per_svc_amount * rate)
+
         total_tips = sum(getattr(v, 'tip', 0) or 0 for v in visits)
-        commission_earned = round(total_revenue * rate)
         total_earned = commission_earned + total_tips
 
         # Count unpaid visits (no payment_id linked)
         unpaid_count = sum(1 for v in visits if not getattr(v, 'payment_id', None))
+
+        # Fines in period
+        fines_q = db.query(StaffFine).filter(
+            StaffFine.staff_id == s.id,
+            StaffFine.fine_date >= d_from,
+            StaffFine.fine_date <= d_to,
+        )
+        if tid:
+            fines_q = fines_q.filter(StaffFine.tenant_id == tid)
+        fines = fines_q.all()
+        fines_total = sum(f.amount for f in fines)
 
         # Payments made in period
         pay_q = db.query(StaffPayment).filter(
@@ -137,18 +177,27 @@ def get_payroll_summary(
         total_paid = sum(p.amount or 0 for p in payments)
         payment_count = len(payments)
 
+        # Balance = earned - fines - paid
+        balance = total_earned - fines_total - total_paid
+
         results.append(StaffPayrollSummary(
             staff_id=s.id,
             staff_name=s.name,
             staff_role=s.role or "",
             photo_url=getattr(s, 'photo_url', None),
-            commission_rate=rate,
+            commission_rate=default_rate,
             total_earned=total_earned,
             total_paid=total_paid,
-            balance=total_earned - total_paid,
+            balance=balance,
             services_count=len(visits),
             unpaid_services_count=unpaid_count,
             payment_count=payment_count,
+            fines_total=fines_total,
+            fines_count=len(fines),
+            fines=[
+                {"id": f.id, "reason": f.reason, "amount": f.amount, "fine_date": f.fine_date.isoformat(), "notes": f.notes or ""}
+                for f in fines
+            ],
             preferred_payment_method=getattr(s, 'preferred_payment_method', None),
             has_bank_info=_staff_has_bank_info(s),
         ))

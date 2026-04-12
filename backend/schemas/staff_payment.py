@@ -58,6 +58,13 @@ class StaffPaymentResponse(BaseModel):
         from_attributes = True
 
 
+class FineItem(BaseModel):
+    id: int
+    reason: str
+    amount: int
+    fine_date: str
+    notes: str = ""
+
 class StaffPayrollSummary(BaseModel):
     staff_id: int
     staff_name: str
@@ -70,6 +77,10 @@ class StaffPayrollSummary(BaseModel):
     services_count: int = 0
     unpaid_services_count: int = 0  # Visits not yet linked to any payment
     payment_count: int = 0
+    # Fines
+    fines_total: int = 0
+    fines_count: int = 0
+    fines: list[FineItem] = []
     # Bank info summary for pay modal
     preferred_payment_method: Optional[str] = None
     has_bank_info: bool = False

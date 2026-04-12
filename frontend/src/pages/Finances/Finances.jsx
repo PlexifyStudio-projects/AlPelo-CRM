@@ -3822,6 +3822,7 @@ const TabNomina = () => {
   const totalOwed = summary.reduce((s, st) => s + Math.max(0, st.balance), 0);
   const totalPaid = summary.reduce((s, st) => s + st.total_paid, 0);
   const totalEarned = summary.reduce((s, st) => s + st.total_earned, 0);
+  const totalNomFines = summary.reduce((s, st) => s + (st.fines_total || 0), 0);
 
   const fmtDate = (d) => {
     if (!d) return '—';
@@ -3843,7 +3844,7 @@ const TabNomina = () => {
     if (!keepSelection) setSelectedVisitIds([]);
     setBankInfo(null);
 
-    // Calculate amount: if we have selected visits, sum their commissions; otherwise use full balance
+    // Calculate amount: balance already includes fines deduction (earned - fines - paid)
     let amount = Math.max(0, staff.balance);
     const currentSelected = keepSelection ? selectedVisitIds : [];
     if (currentSelected.length > 0) {
@@ -3852,9 +3853,10 @@ const TabNomina = () => {
       amount = Math.round(selectedRevenue * staff.commission_rate);
     }
 
+    const finesNote = (staff.fines_total || 0) > 0 ? ` (multas descontadas: ${formatCOP(staff.fines_total)})` : '';
     setPayForm({
       amount: String(amount),
-      concept: `Comisiones ${fmtDate(dateFrom)} — ${fmtDateFull(dateTo)}`,
+      concept: `Comisiones ${fmtDate(dateFrom)} — ${fmtDateFull(dateTo)}${finesNote}`,
       payment_method: staff.preferred_payment_method || 'efectivo',
       reference: '',
       notes: '',
@@ -3957,12 +3959,12 @@ const TabNomina = () => {
             amount: Math.max(0, st.balance),
             period_from: dateFrom,
             period_to: dateTo,
-            concept: `Comisiones ${fmtDate(dateFrom)} — ${fmtDateFull(dateTo)}`,
+            concept: `Comisiones ${fmtDate(dateFrom)} — ${fmtDateFull(dateTo)}${(st.fines_total || 0) > 0 ? ` (multas: ${formatCOP(st.fines_total)})` : ''}`,
             payment_method: st.preferred_payment_method || 'efectivo',
             commission_total: st.total_earned,
             tips_total: 0,
             product_commissions: 0,
-            deductions: 0,
+            deductions: st.fines_total || 0,
           }),
         });
         ok++;
@@ -4021,6 +4023,17 @@ const TabNomina = () => {
             <span className="finances__nom-stat-label">Pagado</span>
           </div>
         </div>
+        {totalNomFines > 0 && (
+          <div className="finances__nom-stat">
+            <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #F59E0B, #FBBF24)' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div className="finances__nom-stat-data">
+              <span className="finances__nom-stat-value" style={{ color: '#D97706' }}><AnimatedNumber value={totalNomFines} prefix="-$" /></span>
+              <span className="finances__nom-stat-label">Multas</span>
+            </div>
+          </div>
+        )}
         {totalOwed > 0 && (
           <div className="finances__nom-stat finances__nom-stat--alert">
             <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #DC2626, #EF4444)' }}>
@@ -4068,9 +4081,10 @@ const TabNomina = () => {
           <span style={{ flex: 1 }}>Profesional</span>
           <span className="finances__nom-col-center" style={{ width: 80 }}>Servicios</span>
           <span className="finances__nom-col-center" style={{ width: 80 }}>Pendientes</span>
-          <span className="finances__nom-col-right" style={{ width: 120 }}>Ganado</span>
-          <span className="finances__nom-col-right" style={{ width: 120 }}>Pagado</span>
-          <span className="finances__nom-col-right" style={{ width: 120 }}>Saldo</span>
+          <span className="finances__nom-col-right" style={{ width: 110 }}>Comisiones</span>
+          <span className="finances__nom-col-right" style={{ width: 90 }}>Multas</span>
+          <span className="finances__nom-col-right" style={{ width: 110 }}>Pagado</span>
+          <span className="finances__nom-col-right" style={{ width: 110 }}>Saldo</span>
           <span style={{ width: 140 }} />
         </div>
         {summary.map(st => {
@@ -4087,7 +4101,6 @@ const TabNomina = () => {
                     <strong>{st.staff_name}</strong>
                     <small>
                       {st.staff_role}
-                      <span className="finances__nom-rate-pill">{(st.commission_rate * 100).toFixed(0)}%</span>
                       {st.has_bank_info && <span className="finances__nom-bank-dot" title="Datos bancarios">$</span>}
                     </small>
                   </span>
@@ -4099,9 +4112,12 @@ const TabNomina = () => {
                     : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
                   }
                 </span>
-                <span className="finances__nom-col-right finances__nom-cell finances__nom-cell--earned" style={{ width: 120 }}>{formatCOP(st.total_earned)}</span>
-                <span className="finances__nom-col-right finances__nom-cell finances__nom-cell--paid" style={{ width: 120 }}>{formatCOP(st.total_paid)}</span>
-                <span className="finances__nom-col-right" style={{ width: 120 }}>
+                <span className="finances__nom-col-right finances__nom-cell finances__nom-cell--earned" style={{ width: 110 }}>{formatCOP(st.total_earned)}</span>
+                <span className="finances__nom-col-right finances__nom-cell" style={{ width: 90, color: (st.fines_total || 0) > 0 ? '#DC2626' : 'rgba(0,0,0,0.3)' }}>
+                  {(st.fines_total || 0) > 0 ? `-${formatCOP(st.fines_total)}` : '$0'}
+                </span>
+                <span className="finances__nom-col-right finances__nom-cell finances__nom-cell--paid" style={{ width: 110 }}>{formatCOP(st.total_paid)}</span>
+                <span className="finances__nom-col-right" style={{ width: 110 }}>
                   {st.balance > 0
                     ? <span className="finances__nom-balance-owed">{formatCOP(st.balance)}</span>
                     : <span className="finances__nom-balance-ok">Al día</span>
@@ -4147,6 +4163,31 @@ const TabNomina = () => {
                         onVisitsLoaded={(v) => setStaffVisitsMap(prev => ({ ...prev, [st.staff_id]: v }))}
                       />
                     </div>
+                    {/* Fines section in expanded */}
+                    {(st.fines_count || 0) > 0 && (
+                      <div className="finances__nom-expand-col" style={{ gridColumn: '1 / -1' }}>
+                        <div className="finances__nom-expand-title" style={{ color: '#DC2626' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          Multas ({st.fines_count})
+                          <span style={{ marginLeft: 'auto', fontWeight: 700 }}>-{formatCOP(st.fines_total)}</span>
+                        </div>
+                        <div className="finances__perf-fines-list">
+                          {(st.fines || []).map(f => (
+                            <div key={f.id} className="finances__perf-fine-item">
+                              <div className="finances__perf-fine-info">
+                                <strong>{f.reason}</strong>
+                                <span className="finances__perf-fine-date">
+                                  {new Date(f.fine_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                                {f.notes && <small className="finances__perf-fine-notes">{f.notes}</small>}
+                              </div>
+                              <span className="finances__perf-fine-amount">-{formatCOP(f.amount)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="finances__nom-expand-col">
                       <div className="finances__nom-expand-title">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -4221,7 +4262,9 @@ const TabNomina = () => {
                   {showPayModal.staff_role} · {(showPayModal.commission_rate * 100).toFixed(0)}%
                 </small>
                 <small style={{ display: 'block', color: 'rgba(0,0,0,0.5)', fontSize: 12, marginTop: 2 }}>
-                  Ganado: {formatCOP(showPayModal.total_earned)} · Pagado: {formatCOP(showPayModal.total_paid)} · <strong style={{ color: showPayModal.balance > 0 ? '#DC2626' : '#059669' }}>Saldo: {formatCOP(showPayModal.balance)}</strong>
+                  Comisiones: {formatCOP(showPayModal.total_earned)}
+                  {(showPayModal.fines_total || 0) > 0 && <span style={{ color: '#DC2626' }}> · Multas: -{formatCOP(showPayModal.fines_total)}</span>}
+                  {' '}· Pagado: {formatCOP(showPayModal.total_paid)} · <strong style={{ color: showPayModal.balance > 0 ? '#DC2626' : '#059669' }}>Saldo: {formatCOP(showPayModal.balance)}</strong>
                 </small>
               </div>
             </div>
