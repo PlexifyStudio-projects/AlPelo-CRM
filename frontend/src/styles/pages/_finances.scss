@@ -2399,6 +2399,278 @@
     margin-left: auto;
   }
 
+  // ===================== NOMINA 2026 REDESIGN =====================
+
+  &__nom-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  &__nom-stat {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 16px;
+    transition: all 200ms ease;
+
+    &:hover {
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      transform: translateY(-1px);
+    }
+
+    &--alert {
+      border-color: rgba(#DC2626, 0.15);
+      background: rgba(#DC2626, 0.02);
+    }
+  }
+
+  &__nom-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  &__nom-stat-data {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__nom-stat-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: $color-secondary;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+  }
+
+  &__nom-stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: $color-gray-400;
+    letter-spacing: 0.01em;
+  }
+
+  &__nom-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  &__nom-periods {
+    display: flex;
+    gap: 4px;
+    background: $color-gray-50;
+    border-radius: 10px;
+    padding: 3px;
+  }
+
+  &__nom-period {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: $font-primary;
+    color: $color-gray-500;
+    background: transparent;
+    cursor: pointer;
+    transition: all 150ms ease;
+
+    &:hover { color: $color-secondary; }
+
+    &--active {
+      background: $color-white;
+      color: $color-primary;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      font-weight: 700;
+    }
+  }
+
+  &__nom-custom-dates {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    input {
+      padding: 7px 12px;
+      border: 1.5px solid $color-gray-200;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: $font-primary;
+      font-weight: 600;
+      color: $color-secondary;
+      outline: none;
+      &:focus { border-color: $color-primary; }
+    }
+
+    span { color: $color-gray-300; }
+  }
+
+  &__nom-controls-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__nom-date-range {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: $color-gray-500;
+
+    svg { color: $color-gray-400; }
+  }
+
+  &__nom-pay-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: linear-gradient(135deg, $color-primary, darken($color-primary, 8%));
+    color: $color-white;
+    border: none;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: $font-primary;
+    cursor: pointer;
+    transition: all 150ms ease;
+    box-shadow: 0 2px 8px rgba($color-primary, 0.25);
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba($color-primary, 0.35);
+      transform: translateY(-1px);
+    }
+  }
+
+  &__nom-col-center { text-align: center; }
+  &__nom-col-right { text-align: right; }
+
+  &__nom-cell {
+    font-size: 14px;
+    font-weight: 600;
+    color: $color-gray-600;
+    font-variant-numeric: tabular-nums;
+
+    &--earned { color: #059669; font-weight: 700; }
+    &--paid { color: #3B82F6; font-weight: 700; }
+  }
+
+  &__nom-rate-pill {
+    display: inline-block;
+    padding: 1px 6px;
+    margin-left: 6px;
+    background: rgba($color-primary, 0.08);
+    color: $color-primary;
+    border-radius: $border-radius-full;
+    font-size: 10px;
+    font-weight: 800;
+  }
+
+  &__nom-bank-dot {
+    display: inline-flex;
+    width: 16px;
+    height: 16px;
+    align-items: center;
+    justify-content: center;
+    background: rgba($color-primary, 0.1);
+    color: $color-primary;
+    border-radius: 50%;
+    font-size: 9px;
+    font-weight: 800;
+    margin-left: 4px;
+  }
+
+  &__nom-unpaid-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    background: rgba(#D97706, 0.1);
+    color: #D97706;
+    border-radius: $border-radius-full;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  &__nom-balance-owed {
+    font-size: 15px;
+    font-weight: 800;
+    color: #DC2626;
+    letter-spacing: -0.02em;
+  }
+
+  &__nom-balance-ok {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #059669;
+  }
+
+  &__nom-pay-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, #059669, #10B981);
+    color: $color-white;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: $font-primary;
+    cursor: pointer;
+    transition: all 150ms ease;
+    box-shadow: 0 2px 6px rgba(#059669, 0.25);
+
+    &:hover {
+      box-shadow: 0 3px 12px rgba(#059669, 0.35);
+      transform: translateY(-1px);
+    }
+  }
+
+  &__nom-chevron {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: $color-gray-50;
+    color: $color-gray-400;
+    transition: all 200ms ease;
+
+    &--open {
+      background: rgba($color-primary, 0.08);
+      color: $color-primary;
+      transform: rotate(180deg);
+    }
+  }
+
   &__nomina-table {
     background: $color-white;
     border: 1px solid $color-gray-100;

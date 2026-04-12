@@ -3634,79 +3634,85 @@ const TabNomina = () => {
 
   return (
     <>
-      <div className="finances__kpis">
-        <div className="finances__kpi-card finances__kpi-card--primary">
-          <div className="finances__kpi-icon finances__kpi-icon--primary">{Icons.users}</div>
-          <div className="finances__kpi-info">
-            <span className="finances__kpi-value">{summary.length}</span>
-            <span className="finances__kpi-label">Profesionales</span>
+      <div className="finances__nom-stats">
+        <div className="finances__nom-stat">
+          <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #2D5A3D, #3D7A52)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div className="finances__nom-stat-data">
+            <span className="finances__nom-stat-value">{summary.length}</span>
+            <span className="finances__nom-stat-label">Profesionales</span>
           </div>
         </div>
-        <div className="finances__kpi-card">
-          <div className="finances__kpi-icon finances__kpi-icon--success">{Icons.dollar}</div>
-          <div className="finances__kpi-info">
-            <span className="finances__kpi-value"><AnimatedNumber value={totalEarned} prefix="$" /></span>
-            <span className="finances__kpi-label">Total Ganado</span>
+        <div className="finances__nom-stat">
+          <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #059669, #10B981)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <div className="finances__nom-stat-data">
+            <span className="finances__nom-stat-value"><AnimatedNumber value={totalEarned} prefix="$" /></span>
+            <span className="finances__nom-stat-label">Total comisiones</span>
           </div>
         </div>
-        <div className="finances__kpi-card">
-          <div className="finances__kpi-icon finances__kpi-icon--accent">{Icons.check}</div>
-          <div className="finances__kpi-info">
-            <span className="finances__kpi-value"><AnimatedNumber value={totalPaid} prefix="$" /></span>
-            <span className="finances__kpi-label">Total Pagado</span>
+        <div className="finances__nom-stat">
+          <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div className="finances__nom-stat-data">
+            <span className="finances__nom-stat-value"><AnimatedNumber value={totalPaid} prefix="$" /></span>
+            <span className="finances__nom-stat-label">Pagado</span>
           </div>
         </div>
         {totalOwed > 0 && (
-          <div className="finances__kpi-card finances__kpi-card--warning">
-            <div className="finances__kpi-icon finances__kpi-icon--warning">{Icons.alert}</div>
-            <div className="finances__kpi-info">
-              <span className="finances__kpi-value"><AnimatedNumber value={totalOwed} prefix="$" /></span>
-              <span className="finances__kpi-label">Pendiente por pagar</span>
+          <div className="finances__nom-stat finances__nom-stat--alert">
+            <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #DC2626, #EF4444)' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div className="finances__nom-stat-data">
+              <span className="finances__nom-stat-value" style={{ color: '#DC2626' }}><AnimatedNumber value={totalOwed} prefix="$" /></span>
+              <span className="finances__nom-stat-label">Pendiente</span>
             </div>
           </div>
         )}
       </div>
 
-      <div className="finances__nomina-period-bar">
-        <div className="finances__nomina-period-chips">
+      <div className="finances__nom-controls">
+        <div className="finances__nom-periods">
           {NOMINA_PERIODS.map(p => (
-            <button
-              key={p.value}
-              className={`finances__visit-filter-chip ${nominaPeriod === p.value ? 'finances__visit-filter-chip--active' : ''}`}
-              onClick={() => setNominaPeriod(p.value)}
-            >
+            <button key={p.value} className={`finances__nom-period ${nominaPeriod === p.value ? 'finances__nom-period--active' : ''}`} onClick={() => setNominaPeriod(p.value)}>
               {p.label}
             </button>
           ))}
         </div>
         {nominaPeriod === 'custom' && (
-          <div className="finances__nomina-custom-dates">
-            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} className="finances__input" />
-            <span style={{ color: 'rgba(0,0,0,0.3)' }}>—</span>
-            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} className="finances__input" />
+          <div className="finances__nom-custom-dates">
+            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+            <span>—</span>
+            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} />
           </div>
         )}
-        <span className="finances__nomina-period-label">{fmtDate(dateFrom)} — {fmtDateFull(dateTo)}</span>
-      </div>
-
-      <div className="finances__section-header">
-        <h3 className="finances__section-title">Liquidación por profesional</h3>
-        {staffWithBalance.length > 0 && (
-          <button className="finances__btn-primary" style={{ padding: '6px 16px', fontSize: 12 }} onClick={openBulkModal}>
-            Liquidar nomina ({staffWithBalance.length})
-          </button>
-        )}
+        <div className="finances__nom-controls-right">
+          <span className="finances__nom-date-range">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {fmtDate(dateFrom)} — {fmtDateFull(dateTo)}
+          </span>
+          {staffWithBalance.length > 0 && (
+            <button className="finances__nom-pay-all" onClick={openBulkModal}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Liquidar nómina ({staffWithBalance.length})
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="finances__nomina-table">
         <div className="finances__nomina-thead">
           <span style={{ flex: 1 }}>Profesional</span>
-          <span style={{ width: 80, textAlign: 'center' }}>Servicios</span>
-          <span style={{ width: 80, textAlign: 'center' }}>Sin pagar</span>
-          <span style={{ width: 110, textAlign: 'right' }}>Ganado</span>
-          <span style={{ width: 110, textAlign: 'right' }}>Pagado</span>
-          <span style={{ width: 110, textAlign: 'right' }}>Saldo</span>
-          <span style={{ width: 130 }} />
+          <span className="finances__nom-col-center" style={{ width: 80 }}>Servicios</span>
+          <span className="finances__nom-col-center" style={{ width: 80 }}>Pendientes</span>
+          <span className="finances__nom-col-right" style={{ width: 120 }}>Ganado</span>
+          <span className="finances__nom-col-right" style={{ width: 120 }}>Pagado</span>
+          <span className="finances__nom-col-right" style={{ width: 120 }}>Saldo</span>
+          <span style={{ width: 140 }} />
         </div>
         {summary.map(st => {
           const isExpanded = expandedStaff === st.staff_id;
@@ -3716,29 +3722,42 @@ const TabNomina = () => {
               <div className="finances__nomina-row" onClick={() => { setExpandedStaff(isExpanded ? null : st.staff_id); setSelectedVisitIds([]); }}>
                 <span className="finances__nomina-staff" style={{ flex: 1 }}>
                   <span className="finances__nomina-avatar" style={{ background: st.photo_url ? 'transparent' : '#2D5A3D' }}>
-                    {st.photo_url ? <img src={st.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : st.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                    {st.photo_url ? <img src={st.photo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} /> : st.staff_name.split(' ').map(w => w[0]).join('').slice(0, 2)}
                   </span>
                   <span className="finances__nomina-name">
                     <strong>{st.staff_name}</strong>
-                    <small>{st.staff_role} · {(st.commission_rate * 100).toFixed(0)}%{st.has_bank_info && <span className="finances__nomina-bank-badge" title="Datos bancarios configurados">$</span>}</small>
+                    <small>
+                      {st.staff_role}
+                      <span className="finances__nom-rate-pill">{(st.commission_rate * 100).toFixed(0)}%</span>
+                      {st.has_bank_info && <span className="finances__nom-bank-dot" title="Datos bancarios">$</span>}
+                    </small>
                   </span>
                 </span>
-                <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>{st.services_count}</span>
-                <span style={{ width: 80, textAlign: 'center', fontSize: 13, fontWeight: 600, color: (st.unpaid_services_count || 0) > 0 ? '#D97706' : '#059669' }}>
-                  {(st.unpaid_services_count || 0) > 0 ? st.unpaid_services_count : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>}
+                <span className="finances__nom-col-center finances__nom-cell" style={{ width: 80 }}>{st.services_count}</span>
+                <span className="finances__nom-col-center finances__nom-cell" style={{ width: 80 }}>
+                  {(st.unpaid_services_count || 0) > 0
+                    ? <span className="finances__nom-unpaid-badge">{st.unpaid_services_count}</span>
+                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  }
                 </span>
-                <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#059669' }}>{formatCOP(st.total_earned)}</span>
-                <span style={{ width: 110, textAlign: 'right', fontSize: 13, fontWeight: 600, color: '#3B82F6' }}>{formatCOP(st.total_paid)}</span>
-                <span style={{ width: 110, textAlign: 'right', fontSize: 14, fontWeight: 700, color: st.balance > 0 ? '#DC2626' : '#059669' }}>
-                  {st.balance > 0 ? formatCOP(st.balance) : 'Al dia'}
+                <span className="finances__nom-col-right finances__nom-cell finances__nom-cell--earned" style={{ width: 120 }}>{formatCOP(st.total_earned)}</span>
+                <span className="finances__nom-col-right finances__nom-cell finances__nom-cell--paid" style={{ width: 120 }}>{formatCOP(st.total_paid)}</span>
+                <span className="finances__nom-col-right" style={{ width: 120 }}>
+                  {st.balance > 0
+                    ? <span className="finances__nom-balance-owed">{formatCOP(st.balance)}</span>
+                    : <span className="finances__nom-balance-ok">Al día</span>
+                  }
                 </span>
-                <span style={{ width: 130, display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                <span style={{ width: 140, display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
                   {st.balance > 0 && (
-                    <button className="finances__btn-primary" style={{ padding: '5px 12px', fontSize: 11 }} onClick={(e) => { e.stopPropagation(); openPayModal(st); }}>
+                    <button className="finances__nom-pay-btn" onClick={(e) => { e.stopPropagation(); openPayModal(st); }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                       Pagar
                     </button>
                   )}
-                  <svg className={`finances__inv-chevron ${isExpanded ? 'finances__inv-chevron--open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  <div className={`finances__nom-chevron ${isExpanded ? 'finances__nom-chevron--open' : ''}`}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9" /></svg>
+                  </div>
                 </span>
               </div>
 
