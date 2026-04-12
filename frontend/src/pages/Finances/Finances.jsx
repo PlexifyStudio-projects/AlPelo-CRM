@@ -2141,8 +2141,8 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             if (!byStaff[name]) byStaff[name] = { name, staffId: it.staff_id, items: [], total: 0, comm: 0 };
                             const key = `${it.staff_id}-${it.service_id}`;
                             const perSvcRate = it.service_id ? svcCommRates[key] : undefined;
-                            const defRate = it.staff_id ? staffDefaults[it.staff_id] : undefined;
-                            const rate = (perSvcRate !== undefined && perSvcRate > 0) ? perSvcRate : (defRate !== undefined && defRate > 0) ? defRate : 0;
+                            const defRate = staffDefaults[it.staff_id];
+                            const rate = perSvcRate > 0 ? perSvcRate : defRate > 0 ? defRate : 0;
                             const c = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
                             byStaff[name].items.push({ ...it, rate, commAmount: c });
                             byStaff[name].total += (it.unit_price || 0) * (it.quantity || 1);
