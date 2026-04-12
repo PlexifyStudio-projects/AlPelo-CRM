@@ -463,49 +463,51 @@ const Orders = () => {
         </div>
       )}
 
-      {/* ─── MODAL ────────────────────────────────────── */}
+      {/* ─── DRAWER ────────────────────────────────────── */}
       {showModal && (
         <div className={`${b}__overlay`} onClick={() => setShowModal(false)}>
-          <div className={`${b}__modal`} onClick={e => e.stopPropagation()}>
-            <div className={`${b}__modal-header`}>
-              <h2>{editOrder ? `Orden ${editOrder.ticket_number}` : 'Nueva orden'}</h2>
-              <div className={`${b}__modal-header-actions`}>
-                {editOrder && editOrder.status === 'pending' && (
-                  <button className={`${b}__modal-action ${b}__modal-action--start`}
-                    onClick={() => { handleStatusChange(editOrder, 'in_progress'); setShowModal(false); }}>
-                    Iniciar servicio
-                  </button>
-                )}
-                {editOrder && editOrder.payment_status === 'unpaid' && editOrder.status !== 'cancelled' && (
-                  <button className={`${b}__modal-action ${b}__modal-action--pay`}
-                    onClick={() => { handlePay(editOrder); setShowModal(false); }}>
-                    Registrar pago
-                  </button>
-                )}
-                <button className={`${b}__modal-close`} onClick={() => setShowModal(false)}><XIcon /></button>
+          <div className={`${b}__drawer`} onClick={e => e.stopPropagation()}>
+
+            {/* Drawer header */}
+            <div className={`${b}__drawer-header`}>
+              <button className={`${b}__drawer-back`} onClick={() => setShowModal(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+              </button>
+              <div className={`${b}__drawer-title`}>
+                <h2>{editOrder ? `Orden ${editOrder.ticket_number}` : 'Nueva orden'}</h2>
+                {editOrder && <span className={`${b}__drawer-status`} style={{ color: STATUS_META[editOrder.status]?.color, background: STATUS_META[editOrder.status]?.bg }}>{STATUS_META[editOrder.status]?.label}</span>}
               </div>
+              {editOrder && editOrder.status === 'pending' && (
+                <button className={`${b}__drawer-action ${b}__drawer-action--start`}
+                  onClick={() => { handleStatusChange(editOrder, 'in_progress'); setShowModal(false); }}>
+                  Iniciar
+                </button>
+              )}
+              {editOrder && editOrder.payment_status === 'unpaid' && editOrder.status !== 'cancelled' && (
+                <button className={`${b}__drawer-action ${b}__drawer-action--pay`}
+                  onClick={() => { handlePay(editOrder); setShowModal(false); }}>
+                  Cobrar
+                </button>
+              )}
             </div>
 
-            <div className={`${b}__modal-body`}>
-              {/* Ticket number */}
+            <div className={`${b}__drawer-body`}>
+              {/* ── Ticket ── */}
               <div className={`${b}__ticket-section`}>
                 <div className={`${b}__ticket-icon`}><TicketIcon /></div>
                 <div className={`${b}__ticket-field`}>
                   <label>N° Ticket</label>
                   <input value={form.ticket_number}
                     onChange={e => setForm(p => ({ ...p, ticket_number: e.target.value }))}
-                    placeholder={editOrder ? editOrder.ticket_number : 'Ej: 001, A-15 (auto si vacío)'}
+                    placeholder={editOrder ? editOrder.ticket_number : 'Auto si vacío'}
                   />
                 </div>
-                {editOrder && <span className={`${b}__ticket-auto`}>{editOrder.ticket_number}</span>}
               </div>
 
-              {/* Client search / selection */}
+              {/* ── Cliente ── */}
               <div className={`${b}__section`}>
                 <h3 className={`${b}__section-title`}>Cliente</h3>
-
                 {selectedClient && !isNewClient ? (
-                  /* ── Client selected chip ── */
                   <div className={`${b}__client-chip`}>
                     <div className={`${b}__client-chip-avatar`}>
                       {selectedClient.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}
@@ -514,67 +516,39 @@ const Orders = () => {
                       <span className={`${b}__client-chip-name`}>{selectedClient.name}</span>
                       {selectedClient.phone && <span className={`${b}__client-chip-phone`}>{formatPhone(selectedClient.phone)}</span>}
                     </div>
-                    <button className={`${b}__client-chip-x`} onClick={clearClient} title="Cambiar cliente">
-                      <XIcon />
-                    </button>
+                    <button className={`${b}__client-chip-x`} onClick={clearClient}><XIcon /></button>
                   </div>
                 ) : isNewClient ? (
-                  /* ── New client form ── */
                   <div className={`${b}__new-client`}>
                     <div className={`${b}__new-client-header`}>
                       <span className={`${b}__new-client-badge`}>Nuevo cliente</span>
                       <button className={`${b}__new-client-cancel`} onClick={clearClient}>Buscar existente</button>
                     </div>
                     <div className={`${b}__form-grid`}>
-                      <div className={`${b}__field`}>
-                        <label>Nombre completo *</label>
-                        <input value={form.client_name} onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))} autoFocus />
-                      </div>
-                      <div className={`${b}__field`}>
-                        <label>Teléfono *</label>
-                        <input value={form.client_phone} onChange={e => setForm(p => ({ ...p, client_phone: e.target.value }))} placeholder="3XX XXX XXXX" />
-                      </div>
-                      <div className={`${b}__field`}>
-                        <label>Correo</label>
-                        <input type="email" value={form.client_email} onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))} />
-                      </div>
-                      <div className={`${b}__field`}>
-                        <label>Fecha de nacimiento</label>
-                        <input type="date" value={form.client_birthday} onChange={e => setForm(p => ({ ...p, client_birthday: e.target.value }))} />
-                      </div>
-                      <div className={`${b}__field`}>
-                        <label>Tipo de documento</label>
+                      <div className={`${b}__field`}><label>Nombre completo *</label><input value={form.client_name} onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))} autoFocus /></div>
+                      <div className={`${b}__field`}><label>Teléfono *</label><input value={form.client_phone} onChange={e => setForm(p => ({ ...p, client_phone: e.target.value }))} placeholder="3XX XXX XXXX" /></div>
+                      <div className={`${b}__field`}><label>Correo</label><input type="email" value={form.client_email} onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))} /></div>
+                      <div className={`${b}__field`}><label>Nacimiento</label><input type="date" value={form.client_birthday} onChange={e => setForm(p => ({ ...p, client_birthday: e.target.value }))} /></div>
+                      <div className={`${b}__field`}><label>Tipo doc.</label>
                         <select value={form.client_doc_type} onChange={e => setForm(p => ({ ...p, client_doc_type: e.target.value }))}>
-                          <option value="">Seleccionar</option>
-                          <option value="CC">Cédula de ciudadanía</option>
-                          <option value="CE">Cédula de extranjería</option>
-                          <option value="TI">Tarjeta de identidad</option>
-                          <option value="PP">Pasaporte</option>
-                          <option value="NIT">NIT</option>
+                          <option value="">—</option><option value="CC">CC</option><option value="CE">CE</option><option value="TI">TI</option><option value="PP">Pasaporte</option><option value="NIT">NIT</option>
                         </select>
                       </div>
-                      <div className={`${b}__field`}>
-                        <label>Número de documento</label>
-                        <input value={form.client_doc_number} onChange={e => setForm(p => ({ ...p, client_doc_number: e.target.value }))} />
-                      </div>
+                      <div className={`${b}__field`}><label>N° Documento</label><input value={form.client_doc_number} onChange={e => setForm(p => ({ ...p, client_doc_number: e.target.value }))} /></div>
                     </div>
                   </div>
                 ) : (
-                  /* ── Client search ── */
                   <div className={`${b}__client-search`}>
                     <div className={`${b}__client-search-box`}>
                       <SearchIcon />
-                      <input value={clientSearchQ} onChange={e => setClientSearchQ(e.target.value)}
-                        placeholder="Buscar por nombre, teléfono o documento..." autoFocus />
+                      <input value={clientSearchQ} onChange={e => setClientSearchQ(e.target.value)} placeholder="Buscar por nombre, teléfono o documento..." autoFocus />
                       {searchingClients && <div className={`${b}__client-search-spin`} />}
                     </div>
                     {clientResults.length > 0 && (
                       <div className={`${b}__client-results`}>
                         {clientResults.map(c => (
                           <button key={c.id} className={`${b}__client-result`} onClick={() => selectClient(c)}>
-                            <div className={`${b}__client-result-avatar`}>
-                              {c.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}
-                            </div>
+                            <div className={`${b}__client-result-avatar`}>{c.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}</div>
                             <div className={`${b}__client-result-info`}>
                               <strong>{c.name}</strong>
                               <span>{c.phone ? formatPhone(c.phone) : 'Sin teléfono'}{c.email ? ` · ${c.email}` : ''}</span>
@@ -584,56 +558,61 @@ const Orders = () => {
                         ))}
                       </div>
                     )}
-                    {clientSearchQ.length >= 2 && clientResults.length === 0 && !searchingClients && (
-                      <div className={`${b}__client-no-result`}>
-                        <span>No se encontró el cliente</span>
-                      </div>
+                    {clientSearchQ.length >= 2 && !clientResults.length && !searchingClients && (
+                      <div className={`${b}__client-no-result`}>No se encontró el cliente</div>
                     )}
-                    <button className={`${b}__new-client-btn`} onClick={() => setIsNewClient(true)}>
-                      <PlusIcon /> Registrar nuevo cliente
-                    </button>
+                    <button className={`${b}__new-client-btn`} onClick={() => setIsNewClient(true)}><PlusIcon /> Registrar nuevo cliente</button>
                   </div>
                 )}
               </div>
 
-              {/* Services + Staff per service */}
+              {/* ── Servicios ── */}
               <div className={`${b}__section`}>
-                <h3 className={`${b}__section-title`}>Servicios y personal</h3>
-                {formItems.length > 0 && (
-                  <div className={`${b}__item-list`}>
-                    {formItems.map((item, i) => {
-                      const eligible = item.staff_ids?.length
-                        ? staffList.filter(s => item.staff_ids.includes(s.id))
-                        : staffList;
-                      return (
-                        <div key={i} className={`${b}__svc-card`}>
-                          <div className={`${b}__svc-card-top`}>
-                            <span className={`${b}__svc-card-name`}>{item.service_name}</span>
-                            <span className={`${b}__svc-card-dur`}>{item.duration_minutes}min</span>
-                            <span className={`${b}__svc-card-price`}>{formatCOP(item.price)}</span>
-                            <button className={`${b}__item-remove`} onClick={() => removeService(i)}><TrashIcon /></button>
-                          </div>
-                          <div className={`${b}__svc-card-staff`}>
-                            <label>Asignar a:</label>
-                            <div className={`${b}__staff-chips`}>
-                              {eligible.map(s => (
+                <h3 className={`${b}__section-title`}>Servicios</h3>
+                {formItems.map((item, i) => {
+                  const eligible = item.staff_ids?.length
+                    ? staffList.filter(s => item.staff_ids.includes(s.id))
+                    : [];
+                  const assigned = eligible.find(s => s.id == item.staff_id);
+                  return (
+                    <div key={i} className={`${b}__svc-card`}>
+                      <div className={`${b}__svc-card-top`}>
+                        <div className={`${b}__svc-card-info`}>
+                          <span className={`${b}__svc-card-name`}>{item.service_name}</span>
+                          <span className={`${b}__svc-card-meta`}>{item.duration_minutes} min</span>
+                        </div>
+                        <span className={`${b}__svc-card-price`}>{formatCOP(item.price)}</span>
+                        <button className={`${b}__item-remove`} onClick={() => removeService(i)}><TrashIcon /></button>
+                      </div>
+                      {eligible.length > 0 && (
+                        <div className={`${b}__svc-staff`}>
+                          <span className={`${b}__svc-staff-label`}>
+                            {assigned ? 'Atendido por' : 'Asignar personal'}
+                          </span>
+                          <div className={`${b}__svc-staff-list`}>
+                            {eligible.map(s => {
+                              const active = item.staff_id == s.id;
+                              return (
                                 <button key={s.id}
-                                  className={`${b}__staff-chip ${item.staff_id == s.id ? `${b}__staff-chip--active` : ''}`}
-                                  onClick={() => updateItem(i, 'staff_id', item.staff_id == s.id ? '' : s.id)}>
-                                  <span className={`${b}__staff-chip-avatar`} style={{ background: s.color || '#3B82F6' }}>
-                                    {s.name?.split(' ')[0]?.[0]}{s.name?.split(' ')[1]?.[0] || ''}
-                                  </span>
+                                  className={`${b}__staff-pill ${active ? `${b}__staff-pill--on` : ''}`}
+                                  onClick={() => updateItem(i, 'staff_id', active ? '' : s.id)}>
+                                  <div className={`${b}__staff-pill-av`} style={{ background: s.color || '#3B82F6' }}>
+                                    {s.photo_url
+                                      ? <img src={s.photo_url} alt="" />
+                                      : <>{s.name?.[0]}</>
+                                    }
+                                  </div>
                                   <span>{s.name?.split(' ')[0]}</span>
+                                  {active && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>}
                                 </button>
-                              ))}
-                              {!item.staff_id && <span className={`${b}__staff-pending`}>Sin asignar</span>}
-                            </div>
+                              );
+                            })}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  );
+                })}
                 <div className={`${b}__add-search`}>
                   <input placeholder="Buscar servicio para agregar..." value={svcSearch} onChange={e => setSvcSearch(e.target.value)} />
                   {filteredSvc.length > 0 && (
@@ -649,34 +628,27 @@ const Orders = () => {
                 </div>
               </div>
 
-              {/* Products */}
+              {/* ── Productos ── */}
               <div className={`${b}__section`}>
-                <h3 className={`${b}__section-title`}>Productos gastados <span className={`${b}__optional`}>(opcional)</span></h3>
-                {formProducts.length > 0 && (
-                  <div className={`${b}__item-list`}>
-                    {formProducts.map((prod, i) => (
-                      <div key={i} className={`${b}__item-row ${b}__item-row--product`}>
-                        <span className={`${b}__item-name`}>{prod.product_name}</span>
-                        <div className={`${b}__prod-fields`}>
-                          <label>Cant.
-                            <input type="number" min="1" value={prod.quantity} onChange={e => updateProduct(i, 'quantity', parseInt(e.target.value) || 1)} />
-                          </label>
-                          <label>Precio
-                            <input type="number" value={prod.unit_price} onChange={e => updateProduct(i, 'unit_price', parseInt(e.target.value) || 0)} />
-                          </label>
-                          <label>Cobra a
-                            <select value={prod.charged_to} onChange={e => updateProduct(i, 'charged_to', e.target.value)}>
-                              <option value="client">Cliente</option>
-                              <option value="staff">Personal</option>
-                            </select>
-                          </label>
-                        </div>
-                        <span className={`${b}__item-price`}>{formatCOP(prod.quantity * prod.unit_price)}</span>
-                        <button className={`${b}__item-remove`} onClick={() => removeProduct(i)}><TrashIcon /></button>
-                      </div>
-                    ))}
+                <h3 className={`${b}__section-title`}>Productos <span className={`${b}__optional`}>(opcional)</span></h3>
+                {formProducts.map((prod, i) => (
+                  <div key={i} className={`${b}__prod-card`}>
+                    <div className={`${b}__prod-card-top`}>
+                      <span className={`${b}__prod-card-name`}>{prod.product_name}</span>
+                      <span className={`${b}__prod-card-total`}>{formatCOP(prod.quantity * prod.unit_price)}</span>
+                      <button className={`${b}__item-remove`} onClick={() => removeProduct(i)}><TrashIcon /></button>
+                    </div>
+                    <div className={`${b}__prod-card-fields`}>
+                      <label>Cant.<input type="number" min="1" value={prod.quantity} onChange={e => updateProduct(i, 'quantity', parseInt(e.target.value) || 1)} /></label>
+                      <label>Precio<input type="number" value={prod.unit_price} onChange={e => updateProduct(i, 'unit_price', parseInt(e.target.value) || 0)} /></label>
+                      <label>Cobrar a
+                        <select value={prod.charged_to} onChange={e => updateProduct(i, 'charged_to', e.target.value)}>
+                          <option value="client">Cliente</option><option value="staff">Personal</option>
+                        </select>
+                      </label>
+                    </div>
                   </div>
-                )}
+                ))}
                 <div className={`${b}__add-search`}>
                   <input placeholder="Buscar producto..." value={prodSearch} onChange={e => setProdSearch(e.target.value)} />
                   {filteredProd.length > 0 && (
@@ -692,26 +664,23 @@ const Orders = () => {
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* ── Notas ── */}
               <div className={`${b}__section`}>
                 <h3 className={`${b}__section-title`}>Notas <span className={`${b}__optional`}>(opcional)</span></h3>
                 <textarea className={`${b}__notes`} rows="2" value={form.notes}
-                  onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-                  placeholder="Indicaciones, preferencias..." />
+                  onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Indicaciones, preferencias..." />
               </div>
             </div>
 
-            <div className={`${b}__modal-footer`}>
-              <div className={`${b}__modal-total`}>
-                <span>Subtotal</span>
+            {/* Drawer footer */}
+            <div className={`${b}__drawer-footer`}>
+              <div className={`${b}__drawer-total`}>
+                <span>Total</span>
                 <strong>{formatCOP(formSubtotal)}</strong>
               </div>
-              <div className={`${b}__modal-actions`}>
-                <button className={`${b}__btn-cancel`} onClick={() => setShowModal(false)}>Cancelar</button>
-                <button className={`${b}__btn-save`} onClick={handleSave} disabled={submitting}>
-                  {submitting ? 'Guardando...' : editOrder ? 'Guardar cambios' : 'Crear orden'}
-                </button>
-              </div>
+              <button className={`${b}__btn-save`} onClick={handleSave} disabled={submitting}>
+                {submitting ? 'Guardando...' : editOrder ? 'Guardar cambios' : 'Crear orden'}
+              </button>
             </div>
           </div>
         </div>
