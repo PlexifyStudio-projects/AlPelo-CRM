@@ -1182,12 +1182,9 @@
   }
 
   &__slot--blocked {
-    background: rgba($color-gray-400, 0.06) !important;
+    background: rgba($color-gray-300, 0.10) !important;
     cursor: not-allowed !important;
     z-index: 4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 
     &::after {
       content: '';
@@ -1197,29 +1194,12 @@
         -45deg,
         transparent,
         transparent 5px,
-        rgba($color-gray-300, 0.18) 5px,
-        rgba($color-gray-300, 0.18) 7px
+        rgba($color-gray-300, 0.15) 5px,
+        rgba($color-gray-300, 0.15) 7px
       );
       border-radius: 4px;
       pointer-events: none;
     }
-  }
-
-  &__block-reason {
-    position: relative;
-    z-index: 2;
-    font-size: 9px;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-400;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    padding: 0 4px;
-    pointer-events: none;
-    line-height: 1;
   }
 
   &__drop-label {

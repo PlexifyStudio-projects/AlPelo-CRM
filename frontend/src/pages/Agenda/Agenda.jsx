@@ -1290,12 +1290,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                                 <div key={`s${h}${m}`}
                                   className={`${b}__slot ${isDrop && !blockReason ? `${b}__slot--drop-target` : ''} ${blockReason ? `${b}__slot--blocked` : ''}`}
                                   style={{ top: `${slotTops[si]}px`, height: `${baseSlotH}px` }}
+                                  title={blockReason || ''}
                                   onClick={() => openCreate(currentDate, t, s.id)}
                                   onDragOver={(e) => { if (!blockReason) handleDragOver(e, currentDate, t); else e.preventDefault(); }}
                                   onDragLeave={() => setDropTarget(null)}
                                   onDrop={(e) => { if (!blockReason) handleDrop(e, currentDate, t, s.id); else { e.preventDefault(); setDropTarget(null); } }}>
                                   {isDrop && !blockReason && <span className={`${b}__drop-label`}>{formatTime12(t)}</span>}
-                                  {blockReason && <span className={`${b}__block-reason`}>{blockReason}</span>}
                                 </div>
                               );
                             });
