@@ -509,6 +509,25 @@ def list_services(
     return result
 
 
+# ============================================================================
+# COMMISSION ENDPOINTS — must be BEFORE {service_id} routes
+# ============================================================================
+
+@router.get("/services/all-commissions")
+def get_all_commissions(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Get ALL commission rates for all staff x service combinations."""
+    from database.models import StaffServiceCommission
+    tid = safe_tid(user, db)
+    q = db.query(StaffServiceCommission)
+    if tid:
+        q = q.filter(StaffServiceCommission.tenant_id == tid)
+    all_comms = q.all()
+    result = {}
+    for c in all_comms:
+        result[f"{c.staff_id}-{c.service_id}"] = c.commission_rate or 0
+    return {"rates": result}
+
+
 @router.get("/services/{service_id}", response_model=ServiceResponse)
 def get_service(service_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     tid = safe_tid(user, db)
@@ -529,25 +548,6 @@ def get_service(service_id: int, db: Session = Depends(get_db), user: Admin = De
         **{c.name: getattr(service, c.name) for c in service.__table__.columns},
         staff_names=staff_names,
     )
-
-
-# ============================================================================
-# COMMISSION ENDPOINTS
-# ============================================================================
-
-@router.get("/services/all-commissions")
-def get_all_commissions(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    """Get ALL commission rates for all staff x service combinations."""
-    from database.models import StaffServiceCommission
-    tid = safe_tid(user, db)
-    q = db.query(StaffServiceCommission)
-    if tid:
-        q = q.filter(StaffServiceCommission.tenant_id == tid)
-    all_comms = q.all()
-    result = {}
-    for c in all_comms:
-        result[f"{c.staff_id}-{c.service_id}"] = c.commission_rate or 0
-    return {"rates": result}
 
 
 @router.get("/services/{service_id}/commissions")
