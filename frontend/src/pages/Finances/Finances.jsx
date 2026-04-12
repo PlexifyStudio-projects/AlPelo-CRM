@@ -1563,6 +1563,19 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
     staffService.list({ active: true }).then(setAllStaff).catch(() => {});
   }, []);
 
+  const [staffDefaults, setStaffDefaults] = useState({}); // { staffId: defaultRate }
+
+  // Load staff default rates once
+  useEffect(() => {
+    fetch(`${API}/finances/commissions/config`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        const m = {};
+        data.forEach(c => { m[c.staff_id] = c.default_rate || 0; });
+        setStaffDefaults(m);
+      }).catch(() => {});
+  }, []);
+
   // Load per-service commission rates when expanding an invoice
   useEffect(() => {
     if (!expandedId) return;
@@ -2143,7 +2156,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             const name = it.staff_name || 'Sin asignar';
                             if (!byStaff[name]) byStaff[name] = { name, staffId: it.staff_id, items: [], total: 0, comm: 0 };
                             const perSvcRate = svcCommRates[`${it.staff_id}-${it.service_id}`];
-                            const rate = perSvcRate !== undefined ? perSvcRate : (it.commission_rate ?? 0);
+                            const rate = perSvcRate !== undefined ? perSvcRate : (staffDefaults[it.staff_id] ?? it.commission_rate ?? 0);
                             const c = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
                             byStaff[name].items.push({ ...it, rate, commAmount: c });
                             byStaff[name].total += (it.unit_price || 0) * (it.quantity || 1);
@@ -2273,7 +2286,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             (inv.items || []).forEach(it => {
                               const name = it.staff_name || 'Sin asignar';
                               if (!byStaff[name]) byStaff[name] = { name, items: [], totalSvc: 0, totalComm: 0 };
-                              const rate = svcCommRates[`${it.staff_id}-${it.service_id}`] ?? 0;
+                              const rate = svcCommRates[`${it.staff_id}-${it.service_id}`] ?? staffDefaults[it.staff_id] ?? 0;
                               const comm = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
                               byStaff[name].items.push({ svc: it.service_name, rate, comm });
                               byStaff[name].totalSvc += (it.unit_price || 0) * (it.quantity || 1);
