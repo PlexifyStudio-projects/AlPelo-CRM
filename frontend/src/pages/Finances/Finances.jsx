@@ -2266,12 +2266,40 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           if (inv.tax_amount > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">IVA (${(inv.tax_rate*100).toFixed(0)}%)</td><td class="r">${formatCOP(inv.tax_amount)}</td></tr>`);
                           if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">Propina</td><td class="r">+${formatCOP(inv.tip)}</td></tr>`);
                           win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr></table>`);
-                          // Breakdown
+                          // Breakdown — per-staff commissions
                           win.document.write('<div class="breakdown">');
-                          if (primaryStaff) {
-                            win.document.write(`<div class="box"><h3>Distribucion</h3><div class="box-row green"><span>Comision ${primaryStaff} (${(commissionRate*100).toFixed(0)}%)</span><strong>${formatCOP(staffEarnings)}</strong></div><div class="box-row blue"><span>Ganancia negocio</span><strong>${formatCOP(businessEarnings)}</strong></div></div>`);
+                          {
+                            const byStaff = {};
+                            (inv.items || []).forEach(it => {
+                              const name = it.staff_name || 'Sin asignar';
+                              if (!byStaff[name]) byStaff[name] = { name, items: [], totalSvc: 0, totalComm: 0 };
+                              const rate = svcCommRates[`${it.staff_id}-${it.service_id}`] ?? 0;
+                              const comm = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
+                              byStaff[name].items.push({ svc: it.service_name, rate, comm });
+                              byStaff[name].totalSvc += (it.unit_price || 0) * (it.quantity || 1);
+                              byStaff[name].totalComm += comm;
+                            });
+                            const entries = Object.values(byStaff);
+                            const totalComm = entries.reduce((s, e) => s + e.totalComm, 0);
+                            const bizEarn = (inv.total || 0) - (inv.tip || 0) - totalComm;
+                            let distHtml = '<div class="box"><h3>Distribucion por profesional</h3>';
+                            entries.forEach(s => {
+                              distHtml += `<div class="box-row" style="font-weight:700"><span>${s.name}</span><strong>${formatCOP(s.totalSvc)}</strong></div>`;
+                              s.items.forEach(it => {
+                                distHtml += `<div class="box-row" style="font-size:11px;color:#64748b;padding-left:12px"><span>${it.svc} (${(it.rate * 100).toFixed(0)}%)</span><strong style="color:#059669">${formatCOP(it.comm)}</strong></div>`;
+                              });
+                            });
+                            distHtml += `<div style="border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px"><div class="box-row green"><span>Total comisiones</span><strong>${formatCOP(totalComm)}</strong></div><div class="box-row blue"><span>Ganancia negocio</span><strong>${formatCOP(bizEarn)}</strong></div></div></div>`;
+                            win.document.write(distHtml);
                           }
-                          win.document.write(`<div class="box"><h3>Detalles de pago</h3><div class="box-row"><span>Metodo</span><strong>${ml}</strong></div><div class="box-row"><span>Condicion</span><strong>${inv.payment_terms === 'credito' ? 'Credito' : 'Contado'}</strong></div><div class="box-row"><span>Estado</span><strong>${STATUS_LABELS[inv.status] || inv.status}</strong></div><div class="box-row"><span>Fecha</span><strong>${dateStr}</strong></div>${timeStr ? `<div class="box-row"><span>Hora</span><strong>${timeStr}</strong></div>` : ''}</div>`);
+                          // Payment details
+                          let payHtml = `<div class="box"><h3>Detalles de pago</h3><div class="box-row"><span>Metodo</span><strong>${ml}</strong></div>`;
+                          if (inv.payment_method === 'efectivo' && inv.payment_details?.received > 0) {
+                            payHtml += `<div class="box-row"><span>Efectivo recibido</span><strong>${formatCOP(inv.payment_details.received)}</strong></div>`;
+                            if (inv.payment_details.change > 0) payHtml += `<div class="box-row" style="color:#D97706"><span>Cambio entregado</span><strong>${formatCOP(inv.payment_details.change)}</strong></div>`;
+                          }
+                          payHtml += `<div class="box-row"><span>Condicion</span><strong>${inv.payment_terms === 'credito' ? 'Credito' : 'Contado'}</strong></div><div class="box-row"><span>Estado</span><strong>${STATUS_LABELS[inv.status] || inv.status}</strong></div><div class="box-row"><span>Fecha</span><strong>${dateStr}</strong></div>${timeStr ? `<div class="box-row"><span>Hora</span><strong>${timeStr}</strong></div>` : ''}${visitCode ? `<div class="box-row"><span>Ticket</span><strong>${visitCode}</strong></div>` : ''}</div>`;
+                          win.document.write(payHtml);
                           win.document.write('</div>');
                           win.document.write(`<div class="footer"><span>Factura ${inv.invoice_number} — ${dateStr}</span><span>Generado por Plexify Studio</span></div>`);
                           win.document.write('<div class="no-print"><button onclick="window.print()" style="background:#2D5A3D;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Imprimir</button></div>');
