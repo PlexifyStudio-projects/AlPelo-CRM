@@ -1088,6 +1088,7 @@ $_fg-payment: #14B8A6;
     flex-wrap: wrap;
     gap: 8px;
     padding: 4px 0;
+    grid-column: 1 / -1;
   }
 
   &__multi-check-item {
