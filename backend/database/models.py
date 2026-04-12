@@ -1354,7 +1354,7 @@ class OrderProduct(Base):
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=False)
     order_id = Column(Integer, ForeignKey("public.order.id", ondelete="CASCADE"), nullable=False)
-    product_id = Column(Integer, ForeignKey("public.product.id"), nullable=True)
+    product_id = Column(Integer, ForeignKey("public.products.id"), nullable=True)
     product_name = Column(String(200), nullable=False)
     quantity = Column(Integer, nullable=False, default=1)
     unit_price = Column(Integer, nullable=False, default=0)
