@@ -319,14 +319,16 @@ def get_payment_detail(
     linked_apts = db.query(Appointment).filter(Appointment.staff_payment_id == payment.id).all()
     visits = []
     for apt in linked_apts:
+        svc = db.query(Service).filter(Service.id == apt.service_id).first()
+        svc_name = svc.name if svc else "Servicio"
         visits.append(VisitDetailItem(
             id=apt.id,
             client_name=apt.client_name or "?",
-            service_name=apt.service_name or (db.query(Service).filter(Service.id == apt.service_id).first() or type('', (), {'name': 'Servicio'})).name,
+            service_name=svc_name,
             amount=apt.price or 0,
             visit_date=apt.date,
             payment_method=None,
-            notes=apt.visit_code,
+            notes=getattr(apt, 'visit_code', None),
         ))
 
     # Fallback: if no appointments linked, check visit history
