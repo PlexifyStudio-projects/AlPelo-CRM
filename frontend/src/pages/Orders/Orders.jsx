@@ -220,8 +220,12 @@ const Orders = () => {
   };
 
   const addService = (svc) => {
-    setFormItems(prev => [...prev, { service_id: svc.id, service_name: svc.name, price: svc.price, duration_minutes: svc.duration_minutes, staff_id: '' }]);
+    setFormItems(prev => [...prev, { service_id: svc.id, service_name: svc.name, price: svc.price, duration_minutes: svc.duration_minutes, staff_id: '', staff_ids: svc.staff_ids || [] }]);
     setSvcSearch('');
+  };
+
+  const updateItem = (idx, field, val) => {
+    setFormItems(prev => prev.map((it, i) => i === idx ? { ...it, [field]: val } : it));
   };
 
   const removeService = (idx) => setFormItems(prev => prev.filter((_, i) => i !== idx));
@@ -248,11 +252,13 @@ const Orders = () => {
     if (!formItems.length) { addNotification('Agrega al menos un servicio', 'error'); return; }
     setSubmitting(true);
     try {
+      // Use first item's staff_id as order-level staff
+      const mainStaff = formItems.find(it => it.staff_id)?.staff_id || null;
       const payload = {
         ...form,
         client_id: selectedClient?.id || null,
-        staff_id: form.staff_id ? parseInt(form.staff_id) : null,
-        items: formItems,
+        staff_id: mainStaff ? parseInt(mainStaff) : null,
+        items: formItems.map(it => ({ ...it, staff_id: it.staff_id ? parseInt(it.staff_id) : null })),
         products: formProducts,
       };
       if (editOrder) {
@@ -590,28 +596,42 @@ const Orders = () => {
                 )}
               </div>
 
-              {/* Staff */}
+              {/* Services + Staff per service */}
               <div className={`${b}__section`}>
-                <h3 className={`${b}__section-title`}>Personal <span className={`${b}__optional`}>(opcional)</span></h3>
-                <select className={`${b}__staff-select`} value={form.staff_id} onChange={e => setForm(p => ({ ...p, staff_id: e.target.value }))}>
-                  <option value="">Sin asignar por ahora</option>
-                  {staffList.map(s => <option key={s.id} value={s.id}>{s.name} — {s.role_category || 'Staff'}</option>)}
-                </select>
-              </div>
-
-              {/* Services */}
-              <div className={`${b}__section`}>
-                <h3 className={`${b}__section-title`}>Servicios</h3>
+                <h3 className={`${b}__section-title`}>Servicios y personal</h3>
                 {formItems.length > 0 && (
                   <div className={`${b}__item-list`}>
-                    {formItems.map((item, i) => (
-                      <div key={i} className={`${b}__item-row`}>
-                        <span className={`${b}__item-name`}>{item.service_name}</span>
-                        <span className={`${b}__item-dur`}>{item.duration_minutes}min</span>
-                        <span className={`${b}__item-price`}>{formatCOP(item.price)}</span>
-                        <button className={`${b}__item-remove`} onClick={() => removeService(i)}><TrashIcon /></button>
-                      </div>
-                    ))}
+                    {formItems.map((item, i) => {
+                      const eligible = item.staff_ids?.length
+                        ? staffList.filter(s => item.staff_ids.includes(s.id))
+                        : staffList;
+                      return (
+                        <div key={i} className={`${b}__svc-card`}>
+                          <div className={`${b}__svc-card-top`}>
+                            <span className={`${b}__svc-card-name`}>{item.service_name}</span>
+                            <span className={`${b}__svc-card-dur`}>{item.duration_minutes}min</span>
+                            <span className={`${b}__svc-card-price`}>{formatCOP(item.price)}</span>
+                            <button className={`${b}__item-remove`} onClick={() => removeService(i)}><TrashIcon /></button>
+                          </div>
+                          <div className={`${b}__svc-card-staff`}>
+                            <label>Asignar a:</label>
+                            <div className={`${b}__staff-chips`}>
+                              {eligible.map(s => (
+                                <button key={s.id}
+                                  className={`${b}__staff-chip ${item.staff_id == s.id ? `${b}__staff-chip--active` : ''}`}
+                                  onClick={() => updateItem(i, 'staff_id', item.staff_id == s.id ? '' : s.id)}>
+                                  <span className={`${b}__staff-chip-avatar`} style={{ background: s.color || '#3B82F6' }}>
+                                    {s.name?.split(' ')[0]?.[0]}{s.name?.split(' ')[1]?.[0] || ''}
+                                  </span>
+                                  <span>{s.name?.split(' ')[0]}</span>
+                                </button>
+                              ))}
+                              {!item.staff_id && <span className={`${b}__staff-pending`}>Sin asignar</span>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 <div className={`${b}__add-search`}>

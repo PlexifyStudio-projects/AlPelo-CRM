@@ -881,6 +881,107 @@
     text-align: right;
   }
 
+  // ─── Service card with staff ────────────────────────
+  &__svc-card {
+    padding: 12px 14px;
+    background: $color-gray-50;
+    border-radius: 10px;
+    border: 1px solid $color-gray-100;
+  }
+
+  &__svc-card-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__svc-card-name {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: $font-weight-semibold;
+    color: $color-secondary;
+  }
+
+  &__svc-card-dur {
+    font-size: 0.75rem;
+    color: $color-gray-400;
+  }
+
+  &__svc-card-price {
+    font-size: 0.88rem;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    min-width: 70px;
+    text-align: right;
+  }
+
+  &__svc-card-staff {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid $color-gray-100;
+
+    label {
+      font-size: 0.72rem;
+      font-weight: $font-weight-semibold;
+      color: $color-gray-400;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      display: block;
+      margin-bottom: 8px;
+    }
+  }
+
+  &__staff-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  &__staff-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px 5px 5px;
+    border: 1px solid $color-gray-200;
+    border-radius: $border-radius-full;
+    background: white;
+    font-size: 0.78rem;
+    font-weight: $font-weight-medium;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all 150ms;
+
+    &:hover { border-color: $color-primary-light; color: $color-primary; }
+
+    &--active {
+      background: rgba($color-primary, 0.08);
+      border-color: $color-primary;
+      color: $color-primary;
+      font-weight: $font-weight-semibold;
+    }
+  }
+
+  &__staff-chip-avatar {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    font-weight: $font-weight-bold;
+    color: white;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+
+  &__staff-pending {
+    font-size: 0.75rem;
+    color: $color-gray-300;
+    font-style: italic;
+  }
+
   &__item-remove {
     background: none;
     border: none;
