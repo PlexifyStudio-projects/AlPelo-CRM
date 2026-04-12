@@ -1118,9 +1118,14 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                             const bottomPx = slotTops[Math.floor(bEndSlot)] || topPx;
                             const height = bottomPx - topPx;
                             if (height <= 0) return null;
+                            const breakTime = `${pad2(bsh)}:${pad2(bsm)}`;
                             return (
-                              <div className={`${b}__break-block`} style={{ top: `${topPx}px`, height: `${height}px` }}>
+                              <div className={`${b}__break-block`} style={{ top: `${topPx}px`, height: `${height}px` }}
+                                onClick={(e) => { e.stopPropagation(); openCreate(currentDate, breakTime, s.id); }}
+                                title={`Descanso ${ds.break_start} - ${ds.break_end} · Clic para agendar aquí`}>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
                                 <span>Descanso</span>
+                                <small>{ds.break_start} — {ds.break_end}</small>
                               </div>
                             );
                           })()}
