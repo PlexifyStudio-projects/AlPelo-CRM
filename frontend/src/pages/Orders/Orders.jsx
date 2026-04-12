@@ -134,6 +134,18 @@ const Orders = () => {
         staffService.list(),
         fetch(`${API}/inventory/products`, { credentials: 'include' }).then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] })),
       ]);
+      // Auto-mark stale pending/in_progress orders as no_show after 48h
+      const now = Date.now();
+      const stale = orderList.filter(o =>
+        (o.status === 'pending' || o.status === 'in_progress') &&
+        o.payment_status === 'unpaid' &&
+        o.arrival_time && (now - new Date(o.arrival_time).getTime()) > 48 * 60 * 60 * 1000
+      );
+      if (stale.length) {
+        await Promise.all(stale.map(o => orderService.update(o.id, { status: 'no_show' }).catch(() => {})));
+        stale.forEach(o => { o.status = 'no_show'; });
+        if (stale.length) addNotification(`${stale.length} orden(es) marcada(s) como "No asistió" (más de 48h sin acción)`, 'warning');
+      }
       setOrders(orderList);
       setServices(svcList.filter(s => s.is_active));
       setStaffList(staffData.filter(s => s.is_active !== false));
@@ -683,9 +695,29 @@ const Orders = () => {
               </div>
 
               {/* ── Fecha ── */}
-              <div className={`${b}__date-section`}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <input type="date" value={orderDate} onChange={e => { setOrderDate(e.target.value); formItems.forEach((_, idx) => updateItem(idx, 'time', '')); }} />
+              <div className={`${b}__date-tabs`}>
+                {(() => {
+                  const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                  const today = new Date(); today.setHours(0,0,0,0);
+                  const days = [];
+                  for (let i = -2; i <= 7; i++) {
+                    const d = new Date(today); d.setDate(d.getDate() + i);
+                    days.push(d);
+                  }
+                  return days.map(d => {
+                    const iso = toISO(d);
+                    const isActive = iso === orderDate;
+                    const isToday = iso === toISO(today);
+                    return (
+                      <button key={iso}
+                        className={`${b}__date-tab ${isActive ? `${b}__date-tab--on` : ''} ${isToday ? `${b}__date-tab--today` : ''}`}
+                        onClick={() => { setOrderDate(iso); formItems.forEach((_, idx) => updateItem(idx, 'time', '')); }}>
+                        <span className={`${b}__date-tab-day`}>{DAYS[d.getDay()]}</span>
+                        <span className={`${b}__date-tab-num`}>{d.getDate()}</span>
+                      </button>
+                    );
+                  });
+                })()}
               </div>
 
               {/* ── Cliente ── */}

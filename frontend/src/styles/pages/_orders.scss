@@ -684,29 +684,59 @@
     }
   }
 
-  // ─── Date selector ────────────────────────────────
-  &__date-section {
+  // ─── Date tabs ────────────────────────────────────
+  &__date-tabs {
     display: flex;
+    gap: 4px;
+    padding: 12px 0;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  &__date-tab {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
-    padding: 12px 18px;
+    gap: 2px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 10px;
     background: white;
-    border-radius: 12px;
-    margin-bottom: 16px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03);
+    cursor: pointer;
+    transition: all 150ms;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
-    svg { color: $color-primary; opacity: 0.6; flex-shrink: 0; }
+    &:hover { background: rgba($color-primary, 0.04); }
 
-    input[type="date"] {
-      flex: 1;
-      border: none;
-      outline: none;
-      font-size: 0.88rem;
-      font-weight: $font-weight-semibold;
-      color: $color-secondary;
-      background: none;
-      cursor: pointer;
+    &--on {
+      background: $color-primary !important;
+      box-shadow: 0 2px 8px rgba($color-primary, 0.25);
     }
+
+    &--on &-day, &--on &-num { color: white !important; }
+
+    &--today &-num {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+  }
+
+  &__date-tab-day {
+    font-size: 0.62rem;
+    font-weight: $font-weight-semibold;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__date-tab-num {
+    font-size: 0.95rem;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    line-height: 1;
   }
 
   // ─── Sections ─────────────────────────────────────
