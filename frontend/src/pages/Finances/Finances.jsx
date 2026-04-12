@@ -2868,95 +2868,113 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
   const selectNone = () => onSelectionChange && onSelectionChange([]);
 
   return (
-    <div className="finances__visit-list">
-      <div className="finances__visit-date-bar">
-        <span className="finances__visit-date-label">Periodo:</span>
-        <input type="date" value={localFrom} onChange={e => setLocalFrom(e.target.value)} className="finances__visit-date-input" />
-        <span style={{ color: 'rgba(0,0,0,0.3)' }}>—</span>
-        <input type="date" value={localTo} onChange={e => setLocalTo(e.target.value)} className="finances__visit-date-input" />
+    <div className="finances__vl">
+      <div className="finances__vl-dates">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <input type="date" value={localFrom} onChange={e => setLocalFrom(e.target.value)} />
+        <span className="finances__vl-dates-sep">hasta</span>
+        <input type="date" value={localTo} onChange={e => setLocalTo(e.target.value)} />
       </div>
-      <div className="finances__visit-toolbar">
-        <div className="finances__visit-search">
+
+      <div className="finances__vl-controls">
+        <div className="finances__vl-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" placeholder="Buscar cliente, servicio, ticket..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <div className="finances__visit-filters">
-          {['all', 'unpaid', 'paid'].map(f => (
-            <button key={f} className={`finances__visit-filter-chip ${filter === f ? 'finances__visit-filter-chip--active' : ''}`} onClick={() => setFilter(f)}>
-              {f === 'all' ? 'Todas' : f === 'unpaid' ? 'Sin pagar' : 'Pagadas'}
-              {f === 'unpaid' && unpaidCount > 0 && <span className="finances__visit-filter-count">{unpaidCount}</span>}
-              {f === 'paid' && paidCount > 0 && <span className="finances__visit-filter-count">{paidCount}</span>}
+        <div className="finances__vl-filters">
+          {[
+            { id: 'all', label: 'Todas', icon: null },
+            { id: 'unpaid', label: 'Sin pagar', count: unpaidCount, color: '#D97706' },
+            { id: 'paid', label: 'Pagadas', count: paidCount, color: '#10B981' },
+          ].map(f => (
+            <button key={f.id} className={`finances__vl-filter ${filter === f.id ? 'finances__vl-filter--active' : ''}`} onClick={() => setFilter(f.id)}>
+              {f.label}
+              {f.count > 0 && <span className="finances__vl-filter-badge" style={filter === f.id ? {} : { background: `${f.color}15`, color: f.color }}>{f.count}</span>}
             </button>
           ))}
         </div>
       </div>
+
       {selectable && (
-        <div className="finances__visit-select-bar">
-          <button className="finances__visit-select-btn" onClick={selectAllUnpaid}>Seleccionar sin pagar</button>
+        <div className="finances__vl-actions">
+          <button className="finances__vl-action" onClick={selectAllUnpaid}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 12l2 2 4-4"/></svg>
+            Seleccionar pendientes
+          </button>
           {selectedIds && selectedIds.length > 0 && (
             <>
-              <button className="finances__visit-select-btn finances__visit-select-btn--clear" onClick={selectNone}>Deseleccionar</button>
-              <span className="finances__visit-select-count">{selectedIds.length} seleccionadas</span>
+              <button className="finances__vl-action finances__vl-action--clear" onClick={selectNone}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                Limpiar
+              </button>
+              <span className="finances__vl-selected-count">{selectedIds.length} seleccionadas</span>
             </>
           )}
         </div>
       )}
-      <div className="finances__visit-scroll">
+
+      <div className="finances__vl-table">
+        <div className="finances__vl-thead">
+          {selectable && <span style={{ width: 32 }} />}
+          <span style={{ width: 70 }}>Ticket</span>
+          <span style={{ width: 120 }}>Fecha</span>
+          <span style={{ width: 50 }}>Hora</span>
+          <span style={{ flex: 1 }}>Cliente</span>
+          <span className="finances__vl-thead-r" style={{ width: 90 }}>Precio</span>
+          <span className="finances__vl-thead-r" style={{ width: 90 }}>Comisión</span>
+          <span style={{ width: 100 }}>Estado</span>
+        </div>
         {filtered.map(v => {
           const commission = getCommission(v);
           const products = parseProducts(v.notes);
           const dur = v.duration_minutes;
           const paid = isPaidVisit(v);
           return (
-            <div key={v.id} className={`finances__visit-item ${paid ? 'finances__visit-item--paid' : ''} ${selectable && isSelected(v.id) ? 'finances__visit-item--selected' : ''}`}
-              onClick={selectable && !paid ? () => toggleSelect(v.id) : undefined}
-              style={selectable && !paid ? { cursor: 'pointer' } : undefined}
-            >
-              <div className="finances__visit-top">
+            <div key={v.id}>
+              <div className={`finances__vl-row ${paid ? 'finances__vl-row--paid' : ''} ${selectable && isSelected(v.id) ? 'finances__vl-row--selected' : ''}`}
+                onClick={selectable && !paid ? () => toggleSelect(v.id) : undefined}
+                style={selectable && !paid ? { cursor: 'pointer' } : undefined}>
                 {selectable && (
-                  <span className="finances__visit-check">
-                    {paid ? (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="#10B981" stroke="#10B981" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
-                    ) : (
-                      <span className={`finances__visit-checkbox ${isSelected(v.id) ? 'finances__visit-checkbox--checked' : ''}`}>
-                        {isSelected(v.id) && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
-                      </span>
-                    )}
+                  <span className="finances__vl-check" style={{ width: 32 }}>
+                    {paid
+                      ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                      : <span className={`finances__vl-checkbox ${isSelected(v.id) ? 'finances__vl-checkbox--on' : ''}`}>
+                          {isSelected(v.id) && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                        </span>
+                    }
                   </span>
                 )}
-                <span className="finances__visit-id">{v.visit_code ? `#${v.visit_code}` : `#${v.id}`}</span>
-                <span className="finances__visit-date">{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                <span className="finances__visit-time">{v.time}</span>
-                <span className="finances__visit-client">{v.client_name}</span>
-                <span className="finances__visit-amount">{formatCOP(v.price || 0)}</span>
-              </div>
-              <div className="finances__visit-mid">
-                <span className="finances__visit-service">{v.service_name}</span>
-                {dur && <span className="finances__visit-dur">{dur}min</span>}
-                <span className="finances__visit-commission">{formatCOP(commission)}</span>
-                {paid ? (
-                  <div className="finances__visit-status-wrap">
-                    <span className="finances__visit-status finances__visit-status--liquidada">Liquidada</span>
-                    <button className="finances__visit-return-btn" onClick={(e) => {
-                      e.stopPropagation();
-                      fetch(`${API}/appointments/${v.id}`, {
-                        method: 'PUT', credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ staff_payment_id: null }),
-                      }).then(() => {
-                        setVisits(prev => prev.map(x => x.id === v.id ? { ...x, staff_payment_id: null } : x));
-                      }).catch(() => {});
-                    }} title="Retornar a pendiente">
-                      Retornar
-                    </button>
-                  </div>
-                ) : (
-                  <span className="finances__visit-status finances__visit-status--pendiente">Pendiente</span>
-                )}
+                <span className="finances__vl-ticket" style={{ width: 70 }}>{v.visit_code ? `#${v.visit_code}` : `#${v.id}`}</span>
+                <span className="finances__vl-date" style={{ width: 120 }}>{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                <span className="finances__vl-time" style={{ width: 50 }}>{v.time}</span>
+                <span className="finances__vl-client" style={{ flex: 1 }}>
+                  <strong>{v.client_name}</strong>
+                  <small>{v.service_name}{dur ? ` · ${dur}min` : ''}</small>
+                </span>
+                <span className="finances__vl-price" style={{ width: 90 }}>{formatCOP(v.price || 0)}</span>
+                <span className="finances__vl-comm" style={{ width: 90 }}>{formatCOP(commission)}</span>
+                <span style={{ width: 100 }}>
+                  {paid ? (
+                    <div className="finances__vl-status-wrap">
+                      <span className="finances__vl-badge finances__vl-badge--paid">Pagada</span>
+                      <button className="finances__vl-return" onClick={(e) => {
+                        e.stopPropagation();
+                        fetch(`${API}/appointments/${v.id}`, {
+                          method: 'PUT', credentials: 'include',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ staff_payment_id: null }),
+                        }).then(() => setVisits(prev => prev.map(x => x.id === v.id ? { ...x, staff_payment_id: null } : x))).catch(() => {});
+                      }}>↩</button>
+                    </div>
+                  ) : (
+                    <span className="finances__vl-badge finances__vl-badge--pending">Pendiente</span>
+                  )}
+                </span>
               </div>
               {products.length > 0 && (
-                <div className="finances__visit-products">
+                <div className="finances__vl-products">
                   {products.map((p, i) => (
-                    <span key={i} className="finances__visit-product-tag">{p.name} x{p.qty} {formatCOP((p.sale || 0) * (p.qty || 1))}{p.comm ? ` (com: ${formatCOP(p.comm)})` : ''}</span>
+                    <span key={i} className="finances__vl-product">{p.name} x{p.qty} {formatCOP((p.sale || 0) * (p.qty || 1))}</span>
                   ))}
                 </div>
               )}
@@ -2964,11 +2982,12 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
           );
         })}
       </div>
-      <div className="finances__visit-summary">
-        <div className="finances__visit-summary-row"><span>{filtered.length} servicios</span><span>{formatCOP(totalRevenue)}</span></div>
-        <div className="finances__visit-summary-row"><span>Comisiones</span><span style={{ color: '#059669' }}>{formatCOP(totalCommission)}</span></div>
-        {totalProducts > 0 && <div className="finances__visit-summary-row"><span>Productos vendidos</span><span style={{ color: '#D97706' }}>{formatCOP(totalProducts)}</span></div>}
-        <div className="finances__visit-summary-total"><span>Total a pagar</span><span>{formatCOP(totalCommission)}</span></div>
+
+      <div className="finances__vl-summary">
+        <div className="finances__vl-summary-row"><span>{filtered.length} servicios</span><span>{formatCOP(totalRevenue)}</span></div>
+        <div className="finances__vl-summary-row finances__vl-summary-row--accent"><span>Comisión del profesional</span><span>{formatCOP(totalCommission)}</span></div>
+        {totalProducts > 0 && <div className="finances__vl-summary-row"><span>Productos vendidos</span><span>{formatCOP(totalProducts)}</span></div>}
+        <div className="finances__vl-summary-total"><span>Total a pagar</span><span>{formatCOP(totalCommission)}</span></div>
       </div>
     </div>
   );
