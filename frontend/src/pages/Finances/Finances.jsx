@@ -1568,25 +1568,20 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   // Load staff default rates once
   useEffect(() => {
     fetch(`${API_URL}/finances/commissions/config`, { credentials: 'include' })
-      .then(r => { console.log('[DEBUG] commissions/config response status:', r.status); return r.ok ? r.json() : []; })
+      .then(r => r.ok ? r.json() : [])
       .then(data => {
-        console.log('[DEBUG] commissions/config raw data:', JSON.stringify(data).substring(0, 500));
         const m = {};
         data.forEach(c => { m[c.staff_id] = c.default_rate || 0; });
-        console.log('[DEBUG] staffDefaults built:', JSON.stringify(m));
         setStaffDefaults(m);
-      }).catch(err => { console.error('[DEBUG] commissions/config ERROR:', err); });
+      }).catch(() => {});
   }, []);
 
   // Load ALL commission rates from one endpoint
   useEffect(() => {
     fetch(`${API_URL}/services/all-commissions`, { credentials: 'include' })
-      .then(r => { console.log('[DEBUG] all-commissions response status:', r.status); return r.ok ? r.json() : { rates: {} }; })
-      .then(data => {
-        console.log('[DEBUG] all-commissions raw data:', JSON.stringify(data));
-        setSvcCommRates(data.rates || {});
-      })
-      .catch(err => { console.error('[DEBUG] all-commissions ERROR:', err); });
+      .then(r => r.ok ? r.json() : { rates: {} })
+      .then(data => setSvcCommRates(data.rates || {}))
+      .catch(() => {});
   }, []);
 
   const handleClientSearch = (value) => {
@@ -2141,7 +2136,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         {(() => {
                           // Group items by staff with per-service rates
                           const byStaff = {};
-                          console.log('[DEBUG RENDER] svcCommRates keys:', Object.keys(svcCommRates).length, 'staffDefaults keys:', Object.keys(staffDefaults).length);
                           (inv.items || []).forEach(it => {
                             const name = it.staff_name || 'Sin asignar';
                             if (!byStaff[name]) byStaff[name] = { name, staffId: it.staff_id, items: [], total: 0, comm: 0 };
@@ -2149,7 +2143,6 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             const perSvcRate = it.service_id ? svcCommRates[key] : undefined;
                             const defRate = staffDefaults[it.staff_id];
                             const rate = perSvcRate > 0 ? perSvcRate : defRate > 0 ? defRate : 0;
-                            console.log('[DEBUG ITEM]', it.staff_name, '|', it.service_name, '| staff_id:', it.staff_id, '| svc_id:', it.service_id, '| key:', key, '| perSvc:', perSvcRate, '| def:', defRate, '| RATE:', rate);
                             const c = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
                             byStaff[name].items.push({ ...it, rate, commAmount: c });
                             byStaff[name].total += (it.unit_price || 0) * (it.quantity || 1);

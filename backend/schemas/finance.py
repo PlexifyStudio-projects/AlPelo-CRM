@@ -119,9 +119,11 @@ class CommissionPayoutItem(BaseModel):
     services_count: int
 
 class InvoiceItemCreate(BaseModel):
+    service_id: Optional[int] = None
     service_name: str
     quantity: int = 1
     unit_price: int
+    staff_id: Optional[int] = None
     staff_name: Optional[str] = None
     visit_id: Optional[int] = None
 
@@ -156,10 +158,12 @@ class InvoiceUpdate(BaseModel):
 
 class InvoiceItemResponse(BaseModel):
     id: int
+    service_id: Optional[int] = None
     service_name: str
     quantity: int
     unit_price: int
     total: int
+    staff_id: Optional[int] = None
     staff_name: Optional[str] = None
     visit_id: Optional[int] = None
 

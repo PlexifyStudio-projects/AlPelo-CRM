@@ -459,10 +459,12 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db), current_u
         item = InvoiceItem(
             tenant_id=tid,
             invoice_id=inv.id,
+            service_id=item_data.service_id,
             service_name=item_data.service_name,
             quantity=item_data.quantity,
             unit_price=item_data.unit_price,
             total=item_data.unit_price * item_data.quantity,
+            staff_id=item_data.staff_id,
             staff_name=item_data.staff_name,
             visit_id=item_data.visit_id,
         )

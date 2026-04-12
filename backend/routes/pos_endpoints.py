@@ -365,10 +365,12 @@ def create_checkout(
         inv_item = InvoiceItem(
             tenant_id=tid,
             invoice_id=invoice.id,
+            service_id=item.service_id,
             service_name=item.service_name,
             quantity=item.quantity,
             unit_price=item.unit_price,
             total=item.unit_price * item.quantity,
+            staff_id=item.staff_id or staff_id,
             staff_name=item.staff_name or staff_name,
             visit_id=visit_ids[0] if visit_ids else None,
         )

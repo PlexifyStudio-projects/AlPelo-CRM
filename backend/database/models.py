@@ -537,10 +537,12 @@ class InvoiceItem(Base):
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=True)
     invoice_id = Column(Integer, ForeignKey("public.invoice.id"), nullable=False)
+    service_id = Column(Integer, nullable=True)
     service_name = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False, default=1)
     unit_price = Column(Integer, nullable=False)
     total = Column(Integer, nullable=False)
+    staff_id = Column(Integer, nullable=True)
     staff_name = Column(String, nullable=True)
     visit_id = Column(Integer, ForeignKey("public.visit_history.id"), nullable=True)
 
