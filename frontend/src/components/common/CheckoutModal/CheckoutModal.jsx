@@ -816,7 +816,10 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         <div className={`${b}__receipt-items`}>
           {items.map(item => (
             <div key={item.id} className={`${b}__receipt-item`}>
-              <span>{item.service_name}</span>
+              <div>
+                <span>{item.service_name}</span>
+                {item.staff_name && <small style={{ display: 'block', fontSize: '0.72rem', color: '#64748B', marginTop: 1 }}>{item.staff_name}</small>}
+              </div>
               <span>{fmt(item.price)}</span>
             </div>
           ))}
@@ -868,18 +871,47 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         )}
 
         <div className={`${b}__receipt-breakdown`}>
-          <div className={`${b}__receipt-breakdown-title`}>Desglose</div>
-          <div className={`${b}__receipt-breakdown-row`}>
-            <span>Profesional</span>
-            <span className={`${b}__receipt-breakdown-value`}>{appointment.staff_name}</span>
-          </div>
-          <div className={`${b}__receipt-breakdown-row`}>
-            <span>Comision staff ({staffCommissionRate}%)</span>
-            <span className={`${b}__receipt-breakdown-value`} style={{ color: '#059669' }}>{fmt(commissionAmount)}</span>
-          </div>
-          <div className={`${b}__receipt-breakdown-row`}>
-            <span>Ganancia negocio</span>
-            <span className={`${b}__receipt-breakdown-value`} style={{ color: '#2563EB' }}>{fmt(total - commissionAmount)}</span>
+          <div className={`${b}__receipt-breakdown-title`}>Desglose por profesional</div>
+          {(() => {
+            // Group items by staff
+            const byStaff = {};
+            items.forEach(it => {
+              const key = it.staff_name || appointment.staff_name || 'Staff';
+              if (!byStaff[key]) byStaff[key] = { name: key, total: 0, services: [] };
+              byStaff[key].total += it.price || 0;
+              byStaff[key].services.push(it.service_name);
+            });
+            const staffEntries = Object.values(byStaff);
+            return staffEntries.map((s, idx) => {
+              const sComm = Math.round(s.total * staffCommissionRate / 100);
+              return (
+                <div key={idx} className={`${b}__receipt-staff-block`}>
+                  <div className={`${b}__receipt-breakdown-row`}>
+                    <span style={{ fontWeight: 700 }}>{s.name}</span>
+                    <span className={`${b}__receipt-breakdown-value`}>{s.services.join(', ')}</span>
+                  </div>
+                  <div className={`${b}__receipt-breakdown-row`}>
+                    <span>Servicios</span>
+                    <span>{fmt(s.total)}</span>
+                  </div>
+                  <div className={`${b}__receipt-breakdown-row`}>
+                    <span>Comisión ({staffCommissionRate}%)</span>
+                    <span className={`${b}__receipt-breakdown-value`} style={{ color: '#059669' }}>{fmt(sComm)}</span>
+                  </div>
+                  {staffEntries.length > 1 && idx < staffEntries.length - 1 && <div style={{ borderBottom: '1px dashed #e2e8f0', margin: '6px 0' }} />}
+                </div>
+              );
+            });
+          })()}
+          <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 8, paddingTop: 8 }}>
+            <div className={`${b}__receipt-breakdown-row`}>
+              <span>Total comisiones</span>
+              <span className={`${b}__receipt-breakdown-value`} style={{ color: '#059669', fontWeight: 700 }}>{fmt(commissionAmount)}</span>
+            </div>
+            <div className={`${b}__receipt-breakdown-row`}>
+              <span>Ganancia negocio</span>
+              <span className={`${b}__receipt-breakdown-value`} style={{ color: '#2563EB', fontWeight: 700 }}>{fmt(total - commissionAmount)}</span>
+            </div>
           </div>
           {productItems.length > 0 && productItems.some(p => p.commission > 0) && (
             <div className={`${b}__receipt-breakdown-row`}>
