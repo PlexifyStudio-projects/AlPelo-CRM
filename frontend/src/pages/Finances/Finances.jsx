@@ -2921,7 +2921,7 @@ const parseProducts = (notes) => {
   try { return JSON.parse(notes.substring(s + PRODUCTS_TAG.length, e)); } catch { return []; }
 };
 
-const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, commissionRate, selectable = false, selectedIds, onSelectionChange, onVisitsLoaded }) => {
+const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, commissionRate, finesTotal = 0, selectable = false, selectedIds, onSelectionChange, onVisitsLoaded }) => {
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -3112,7 +3112,8 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
         <div className="finances__vl-summary-row"><span>{filtered.length} servicios</span><span>{formatCOP(totalRevenue)}</span></div>
         <div className="finances__vl-summary-row finances__vl-summary-row--accent"><span>Comisión del profesional</span><span>{formatCOP(totalCommission)}</span></div>
         {totalProducts > 0 && <div className="finances__vl-summary-row"><span>Productos vendidos</span><span>{formatCOP(totalProducts)}</span></div>}
-        <div className="finances__vl-summary-total"><span>Total a pagar</span><span>{formatCOP(totalCommission)}</span></div>
+        {finesTotal > 0 && <div className="finances__vl-summary-row" style={{ color: '#DC2626' }}><span>Multas</span><span>-{formatCOP(finesTotal)}</span></div>}
+        <div className="finances__vl-summary-total"><span>Total a pagar</span><span>{formatCOP(totalCommission - finesTotal)}</span></div>
       </div>
     </div>
   );
@@ -4157,6 +4158,7 @@ const TabNomina = () => {
                         dateFrom={dateFrom}
                         dateTo={dateTo}
                         commissionRate={st.commission_rate}
+                        finesTotal={st.fines_total || 0}
                         selectable={true}
                         selectedIds={selectedVisitIds}
                         onSelectionChange={setSelectedVisitIds}
