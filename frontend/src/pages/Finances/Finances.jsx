@@ -3006,7 +3006,7 @@ const openPaymentReceipt = (paymentId, apiBase) => {
       </body></html>`);
       w.document.close();
     })
-    .catch(() => { w.document.body.innerHTML = '<p style="color:red;text-align:center">Error cargando comprobante</p>'; });
+    .catch((err) => { w.document.body.innerHTML = `<p style="color:red;text-align:center">Error cargando comprobante</p><p style="color:#888;text-align:center;font-size:12px">${err?.message || err || 'Error desconocido'}</p>`; });
 };
 
 // ============================================================================
