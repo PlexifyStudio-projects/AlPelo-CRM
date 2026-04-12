@@ -14,6 +14,7 @@ from database.models import (
     Admin, Checkout, CheckoutItem, CashRegister,
     Appointment, Client, Staff, Service, Tenant,
     VisitHistory, Invoice, InvoiceItem, StaffCommission,
+    Product, InventoryMovement,
 )
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid, now_colombia
@@ -27,6 +28,7 @@ router = APIRouter()
 
 class CheckoutItemCreate(BaseModel):
     service_id: Optional[int] = None
+    product_id: Optional[int] = None
     service_name: str
     quantity: int = 1
     unit_price: int
@@ -277,6 +279,23 @@ def create_checkout(
             staff_name=item.staff_name or staff_name,
         )
         db.add(ci)
+
+    # ---- Deduct product stock ----
+    for item in data.items:
+        if item.product_id:
+            product = db.query(Product).filter(Product.id == item.product_id).first()
+            if product:
+                product.stock = max(0, product.stock - item.quantity)
+                db.add(InventoryMovement(
+                    tenant_id=tid,
+                    product_id=item.product_id,
+                    movement_type="sale",
+                    quantity=-item.quantity,
+                    unit_cost=item.unit_price,
+                    note=f"Venta checkout #{checkout.id}",
+                    reference_id=checkout.id,
+                    created_by=getattr(current_user, "username", None),
+                ))
 
     # ---- Auto-create VisitHistory (ONE PER STAFF) ----
     # Group items by staff_id so each staff gets their own visit record

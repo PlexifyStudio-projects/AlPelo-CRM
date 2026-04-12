@@ -349,6 +349,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           })),
           ...productItems.map(p => ({
             service_id: null,
+            product_id: p.productId || null,
             service_name: `[Producto] ${p.name}`,
             quantity: p.qty || 1,
             unit_price: p.salePrice || 0,
