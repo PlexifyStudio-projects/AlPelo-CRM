@@ -127,15 +127,38 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     if (!appointment) return;
     setClientName(appointment.client_name || 'Cliente');
     setSelectedClientId(appointment.client_id);
-    setItems([{
-      id: crypto.randomUUID(),
-      service_id: appointment.service_id,
-      service_name: appointment.service_name || 'Servicio',
-      staff_name: appointment.staff_name || 'Staff',
-      staff_id: appointment.staff_id,
-      price: appointment.price || 0,
-    }]);
-    setProductItems(deserializeProducts(appointment.notes));
+    // Support multiple items from Orders module
+    if (appointment._all_items?.length) {
+      setItems(appointment._all_items.map(i => ({
+        id: crypto.randomUUID(),
+        service_id: i.service_id,
+        service_name: i.service_name || 'Servicio',
+        staff_name: i.staff_name || 'Staff',
+        staff_id: i.staff_id,
+        price: i.price || 0,
+      })));
+    } else {
+      setItems([{
+        id: crypto.randomUUID(),
+        service_id: appointment.service_id,
+        service_name: appointment.service_name || 'Servicio',
+        staff_name: appointment.staff_name || 'Staff',
+        staff_id: appointment.staff_id,
+        price: appointment.price || 0,
+      }]);
+    }
+    // Support products from Orders module
+    if (appointment._products?.length) {
+      setProductItems(appointment._products.map(p => ({
+        id: crypto.randomUUID(),
+        product_id: p.product_id,
+        name: p.product_name || p.name,
+        quantity: p.quantity || 1,
+        unit_price: p.unit_price || 0,
+      })));
+    } else {
+      setProductItems(deserializeProducts(appointment.notes));
+    }
   }, [appointment]);
 
   useEffect(() => {
@@ -785,8 +808,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           <span className={`${b}__receipt-title`}>Resumen de cobro</span>
           <span className={`${b}__receipt-client`}>{clientName}</span>
           {(() => {
-            const codeMatch = (appointment?.notes || '').match(/\[CODIGO:([^\]]+)\]/);
-            const code = codeMatch ? codeMatch[1] : `#${appointment?.id || ''}`;
+            const code = appointment?.visit_code || appointment?.ticket_number || (() => { const m = (appointment?.notes || '').match(/\[CODIGO:([^\]]+)\]/); return m ? m[1] : `#${appointment?.id || ''}`; })();
             return <span className={`${b}__receipt-code`}>ID: {code}</span>;
           })()}
         </div>

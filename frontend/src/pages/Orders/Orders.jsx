@@ -405,9 +405,7 @@ const Orders = () => {
   };
 
   const handlePay = (order) => {
-    // Use current form items if editing, otherwise order items
     const items = showModal && formItems.length ? formItems : order.items || [];
-    // Validate at least one staff assigned
     const hasStaff = items.some(i => i.staff_id) || order.staff_id;
     if (!hasStaff) {
       addNotification('Debes asignar personal a al menos un servicio antes de cobrar', 'error');
@@ -416,6 +414,15 @@ const Orders = () => {
     const firstWithStaff = items.find(i => i.staff_id) || items[0] || {};
     const staffId = parseInt(firstWithStaff.staff_id) || order.staff_id;
     const staffName = staffList.find(s => s.id === staffId)?.name || order.staff_name || '';
+    // Build appointment-like object with ALL items encoded in notes for CheckoutModal
+    const allItems = items.map(i => ({
+      service_id: i.service_id,
+      service_name: i.service_name,
+      staff_id: parseInt(i.staff_id) || staffId,
+      staff_name: staffList.find(s => s.id === parseInt(i.staff_id))?.name || staffName,
+      price: i.price || 0,
+    }));
+    const prods = (showModal && formProducts.length ? formProducts : order.products || []);
     setCheckoutOrder({
       id: order.id,
       client_id: order.client_id,
@@ -425,9 +432,12 @@ const Orders = () => {
       service_name: firstWithStaff.service_name || 'Servicio',
       staff_id: staffId,
       staff_name: staffName,
-      price: order.subtotal || order.total || items.reduce((s, i) => s + (i.price || 0), 0),
+      price: allItems.reduce((s, i) => s + i.price, 0),
+      visit_code: order.ticket_number,
       notes: '',
       _order_id: order.id,
+      _all_items: allItems,
+      _products: prods,
     });
     setShowModal(false);
   };
@@ -618,7 +628,13 @@ const Orders = () => {
                   </div>
                   <div className={`${b}__card-money`}>
                     <span className={`${b}__card-total`}>{formatCOP(o.total)}</span>
-                    <span className={`${b}__card-pay`} style={{ color: py.color }}>{py.label}</span>
+                    {o.payment_status === 'unpaid' && o.status !== 'cancelled' && o.status !== 'no_show' && (o.staff_id || o.items?.some(it => it.staff_id)) ? (
+                      <button className={`${b}__card-pay-btn`} onClick={(e) => { e.stopPropagation(); handlePay(o); }}>
+                        Cobrar
+                      </button>
+                    ) : (
+                      <span className={`${b}__card-pay`} style={{ color: py.color }}>{py.label}</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -641,12 +657,6 @@ const Orders = () => {
                 <h2>{editOrder ? `Orden ${editOrder.ticket_number}` : 'Nueva orden'}</h2>
                 {editOrder && <span className={`${b}__drawer-status`} style={{ color: STATUS_META[editOrder.status]?.color, background: STATUS_META[editOrder.status]?.bg }}>{STATUS_META[editOrder.status]?.label}</span>}
               </div>
-              {editOrder && editOrder.payment_status === 'unpaid' && editOrder.status !== 'cancelled' && editOrder.status !== 'no_show' && (
-                <button className={`${b}__drawer-action ${b}__drawer-action--pay`}
-                  onClick={() => handlePay(editOrder)}>
-                  Cobrar
-                </button>
-              )}
               {editOrder && editOrder.payment_status === 'paid' && (
                 <button className={`${b}__drawer-action ${b}__drawer-action--unpay`}
                   onClick={async () => {

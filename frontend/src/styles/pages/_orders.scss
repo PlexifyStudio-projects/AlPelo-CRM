@@ -394,6 +394,20 @@
     font-weight: $font-weight-bold;
   }
 
+  &__card-pay-btn {
+    font-size: 0.7rem;
+    font-weight: $font-weight-bold;
+    color: white;
+    background: $color-success;
+    border: none;
+    padding: 4px 14px;
+    border-radius: $border-radius-full;
+    cursor: pointer;
+    transition: all 150ms;
+
+    &:hover { background: $color-success-dark; transform: scale(1.05); }
+  }
+
   // ─── Loading ───────────────────────────────────────
   &__loading {
     display: flex;
