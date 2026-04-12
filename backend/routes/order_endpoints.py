@@ -8,7 +8,7 @@ from sqlalchemy import or_, func
 from database.connection import get_db
 from database.models import Order, OrderItem, OrderProduct, Client, Staff, Service, Product
 from middleware.auth_middleware import get_current_user
-from routes._helpers import safe_tid
+from routes._helpers import safe_tid, now_colombia
 
 router = APIRouter(prefix="/api/orders", tags=["Orders"])
 
@@ -193,7 +193,7 @@ def create_order(data: dict, db: Session = Depends(get_db), user=Depends(get_cur
         client_doc_number=data.get("client_doc_number", ""),
         staff_id=data.get("staff_id"),
         status="pending",
-        arrival_time=datetime.utcnow(),
+        arrival_time=now_colombia(),
         notes=data.get("notes", ""),
         created_by=user.username if hasattr(user, 'username') else str(user.id),
     )
@@ -262,9 +262,9 @@ def update_order(order_id: int, data: dict, db: Session = Depends(get_db), user=
             setattr(o, field, data[field])
 
     if data.get("status") == "in_progress" and not o.service_start_time:
-        o.service_start_time = datetime.utcnow()
+        o.service_start_time = now_colombia()
     if data.get("status") == "completed" and not o.service_end_time:
-        o.service_end_time = datetime.utcnow()
+        o.service_end_time = now_colombia()
 
     # Replace items if provided
     if "items" in data:

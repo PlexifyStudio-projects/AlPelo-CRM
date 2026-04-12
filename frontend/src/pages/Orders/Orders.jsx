@@ -40,7 +40,7 @@ const formatCOP = (n) => {
 const fmtTime = (iso) => {
   if (!iso) return '—';
   const d = new Date(iso);
-  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
+  return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
 const SearchIcon = () => (
@@ -710,7 +710,7 @@ const Orders = () => {
                     {(() => {
                       const d = o.arrival_time ? new Date(o.arrival_time) : null;
                       if (!d) return '—';
-                      return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' });
+                      return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
                     })()}
                     <ClockIcon /> {fmtTime(o.arrival_time)}
                   </div>
