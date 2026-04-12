@@ -299,28 +299,29 @@ const Orders = () => {
   };
 
   const handlePay = (order) => {
-    // Validate staff assigned
-    const hasStaff = order.staff_id || order.items?.some(i => i.staff_id);
+    // Use current form items if editing, otherwise order items
+    const items = showModal && formItems.length ? formItems : order.items || [];
+    // Validate at least one staff assigned
+    const hasStaff = items.some(i => i.staff_id) || order.staff_id;
     if (!hasStaff) {
-      addNotification('Debes asignar personal antes de cobrar', 'error');
+      addNotification('Debes asignar personal a al menos un servicio antes de cobrar', 'error');
       return;
     }
-    // Build appointment-like object for CheckoutModal
-    const firstItem = order.items?.[0] || {};
-    const staffName = order.staff_name || staffList.find(s => s.id === (firstItem.staff_id || order.staff_id))?.name || '';
+    const firstWithStaff = items.find(i => i.staff_id) || items[0] || {};
+    const staffId = parseInt(firstWithStaff.staff_id) || order.staff_id;
+    const staffName = staffList.find(s => s.id === staffId)?.name || order.staff_name || '';
     setCheckoutOrder({
       id: order.id,
       client_id: order.client_id,
-      client_name: order.client_name,
-      client_phone: order.client_phone,
-      service_id: firstItem.service_id,
-      service_name: firstItem.service_name || 'Servicio',
-      staff_id: firstItem.staff_id || order.staff_id,
+      client_name: order.client_name || form.client_name,
+      client_phone: order.client_phone || form.client_phone,
+      service_id: firstWithStaff.service_id,
+      service_name: firstWithStaff.service_name || 'Servicio',
+      staff_id: staffId,
       staff_name: staffName,
-      price: order.subtotal || order.total || 0,
+      price: order.subtotal || order.total || items.reduce((s, i) => s + (i.price || 0), 0),
       notes: '',
       _order_id: order.id,
-      _order_items: order.items,
     });
     setShowModal(false);
   };
