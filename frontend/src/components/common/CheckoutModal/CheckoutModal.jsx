@@ -933,31 +933,37 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
                   <span style={{ fontWeight: 700 }}>{s.name}</span>
                   <span className={`${b}__receipt-breakdown-value`}>{fmt(s.totalSvc)}</span>
                 </div>
-                {s.items.map((it, j) => (
-                  <div key={j} className={`${b}__receipt-breakdown-row`} style={{ fontSize: '0.78rem', color: '#64748B', gap: 6 }}>
-                    <span style={{ flex: 1 }}>{it.service_name}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                      <input type="number" min="0" max="100" step="1"
-                        value={it.commRate}
-                        onChange={e => {
-                          const newRate = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                          const decimal = newRate / 100;
-                          // Update local state
-                          setPerServiceRates(prev => ({ ...prev, [`${it.staff_id}-${it.service_id}`]: decimal }));
-                          // Save to backend
-                          fetch(`${API_URL}/services/${it.service_id}/commissions`, {
-                            method: 'PUT', credentials: 'include',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify([{ staff_id: it.staff_id, commission_rate: decimal }]),
-                          }).catch(() => {});
-                        }}
-                        style={{ width: 42, padding: '2px 4px', border: '1px solid #e2e8f0', borderRadius: 4, fontSize: '0.78rem', textAlign: 'center', outline: 'none' }}
-                      />
-                      <span>%</span>
+                {s.items.map((it, j) => {
+                  const hasConfigured = perServiceRates[`${it.staff_id}-${it.service_id}`] > 0;
+                  return (
+                    <div key={j} className={`${b}__receipt-breakdown-row`} style={{ fontSize: '0.78rem', color: '#64748B', gap: 6 }}>
+                      <span style={{ flex: 1 }}>{it.service_name}</span>
+                      {hasConfigured ? (
+                        <span>({it.commRate}%)</span>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                          <input type="number" min="0" max="100" step="1"
+                            value={it.commRate}
+                            placeholder="0"
+                            onChange={e => {
+                              const newRate = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              const decimal = newRate / 100;
+                              setPerServiceRates(prev => ({ ...prev, [`${it.staff_id}-${it.service_id}`]: decimal }));
+                              fetch(`${API_URL}/services/${it.service_id}/commissions`, {
+                                method: 'PUT', credentials: 'include',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify([{ staff_id: it.staff_id, commission_rate: decimal }]),
+                              }).catch(() => {});
+                            }}
+                            style={{ width: 42, padding: '2px 4px', border: '1px solid #e2e8f0', borderRadius: 4, fontSize: '0.78rem', textAlign: 'center', outline: 'none', background: '#FEF3C7' }}
+                          />
+                          <span>%</span>
+                        </div>
+                      )}
+                      <span style={{ color: '#059669', minWidth: 60, textAlign: 'right' }}>{fmt(it.commAmount)}</span>
                     </div>
-                    <span style={{ color: '#059669', minWidth: 60, textAlign: 'right' }}>{fmt(it.commAmount)}</span>
-                  </div>
-                ))}
+                  );
+                })}
                 <div className={`${b}__receipt-breakdown-row`}>
                   <span>Comisión total</span>
                   <span className={`${b}__receipt-breakdown-value`} style={{ color: '#059669' }}>{fmt(s.totalComm)}</span>
