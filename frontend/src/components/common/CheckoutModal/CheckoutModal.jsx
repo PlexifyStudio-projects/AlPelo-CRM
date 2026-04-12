@@ -205,7 +205,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           const res = await fetch(`${API_URL}/services/${svcId}/commissions`, { credentials: 'include' });
           if (res.ok) {
             const data = await res.json();
-            (data.staff || []).forEach(s => {
+            (data.commissions || data.staff || []).forEach(s => {
               if (s.commission_rate > 0) rateMap[`${s.staff_id}-${svcId}`] = s.commission_rate;
             });
           }
