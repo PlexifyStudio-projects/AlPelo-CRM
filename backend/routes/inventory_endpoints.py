@@ -115,14 +115,67 @@ def get_product(product_id: int, db: Session = Depends(get_db), user: Admin = De
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    # Get recent movements
+    # Get recent movements from inventory
     movements = (
         db.query(InventoryMovement)
         .filter(InventoryMovement.product_id == product_id)
         .order_by(InventoryMovement.created_at.desc())
-        .limit(20)
+        .limit(50)
         .all()
     )
+
+    # Also get sales from CheckoutItem (for older sales without InventoryMovement)
+    product_tag = f"[Producto] {product.name}"
+    checkout_sales = (
+        db.query(CheckoutItem, Checkout)
+        .join(Checkout, Checkout.id == CheckoutItem.checkout_id)
+        .filter(CheckoutItem.service_name == product_tag)
+        .order_by(Checkout.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+    # Merge: existing movement IDs from checkout references
+    existing_refs = {m.reference_id for m in movements if m.reference_id and m.movement_type == 'sale'}
+
+    # Build combined list
+    all_movements = []
+    for m in movements:
+        entry = {
+            "id": m.id,
+            "type": m.movement_type,
+            "quantity": m.quantity,
+            "unit_cost": m.unit_cost,
+            "note": m.note,
+            "reference_id": m.reference_id,
+            "created_by": m.created_by,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        if m.movement_type == "sale" and m.reference_id:
+            entry.update(_get_checkout_info(db, m.reference_id))
+        all_movements.append(entry)
+
+    # Add checkout sales that don't have InventoryMovement yet
+    for ci, co in checkout_sales:
+        if co.id in existing_refs:
+            continue
+        all_movements.append({
+            "id": f"co-{co.id}",
+            "type": "sale",
+            "quantity": -(ci.quantity or 1),
+            "unit_cost": ci.unit_price,
+            "note": f"Venta checkout #{co.id}",
+            "reference_id": co.id,
+            "created_by": co.created_by,
+            "created_at": co.created_at.isoformat() if co.created_at else None,
+            "client_name": co.client_name,
+            "client_phone": getattr(co, 'client_phone', None),
+            "staff_name": ci.staff_name or co.staff_name,
+            "payment_method": co.payment_method,
+        })
+
+    # Sort by date desc
+    all_movements.sort(key=lambda x: x.get('created_at') or '', reverse=True)
 
     return {
         "id": product.id,
@@ -137,20 +190,7 @@ def get_product(product_id: int, db: Session = Depends(get_db), user: Admin = De
         "supplier": product.supplier,
         "image_url": product.image_url,
         "is_active": product.is_active,
-        "movements": [
-            {
-                "id": m.id,
-                "type": m.movement_type,
-                "quantity": m.quantity,
-                "unit_cost": m.unit_cost,
-                "note": m.note,
-                "reference_id": m.reference_id,
-                "created_by": m.created_by,
-                "created_at": m.created_at.isoformat() if m.created_at else None,
-                **(_get_checkout_info(db, m.reference_id) if m.movement_type == "sale" and m.reference_id else {}),
-            }
-            for m in movements
-        ],
+        "movements": all_movements[:50],
     }
 
 
