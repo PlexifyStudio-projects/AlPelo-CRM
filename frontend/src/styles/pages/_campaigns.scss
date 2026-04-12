@@ -1087,12 +1087,35 @@ $_fg-payment: #14B8A6;
     }
   }
 
+  &__multi-check-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    grid-column: 1 / -1;
+  }
+
+  &__multi-search {
+    width: 100%;
+    padding: 9px 14px;
+    border: 1.5px solid $color-gray-200;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: $font-primary;
+    font-weight: 500;
+    outline: none;
+    background: $color-white;
+    color: $color-secondary;
+    transition: border-color 150ms ease;
+
+    &::placeholder { color: $color-gray-300; }
+    &:focus { border-color: $color-primary; box-shadow: 0 0 0 3px rgba($color-primary, 0.08); }
+  }
+
   &__multi-check {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     padding: 4px 0;
-    grid-column: 1 / -1;
   }
 
   &__multi-check-item {

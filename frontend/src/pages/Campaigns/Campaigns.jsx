@@ -193,6 +193,8 @@ const Campaigns = () => {
   const [sendStep, setSendStep] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [filters, setFilters] = useState({});
+  const [staffFilterSearch, setStaffFilterSearch] = useState('');
+  const [serviceFilterSearch, setServiceFilterSearch] = useState('');
   const [expandedGroups, setExpandedGroups] = useState(['status']);
   const [audienceResults, setAudienceResults] = useState(null);
   const [audienceLoading, setAudienceLoading] = useState(false);
@@ -844,8 +846,10 @@ const Campaigns = () => {
                                 </select>
                               )}
                               {f.type === 'staff_multi' && (
+                                <div className={`${B}__multi-check-wrap`}>
+                                  <input type="text" className={`${B}__multi-search`} placeholder="Buscar profesional..." value={staffFilterSearch} onChange={e => setStaffFilterSearch(e.target.value)} />
                                 <div className={`${B}__multi-check`}>
-                                  {staffList.filter(s => s.is_active).map(s => {
+                                  {staffList.filter(s => s.is_active && (!staffFilterSearch || s.name.toLowerCase().includes(staffFilterSearch.toLowerCase()))).map(s => {
                                     const selected = Array.isArray(filters[f.key]) ? filters[f.key].includes(s.id) : false;
                                     return (
                                       <label key={s.id} className={`${B}__multi-check-item ${selected ? `${B}__multi-check-item--on` : ''}`}>
@@ -861,10 +865,13 @@ const Campaigns = () => {
                                     );
                                   })}
                                 </div>
+                                </div>
                               )}
                               {f.type === 'service_multi' && (
+                                <div className={`${B}__multi-check-wrap`}>
+                                  <input type="text" className={`${B}__multi-search`} placeholder="Buscar servicio..." value={serviceFilterSearch} onChange={e => setServiceFilterSearch(e.target.value)} />
                                 <div className={`${B}__multi-check`}>
-                                  {servicesList.filter(s => s.is_active).map(s => {
+                                  {servicesList.filter(s => s.is_active && (!serviceFilterSearch || s.name.toLowerCase().includes(serviceFilterSearch.toLowerCase()))).map(s => {
                                     const selected = Array.isArray(filters[f.key]) ? filters[f.key].includes(s.name) : false;
                                     return (
                                       <label key={s.id} className={`${B}__multi-check-item ${selected ? `${B}__multi-check-item--on` : ''}`}>
@@ -879,6 +886,7 @@ const Campaigns = () => {
                                       </label>
                                     );
                                   })}
+                                </div>
                                 </div>
                               )}
                             </div>
