@@ -337,6 +337,54 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     setDraggingApt(null);
   }, [draggingApt, addNotification, staff, appointments, staffSchedules]);
 
+  // Compute blocked slots per staff column while dragging
+  const dragBlockedSlots = useMemo(() => {
+    if (!draggingApt) return null;
+    const dur = draggingApt.duration_minutes || 30;
+    const dateStr = toISO(currentDate);
+    const blocked = {}; // { staffId: Set<slotTime> }
+
+    staff.forEach(s => {
+      const busyRanges = [];
+
+      // Other appointments on this staff
+      appointments.forEach(a => {
+        if (a.id === draggingApt.id || a.date !== dateStr) return;
+        if (a.status === 'cancelled' || a.status === 'no_show') return;
+        if (a.staff_id === s.id || a.client_id === draggingApt.client_id) {
+          busyRanges.push({ s: timeToMin(a.time), e: timeToMin(a.time) + (a.duration_minutes || 30) });
+        }
+      });
+
+      // Break time
+      const sched = staffSchedules[s.id];
+      if (sched) {
+        const dow = currentDate.getDay();
+        const bdow = dow === 0 ? 6 : dow - 1;
+        const ds = Array.isArray(sched) ? sched.find(x => x.day_of_week === bdow) : null;
+        if (ds && ds.is_working && ds.break_start && ds.break_end) {
+          busyRanges.push({ s: timeToMin(ds.break_start), e: timeToMin(ds.break_end) });
+        }
+        if (ds && !ds.is_working) {
+          busyRanges.push({ s: HOURS_START * 60, e: HOURS_END * 60 });
+        }
+      }
+
+      if (busyRanges.length === 0) return;
+
+      const blockedTimes = new Set();
+      for (let m = HOURS_START * 60; m < HOURS_END * 60; m += SLOT_MIN) {
+        const slotEnd = m + dur;
+        if (busyRanges.some(b => m < b.e && slotEnd > b.s)) {
+          blockedTimes.add(`${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`);
+        }
+      }
+      if (blockedTimes.size > 0) blocked[s.id] = blockedTimes;
+    });
+
+    return blocked;
+  }, [draggingApt, appointments, staff, staffSchedules, currentDate]);
+
   const weekDays = useMemo(() => getWeekDays(getMonday(currentDate)), [currentDate]);
   const isStaffView = view === 'staff';
 
@@ -1220,15 +1268,16 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                               const t = `${pad2(h)}:${pad2(m)}`;
                               const si = (h - HOURS_START) * SLOTS_PER_HOUR + (m / SLOT_MIN);
                               const isDrop = dropTarget?.date === dt && dropTarget?.time === t;
+                              const isBlocked = draggingApt && dragBlockedSlots?.[s.id]?.has(t);
                               return (
                                 <div key={`s${h}${m}`}
-                                  className={`${b}__slot ${isDrop ? `${b}__slot--drop-target` : ''}`}
+                                  className={`${b}__slot ${isDrop && !isBlocked ? `${b}__slot--drop-target` : ''} ${isBlocked ? `${b}__slot--blocked` : ''}`}
                                   style={{ top: `${slotTops[si]}px`, height: `${baseSlotH}px` }}
                                   onClick={() => openCreate(currentDate, t, s.id)}
-                                  onDragOver={(e) => handleDragOver(e, currentDate, t)}
+                                  onDragOver={(e) => { if (!isBlocked) handleDragOver(e, currentDate, t); else e.preventDefault(); }}
                                   onDragLeave={() => setDropTarget(null)}
-                                  onDrop={(e) => handleDrop(e, currentDate, t, s.id)}>
-                                  {isDrop && <span className={`${b}__drop-label`}>{formatTime12(t)}</span>}
+                                  onDrop={(e) => { if (!isBlocked) handleDrop(e, currentDate, t, s.id); else { e.preventDefault(); setDropTarget(null); } }}>
+                                  {isDrop && !isBlocked && <span className={`${b}__drop-label`}>{formatTime12(t)}</span>}
                                 </div>
                               );
                             });
