@@ -2122,6 +2122,18 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           {inv.tax_amount > 0 && <div className="finances__sale-summary-line"><span>IVA ({(inv.tax_rate * 100).toFixed(0)}%)</span><span>{formatCOP(inv.tax_amount)}</span></div>}
                           {inv.tip > 0 && <div className="finances__sale-summary-line"><span>Propina</span><span>+{formatCOP(inv.tip)}</span></div>}
                           <div className="finances__sale-summary-line finances__sale-summary-line--total"><span>TOTAL</span><span>{formatCOP(inv.total)}</span></div>
+                          {inv.payment_method === 'efectivo' && inv.payment_details?.received > 0 && (
+                            <>
+                              <div className="finances__sale-summary-line" style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed #e2e8f0' }}>
+                                <span>Efectivo recibido</span><span>{formatCOP(inv.payment_details.received)}</span>
+                              </div>
+                              {inv.payment_details.change > 0 && (
+                                <div className="finances__sale-summary-line" style={{ color: '#D97706' }}>
+                                  <span>Cambio entregado</span><span>{formatCOP(inv.payment_details.change)}</span>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
 
                         {(() => {

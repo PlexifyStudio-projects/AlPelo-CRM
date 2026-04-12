@@ -557,8 +557,9 @@ def get_service_commissions(service_id: int, db: Session = Depends(get_db), user
     commissions = commissions.all()
     commission_map = {c.staff_id: c.commission_rate for c in commissions}
 
-    # Build response for all assigned staff
-    staff_ids = service.staff_ids or []
+    # Build response: staff_ids + any staff with existing commission config
+    staff_ids = set(service.staff_ids or [])
+    staff_ids.update(commission_map.keys())
     staff_list = db.query(Staff).filter(Staff.id.in_(staff_ids)).all() if staff_ids else []
 
     return {
