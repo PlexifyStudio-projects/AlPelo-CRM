@@ -2158,7 +2158,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                             const key = `${it.staff_id}-${it.service_id}`;
                             const perSvcRate = it.service_id ? svcCommRates[key] : undefined;
                             const defRate = it.staff_id ? staffDefaults[it.staff_id] : undefined;
-                            const rate = (perSvcRate !== undefined && perSvcRate > 0) ? perSvcRate : (defRate !== undefined && defRate > 0) ? defRate : (it.commission_rate || inv.staff_commission_rate || 0);
+                            const rate = (perSvcRate !== undefined && perSvcRate > 0) ? perSvcRate : (defRate !== undefined && defRate > 0) ? defRate : 0;
                             const c = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
                             byStaff[name].items.push({ ...it, rate, commAmount: c });
                             byStaff[name].total += (it.unit_price || 0) * (it.quantity || 1);
@@ -2290,7 +2290,7 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                               if (!byStaff[name]) byStaff[name] = { name, items: [], totalSvc: 0, totalComm: 0 };
                               const pRate = it.service_id ? svcCommRates[`${it.staff_id}-${it.service_id}`] : undefined;
                               const dRate = it.staff_id ? staffDefaults[it.staff_id] : undefined;
-                              const rate = (pRate !== undefined && pRate > 0) ? pRate : (dRate !== undefined && dRate > 0) ? dRate : (inv.staff_commission_rate || 0);
+                              const rate = (pRate !== undefined && pRate > 0) ? pRate : (dRate !== undefined && dRate > 0) ? dRate : 0;
                               const comm = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
                               byStaff[name].items.push({ svc: it.service_name, rate, comm });
                               byStaff[name].totalSvc += (it.unit_price || 0) * (it.quantity || 1);
