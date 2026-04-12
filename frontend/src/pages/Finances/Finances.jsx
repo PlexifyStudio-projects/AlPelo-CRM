@@ -3082,13 +3082,18 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
                   {paid ? (
                     <div className="finances__vl-status-wrap">
                       <span className="finances__vl-badge finances__vl-badge--paid">Pagada</span>
-                      <button className="finances__vl-return" onClick={(e) => {
+                      <button className="finances__vl-return" title="Devolver / Anular pago" onClick={(e) => {
                         e.stopPropagation();
-                        fetch(`${API}/appointments/${v.id}`, {
-                          method: 'PUT', credentials: 'include',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ staff_payment_id: null }),
-                        }).then(() => setVisits(prev => prev.map(x => x.id === v.id ? { ...x, staff_payment_id: null } : x))).catch(() => {});
+                        if (!confirm('¿Devolver este servicio? Se anulará la factura, el checkout y se restaurará el stock.')) return;
+                        // Void checkout cascade (invoice, visit, stock) + unlink payment
+                        Promise.all([
+                          fetch(`${API}/checkouts/void-by-appointment/${v.id}`, { method: 'POST', credentials: 'include' }).catch(() => {}),
+                          fetch(`${API}/appointments/${v.id}`, {
+                            method: 'PUT', credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ staff_payment_id: null, status: 'confirmed' }),
+                          }).catch(() => {}),
+                        ]).then(() => loadVisits());
                       }}>↩</button>
                     </div>
                   ) : (

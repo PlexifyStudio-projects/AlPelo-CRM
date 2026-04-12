@@ -650,6 +650,34 @@ def _void_checkout_cascade(checkout, db, tid):
 
 
 # ============================================================================
+# 5b. POST /checkouts/void-by-appointment/{appointment_id}
+# ============================================================================
+
+@router.post("/checkouts/void-by-appointment/{appointment_id}")
+def void_checkout_by_appointment(
+    appointment_id: int,
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    """Void a checkout by its linked appointment_id. Used by Nómina retornar."""
+    tid = safe_tid(current_user, db)
+    q = db.query(Checkout).filter(Checkout.appointment_id == appointment_id)
+    if tid:
+        q = q.filter(Checkout.tenant_id == tid)
+    checkout = q.first()
+    if not checkout:
+        raise HTTPException(status_code=404, detail="Checkout no encontrado para esta cita")
+
+    if checkout.status == "voided":
+        raise HTTPException(status_code=400, detail="Este checkout ya fue anulado")
+
+    _void_checkout_cascade(checkout, db, tid)
+    db.commit()
+    db.refresh(checkout)
+    return _checkout_to_dict(checkout)
+
+
+# ============================================================================
 # 6. POST /cash-register/open — Open today's register
 # ============================================================================
 
