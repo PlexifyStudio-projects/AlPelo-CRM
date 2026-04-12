@@ -262,7 +262,8 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     });
   }, [items, perServiceRates, staffDefaultRates]);
 
-  const commissionAmount = useMemo(() => itemCommissions.reduce((s, i) => s + i.commAmount, 0), [itemCommissions]);
+  const productCommTotal = useMemo(() => productItems.reduce((s, p) => s + (p.commission || 0), 0), [productItems]);
+  const commissionAmount = useMemo(() => itemCommissions.reduce((s, i) => s + i.commAmount, 0) + productCommTotal, [itemCommissions, productCommTotal]);
 
   const discountAmount = useMemo(() => {
     if (discountType === 'percent') return Math.round(subtotal * (discountPercent / 100));
@@ -961,14 +962,23 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         <div className={`${b}__receipt-breakdown`}>
           <div className={`${b}__receipt-breakdown-title`}>Desglose por profesional</div>
           {(() => {
-            // Group by staff using per-service rates
+            // Group services + products by staff
             const byStaff = {};
             itemCommissions.forEach(it => {
               const key = it.staff_name || appointment.staff_name || 'Staff';
-              if (!byStaff[key]) byStaff[key] = { name: key, items: [], totalComm: 0, totalSvc: 0 };
+              if (!byStaff[key]) byStaff[key] = { name: key, items: [], prodItems: [], totalComm: 0, totalSvc: 0, prodComm: 0 };
               byStaff[key].items.push(it);
               byStaff[key].totalComm += it.commAmount;
               byStaff[key].totalSvc += it.price || 0;
+            });
+            // Add products to staff who sold them
+            productItems.forEach(p => {
+              if (!p.staff_name && !p.staff_id) return;
+              const key = p.staff_name || allStaff.find(s => s.id === p.staff_id)?.name || 'Staff';
+              if (!byStaff[key]) byStaff[key] = { name: key, items: [], prodItems: [], totalComm: 0, totalSvc: 0, prodComm: 0 };
+              byStaff[key].prodItems.push(p);
+              byStaff[key].prodComm += p.commission || 0;
+              byStaff[key].totalComm += p.commission || 0;
             });
             const staffEntries = Object.values(byStaff);
             return staffEntries.map((s, idx) => (
@@ -1023,6 +1033,13 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
                     </div>
                   );
                 })}
+                {s.prodItems?.map((p, k) => (
+                  <div key={`p${k}`} className={`${b}__receipt-breakdown-row`} style={{ fontSize: '0.78rem', color: '#64748B' }}>
+                    <span style={{ flex: 1 }}>{p.name} x{p.qty}</span>
+                    <span style={{ color: '#D97706', marginRight: 4 }}>{fmt(p.salePrice * p.qty)}</span>
+                    <span style={{ color: '#059669' }}>+{fmt(p.commission || 0)}</span>
+                  </div>
+                ))}
                 <div className={`${b}__receipt-breakdown-row`}>
                   <span>Comisión total</span>
                   <span className={`${b}__receipt-breakdown-value`} style={{ color: '#059669' }}>{fmt(s.totalComm)}</span>
@@ -1041,10 +1058,10 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
               <span className={`${b}__receipt-breakdown-value`} style={{ color: '#2563EB', fontWeight: 700 }}>{fmt(total - commissionAmount)}</span>
             </div>
           </div>
-          {productItems.length > 0 && productItems.some(p => p.commission > 0) && (
-            <div className={`${b}__receipt-breakdown-row`}>
-              <span>Comision productos</span>
-              <span className={`${b}__receipt-breakdown-value`} style={{ color: '#D97706' }}>{fmt(productItems.reduce((s, p) => s + (p.commission || 0), 0))}</span>
+          {productCommTotal > 0 && (
+            <div className={`${b}__receipt-breakdown-row`} style={{ fontSize: '0.78rem' }}>
+              <span style={{ color: '#64748B' }}>Incluye comisión productos</span>
+              <span className={`${b}__receipt-breakdown-value`} style={{ color: '#D97706' }}>{fmt(productCommTotal)}</span>
             </div>
           )}
         </div>
