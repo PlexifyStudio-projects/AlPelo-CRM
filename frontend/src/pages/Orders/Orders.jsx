@@ -4,6 +4,7 @@ import orderService from '../../services/orderService';
 import servicesService from '../../services/servicesService';
 import staffService from '../../services/staffService';
 import clientService from '../../services/clientService';
+import appointmentService from '../../services/appointmentService';
 import { useNotification } from '../../context/NotificationContext';
 import { formatPhone } from '../../utils/formatters';
 import CheckoutModal from '../../components/common/CheckoutModal/CheckoutModal';
@@ -74,6 +75,18 @@ const XIcon = () => (
   </svg>
 );
 
+const HOURS_START = 7, HOURS_END = 21, SLOT_MIN = 15;
+const pad2 = (n) => String(n).padStart(2, '0');
+const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const minToTime = (m) => `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
+const formatTime12 = (t) => {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h >= 12 ? 'p.m.' : 'a.m.';
+  return `${h % 12 || 12}:${pad2(m)} ${ampm}`;
+};
+const toISO = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
 const Orders = () => {
   const { addNotification } = useNotification();
   const [orders, setOrders] = useState([]);
@@ -86,6 +99,8 @@ const Orders = () => {
   const [showModal, setShowModal] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
   const [checkoutOrder, setCheckoutOrder] = useState(null);
+  const [staffSchedules, setStaffSchedules] = useState({});
+  const [todayApts, setTodayApts] = useState([]);
 
   // Client search state
   const [clientSearchQ, setClientSearchQ] = useState('');
@@ -130,6 +145,27 @@ const Orders = () => {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Load staff schedules + today's appointments for slot computation
+  useEffect(() => {
+    if (!staffList.length) return;
+    const today = toISO(new Date());
+    const loadExtra = async () => {
+      try {
+        const apts = await appointmentService.list({ date_from: today, date_to: today });
+        setTodayApts(Array.isArray(apts) ? apts : []);
+      } catch { setTodayApts([]); }
+      const schedMap = {};
+      await Promise.all(staffList.map(async (s) => {
+        try {
+          const res = await fetch(`${API}/staff/${s.id}/schedule`, { credentials: 'include' });
+          if (res.ok) { const d = await res.json(); schedMap[s.id] = d.schedule || []; }
+        } catch {}
+      }));
+      setStaffSchedules(schedMap);
+    };
+    loadExtra();
+  }, [staffList]);
 
   // Block body scroll when drawer is open
   useEffect(() => {
@@ -198,6 +234,52 @@ const Orders = () => {
     return c;
   }, [orders]);
 
+  const computeSlots = useCallback((staffId, serviceId, itemIndex) => {
+    const svc = services.find(s => s.id === serviceId);
+    const dur = svc?.duration_minutes || 30;
+    const today = new Date();
+    const dow = today.getDay();
+    const bdow = dow === 0 ? 6 : dow - 1;
+
+    let schedStart = HOURS_START * 60, schedEnd = HOURS_END * 60;
+    let breakStart = -1, breakEnd = -1, isWorking = true;
+    const sched = staffSchedules[staffId];
+    if (sched) {
+      const ds = sched.find(s => s.day_of_week === bdow);
+      if (ds) {
+        if (!ds.is_working) isWorking = false;
+        else {
+          if (ds.start_time && ds.end_time) { schedStart = timeToMin(ds.start_time); schedEnd = timeToMin(ds.end_time); }
+          if (ds.break_start && ds.break_end) { breakStart = timeToMin(ds.break_start); breakEnd = timeToMin(ds.break_end); }
+        }
+      }
+    }
+    if (!isWorking) return [];
+
+    const todayStr = toISO(today);
+    const busy = todayApts
+      .filter(a => a.staff_id === staffId && a.status !== 'cancelled' && a.status !== 'no_show')
+      .map(a => ({ s: timeToMin(a.time), e: timeToMin(a.time) + (a.duration_minutes || 30) }));
+
+    // Block times from other items in this order (same client can't be in 2 places)
+    formItems.forEach((other, j) => {
+      if (j === itemIndex || !other.time) return;
+      const otherDur = services.find(s => s.id === other.service_id)?.duration_minutes || 30;
+      busy.push({ s: timeToMin(other.time), e: timeToMin(other.time) + otherDur });
+    });
+
+    const nowMin = today.getHours() * 60 + today.getMinutes();
+    const slots = [];
+    for (let m = Math.max(HOURS_START * 60, schedStart); m < Math.min(HOURS_END * 60, schedEnd); m += SLOT_MIN) {
+      if (m < nowMin) continue;
+      const end = m + dur;
+      if (end > schedEnd) break;
+      if (breakStart >= 0 && m < breakEnd && end > breakStart) continue;
+      if (!busy.some(b => m < b.e && end > b.s)) slots.push(m);
+    }
+    return slots;
+  }, [services, staffSchedules, todayApts, formItems]);
+
   const openCreate = () => {
     setEditOrder(null);
     setSelectedClient(null);
@@ -234,7 +316,7 @@ const Orders = () => {
   };
 
   const addService = (svc) => {
-    setFormItems(prev => [...prev, { service_id: svc.id, service_name: svc.name, price: svc.price, duration_minutes: svc.duration_minutes, staff_id: '', staff_ids: svc.staff_ids || [] }]);
+    setFormItems(prev => [...prev, { service_id: svc.id, service_name: svc.name, price: svc.price, duration_minutes: svc.duration_minutes, staff_id: '', time: '', staff_ids: svc.staff_ids || [] }]);
     setSvcSearch('');
   };
 
@@ -706,6 +788,33 @@ const Orders = () => {
                           </div>
                         </div>
                       )}
+                      {/* Time slots — show after staff is selected */}
+                      {item.staff_id && (() => {
+                        const slots = computeSlots(parseInt(item.staff_id), item.service_id, i);
+                        return (
+                          <div className={`${b}__svc-time`}>
+                            <span className={`${b}__svc-staff-label`}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                              {item.time ? `Horario: ${formatTime12(item.time)}` : `Horarios disponibles (${slots.length})`}
+                            </span>
+                            <div className={`${b}__time-slots`}>
+                              {slots.length === 0 ? (
+                                <span className={`${b}__time-none`}>No hay horarios disponibles hoy</span>
+                              ) : slots.map(m => {
+                                const t = minToTime(m);
+                                const active = item.time === t;
+                                return (
+                                  <button key={m}
+                                    className={`${b}__time-slot ${active ? `${b}__time-slot--on` : ''}`}
+                                    onClick={() => updateItem(i, 'time', active ? '' : t)}>
+                                    {formatTime12(t)}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
