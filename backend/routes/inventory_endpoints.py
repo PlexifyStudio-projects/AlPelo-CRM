@@ -11,8 +11,30 @@ from datetime import datetime
 from typing import Optional
 
 from database.connection import get_db
-from database.models import Product, InventoryMovement, Admin
+from database.models import Product, InventoryMovement, Admin, Checkout, CheckoutItem
 from routes._helpers import safe_tid
+
+
+def _get_checkout_info(db, checkout_id):
+    """Get client/staff info from a checkout for movement history."""
+    try:
+        co = db.query(Checkout).filter(Checkout.id == checkout_id).first()
+        if not co:
+            return {}
+        # Find which staff sold this product
+        prod_items = db.query(CheckoutItem).filter(
+            CheckoutItem.checkout_id == checkout_id,
+            CheckoutItem.service_name.ilike('[Producto]%')
+        ).all()
+        staff_name = prod_items[0].staff_name if prod_items else co.staff_name
+        return {
+            "client_name": co.client_name,
+            "client_phone": getattr(co, 'client_phone', None),
+            "staff_name": staff_name,
+            "payment_method": co.payment_method,
+        }
+    except Exception:
+        return {}
 from middleware.auth_middleware import get_current_user
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
@@ -122,8 +144,10 @@ def get_product(product_id: int, db: Session = Depends(get_db), user: Admin = De
                 "quantity": m.quantity,
                 "unit_cost": m.unit_cost,
                 "note": m.note,
+                "reference_id": m.reference_id,
                 "created_by": m.created_by,
                 "created_at": m.created_at.isoformat() if m.created_at else None,
+                **(_get_checkout_info(db, m.reference_id) if m.movement_type == "sale" and m.reference_id else {}),
             }
             for m in movements
         ],

@@ -340,6 +340,196 @@
 
     &:hover { border-color: $color-primary; color: $color-primary; }
     &--del:hover { border-color: #EF4444; color: #EF4444; }
+  }
+
+  // ─── Detail Drawer ────────────────────────────────
+  &__detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.35);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+  }
+
+  &__detail {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 480px;
+    max-width: 96vw;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -12px 0 48px rgba(0, 0, 0, 0.14);
+    z-index: 1001;
+    animation: invDrawerIn 250ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes invDrawerIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+
+  &__detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 20px;
+    border-bottom: 1px solid $color-gray-100;
+
+    h2 { font-size: 1.1rem; font-weight: $font-weight-bold; color: $color-secondary; margin: 0; }
+  }
+
+  &__detail-back {
+    background: none;
+    border: none;
+    color: $color-gray-400;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    &:hover { background: $color-gray-50; }
+  }
+
+  &__detail-sku {
+    font-size: 0.72rem;
+    color: $color-gray-400;
+    font-family: monospace;
+  }
+
+  &__detail-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+    background: $color-off-white;
+  }
+
+  &__detail-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  &__detail-stat {
+    background: white;
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  &__detail-stat-val {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: $font-weight-extrabold;
+    color: $color-secondary;
+  }
+
+  &__detail-stat-label {
+    font-size: 0.65rem;
+    color: $color-gray-400;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__detail-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: $font-weight-bold;
+    color: $color-secondary;
+    margin: 0 0 14px;
+
+    svg { color: $color-primary; opacity: 0.6; }
+  }
+
+  &__detail-loading, &__detail-empty {
+    text-align: center;
+    padding: 30px;
+    color: $color-gray-400;
+    font-size: 0.85rem;
+  }
+
+  &__detail-movements {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__detail-mov {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  &__detail-mov-left {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  &__detail-mov-type {
+    font-size: 0.78rem;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  &__detail-mov-date {
+    font-size: 0.72rem;
+    color: $color-gray-400;
+  }
+
+  &__detail-mov-client, &__detail-mov-staff {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.75rem;
+    color: $color-gray-500;
+    font-weight: $font-weight-medium;
+
+    svg { opacity: 0.5; }
+  }
+
+  &__detail-mov-staff { color: $color-primary; }
+
+  &__detail-mov-note {
+    font-size: 0.7rem;
+    color: $color-gray-300;
+    font-style: italic;
+  }
+
+  &__detail-mov-by {
+    font-size: 0.65rem;
+    color: $color-gray-300;
+  }
+
+  &__detail-mov-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  &__detail-mov-qty {
+    font-size: 1rem;
+    font-weight: $font-weight-extrabold;
+  }
+
+  &__detail-mov-cost {
+    font-size: 0.68rem;
+    color: $color-gray-400;
 
     &--delete:hover { border-color: #DC2626; color: #DC2626; }
   }

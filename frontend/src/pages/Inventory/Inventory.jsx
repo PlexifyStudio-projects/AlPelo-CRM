@@ -29,6 +29,8 @@ const Inventory = () => {
   const [showModal, setShowModal] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [showStockModal, setShowStockModal] = useState(null);
+  const [detailProduct, setDetailProduct] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const loadProducts = useCallback(async () => {
     try {
@@ -107,6 +109,16 @@ const Inventory = () => {
     } catch (e) {
       addNotification('Error: ' + e.message, 'error');
     }
+  };
+
+  const openDetail = async (p) => {
+    setDetailLoading(true);
+    setDetailProduct({ ...p, movements: [] });
+    try {
+      const data = await fetchApi(`/inventory/products/${p.id}`);
+      setDetailProduct(data);
+    } catch { }
+    finally { setDetailLoading(false); }
   };
 
   const lowStockProducts = useMemo(() => products.filter(p => p.is_low_stock), [products]);
@@ -190,7 +202,7 @@ const Inventory = () => {
       ) : (
         <div className={`${b}__grid`}>
           {products.map(p => (
-            <div key={p.id} className={`${b}__card ${p.is_low_stock ? `${b}__card--low` : ''}`}>
+            <div key={p.id} className={`${b}__card ${p.is_low_stock ? `${b}__card--low` : ''}`} onClick={() => openDetail(p)} style={{ cursor: 'pointer' }}>
               <div className={`${b}__card-top`}>
                 <div className={`${b}__card-info`}>
                   <strong className={`${b}__card-name`}>{p.name}</strong>
@@ -222,14 +234,14 @@ const Inventory = () => {
                 </div>
                 <div className={`${b}__card-stock-controls`}>
                   <button className={`${b}__stock-btn ${b}__stock-btn--minus`} title="Quitar 1"
-                    onClick={async () => { try { await handleStockAdjust(p.id, { type: 'loss', quantity: 1, note: 'Ajuste rápido -1' }); } catch {} }}>
+                    onClick={async (e) => { e.stopPropagation(); try { await handleStockAdjust(p.id, { type: 'loss', quantity: 1, note: 'Ajuste rápido -1' }); } catch {} }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="5" y1="12" x2="19" y2="12" /></svg>
                   </button>
                   <button className={`${b}__stock-btn ${b}__stock-btn--plus`} title="Agregar 1"
-                    onClick={async () => { try { await handleStockAdjust(p.id, { type: 'purchase', quantity: 1, unit_cost: p.cost, note: 'Ajuste rápido +1' }); } catch {} }}>
+                    onClick={async (e) => { e.stopPropagation(); try { await handleStockAdjust(p.id, { type: 'purchase', quantity: 1, unit_cost: p.cost, note: 'Ajuste rápido +1' }); } catch {} }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                   </button>
-                  <button className={`${b}__stock-btn ${b}__stock-btn--adjust`} title="Ajuste mayor" onClick={() => setShowStockModal(p)}>
+                  <button className={`${b}__stock-btn ${b}__stock-btn--adjust`} title="Ajuste mayor" onClick={(e) => { e.stopPropagation(); setShowStockModal(p); }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                   </button>
                 </div>
@@ -238,10 +250,10 @@ const Inventory = () => {
               <div className={`${b}__card-footer`}>
                 <span className={`${b}__card-value`}>Valor: {formatCOP(p.stock * p.price)}</span>
                 <div className={`${b}__card-actions`}>
-                  <button className={`${b}__card-action`} title="Editar" onClick={() => { setEditProduct(p); setShowModal(true); }}>
+                  <button className={`${b}__card-action`} title="Editar" onClick={(e) => { e.stopPropagation(); setEditProduct(p); setShowModal(true); }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   </button>
-                  <button className={`${b}__card-action ${b}__card-action--del`} title="Desactivar" onClick={() => handleDelete(p.id)}>
+                  <button className={`${b}__card-action ${b}__card-action--del`} title="Desactivar" onClick={(e) => { e.stopPropagation(); handleDelete(p.id); }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                   </button>
                 </div>
@@ -249,6 +261,94 @@ const Inventory = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Product Detail Drawer */}
+      {detailProduct && createPortal(
+        <div className={`${b}__detail-overlay`} onClick={() => setDetailProduct(null)}>
+          <div className={`${b}__detail`} onClick={e => e.stopPropagation()}>
+            <div className={`${b}__detail-header`}>
+              <button className={`${b}__detail-back`} onClick={() => setDetailProduct(null)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+              </button>
+              <div>
+                <h2>{detailProduct.name}</h2>
+                {detailProduct.sku && <span className={`${b}__detail-sku`}>{detailProduct.sku}</span>}
+              </div>
+            </div>
+
+            <div className={`${b}__detail-body`}>
+              <div className={`${b}__detail-stats`}>
+                <div className={`${b}__detail-stat`}>
+                  <span className={`${b}__detail-stat-val`}>{detailProduct.stock}</span>
+                  <span className={`${b}__detail-stat-label`}>Stock actual</span>
+                </div>
+                <div className={`${b}__detail-stat`}>
+                  <span className={`${b}__detail-stat-val`}>{formatCOP(detailProduct.price)}</span>
+                  <span className={`${b}__detail-stat-label`}>Precio venta</span>
+                </div>
+                <div className={`${b}__detail-stat`}>
+                  <span className={`${b}__detail-stat-val`}>{formatCOP(detailProduct.cost)}</span>
+                  <span className={`${b}__detail-stat-label`}>Costo</span>
+                </div>
+              </div>
+
+              <h3 className={`${b}__detail-section-title`}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg>
+                Historial de movimientos
+              </h3>
+
+              {detailLoading ? (
+                <div className={`${b}__detail-loading`}>Cargando...</div>
+              ) : (detailProduct.movements || []).length === 0 ? (
+                <div className={`${b}__detail-empty`}>Sin movimientos registrados</div>
+              ) : (
+                <div className={`${b}__detail-movements`}>
+                  {(detailProduct.movements || []).map(m => {
+                    const isOut = m.quantity < 0;
+                    const typeLabels = { purchase: 'Compra', sale: 'Venta', adjustment: 'Ajuste', loss: 'Pérdida', return: 'Devolución' };
+                    const typeColors = { purchase: '#10B981', sale: '#3B82F6', adjustment: '#D97706', loss: '#EF4444', return: '#8B5CF6' };
+                    const date = m.created_at ? new Date(m.created_at) : null;
+                    return (
+                      <div key={m.id} className={`${b}__detail-mov`}>
+                        <div className={`${b}__detail-mov-left`}>
+                          <span className={`${b}__detail-mov-type`} style={{ color: typeColors[m.type] || '#64748B' }}>
+                            {typeLabels[m.type] || m.type}
+                          </span>
+                          <span className={`${b}__detail-mov-date`}>
+                            {date ? date.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                            {date ? ` · ${date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' })}` : ''}
+                          </span>
+                          {m.client_name && (
+                            <span className={`${b}__detail-mov-client`}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                              {m.client_name}{m.client_phone ? ` · ${m.client_phone}` : ''}
+                            </span>
+                          )}
+                          {m.staff_name && (
+                            <span className={`${b}__detail-mov-staff`}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
+                              Vendido por: {m.staff_name}
+                            </span>
+                          )}
+                          {m.note && <span className={`${b}__detail-mov-note`}>{m.note}</span>}
+                          {m.created_by && <span className={`${b}__detail-mov-by`}>Por: {m.created_by}</span>}
+                        </div>
+                        <div className={`${b}__detail-mov-right`}>
+                          <span className={`${b}__detail-mov-qty`} style={{ color: isOut ? '#EF4444' : '#10B981' }}>
+                            {isOut ? '' : '+'}{m.quantity}
+                          </span>
+                          {m.unit_cost > 0 && <span className={`${b}__detail-mov-cost`}>{formatCOP(m.unit_cost)} c/u</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
 
       {showModal && createPortal(
