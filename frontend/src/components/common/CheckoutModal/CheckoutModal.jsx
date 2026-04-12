@@ -194,46 +194,61 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const [staffCommissionRate, setStaffCommissionRate] = useState(40);
   const [perServiceRates, setPerServiceRates] = useState({}); // { `${staffId}-${serviceId}`: rate }
 
-  // Load per-service commission rates for all items
+  const [staffDefaultRates, setStaffDefaultRates] = useState({}); // { staffId: rate(0-1) }
+
+  // Load per-service commission rates + default rates for all staff
   useEffect(() => {
     if (!items.length) return;
     const serviceIds = [...new Set(items.map(i => i.service_id).filter(Boolean))];
+    const staffIds = [...new Set(items.map(i => i.staff_id).filter(Boolean))];
     const loadRates = async () => {
       const rateMap = {};
+      // Per-service rates
       await Promise.all(serviceIds.map(async (svcId) => {
         try {
           const res = await fetch(`${API_URL}/services/${svcId}/commissions`, { credentials: 'include' });
           if (res.ok) {
             const data = await res.json();
             (data.commissions || data.staff || []).forEach(s => {
-              if (s.commission_rate > 0) rateMap[`${s.staff_id}-${svcId}`] = s.commission_rate;
+              rateMap[`${s.staff_id}-${svcId}`] = s.commission_rate || 0;
             });
           }
         } catch {}
       }));
       setPerServiceRates(rateMap);
+      // Default rates per staff
+      try {
+        const res = await fetch(`${API_URL}/finances/commissions/config`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          const defaults = {};
+          data.forEach(c => { defaults[c.staff_id] = c.default_rate || 0; });
+          setStaffDefaultRates(defaults);
+          // Set main rate from first staff
+          if (appointment?.staff_id && defaults[appointment.staff_id] !== undefined) {
+            setStaffCommissionRate(Math.round(defaults[appointment.staff_id] * 100));
+          }
+        }
+      } catch {}
     };
     loadRates();
-    // Also load default rate
-    if (appointment?.staff_id) {
-      fetch(`${API_URL}/finances/commissions/config`, { credentials: 'include' })
-        .then(r => r.ok ? r.json() : [])
-        .then(data => {
-          const sc = data.find(c => c.staff_id === appointment.staff_id);
-          if (sc?.default_rate) setStaffCommissionRate(Math.round(sc.default_rate * 100));
-        })
-        .catch(() => {});
-    }
   }, [items, appointment?.staff_id]);
 
-  // Calculate commission per item using per-service rates, fallback to default
+  // Calculate commission per item: per-service rate > staff default > 0
   const itemCommissions = useMemo(() => {
     return items.map(it => {
-      const key = `${it.staff_id}-${it.service_id}`;
-      const rate = perServiceRates[key] ?? (staffCommissionRate / 100);
+      const perSvcKey = `${it.staff_id}-${it.service_id}`;
+      let rate;
+      if (perServiceRates[perSvcKey] !== undefined) {
+        rate = perServiceRates[perSvcKey];
+      } else if (staffDefaultRates[it.staff_id] !== undefined) {
+        rate = staffDefaultRates[it.staff_id];
+      } else {
+        rate = 0;
+      }
       return { ...it, commRate: Math.round(rate * 100), commAmount: Math.round((it.price || 0) * rate) };
     });
-  }, [items, perServiceRates, staffCommissionRate]);
+  }, [items, perServiceRates, staffDefaultRates]);
 
   const commissionAmount = useMemo(() => itemCommissions.reduce((s, i) => s + i.commAmount, 0), [itemCommissions]);
 
