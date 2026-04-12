@@ -127,6 +127,13 @@ const Orders = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Block body scroll when drawer is open
+  useEffect(() => {
+    if (showModal) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [showModal]);
+
   // Client search debounce
   useEffect(() => {
     if (!clientSearchQ.trim() || isNewClient || selectedClient) { setClientResults([]); return; }

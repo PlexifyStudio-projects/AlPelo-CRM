@@ -144,7 +144,7 @@
   // Nav
   &__nav {
     flex: 1;
-    padding: 8px 0;
+    padding: 4px 0;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
@@ -155,7 +155,7 @@
   &__menu {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     padding: 0 10px;
   }
 
@@ -169,7 +169,7 @@
     cursor: pointer;
     white-space: nowrap;
     position: relative;
-    height: 40px;
+    height: 36px;
     transition: all 150ms ease;
     color: rgba(0, 0, 0, 0.5);
 
