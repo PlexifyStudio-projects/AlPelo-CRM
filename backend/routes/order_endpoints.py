@@ -165,8 +165,11 @@ def create_order(data: dict, db: Session = Depends(get_db), user=Depends(get_cur
         if existing:
             client_id = existing.id
         else:
+            last_c = db.query(Client).order_by(Client.id.desc()).first()
+            next_num = (last_c.id + 1) if last_c else 1
             new_client = Client(
                 tenant_id=tid,
+                client_id=f"C{next_num:05d}",
                 name=client_name,
                 phone=client_phone,
                 email=data.get("client_email", ""),

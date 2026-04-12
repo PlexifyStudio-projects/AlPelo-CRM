@@ -850,23 +850,23 @@
   &__form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 10px;
   }
 
   &__field {
     display: flex;
     flex-direction: column;
     gap: 4px;
-
-    &--half { grid-column: span 1; }
+    min-width: 0;
 
     label {
-      font-size: 0.75rem;
-      font-weight: $font-weight-medium;
+      font-size: 0.72rem;
+      font-weight: $font-weight-semibold;
       color: $color-gray-400;
     }
 
     input, select {
+      width: 100%;
       padding: 10px 12px;
       border: none;
       border-radius: 8px;
@@ -875,8 +875,9 @@
       outline: none;
       transition: all 150ms;
       background: $color-gray-50;
+      box-sizing: border-box;
 
-      &:focus { background: white; box-shadow: 0 0 0 1.5px rgba($color-primary, 0.2); }
+      &:focus { background: white; box-shadow: inset 0 0 0 1.5px rgba($color-primary, 0.2); }
     }
   }
 
