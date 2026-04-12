@@ -521,10 +521,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       .map(a => ({ s: timeToMin(a.time), e: timeToMin(a.time) + (a.duration_minutes || 30) }));
 
     serviceAssignments.forEach((other, j) => {
-      if (j === assignmentIndex || !other.staffId || !other.time) return;
-      if (parseInt(other.staffId) !== staffId) return;
+      if (j === assignmentIndex || !other.time) return;
       const otherSvc = serviceMap[other.serviceId];
-      busy.push({ s: timeToMin(other.time), e: timeToMin(other.time) + (otherSvc?.duration_minutes || 30) });
+      const otherBlock = { s: timeToMin(other.time), e: timeToMin(other.time) + (otherSvc?.duration_minutes || 30) };
+      // Same staff: block because staff can't do two things at once
+      // Different staff: block because same CLIENT can't be in two services at once
+      if (other.staffId) busy.push(otherBlock);
     });
 
     const now = new Date();
