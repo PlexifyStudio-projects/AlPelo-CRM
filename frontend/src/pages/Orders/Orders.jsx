@@ -137,7 +137,7 @@ const Orders = () => {
         servicesService.list(),
         staffService.list(),
         fetch(`${API}/inventory/products`, { credentials: 'include' }).then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] })),
-        appointmentService.list({}).catch(() => []),
+        appointmentService.list({}).then(list => (Array.isArray(list) ? list.slice(0, 50) : [])).catch(() => []),
       ]);
       const orderList = orderData.orders || orderData || [];
       setTotalPages(orderData.pages || 1);
@@ -706,6 +706,12 @@ const Orders = () => {
                 {/* Footer: time + total + payment */}
                 <div className={`${b}__card-footer`}>
                   <div className={`${b}__card-time`}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    {(() => {
+                      const d = o.arrival_time ? new Date(o.arrival_time) : null;
+                      if (!d) return '—';
+                      return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/Bogota' });
+                    })()}
                     <ClockIcon /> {fmtTime(o.arrival_time)}
                   </div>
                   <div className={`${b}__card-money`}>
