@@ -492,7 +492,15 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           <div key={item.id} className={`${b}__item`}>
             <div className={`${b}__item-info`}>
               <span className={`${b}__item-name`}>{item.service_name}</span>
-              <span className={`${b}__item-staff`}>{item.staff_name}</span>
+              <select className={`${b}__item-staff-select`} value={item.staff_id || ''}
+                onChange={e => {
+                  const sid = parseInt(e.target.value) || null;
+                  const sName = allStaff.find(s => s.id === sid)?.name || '';
+                  setItems(prev => prev.map(i => i.id === item.id ? { ...i, staff_id: sid, staff_name: sName } : i));
+                }}>
+                <option value="">Seleccionar profesional...</option>
+                {allStaff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
             </div>
             <div className={`${b}__item-actions`}>
               <span className={`${b}__item-price`}>{fmt(item.price)}</span>
@@ -556,10 +564,15 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
                 <select className={`${b}__product-staff`} value={p.staff_id || ''}
                   onChange={e => setProductItems(prev => prev.map((pp, j) => j === i ? { ...pp, staff_id: parseInt(e.target.value) || null, staff_name: allStaff.find(s => s.id === parseInt(e.target.value))?.name || null } : pp))}>
                   <option value="">Vendido por...</option>
-                  {(allStaff.length ? allStaff : items.filter(it => it.staff_id).map(it => ({ id: it.staff_id, name: it.staff_name }))).map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
+                  {allStaff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
+                <div className={`${b}__product-commission`}>
+                  <span>Comisión:</span>
+                  <span>$</span>
+                  <input type="number" min="0" value={p.commission || 0}
+                    onChange={e => setProductItems(prev => prev.map((pp, j) => j === i ? { ...pp, commission: parseInt(e.target.value) || 0 } : pp))}
+                  />
+                </div>
               </div>
             </div>
             <span className={`${b}__product-total`}>{fmt(p.salePrice * p.qty)}</span>

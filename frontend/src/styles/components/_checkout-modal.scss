@@ -407,6 +407,42 @@
     &:focus { border-color: #3b82f6; }
   }
 
+  &__product-commission {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #64748b;
+
+    input {
+      width: 60px;
+      padding: 3px 6px;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      font-size: 12px;
+      text-align: right;
+      outline: none;
+      color: #059669;
+      font-weight: 600;
+
+      &:focus { border-color: #3b82f6; }
+    }
+  }
+
+  &__item-staff-select {
+    padding: 3px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #334155;
+    outline: none;
+    background: #f8fafc;
+    cursor: pointer;
+    margin-top: 2px;
+
+    &:focus { border-color: #3b82f6; }
+  }
+
   &__product-total {
     font-size: 14px;
     font-weight: 700;
