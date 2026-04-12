@@ -169,7 +169,8 @@ def run_migrations(engine):
         # Client document fields
         ("client", "document_type", "VARCHAR(20)"),
         ("client", "document_number", "VARCHAR(50)"),
-        # Appointment visit code
+        # Visit code / ticket
+        ("client", "visit_code", "VARCHAR(20)"),
         ("appointment", "visit_code", "VARCHAR(20)"),
     ]
 

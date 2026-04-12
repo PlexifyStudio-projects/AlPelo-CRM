@@ -41,7 +41,7 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
         document_number: editingClient.document_number || '',
         birthday: editingClient.birthday || '',
         accepts_whatsapp: editingClient.accepts_whatsapp ?? true,
-        visit_code: editingClient.last_visit_code || '',
+        visit_code: editingClient.visit_code || '',
       });
     } else {
       setForm({

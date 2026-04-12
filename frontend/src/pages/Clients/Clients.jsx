@@ -10,7 +10,6 @@ import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency } from '../../utils/formatters';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
-import appointmentService from '../../services/appointmentService';
 
 const Clients = () => {
   const [clients, setClients] = useState([]);
@@ -98,22 +97,12 @@ const Clients = () => {
   const handleSaveClient = async (clientData, visitCode) => {
     try {
       let savedClientId = editingClient?.id;
+      // Include visit_code in the client data
+      if (visitCode !== undefined) {
+        clientData.visit_code = visitCode || null;
+      }
       if (editingClient) {
         await clientService.update(editingClient.id, clientData);
-        // If visit code provided, update the latest appointment
-        if (visitCode !== undefined && visitCode !== (editingClient.last_visit_code || '')) {
-          try {
-            const apts = await appointmentService.list({ client_id: editingClient.id });
-            const latestApt = apts?.length ? apts.sort((a, b) => b.id - a.id)[0] : null;
-            if (latestApt) {
-              await appointmentService.update(latestApt.id, { visit_code: visitCode || null });
-            } else if (visitCode) {
-              addNotification('No hay citas para asignar el ticket. Crea una cita primero.', 'warning');
-            }
-          } catch (e) {
-            addNotification('Error guardando ticket: ' + e.message, 'error');
-          }
-        }
         addNotification('Cliente actualizado correctamente', 'success');
       } else {
         await clientService.create(clientData);
@@ -121,7 +110,6 @@ const Clients = () => {
       }
       setEditingClient(null);
       await loadClients();
-      // Reopen client detail with fresh data
       if (savedClientId) {
         try {
           const fresh = await clientService.get(savedClientId);

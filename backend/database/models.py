@@ -68,6 +68,7 @@ class Client(Base):
     email = Column(String, nullable=True)
     document_type = Column(String, nullable=True)  # CC, CE, TI, NIT, Pasaporte
     document_number = Column(String, nullable=True)
+    visit_code = Column(String, nullable=True)  # Ticket assigned at reception
     birthday = Column(Date, nullable=True)
     favorite_service = Column(String, nullable=True)
     preferred_barber_id = Column(Integer, ForeignKey("public.staff.id"), nullable=True)

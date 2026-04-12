@@ -376,14 +376,6 @@ def compute_client_fields(client: Client, db: Session):
                 staff_obj = db.query(Staff).filter(Staff.id == top_staff_id).first()
                 preferred_professional = staff_obj.name if staff_obj else None
 
-    # Get latest visit code from appointments
-    last_apt = db.query(Appointment).filter(
-        Appointment.client_id == client.id,
-        Appointment.visit_code.isnot(None),
-        Appointment.visit_code != "",
-    ).order_by(Appointment.id.desc()).first()
-    last_visit_code = last_apt.visit_code if last_apt else None
-
     return ClientResponse(
         id=client.id,
         client_id=client.client_id,
@@ -407,7 +399,7 @@ def compute_client_fields(client: Client, db: Session):
         last_visit=last_visit,
         days_since_last_visit=days_since,
         no_show_count=no_show_count,
-        last_visit_code=last_visit_code,
+        visit_code=getattr(client, 'visit_code', None),
         status=status,
     )
 
@@ -441,13 +433,6 @@ def compute_client_list_item(client: Client, db: Session):
 
     status = compute_status(total_visits, days_since, client.status_override)
 
-    last_apt = db.query(Appointment).filter(
-        Appointment.client_id == client.id,
-        Appointment.visit_code.isnot(None),
-        Appointment.visit_code != "",
-    ).order_by(Appointment.id.desc()).first()
-    last_visit_code = last_apt.visit_code if last_apt else None
-
     return ClientListResponse(
         id=client.id,
         client_id=client.client_id,
@@ -456,7 +441,7 @@ def compute_client_list_item(client: Client, db: Session):
         email=client.email,
         document_type=getattr(client, 'document_type', None),
         document_number=getattr(client, 'document_number', None),
-        last_visit_code=last_visit_code,
+        visit_code=getattr(client, 'visit_code', None),
         is_active=client.is_active,
         tags=client.tags or [],
         total_visits=total_visits,
