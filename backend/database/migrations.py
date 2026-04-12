@@ -175,6 +175,9 @@ def run_migrations(engine):
         # Commission fields on appointment (locked at payment)
         ("appointment", "commission_rate", "FLOAT"),
         ("appointment", "commission_amount", "INTEGER"),
+        # Invoice item: service_id + staff_id for commission lookup
+        ("invoice_item", "service_id", "INTEGER"),
+        ("invoice_item", "staff_id", "INTEGER"),
     ]
 
     for table, column, col_type in migrations:
