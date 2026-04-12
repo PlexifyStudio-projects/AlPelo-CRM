@@ -6,6 +6,7 @@ import staffService from '../../services/staffService';
 import clientService from '../../services/clientService';
 import { useNotification } from '../../context/NotificationContext';
 import { formatPhone } from '../../utils/formatters';
+import CheckoutModal from '../../components/common/CheckoutModal/CheckoutModal';
 
 const b = 'orders';
 
@@ -14,6 +15,7 @@ const STATUS_META = {
   in_progress: { label: 'En proceso',  color: '#3B82F6', bg: 'rgba(59,130,246,0.08)' },
   completed:   { label: 'Completada',  color: '#10B981', bg: 'rgba(16,185,129,0.08)' },
   cancelled:   { label: 'Cancelada',   color: '#EF4444', bg: 'rgba(239,68,68,0.08)' },
+  no_show:     { label: 'No asistió', color: '#D4A017', bg: 'rgba(212,160,23,0.08)' },
 };
 
 const PAYMENT_META = {
@@ -83,6 +85,7 @@ const Orders = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
+  const [checkoutOrder, setCheckoutOrder] = useState(null);
 
   // Client search state
   const [clientSearchQ, setClientSearchQ] = useState('');
@@ -293,12 +296,31 @@ const Orders = () => {
     } catch (err) { addNotification(err.message, 'error'); }
   };
 
-  const handlePay = async (order) => {
-    try {
-      await orderService.update(order.id, { payment_status: 'paid', status: 'completed' });
-      addNotification('Pago registrado', 'success');
-      loadData();
-    } catch (err) { addNotification(err.message, 'error'); }
+  const handlePay = (order) => {
+    // Validate staff assigned
+    const hasStaff = order.staff_id || order.items?.some(i => i.staff_id);
+    if (!hasStaff) {
+      addNotification('Debes asignar personal antes de cobrar', 'error');
+      return;
+    }
+    // Build appointment-like object for CheckoutModal
+    const firstItem = order.items?.[0] || {};
+    const staffName = order.staff_name || staffList.find(s => s.id === (firstItem.staff_id || order.staff_id))?.name || '';
+    setCheckoutOrder({
+      id: order.id,
+      client_id: order.client_id,
+      client_name: order.client_name,
+      client_phone: order.client_phone,
+      service_id: firstItem.service_id,
+      service_name: firstItem.service_name || 'Servicio',
+      staff_id: firstItem.staff_id || order.staff_id,
+      staff_name: staffName,
+      price: order.subtotal || order.total || 0,
+      notes: '',
+      _order_id: order.id,
+      _order_items: order.items,
+    });
+    setShowModal(false);
   };
 
   const filteredSvc = svcSearch.length >= 2
@@ -510,19 +532,33 @@ const Orders = () => {
                 <h2>{editOrder ? `Orden ${editOrder.ticket_number}` : 'Nueva orden'}</h2>
                 {editOrder && <span className={`${b}__drawer-status`} style={{ color: STATUS_META[editOrder.status]?.color, background: STATUS_META[editOrder.status]?.bg }}>{STATUS_META[editOrder.status]?.label}</span>}
               </div>
-              {editOrder && editOrder.status === 'pending' && (
-                <button className={`${b}__drawer-action ${b}__drawer-action--start`}
-                  onClick={() => { handleStatusChange(editOrder, 'in_progress'); setShowModal(false); }}>
-                  Iniciar
-                </button>
-              )}
               {editOrder && editOrder.payment_status === 'unpaid' && editOrder.status !== 'cancelled' && (
                 <button className={`${b}__drawer-action ${b}__drawer-action--pay`}
-                  onClick={() => { handlePay(editOrder); setShowModal(false); }}>
+                  onClick={() => handlePay(editOrder)}>
                   Cobrar
                 </button>
               )}
             </div>
+
+            {/* Status bar for existing orders */}
+            {editOrder && (
+              <div className={`${b}__status-bar`}>
+                {[
+                  { key: 'pending', label: 'Pendiente', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> },
+                  { key: 'in_progress', label: 'En proceso', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 6v6l4 2"/></svg> },
+                  { key: 'completed', label: 'Completada', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+                  { key: 'cancelled', label: 'Cancelada', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg> },
+                  { key: 'no_show', label: 'No asistió', icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><line x1="2" y1="2" x2="22" y2="22" /></svg> },
+                ].map(s => (
+                  <button key={s.key}
+                    className={`${b}__status-btn ${editOrder.status === s.key ? `${b}__status-btn--active` : ''}`}
+                    style={editOrder.status === s.key ? { color: STATUS_META[s.key]?.color, background: STATUS_META[s.key]?.bg } : {}}
+                    onClick={() => { handleStatusChange(editOrder, s.key); }}>
+                    {s.icon} {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div className={`${b}__drawer-body`}>
               {/* ── Ticket ── */}
@@ -732,6 +768,22 @@ const Orders = () => {
           </div>
         </div>
       , document.body)}
+
+      {checkoutOrder && (
+        <CheckoutModal
+          appointment={checkoutOrder}
+          onClose={() => setCheckoutOrder(null)}
+          onCompleted={async () => {
+            // Mark order as completed + paid
+            try {
+              await orderService.update(checkoutOrder._order_id, { status: 'completed', payment_status: 'paid' });
+            } catch {}
+            setCheckoutOrder(null);
+            loadData();
+            addNotification('Cobro realizado exitosamente', 'success');
+          }}
+        />
+      )}
     </div>
   );
 };
