@@ -223,7 +223,10 @@ const Orders = () => {
       client_doc_number: o.client_doc_number || '', client_birthday: '', staff_id: o.staff_id || '',
       notes: o.notes || '',
     });
-    setFormItems(o.items?.map(i => ({ service_id: i.service_id, service_name: i.service_name, price: i.price, duration_minutes: i.duration_minutes, staff_id: i.staff_id })) || []);
+    setFormItems(o.items?.map(i => {
+      const svc = services.find(s => s.id === i.service_id);
+      return { service_id: i.service_id, service_name: i.service_name, price: i.price, duration_minutes: i.duration_minutes, staff_id: i.staff_id, staff_ids: svc?.staff_ids || [] };
+    }) || []);
     setFormProducts(o.products?.map(p => ({ product_id: p.product_id, product_name: p.product_name, quantity: p.quantity, unit_price: p.unit_price, charged_to: p.charged_to })) || []);
     setSvcSearch('');
     setProdSearch('');
@@ -661,8 +664,10 @@ const Orders = () => {
                   <h3>Servicios</h3>
                 </div>
                 {formItems.map((item, i) => {
-                  const eligible = item.staff_ids?.length
-                    ? staffList.filter(s => item.staff_ids.includes(s.id))
+                  const svcDef = services.find(s => s.id === item.service_id);
+                  const sids = item.staff_ids?.length ? item.staff_ids : svcDef?.staff_ids || [];
+                  const eligible = sids.length
+                    ? staffList.filter(s => sids.includes(s.id))
                     : staffList;
                   const assigned = staffList.find(s => s.id == item.staff_id);
                   return (
