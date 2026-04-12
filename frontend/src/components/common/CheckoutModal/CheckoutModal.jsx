@@ -334,7 +334,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
     setSubmitting(true);
     try {
       const payload = {
-        appointment_id: appointment.id,
+        appointment_id: appointment._order_id ? null : appointment.id,
         client_id: selectedClientId || appointment.client_id,
         client_name: clientName || appointment.client_name,
         items: [
