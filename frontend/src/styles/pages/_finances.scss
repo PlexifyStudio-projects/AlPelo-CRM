@@ -2401,202 +2401,273 @@
 
   &__nomina-table {
     background: $color-white;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 14px;
+    border: 1px solid $color-gray-100;
+    border-radius: 16px;
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
 
   &__nomina-thead {
     display: flex;
     align-items: center;
-    padding: 10px 24px;
-    background: #F8F9FB;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 14px 28px;
+    background: linear-gradient(180deg, $color-gray-50 0%, rgba($color-gray-50, 0.5) 100%);
+    border-bottom: 1px solid $color-gray-100;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(0, 0, 0, 0.35);
+    letter-spacing: 0.1em;
+    color: $color-gray-400;
   }
 
   &__nomina-row-wrap {
-    & + & { border-top: 1px solid rgba(0, 0, 0, 0.04); }
-    &--expanded { background: #FAFBFC; }
+    & + & { border-top: 1px solid $color-gray-50; }
+    &--expanded {
+      background: linear-gradient(180deg, rgba($color-primary, 0.015) 0%, rgba($color-primary, 0.03) 100%);
+      border-left: 3px solid $color-primary;
+    }
   }
 
   &__nomina-row {
     display: flex;
     align-items: center;
-    padding: 14px 24px;
+    padding: 18px 28px;
     cursor: pointer;
-    transition: background 120ms ease;
-    &:hover { background: rgba(0, 0, 0, 0.01); }
+    transition: all 150ms ease;
+
+    &:hover {
+      background: rgba($color-primary, 0.02);
+    }
   }
 
   &__nomina-staff {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
   }
 
   &__nomina-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: $color-white;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 800;
     flex-shrink: 0;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   &__nomina-name {
     display: flex;
     flex-direction: column;
-    gap: 1px;
+    gap: 2px;
 
-    strong { font-size: 13px; color: $color-secondary; letter-spacing: -0.01em; }
-    small { font-size: 11px; color: rgba(0, 0, 0, 0.35); }
+    strong {
+      font-size: 14px;
+      color: $color-secondary;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+    }
+    small {
+      font-size: 11px;
+      color: $color-gray-400;
+      font-weight: 500;
+    }
+  }
+
+  &__nomina-bank-badge {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    background: rgba($color-primary, 0.1);
+    color: $color-primary;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 800;
+    margin-left: 4px;
   }
 
   &__nomina-detail {
-    padding: 4px 24px 20px;
+    padding: 8px 28px 24px;
 
     h4 {
-      font-size: 10px;
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: rgba(0, 0, 0, 0.3);
-      margin: 0 0 10px;
+      color: $color-gray-400;
+      margin: 0 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid $color-gray-100;
     }
   }
 
   &__nomina-payments {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   &__nomina-payment {
-    padding: 10px 14px;
+    padding: 14px 18px;
     background: $color-white;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    border-radius: 10px;
+    border: 1px solid $color-gray-100;
+    border-radius: 12px;
+    transition: box-shadow 150ms ease;
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
   }
 
   &__nomina-payment-main {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
   }
 
   &__nomina-payment-date {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
     color: $color-secondary;
-    min-width: 90px;
+    min-width: 100px;
   }
 
   &__nomina-payment-concept {
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.5);
+    color: $color-gray-400;
     flex: 1;
   }
 
   &__nomina-payment-amount {
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 800;
     color: $color-primary;
+    letter-spacing: -0.02em;
   }
 
   &__nomina-payment-meta {
     display: flex;
     gap: 16px;
-    margin-top: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid $color-gray-50;
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.3);
+    color: $color-gray-400;
   }
 
-  // Pay modal
+  &__nomina-receipt-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba($color-primary, 0.08);
+    color: $color-primary;
+    border-radius: $border-radius-sm;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+  }
+
   &__nomina-detail-grid {
     display: grid;
     grid-template-columns: 1.3fr 1fr;
-    gap: 20px;
+    gap: 24px;
 
     @media (max-width: $breakpoint-lg) {
       grid-template-columns: 1fr;
     }
   }
 
+  &__nomina-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
   &__visit-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 14px;
+    padding: 16px;
   }
 
   &__visit-search {
     input {
       width: 100%;
-      padding: 8px 12px;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      border-radius: 8px;
-      font-size: 12px;
+      padding: 10px 14px;
+      border: 1.5px solid $color-gray-100;
+      border-radius: 10px;
+      font-size: 13px;
       outline: none;
       font-family: inherit;
-      &:focus { border-color: $color-primary; }
-      &::placeholder { color: rgba(0, 0, 0, 0.3); }
+      font-weight: 500;
+      transition: all 150ms ease;
+      &:focus { border-color: $color-primary; box-shadow: 0 0 0 3px rgba($color-primary, 0.08); }
+      &::placeholder { color: $color-gray-300; }
     }
   }
 
   &__visit-scroll {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    max-height: 350px;
+    gap: 0;
+    max-height: 400px;
     overflow-y: auto;
     scrollbar-width: thin;
+    border: 1px solid $color-gray-100;
+    border-radius: 10px;
+    overflow: hidden;
   }
 
   &__visit-item {
-    padding: 10px 12px;
+    padding: 12px 16px;
     background: $color-white;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
-    transition: border-color 120ms ease;
+    border-bottom: 1px solid $color-gray-50;
+    transition: all 150ms ease;
 
-    &:hover { border-color: rgba(0, 0, 0, 0.12); }
+    &:last-child { border-bottom: none; }
+    &:hover { background: rgba($color-primary, 0.015); }
+    &--paid { background: rgba(#10B981, 0.02); }
+    &--selected { background: rgba($color-primary, 0.05); border-left: 3px solid $color-primary; }
   }
 
   &__visit-top {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
   }
 
   &__visit-id {
-    font-size: 10px;
-    font-weight: 700;
-    color: rgba(0, 0, 0, 0.25);
+    font-size: 11px;
+    font-weight: 800;
+    color: $color-primary;
     font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
   }
 
   &__visit-date {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: $color-secondary;
   }
 
   &__visit-time {
     font-size: 11px;
-    color: rgba(0, 0, 0, 0.35);
+    color: $color-gray-400;
+    font-weight: 500;
   }
 
   &__visit-client {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 600;
     color: $color-secondary;
     flex: 1;
@@ -2606,31 +2677,34 @@
   }
 
   &__visit-amount {
-    font-size: 13px;
-    font-weight: 700;
-    color: $color-primary;
+    font-size: 14px;
+    font-weight: 800;
+    color: $color-secondary;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
   }
 
   &__visit-mid {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 4px;
+    gap: 10px;
+    margin-top: 6px;
   }
 
   &__visit-service {
-    font-size: 11px;
-    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+    color: $color-primary;
+    font-weight: 500;
     flex: 1;
   }
 
   &__visit-dur {
     font-size: 10px;
-    color: rgba(0, 0, 0, 0.3);
-    padding: 1px 6px;
-    background: rgba(0, 0, 0, 0.03);
-    border-radius: 6px;
+    color: $color-gray-400;
+    padding: 2px 8px;
+    background: $color-gray-50;
+    border-radius: $border-radius-full;
+    font-weight: 600;
   }
 
   &__visit-commission {
@@ -2693,69 +2767,72 @@
   &__visit-summary {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 10px 12px;
-    margin-top: 6px;
-    background: #FAFBFC;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 10px;
+    gap: 6px;
+    padding: 14px 18px;
+    margin-top: 10px;
+    background: linear-gradient(135deg, $color-gray-50 0%, rgba($color-primary, 0.02) 100%);
+    border: 1px solid $color-gray-100;
+    border-radius: 12px;
   }
 
   &__visit-summary-row {
     display: flex;
     justify-content: space-between;
-    font-size: 11px;
-    color: rgba(0, 0, 0, 0.5);
+    font-size: 12px;
+    color: $color-gray-500;
     font-weight: 500;
 
-    span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
+    span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; }
   }
 
   &__visit-summary-total {
     display: flex;
     justify-content: space-between;
-    font-size: 13px;
-    font-weight: 700;
-    color: $color-secondary;
-    padding-top: 6px;
+    font-size: 15px;
+    font-weight: 800;
+    color: $color-primary;
+    padding-top: 8px;
     margin-top: 4px;
-    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    border-top: 2px solid $color-gray-200;
+    letter-spacing: -0.02em;
   }
 
   // Visit toolbar with search + filters
   &__visit-date-bar {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    background: rgba($color-primary, 0.03);
-    border: 1px solid rgba($color-primary, 0.1);
-    border-radius: $border-radius-md;
-    margin-bottom: 8px;
+    gap: 12px;
+    padding: 12px 18px;
+    background: linear-gradient(135deg, rgba($color-primary, 0.03) 0%, rgba($color-primary, 0.06) 100%);
+    border: 1px solid rgba($color-primary, 0.12);
+    border-radius: 12px;
+    margin-bottom: 10px;
   }
 
   &__visit-date-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: $color-gray-500;
+    font-size: 11px;
+    font-weight: 800;
+    color: $color-primary;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     flex-shrink: 0;
   }
 
   &__visit-date-input {
-    padding: 6px 10px;
-    border: 1.5px solid $color-gray-200;
-    border-radius: $border-radius-md;
+    padding: 8px 12px;
+    border: 1.5px solid rgba($color-primary, 0.15);
+    border-radius: 10px;
     font-size: 13px;
     font-family: $font-primary;
+    font-weight: 600;
     color: $color-secondary;
     outline: none;
     background: $color-white;
+    transition: all 150ms ease;
 
     &:focus {
       border-color: $color-primary;
-      box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
     }
   }
 
