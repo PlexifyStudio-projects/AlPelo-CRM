@@ -2099,20 +2099,55 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                           <div className="finances__sale-summary-line finances__sale-summary-line--total"><span>TOTAL</span><span>{formatCOP(inv.total)}</span></div>
                         </div>
 
-                        {primaryStaff && (
-                          <div className="finances__sale-detail-commission">
-                            <div className="finances__sale-commission-row">
-                              <span className="finances__sale-commission-dot finances__sale-commission-dot--staff" />
-                              <span>Comision {primaryStaff} ({(commissionRate * 100).toFixed(0)}%)</span>
-                              <strong>{formatCOP(staffEarnings)}</strong>
+                        {(() => {
+                          // Group items by staff with per-service rates
+                          const byStaff = {};
+                          (inv.items || []).forEach(it => {
+                            const name = it.staff_name || 'Sin asignar';
+                            if (!byStaff[name]) byStaff[name] = { name, staffId: it.staff_id, items: [], total: 0, comm: 0 };
+                            const rate = it.commission_rate ?? commissionRate;
+                            const c = Math.round((it.unit_price || 0) * (it.quantity || 1) * rate);
+                            byStaff[name].items.push({ ...it, rate, commAmount: c });
+                            byStaff[name].total += (it.unit_price || 0) * (it.quantity || 1);
+                            byStaff[name].comm += c;
+                          });
+                          const entries = Object.values(byStaff);
+                          const totalComm = entries.reduce((s, e) => s + e.comm, 0);
+                          const bizEarnings = (inv.total || 0) - (inv.tip || 0) - totalComm - (inv.tax_amount || 0);
+                          if (!entries.length) return null;
+                          return (
+                            <div className="finances__sale-detail-commission">
+                              {entries.map((s, idx) => (
+                                <div key={idx}>
+                                  <div className="finances__sale-commission-row" style={{ fontWeight: 700 }}>
+                                    <span className="finances__sale-commission-dot finances__sale-commission-dot--staff" />
+                                    <span>{s.name}</span>
+                                    <strong>{formatCOP(s.total)}</strong>
+                                  </div>
+                                  {s.items.map((it, j) => (
+                                    <div key={j} className="finances__sale-commission-row" style={{ paddingLeft: 20, fontSize: '0.78rem', color: '#64748B' }}>
+                                      <span>{it.service_name} ({(it.rate * 100).toFixed(0)}%)</span>
+                                      <strong style={{ color: '#059669' }}>{formatCOP(it.commAmount)}</strong>
+                                    </div>
+                                  ))}
+                                  {idx < entries.length - 1 && <div style={{ borderBottom: '1px dashed #e2e8f0', margin: '4px 0' }} />}
+                                </div>
+                              ))}
+                              <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 6, paddingTop: 6 }}>
+                                <div className="finances__sale-commission-row">
+                                  <span className="finances__sale-commission-dot finances__sale-commission-dot--staff" />
+                                  <span>Total comisiones</span>
+                                  <strong style={{ color: '#059669' }}>{formatCOP(totalComm)}</strong>
+                                </div>
+                                <div className="finances__sale-commission-row">
+                                  <span className="finances__sale-commission-dot finances__sale-commission-dot--biz" />
+                                  <span>Ganancia negocio</span>
+                                  <strong>{formatCOP(bizEarnings)}</strong>
+                                </div>
+                              </div>
                             </div>
-                            <div className="finances__sale-commission-row">
-                              <span className="finances__sale-commission-dot finances__sale-commission-dot--biz" />
-                              <span>Ganancia negocio</span>
-                              <strong>{formatCOP(businessEarnings)}</strong>
-                            </div>
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
                     </div>
 
