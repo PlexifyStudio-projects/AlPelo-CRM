@@ -97,6 +97,7 @@ const Orders = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
+  const [monthFilter, setMonthFilter] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`; });
   const [statusFilter, setStatusFilter] = useState('all');
   const [showModal, setShowModal] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
@@ -262,17 +263,26 @@ const Orders = () => {
 
   const filtered = useMemo(() => {
     let list = [...orders];
+    // Month filter
+    if (monthFilter) {
+      list = list.filter(o => {
+        const d = o.arrival_time || o.created_at || '';
+        return d.startsWith(monthFilter);
+      });
+    }
+    // Status filter
     if (statusFilter === 'paid') {
       list = list.filter(o => o.payment_status === 'paid');
     } else if (statusFilter !== 'all') {
       list = list.filter(o => o.status === statusFilter);
     }
+    // Search
     if (search) {
       const q = search.toLowerCase();
       const qDigits = q.replace(/\D/g, '');
       list = list.filter(o => {
-        if (o.ticket_number.toLowerCase().includes(q)) return true;
-        if (o.client_name.toLowerCase().includes(q)) return true;
+        if (o.ticket_number?.toLowerCase().includes(q)) return true;
+        if (o.client_name?.toLowerCase().includes(q)) return true;
         if (qDigits && o.client_phone) {
           const ph = o.client_phone.replace(/\D/g, '');
           if (ph.includes(qDigits)) return true;
@@ -280,8 +290,17 @@ const Orders = () => {
         return false;
       });
     }
+    // Sort: pending first, then in_progress, completed, paid, no_show, cancelled
+    const STATUS_PRIORITY = { pending: 0, in_progress: 1, completed: 2, no_show: 3, cancelled: 4 };
+    list.sort((a, b) => {
+      const pa = STATUS_PRIORITY[a.status] ?? 2;
+      const pb = STATUS_PRIORITY[b.status] ?? 2;
+      if (pa !== pb) return pa - pb;
+      // Within same status, newest first
+      return (b.arrival_time || b.created_at || '').localeCompare(a.arrival_time || a.created_at || '');
+    });
     return list;
-  }, [orders, statusFilter, search]);
+  }, [orders, statusFilter, search, monthFilter]);
 
   const counts = useMemo(() => {
     const c = { all: orders.length, pending: 0, in_progress: 0, completed: 0, paid: 0, no_show: 0, cancelled: 0 };
@@ -567,6 +586,7 @@ const Orders = () => {
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por ticket, teléfono o nombre..." />
         </div>
+        <input type="month" className={`${b}__month-filter`} value={monthFilter} onChange={e => setMonthFilter(e.target.value)} />
         <div className={`${b}__filters`}>
           {[
             { key: 'all', label: 'Todas' },
@@ -615,7 +635,14 @@ const Orders = () => {
             const svcCount = o.items?.length || 0;
             const prodCount = o.products?.length || 0;
             return (
-              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={() => openEdit(o)}>
+              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={() => {
+                if (o.payment_status === 'paid' && o.status === 'completed') {
+                  // For paid/completed: just show a simple info or do nothing editable
+                  openEdit(o);
+                } else {
+                  openEdit(o);
+                }
+              }}>
                 {/* Header: status accent bar */}
                 <div className={`${b}__card-accent`} style={{ background: st.color }} />
 

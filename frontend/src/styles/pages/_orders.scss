@@ -154,6 +154,20 @@
     }
   }
 
+  &__month-filter {
+    padding: 8px 14px;
+    border: 1px solid $color-gray-100;
+    border-radius: $border-radius-full;
+    font-size: 0.82rem;
+    font-weight: $font-weight-medium;
+    color: $color-secondary;
+    outline: none;
+    background: white;
+    cursor: pointer;
+
+    &:focus { border-color: $color-primary-light; }
+  }
+
   &__filters {
     display: flex;
     gap: 6px;
