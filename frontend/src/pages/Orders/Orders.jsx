@@ -660,13 +660,11 @@ const Orders = () => {
                     const res = await fetch(`${API}/finances/invoices/`, { credentials: 'include' });
                     if (res.ok) {
                       const allInvoices = await res.json();
-                      // Match by client name + similar total (within 1000 COP) + same date
-                      const svcDate = o.service_date || '';
-                      const inv = allInvoices.find(i =>
-                        i.client_name === o.client_name &&
-                        Math.abs((i.total || 0) - (o.total || 0)) < 1000 &&
-                        (i.issued_date === svcDate || i.issued_date === svcDate.split('T')[0])
-                      ) || allInvoices.find(i => i.client_name === o.client_name && Math.abs((i.total||0) - (o.total||0)) < 1000);
+                      // Match by client name — find most recent invoice for this client
+                      const clientInvs = allInvoices
+                        .filter(i => i.client_name === o.client_name && i.status === 'paid')
+                        .sort((a, b) => (b.paid_at || b.issued_date || '').localeCompare(a.paid_at || a.issued_date || ''));
+                      const inv = clientInvs[0];
                       if (inv) {
                         // Redirect to Finanzas with the invoice expanded — but simpler: just open the print
                         // Use the Finanzas print logic inline
