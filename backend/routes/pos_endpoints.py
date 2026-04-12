@@ -214,12 +214,18 @@ def create_checkout(
             staff_name = staff_name or appt.staff.name
         client_phone = appt.client_phone
 
-    # Resolve client phone if we have client_id
-    if client_id and not client_phone:
+    # Resolve full client info if we have client_id
+    client_document = None
+    client_document_type = None
+    client_email = None
+    if client_id:
         client_obj = db.query(Client).filter(Client.id == client_id).first()
         if client_obj:
             client_name = client_name if data.client_name else client_obj.name
-            client_phone = client_obj.phone
+            client_phone = client_phone or client_obj.phone
+            client_document = client_obj.document_number
+            client_document_type = client_obj.document_type
+            client_email = client_obj.email
 
     # ---- Calculate pricing ----
     subtotal = sum(item.unit_price * item.quantity for item in data.items)
@@ -346,6 +352,9 @@ def create_checkout(
         client_id=client_id,
         client_name=client_name,
         client_phone=client_phone,
+        client_document=client_document,
+        client_document_type=client_document_type,
+        client_email=client_email,
         subtotal=base_amount if tax_rate > 0 else subtotal,
         discount_type=data.discount_type,
         discount_value=data.discount_value,
