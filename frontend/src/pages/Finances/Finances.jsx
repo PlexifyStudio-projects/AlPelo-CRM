@@ -223,7 +223,6 @@ const TAB_OPTIONS = [
   { value: 'reportes', label: 'Reportes' },
   { value: 'rendimiento', label: 'Rendimiento' },
   { value: 'gastos', label: 'Gastos' },
-  { value: 'comisiones', label: 'Comisiones' },
   { value: 'facturas', label: 'Facturas' },
   { value: 'nomina', label: 'Nómina' },
   { value: 'dian', label: 'DIAN' },
@@ -2838,7 +2837,12 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
   }) : byStatus;
 
   const totalRevenue = filtered.reduce((s, v) => s + (v.price || 0), 0);
-  const totalCommission = Math.round(totalRevenue * commissionRate);
+  const getCommission = (v) => {
+    if (v.commission_amount != null) return v.commission_amount;
+    if (v.commission_rate != null) return Math.round((v.price || 0) * v.commission_rate);
+    return Math.round((v.price || 0) * commissionRate);
+  };
+  const totalCommission = filtered.reduce((s, v) => s + getCommission(v), 0);
   const totalProducts = filtered.reduce((s, v) => {
     const prods = parseProducts(v.notes);
     return s + prods.reduce((ps, p) => ps + ((p.sale || 0) * (p.qty || 1)), 0);
@@ -2886,7 +2890,7 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
       )}
       <div className="finances__visit-scroll">
         {filtered.map(v => {
-          const commission = Math.round((v.price || 0) * commissionRate);
+          const commission = getCommission(v);
           const products = parseProducts(v.notes);
           const dur = v.duration_minutes;
           const paid = isPaidVisit(v);
@@ -2907,7 +2911,7 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
                     )}
                   </span>
                 )}
-                <span className="finances__visit-id">{(() => { const cm = (v.notes || '').match(/\[CODIGO:([^\]]+)\]/); return cm ? cm[1] : `#${v.id}`; })()}</span>
+                <span className="finances__visit-id">{v.visit_code ? `#${v.visit_code}` : `#${v.id}`}</span>
                 <span className="finances__visit-date">{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                 <span className="finances__visit-time">{v.time}</span>
                 <span className="finances__visit-client">{v.client_name}</span>
@@ -2918,7 +2922,18 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
                 {dur && <span className="finances__visit-dur">{dur}min</span>}
                 <span className="finances__visit-commission">{formatCOP(commission)}</span>
                 {paid ? (
-                  <span className="finances__visit-status finances__visit-status--liquidada">Liquidada</span>
+                  <button className="finances__visit-status finances__visit-status--liquidada" onClick={(e) => {
+                    e.stopPropagation();
+                    fetch(`${API}/appointments/${v.id}`, {
+                      method: 'PUT', credentials: 'include',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ staff_payment_id: null }),
+                    }).then(() => {
+                      setVisits(prev => prev.map(x => x.id === v.id ? { ...x, staff_payment_id: null } : x));
+                    }).catch(() => {});
+                  }} title="Clic para retornar a pendiente">
+                    Liquidada ↩
+                  </button>
                 ) : (
                   <span className="finances__visit-status finances__visit-status--pendiente">Pendiente</span>
                 )}
@@ -2936,7 +2951,7 @@ const StaffVisitsList = ({ staffId, dateFrom, dateTo, commissionRate, selectable
       </div>
       <div className="finances__visit-summary">
         <div className="finances__visit-summary-row"><span>{filtered.length} servicios</span><span>{formatCOP(totalRevenue)}</span></div>
-        <div className="finances__visit-summary-row"><span>Comisiones ({(commissionRate * 100).toFixed(0)}%)</span><span style={{ color: '#059669' }}>{formatCOP(totalCommission)}</span></div>
+        <div className="finances__visit-summary-row"><span>Comisiones</span><span style={{ color: '#059669' }}>{formatCOP(totalCommission)}</span></div>
         {totalProducts > 0 && <div className="finances__visit-summary-row"><span>Productos vendidos</span><span style={{ color: '#D97706' }}>{formatCOP(totalProducts)}</span></div>}
         <div className="finances__visit-summary-total"><span>Total a pagar</span><span>{formatCOP(totalCommission)}</span></div>
       </div>
@@ -3753,26 +3768,6 @@ const TabNomina = () => {
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                                   </button>
                                 )}
-                                {p.payment_method !== 'efectivo' && !(p.notes || '').includes('[WOMPI]') && (
-                                  <button className="finances__icon-btn finances__icon-btn--accent" onClick={async () => {
-                                    if (!window.confirm(`Dispersar ${formatCOP(p.amount)} a ${st.staff_name} via Wompi?`)) return;
-                                    try {
-                                      const res = await fetch(`${API}/staff-payments/disburse/${p.id}`, { method: 'POST', credentials: 'include' });
-                                      const result = await res.json();
-                                      if (result.ok) {
-                                        addNotification(`Dispersion enviada: ${result.message}`, 'success');
-                                        loadNomina();
-                                      } else {
-                                        addNotification(result.error || 'Error al dispersar', 'error');
-                                      }
-                                    } catch { addNotification('Error de conexion', 'error'); }
-                                  }} title="Dispersar via Wompi">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                  </button>
-                                )}
-                                {(p.notes || '').includes('[WOMPI]') && (
-                                  <span style={{ fontSize: 10, color: '#059669', fontWeight: 700 }} title="Dispersado via Wompi">DISPERSADO</span>
-                                )}
                                 <button className="finances__icon-btn finances__icon-btn--danger" onClick={() => handleDeletePayment(p.id)} title="Eliminar">{Icons.trash}</button>
                               </div>
                               {(p.reference || p.notes || p.receipt_number) && (
@@ -4114,7 +4109,6 @@ const Finances = () => {
       {activeTab === 'reportes' && <TabReportes period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'rendimiento' && <TabRendimiento period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-      {activeTab === 'comisiones' && <TabComisiones period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'nomina' && <TabNomina />}
       {activeTab === 'dian' && <TabDian />}
