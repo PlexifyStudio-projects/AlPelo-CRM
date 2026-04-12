@@ -684,6 +684,31 @@
     }
   }
 
+  // ─── Date selector ────────────────────────────────
+  &__date-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.03);
+
+    svg { color: $color-primary; opacity: 0.6; flex-shrink: 0; }
+
+    input[type="date"] {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 0.88rem;
+      font-weight: $font-weight-semibold;
+      color: $color-secondary;
+      background: none;
+      cursor: pointer;
+    }
+  }
+
   // ─── Sections ─────────────────────────────────────
   &__section {
     margin-bottom: 16px;
@@ -1150,6 +1175,29 @@
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px dashed $color-gray-100;
+  }
+
+  &__svc-time-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: $font-weight-medium;
+    color: $color-gray-400;
+    margin-bottom: 8px;
+
+    svg { opacity: 0.5; }
+    strong { color: $color-gray-500; }
+  }
+
+  &__svc-time-selected {
+    margin-left: auto;
+    font-weight: $font-weight-bold;
+    color: $color-primary;
+    background: rgba($color-primary, 0.08);
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
+    font-size: 0.7rem;
   }
 
   &__time-slots {

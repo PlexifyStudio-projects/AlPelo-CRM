@@ -100,7 +100,8 @@ const Orders = () => {
   const [editOrder, setEditOrder] = useState(null);
   const [checkoutOrder, setCheckoutOrder] = useState(null);
   const [staffSchedules, setStaffSchedules] = useState({});
-  const [todayApts, setTodayApts] = useState([]);
+  const [dayApts, setDayApts] = useState([]);
+  const [orderDate, setOrderDate] = useState(toISO(new Date()));
 
   // Client search state
   const [clientSearchQ, setClientSearchQ] = useState('');
@@ -146,15 +147,10 @@ const Orders = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Load staff schedules + today's appointments for slot computation
+  // Load staff schedules
   useEffect(() => {
     if (!staffList.length) return;
-    const today = toISO(new Date());
-    const loadExtra = async () => {
-      try {
-        const apts = await appointmentService.list({ date_from: today, date_to: today });
-        setTodayApts(Array.isArray(apts) ? apts : []);
-      } catch { setTodayApts([]); }
+    const loadSchedules = async () => {
       const schedMap = {};
       await Promise.all(staffList.map(async (s) => {
         try {
@@ -164,8 +160,20 @@ const Orders = () => {
       }));
       setStaffSchedules(schedMap);
     };
-    loadExtra();
+    loadSchedules();
   }, [staffList]);
+
+  // Load appointments for selected date
+  useEffect(() => {
+    if (!orderDate) return;
+    const loadApts = async () => {
+      try {
+        const apts = await appointmentService.list({ date_from: orderDate, date_to: orderDate });
+        setDayApts(Array.isArray(apts) ? apts : []);
+      } catch { setDayApts([]); }
+    };
+    loadApts();
+  }, [orderDate]);
 
   // Block body scroll when drawer is open
   useEffect(() => {
@@ -237,8 +245,8 @@ const Orders = () => {
   const computeSlots = useCallback((staffId, serviceId, itemIndex) => {
     const svc = services.find(s => s.id === serviceId);
     const dur = svc?.duration_minutes || 30;
-    const today = new Date();
-    const dow = today.getDay();
+    const dateObj = new Date(orderDate + 'T12:00:00');
+    const dow = dateObj.getDay();
     const bdow = dow === 0 ? 6 : dow - 1;
 
     let schedStart = HOURS_START * 60, schedEnd = HOURS_END * 60;
@@ -254,31 +262,31 @@ const Orders = () => {
         }
       }
     }
-    if (!isWorking) return [];
+    if (!isWorking) return { slots: [], closed: true };
 
-    const todayStr = toISO(today);
-    const busy = todayApts
+    const busy = dayApts
       .filter(a => a.staff_id === staffId && a.status !== 'cancelled' && a.status !== 'no_show')
       .map(a => ({ s: timeToMin(a.time), e: timeToMin(a.time) + (a.duration_minutes || 30) }));
 
-    // Block times from other items in this order (same client can't be in 2 places)
     formItems.forEach((other, j) => {
       if (j === itemIndex || !other.time) return;
       const otherDur = services.find(s => s.id === other.service_id)?.duration_minutes || 30;
       busy.push({ s: timeToMin(other.time), e: timeToMin(other.time) + otherDur });
     });
 
-    const nowMin = today.getHours() * 60 + today.getMinutes();
+    const isToday = orderDate === toISO(new Date());
+    const now = new Date();
+    const nowMin = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
     const slots = [];
     for (let m = Math.max(HOURS_START * 60, schedStart); m < Math.min(HOURS_END * 60, schedEnd); m += SLOT_MIN) {
-      if (m < nowMin) continue;
+      if (isToday && m < nowMin) continue;
       const end = m + dur;
       if (end > schedEnd) break;
       if (breakStart >= 0 && m < breakEnd && end > breakStart) continue;
       if (!busy.some(b => m < b.e && end > b.s)) slots.push(m);
     }
-    return slots;
-  }, [services, staffSchedules, todayApts, formItems]);
+    return { slots, closed: false };
+  }, [services, staffSchedules, dayApts, formItems, orderDate]);
 
   const openCreate = () => {
     setEditOrder(null);
@@ -674,6 +682,12 @@ const Orders = () => {
                 </div>
               </div>
 
+              {/* ── Fecha ── */}
+              <div className={`${b}__date-section`}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <input type="date" value={orderDate} onChange={e => { setOrderDate(e.target.value); formItems.forEach((_, idx) => updateItem(idx, 'time', '')); }} />
+              </div>
+
               {/* ── Cliente ── */}
               <div className={`${b}__section`}>
                 <div className={`${b}__section-header`}>
@@ -790,28 +804,35 @@ const Orders = () => {
                       )}
                       {/* Time slots — show after staff is selected */}
                       {item.staff_id && (() => {
-                        const slots = computeSlots(parseInt(item.staff_id), item.service_id, i);
+                        const { slots, closed } = computeSlots(parseInt(item.staff_id), item.service_id, i);
+                        const dateObj = new Date(orderDate + 'T12:00:00');
+                        const dayLabel = dateObj.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' });
                         return (
                           <div className={`${b}__svc-time`}>
-                            <span className={`${b}__svc-staff-label`}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                              {item.time ? `Horario: ${formatTime12(item.time)}` : `Horarios disponibles (${slots.length})`}
-                            </span>
-                            <div className={`${b}__time-slots`}>
-                              {slots.length === 0 ? (
-                                <span className={`${b}__time-none`}>No hay horarios disponibles hoy</span>
-                              ) : slots.map(m => {
-                                const t = minToTime(m);
-                                const active = item.time === t;
-                                return (
-                                  <button key={m}
-                                    className={`${b}__time-slot ${active ? `${b}__time-slot--on` : ''}`}
-                                    onClick={() => updateItem(i, 'time', active ? '' : t)}>
-                                    {formatTime12(t)}
-                                  </button>
-                                );
-                              })}
+                            <div className={`${b}__svc-time-header`}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                              <span>Horarios — <strong>{dayLabel}</strong></span>
+                              {item.time && <span className={`${b}__svc-time-selected`}>{formatTime12(item.time)}</span>}
                             </div>
+                            {closed ? (
+                              <span className={`${b}__time-none`}>Este personal no trabaja el {dayLabel}</span>
+                            ) : slots.length === 0 ? (
+                              <span className={`${b}__time-none`}>No hay horarios disponibles para esta fecha</span>
+                            ) : (
+                              <div className={`${b}__time-slots`}>
+                                {slots.map(m => {
+                                  const t = minToTime(m);
+                                  const active = item.time === t;
+                                  return (
+                                    <button key={m}
+                                      className={`${b}__time-slot ${active ? `${b}__time-slot--on` : ''}`}
+                                      onClick={() => updateItem(i, 'time', active ? '' : t)}>
+                                      {formatTime12(t)}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         );
                       })()}
