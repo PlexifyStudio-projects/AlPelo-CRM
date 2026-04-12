@@ -192,21 +192,50 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const productsTotal = useMemo(() => productItems.reduce((s, p) => s + (p.salePrice || 0) * (p.qty || 1), 0), [productItems]);
   const subtotal = useMemo(() => servicesTotal + productsTotal, [servicesTotal, productsTotal]);
   const [staffCommissionRate, setStaffCommissionRate] = useState(40);
+  const [perServiceRates, setPerServiceRates] = useState({}); // { `${staffId}-${serviceId}`: rate }
 
+  // Load per-service commission rates for all items
   useEffect(() => {
-    if (!appointment?.staff_id) return;
-    fetch(`${API_URL}/finances/commissions/config`, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : [])
-      .then(data => {
-        const staffConfig = data.find(c => c.staff_id === appointment.staff_id);
-        if (staffConfig?.default_rate) {
-          setStaffCommissionRate(Math.round(staffConfig.default_rate * 100));
-        }
-      })
-      .catch(() => {});
-  }, [appointment?.staff_id]);
+    if (!items.length) return;
+    const serviceIds = [...new Set(items.map(i => i.service_id).filter(Boolean))];
+    const loadRates = async () => {
+      const rateMap = {};
+      await Promise.all(serviceIds.map(async (svcId) => {
+        try {
+          const res = await fetch(`${API_URL}/services/${svcId}/commissions`, { credentials: 'include' });
+          if (res.ok) {
+            const data = await res.json();
+            (data.staff || []).forEach(s => {
+              if (s.commission_rate > 0) rateMap[`${s.staff_id}-${svcId}`] = s.commission_rate;
+            });
+          }
+        } catch {}
+      }));
+      setPerServiceRates(rateMap);
+    };
+    loadRates();
+    // Also load default rate
+    if (appointment?.staff_id) {
+      fetch(`${API_URL}/finances/commissions/config`, { credentials: 'include' })
+        .then(r => r.ok ? r.json() : [])
+        .then(data => {
+          const sc = data.find(c => c.staff_id === appointment.staff_id);
+          if (sc?.default_rate) setStaffCommissionRate(Math.round(sc.default_rate * 100));
+        })
+        .catch(() => {});
+    }
+  }, [items, appointment?.staff_id]);
 
-  const commissionAmount = useMemo(() => Math.round(subtotal * (staffCommissionRate / 100)), [subtotal, staffCommissionRate]);
+  // Calculate commission per item using per-service rates, fallback to default
+  const itemCommissions = useMemo(() => {
+    return items.map(it => {
+      const key = `${it.staff_id}-${it.service_id}`;
+      const rate = perServiceRates[key] ?? (staffCommissionRate / 100);
+      return { ...it, commRate: Math.round(rate * 100), commAmount: Math.round((it.price || 0) * rate) };
+    });
+  }, [items, perServiceRates, staffCommissionRate]);
+
+  const commissionAmount = useMemo(() => itemCommissions.reduce((s, i) => s + i.commAmount, 0), [itemCommissions]);
 
   const discountAmount = useMemo(() => {
     if (discountType === 'percent') return Math.round(subtotal * (discountPercent / 100));
@@ -873,35 +902,35 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         <div className={`${b}__receipt-breakdown`}>
           <div className={`${b}__receipt-breakdown-title`}>Desglose por profesional</div>
           {(() => {
-            // Group items by staff
+            // Group by staff using per-service rates
             const byStaff = {};
-            items.forEach(it => {
+            itemCommissions.forEach(it => {
               const key = it.staff_name || appointment.staff_name || 'Staff';
-              if (!byStaff[key]) byStaff[key] = { name: key, total: 0, services: [] };
-              byStaff[key].total += it.price || 0;
-              byStaff[key].services.push(it.service_name);
+              if (!byStaff[key]) byStaff[key] = { name: key, items: [], totalComm: 0, totalSvc: 0 };
+              byStaff[key].items.push(it);
+              byStaff[key].totalComm += it.commAmount;
+              byStaff[key].totalSvc += it.price || 0;
             });
             const staffEntries = Object.values(byStaff);
-            return staffEntries.map((s, idx) => {
-              const sComm = Math.round(s.total * staffCommissionRate / 100);
-              return (
-                <div key={idx} className={`${b}__receipt-staff-block`}>
-                  <div className={`${b}__receipt-breakdown-row`}>
-                    <span style={{ fontWeight: 700 }}>{s.name}</span>
-                    <span className={`${b}__receipt-breakdown-value`}>{s.services.join(', ')}</span>
-                  </div>
-                  <div className={`${b}__receipt-breakdown-row`}>
-                    <span>Servicios</span>
-                    <span>{fmt(s.total)}</span>
-                  </div>
-                  <div className={`${b}__receipt-breakdown-row`}>
-                    <span>Comisión ({staffCommissionRate}%)</span>
-                    <span className={`${b}__receipt-breakdown-value`} style={{ color: '#059669' }}>{fmt(sComm)}</span>
-                  </div>
-                  {staffEntries.length > 1 && idx < staffEntries.length - 1 && <div style={{ borderBottom: '1px dashed #e2e8f0', margin: '6px 0' }} />}
+            return staffEntries.map((s, idx) => (
+              <div key={idx} className={`${b}__receipt-staff-block`}>
+                <div className={`${b}__receipt-breakdown-row`}>
+                  <span style={{ fontWeight: 700 }}>{s.name}</span>
+                  <span className={`${b}__receipt-breakdown-value`}>{fmt(s.totalSvc)}</span>
                 </div>
-              );
-            });
+                {s.items.map((it, j) => (
+                  <div key={j} className={`${b}__receipt-breakdown-row`} style={{ fontSize: '0.78rem', color: '#64748B' }}>
+                    <span>{it.service_name} ({it.commRate}%)</span>
+                    <span style={{ color: '#059669' }}>{fmt(it.commAmount)}</span>
+                  </div>
+                ))}
+                <div className={`${b}__receipt-breakdown-row`}>
+                  <span>Comisión total</span>
+                  <span className={`${b}__receipt-breakdown-value`} style={{ color: '#059669' }}>{fmt(s.totalComm)}</span>
+                </div>
+                {staffEntries.length > 1 && idx < staffEntries.length - 1 && <div style={{ borderBottom: '1px dashed #e2e8f0', margin: '6px 0' }} />}
+              </div>
+            ));
           })()}
           <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 8, paddingTop: 8 }}>
             <div className={`${b}__receipt-breakdown-row`}>
