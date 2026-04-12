@@ -129,11 +129,13 @@ const Orders = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [orderList, svcList, staffData, invData] = await Promise.all([
+      const today = toISO(new Date());
+      const [orderList, svcList, staffData, invData, aptList] = await Promise.all([
         orderService.list(),
         servicesService.list(),
         staffService.list(),
         fetch(`${API}/inventory/products`, { credentials: 'include' }).then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] })),
+        appointmentService.list({ date_from: today, date_to: today }).catch(() => []),
       ]);
       // Auto-mark stale pending/in_progress orders as no_show after 48h
       const now = Date.now();
@@ -147,7 +149,32 @@ const Orders = () => {
         stale.forEach(o => { o.status = 'no_show'; });
         if (stale.length) addNotification(`${stale.length} orden(es) marcada(s) como "No asistió" (más de 48h sin acción)`, 'warning');
       }
-      setOrders(orderList);
+      // Convert appointments to order-like cards
+      const aptOrders = (Array.isArray(aptList) ? aptList : []).map(a => {
+        const statusMap = { confirmed: 'pending', completed: 'completed', paid: 'completed', cancelled: 'cancelled', no_show: 'no_show' };
+        return {
+          id: `apt-${a.id}`,
+          _apt_id: a.id,
+          _is_appointment: true,
+          ticket_number: a.visit_code || `A-${a.id}`,
+          client_id: a.client_id,
+          client_name: a.client_name || 'Cliente',
+          client_phone: a.client_phone || '',
+          staff_id: a.staff_id,
+          staff_name: a.staff_name || '',
+          status: statusMap[a.status] || a.status,
+          payment_status: a.status === 'paid' ? 'paid' : 'unpaid',
+          arrival_time: `${a.date}T${a.time || '00:00'}`,
+          total: a.price || 0,
+          subtotal: a.price || 0,
+          items: [{ service_id: a.service_id, service_name: a.service_name || 'Servicio', price: a.price || 0, duration_minutes: a.duration_minutes, staff_id: a.staff_id }],
+          products: [],
+          created_at: a.created_at,
+        };
+      });
+      // Merge: orders + appointments, deduplicate by client+time if needed
+      const allOrders = [...orderList, ...aptOrders];
+      setOrders(allOrders);
       setServices(svcList.filter(s => s.is_active));
       setStaffList(staffData.filter(s => s.is_active !== false));
       setProducts(invData?.products || []);
@@ -232,7 +259,11 @@ const Orders = () => {
 
   const filtered = useMemo(() => {
     let list = [...orders];
-    if (statusFilter !== 'all') list = list.filter(o => o.status === statusFilter);
+    if (statusFilter === 'paid') {
+      list = list.filter(o => o.payment_status === 'paid');
+    } else if (statusFilter !== 'all') {
+      list = list.filter(o => o.status === statusFilter);
+    }
     if (search) {
       const q = search.toLowerCase();
       const qDigits = q.replace(/\D/g, '');
@@ -250,8 +281,11 @@ const Orders = () => {
   }, [orders, statusFilter, search]);
 
   const counts = useMemo(() => {
-    const c = { all: orders.length, pending: 0, in_progress: 0, completed: 0, cancelled: 0 };
-    orders.forEach(o => { if (c[o.status] !== undefined) c[o.status]++; });
+    const c = { all: orders.length, pending: 0, in_progress: 0, completed: 0, paid: 0, no_show: 0, cancelled: 0 };
+    orders.forEach(o => {
+      if (c[o.status] !== undefined) c[o.status]++;
+      if (o.payment_status === 'paid') c.paid++;
+    });
     return c;
   }, [orders]);
 
@@ -396,9 +430,14 @@ const Orders = () => {
 
   const handleStatusChange = async (order, newStatus) => {
     try {
-      await orderService.update(order.id, { status: newStatus });
-      addNotification(`Orden: ${STATUS_META[newStatus]?.label || newStatus}`, 'success');
-      // Update local editOrder so drawer reflects immediately
+      if (order._is_appointment) {
+        // Update appointment status via appointment service
+        const aptStatus = newStatus === 'pending' ? 'confirmed' : newStatus;
+        await appointmentService.update(order._apt_id || order.id, { status: aptStatus });
+      } else {
+        await orderService.update(order.id, { status: newStatus });
+      }
+      addNotification(`${order._is_appointment ? 'Cita' : 'Orden'}: ${STATUS_META[newStatus]?.label || newStatus}`, 'success');
       if (editOrder?.id === order.id) setEditOrder(prev => ({ ...prev, status: newStatus }));
       loadData();
     } catch (err) { addNotification(err.message, 'error'); }
@@ -528,9 +567,12 @@ const Orders = () => {
         <div className={`${b}__filters`}>
           {[
             { key: 'all', label: 'Todas' },
-            { key: 'pending', label: 'Pendientes' },
+            { key: 'pending', label: 'Agendadas' },
             { key: 'in_progress', label: 'En proceso' },
             { key: 'completed', label: 'Completadas' },
+            { key: 'paid', label: 'Pagadas' },
+            { key: 'no_show', label: 'No asistieron' },
+            { key: 'cancelled', label: 'Canceladas' },
           ].map(f => (
             <button key={f.key}
               className={`${b}__filter ${statusFilter === f.key ? `${b}__filter--active` : ''}`}
@@ -565,6 +607,8 @@ const Orders = () => {
             const st = STATUS_META[o.status] || STATUS_META.pending;
             const py = PAYMENT_META[o.payment_status] || PAYMENT_META.unpaid;
             const initials = o.client_name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '?';
+            const AVATAR_COLORS = ['#2D5A3D','#3B82F6','#E05292','#C9A84C','#8B5CF6','#F97316','#14B8A6','#EC4899','#06B6D4','#EF4444','#6366F1','#059669','#D946EF','#0EA5E9'];
+            const avatarColor = AVATAR_COLORS[(o.client_name || '').charCodeAt(0) % AVATAR_COLORS.length];
             const svcCount = o.items?.length || 0;
             const prodCount = o.products?.length || 0;
             return (
@@ -574,13 +618,16 @@ const Orders = () => {
 
                 {/* Ticket + Status */}
                 <div className={`${b}__card-header`}>
-                  <span className={`${b}__card-ticket`}>{o.ticket_number}</span>
+                  <div className={`${b}__card-header-left`}>
+                    <span className={`${b}__card-ticket`}>{o.ticket_number}</span>
+                    {o._is_appointment && <span className={`${b}__card-source`}>Agenda</span>}
+                  </div>
                   <span className={`${b}__card-status`} style={{ color: st.color, background: st.bg }}>{st.label}</span>
                 </div>
 
                 {/* Client */}
                 <div className={`${b}__card-client`}>
-                  <div className={`${b}__card-avatar`} style={{ background: st.color }}>{initials}</div>
+                  <div className={`${b}__card-avatar`} style={{ background: avatarColor }}>{initials}</div>
                   <div className={`${b}__card-client-info`}>
                     <strong>{o.client_name}</strong>
                     {o.client_phone && <span>
@@ -637,6 +684,22 @@ const Orders = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Quick actions for pending/in_progress */}
+                {(o.status === 'pending' || o.status === 'in_progress') && o.payment_status !== 'paid' && (
+                  <div className={`${b}__card-quick`}>
+                    <button className={`${b}__card-quick-btn ${b}__card-quick-btn--noshow`}
+                      onClick={(e) => { e.stopPropagation(); handleStatusChange(o._is_appointment ? { ...o, id: o._apt_id, _is_appointment: true } : o, 'no_show'); }}
+                      title="No asistió">
+                      No asistió
+                    </button>
+                    <button className={`${b}__card-quick-btn ${b}__card-quick-btn--cancel`}
+                      onClick={(e) => { e.stopPropagation(); handleStatusChange(o._is_appointment ? { ...o, id: o._apt_id, _is_appointment: true } : o, 'cancelled'); }}
+                      title="Cancelar">
+                      Cancelar
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}

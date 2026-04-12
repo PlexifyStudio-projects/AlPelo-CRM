@@ -232,6 +232,23 @@
     padding: 14px 16px 0;
   }
 
+  &__card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__card-source {
+    font-size: 0.58rem;
+    font-weight: $font-weight-bold;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 2px 7px;
+    border-radius: $border-radius-full;
+    background: rgba(#8B5CF6, 0.08);
+    color: #8B5CF6;
+  }
+
   &__card-ticket {
     font-size: 0.82rem;
     font-weight: $font-weight-extrabold;
@@ -392,6 +409,34 @@
   &__card-pay {
     font-size: 0.65rem;
     font-weight: $font-weight-bold;
+  }
+
+  &__card-quick {
+    display: flex;
+    gap: 6px;
+    padding: 0 16px 12px;
+  }
+
+  &__card-quick-btn {
+    flex: 1;
+    padding: 5px 0;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.68rem;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 150ms;
+
+    &--noshow {
+      background: rgba(#D97706, 0.08);
+      color: #D97706;
+      &:hover { background: rgba(#D97706, 0.15); }
+    }
+    &--cancel {
+      background: rgba(#EF4444, 0.08);
+      color: #EF4444;
+      &:hover { background: rgba(#EF4444, 0.15); }
+    }
   }
 
   &__card-pay-btn {
