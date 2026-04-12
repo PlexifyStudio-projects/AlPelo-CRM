@@ -534,6 +534,7 @@ def list_appointments(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     staff_id: Optional[int] = Query(None),
+    client_id: Optional[int] = Query(None),
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     user: Admin = Depends(get_current_user),
@@ -552,6 +553,8 @@ def list_appointments(
         query = query.filter(Appointment.date <= dt_date.fromisoformat(date_to))
     if staff_id:
         query = query.filter(Appointment.staff_id == staff_id)
+    if client_id:
+        query = query.filter(Appointment.client_id == client_id)
     if status:
         query = query.filter(Appointment.status == status)
 

@@ -100,14 +100,16 @@ const Clients = () => {
       if (editingClient) {
         await clientService.update(editingClient.id, clientData);
         // If visit code changed, update the latest appointment
-        if (visitCode && visitCode !== editingClient.last_visit_code) {
+        if (visitCode !== undefined && visitCode !== (editingClient.last_visit_code || '')) {
           try {
             const apts = await appointmentService.list({ client_id: editingClient.id });
             const latestApt = apts?.length ? apts.sort((a, b) => b.id - a.id)[0] : null;
             if (latestApt) {
-              await appointmentService.update(latestApt.id, { visit_code: visitCode });
+              await appointmentService.update(latestApt.id, { visit_code: visitCode || null });
             }
-          } catch (_) { /* non-blocking */ }
+          } catch (e) {
+            console.warn('Error actualizando ticket:', e.message);
+          }
         }
         addNotification('Cliente actualizado correctamente', 'success');
       } else {

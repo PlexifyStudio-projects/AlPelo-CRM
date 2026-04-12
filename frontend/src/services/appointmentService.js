@@ -6,6 +6,7 @@ const appointmentService = {
     if (params.date_from) query.append('date_from', params.date_from);
     if (params.date_to) query.append('date_to', params.date_to);
     if (params.staff_id) query.append('staff_id', params.staff_id);
+    if (params.client_id) query.append('client_id', params.client_id);
     if (params.status) query.append('status', params.status);
     const qs = query.toString();
     const res = await fetch(`${API_URL}/appointments/${qs ? '?' + qs : ''}`, { credentials: 'include' });
