@@ -10,7 +10,7 @@ import io
 from database.connection import get_db
 from database.models import (
     Admin, Staff, Client, VisitHistory, Expense, Invoice, InvoiceItem,
-    StaffCommission, Service,
+    StaffCommission, StaffServiceCommission, Service, StaffFine,
 )
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
@@ -1085,9 +1085,15 @@ def get_staff_performance(
             pvq = pvq.filter(VisitHistory.tenant_id == tid)
         prev_visits = pvq.all()
 
-        # Commission
+        # Commission — per-service from StaffServiceCommission
         comm = db.query(StaffCommission).filter(StaffCommission.staff_id == s.id).first()
-        rate = comm.default_rate if comm else 0.40
+        default_rate = comm.default_rate if comm else 0.40
+
+        # Load all per-service commission rates for this staff
+        ssc_rows = db.query(StaffServiceCommission).filter(
+            StaffServiceCommission.staff_id == s.id
+        ).all()
+        ssc_map = {r.service_id: r.commission_rate for r in ssc_rows}  # {service_id: rate}
 
         # Metrics
         revenue = sum(v.amount or 0 for v in visits)
@@ -1096,7 +1102,45 @@ def get_staff_performance(
         prev_services = len(prev_visits)
         unique_clients = len(set(v.client_id for v in visits if v.client_id))
         avg_ticket = round(revenue / services_count) if services_count > 0 else 0
-        commission_amount = round(revenue * rate)
+
+        # Per-service commission breakdown
+        commission_breakdown = {}  # {service_name: {revenue, rate, commission}}
+        commission_amount = 0
+        for v in visits:
+            names = v.service_name.split(',') if v.service_name else ['Otros']
+            per_svc_amount = (v.amount or 0) / max(len(names), 1)
+            for name in names:
+                name = name.strip()
+                is_product = name.startswith('[Producto]')
+                # Find service_id from catalog
+                svc_info = svc_catalog.get(name.lower().strip(), {})
+                svc_id = svc_info.get("id")
+                # Get rate: StaffServiceCommission > StaffCommission default > 0.40
+                if is_product:
+                    rate = 0  # Products use fixed $ commission, not %
+                elif svc_id and svc_id in ssc_map:
+                    rate = ssc_map[svc_id]
+                else:
+                    rate = default_rate
+                svc_comm = round(per_svc_amount * rate)
+                commission_amount += svc_comm
+                if name not in commission_breakdown:
+                    commission_breakdown[name] = {"revenue": 0, "rate": rate, "commission": 0, "count": 0}
+                commission_breakdown[name]["revenue"] += int(per_svc_amount)
+                commission_breakdown[name]["commission"] += svc_comm
+                commission_breakdown[name]["count"] += 1
+
+        # Fines in this period
+        fines_q = db.query(StaffFine).filter(
+            StaffFine.staff_id == s.id,
+            StaffFine.fine_date >= start,
+            StaffFine.fine_date <= end,
+        )
+        if tid:
+            fines_q = fines_q.filter(StaffFine.tenant_id == tid)
+        fines = fines_q.all()
+        fines_total = sum(f.amount for f in fines)
+        fines_count = len(fines)
 
         # Revenue by service category
         cat_breakdown = {}
@@ -1138,7 +1182,7 @@ def get_staff_performance(
             "staff_name": s.name,
             "staff_role": s.role or "",
             "photo_url": getattr(s, 'photo_url', None),
-            "commission_rate": rate,
+            "commission_rate": default_rate,
             "revenue": revenue,
             "prev_revenue": prev_revenue,
             "revenue_growth": rev_growth,
@@ -1148,6 +1192,16 @@ def get_staff_performance(
             "unique_clients": unique_clients,
             "avg_ticket": avg_ticket,
             "commission_amount": commission_amount,
+            "commission_breakdown": [
+                {"service": k, "revenue": v["revenue"], "rate": v["rate"], "commission": v["commission"], "count": v["count"]}
+                for k, v in sorted(commission_breakdown.items(), key=lambda x: -x[1]["commission"])
+            ],
+            "fines_total": fines_total,
+            "fines_count": fines_count,
+            "fines": [
+                {"id": f.id, "reason": f.reason, "amount": f.amount, "date": f.fine_date.isoformat(), "notes": f.notes or ""}
+                for f in fines
+            ],
             "category_breakdown": cat_breakdown,
             "top_services": [{"name": n, "count": c} for n, c in top_services],
             "daily_revenue": [{"date": d, "revenue": r} for d, r in sorted(day_revenue.items())],
@@ -1422,3 +1476,109 @@ def revenue_forecast(
             "future_confirmed": round(future_confirmed, 0),
         },
     }
+
+
+# ─── FINES / MULTAS ──────────────────────────────────────
+
+@router.get("/finances/fines")
+def list_fines(
+    staff_id: Optional[int] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    tid = safe_tid(current_user, db)
+    q = db.query(StaffFine)
+    if tid:
+        q = q.filter(StaffFine.tenant_id == tid)
+    if staff_id:
+        q = q.filter(StaffFine.staff_id == staff_id)
+    if date_from:
+        q = q.filter(StaffFine.fine_date >= date.fromisoformat(date_from))
+    if date_to:
+        q = q.filter(StaffFine.fine_date <= date.fromisoformat(date_to))
+
+    fines = q.order_by(StaffFine.fine_date.desc()).all()
+    # Enrich with staff name
+    staff_names = {s.id: s.name for s in db.query(Staff).filter(Staff.tenant_id == tid).all()} if tid else {}
+    return [
+        {
+            "id": f.id,
+            "staff_id": f.staff_id,
+            "staff_name": staff_names.get(f.staff_id, ""),
+            "reason": f.reason,
+            "amount": f.amount,
+            "fine_date": f.fine_date.isoformat(),
+            "notes": f.notes or "",
+            "created_by": f.created_by or "",
+            "created_at": f.created_at.isoformat() if f.created_at else None,
+        }
+        for f in fines
+    ]
+
+
+@router.post("/finances/fines")
+def create_fine(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    tid = safe_tid(current_user, db)
+    if not tid:
+        raise HTTPException(400, "Tenant requerido")
+
+    staff_id = data.get("staff_id")
+    reason = (data.get("reason") or "").strip()
+    amount = data.get("amount", 0)
+    fine_date_str = data.get("fine_date")
+
+    if not staff_id or not reason or not amount:
+        raise HTTPException(400, "staff_id, reason y amount son obligatorios")
+
+    # Verify staff belongs to tenant
+    staff = db.query(Staff).filter(Staff.id == staff_id, Staff.tenant_id == tid).first()
+    if not staff:
+        raise HTTPException(404, "Profesional no encontrado")
+
+    fine = StaffFine(
+        tenant_id=tid,
+        staff_id=staff_id,
+        reason=reason,
+        amount=int(amount),
+        fine_date=date.fromisoformat(fine_date_str) if fine_date_str else date.today(),
+        notes=(data.get("notes") or "").strip(),
+        created_by=current_user.username if hasattr(current_user, 'username') else str(current_user.id),
+    )
+    db.add(fine)
+    db.commit()
+    db.refresh(fine)
+    return {
+        "id": fine.id,
+        "staff_id": fine.staff_id,
+        "staff_name": staff.name,
+        "reason": fine.reason,
+        "amount": fine.amount,
+        "fine_date": fine.fine_date.isoformat(),
+        "notes": fine.notes or "",
+        "created_by": fine.created_by or "",
+        "created_at": fine.created_at.isoformat() if fine.created_at else None,
+    }
+
+
+@router.delete("/finances/fines/{fine_id}")
+def delete_fine(
+    fine_id: int,
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    tid = safe_tid(current_user, db)
+    q = db.query(StaffFine).filter(StaffFine.id == fine_id)
+    if tid:
+        q = q.filter(StaffFine.tenant_id == tid)
+    fine = q.first()
+    if not fine:
+        raise HTTPException(404, "Multa no encontrada")
+    db.delete(fine)
+    db.commit()
+    return {"detail": "Multa eliminada"}

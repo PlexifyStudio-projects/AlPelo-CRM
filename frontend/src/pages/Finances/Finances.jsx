@@ -3162,9 +3162,14 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
   const [expandedId, setExpandedId] = useState(null);
   const [filterStaff, setFilterStaff] = useState('');
   const [sortBy, setSortBy] = useState('revenue');
+  const [fineModal, setFineModal] = useState(null); // staff_id or null
+  const [fineForm, setFineForm] = useState({ reason: '', amount: '', notes: '' });
+  const [savingFine, setSavingFine] = useState(false);
+  const [staffList, setStaffList] = useState([]);
+  const [detailTab, setDetailTab] = useState({}); // {staff_id: 'comisiones' | 'multas' | 'metricas'}
   const API_R = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
-  useEffect(() => {
+  const loadData = () => {
     setLoading(true);
     const params = period === 'custom' && dateFrom && dateTo
       ? `?period=custom&date_from=${dateFrom}&date_to=${dateTo}`
@@ -3175,7 +3180,49 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
       .then(d => setData(Array.isArray(d) ? d : []))
       .catch(() => setData([]))
       .finally(() => setLoading(false));
-  }, [period, dateFrom, dateTo]);
+  };
+
+  useEffect(() => { loadData(); }, [period, dateFrom, dateTo]);
+
+  useEffect(() => {
+    fetch(`${API_R}/staff`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setStaffList(Array.isArray(d) ? d : d.staff || []))
+      .catch(() => {});
+  }, []);
+
+  const handleAddFine = async () => {
+    if (!fineModal || !fineForm.reason.trim() || !fineForm.amount) return;
+    setSavingFine(true);
+    try {
+      const res = await fetch(`${API_R}/finances/fines`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          staff_id: fineModal,
+          reason: fineForm.reason.trim(),
+          amount: parseInt(fineForm.amount),
+          fine_date: new Date().toISOString().slice(0, 10),
+          notes: fineForm.notes.trim(),
+        }),
+      });
+      if (res.ok) {
+        setFineModal(null);
+        setFineForm({ reason: '', amount: '', notes: '' });
+        loadData();
+      }
+    } catch (e) { /* ignore */ }
+    setSavingFine(false);
+  };
+
+  const handleDeleteFine = async (fineId) => {
+    if (!confirm('¿Eliminar esta multa?')) return;
+    try {
+      const res = await fetch(`${API_R}/finances/fines/${fineId}`, { method: 'DELETE', credentials: 'include' });
+      if (res.ok) loadData();
+    } catch (e) { /* ignore */ }
+  };
 
   if (loading) return <div className="finances__comm-skeleton">{[...Array(3)].map((_, i) => <div key={i} className="finances__card" style={{ padding: 20 }}><SkeletonBlock width="100%" height="80px" /></div>)}</div>;
   if (!data.length) return <div className="finances__empty">Sin datos de rendimiento para este periodo</div>;
@@ -3192,8 +3239,12 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
   const totalRevenue = data.reduce((s, st) => s + st.revenue, 0);
   const totalServices = data.reduce((s, st) => s + st.services_count, 0);
   const totalClients = data.reduce((s, st) => s + st.unique_clients, 0);
+  const totalCommissions = data.reduce((s, st) => s + st.commission_amount, 0);
+  const totalFines = data.reduce((s, st) => s + (st.fines_total || 0), 0);
   const maxRev = sorted[0]?.revenue || 1;
   const medals = ['🥇', '🥈', '🥉'];
+
+  const getDetailTab = (staffId) => detailTab[staffId] || 'comisiones';
 
   return (
     <>
@@ -3213,17 +3264,17 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
           </div>
         </div>
         <div className="finances__kpi-card">
-          <div className="finances__kpi-icon finances__kpi-icon--accent">{Icons.receipt}</div>
+          <div className="finances__kpi-icon finances__kpi-icon--accent">{Icons.dollar}</div>
           <div className="finances__kpi-info">
-            <span className="finances__kpi-value"><AnimatedNumber value={totalServices} /></span>
-            <span className="finances__kpi-label">Servicios</span>
+            <span className="finances__kpi-value"><AnimatedNumber value={totalCommissions} prefix="$" /></span>
+            <span className="finances__kpi-label">Comisiones totales</span>
           </div>
         </div>
         <div className="finances__kpi-card">
-          <div className="finances__kpi-icon finances__kpi-icon--info">{Icons.users}</div>
+          <div className="finances__kpi-icon finances__kpi-icon--danger">{Icons.receipt}</div>
           <div className="finances__kpi-info">
-            <span className="finances__kpi-value"><AnimatedNumber value={totalClients} /></span>
-            <span className="finances__kpi-label">Clientes unicos</span>
+            <span className="finances__kpi-value"><AnimatedNumber value={totalFines} prefix="$" /></span>
+            <span className="finances__kpi-label">Multas totales</span>
           </div>
         </div>
       </div>
@@ -3252,6 +3303,8 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
           const pct = Math.round((st.revenue / maxRev) * 100);
           const sharePct = totalRevenue > 0 ? Math.round((st.revenue / totalRevenue) * 100) : 0;
           const isExpanded = expandedId === st.staff_id;
+          const netEarnings = st.commission_amount - (st.fines_total || 0);
+          const activeTab = getDetailTab(st.staff_id);
           return (
             <div key={st.staff_id} className={`finances__perf-card ${isExpanded ? 'finances__perf-card--expanded' : ''}`}>
               <div className="finances__perf-item" onClick={() => setExpandedId(isExpanded ? null : st.staff_id)}>
@@ -3282,7 +3335,9 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
                     <span>{st.services_count} servicios</span>
                     <span>{st.unique_clients} clientes</span>
                     <span>Ticket: {formatCOP(st.avg_ticket)}</span>
-                    <span>Comision ({(st.commission_rate * 100).toFixed(0)}%): {formatCOP(st.commission_amount)}</span>
+                    <span>Comision: {formatCOP(st.commission_amount)}</span>
+                    {(st.fines_total || 0) > 0 && <span style={{ color: '#DC2626' }}>Multas: {formatCOP(st.fines_total)}</span>}
+                    <span style={{ fontWeight: 700, color: netEarnings >= 0 ? '#059669' : '#DC2626' }}>Neto: {formatCOP(netEarnings)}</span>
                   </div>
                 </div>
                 <svg className={`finances__inv-chevron ${isExpanded ? 'finances__inv-chevron--open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9" /></svg>
@@ -3290,74 +3345,177 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
 
               {isExpanded && (
                 <div className="finances__perf-detail">
-                  <div className="finances__perf-detail-grid">
-                    {/* Comparison cards */}
-                    <div className="finances__perf-compare">
-                      <h4>Comparacion vs periodo anterior</h4>
-                      <div className="finances__perf-compare-cards">
-                        <div className="finances__perf-compare-card">
-                          <span className="finances__perf-compare-label">Ingresos</span>
-                          <strong>{formatCOP(st.revenue)}</strong>
-                          <small>Anterior: {formatCOP(st.prev_revenue)}</small>
-                          <span className={st.revenue_growth >= 0 ? 'finances__perf-growth--up' : 'finances__perf-growth--down'}>{st.revenue_growth > 0 ? '+' : ''}{st.revenue_growth}%</span>
-                        </div>
-                        <div className="finances__perf-compare-card">
-                          <span className="finances__perf-compare-label">Servicios</span>
-                          <strong>{st.services_count}</strong>
-                          <small>Anterior: {st.prev_services}</small>
-                          <span className={st.services_growth >= 0 ? 'finances__perf-growth--up' : 'finances__perf-growth--down'}>{st.services_growth > 0 ? '+' : ''}{st.services_growth}%</span>
-                        </div>
-                        <div className="finances__perf-compare-card">
-                          <span className="finances__perf-compare-label">Clientes unicos</span>
-                          <strong>{st.unique_clients}</strong>
-                        </div>
-                        <div className="finances__perf-compare-card">
-                          <span className="finances__perf-compare-label">Mejor dia</span>
-                          <strong>{st.best_day ? formatCOP(st.best_day.revenue) : '—'}</strong>
-                          {st.best_day && <small>{new Date(st.best_day.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</small>}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Category breakdown */}
-                    <div className="finances__perf-categories">
-                      <h4>Ingresos por categoria</h4>
-                      {Object.entries(st.category_breakdown || {}).sort((a, b) => b[1] - a[1]).map(([cat, rev]) => (
-                        <div key={cat} className="finances__perf-cat-row">
-                          <span className="finances__perf-cat-name" style={{ color: CATEGORY_COLORS[cat] || '#666' }}>{cat}</span>
-                          <div className="finances__perf-cat-bar-bg">
-                            <div className="finances__perf-cat-bar" style={{ width: `${Math.round((rev / st.revenue) * 100)}%`, background: CATEGORY_COLORS[cat] || '#999' }} />
-                          </div>
-                          <span className="finances__perf-cat-value">{formatCOP(rev)}</span>
-                        </div>
-                      ))}
-                    </div>
+                  {/* Detail sub-tabs */}
+                  <div className="finances__perf-tabs">
+                    {['comisiones', 'multas', 'metricas'].map(tab => (
+                      <button
+                        key={tab}
+                        className={`finances__perf-tab ${activeTab === tab ? 'finances__perf-tab--active' : ''}`}
+                        onClick={() => setDetailTab(p => ({ ...p, [st.staff_id]: tab }))}
+                      >
+                        {tab === 'comisiones' ? 'Comisiones' : tab === 'multas' ? `Multas (${st.fines_count || 0})` : 'Metricas'}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Top services */}
-                  {st.top_services && st.top_services.length > 0 && (
-                    <div className="finances__perf-top-services">
-                      <h4>Servicios mas realizados</h4>
-                      <div className="finances__perf-service-chips">
-                        {st.top_services.map((svc, j) => (
-                          <span key={j} className="finances__perf-service-chip">{svc.name} <strong>{svc.count}</strong></span>
-                        ))}
+                  {/* ── COMISIONES TAB ── */}
+                  {activeTab === 'comisiones' && (
+                    <div className="finances__perf-comm">
+                      <div className="finances__perf-comm-summary">
+                        <div className="finances__perf-comm-stat">
+                          <span className="finances__perf-comm-stat-label">Ingresos generados</span>
+                          <strong>{formatCOP(st.revenue)}</strong>
+                        </div>
+                        <div className="finances__perf-comm-stat">
+                          <span className="finances__perf-comm-stat-label">Total comisiones</span>
+                          <strong style={{ color: '#059669' }}>{formatCOP(st.commission_amount)}</strong>
+                        </div>
+                        <div className="finances__perf-comm-stat">
+                          <span className="finances__perf-comm-stat-label">Multas</span>
+                          <strong style={{ color: (st.fines_total || 0) > 0 ? '#DC2626' : 'inherit' }}>-{formatCOP(st.fines_total || 0)}</strong>
+                        </div>
+                        <div className="finances__perf-comm-stat finances__perf-comm-stat--net">
+                          <span className="finances__perf-comm-stat-label">Neto a pagar</span>
+                          <strong style={{ color: netEarnings >= 0 ? '#059669' : '#DC2626' }}>{formatCOP(netEarnings)}</strong>
+                        </div>
                       </div>
+
+                      {/* Per-service commission table */}
+                      {st.commission_breakdown && st.commission_breakdown.length > 0 && (
+                        <div className="finances__perf-comm-table">
+                          <div className="finances__perf-comm-row finances__perf-comm-row--header">
+                            <span>Servicio</span>
+                            <span>Cant.</span>
+                            <span>Ingreso</span>
+                            <span>Tasa</span>
+                            <span>Comision</span>
+                          </div>
+                          {st.commission_breakdown.map((cb, j) => (
+                            <div key={j} className="finances__perf-comm-row">
+                              <span className="finances__perf-comm-svc">{cb.service}</span>
+                              <span>{cb.count}</span>
+                              <span>{formatCOP(cb.revenue)}</span>
+                              <span className="finances__perf-comm-rate">{(cb.rate * 100).toFixed(0)}%</span>
+                              <span className="finances__perf-comm-amount">{formatCOP(cb.commission)}</span>
+                            </div>
+                          ))}
+                          <div className="finances__perf-comm-row finances__perf-comm-row--total">
+                            <span>Total</span>
+                            <span>{st.commission_breakdown.reduce((s, c) => s + c.count, 0)}</span>
+                            <span>{formatCOP(st.revenue)}</span>
+                            <span></span>
+                            <span className="finances__perf-comm-amount">{formatCOP(st.commission_amount)}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {/* Mini daily chart */}
-                  {st.daily_revenue && st.daily_revenue.length > 1 && (
-                    <div className="finances__perf-daily">
-                      <h4>Ingresos por dia</h4>
-                      <ResponsiveContainer width="100%" height={120}>
-                        <BarChart data={st.daily_revenue.map(d => ({ ...d, label: new Date(d.date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) }))}>
-                          <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#999' }} tickLine={false} axisLine={false} />
-                          <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
-                          <Bar dataKey="revenue" name="Ingresos" fill={i === 0 ? '#F59E0B' : '#2D5A3D'} radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                  {/* ── MULTAS TAB ── */}
+                  {activeTab === 'multas' && (
+                    <div className="finances__perf-fines">
+                      <div className="finances__perf-fines-header">
+                        <h4>Registro de multas</h4>
+                        <button className="finances__perf-fine-add-btn" onClick={() => { setFineModal(st.staff_id); setFineForm({ reason: '', amount: '', notes: '' }); }}>
+                          + Agregar multa
+                        </button>
+                      </div>
+
+                      {st.fines && st.fines.length > 0 ? (
+                        <div className="finances__perf-fines-list">
+                          {st.fines.map(f => (
+                            <div key={f.id} className="finances__perf-fine-item">
+                              <div className="finances__perf-fine-info">
+                                <strong>{f.reason}</strong>
+                                <span className="finances__perf-fine-date">
+                                  {new Date(f.date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                                {f.notes && <small className="finances__perf-fine-notes">{f.notes}</small>}
+                              </div>
+                              <div className="finances__perf-fine-actions">
+                                <span className="finances__perf-fine-amount">-{formatCOP(f.amount)}</span>
+                                <button className="finances__perf-fine-del" onClick={() => handleDeleteFine(f.id)} title="Eliminar">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="finances__perf-fines-empty">Sin multas en este periodo</div>
+                      )}
                     </div>
+                  )}
+
+                  {/* ── METRICAS TAB ── */}
+                  {activeTab === 'metricas' && (
+                    <>
+                      <div className="finances__perf-detail-grid">
+                        <div className="finances__perf-compare">
+                          <h4>Comparacion vs periodo anterior</h4>
+                          <div className="finances__perf-compare-cards">
+                            <div className="finances__perf-compare-card">
+                              <span className="finances__perf-compare-label">Ingresos</span>
+                              <strong>{formatCOP(st.revenue)}</strong>
+                              <small>Anterior: {formatCOP(st.prev_revenue)}</small>
+                              <span className={st.revenue_growth >= 0 ? 'finances__perf-growth--up' : 'finances__perf-growth--down'}>{st.revenue_growth > 0 ? '+' : ''}{st.revenue_growth}%</span>
+                            </div>
+                            <div className="finances__perf-compare-card">
+                              <span className="finances__perf-compare-label">Servicios</span>
+                              <strong>{st.services_count}</strong>
+                              <small>Anterior: {st.prev_services}</small>
+                              <span className={st.services_growth >= 0 ? 'finances__perf-growth--up' : 'finances__perf-growth--down'}>{st.services_growth > 0 ? '+' : ''}{st.services_growth}%</span>
+                            </div>
+                            <div className="finances__perf-compare-card">
+                              <span className="finances__perf-compare-label">Clientes unicos</span>
+                              <strong>{st.unique_clients}</strong>
+                            </div>
+                            <div className="finances__perf-compare-card">
+                              <span className="finances__perf-compare-label">Mejor dia</span>
+                              <strong>{st.best_day ? formatCOP(st.best_day.revenue) : '—'}</strong>
+                              {st.best_day && <small>{new Date(st.best_day.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</small>}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="finances__perf-categories">
+                          <h4>Ingresos por categoria</h4>
+                          {Object.entries(st.category_breakdown || {}).sort((a, b) => b[1] - a[1]).map(([cat, rev]) => (
+                            <div key={cat} className="finances__perf-cat-row">
+                              <span className="finances__perf-cat-name" style={{ color: CATEGORY_COLORS[cat] || '#666' }}>{cat}</span>
+                              <div className="finances__perf-cat-bar-bg">
+                                <div className="finances__perf-cat-bar" style={{ width: `${Math.round((rev / st.revenue) * 100)}%`, background: CATEGORY_COLORS[cat] || '#999' }} />
+                              </div>
+                              <span className="finances__perf-cat-value">{formatCOP(rev)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {st.top_services && st.top_services.length > 0 && (
+                        <div className="finances__perf-top-services">
+                          <h4>Servicios mas realizados</h4>
+                          <div className="finances__perf-service-chips">
+                            {st.top_services.map((svc, j) => (
+                              <span key={j} className="finances__perf-service-chip">{svc.name} <strong>{svc.count}</strong></span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {st.daily_revenue && st.daily_revenue.length > 1 && (
+                        <div className="finances__perf-daily">
+                          <h4>Ingresos por dia</h4>
+                          <ResponsiveContainer width="100%" height={120}>
+                            <BarChart data={st.daily_revenue.map(d => ({ ...d, label: new Date(d.date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) }))}>
+                              <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#999' }} tickLine={false} axisLine={false} />
+                              <Tooltip content={<RechartsTooltip formatter={formatCOP} />} />
+                              <Bar dataKey="revenue" name="Ingresos" fill={i === 0 ? '#F59E0B' : '#2D5A3D'} radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -3365,6 +3523,58 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
           );
         })}
       </div>
+
+      {/* Fine modal */}
+      {fineModal && (
+        <div className="finances__perf-fine-overlay" onClick={() => setFineModal(null)}>
+          <div className="finances__perf-fine-modal" onClick={e => e.stopPropagation()}>
+            <h3>Agregar multa</h3>
+            <p className="finances__perf-fine-modal-staff">
+              {data.find(s => s.staff_id === fineModal)?.staff_name || staffList.find(s => s.id === fineModal)?.name || ''}
+            </p>
+            <label className="finances__perf-fine-label">
+              Motivo *
+              <input
+                className="finances__input"
+                placeholder="Ej: Llegada tarde, Ausencia sin aviso..."
+                value={fineForm.reason}
+                onChange={e => setFineForm(p => ({ ...p, reason: e.target.value }))}
+              />
+            </label>
+            <label className="finances__perf-fine-label">
+              Monto (COP) *
+              <input
+                className="finances__input"
+                type="number"
+                placeholder="Ej: 20000"
+                value={fineForm.amount}
+                onChange={e => setFineForm(p => ({ ...p, amount: e.target.value }))}
+              />
+            </label>
+            <label className="finances__perf-fine-label">
+              Notas adicionales
+              <textarea
+                className="finances__input"
+                rows={2}
+                placeholder="Detalles adicionales..."
+                value={fineForm.notes}
+                onChange={e => setFineForm(p => ({ ...p, notes: e.target.value }))}
+                style={{ resize: 'vertical' }}
+              />
+            </label>
+            <div className="finances__perf-fine-modal-actions">
+              <button className="finances__btn finances__btn--ghost" onClick={() => setFineModal(null)}>Cancelar</button>
+              <button
+                className="finances__btn finances__btn--danger"
+                disabled={savingFine || !fineForm.reason.trim() || !fineForm.amount}
+                onClick={handleAddFine}
+              >
+                {savingFine ? 'Guardando...' : 'Registrar multa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

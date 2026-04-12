@@ -1367,3 +1367,20 @@ class OrderProduct(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     order = relationship("Order", back_populates="products")
+
+
+class StaffFine(Base):
+    """Fines/penalties applied to staff members (late arrival, misconduct, etc.)."""
+    __tablename__ = "staff_fine"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
+    reason = Column(String(300), nullable=False)
+    amount = Column(Integer, nullable=False, default=0)  # COP
+    fine_date = Column(Date, nullable=False)
+    notes = Column(Text, nullable=True)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    staff = relationship("Staff", foreign_keys=[staff_id])
