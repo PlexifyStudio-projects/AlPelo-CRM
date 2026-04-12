@@ -546,14 +546,21 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
           <div key={i} className={`${b}__product-row`}>
             <div className={`${b}__product-info`}>
               <span className={`${b}__product-name`}>{p.name}</span>
-              <span className={`${b}__product-meta`}>{fmt(p.salePrice)} x{p.qty}</span>
-              <select className={`${b}__product-staff`} value={p.staff_id || ''}
-                onChange={e => setProductItems(prev => prev.map((pp, j) => j === i ? { ...pp, staff_id: parseInt(e.target.value) || null, staff_name: allStaff.find(s => s.id === parseInt(e.target.value))?.name || null } : pp))}>
-                <option value="">Vendido por...</option>
-                {(allStaff.length ? allStaff : items.filter(it => it.staff_id).map(it => ({ id: it.staff_id, name: it.staff_name }))).map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <div className={`${b}__product-controls`}>
+                <span className={`${b}__product-meta`}>{fmt(p.salePrice)} c/u</span>
+                <div className={`${b}__product-qty`}>
+                  <button type="button" onClick={() => setProductItems(prev => prev.map((pp, j) => j === i ? { ...pp, qty: Math.max(1, (pp.qty || 1) - 1) } : pp))}>−</button>
+                  <span>{p.qty}</span>
+                  <button type="button" onClick={() => setProductItems(prev => prev.map((pp, j) => j === i ? { ...pp, qty: (pp.qty || 1) + 1 } : pp))}>+</button>
+                </div>
+                <select className={`${b}__product-staff`} value={p.staff_id || ''}
+                  onChange={e => setProductItems(prev => prev.map((pp, j) => j === i ? { ...pp, staff_id: parseInt(e.target.value) || null, staff_name: allStaff.find(s => s.id === parseInt(e.target.value))?.name || null } : pp))}>
+                  <option value="">Vendido por...</option>
+                  {(allStaff.length ? allStaff : items.filter(it => it.staff_id).map(it => ({ id: it.staff_id, name: it.staff_name }))).map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <span className={`${b}__product-total`}>{fmt(p.salePrice * p.qty)}</span>
             <button type="button" className={`${b}__product-remove`} onClick={() => setProductItems(prev => prev.filter((_, j) => j !== i))} title="Quitar producto">
