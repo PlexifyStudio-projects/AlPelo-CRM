@@ -947,17 +947,24 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
                             placeholder="0"
                             onChange={e => {
                               const newRate = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              const decimal = newRate / 100;
-                              setPerServiceRates(prev => ({ ...prev, [`${it.staff_id}-${it.service_id}`]: decimal }));
-                              fetch(`${API_URL}/services/${it.service_id}/commissions`, {
-                                method: 'PUT', credentials: 'include',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify([{ staff_id: it.staff_id, commission_rate: decimal }]),
-                              }).catch(() => {});
+                              setPerServiceRates(prev => ({ ...prev, [`${it.staff_id}-${it.service_id}`]: newRate / 100 }));
                             }}
                             style={{ width: 42, padding: '2px 4px', border: '1px solid #e2e8f0', borderRadius: 4, fontSize: '0.78rem', textAlign: 'center', outline: 'none', background: '#FEF3C7' }}
                           />
                           <span>%</span>
+                          {it.commRate > 0 && (
+                            <button onClick={() => {
+                              fetch(`${API_URL}/services/${it.service_id}/commissions`, {
+                                method: 'PUT', credentials: 'include',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify([{ staff_id: it.staff_id, commission_rate: it.commRate / 100 }]),
+                              }).catch(() => {});
+                            }}
+                            style={{ width: 22, height: 22, borderRadius: 6, border: 'none', background: '#10B981', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                            title="Guardar comisión">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                            </button>
+                          )}
                         </div>
                       )}
                       <span style={{ color: '#059669', minWidth: 60, textAlign: 'right' }}>{fmt(it.commAmount)}</span>
