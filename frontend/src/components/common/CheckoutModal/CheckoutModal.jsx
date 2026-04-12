@@ -195,6 +195,8 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
   const [perServiceRates, setPerServiceRates] = useState({}); // { `${staffId}-${serviceId}`: rate }
 
   const [staffDefaultRates, setStaffDefaultRates] = useState({}); // { staffId: rate(0-1) }
+  const [savedRates, setSavedRates] = useState({}); // rates confirmed from backend
+  const [draftRates, setDraftRates] = useState({}); // rates being edited (not yet saved)
 
   // Load per-service commission rates + default rates for all staff
   useEffect(() => {
@@ -216,6 +218,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
         } catch {}
       }));
       setPerServiceRates(rateMap);
+      setSavedRates({ ...rateMap });
       // Default rates per staff
       try {
         const res = await fetch(`${API_URL}/finances/commissions/config`, { credentials: 'include' });
@@ -934,35 +937,43 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
                   <span className={`${b}__receipt-breakdown-value`}>{fmt(s.totalSvc)}</span>
                 </div>
                 {s.items.map((it, j) => {
-                  const hasConfigured = perServiceRates[`${it.staff_id}-${it.service_id}`] > 0;
+                  const key = `${it.staff_id}-${it.service_id}`;
+                  const wasSaved = savedRates[key] > 0;
+                  const draft = draftRates[key];
+                  const draftPct = draft !== undefined ? Math.round(draft * 100) : '';
                   return (
                     <div key={j} className={`${b}__receipt-breakdown-row`} style={{ fontSize: '0.78rem', color: '#64748B', gap: 6 }}>
                       <span style={{ flex: 1 }}>{it.service_name}</span>
-                      {hasConfigured ? (
+                      {wasSaved ? (
                         <span>({it.commRate}%)</span>
                       ) : (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <input type="number" min="0" max="100" step="1"
-                            value={it.commRate}
+                            value={draft !== undefined ? Math.round(draft * 100) : ''}
                             placeholder="0"
                             onChange={e => {
-                              const newRate = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
-                              setPerServiceRates(prev => ({ ...prev, [`${it.staff_id}-${it.service_id}`]: newRate / 100 }));
+                              const v = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              setDraftRates(prev => ({ ...prev, [key]: v / 100 }));
+                              setPerServiceRates(prev => ({ ...prev, [key]: v / 100 }));
                             }}
-                            style={{ width: 42, padding: '2px 4px', border: '1px solid #e2e8f0', borderRadius: 4, fontSize: '0.78rem', textAlign: 'center', outline: 'none', background: '#FEF3C7' }}
+                            style={{ width: 44, padding: '3px 4px', border: '1px solid #e2e8f0', borderRadius: 5, fontSize: '0.8rem', textAlign: 'center', outline: 'none', background: '#FEF3C7' }}
                           />
                           <span>%</span>
-                          {it.commRate > 0 && (
+                          {draft > 0 && (
                             <button onClick={() => {
+                              const rate = draft;
                               fetch(`${API_URL}/services/${it.service_id}/commissions`, {
                                 method: 'PUT', credentials: 'include',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify([{ staff_id: it.staff_id, commission_rate: it.commRate / 100 }]),
+                                body: JSON.stringify([{ staff_id: it.staff_id, commission_rate: rate }]),
+                              }).then(() => {
+                                setSavedRates(prev => ({ ...prev, [key]: rate }));
+                                setDraftRates(prev => { const n = { ...prev }; delete n[key]; return n; });
                               }).catch(() => {});
                             }}
-                            style={{ width: 22, height: 22, borderRadius: 6, border: 'none', background: '#10B981', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                            style={{ width: 24, height: 24, borderRadius: 6, border: 'none', background: '#10B981', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'transform 150ms' }}
                             title="Guardar comisión">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
                             </button>
                           )}
                         </div>
