@@ -58,101 +58,28 @@ const FilterGroupIcons = {
 };
 const FILTER_GROUPS = [
   {
-    id: 'status',
-    label: 'Estado del cliente',
-    icon: 'status',
+    id: 'staff',
+    label: 'Profesional',
+    icon: 'service',
     filters: [
-      { key: 'status', type: 'select', label: 'Estado', options: [
-        { value: '', label: 'Todos' },
-        { value: 'activo', label: 'Activos' },
-        { value: 'vip', label: 'VIP' },
-        { value: 'nuevo', label: 'Nuevos' },
-        { value: 'en_riesgo', label: 'En riesgo' },
-        { value: 'inactivo', label: 'Inactivos' },
-      ]},
-      { key: 'rfm_segment', type: 'select', label: 'Tipo de cliente', options: [
-        { value: '', label: 'Todos' },
-        { value: 'vip', label: 'Estrella — Viene seguido, gasto alto, reciente' },
-        { value: 'leal', label: 'Fiel — Viene seguido y hace poco' },
-        { value: 'potencial', label: 'Potencial — Gasta bien, puede venir mas' },
-        { value: 'reciente', label: 'Reciente — Visito hace poco' },
-        { value: 'prioritario', label: 'Se nos va — Era frecuente pero dejo de venir' },
-        { value: 'frecuente', label: 'Constante — Viene seguido, gasto bajo' },
-        { value: 'valioso', label: 'Dormido — Gastaba bien pero desaparecio' },
-        { value: 'inactivo', label: 'Frio — Poco movimiento' },
-        { value: 'nuevo', label: 'Nuevo — Sin historial aun' },
-      ]},
-    ],
-  },
-  {
-    id: 'activity',
-    label: 'Actividad y visitas',
-    icon: 'activity',
-    filters: [
-      { key: 'days_inactive', type: 'number', label: 'Dias sin visitar (minimo)', placeholder: 'Ej: 30' },
-      { key: 'days_inactive_max', type: 'number', label: 'Dias sin visitar (maximo)', placeholder: 'Ej: 90' },
-      { key: 'min_visits', type: 'number', label: 'Minimo de visitas', placeholder: 'Ej: 3' },
-      { key: 'max_visits', type: 'number', label: 'Maximo de visitas', placeholder: 'Ej: 10' },
-      { key: 'no_show_count', type: 'number', label: 'No-shows minimos', placeholder: 'Ej: 2' },
+      { key: 'staff_ids', type: 'staff_multi', label: 'Atendido por' },
     ],
   },
   {
     id: 'service',
-    label: 'Servicio y profesional',
+    label: 'Servicio',
     icon: 'service',
     filters: [
-      { key: 'service_name', type: 'service_select', label: 'Servicio utilizado' },
-      { key: 'staff_id', type: 'staff_select', label: 'Atendido por profesional' },
-      { key: 'preferred_barber', type: 'staff_select', label: 'Profesional preferido' },
-    ],
-  },
-  {
-    id: 'financial',
-    label: 'Gasto y valor',
-    icon: 'financial',
-    filters: [
-      { key: 'min_spent', type: 'number', label: 'Gasto total minimo (COP)', placeholder: 'Ej: 50000' },
-      { key: 'max_spent', type: 'number', label: 'Gasto total maximo (COP)', placeholder: 'Ej: 500000' },
-      { key: 'min_avg_ticket', type: 'number', label: 'Ticket promedio minimo', placeholder: 'Ej: 25000' },
-      { key: 'max_avg_ticket', type: 'number', label: 'Ticket promedio maximo', placeholder: 'Ej: 100000' },
-      { key: 'top_spenders_pct', type: 'number', label: 'Top gastadores (percentil %)', placeholder: 'Ej: 20 = top 20%' },
-    ],
-  },
-  {
-    id: 'personal',
-    label: 'Datos personales',
-    icon: 'personal',
-    filters: [
-      { key: 'birthday_month', type: 'checkbox', label: 'Cumpleaneros del mes actual' },
-      { key: 'has_email', type: 'checkbox', label: 'Tiene email registrado' },
-      { key: 'has_birthday', type: 'checkbox', label: 'Tiene fecha de cumpleanos' },
-      { key: 'accepts_whatsapp', type: 'checkbox', label: 'Acepta WhatsApp' },
+      { key: 'service_names', type: 'service_multi', label: 'Servicio utilizado' },
     ],
   },
   {
     id: 'dates',
-    label: 'Fechas y periodos',
+    label: 'Periodo',
     icon: 'dates',
     filters: [
-      { key: 'last_visit_from', type: 'date', label: 'Ultima visita desde' },
-      { key: 'last_visit_to', type: 'date', label: 'Ultima visita hasta' },
-      { key: 'created_from', type: 'date', label: 'Registrado desde' },
-      { key: 'created_to', type: 'date', label: 'Registrado hasta' },
-    ],
-  },
-  {
-    id: 'payment',
-    label: 'Metodo de pago',
-    icon: 'payment',
-    filters: [
-      { key: 'payment_method', type: 'select', label: 'Metodo de pago', options: [
-        { value: '', label: 'Todos' },
-        { value: 'efectivo', label: 'Efectivo' },
-        { value: 'nequi', label: 'Nequi' },
-        { value: 'daviplata', label: 'Daviplata' },
-        { value: 'transferencia', label: 'Transferencia' },
-        { value: 'tarjeta', label: 'Tarjeta' },
-      ]},
+      { key: 'last_visit_from', type: 'date', label: 'Desde' },
+      { key: 'last_visit_to', type: 'date', label: 'Hasta' },
     ],
   },
 ];
@@ -902,6 +829,44 @@ const Campaigns = () => {
                                     <option key={s.id} value={s.name}>{s.name}</option>
                                   ))}
                                 </select>
+                              )}
+                              {f.type === 'staff_multi' && (
+                                <div className={`${B}__multi-check`}>
+                                  {staffList.filter(s => s.is_active).map(s => {
+                                    const selected = Array.isArray(filters[f.key]) ? filters[f.key].includes(s.id) : false;
+                                    return (
+                                      <label key={s.id} className={`${B}__multi-check-item ${selected ? `${B}__multi-check-item--on` : ''}`}>
+                                        <input type="checkbox" checked={selected} onChange={() => {
+                                          const current = Array.isArray(filters[f.key]) ? filters[f.key] : [];
+                                          updateFilter(f.key, selected ? current.filter(id => id !== s.id) : [...current, s.id]);
+                                        }} />
+                                        <span className={`${B}__multi-check-box`}>
+                                          {selected && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                                        </span>
+                                        <span>{s.name}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {f.type === 'service_multi' && (
+                                <div className={`${B}__multi-check`}>
+                                  {servicesList.filter(s => s.is_active).map(s => {
+                                    const selected = Array.isArray(filters[f.key]) ? filters[f.key].includes(s.name) : false;
+                                    return (
+                                      <label key={s.id} className={`${B}__multi-check-item ${selected ? `${B}__multi-check-item--on` : ''}`}>
+                                        <input type="checkbox" checked={selected} onChange={() => {
+                                          const current = Array.isArray(filters[f.key]) ? filters[f.key] : [];
+                                          updateFilter(f.key, selected ? current.filter(n => n !== s.name) : [...current, s.name]);
+                                        }} />
+                                        <span className={`${B}__multi-check-box`}>
+                                          {selected && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                                        </span>
+                                        <span>{s.name}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
                               )}
                             </div>
                           ))}
