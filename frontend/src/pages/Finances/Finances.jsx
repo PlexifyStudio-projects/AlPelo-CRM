@@ -2069,6 +2069,8 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                   <span className="finances__sale-td finances__sale-td--client" style={{ flex: 1 }}>
                     <strong>{inv.client_name}</strong>
                     {inv.client_phone && <small>{inv.client_phone}</small>}
+                    {inv.client_document && <small>{inv.client_document_type || 'CC'}: {inv.client_document}</small>}
+                    {inv.client_email && <small>{inv.client_email}</small>}
                   </span>
                   <span className="finances__sale-td finances__sale-td--services" style={{ flex: 1.5 }}>
                     {(inv.items || []).map((item, idx) => (
@@ -2201,10 +2203,17 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                       {inv.receipt_url && (
                         <div className="finances__sale-receipt">
                           <span className="finances__sale-receipt-label">Comprobante adjunto</span>
-                          <img src={inv.receipt_url} alt="Comprobante" className="finances__sale-receipt-img" onClick={() => {
-                          const w = window.open('', '_blank');
-                          if (w) { w.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111"><img src="${inv.receipt_url}" style="max-width:100%;max-height:100vh;object-fit:contain"></body></html>`); w.document.close(); }
-                        }} />
+                          {inv.receipt_url.match(/\.(pdf|doc|docx|xls|xlsx)$/i) ? (
+                            <a href={inv.receipt_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: '#f1f5f9', borderRadius: 8, color: '#1e40af', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                              Ver documento
+                            </a>
+                          ) : (
+                            <img src={inv.receipt_url} alt="Comprobante" className="finances__sale-receipt-img" onClick={() => {
+                              const w = window.open('', '_blank');
+                              if (w) { w.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111"><img src="${inv.receipt_url}" style="max-width:100%;max-height:100vh;object-fit:contain"></body></html>`); w.document.close(); }
+                            }} />
+                          )}
                         </div>
                       )}
                       <div className="finances__sale-detail-actions">
