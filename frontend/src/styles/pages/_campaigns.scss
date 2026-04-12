@@ -1009,6 +1009,10 @@ $_fg-payment: #14B8A6;
     flex-direction: column;
     gap: 5px;
 
+    &:has(.campaigns__multi-check) {
+      grid-column: 1 / -1;
+    }
+
     > label:first-child {
       font-size: $font-size-xs;
       font-weight: $font-weight-semibold;
