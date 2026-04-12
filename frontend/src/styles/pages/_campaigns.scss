@@ -1086,19 +1086,17 @@ $_fg-payment: #14B8A6;
   &__multi-check {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    max-height: 220px;
-    overflow-y: auto;
+    gap: 8px;
     padding: 4px 0;
   }
 
   &__multi-check-item {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
+    gap: 7px;
+    padding: 7px 14px;
     border: 1.5px solid $color-gray-200;
-    border-radius: 10px;
+    border-radius: $border-radius-full;
     font-size: 13px;
     font-weight: 500;
     color: $color-gray-600;
@@ -1106,24 +1104,26 @@ $_fg-payment: #14B8A6;
     transition: all 150ms ease;
     background: $color-white;
     user-select: none;
+    white-space: nowrap;
 
     input { display: none; }
 
-    &:hover { border-color: $color-primary; color: $color-primary; }
+    &:hover { border-color: $color-primary; color: $color-primary; background: rgba($color-primary, 0.02); }
 
     &--on {
       border-color: $color-primary;
-      background: rgba($color-primary, 0.05);
+      background: rgba($color-primary, 0.06);
       color: $color-primary;
       font-weight: 600;
+      box-shadow: 0 1px 4px rgba($color-primary, 0.12);
     }
   }
 
   &__multi-check-box {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border: 2px solid $color-gray-300;
-    border-radius: 5px;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
