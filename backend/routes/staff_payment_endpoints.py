@@ -168,6 +168,7 @@ def get_payroll_summary(
             StaffFine.staff_id == s.id,
             StaffFine.fine_date >= d_from,
             StaffFine.fine_date <= d_to,
+            StaffFine.is_paid == False,
         )
         if tid:
             fines_q = fines_q.filter(StaffFine.tenant_id == tid)
@@ -475,6 +476,18 @@ def create_payment(
             unpaid_visits = unpaid_visits.filter(VisitHistory.tenant_id == tid)
         for v in unpaid_visits.all():
             v.payment_id = payment.id
+
+    # Mark unpaid fines as paid (they were deducted from this payment)
+    unpaid_fines = db.query(StaffFine).filter(
+        StaffFine.staff_id == data.staff_id,
+        StaffFine.is_paid == False,
+        StaffFine.fine_date >= data.period_from,
+        StaffFine.fine_date <= data.period_to,
+    )
+    if tid:
+        unpaid_fines = unpaid_fines.filter(StaffFine.tenant_id == tid)
+    for f in unpaid_fines.all():
+        f.is_paid = True
 
     db.commit()
     db.refresh(payment)

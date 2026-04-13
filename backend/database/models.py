@@ -1381,6 +1381,7 @@ class StaffFine(Base):
     amount = Column(Integer, nullable=False, default=0)  # COP
     fine_date = Column(Date, nullable=False)
     notes = Column(Text, nullable=True)
+    is_paid = Column(Boolean, default=False)  # True once deducted from a payment
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

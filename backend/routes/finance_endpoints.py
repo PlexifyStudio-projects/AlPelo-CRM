@@ -1201,6 +1201,7 @@ def get_staff_performance(
             StaffFine.staff_id == s.id,
             StaffFine.fine_date >= start,
             StaffFine.fine_date <= end,
+            StaffFine.is_paid == False,
         )
         if tid:
             fines_q = fines_q.filter(StaffFine.tenant_id == tid)

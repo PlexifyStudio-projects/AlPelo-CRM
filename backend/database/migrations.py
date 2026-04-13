@@ -183,6 +183,8 @@ def run_migrations(engine):
         ("order", "service_time", "VARCHAR(5)"),
         # Visit tip for Nómina
         ("visit_history", "tip", "INTEGER NOT NULL DEFAULT 0"),
+        # Fine paid status
+        ("staff_fine", "is_paid", "BOOLEAN DEFAULT FALSE"),
     ]
 
     for table, column, col_type in migrations:
