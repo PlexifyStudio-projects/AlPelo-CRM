@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from '../../layout/Sidebar/Sidebar';
-import Header from '../../layout/Header/Header';
 import StaffDashboard from '../StaffDashboard/StaffDashboard';
 import StaffAgenda from '../StaffAgenda/StaffAgenda';
 import StaffFinances from '../StaffFinances/StaffFinances';
@@ -8,9 +7,9 @@ import staffMeService from '../../../services/staffMeService';
 import { useNotification } from '../../../context/NotificationContext';
 
 const MENU_ITEMS = [
-  { id: 'staff-dashboard', label: 'Mi Panel', description: 'RESUMEN DEL DIA', section: 'MI DIA' },
-  { id: 'staff-agenda', label: 'Mi Agenda', description: 'MIS CITAS DE HOY', section: 'MI DIA' },
-  { id: 'staff-finances', label: 'Mis Ingresos', description: 'COMISIONES Y GANANCIAS', section: 'MI DIA' },
+  { id: 'staff-dashboard', label: 'Mi Panel', icon: 'dashboard' },
+  { id: 'staff-agenda', label: 'Mi Agenda', icon: 'agenda' },
+  { id: 'staff-finances', label: 'Mis Ingresos', icon: 'finances' },
 ];
 
 const MOBILE_BREAKPOINT = 768;
@@ -93,13 +92,13 @@ const StaffRouter = ({ user, onLogout }) => {
         badgeCounts={{}}
       />
       <div className="main-layout__content">
-        <Header
-          user={user}
-          onLogout={onLogout}
-          onNavigate={handleNavigate}
-          isMobile={isMobile}
-          onOpenMobileMenu={handleOpenMobile}
-        />
+        {isMobile && (
+          <div className="main-layout__mobile-header">
+            <button className="main-layout__mobile-menu-btn" onClick={handleOpenMobile}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            </button>
+          </div>
+        )}
         <main className="main-layout__main">
           {renderSection()}
         </main>

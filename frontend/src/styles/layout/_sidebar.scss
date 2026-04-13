@@ -231,6 +231,10 @@
   &__item[data-id="team"] .sidebar__icon { color: #14B8A6; }         // Teal — collaboration
   &__item[data-id="automations"] .sidebar__icon { color: #EAB308; }  // Yellow — energy
   &__item[data-id="inbox"] .sidebar__icon { color: #25D366; }        // WhatsApp green
+  // Staff portal icons
+  &__item[data-id="staff-dashboard"] .sidebar__icon { color: #3B82F6; }
+  &__item[data-id="staff-agenda"] .sidebar__icon { color: #6366F1; }
+  &__item[data-id="staff-finances"] .sidebar__icon { color: #10B981; }
 
   &__label {
     font-size: 13.5px;

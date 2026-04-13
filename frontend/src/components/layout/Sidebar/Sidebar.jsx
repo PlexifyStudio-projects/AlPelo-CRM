@@ -287,7 +287,7 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
               style={{ '--item-index': index }}
             >
               <span className={`${b}__icon`}>
-                {SVG_ICONS[item.id] || item.icon}
+                {SVG_ICONS[item.id] || SVG_ICONS[item.icon] || item.icon}
               </span>
               {!isCollapsed && (
                 <>
