@@ -1,7 +1,7 @@
 """30min + custom reminders.
 Extracted from scheduler.py Phase 8."""
 from datetime import datetime, timedelta, date
-from database.models import Appointment, Client, Staff, Service, ClientNote, Tenant
+from database.models import Appointment, Client, Staff, Service, ClientNote, Tenant, WhatsAppMessage
 from activity_log import log_event
 from routes._helpers import now_colombia as _now_colombia
 from services.automation.helpers import (
