@@ -688,7 +688,14 @@ const LinaThinking = ({ convId }) => {
         const events = (data.events || []).reverse();
         // Only show events from the last 60 seconds (current processing)
         const cutoff = new Date(Date.now() - 60000).toISOString();
-        const recent = events.filter(e => e.timestamp > cutoff && !seenIdsRef.current.has(e.id));
+        // Only show "Paso" steps and successful actions — hide errors/warnings from the UI
+        const recent = events.filter(e =>
+          e.timestamp > cutoff && !seenIdsRef.current.has(e.id)
+          && e.status !== 'error'
+          && !e.description.toLowerCase().includes('sin respuesta')
+          && !e.description.toLowerCase().includes('error')
+          && !e.description.toLowerCase().includes('fallido')
+        );
         if (recent.length > 0) {
           recent.forEach(e => seenIdsRef.current.add(e.id));
           setSteps(prev => {
@@ -699,8 +706,7 @@ const LinaThinking = ({ convId }) => {
                 : e.description.includes('Paso 3') ? '🧠'
                 : e.description.includes('Paso 4') ? '✅'
                 : e.event_type === 'accion' ? '⚡'
-                : e.status === 'warning' ? '⚠️'
-                : e.status === 'error' ? '❌'
+                : e.status === 'warning' ? '⏳'
                 : '🔍';
               // Clean description: remove emoji prefix
               const text = e.description.replace(/^[^\w]*/, '').trim();

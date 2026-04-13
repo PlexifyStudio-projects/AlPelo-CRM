@@ -280,9 +280,17 @@ def _sweep_missed_conversations(db):
         inbound_text = " | ".join(
             m.content for m in pending
             if m.content and not m.content.startswith("📎")
+            and m.message_type not in ("sticker", "reaction")
         ) or last_inbound.content or ""
 
         if not inbound_text.strip():
+            continue
+        # Skip noise messages (only punctuation, no real content)
+        _clean_inbound = ''.join(c for c in inbound_text if c.isalnum()).strip()
+        if not _clean_inbound:
+            continue
+        # Skip if last inbound was a sticker
+        if last_inbound.message_type in ("sticker", "reaction"):
             continue
 
         try:
@@ -625,8 +633,14 @@ def _detect_unresolved_messages(db):
         if not last_msg or not last_msg.created_at:
             continue
 
-        # Must be inbound (client wrote last)
+        # Must be inbound (client wrote last) — skip stickers/reactions
         if last_msg.direction != "inbound":
+            continue
+        if last_msg.message_type in ("sticker", "reaction"):
+            continue
+        # Skip noise (only punctuation)
+        _ur_clean = ''.join(c for c in (last_msg.content or '') if c.isalnum()).strip()
+        if not _ur_clean:
             continue
 
         # Must be in our 5-30 minute window

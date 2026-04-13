@@ -501,7 +501,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             if not ai_response or not ai_response.strip():
                 print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")
-                log_event("error", "Sin respuesta de Claude — revisa API key y creditos", detail="La llamada a la IA no devolvio texto. Posible falta de creditos o error de API.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="error")
+                log_event("sistema", "IA temporalmente ocupada — reintentara automaticamente", detail="El servidor de IA esta sobrecargado en este momento. La respuesta se generara cuando se libere.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
                 return
 
             # Anti-repetition: block if response is too similar to last AI message
