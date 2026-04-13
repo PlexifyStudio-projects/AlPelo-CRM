@@ -1133,6 +1133,70 @@ def _execute_action(action: dict, db: Session) -> str:
         req_start = req_hour * 60 + req_min
         req_end = req_start + duration_mins
 
+        # --- BREAK CHECK: staff break time (DESCANSO) ---
+        _sched_q = db.query(StaffSchedule).filter(
+            StaffSchedule.staff_id == staff_obj.id,
+            StaffSchedule.day_of_week == apt_date_obj.weekday(),
+        )
+        if _tid:
+            _sched_q = _sched_q.filter(StaffSchedule.tenant_id == _tid)
+        _sched = _sched_q.first()
+        if _sched and _sched.break_start and _sched.break_end:
+            _brk_s = int(_sched.break_start.split(":")[0]) * 60 + int(_sched.break_start.split(":")[1])
+            _brk_e = int(_sched.break_end.split(":")[0]) * 60 + int(_sched.break_end.split(":")[1])
+            if req_start < _brk_e and req_end > _brk_s:
+                # Find other staff NOT on break at this time
+                q_alt = db.query(Staff).filter(Staff.is_active == True)
+                if _tid:
+                    q_alt = q_alt.filter(Staff.tenant_id == _tid)
+                alt_available = []
+                for _s in q_alt.all():
+                    if _s.id == staff_obj.id:
+                        continue
+                    _s_sched = db.query(StaffSchedule).filter(
+                        StaffSchedule.staff_id == _s.id,
+                        StaffSchedule.day_of_week == apt_date_obj.weekday(),
+                    )
+                    if _tid:
+                        _s_sched = _s_sched.filter(StaffSchedule.tenant_id == _tid)
+                    _s_sched = _s_sched.first()
+                    # Check if this staff is on break too
+                    if _s_sched and _s_sched.break_start and _s_sched.break_end:
+                        _s_brk_s = int(_s_sched.break_start.split(":")[0]) * 60 + int(_s_sched.break_start.split(":")[1])
+                        _s_brk_e = int(_s_sched.break_end.split(":")[0]) * 60 + int(_s_sched.break_end.split(":")[1])
+                        if req_start < _s_brk_e and req_end > _s_brk_s:
+                            continue  # Also on break
+                    # Check if this staff has appointment conflicts
+                    _s_apts = db.query(Appointment).filter(
+                        Appointment.staff_id == _s.id,
+                        Appointment.date == apt_date_obj,
+                        Appointment.status.in_(["confirmed", "completed"]),
+                    )
+                    if _tid:
+                        _s_apts = _s_apts.filter(Appointment.tenant_id == _tid)
+                    _s_busy = False
+                    for _sa in _s_apts.all():
+                        try:
+                            _sh, _sm = int(_sa.time.split(":")[0]), int(_sa.time.split(":")[1])
+                            _sa_start = _sh * 60 + _sm
+                            _sa_end = _sa_start + (_sa.duration_minutes or 30)
+                            if req_start < _sa_end and req_end > _sa_start:
+                                _s_busy = True
+                                break
+                        except (ValueError, AttributeError):
+                            pass
+                    if not _s_busy:
+                        alt_available.append(_s.name)
+
+                _log_evt("accion", f"⛔ Descanso: {staff_obj.name} en DESCANSO {_sched.break_start}-{_sched.break_end}", detail=f"Hora pedida: {apt_time}. Otros disponibles: {', '.join(alt_available[:3]) if alt_available else 'ninguno'}", contact_name=client_name, status="warning")
+                msg = f"CONFLICTO: {staff_obj.name} esta en DESCANSO de {_sched.break_start} a {_sched.break_end}. NO se puede agendar en ese horario."
+                msg += f" Sugerir despues de las {_sched.break_end}."
+                if alt_available:
+                    msg += f" Profesionales disponibles a las {apt_time}: {', '.join(alt_available[:3])}."
+                else:
+                    msg += f" NINGUN profesional esta disponible a las {apt_time} (todos en descanso)."
+                return msg
+
         # --- SAME-CLIENT OVERLAP CHECK: client can't have 2 appointments at the same time ---
         # Find the client first to check their schedule
         _check_client = find_client(db, search_name=client_name, phone=client_phone, tenant_id=_tid)
@@ -1194,7 +1258,7 @@ def _execute_action(action: dict, db: Session) -> str:
             next_free_m = next_free % 60
             next_free_str = f"{next_free_h:02d}:{next_free_m:02d}"
 
-            # Find other available staff at the requested time
+            # Find other available staff at the requested time (check breaks + appointments)
             q_all_staff = db.query(Staff).filter(Staff.is_active == True)
             if _tid:
                 q_all_staff = q_all_staff.filter(Staff.tenant_id == _tid)
@@ -1203,6 +1267,20 @@ def _execute_action(action: dict, db: Session) -> str:
             for s in all_staff:
                 if s.id == staff_obj.id:
                     continue
+                # Check if this staff is on break
+                _s_sch = db.query(StaffSchedule).filter(
+                    StaffSchedule.staff_id == s.id,
+                    StaffSchedule.day_of_week == apt_date_obj.weekday(),
+                )
+                if _tid:
+                    _s_sch = _s_sch.filter(StaffSchedule.tenant_id == _tid)
+                _s_sch = _s_sch.first()
+                if _s_sch and _s_sch.break_start and _s_sch.break_end:
+                    _sb_s = int(_s_sch.break_start.split(":")[0]) * 60 + int(_s_sch.break_start.split(":")[1])
+                    _sb_e = int(_s_sch.break_end.split(":")[0]) * 60 + int(_s_sch.break_end.split(":")[1])
+                    if req_start < _sb_e and req_end > _sb_s:
+                        continue  # On break
+                # Check appointment conflicts
                 q_sc = db.query(Appointment).filter(
                     Appointment.staff_id == s.id,
                     Appointment.date == apt_date_obj,
@@ -1210,9 +1288,8 @@ def _execute_action(action: dict, db: Session) -> str:
                 )
                 if _tid:
                     q_sc = q_sc.filter(Appointment.tenant_id == _tid)
-                s_conflicts = q_sc.all()
                 s_busy = False
-                for sa in s_conflicts:
+                for sa in q_sc.all():
                     try:
                         sh, sm = int(sa.time.split(":")[0]), int(sa.time.split(":")[1])
                         sa_start = sh * 60 + sm
@@ -1329,6 +1406,22 @@ def _execute_action(action: dict, db: Session) -> str:
                 req_start = rh * 60 + rm
                 req_end = req_start + new_duration
 
+                # --- BREAK CHECK: staff break time (DESCANSO) ---
+                _ua_sched_q = db.query(StaffSchedule).filter(
+                    StaffSchedule.staff_id == new_staff_id,
+                    StaffSchedule.day_of_week == new_date.weekday(),
+                )
+                if _tid:
+                    _ua_sched_q = _ua_sched_q.filter(StaffSchedule.tenant_id == _tid)
+                _ua_sched = _ua_sched_q.first()
+                if _ua_sched and _ua_sched.break_start and _ua_sched.break_end:
+                    _ua_brk_s = int(_ua_sched.break_start.split(":")[0]) * 60 + int(_ua_sched.break_start.split(":")[1])
+                    _ua_brk_e = int(_ua_sched.break_end.split(":")[0]) * 60 + int(_ua_sched.break_end.split(":")[1])
+                    if req_start < _ua_brk_e and req_end > _ua_brk_s:
+                        _ua_s_name = new_staff_name or (db.query(Staff).filter(Staff.id == new_staff_id).first().name if db.query(Staff).filter(Staff.id == new_staff_id).first() else "el profesional")
+                        _log_evt_u("accion", f"⛔ Reagendar bloqueado: {_ua_s_name} en DESCANSO {_ua_sched.break_start}-{_ua_sched.break_end}", detail=f"Cita ID:{apt_id}. Hora pedida: {new_time}.", contact_name=apt.client_name or "", status="warning")
+                        return f"CONFLICTO: {_ua_s_name} esta en DESCANSO de {_ua_sched.break_start} a {_ua_sched.break_end}. NO se puede reagendar en ese horario. Sugerir despues de las {_ua_sched.break_end}."
+
                 # Check staff conflicts (exclude current appointment)
                 q_staff_apts = db.query(Appointment).filter(
                     Appointment.staff_id == new_staff_id,
@@ -1368,7 +1461,7 @@ def _execute_action(action: dict, db: Session) -> str:
                     next_free = max(busy_ends) if busy_ends else req_end
                     next_free_str = f"{next_free // 60:02d}:{next_free % 60:02d}"
 
-                    # Find alternative staff
+                    # Find alternative staff (check breaks + appointments)
                     q_all_staff = db.query(Staff).filter(Staff.is_active == True)
                     if _tid:
                         q_all_staff = q_all_staff.filter(Staff.tenant_id == _tid)
@@ -1376,6 +1469,20 @@ def _execute_action(action: dict, db: Session) -> str:
                     for s in q_all_staff.all():
                         if s.id == new_staff_id:
                             continue
+                        # Check if on break
+                        _s_sch_u = db.query(StaffSchedule).filter(
+                            StaffSchedule.staff_id == s.id,
+                            StaffSchedule.day_of_week == new_date.weekday(),
+                        )
+                        if _tid:
+                            _s_sch_u = _s_sch_u.filter(StaffSchedule.tenant_id == _tid)
+                        _s_sch_u = _s_sch_u.first()
+                        if _s_sch_u and _s_sch_u.break_start and _s_sch_u.break_end:
+                            _sb_s = int(_s_sch_u.break_start.split(":")[0]) * 60 + int(_s_sch_u.break_start.split(":")[1])
+                            _sb_e = int(_s_sch_u.break_end.split(":")[0]) * 60 + int(_s_sch_u.break_end.split(":")[1])
+                            if req_start < _sb_e and req_end > _sb_s:
+                                continue  # On break
+                        # Check appointment conflicts
                         q_sc = db.query(Appointment).filter(
                             Appointment.staff_id == s.id,
                             Appointment.date == new_date,

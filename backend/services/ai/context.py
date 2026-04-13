@@ -145,7 +145,18 @@ Ingreso total registrado: ${total_revenue:,} COP""")
             staff_iq = staff_iq.filter(Staff.primary_location_id == location_id)
     staff_active = staff_q.all()
     staff_inactive = staff_iq.all()
-    staff_lines = [f"  - ID:{s.id} {s.name} ({s.role})" for s in staff_active]
+    # Include today's break info per staff
+    from database.models import StaffSchedule as _SS
+    _today_dow = _now.weekday() if _now else datetime.utcnow().weekday()
+    def _staff_break_info(s):
+        _sch = db.query(_SS).filter(_SS.staff_id == s.id, _SS.day_of_week == _today_dow)
+        if tenant_id:
+            _sch = _sch.filter(_SS.tenant_id == tenant_id)
+        _sch = _sch.first()
+        if _sch and _sch.break_start and _sch.break_end:
+            return f", DESCANSO:{_sch.break_start}-{_sch.break_end}"
+        return ""
+    staff_lines = [f"  - ID:{s.id} {s.name} ({s.role}{_staff_break_info(s)})" for s in staff_active]
     if staff_inactive:
         staff_lines.append("  --- DESACTIVADOS ---")
         staff_lines.extend([f"  - ID:{s.id} {s.name} ({s.role}) [INACTIVO]" for s in staff_inactive])
