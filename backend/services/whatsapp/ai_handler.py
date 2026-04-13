@@ -259,6 +259,14 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 if not inbound_text or inbound_text.startswith("📎"):
                     inbound_text = "[El cliente envio una imagen pero no se pudo descargar. Dile que recibiste la imagen pero no cargo, y preguntale que necesita.]"
 
+        # Step 0.9: Skip empty/noise messages (single punctuation, dots, etc.)
+        _stripped = (inbound_text or "").strip()
+        _clean_stripped = re.sub(r'[^\w\s]', '', _stripped).strip() if _stripped else ""
+        if _stripped and len(_stripped) <= 3 and not _clean_stripped:
+            # Message is ONLY punctuation/symbols (e.g. ".", "..", "!", "?")
+            print(f"[Lina IA] Skipping noise message for conv {conv_id}: '{_stripped}'")
+            return
+
         # Step 1: Wait random delay (shorter for catchup, natural for live messages)
         # Get contact name for logging
         _log_db = SessionLocal()
@@ -428,9 +436,14 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
             # Collect ALL recent inbound messages that came after the last Lina reply
             # This ensures we don't miss any text sent alongside/after an image
+            # SKIP stickers/reactions — they're not actionable content
             pending_inbound = []
             for m in reversed(recent_msgs):
                 if m.direction == "inbound":
+                    # Skip sticker/reaction messages (stored as "📎 Sticker" etc.)
+                    _mc = (m.content or "").strip().lower()
+                    if m.message_type in ("sticker", "reaction") or _mc in ("📎 sticker", "sticker"):
+                        continue
                     pending_inbound.append(m.content)
                 elif m.sent_by == "lina_ia":
                     pending_inbound = []  # Reset — only care about msgs after last AI reply
@@ -917,7 +930,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 print(f"[Lina IA] Response was only actions, no text for conv {conv_id}.")
                 return
 
-            # Step 3.8: Block dismissive/rude responses
+            # Step 3.8: Block dismissive/rude/internal responses
             BLOCKED_PHRASES = [
                 "no hay nada que responder",
                 "no entiendo tu mensaje",
@@ -925,6 +938,16 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 "mensaje vacio",
                 "no me has dicho nada",
                 "no has escrito nada",
+                "no respondo nada",
+                "no hay mensaje de texto",
+                "envio un sticker",
+                "envió un sticker",
+                "solo un sticker",
+                "no requiere respuesta",
+                "no necesita respuesta",
+                "no hay texto",
+                "mensaje sin texto",
+                "no contiene texto",
             ]
             if any(bp in clean_response.lower() for bp in BLOCKED_PHRASES):
                 print(f"[Lina IA] Blocked dismissive response for conv {conv_id}: {clean_response[:60]}")
