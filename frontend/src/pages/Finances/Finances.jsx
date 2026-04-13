@@ -2949,6 +2949,7 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
           tip: v.tip || 0,
           commission_amount: v.commission,
           product_commission: v.product_commission || 0,
+          service_breakdown: v.service_breakdown || [],
           staff_payment_id: v.payment_id,
           notes: v.notes,
           visit_code: v.id,
@@ -3147,7 +3148,13 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
             <div className="finances__vl-summary-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 4 }}><span>Total ingresos</span><span>{formatCOP(selServiceRevenue + selProducts + selTips)}</span></div>
 
             <div className="finances__vl-summary-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.3)' }}><span>Profesional</span><span></span></div>
-            <div className="finances__vl-summary-row"><span>Comisión servicios</span><span>{formatCOP(selSvcComm)}</span></div>
+            <div className="finances__vl-summary-row" style={{ fontWeight: 600 }}><span>Comisión servicios</span><span>{formatCOP(selSvcComm)}</span></div>
+            {sel.flatMap(v => (v.service_breakdown || []).map(sb => ({ ...sb, visitId: v.id }))).map((sb, i) => (
+              <div key={i} className="finances__vl-summary-row" style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', paddingLeft: 12 }}>
+                <span>{sb.name} <span style={{ color: '#2D5A3D', fontWeight: 600 }}>({(sb.rate * 100).toFixed(0)}%)</span></span>
+                <span>{formatCOP(sb.price)} → {formatCOP(sb.commission)}</span>
+              </div>
+            ))}
             {realProdComm > 0 && <div className="finances__vl-summary-row"><span>Comisión por ventas</span><span>{formatCOP(realProdComm)}</span></div>}
             {prodsWithComm.map((p, i) => (
               <div key={i} className="finances__vl-summary-row" style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', paddingLeft: 12 }}>

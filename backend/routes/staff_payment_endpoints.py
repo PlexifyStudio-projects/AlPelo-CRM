@@ -259,9 +259,10 @@ def get_staff_visits(
     import re as _re
     result = []
     for v in visits:
-        # Calculate commission per-service
+        # Calculate commission per-service with breakdown
         names = v.service_name.split(',') if v.service_name else ['Otros']
         svc_commission = 0
+        svc_breakdown = []
         for name in names:
             name_clean = name.strip()
             is_product = name_clean.startswith('[Producto]')
@@ -273,7 +274,10 @@ def get_staff_visits(
                 rate = ssc_map[svc_id]
             else:
                 rate = default_rate
-            svc_commission += round(per_svc * rate)
+            comm_amt = round(per_svc * rate)
+            svc_commission += comm_amt
+            if not is_product:
+                svc_breakdown.append({"name": name_clean, "price": int(per_svc), "rate": rate, "commission": comm_amt})
 
         # Product commission from notes
         prod_comm = 0
@@ -293,6 +297,7 @@ def get_staff_visits(
             "tip": getattr(v, 'tip', 0) or 0,
             "commission": svc_commission + prod_comm,
             "product_commission": prod_comm,
+            "service_breakdown": svc_breakdown,
             "payment_method": v.payment_method,
             "payment_id": v.payment_id,
             "notes": v.notes,
