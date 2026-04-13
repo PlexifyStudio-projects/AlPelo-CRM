@@ -383,6 +383,9 @@ def staff_commissions(
     elif period == "month":
         d_from = today.replace(day=1)
         d_to = today
+    elif period == "year":
+        d_from = today.replace(month=1, day=1)
+        d_to = today
     else:
         d_from = d_to = today
 
@@ -443,6 +446,29 @@ def staff_commissions(
             "is_paid": is_paid,
         })
 
+    # Tips from visit_history in this period
+    total_tips = db.query(func.coalesce(func.sum(VisitHistory.tip), 0)).filter(
+        VisitHistory.staff_id == staff.id,
+        VisitHistory.status == "completed",
+        VisitHistory.tenant_id == tid,
+        VisitHistory.visit_date >= d_from,
+        VisitHistory.visit_date <= d_to,
+    ).scalar() or 0
+
+    # Fines in this period
+    from database.models import StaffFine
+    fines = db.query(StaffFine).filter(
+        StaffFine.staff_id == staff.id,
+        StaffFine.tenant_id == tid,
+        StaffFine.date >= d_from,
+        StaffFine.date <= d_to,
+    ).all()
+    total_fines = sum(f.amount for f in fines if not f.is_paid)
+    fines_data = [{
+        "id": f.id, "reason": f.reason, "amount": f.amount,
+        "date": f.date.isoformat() if f.date else None, "is_paid": f.is_paid,
+    } for f in fines]
+
     return {
         "period": period,
         "date_from": d_from.isoformat(),
@@ -452,6 +478,9 @@ def staff_commissions(
         "total_commission": total_commission,
         "total_paid": total_paid,
         "total_pending": total_pending,
+        "total_tips": total_tips,
+        "total_fines": total_fines,
+        "fines": fines_data,
         "services_count": len(items),
         "items": items,
     }

@@ -494,8 +494,11 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
   const staffCommRate = data?.staff_commission_rate || 0.45;
   const staffEarnings = isStaffView ? (data?.total_revenue || 0) : null;
   const daysWorked = isStaffView ? (data?.revenue_by_day || []).filter(d => d.revenue > 0).length : null;
-  const staffPendingPay = isStaffView ? (data?._staff_data?.commission?.total_pending || 0) : 0;
-  const staffFines = isStaffView ? (data?._staff_data?.stats?.fines_total || 0) : 0;
+  const staffComm = isStaffView ? data?._staff_data?.commission : null;
+  const staffPendingPay = staffComm?.total_pending || 0;
+  const staffTips = staffComm?.total_tips || 0;
+  const staffFines = staffComm?.total_fines || 0;
+  const staffPaid = staffComm?.total_paid || 0;
 
   return (
     <>
@@ -553,12 +556,41 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
             </div>
           </div>
         )}
-        {isStaffView && staffPendingPay > 0 && (
+        {isStaffView && (
+          <div className="finances__kpi-card" style={{ borderLeft: '3px solid #10B981' }}>
+            <div className="finances__kpi-icon" style={{ color: '#10B981', background: 'rgba(16,185,129,0.08)' }}>{Icons.check}</div>
+            <div className="finances__kpi-info">
+              <span className="finances__kpi-value"><AnimatedNumber value={staffPaid} prefix="$" /></span>
+              <span className="finances__kpi-label">Pagado</span>
+            </div>
+          </div>
+        )}
+        {isStaffView && (
           <div className="finances__kpi-card" style={{ borderLeft: '3px solid #F59E0B' }}>
             <div className="finances__kpi-icon" style={{ color: '#F59E0B', background: 'rgba(245,158,11,0.08)' }}>{Icons.clock}</div>
             <div className="finances__kpi-info">
               <span className="finances__kpi-value"><AnimatedNumber value={staffPendingPay} prefix="$" /></span>
               <span className="finances__kpi-label">Por Cobrar</span>
+            </div>
+          </div>
+        )}
+        {isStaffView && staffTips > 0 && (
+          <div className="finances__kpi-card" style={{ borderLeft: '3px solid #8B5CF6' }}>
+            <div className="finances__kpi-icon" style={{ color: '#8B5CF6', background: 'rgba(139,92,246,0.08)' }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+            </div>
+            <div className="finances__kpi-info">
+              <span className="finances__kpi-value"><AnimatedNumber value={staffTips} prefix="$" /></span>
+              <span className="finances__kpi-label">Propinas</span>
+            </div>
+          </div>
+        )}
+        {isStaffView && staffFines > 0 && (
+          <div className="finances__kpi-card" style={{ borderLeft: '3px solid #EF4444' }}>
+            <div className="finances__kpi-icon" style={{ color: '#EF4444', background: 'rgba(239,68,68,0.08)' }}>{Icons.alert}</div>
+            <div className="finances__kpi-info">
+              <span className="finances__kpi-value"><AnimatedNumber value={staffFines} prefix="-$" /></span>
+              <span className="finances__kpi-label">Multas</span>
             </div>
           </div>
         )}
