@@ -688,13 +688,10 @@ const LinaThinking = ({ convId }) => {
         const events = (data.events || []).reverse();
         // Only show events from the last 60 seconds (current processing)
         const cutoff = new Date(Date.now() - 60000).toISOString();
-        // Only show "Paso" steps and successful actions — hide errors/warnings from the UI
+        // Only show actual processing steps (Paso 1-4) and successful actions
         const recent = events.filter(e =>
           e.timestamp > cutoff && !seenIdsRef.current.has(e.id)
-          && e.status !== 'error'
-          && !e.description.toLowerCase().includes('sin respuesta')
-          && !e.description.toLowerCase().includes('error')
-          && !e.description.toLowerCase().includes('fallido')
+          && (e.description.includes('Paso ') || (e.event_type === 'accion' && e.status === 'ok'))
         );
         if (recent.length > 0) {
           recent.forEach(e => seenIdsRef.current.add(e.id));

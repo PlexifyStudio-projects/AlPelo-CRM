@@ -499,9 +499,14 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             _conv_tid = getattr(conv, 'tenant_id', None) or 1
             ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type, tenant_id=_conv_tid, max_tokens=800)
 
+            # Retry once after 15s if first call failed (529 overloaded)
             if not ai_response or not ai_response.strip():
-                print(f"[Lina IA] No response generated for conv {conv_id}, staying silent.")
-                log_event("sistema", "IA temporalmente ocupada — reintentara automaticamente", detail="El servidor de IA esta sobrecargado en este momento. La respuesta se generara cuando se libere.", conv_id=conv_id, contact_name=conv.wa_contact_name or "", status="warning")
+                print(f"[Lina IA] First AI call failed for conv {conv_id}. Retrying in 15s...")
+                await asyncio.sleep(15)
+                ai_response = await _call_ai(system_prompt, history, inbound_text, image_b64=image_data_b64, image_mime=image_media_type, tenant_id=_conv_tid, max_tokens=800)
+
+            if not ai_response or not ai_response.strip():
+                print(f"[Lina IA] Retry also failed for conv {conv_id}, staying silent.")
                 return
 
             # Anti-repetition: block if response is too similar to last AI message
