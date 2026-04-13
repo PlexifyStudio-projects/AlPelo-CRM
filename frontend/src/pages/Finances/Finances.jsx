@@ -4787,11 +4787,10 @@ const Finances = () => {
         // Transform to the format TabResumen expects
         const daysMap = {};
         (comm.items || []).forEach(i => { if (i.date) daysMap[i.date] = (daysMap[i.date] || 0) + i.commission; });
-        const uniqueClients = new Set((comm.items || []).map(i => i.client_name)).size;
         json = {
-          total_revenue: comm.total_commission || 0,
+          total_revenue: (comm.total_commission || 0) + (comm.total_tips || 0),
           total_visits: comm.services_count || 0,
-          unique_clients: uniqueClients,
+          unique_clients: comm.unique_clients || 0,
           avg_ticket: 0,
           revenue_by_day: Object.entries(daysMap).sort().map(([d, r]) => ({ date: d, day: new Date(d + 'T12:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric' }), revenue: r })),
           revenue_growth_pct: null,
