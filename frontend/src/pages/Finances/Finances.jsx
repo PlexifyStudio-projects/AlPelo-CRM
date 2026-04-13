@@ -3124,12 +3124,15 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
       <div className="finances__vl-summary">
         <div className="finances__vl-summary-row"><span>{filtered.length} servicios</span><span>{formatCOP(totalRevenue)}</span></div>
         {totalProducts > 0 && <div className="finances__vl-summary-row"><span>Productos vendidos</span><span>{formatCOP(totalProducts)}</span></div>}
-        <div className="finances__vl-summary-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 4 }}><span style={{ fontWeight: 600 }}>Comisión servicios</span><span>{formatCOP(totalCommission - totalProductComm)}</span></div>
-        {totalProductComm > 0 && <div className="finances__vl-summary-row"><span style={{ fontWeight: 600 }}>Comisión productos</span><span>{formatCOP(totalProductComm)}</span></div>}
+        <div className="finances__vl-summary-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 4 }}><span>Total ingresos generados</span><span>{formatCOP(totalRevenue + totalProducts)}</span></div>
+
+        <div className="finances__vl-summary-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.3)' }}><span>Reparticion</span><span></span></div>
+        <div className="finances__vl-summary-row"><span>Comisión servicios</span><span>{formatCOP(totalCommission - totalProductComm)}</span></div>
+        {totalProductComm > 0 && <div className="finances__vl-summary-row"><span>Comisión productos</span><span>{formatCOP(totalProductComm)}</span></div>}
         {totalTips > 0 && <div className="finances__vl-summary-row" style={{ color: '#059669' }}><span>Propinas</span><span>+{formatCOP(totalTips)}</span></div>}
         {finesTotal > 0 && <div className="finances__vl-summary-row" style={{ color: '#DC2626' }}><span>Multas</span><span>-{formatCOP(finesTotal)}</span></div>}
-        <div className="finances__vl-summary-total"><span>Total profesional</span><span>{formatCOP(totalCommission + totalTips - finesTotal)}</span></div>
-        <div className="finances__vl-summary-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 4, color: '#2D5A3D' }}><span style={{ fontWeight: 700 }}>Ganancia del negocio</span><span style={{ fontWeight: 700 }}>{formatCOP((totalRevenue + totalProducts) - (totalCommission + totalTips))}</span></div>
+        <div className="finances__vl-summary-total"><span>Total a pagar al profesional</span><span>{formatCOP(totalCommission + totalTips - finesTotal)}</span></div>
+        <div className="finances__vl-summary-row" style={{ color: '#2D5A3D', fontWeight: 700 }}><span>Ganancia del negocio</span><span>{formatCOP((totalRevenue + totalProducts) - (totalCommission + totalTips))}</span></div>
       </div>
 
       {voidConfirm && createPortal(
