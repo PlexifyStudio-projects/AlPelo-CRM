@@ -1050,11 +1050,48 @@ const TabReportes = ({ period, dateFrom, dateTo }) => {
     </>
   );
 };
-const TabGastos = ({ period, dateFrom, dateTo }) => {
+const GASTOS_PERIODS = [
+  { value: 'month', label: 'Este Mes' },
+  { value: 'last_month', label: 'Mes Anterior' },
+  { value: 'week', label: 'Esta Semana' },
+  { value: 'year', label: 'Este Año' },
+  { value: 'custom', label: 'Personalizado' },
+];
+
+const TabGastos = ({ period: parentPeriod, dateFrom: parentFrom, dateTo: parentTo }) => {
   const { addNotification } = useNotification();
   const [expenses, setExpenses] = useState([]);
   const [summary, setSummary] = useState(null);
   const [pnl, setPnl] = useState(null);
+  const [localPeriod, setLocalPeriod] = useState('month');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
+  const computedDates = useMemo(() => {
+    const today = new Date();
+    const toStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (localPeriod === 'custom' && customFrom && customTo) return { from: customFrom, to: customTo };
+    if (localPeriod === 'last_month') {
+      const first = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const last = new Date(today.getFullYear(), today.getMonth(), 0);
+      return { from: toStr(first), to: toStr(last) };
+    }
+    if (localPeriod === 'week') {
+      const mon = new Date(today); mon.setDate(today.getDate() - today.getDay() + 1);
+      return { from: toStr(mon), to: toStr(today) };
+    }
+    if (localPeriod === 'year') return { from: `${today.getFullYear()}-01-01`, to: toStr(today) };
+    return { from: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`, to: toStr(today) };
+  }, [localPeriod, customFrom, customTo]);
+
+  const period = localPeriod === 'custom' ? 'custom' : localPeriod;
+  const dateFrom = computedDates.from;
+  const dateTo = computedDates.to;
+
+  const periodLabel = useMemo(() => {
+    const f = (d) => { const p = d.split('-'); return new Date(+p[0], +p[1]-1, +p[2], 12).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' }); };
+    return `${f(dateFrom)} — ${f(dateTo)}`;
+  }, [dateFrom, dateTo]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -1062,13 +1099,8 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
   const [form, setForm] = useState(emptyForm);
 
   const buildParams = useCallback(() => {
-    const params = { period };
-    if (period === 'custom' && dateFrom && dateTo) {
-      params.date_from = dateFrom;
-      params.date_to = dateTo;
-    }
-    return params;
-  }, [period, dateFrom, dateTo]);
+    return { period: 'custom', date_from: dateFrom, date_to: dateTo };
+  }, [dateFrom, dateTo]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1143,18 +1175,56 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
 
   return (
     <>
+      {/* Period selector */}
+      <div className="finances__nom-controls" style={{ marginBottom: 20 }}>
+        <div className="finances__nom-periods">
+          {GASTOS_PERIODS.map(p => (
+            <button key={p.value} className={`finances__nom-period ${localPeriod === p.value ? 'finances__nom-period--active' : ''}`} onClick={() => setLocalPeriod(p.value)}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {localPeriod === 'custom' && (
+          <div className="finances__nom-custom-dates">
+            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+            <span>—</span>
+            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+          </div>
+        )}
+        <span className="finances__nom-date-range">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          {periodLabel}
+        </span>
+      </div>
+
+      {/* Estado de resultados */}
       {pnl && (
-        <div className="finances__pnl-card">
+        <div className="finances__pnl-card" style={{ maxWidth: 600 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.3)', marginBottom: 12 }}>Estado de resultados</div>
+
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.25)', marginBottom: 6 }}>Ingresos</div>
           <div className="finances__pnl-row">
-            <span className="finances__pnl-label">Ingresos servicios y productos</span>
+            <span className="finances__pnl-label">Servicios y productos</span>
             <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_revenue)}</span>
           </div>
+          {(pnl.total_fines || 0) > 0 && (
+            <div className="finances__pnl-row">
+              <span className="finances__pnl-label">Multas cobradas al personal</span>
+              <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_fines)}</span>
+            </div>
+          )}
+          <div className="finances__pnl-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 6, marginTop: 4 }}>
+            <span className="finances__pnl-label">Total ingresos</span>
+            <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_revenue + (pnl.total_fines || 0))}</span>
+          </div>
+
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.25)', marginTop: 14, marginBottom: 6 }}>Egresos</div>
           <div className="finances__pnl-row">
             <span className="finances__pnl-label">Gastos operativos</span>
-            <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_expenses)}</span>
+            <span className="finances__pnl-value finances__pnl-value--negative">{pnl.total_expenses > 0 ? `-${formatCOP(pnl.total_expenses)}` : '$0'}</span>
           </div>
           <div className="finances__pnl-row">
-            <span className="finances__pnl-label">Comisiones personal</span>
+            <span className="finances__pnl-label">Pago de nomina (comisiones)</span>
             <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_commissions)}</span>
           </div>
           {(pnl.total_tips || 0) > 0 && (
@@ -1163,23 +1233,23 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
               <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_tips)}</span>
             </div>
           )}
-          {(pnl.total_fines || 0) > 0 && (
-            <div className="finances__pnl-row">
-              <span className="finances__pnl-label">Multas cobradas</span>
-              <span className="finances__pnl-value finances__pnl-value--positive">+{formatCOP(pnl.total_fines)}</span>
-            </div>
-          )}
-          <div className="finances__pnl-divider" />
+          <div className="finances__pnl-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 6, marginTop: 4 }}>
+            <span className="finances__pnl-label">Total egresos</span>
+            <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_expenses + pnl.total_commissions + (pnl.total_tips || 0))}</span>
+          </div>
+
+          <div className="finances__pnl-divider" style={{ margin: '12px 0' }} />
           <div className="finances__pnl-row finances__pnl-row--total">
             <span className="finances__pnl-label">Ganancia Neta</span>
             <span className={`finances__pnl-value ${pnl.net_profit >= 0 ? 'finances__pnl-value--positive' : 'finances__pnl-value--negative'}`}>
               {formatCOP(pnl.net_profit)}
             </span>
           </div>
-          <span className="finances__pnl-margin">Margen: {pnl.margin_pct}%</span>
+          <span className="finances__pnl-margin">Margen de ganancia: {pnl.margin_pct}%</span>
         </div>
       )}
-      <div className="finances__section-header">
+
+      <div className="finances__section-header" style={{ marginTop: 24 }}>
         <h3 className="finances__section-title">Gastos del periodo</h3>
         <button className="finances__action-btn" onClick={() => { setShowForm(!showForm); setEditingId(null); setForm(emptyForm); }}>
           {Icons.plus} Nuevo Gasto
