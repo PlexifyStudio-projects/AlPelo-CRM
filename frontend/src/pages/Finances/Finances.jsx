@@ -3928,19 +3928,20 @@ const TabNomina = () => {
     if (!keepSelection) setSelectedVisitIds([]);
     setBankInfo(null);
 
-    // Calculate amount: balance already includes fines deduction (earned - fines - paid)
+    // Calculate amount from pre-calculated commissions + tips
     let amount = Math.max(0, staff.balance);
     const currentSelected = keepSelection ? selectedVisitIds : [];
     if (currentSelected.length > 0) {
       const visits = staffVisitsMap[staff.staff_id] || [];
-      const selectedRevenue = visits.filter(v => currentSelected.includes(v.id)).reduce((s, v) => s + (v.price || 0), 0);
-      amount = Math.round(selectedRevenue * staff.commission_rate);
+      const selected = visits.filter(v => currentSelected.includes(v.id));
+      const selComm = selected.reduce((s, v) => s + (v.commission_amount || 0), 0);
+      const selTips = selected.reduce((s, v) => s + (v.tip || 0), 0);
+      amount = selComm + selTips;
     }
 
-    const finesNote = (staff.fines_total || 0) > 0 ? ` (multas descontadas: ${formatCOP(staff.fines_total)})` : '';
     setPayForm({
       amount: String(amount),
-      concept: `Comisiones ${fmtDate(dateFrom)} — ${fmtDateFull(dateTo)}${finesNote}`,
+      concept: `Pago por servicios realizados — ${fmtDate(dateFrom)} a ${fmtDateFull(dateTo)}`,
       payment_method: staff.preferred_payment_method || 'efectivo',
       reference: '',
       notes: '',
@@ -4360,7 +4361,7 @@ const TabNomina = () => {
             {selectedVisitIds.length > 0 && (
               <div className="finances__pay-selected-info">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2D5A3D" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <span>{selectedVisitIds.length} servicios seleccionados — Comision: {formatCOP(parseInt(payForm.amount) || 0)}</span>
+                <span>{selectedVisitIds.length} servicios seleccionados — Total a pagar: {formatCOP(parseInt(payForm.amount) || 0)}</span>
               </div>
             )}
 
