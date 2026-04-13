@@ -613,47 +613,97 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
         )}
       </div>
 
-      {/* Bottom section: admin gets P&L + payment methods, staff gets earnings summary */}
+      {/* Bottom section */}
       {!loading && (
-        isStaffView ? (
-          <div className="finances__body">
-            <div className="finances__owner-panel">
-              <div className="finances__owner-hero">
-                <span className="finances__owner-eyebrow">Tu Comision Total</span>
-                <span className="finances__owner-big">{formatCOP(staffEarnings || 0)}</span>
-                <div className="finances__owner-margin">
-                  <div className="finances__owner-margin-bar">
-                    <div className="finances__owner-margin-fill" style={{ width: `${Math.round(staffCommRate * 100)}%` }} />
+        isStaffView ? (() => {
+          const staffItems = staffComm?.items || [];
+          // Top clients
+          const clientMap = {};
+          staffItems.forEach(i => {
+            if (!clientMap[i.client_name]) clientMap[i.client_name] = { count: 0, revenue: 0 };
+            clientMap[i.client_name].count++;
+            clientMap[i.client_name].revenue += i.commission;
+          });
+          const topClients = Object.entries(clientMap).sort((a, b) => b[1].count - a[1].count).slice(0, 5);
+          // Top services
+          const svcMap = {};
+          staffItems.forEach(i => {
+            if (!svcMap[i.service_name]) svcMap[i.service_name] = { count: 0, revenue: 0 };
+            svcMap[i.service_name].count++;
+            svcMap[i.service_name].revenue += i.commission;
+          });
+          const topServices = Object.entries(svcMap).sort((a, b) => b[1].count - a[1].count).slice(0, 5);
+          const maxSvc = topServices.length > 0 ? topServices[0][1].count : 1;
+
+          return (
+            <div className="finances__body" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+              {/* Top clients */}
+              <div className="finances__card">
+                <div className="finances__card-header">
+                  <h2 className="finances__card-title">{Icons.users} Clientes frecuentes</h2>
+                </div>
+                {topClients.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {topClients.map(([name, d], i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: i < topClients.length - 1 ? '1px solid #F1F5F9' : 'none' }}>
+                        <span style={{ width: 32, height: 32, borderRadius: '50%', background: ['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EF4444'][i] + '15', color: ['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EF4444'][i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 12, flexShrink: 0 }}>{name.split(' ').map(w => w[0]).join('').slice(0, 2)}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                          <div style={{ fontSize: 11, color: '#94A3B8' }}>{d.count} visita{d.count > 1 ? 's' : ''}</div>
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#10B981' }}>{formatCOP(d.revenue)}</span>
+                      </div>
+                    ))}
                   </div>
-                  <span className="finances__owner-margin-label">Comision {Math.round(staffCommRate * 100)}%</span>
-                </div>
+                ) : <div style={{ padding: 24, textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>Sin datos</div>}
               </div>
-              <div className="finances__pnl-breakdown">
-                <div className="finances__pnl-row">
-                  <span className="finances__pnl-dot" style={{ background: '#3B82F6' }} />
-                  <span className="finances__pnl-label">Servicios realizados</span>
-                  <span className="finances__pnl-amount">{data?.total_visits || 0}</span>
+
+              {/* Top services */}
+              <div className="finances__card">
+                <div className="finances__card-header">
+                  <h2 className="finances__card-title">{Icons.receipt} Servicios mas realizados</h2>
                 </div>
-                <div className="finances__pnl-row">
-                  <span className="finances__pnl-dot" style={{ background: '#10B981' }} />
-                  <span className="finances__pnl-label">Clientes atendidos</span>
-                  <span className="finances__pnl-amount">{data?.unique_clients || 0}</span>
+                {topServices.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {topServices.map(([name, d], i) => (
+                      <div key={i}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{name}</span>
+                          <span style={{ fontSize: 12, color: '#64748B', flexShrink: 0, marginLeft: 8 }}>{d.count}x · {formatCOP(d.revenue)}</span>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', borderRadius: 3, background: ['#2D5A3D','#3B82F6','#F59E0B','#8B5CF6','#10B981'][i], width: `${(d.count / maxSvc) * 100}%`, transition: 'width 0.5s' }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : <div style={{ padding: 24, textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>Sin datos</div>}
+              </div>
+
+              {/* Performance summary */}
+              <div className="finances__card">
+                <div className="finances__card-header">
+                  <h2 className="finances__card-title">{Icons.barChart} Tu rendimiento</h2>
                 </div>
-                <div className="finances__pnl-row">
-                  <span className="finances__pnl-dot" style={{ background: '#F59E0B' }} />
-                  <span className="finances__pnl-label">Dias trabajados</span>
-                  <span className="finances__pnl-amount">{daysWorked || 0}</span>
-                </div>
-                <div className="finances__pnl-row">
-                  <span className="finances__pnl-dot" style={{ background: '#8B5CF6' }} />
-                  <span className="finances__pnl-label">Promedio diario</span>
-                  <span className="finances__pnl-amount">{formatCOP(daysWorked > 0 ? Math.round(staffEarnings / daysWorked) : 0)}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  {[
+                    { label: 'Comision total', value: formatCOP(staffComm?.total_commission || 0), color: '#2D5A3D' },
+                    { label: 'Propinas recibidas', value: `+${formatCOP(staffTips)}`, color: '#8B5CF6' },
+                    { label: 'Multas', value: staffFines > 0 ? `-${formatCOP(staffFines)}` : '$0', color: '#EF4444' },
+                    { label: 'Promedio por servicio', value: formatCOP(staffItems.length > 0 ? Math.round((staffComm?.total_commission || 0) / staffItems.length) : 0), color: '#3B82F6' },
+                    { label: 'Promedio diario', value: formatCOP(daysWorked > 0 ? Math.round(staffEarnings / daysWorked) : 0), color: '#F59E0B' },
+                    { label: 'Tasa de comision', value: `${Math.round(staffCommRate * 100)}%`, color: '#10B981' },
+                  ].map((row, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < 5 ? '1px solid #F1F5F9' : 'none' }}>
+                      <span style={{ fontSize: 13, color: '#64748B' }}>{row.label}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: row.color }}>{row.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-            <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />
-          </div>
-        ) : (
+          );
+        })() : (
           <div className="finances__body">
             <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />
             <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />
