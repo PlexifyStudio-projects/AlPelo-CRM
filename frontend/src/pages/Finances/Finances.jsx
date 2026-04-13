@@ -4114,8 +4114,8 @@ const TabNomina = () => {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <div className="finances__nom-stat-data">
-              <span className="finances__nom-stat-value" style={{ color: '#D97706' }}><AnimatedNumber value={totalNomFines} prefix="-$" /></span>
-              <span className="finances__nom-stat-label">Multas</span>
+              <span className="finances__nom-stat-value" style={{ color: '#D97706' }}><AnimatedNumber value={totalNomFines} prefix="$" /></span>
+              <span className="finances__nom-stat-label">Multas activas</span>
             </div>
           </div>
         )}
@@ -4200,7 +4200,7 @@ const TabNomina = () => {
                 </span>
                 <span className="finances__nom-col-right finances__nom-cell finances__nom-cell--earned" style={{ width: 110 }}>{formatCOP(st.total_earned)}</span>
                 <span className="finances__nom-col-right finances__nom-cell" style={{ width: 90, color: (st.fines_total || 0) > 0 ? '#DC2626' : 'rgba(0,0,0,0.3)' }}>
-                  {(st.fines_total || 0) > 0 ? `-${formatCOP(st.fines_total)}` : '$0'}
+                  {(st.fines_total || 0) > 0 ? formatCOP(st.fines_total) : 'Saldado'}
                 </span>
                 <span className="finances__nom-col-right finances__nom-cell finances__nom-cell--paid" style={{ width: 110 }}>{formatCOP(st.total_paid)}</span>
                 <span className="finances__nom-col-right finances__nom-cell" style={{ width: 80, color: (st.tips_total || 0) > 0 ? '#059669' : 'rgba(0,0,0,0.3)' }}>
