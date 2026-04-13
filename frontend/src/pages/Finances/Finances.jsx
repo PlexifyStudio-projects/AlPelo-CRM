@@ -692,7 +692,6 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
                     { label: 'Multas', value: staffFines > 0 ? `-${formatCOP(staffFines)}` : '$0', color: '#EF4444' },
                     { label: 'Promedio por servicio', value: formatCOP(staffItems.length > 0 ? Math.round((staffComm?.total_commission || 0) / staffItems.length) : 0), color: '#3B82F6' },
                     { label: 'Promedio diario', value: formatCOP(daysWorked > 0 ? Math.round(staffEarnings / daysWorked) : 0), color: '#F59E0B' },
-                    { label: 'Tasa de comision', value: `${Math.round(staffCommRate * 100)}%`, color: '#10B981' },
                   ].map((row, i) => (
                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: i < 5 ? '1px solid #F1F5F9' : 'none' }}>
                       <span style={{ fontSize: 13, color: '#64748B' }}>{row.label}</span>
