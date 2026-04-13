@@ -3158,7 +3158,7 @@ const parseProducts = (notes) => {
   try { return JSON.parse(notes.substring(s + PRODUCTS_TAG.length, e)); } catch { return []; }
 };
 
-const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, commissionRate, finesTotal = 0, tipsTotal = 0, selectable = false, selectedIds, onSelectionChange, onVisitsLoaded }) => {
+const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, commissionRate, finesTotal = 0, tipsTotal = 0, selectable = false, selectedIds, onSelectionChange, onVisitsLoaded, isStaffView = false }) => {
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -3178,7 +3178,7 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
         const rows = (Array.isArray(data) ? data : []).map(v => ({
           id: v.id,
           date: v.visit_date,
-          time: v.created_at ? new Date(v.created_at + 'Z').toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Bogota' }) : '',
+          time: v.time || (v.created_at ? new Date(v.created_at + 'Z').toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Bogota' }) : ''),
           client_name: v.client_name,
           client_id: v.client_id,
           service_name: v.service_name,
@@ -3189,7 +3189,7 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
           service_breakdown: v.service_breakdown || [],
           staff_payment_id: v.payment_id,
           notes: v.notes,
-          visit_code: v.id,
+          visit_code: v.visit_code || null,
         }));
         setVisits(rows);
         if (onVisitsLoaded) onVisitsLoaded(rows);
@@ -3300,8 +3300,8 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
           <span style={{ width: 120 }}>Fecha</span>
           <span style={{ width: 50 }}>Hora</span>
           <span style={{ flex: 1 }}>Cliente</span>
-          <span className="finances__vl-thead-r" style={{ width: 90 }}>Precio</span>
-          <span className="finances__vl-thead-r" style={{ width: 90 }}>Comisión</span>
+          {!isStaffView && <span className="finances__vl-thead-r" style={{ width: 90 }}>Precio</span>}
+          <span className="finances__vl-thead-r" style={{ width: 90 }}>{isStaffView ? 'Tu ganancia' : 'Comisión'}</span>
           <span style={{ width: 100 }}>Estado</span>
         </div>
         {filtered.map(v => {
@@ -3331,16 +3331,16 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
                   <strong>{v.client_name}</strong>
                   <small>{v.service_name}{dur ? ` · ${dur}min` : ''}</small>
                 </span>
-                <span className="finances__vl-price" style={{ width: 90 }}>{formatCOP(v.price || 0)}</span>
+                {!isStaffView && <span className="finances__vl-price" style={{ width: 90 }}>{formatCOP(v.price || 0)}</span>}
                 <span className="finances__vl-comm" style={{ width: 90 }}>{formatCOP(commission)}</span>
                 <span style={{ width: 100 }}>
                   {paid ? (
                     <div className="finances__vl-status-wrap">
                       <span className="finances__vl-badge finances__vl-badge--paid">Pagada</span>
-                      <button className="finances__vl-return" title="Devolver a pendiente" onClick={(e) => {
+                      {!isStaffView && <button className="finances__vl-return" title="Devolver a pendiente" onClick={(e) => {
                         e.stopPropagation();
                         setVoidConfirm(v.id);
-                      }}>↩</button>
+                      }}>↩</button>}
                     </div>
                   ) : (
                     <span className="finances__vl-badge finances__vl-badge--pending">Pendiente</span>
@@ -3404,11 +3404,13 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
             {finesTotal > 0 && <div className="finances__vl-summary-row" style={{ color: '#DC2626' }}><span>Multas</span><span>-{formatCOP(finesTotal)}</span></div>}
             <div className="finances__vl-summary-total"><span>Total a pagar al profesional</span><span>{formatCOP(selStaffTotal)}</span></div>
 
-            <div className="finances__vl-summary-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.3)' }}><span>Negocio</span><span></span></div>
-            <div className="finances__vl-summary-row"><span>Ganancia servicios</span><span>{formatCOP(selBusinessServices)}</span></div>
-            {selProducts > 0 && <div className="finances__vl-summary-row"><span>Ganancia productos</span><span>{formatCOP(selBusinessProducts)}</span></div>}
-            {finesTotal > 0 && <div className="finances__vl-summary-row"><span>Multas cobradas</span><span>+{formatCOP(finesTotal)}</span></div>}
-            <div className="finances__vl-summary-row" style={{ color: '#2D5A3D', fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 6, marginTop: 4 }}><span>Total ganancia del negocio</span><span>{formatCOP(selBusinessTotal)}</span></div>
+            {!isStaffView && (<>
+              <div className="finances__vl-summary-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.3)' }}><span>Negocio</span><span></span></div>
+              <div className="finances__vl-summary-row"><span>Ganancia servicios</span><span>{formatCOP(selBusinessServices)}</span></div>
+              {selProducts > 0 && <div className="finances__vl-summary-row"><span>Ganancia productos</span><span>{formatCOP(selBusinessProducts)}</span></div>}
+              {finesTotal > 0 && <div className="finances__vl-summary-row"><span>Multas cobradas</span><span>+{formatCOP(finesTotal)}</span></div>}
+              <div className="finances__vl-summary-row" style={{ color: '#2D5A3D', fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 6, marginTop: 4 }}><span>Total ganancia del negocio</span><span>{formatCOP(selBusinessTotal)}</span></div>
+            </>)}
           </div>
         );
       })()}
@@ -3440,7 +3442,7 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
   );
 };
 
-const openPaymentReceipt = (paymentId, apiBase) => {
+const openPaymentReceipt = (paymentId, apiBase, staffOnly = false) => {
   const w = window.open('', '_blank', 'width=800,height=900');
   if (!w) return;
   w.document.write('<html><head><title>Comprobante de Pago</title></head><body style="font-family:system-ui,-apple-system,sans-serif;padding:40px;color:#1a1a1a;max-width:700px;margin:0 auto"><p style="text-align:center;color:#888">Cargando comprobante...</p></body></html>');
@@ -3451,8 +3453,9 @@ const openPaymentReceipt = (paymentId, apiBase) => {
       const commRate = d.commission_total && visits.length ? (d.commission_total / visits.reduce((s, v) => s + (v.amount || 0), 0) || 0.4) : 0.4;
       const visitRows = visits.map(v => {
         const comm = Math.round((v.amount || 0) * commRate);
-        const code = v.notes || (v.notes || '').match(/\[CODIGO:([^\]]+)\]/)?.[1] || `#${v.id}`;
-        return `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${new Date(v.visit_date + 'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'})}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${v.service_name}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px">${v.client_name||''}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:center">${code.startsWith('#') ? code : '#'+code}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right">$${(v.amount||0).toLocaleString('es-CO')}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right">$${comm.toLocaleString('es-CO')}</td></tr>`;
+        const code = v.visit_code || (v.notes || '').match(/\[CODIGO:([^\]]+)\]/)?.[1] || `${v.id}`;
+        const td = (c, s = '') => `<td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;${s}">${c}</td>`;
+        return `<tr>${td(new Date(v.visit_date + 'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short'}))}${td(v.service_name)}${td(v.client_name||'')}${td('#'+code,'text-align:center')}${staffOnly ? '' : td('$'+(v.amount||0).toLocaleString('es-CO'),'text-align:right')}${td('$'+comm.toLocaleString('es-CO'),'text-align:right;color:#059669;font-weight:600')}</tr>`;
       }).join('');
       const bank = d.staff_bank;
       const bankLine = bank ? (bank.preferred_payment_method === 'nequi' && bank.nequi_phone_masked ? `Nequi ${bank.nequi_phone_masked}` : bank.preferred_payment_method === 'daviplata' && bank.daviplata_phone_masked ? `Daviplata ${bank.daviplata_phone_masked}` : bank.bank_name && bank.bank_account_number_masked ? `${bank.bank_name} ${bank.bank_account_type||''} ${bank.bank_account_number_masked}` : d.payment_method) : d.payment_method;
@@ -3463,7 +3466,7 @@ const openPaymentReceipt = (paymentId, apiBase) => {
       <div class="hdr"><div class="logo-area">${d.tenant_logo_url?`<img src="${d.tenant_logo_url}" style="width:48px;height:48px;border-radius:8px;object-fit:cover">`:''}<div><strong style="font-size:18px">${d.tenant_name||'Negocio'}</strong>${d.tenant_nit?`<br><span style="font-size:12px;color:#666">NIT: ${d.tenant_nit}</span>`:''}</div></div><div class="biz-info">${d.tenant_address||''}${d.tenant_phone?`<br>${d.tenant_phone}`:''}</div></div>
       <div class="title"><strong style="font-size:15px;color:#2D5A3D">COMPROBANTE DE PAGO DE NOMINA</strong><br><span style="font-size:13px;color:#666">No. ${d.receipt_number||'—'}</span></div>
       <div class="staff-info"><div><dt>Beneficiario</dt><dd>${d.staff_name}</dd></div><div><dt>Cargo</dt><dd>${d.staff_role||'—'}</dd></div><div><dt>Documento</dt><dd>${bank?.document_type||''} ${bank?.document_number_masked||'—'}</dd></div><div><dt>Cuenta destino</dt><dd>${bankLine}</dd></div><div><dt>Periodo</dt><dd>${periodFrom} — ${periodTo}</dd></div><div><dt>Fecha de pago</dt><dd>${d.paid_at?new Date(d.paid_at+'Z').toLocaleDateString('es-CO',{timeZone:'America/Bogota',day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</dd></div></div>
-      ${visits.length?`<h4 style="font-size:13px;color:#666;margin:20px 0 8px;text-transform:uppercase;letter-spacing:0.5px">Detalle de servicios</h4><table><thead><tr style="background:#f8f9fa"><th style="padding:8px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Fecha</th><th style="padding:8px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Servicio</th><th style="padding:8px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Cliente</th><th style="padding:8px;text-align:center;font-size:11px;color:#666;text-transform:uppercase">Codigo</th><th style="padding:8px;text-align:right;font-size:11px;color:#666;text-transform:uppercase">Precio</th><th style="padding:8px;text-align:right;font-size:11px;color:#666;text-transform:uppercase">Comision</th></tr></thead><tbody>${visitRows}</tbody></table>`:''}
+      ${visits.length?`<h4 style="font-size:13px;color:#666;margin:20px 0 8px;text-transform:uppercase;letter-spacing:0.5px">Detalle de servicios</h4><table><thead><tr style="background:#f8f9fa"><th style="padding:8px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Fecha</th><th style="padding:8px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Servicio</th><th style="padding:8px;text-align:left;font-size:11px;color:#666;text-transform:uppercase">Cliente</th><th style="padding:8px;text-align:center;font-size:11px;color:#666;text-transform:uppercase">Codigo</th>${staffOnly?'':'<th style="padding:8px;text-align:right;font-size:11px;color:#666;text-transform:uppercase">Precio</th>'}<th style="padding:8px;text-align:right;font-size:11px;color:#666;text-transform:uppercase">${staffOnly?'Tu ganancia':'Comision'}</th></tr></thead><tbody>${visitRows}</tbody></table>`:''}
       <div class="totals"><div class="row"><span>Comisiones servicios</span><strong>$${(d.commission_total||0).toLocaleString('es-CO')}</strong></div>${d.tips_total?`<div class="row"><span>Propinas</span><strong>$${d.tips_total.toLocaleString('es-CO')}</strong></div>`:''}${d.product_commissions?`<div class="row"><span>Comisiones productos</span><strong>$${d.product_commissions.toLocaleString('es-CO')}</strong></div>`:''}${d.deductions?`<div class="row" style="color:#DC2626"><span>Deducciones</span><strong>-$${d.deductions.toLocaleString('es-CO')}</strong></div>`:''}
       <div class="row total"><span>TOTAL PAGADO</span><span style="color:#2D5A3D">$${(d.amount||0).toLocaleString('es-CO')}</span></div></div>
       <div style="margin-top:20px;font-size:13px;color:#444"><strong>Metodo:</strong> ${d.payment_method}${d.reference?` &nbsp;|&nbsp; <strong>Ref:</strong> ${d.reference}`:''}${d.paid_by?` &nbsp;|&nbsp; <strong>Pagado por:</strong> ${d.paid_by}`:''}</div>
@@ -4638,7 +4641,7 @@ const TabNomina = ({ isStaffView = false, staffUser = null }) => {
                   }
                 </span>
                 <span style={{ width: 140, display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
-                  {st.balance > 0 && (
+                  {!isStaffView && st.balance > 0 && (
                     <button className="finances__nom-pay-btn" onClick={(e) => { e.stopPropagation(); openPayModal(st); }}>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                       Pagar
@@ -4673,9 +4676,10 @@ const TabNomina = ({ isStaffView = false, staffUser = null }) => {
                         commissionRate={st.commission_rate}
                         finesTotal={st.fines_total || 0}
                         tipsTotal={st.tips_total || 0}
-                        selectable={true}
+                        selectable={!isStaffView}
                         selectedIds={selectedVisitIds}
                         onSelectionChange={setSelectedVisitIds}
+                        isStaffView={isStaffView}
                         onVisitsLoaded={(v) => setStaffVisitsMap(prev => ({ ...prev, [st.staff_id]: v }))}
                       />
                     </div>
@@ -4708,13 +4712,15 @@ const TabNomina = ({ isStaffView = false, staffUser = null }) => {
                                 {p.reference && <span className="finances__nom-payment-ref">Ref: {p.reference}</span>}
                                 <div className="finances__nom-payment-actions">
                                   {p.receipt_number && (
-                                    <button className="finances__nom-action-btn" onClick={() => openPaymentReceipt(p.id, API)} title="Ver comprobante">
+                                    <button className="finances__nom-action-btn" onClick={() => openPaymentReceipt(p.id, API, isStaffView)} title="Ver comprobante">
                                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                                     </button>
                                   )}
-                                  <button className="finances__nom-action-btn finances__nom-action-btn--danger" onClick={() => handleDeletePayment(p.id)} title="Eliminar">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                                  </button>
+                                  {!isStaffView && (
+                                    <button className="finances__nom-action-btn finances__nom-action-btn--danger" onClick={() => handleDeletePayment(p.id)} title="Eliminar">
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>

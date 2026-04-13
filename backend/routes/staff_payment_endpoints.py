@@ -299,9 +299,20 @@ def get_staff_visits(
                 pass
 
         client = db.query(Client).filter(Client.id == v.client_id).first()
+        # Find appointment for visit_code and time
+        apt = db.query(Appointment).filter(
+            Appointment.staff_id == staff_id,
+            Appointment.date == v.visit_date,
+            Appointment.client_id == v.client_id,
+            Appointment.tenant_id == tid,
+        ).first() if tid else None
+        v_code = apt.visit_code if apt and apt.visit_code else None
+        v_time = apt.time if apt else None
         result.append({
             "id": v.id,
             "visit_date": v.visit_date.isoformat(),
+            "visit_code": v_code,
+            "time": v_time,
             "client_id": v.client_id,
             "client_name": client.name if client else "Desconocido",
             "service_name": v.service_name,
