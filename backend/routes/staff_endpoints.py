@@ -107,6 +107,7 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
         VisitHistory.visit_date >= month_start,
         VisitHistory.visit_date <= today,
     ).order_by(VisitHistory.visit_date.desc(), VisitHistory.created_at.desc()).all()
+    print(f"[STAFF STATS] Staff '{staff.name}' (id={staff.id}, tenant={tid}) — {len(month_visits)} visits this month")
 
     # Build visit data — show EVERY visit_history entry for this staff, no dedup
     import re as _re
