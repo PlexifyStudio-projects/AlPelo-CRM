@@ -71,6 +71,7 @@ class StaffPayrollSummary(BaseModel):
     staff_role: str = ""
     photo_url: Optional[str] = None
     commission_rate: float = 0.4
+    total_revenue: int = 0  # Total service + product revenue generated
     total_earned: int = 0
     total_paid: int = 0
     balance: int = 0

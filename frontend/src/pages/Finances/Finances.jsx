@@ -3909,6 +3909,8 @@ const TabNomina = () => {
   const totalNomFines = summary.reduce((s, st) => s + (st.fines_total || 0), 0);
   const totalServices = summary.reduce((s, st) => s + st.services_count, 0);
   const totalTipsNom = summary.reduce((s, st) => s + (st.tips_total || 0), 0);
+  const totalRevNom = summary.reduce((s, st) => s + (st.total_revenue || 0), 0);
+  const totalBusinessProfit = totalRevNom - totalEarned + totalNomFines;
 
   const fmtDate = (d) => {
     if (!d) return '—';
@@ -4088,15 +4090,17 @@ const TabNomina = () => {
   return (
     <>
       <div className="finances__nom-stats">
+        {/* 1. Ganancia negocio */}
         <div className="finances__nom-stat">
-          <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #2D5A3D, #3D7A52)' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #2D5A3D, #059669)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           </div>
           <div className="finances__nom-stat-data">
-            <span className="finances__nom-stat-value">{summary.length}</span>
-            <span className="finances__nom-stat-label">Profesionales</span>
+            <span className="finances__nom-stat-value" style={{ color: '#2D5A3D' }}><AnimatedNumber value={totalBusinessProfit} prefix="$" /></span>
+            <span className="finances__nom-stat-label">Ganancia negocio</span>
           </div>
         </div>
+        {/* 2. Comisiones personal */}
         <div className="finances__nom-stat">
           <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #059669, #10B981)' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -4106,6 +4110,20 @@ const TabNomina = () => {
             <span className="finances__nom-stat-label">Comisiones personal</span>
           </div>
         </div>
+        {/* 3. Por pagar */}
+        <div className={`finances__nom-stat${totalOwed > 0 ? ' finances__nom-stat--alert' : ''}`}>
+          <div className="finances__nom-stat-icon" style={{ background: totalOwed > 0 ? 'linear-gradient(135deg, #DC2626, #EF4444)' : 'linear-gradient(135deg, #10B981, #34D399)' }}>
+            {totalOwed > 0
+              ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+            }
+          </div>
+          <div className="finances__nom-stat-data">
+            <span className="finances__nom-stat-value" style={{ color: totalOwed > 0 ? '#DC2626' : '#059669' }}>{totalOwed > 0 ? <AnimatedNumber value={totalOwed} prefix="$" /> : 'Al día'}</span>
+            <span className="finances__nom-stat-label">Por pagar</span>
+          </div>
+        </div>
+        {/* 4. Pagado */}
         <div className="finances__nom-stat">
           <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #3B82F6, #60A5FA)' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -4115,35 +4133,24 @@ const TabNomina = () => {
             <span className="finances__nom-stat-label">Pagado</span>
           </div>
         </div>
-        {totalOwed > 0 && (
-          <div className="finances__nom-stat finances__nom-stat--alert">
-            <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #DC2626, #EF4444)' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <div className="finances__nom-stat-data">
-              <span className="finances__nom-stat-value" style={{ color: '#DC2626' }}><AnimatedNumber value={totalOwed} prefix="$" /></span>
-              <span className="finances__nom-stat-label">Por pagar</span>
-            </div>
-          </div>
-        )}
-        {totalNomFines > 0 && (
-          <div className="finances__nom-stat">
-            <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #F59E0B, #FBBF24)' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <div className="finances__nom-stat-data">
-              <span className="finances__nom-stat-value" style={{ color: '#D97706' }}><AnimatedNumber value={totalNomFines} prefix="$" /></span>
-              <span className="finances__nom-stat-label">Multas activas</span>
-            </div>
-          </div>
-        )}
+        {/* 5. Multas */}
         <div className="finances__nom-stat">
-          <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #7C3AED, #8B5CF6)' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <div className="finances__nom-stat-icon" style={{ background: totalNomFines > 0 ? 'linear-gradient(135deg, #F59E0B, #FBBF24)' : 'linear-gradient(135deg, #94A3B8, #CBD5E1)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </div>
           <div className="finances__nom-stat-data">
-            <span className="finances__nom-stat-value">{totalServices}</span>
-            <span className="finances__nom-stat-label">Servicios realizados</span>
+            <span className="finances__nom-stat-value" style={{ color: totalNomFines > 0 ? '#D97706' : '#94A3B8' }}>{totalNomFines > 0 ? <AnimatedNumber value={totalNomFines} prefix="$" /> : 'Saldado'}</span>
+            <span className="finances__nom-stat-label">Multas</span>
+          </div>
+        </div>
+        {/* 6. Profesionales */}
+        <div className="finances__nom-stat">
+          <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #7C3AED, #8B5CF6)' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div className="finances__nom-stat-data">
+            <span className="finances__nom-stat-value">{summary.length}</span>
+            <span className="finances__nom-stat-label">Profesionales</span>
           </div>
         </div>
       </div>

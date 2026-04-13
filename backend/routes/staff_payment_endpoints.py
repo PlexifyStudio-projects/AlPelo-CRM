@@ -157,6 +157,7 @@ def get_payroll_summary(
                 except Exception:
                     pass
 
+        total_revenue = sum(v.amount or 0 for v in visits)
         total_tips = sum(getattr(v, 'tip', 0) or 0 for v in visits)
         total_earned = commission_earned + product_commissions_total + total_tips
 
@@ -199,6 +200,7 @@ def get_payroll_summary(
             staff_role=s.role or "",
             photo_url=getattr(s, 'photo_url', None),
             commission_rate=default_rate,
+            total_revenue=total_revenue,
             total_earned=total_earned,
             total_paid=total_paid,
             balance=balance,
