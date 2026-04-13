@@ -1,457 +1,219 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-$_blue: #3B82F6;
-$_blue-dark: #1E40AF;
-$_emerald: #10B981;
-$_emerald-dark: #059669;
-$_amber: #F59E0B;
-$_slate-50: #F8FAFC;
-$_slate-100: #F1F5F9;
-$_slate-200: #E2E8F0;
-$_slate-300: #CBD5E1;
-$_slate-400: #94A3B8;
-$_slate-500: #64748B;
-$_slate-600: #475569;
-$_slate-700: #334155;
-$_slate-800: #1E293B;
-$_slate-900: #0F172A;
-$_radius: 16px;
-$_radius-sm: 10px;
+// Palette
+$_b: #1E40AF; $_bl: #3B82F6; $_bs: #60A5FA;
+$_e: #10B981; $_ed: #059669;
+$_am: #F59E0B;
+$_s1: #F8FAFC; $_s2: #F1F5F9; $_s3: #E2E8F0; $_s4: #CBD5E1; $_s5: #94A3B8;
+$_s6: #475569; $_s7: #334155; $_s8: #1E293B; $_s9: #0F172A;
+$_r: 14px; $_rs: 10px;
 
 .staff-dashboard {
-  padding: 24px;
+  padding: 20px;
   width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
 
-  @include respond-to(md) {
-    padding: 32px 40px;
-  }
+  @include respond-to(md) { padding: 28px 36px; }
 
-  // ---------- Skeleton ----------
-  &__skeleton {
-    animation: pulse 1.5s infinite;
+  // ========== LOADER ==========
+  &__loader {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; min-height: 400px; color: $_s5; font-size: 13px;
   }
-  &__skeleton-bar {
-    background: $_slate-200;
-    border-radius: 8px;
+  &__loader-spinner {
+    width: 32px; height: 32px; border: 3px solid $_s3; border-top-color: $_bl;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
   }
-  &__skeleton-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-top: 24px;
-  }
-  &__skeleton-card {
-    height: 100px;
-    background: $_slate-100;
-    border-radius: $_radius;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  &__loading {
-    color: $_slate-400;
-    text-align: center;
-    padding: 48px;
-  }
-
-  // ---------- Hero ----------
+  // ========== HERO CARD ==========
   &__hero {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    gap: 16px;
-    flex-wrap: wrap;
+    position: relative; border-radius: $_r; overflow: hidden;
+    margin-bottom: 20px; background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #1E40AF 100%);
+    padding: 0;
   }
-
-  &__hero-greeting {
-    display: block;
-    font-size: 13px;
-    font-weight: 500;
-    color: $_slate-400;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 4px;
-  }
-
-  &__hero-name {
-    font-family: $font-primary;
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: $_slate-900;
-    margin: 0;
-    line-height: 1.1;
-    letter-spacing: -0.03em;
-
-    @include respond-to(md) {
-      font-size: 2.8rem;
-    }
-  }
-
-  &__hero-meta {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-  }
-
-  &__hero-role {
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: $_blue;
-    background: rgba($_blue, 0.08);
-    padding: 3px 10px;
-    border-radius: 20px;
-  }
-
-  &__hero-date {
-    font-size: 12px;
-    color: $_slate-400;
-    text-transform: capitalize;
-  }
-
-  // ---------- Metrics ----------
-  &__metrics {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    margin-bottom: 28px;
-
-    @include respond-to(sm) {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
-    }
-  }
-
-  &__metric {
-    background: $color-white;
-    border: 1px solid $_slate-200;
-    border-radius: $_radius;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    transition: all 200ms ease;
-
-    &:hover {
-      border-color: $_slate-300;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-    }
-
-    &--blue {
-      flex-direction: row;
-      align-items: center;
-      gap: 16px;
-    }
-
-    &--emerald {
-      border-left: 3px solid $_emerald;
-    }
-
-    &--amber {
-      border-left: 3px solid $_amber;
-    }
-  }
-
-  &__metric-ring {
-    width: 56px;
-    height: 56px;
-    position: relative;
-    flex-shrink: 0;
-
-    svg {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-    }
-  }
-
-  &__metric-ring-value {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: $_blue-dark;
-  }
-
-  &__metric-value {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: $_slate-900;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
-  }
-
-  &__metric-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  &__metric-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: $_slate-500;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  &__metric-sub {
-    font-size: 11px;
-    color: $_slate-400;
-  }
-
-  // ---------- Next Appointment ----------
-  &__next {
-    position: relative;
-    background: linear-gradient(135deg, $_blue-dark 0%, $_blue 50%, #60A5FA 100%);
-    border-radius: $_radius;
-    padding: 24px;
-    margin-bottom: 28px;
-    overflow: hidden;
-    color: white;
-  }
-
-  &__next-badge {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 3px 10px;
-    border-radius: 20px;
-    margin-bottom: 12px;
-    backdrop-filter: blur(4px);
-  }
-
-  &__next-body {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    position: relative;
-    z-index: 1;
-  }
-
-  &__next-time {
-    font-size: 2rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1;
-    flex-shrink: 0;
-
-    @include respond-to(md) {
-      font-size: 2.5rem;
-    }
-  }
-
-  &__next-details {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  &__next-client {
-    font-size: 1rem;
-    font-weight: 600;
-    @include truncate;
-  }
-
-  &__next-service {
-    font-size: 13px;
-    opacity: 0.75;
-    @include truncate;
-  }
-
-  &__next-glow {
-    position: absolute;
-    top: -40%;
-    right: -10%;
-    width: 200px;
-    height: 200px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
+  &__hero-bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 80% 20%, rgba(59,130,246,0.25) 0%, transparent 50%),
+      radial-gradient(circle at 20% 80%, rgba(16,185,129,0.15) 0%, transparent 50%);
     pointer-events: none;
   }
-
-  // ---------- Timeline ----------
-  &__timeline {
-    margin-bottom: 24px;
+  &__hero-content {
+    position: relative; z-index: 1; padding: 24px;
+    display: flex; justify-content: space-between; align-items: center; gap: 20px;
+    flex-wrap: wrap;
+    @include respond-to(md) { padding: 32px; }
+  }
+  &__hero-left {
+    display: flex; align-items: center; gap: 16px;
+  }
+  &__hero-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: rgba(255,255,255,0.12); backdrop-filter: blur(8px);
+    border: 2px solid rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; font-weight: 800; color: white;
+    @include respond-to(md) { width: 64px; height: 64px; font-size: 1.6rem; }
+  }
+  &__hero-greet {
+    margin: 0; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.5);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  &__hero-name {
+    margin: 2px 0 8px; font-size: 1.6rem; font-weight: 800; color: white;
+    letter-spacing: -0.02em; line-height: 1.1;
+    @include respond-to(md) { font-size: 2rem; }
+  }
+  &__hero-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  &__hero-chip {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 3px 10px; border-radius: 20px; color: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.1); backdrop-filter: blur(4px);
+    &--date { color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.06); text-transform: capitalize; }
+  }
+  &__hero-stats {
+    display: flex; align-items: center; gap: 0;
+    background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
+    border-radius: $_rs; border: 1px solid rgba(255,255,255,0.1);
+    padding: 12px 0;
+  }
+  &__hero-stat {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 0 20px; min-width: 60px;
+  }
+  &__hero-stat-val {
+    font-size: 1.3rem; font-weight: 800; color: white; line-height: 1;
+  }
+  &__hero-stat-lbl {
+    font-size: 9px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: rgba(255,255,255,0.45);
+  }
+  &__hero-stat-divider {
+    width: 1px; height: 28px; background: rgba(255,255,255,0.12);
   }
 
-  &__timeline-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-
-    h2 {
-      font-size: 15px;
-      font-weight: 700;
-      color: $_slate-800;
-      margin: 0;
-    }
+  // ========== KPI CARDS ==========
+  &__kpis {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 20px;
+    @include respond-to(md) { gap: 16px; }
   }
-
-  &__timeline-link {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    font-weight: 600;
-    color: $_blue;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: background 150ms;
-
-    &:hover { background: rgba($_blue, 0.06); }
+  &__kpi {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 20px; background: white; border: 1px solid $_s3;
+    border-radius: $_r; cursor: pointer; transition: all 200ms;
+    &:hover { border-color: $_s4; box-shadow: 0 4px 16px rgba(0,0,0,0.05); transform: translateY(-1px); }
   }
-
-  &__timeline-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    position: relative;
-    padding-left: 20px;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 5px;
-      top: 8px;
-      bottom: 8px;
-      width: 2px;
-      background: $_slate-200;
-      border-radius: 2px;
-    }
+  &__kpi-icon {
+    width: 44px; height: 44px; border-radius: $_rs;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-
-  &__timeline-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 0;
-    position: relative;
-
-    &--past {
-      opacity: 0.45;
-      .staff-dashboard__timeline-dot { background: $_slate-300; }
-    }
-
-    &--now {
-      .staff-dashboard__timeline-dot {
-        background: $_blue;
-        box-shadow: 0 0 0 4px rgba($_blue, 0.2);
-      }
-      .staff-dashboard__timeline-card {
-        border-color: $_blue;
-        background: rgba($_blue, 0.03);
-      }
-    }
-  }
-
-  &__timeline-dot {
-    position: absolute;
-    left: -20px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: $_slate-300;
-    border: 2px solid $color-white;
-    flex-shrink: 0;
-    z-index: 1;
-    transform: translateX(-1px);
-  }
-
-  &__timeline-time {
-    font-size: 12px;
-    font-weight: 700;
-    color: $_slate-500;
-    min-width: 65px;
-    flex-shrink: 0;
-  }
-
-  &__timeline-card {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 10px 14px;
-    background: $color-white;
-    border: 1px solid $_slate-200;
-    border-radius: $_radius-sm;
-    transition: all 150ms;
-    min-width: 0;
-
-    &:hover {
-      border-color: $_slate-300;
-    }
-  }
-
-  &__timeline-client {
-    font-size: 13px;
-    font-weight: 600;
-    color: $_slate-800;
+  &__kpi--earnings &__kpi-icon { background: rgba($_e, 0.1); color: $_e; }
+  &__kpi--pending &__kpi-icon { background: rgba($_am, 0.1); color: $_am; }
+  &__kpi-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  &__kpi-value {
+    font-size: 1.25rem; font-weight: 800; color: $_s9; letter-spacing: -0.02em;
     @include truncate;
   }
-
-  &__timeline-service {
-    font-size: 11px;
-    color: $_slate-400;
-    @include truncate;
+  &__kpi-label { font-size: 11px; font-weight: 600; color: $_s5; text-transform: uppercase; letter-spacing: 0.04em; }
+  &__kpi-badge {
+    font-size: 11px; font-weight: 700; color: $_e; background: rgba($_e, 0.1);
+    padding: 3px 8px; border-radius: 20px; flex-shrink: 0;
   }
 
-  &__timeline-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 48px 24px;
-    background: $_slate-50;
-    border: 1px dashed $_slate-200;
-    border-radius: $_radius;
-    color: $_slate-400;
-    font-size: 13px;
+  // ========== NEXT APPOINTMENT ==========
+  &__next {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px; margin-bottom: 20px;
+    background: white; border: 1px solid $_s3; border-left: 4px solid $_bl;
+    border-radius: $_r; cursor: pointer; transition: all 200ms;
+    position: relative; overflow: hidden;
+    &:hover { border-left-color: $_b; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
   }
-
-  // ---------- Quick Actions ----------
-  &__quick-actions {
-    display: flex;
-    gap: 12px;
-  }
-
-  &__quick-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: $color-white;
-    border: 1px solid $_slate-200;
-    border-radius: $_radius-sm;
-    color: $_slate-600;
-    font-family: $font-primary;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 150ms;
-
-    svg { color: $_emerald; }
-
-    &:hover {
-      border-color: $_emerald;
-      color: $_emerald-dark;
-      background: rgba($_emerald, 0.04);
+  &__next-pulse {
+    position: absolute; left: -2px; top: 50%; transform: translateY(-50%);
+    width: 8px; height: 8px; border-radius: 50%; background: $_bl;
+    &::after {
+      content: ''; position: absolute; inset: -4px;
+      border-radius: 50%; border: 2px solid $_bl; opacity: 0;
+      animation: pulse-ring 2s infinite;
     }
   }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 0.8; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+  &__next-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba($_bl, 0.08); color: $_bl;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  &__next-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  &__next-tag { font-size: 10px; font-weight: 700; color: $_bl; text-transform: uppercase; letter-spacing: 0.08em; }
+  &__next-client { font-size: 14px; font-weight: 700; color: $_s8; @include truncate; }
+  &__next-detail { font-size: 12px; color: $_s5; @include truncate; }
+  &__next-time {
+    font-size: 1.1rem; font-weight: 800; color: $_b; flex-shrink: 0;
+    background: rgba($_bl, 0.06); padding: 6px 12px; border-radius: 8px;
+  }
+
+  // ========== SECTION ==========
+  &__section { margin-bottom: 24px; }
+  &__section-top {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+    h2 { font-size: 15px; font-weight: 700; color: $_s8; margin: 0; }
+    button {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 600; color: $_bl;
+      background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+      &:hover { background: rgba($_bl, 0.06); }
+    }
+  }
+
+  // ========== APPOINTMENT CARDS ==========
+  &__cards { display: flex; flex-direction: column; gap: 8px; }
+  &__card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; background: white; border: 1px solid $_s3;
+    border-radius: $_rs; transition: all 200ms;
+    &:hover { border-color: $_s4; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+
+    &--past { opacity: 0.5; }
+    &--active {
+      border-color: $_bl; background: rgba($_bl, 0.02);
+      box-shadow: 0 0 0 3px rgba($_bl, 0.08);
+    }
+  }
+  &__card-time {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    min-width: 65px; flex-shrink: 0;
+  }
+  &__card-hour { font-size: 13px; font-weight: 700; color: $_s7; }
+  &__card-dur { font-size: 10px; color: $_s5; }
+  &__card-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  &__card-client { font-size: 13px; font-weight: 600; color: $_s8; @include truncate; }
+  &__card-service { font-size: 11px; color: $_s5; @include truncate; }
+  &__card-status { flex-shrink: 0; display: flex; align-items: center; }
+  &__card-live {
+    width: 10px; height: 10px; border-radius: 50%; background: $_bl;
+    box-shadow: 0 0 0 3px rgba($_bl, 0.2);
+    animation: pulse-dot 2s infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 0 3px rgba($_bl, 0.2); }
+    50% { box-shadow: 0 0 0 6px rgba($_bl, 0.1); }
+  }
+
+  // ========== EMPTY ==========
+  &__empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 8px; padding: 48px 24px; background: $_s1; border: 1px dashed $_s3;
+    border-radius: $_r; text-align: center;
+  }
+  &__empty-icon { color: $_s4; margin-bottom: 4px; }
+  &__empty h3 { margin: 0; font-size: 16px; font-weight: 700; color: $_s7; }
+  &__empty p { margin: 0; font-size: 13px; color: $_s5; max-width: 280px; }
 }
