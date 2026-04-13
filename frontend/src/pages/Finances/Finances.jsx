@@ -3142,7 +3142,7 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
         const selBusinessTotal = selBusinessServices + selBusinessProducts - selTips + finesTotal;
         return (
           <div className="finances__vl-summary">
-            <div className="finances__vl-summary-row"><span>{sel.length} servicios</span><span>{formatCOP(selServiceRevenue)}</span></div>
+            <div className="finances__vl-summary-row"><span>{sel.flatMap(v => v.service_breakdown || []).length || sel.length} servicios</span><span>{formatCOP(selServiceRevenue)}</span></div>
             {selProducts > 0 && <div className="finances__vl-summary-row"><span>Productos vendidos ({selProductQty} uds)</span><span>{formatCOP(selProducts)}</span></div>}
             {selTips > 0 && <div className="finances__vl-summary-row" style={{ color: '#059669' }}><span>Propinas recibidas</span><span>{formatCOP(selTips)}</span></div>}
             <div className="finances__vl-summary-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 4 }}><span>Total ingresos</span><span>{formatCOP(selServiceRevenue + selProducts + selTips)}</span></div>
