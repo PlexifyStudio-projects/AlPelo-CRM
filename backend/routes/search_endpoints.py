@@ -692,6 +692,10 @@ def list_appointments(
         query = query.filter(Appointment.status == status)
 
     if search and not date_from and not date_to:
+        # When searching without date range, limit to last 60 days + future to avoid flooding
+        from datetime import timedelta as _td_search
+        _search_start = dt_date.today() - _td_search(days=60)
+        query = query.filter(Appointment.date >= _search_start)
         query = query.order_by(Appointment.date.desc(), Appointment.time.desc())
         appointments = query.limit(20).all()
     else:

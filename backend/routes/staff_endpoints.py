@@ -108,10 +108,11 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
         VisitHistory.visit_date <= today,
     ).order_by(VisitHistory.visit_date.desc(), VisitHistory.created_at.desc()).all()
 
-    # Build visit data — deduplicate by grouping same client+date+service
+    # Build visit data — show EVERY visit_history entry for this staff, no dedup
     import re as _re
-    _seen = {}  # key: (date, client_id, service_name) → visit data
     _client_cache = {}
+    _apt_cache = {}  # (date, client_id) → appointment
+    month_visits_data = []
     for v in month_visits:
         if v.client_id not in _client_cache:
             _client_cache[v.client_id] = db.query(Client).filter(Client.id == v.client_id).first()
@@ -125,28 +126,23 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
             code_match = _re.search(r'\[CODIGO:([^\]]+)\]', v.notes or '')
             if code_match:
                 ticket = code_match.group(1)
-        # Find appointment matching this specific service
-        apt = db.query(Appointment).filter(
-            Appointment.staff_id == staff.id,
-            Appointment.date == v.visit_date,
-            Appointment.client_id == v.client_id,
-            Appointment.tenant_id == tid,
-            Appointment.service_id != None,
-        ).first()
+        # Cache appointment lookup by (date, client_id)
+        _apt_key = (v.visit_date, v.client_id)
+        if _apt_key not in _apt_cache:
+            _apt_cache[_apt_key] = db.query(Appointment).filter(
+                Appointment.staff_id == staff.id,
+                Appointment.date == v.visit_date,
+                Appointment.client_id == v.client_id,
+                Appointment.tenant_id == tid,
+            ).first()
+        apt = _apt_cache[_apt_key]
         if apt:
             ticket = ticket or apt.visit_code or f"A-{apt.id}"
             appt_time = apt.time
             if apt.status == "paid":
                 is_paid = True
 
-        # Dedup key: use visit ID to keep unique (no grouping — show each visit_history row)
-        # But skip exact duplicates (same date+client+service+amount)
-        dedup_key = f"{v.visit_date}|{v.client_id}|{v.service_name}|{v.amount}"
-        if dedup_key in _seen:
-            # Sum tips only
-            _seen[dedup_key]["tip"] += v.tip or 0
-            continue
-        entry = {
+        month_visits_data.append({
             "id": v.id,
             "client_name": client.name if client else "Cliente",
             "service_name": v.service_name,
@@ -158,10 +154,7 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
             "ticket": ticket,
             "is_paid": is_paid,
             "payment_method": v.payment_method,
-        }
-        _seen[dedup_key] = entry
-
-    month_visits_data = list(_seen.values())
+        })
 
     month_commission = sum(int(v.amount * commission_rate) for v in month_visits)
     month_tips = sum(v.tip or 0 for v in month_visits)
