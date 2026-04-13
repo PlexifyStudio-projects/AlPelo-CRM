@@ -34,7 +34,6 @@ from routes._helpers import normalize_phone, safe_tid, now_colombia as _now_colo
 def _build_action_from_text(ai_text, inbound_text, conv, db, tenant_id):
     """Last-resort: extract appointment data from Lina's text + conversation context.
     Returns action dict or None if cannot determine enough data."""
-    import re
     from datetime import date as _date_cls
     from routes._helpers import now_colombia as _nc
 
@@ -261,7 +260,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
         # Step 0.9: Skip empty/noise messages (single punctuation, dots, etc.)
         _stripped = (inbound_text or "").strip()
-        _clean_stripped = re.sub(r'[^\w\s]', '', _stripped).strip() if _stripped else ""
+        _clean_stripped = ''.join(c for c in _stripped if c.isalnum()).strip()
         if _stripped and len(_stripped) <= 3 and not _clean_stripped:
             # Message is ONLY punctuation/symbols (e.g. ".", "..", "!", "?")
             print(f"[Lina IA] Skipping noise message for conv {conv_id}: '{_stripped}'")
@@ -533,8 +532,6 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
             print(f"[Lina IA] RAW response: {repr(ai_response[:300])}")
 
             # Step 3.5: Parse and execute actions from AI response
-            import re
-            import json
 
             # NUCLEAR CLEANUP: Normalize ALL quote variants to straight quotes
             for ch in '\u201c\u201d\u00ab\u00bb\u201e\u201f':
