@@ -1202,55 +1202,88 @@ const TabGastos = ({ period: parentPeriod, dateFrom: parentFrom, dateTo: parentT
         </span>
       </div>
 
-      {/* Estado de resultados */}
+      {/* Estado de resultados + KPIs */}
       {pnl && (
-        <div className="finances__pnl-card" style={{ maxWidth: 600 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.3)', marginBottom: 12 }}>Estado de resultados</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24, alignItems: 'start' }}>
+          <div className="finances__pnl-card" style={{ margin: 0 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.3)', marginBottom: 12 }}>Estado de resultados</div>
 
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.25)', marginBottom: 6 }}>Ingresos</div>
-          <div className="finances__pnl-row">
-            <span className="finances__pnl-label">Servicios y productos</span>
-            <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_revenue)}</span>
-          </div>
-          {(pnl.total_fines || 0) > 0 && (
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.25)', marginBottom: 6 }}>Ingresos</div>
             <div className="finances__pnl-row">
-              <span className="finances__pnl-label">Multas cobradas al personal</span>
-              <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_fines)}</span>
+              <span className="finances__pnl-label">Servicios y productos</span>
+              <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_revenue)}</span>
+            </div>
+            {(pnl.total_fines || 0) > 0 && (
+              <div className="finances__pnl-row">
+                <span className="finances__pnl-label">Multas cobradas al personal</span>
+                <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_fines)}</span>
+              </div>
+            )}
+            <div className="finances__pnl-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 6, marginTop: 4 }}>
+              <span className="finances__pnl-label">Total ingresos</span>
+              <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_revenue + (pnl.total_fines || 0))}</span>
+            </div>
+
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.25)', marginTop: 14, marginBottom: 6 }}>Egresos</div>
+            <div className="finances__pnl-row">
+              <span className="finances__pnl-label">Gastos operativos</span>
+              <span className="finances__pnl-value finances__pnl-value--negative">{pnl.total_expenses > 0 ? `-${formatCOP(pnl.total_expenses)}` : '$0'}</span>
+            </div>
+            <div className="finances__pnl-row">
+              <span className="finances__pnl-label">Pago de nomina (comisiones)</span>
+              <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_commissions)}</span>
+            </div>
+            {(pnl.total_tips || 0) > 0 && (
+              <div className="finances__pnl-row">
+                <span className="finances__pnl-label">Propinas (para personal)</span>
+                <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_tips)}</span>
+              </div>
+            )}
+            <div className="finances__pnl-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 6, marginTop: 4 }}>
+              <span className="finances__pnl-label">Total egresos</span>
+              <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_expenses + pnl.total_commissions + (pnl.total_tips || 0))}</span>
+            </div>
+
+            <div className="finances__pnl-divider" style={{ margin: '12px 0' }} />
+            <div className="finances__pnl-row finances__pnl-row--total">
+              <span className="finances__pnl-label">Ganancia Neta</span>
+              <span className={`finances__pnl-value ${pnl.net_profit >= 0 ? 'finances__pnl-value--positive' : 'finances__pnl-value--negative'}`}>
+                {formatCOP(pnl.net_profit)}
+              </span>
+            </div>
+            <span className="finances__pnl-margin">Margen de ganancia: {pnl.margin_pct}%</span>
+          </div>
+
+          {/* Gastos por categoría — derecha */}
+          {summary && summary.by_category && summary.by_category.length > 0 ? (
+            <div className="finances__pnl-card" style={{ margin: 0 }}>
+              <div className="finances__card-header" style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.3)' }}>Gastos por categoria</div>
+                <span className="finances__card-badge">Total: {formatCOP(summary.total)}</span>
+              </div>
+              <div className="finances__categories">
+                <div className="finances__categories-bar">
+                  {summary.by_category.map((cat, i) => (
+                    <div key={i} className="finances__categories-segment" style={{ width: `${Math.max(cat.pct_of_total, 2)}%`, background: CATEGORY_COLORS[cat.category] || '#8B6914' }} title={`${cat.category}: ${formatCOP(cat.total)}`} />
+                  ))}
+                </div>
+                <div className="finances__categories-legend">
+                  {summary.by_category.map((cat, i) => (
+                    <div key={i} className="finances__categories-item">
+                      <span className="finances__categories-dot" style={{ background: CATEGORY_COLORS[cat.category] || '#8B6914' }} />
+                      <span className="finances__categories-name">{cat.category}</span>
+                      <span className="finances__categories-value">{formatCOP(cat.total)}</span>
+                      <span className="finances__categories-pct">{cat.pct_of_total}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="finances__pnl-card" style={{ margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(0,0,0,0.3)', fontSize: 13 }}>
+              Sin gastos registrados en este periodo
             </div>
           )}
-          <div className="finances__pnl-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 6, marginTop: 4 }}>
-            <span className="finances__pnl-label">Total ingresos</span>
-            <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_revenue + (pnl.total_fines || 0))}</span>
-          </div>
-
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.25)', marginTop: 14, marginBottom: 6 }}>Egresos</div>
-          <div className="finances__pnl-row">
-            <span className="finances__pnl-label">Gastos operativos</span>
-            <span className="finances__pnl-value finances__pnl-value--negative">{pnl.total_expenses > 0 ? `-${formatCOP(pnl.total_expenses)}` : '$0'}</span>
-          </div>
-          <div className="finances__pnl-row">
-            <span className="finances__pnl-label">Pago de nomina (comisiones)</span>
-            <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_commissions)}</span>
-          </div>
-          {(pnl.total_tips || 0) > 0 && (
-            <div className="finances__pnl-row">
-              <span className="finances__pnl-label">Propinas (para personal)</span>
-              <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_tips)}</span>
-            </div>
-          )}
-          <div className="finances__pnl-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 6, marginTop: 4 }}>
-            <span className="finances__pnl-label">Total egresos</span>
-            <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_expenses + pnl.total_commissions + (pnl.total_tips || 0))}</span>
-          </div>
-
-          <div className="finances__pnl-divider" style={{ margin: '12px 0' }} />
-          <div className="finances__pnl-row finances__pnl-row--total">
-            <span className="finances__pnl-label">Ganancia Neta</span>
-            <span className={`finances__pnl-value ${pnl.net_profit >= 0 ? 'finances__pnl-value--positive' : 'finances__pnl-value--negative'}`}>
-              {formatCOP(pnl.net_profit)}
-            </span>
-          </div>
-          <span className="finances__pnl-margin">Margen de ganancia: {pnl.margin_pct}%</span>
         </div>
       )}
 
@@ -1305,31 +1338,7 @@ const TabGastos = ({ period: parentPeriod, dateFrom: parentFrom, dateTo: parentT
           </div>
         </form>
       )}
-      {summary && summary.by_category && summary.by_category.length > 0 && (
-        <div className="finances__card">
-          <div className="finances__card-header">
-            <h2 className="finances__card-title">{Icons.pieChart} Gastos por Categoria</h2>
-            <span className="finances__card-badge">Total: {formatCOP(summary.total)}</span>
-          </div>
-          <div className="finances__categories">
-            <div className="finances__categories-bar">
-              {summary.by_category.map((cat, i) => (
-                <div key={i} className="finances__categories-segment" style={{ width: `${Math.max(cat.pct_of_total, 2)}%`, background: CATEGORY_COLORS[cat.category] || '#8B6914' }} title={`${cat.category}: ${formatCOP(cat.total)}`} />
-              ))}
-            </div>
-            <div className="finances__categories-legend">
-              {summary.by_category.map((cat, i) => (
-                <div key={i} className="finances__categories-item">
-                  <span className="finances__categories-dot" style={{ background: CATEGORY_COLORS[cat.category] || '#8B6914' }} />
-                  <span className="finances__categories-name">{cat.category}</span>
-                  <span className="finances__categories-value">{formatCOP(cat.total)}</span>
-                  <span className="finances__categories-pct">{cat.pct_of_total}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Gastos por categoría ya se muestra arriba en el grid */}
       <div className="finances__table-wrap">
         <table className="finances__table">
           <thead>
