@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTenant } from '../../context/TenantContext';
 import { useNotification } from '../../context/NotificationContext';
+import { useAuth } from '../../context/AuthContext';
 import { formatPhone } from '../../utils/formatters';
 import financeService from '../../services/financeService';
 import clientService from '../../services/clientService';
@@ -487,8 +488,13 @@ const PaymentMethodsCard = ({ period, dateFrom, dateTo }) => {
   return <PaymentDonutChart data={data} />;
 };
 
-const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
+const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = false }) => {
   const hasData = data && data.total_visits > 0;
+  // Staff: compute their commission from total_revenue * avg commission rate
+  // For now we approximate — the real data comes from the same summary endpoint
+  const staffCommRate = data?.staff_commission_rate || 0.45;
+  const staffEarnings = isStaffView ? Math.round((data?.total_revenue || 0) * staffCommRate) : null;
+  const daysWorked = isStaffView ? (data?.revenue_by_day || []).filter(d => d.revenue > 0).length : null;
 
   return (
     <>
@@ -498,11 +504,11 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
           <div className="finances__kpi-info">
             {loading ? <SkeletonBlock width="110px" height="30px" /> : (
               <>
-                <span className="finances__kpi-value"><AnimatedNumber value={data?.total_revenue || 0} prefix="$" /></span>
+                <span className="finances__kpi-value"><AnimatedNumber value={isStaffView ? staffEarnings : (data?.total_revenue || 0)} prefix="$" /></span>
                 <GrowthBadge value={data?.revenue_growth_pct} />
               </>
             )}
-            <span className="finances__kpi-label">Ingresos Totales</span>
+            <span className="finances__kpi-label">{isStaffView ? 'Tus Ingresos' : 'Ingresos Totales'}</span>
           </div>
         </div>
         <div className="finances__kpi-card">
@@ -527,15 +533,17 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
           </div>
         </div>
         <div className="finances__kpi-card">
-          <div className="finances__kpi-icon finances__kpi-icon--accent">{Icons.creditCard}</div>
+          <div className="finances__kpi-icon finances__kpi-icon--accent">{isStaffView ? Icons.calendar : Icons.creditCard}</div>
           <div className="finances__kpi-info">
             {loading ? <SkeletonBlock width="70px" height="30px" /> : (
-              <span className="finances__kpi-value"><AnimatedNumber value={data?.avg_ticket || 0} prefix="$" /></span>
+              <span className="finances__kpi-value">
+                {isStaffView ? <AnimatedNumber value={daysWorked || 0} /> : <AnimatedNumber value={data?.avg_ticket || 0} prefix="$" />}
+              </span>
             )}
-            <span className="finances__kpi-label">Ticket Promedio</span>
+            <span className="finances__kpi-label">{isStaffView ? 'Dias Trabajados' : 'Ticket Promedio'}</span>
           </div>
         </div>
-        {(data?.pending_payments || 0) > 0 && (
+        {!isStaffView && (data?.pending_payments || 0) > 0 && (
           <div className="finances__kpi-card finances__kpi-card--warning">
             <div className="finances__kpi-icon finances__kpi-icon--warning">{Icons.alert}</div>
             <div className="finances__kpi-info">
@@ -546,12 +554,12 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
         )}
       </div>
 
-      {/* Revenue chart — full width */}
+      {/* Revenue chart */}
       <div className="finances__card finances__card--chart">
         <div className="finances__card-header">
-          <h2 className="finances__card-title">{Icons.barChart} Ingresos por dia</h2>
+          <h2 className="finances__card-title">{Icons.barChart} {isStaffView ? 'Tus ingresos por dia' : 'Ingresos por dia'}</h2>
           {!loading && hasData && (
-            <span className="finances__card-badge">{data.revenue_by_day.length} dias</span>
+            <span className="finances__card-badge">{(data.revenue_by_day || []).length} dias</span>
           )}
         </div>
         {loading ? (
@@ -563,15 +571,53 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
         )}
       </div>
 
-      {/* Owner profit + Payment methods side by side */}
+      {/* Bottom section: admin gets P&L + payment methods, staff gets earnings summary */}
       {!loading && (
-        <div className="finances__body">
-          <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />
-          <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />
-        </div>
+        isStaffView ? (
+          <div className="finances__body">
+            <div className="finances__owner-panel">
+              <div className="finances__owner-hero">
+                <span className="finances__owner-eyebrow">Tu Comision Total</span>
+                <span className="finances__owner-big">{formatCOP(staffEarnings || 0)}</span>
+                <div className="finances__owner-margin">
+                  <div className="finances__owner-margin-bar">
+                    <div className="finances__owner-margin-fill" style={{ width: `${Math.round(staffCommRate * 100)}%` }} />
+                  </div>
+                  <span className="finances__owner-margin-label">Comision {Math.round(staffCommRate * 100)}%</span>
+                </div>
+              </div>
+              <div className="finances__pnl-breakdown">
+                <div className="finances__pnl-row">
+                  <span className="finances__pnl-dot" style={{ background: '#3B82F6' }} />
+                  <span className="finances__pnl-label">Servicios realizados</span>
+                  <span className="finances__pnl-amount">{data?.total_visits || 0}</span>
+                </div>
+                <div className="finances__pnl-row">
+                  <span className="finances__pnl-dot" style={{ background: '#10B981' }} />
+                  <span className="finances__pnl-label">Clientes atendidos</span>
+                  <span className="finances__pnl-amount">{data?.unique_clients || 0}</span>
+                </div>
+                <div className="finances__pnl-row">
+                  <span className="finances__pnl-dot" style={{ background: '#F59E0B' }} />
+                  <span className="finances__pnl-label">Dias trabajados</span>
+                  <span className="finances__pnl-amount">{daysWorked || 0}</span>
+                </div>
+                <div className="finances__pnl-row">
+                  <span className="finances__pnl-dot" style={{ background: '#8B5CF6' }} />
+                  <span className="finances__pnl-label">Promedio diario</span>
+                  <span className="finances__pnl-amount">{formatCOP(daysWorked > 0 ? Math.round(staffEarnings / daysWorked) : 0)}</span>
+                </div>
+              </div>
+            </div>
+            <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />
+          </div>
+        ) : (
+          <div className="finances__body">
+            <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />
+            <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />
+          </div>
+        )
       )}
-
-      {/* AI Widget removed */}
     </>
   );
 };
@@ -4671,6 +4717,8 @@ const TabNomina = () => {
 
 const Finances = () => {
   const { tenant } = useTenant();
+  const { user: authUser } = useAuth();
+  const isStaffView = authUser?.role === 'staff';
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -4772,12 +4820,12 @@ const Finances = () => {
       <div className="finances__header">
         <div className="finances__header-left">
           <div className="finances__header-title-row">
-            <h1 className="finances__title">Finanzas</h1>
+            <h1 className="finances__title">{isStaffView ? 'Mis Ingresos' : 'Finanzas'}</h1>
             {data?.date_from && (
               <span className="finances__date-range">{Icons.calendar} {formatDateRange(data.date_from, data.date_to)}</span>
             )}
           </div>
-          <p className="finances__subtitle">Control financiero — {tenant.name}</p>
+          <p className="finances__subtitle">{isStaffView ? 'Comisiones, propinas y servicios' : `Control financiero — ${tenant.name}`}</p>
         </div>
         <div className="finances__header-right">
           <button
@@ -4827,7 +4875,7 @@ const Finances = () => {
         </div>
       </div>
       <div className="finances__tab-selector">
-        {TAB_OPTIONS.map((tab) => (
+        {(isStaffView ? TAB_OPTIONS.filter(t => ['resumen', 'facturas', 'nomina'].includes(t.value)) : TAB_OPTIONS).map((tab) => (
           <button
             key={tab.value}
             className={`finances__tab-btn ${activeTab === tab.value ? 'finances__tab-btn--active' : ''}`}
@@ -4838,7 +4886,7 @@ const Finances = () => {
           </button>
         ))}
       </div>
-      {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} />}
       {activeTab === 'forecast' && <TabForecast />}
       {activeTab === 'reportes' && <TabReportes period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'rendimiento' && <TabRendimiento period={period} dateFrom={dateFrom} dateTo={dateTo} />}
