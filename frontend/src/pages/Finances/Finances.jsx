@@ -3151,7 +3151,8 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
         const selStaffTotal = selSvcComm + realProdComm + selTips - finesTotal;
         const selBusinessServices = selServiceRevenue - selSvcComm;
         const selBusinessProducts = selProducts - realProdComm;
-        const selBusinessTotal = selBusinessServices + selBusinessProducts - selTips + finesTotal;
+        // Tips are client→professional pass-through, NOT a business expense
+        const selBusinessTotal = selBusinessServices + selBusinessProducts + finesTotal;
         return (
           <div className="finances__vl-summary">
             <div className="finances__vl-summary-row"><span>{sel.flatMap(v => v.service_breakdown || []).length || sel.length} servicios</span><span>{formatCOP(selServiceRevenue)}</span></div>
