@@ -1505,6 +1505,8 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   const [svcCommRates, setSvcCommRates] = useState({}); // { `staffId-serviceId`: rate }
   const [methodFilter, setMethodFilter] = useState('');
   const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [invDateFrom, setInvDateFrom] = useState('');
+  const [invDateTo, setInvDateTo] = useState('');
   const [sendingWA, setSendingWA] = useState(null); // invoice id being sent
 
   const [allClients, setAllClients] = useState([]);
@@ -1978,11 +1980,12 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
       {invoices.length > 0 ? (
         <>
         <div className="finances__inv-filters">
+          <div>
           <div className="finances__inv-search">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             <input
               type="text"
-              placeholder="Buscar por cliente, factura, servicio, monto..."
+              placeholder="Buscar por cliente, factura, ticket, servicio, monto..."
               value={invoiceSearch}
               onChange={e => setInvoiceSearch(e.target.value)}
             />
@@ -1991,6 +1994,17 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             )}
+          </div>
+          <div className="finances__inv-date-range">
+            <input type="date" value={invDateFrom} onChange={e => setInvDateFrom(e.target.value)} title="Desde" />
+            <span style={{ color: '#94a3b8', fontSize: 12 }}>—</span>
+            <input type="date" value={invDateTo} onChange={e => setInvDateTo(e.target.value)} title="Hasta" />
+            {(invDateFrom || invDateTo) && (
+              <button className="finances__inv-date-clear" onClick={() => { setInvDateFrom(''); setInvDateTo(''); }} title="Limpiar fechas">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            )}
+          </div>
           </div>
           <div className="finances__method-filters">
             <button className={`finances__method-chip ${!methodFilter ? 'finances__method-chip--active' : ''}`} onClick={() => setMethodFilter('')}>Todos</button>
@@ -2015,11 +2029,20 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
           {invoices
             .filter(inv => {
               if (methodFilter && inv.payment_method !== methodFilter) return false;
+              // Date range filter
+              if (invDateFrom || invDateTo) {
+                const invDate = (inv.paid_at || inv.issued_date || inv.created_at || '').slice(0, 10);
+                if (invDateFrom && invDate < invDateFrom) return false;
+                if (invDateTo && invDate > invDateTo) return false;
+              }
               if (!invoiceSearch) return true;
               const q = invoiceSearch.toLowerCase();
+              // Extract ticket/visit_code from notes
+              const ticketMatch = (inv.notes || '').match(/\[CODIGO:([^\]]+)\]/);
+              const ticket = ticketMatch ? ticketMatch[1] : '';
               const haystack = [
                 inv.client_name, inv.client_phone, inv.invoice_number,
-                inv.payment_method, String(inv.total),
+                inv.payment_method, String(inv.total), ticket,
                 ...(inv.items || []).map(it => it.service_name),
                 ...(inv.items || []).map(it => it.staff_name),
               ].filter(Boolean).join(' ').toLowerCase();
