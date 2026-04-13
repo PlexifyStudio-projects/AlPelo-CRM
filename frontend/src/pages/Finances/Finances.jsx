@@ -4090,16 +4090,18 @@ const TabNomina = () => {
   return (
     <>
       <div className="finances__nom-stats">
-        {/* 1. Ganancia negocio */}
-        <div className="finances__nom-stat">
-          <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #2D5A3D, #059669)' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        {/* 1. Ganancia negocio — only show if backend provides total_revenue */}
+        {totalRevNom > 0 && (
+          <div className="finances__nom-stat">
+            <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #2D5A3D, #059669)' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div className="finances__nom-stat-data">
+              <span className="finances__nom-stat-value" style={{ color: '#2D5A3D' }}><AnimatedNumber value={totalBusinessProfit} prefix="$" /></span>
+              <span className="finances__nom-stat-label">Ganancia negocio</span>
+            </div>
           </div>
-          <div className="finances__nom-stat-data">
-            <span className="finances__nom-stat-value" style={{ color: '#2D5A3D' }}><AnimatedNumber value={totalBusinessProfit} prefix="$" /></span>
-            <span className="finances__nom-stat-label">Ganancia negocio</span>
-          </div>
-        </div>
+        )}
         {/* 2. Comisiones personal */}
         <div className="finances__nom-stat">
           <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #059669, #10B981)' }}>
