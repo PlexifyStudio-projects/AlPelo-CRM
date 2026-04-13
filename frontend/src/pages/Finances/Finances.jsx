@@ -2198,22 +2198,34 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         {inv.client_document && <span>{inv.client_document_type || 'CC'}: {inv.client_document}</span>}
                         {inv.client_email && <span>{inv.client_email}</span>}
                       </div>
-                      {inv.receipt_url && (
-                        <div className="finances__sale-receipt">
-                          <span className="finances__sale-receipt-label">Comprobante adjunto</span>
-                          {inv.receipt_url.match(/\.(pdf|doc|docx|xls|xlsx)$/i) ? (
-                            <a href={inv.receipt_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: '#f1f5f9', borderRadius: 8, color: '#1e40af', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                              Ver documento
-                            </a>
-                          ) : (
-                            <img src={inv.receipt_url} alt="Comprobante" className="finances__sale-receipt-img" onClick={() => {
-                              const w = window.open('', '_blank');
-                              if (w) { w.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111"><img src="${inv.receipt_url}" style="max-width:100%;max-height:100vh;object-fit:contain"></body></html>`); w.document.close(); }
-                            }} />
-                          )}
-                        </div>
-                      )}
+                      {inv.receipt_url && (() => {
+                        const url = inv.receipt_url;
+                        const isImage = url.startsWith('data:image/') || url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                        const isPdf = url.startsWith('data:application/pdf') || url.match(/\.pdf$/i);
+                        const isDoc = !isImage && !isPdf;
+                        const docLabel = isPdf ? 'Ver PDF' : isDoc ? 'Descargar documento' : 'Ver comprobante';
+                        return (
+                          <div className="finances__sale-receipt">
+                            <span className="finances__sale-receipt-label">Comprobante adjunto</span>
+                            {isImage ? (
+                              <img src={url} alt="Comprobante" className="finances__sale-receipt-img" onClick={() => {
+                                const w = window.open('', '_blank');
+                                if (w) { w.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111"><img src="${url}" style="max-width:100%;max-height:100vh;object-fit:contain"></body></html>`); w.document.close(); }
+                              }} />
+                            ) : isPdf ? (
+                              <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#fef2f2', borderRadius: 8, color: '#dc2626', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                                {docLabel}
+                              </a>
+                            ) : (
+                              <a href={url} download style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#f0f9ff', borderRadius: 8, color: '#1e40af', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                                {docLabel}
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <div className="finances__sale-detail-actions">
                         {(inv.status === 'draft' || inv.status === 'sent') && (
                           <button className="finances__btn-primary" style={{ padding: '6px 14px', fontSize: '12px' }} onClick={() => handleStatusChange(inv.id, 'paid')}>
