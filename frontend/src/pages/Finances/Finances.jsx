@@ -3928,15 +3928,20 @@ const TabNomina = () => {
     if (!keepSelection) setSelectedVisitIds([]);
     setBankInfo(null);
 
-    // Calculate amount from pre-calculated commissions + tips
+    // Calculate amount: same logic as the summary breakdown
     let amount = Math.max(0, staff.balance);
     const currentSelected = keepSelection ? selectedVisitIds : [];
     if (currentSelected.length > 0) {
       const visits = staffVisitsMap[staff.staff_id] || [];
       const selected = visits.filter(v => currentSelected.includes(v.id));
-      const selComm = selected.reduce((s, v) => s + (v.commission_amount || 0), 0);
+      // Service commission from breakdown (excludes products)
+      const svcComm = selected.reduce((s, v) => {
+        return s + (v.service_breakdown || []).reduce((ss, sb) => ss + (sb.commission || 0), 0);
+      }, 0);
+      // Product commission only from parsed products with comm > 0
+      const prodComm = selected.flatMap(v => parseProducts(v.notes)).filter(p => (p.comm || 0) > 0).reduce((s, p) => s + (p.comm || 0), 0);
       const selTips = selected.reduce((s, v) => s + (v.tip || 0), 0);
-      amount = selComm + selTips;
+      amount = svcComm + prodComm + selTips;
     }
 
     setPayForm({
