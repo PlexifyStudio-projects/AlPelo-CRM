@@ -34,6 +34,7 @@ class CheckoutItemCreate(BaseModel):
     unit_price: int
     staff_id: Optional[int] = None
     staff_name: Optional[str] = None
+    commission: int = 0  # Fixed $ commission for products
 
 
 class CheckoutCreate(BaseModel):
@@ -316,6 +317,7 @@ def create_checkout(
 
         service_revenue = sum(i.unit_price * i.quantity for i in services)
         product_revenue = sum(i.unit_price * i.quantity for i in products)
+        product_commission = sum(i.commission or 0 for i in products)
         service_names = ", ".join(i.service_name for i in services) if services else ", ".join(i.service_name for i in items_for_staff)
 
         # Build notes with product info for Nómina
@@ -324,10 +326,10 @@ def create_checkout(
             notes_parts.append(data.notes)
         if products:
             import json as _json
-            prod_data = [{"name": p.service_name.replace("[Producto] ", ""), "qty": p.quantity, "sale": p.unit_price} for p in products]
+            prod_data = [{"name": p.service_name.replace("[Producto] ", ""), "qty": p.quantity, "sale": p.unit_price, "comm": p.commission or 0} for p in products]
             notes_parts.append(f"<!--PRODUCTS:{_json.dumps(prod_data)}:PRODUCTS-->")
-        if product_revenue > 0:
-            notes_parts.append(f"[PRODUCT_COMMISSION:{product_revenue}]")
+        if product_commission > 0:
+            notes_parts.append(f"[PRODUCT_COMMISSION:{product_commission}]")
 
         sname = db.query(Staff).filter(Staff.id == sid).first()
         visit = VisitHistory(

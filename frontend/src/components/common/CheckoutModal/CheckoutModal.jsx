@@ -355,6 +355,7 @@ const CheckoutModal = ({ appointment, onClose, onCompleted }) => {
             unit_price: p.salePrice || 0,
             staff_id: p.staff_id || null,
             staff_name: p.staff_name || null,
+            commission: parseInt(p.commission) || 0,
           })),
         ],
         subtotal,

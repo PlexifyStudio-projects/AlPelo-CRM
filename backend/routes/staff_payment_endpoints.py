@@ -128,8 +128,10 @@ def get_payroll_summary(
             visits_q = visits_q.filter(VisitHistory.tenant_id == tid)
         visits = visits_q.all()
 
-        # Per-service commission calculation
+        # Per-service commission calculation + product commissions from notes
+        import re as _re
         commission_earned = 0
+        product_commissions_total = 0
         for v in visits:
             names = v.service_name.split(',') if v.service_name else ['Otros']
             per_svc_amount = (v.amount or 0) / max(len(names), 1)
@@ -138,15 +140,20 @@ def get_payroll_summary(
                 is_product = name.startswith('[Producto]')
                 svc_id = svc_catalog.get(name.lower().strip())
                 if is_product:
-                    rate = 0
+                    rate = 0  # Product % commission = 0, fixed $ from notes
                 elif svc_id and svc_id in ssc_map:
                     rate = ssc_map[svc_id]
                 else:
                     rate = default_rate
                 commission_earned += round(per_svc_amount * rate)
+            # Extract fixed product commission from notes
+            if v.notes:
+                pc_match = _re.search(r'\[PRODUCT_COMMISSION:(\d+)\]', v.notes)
+                if pc_match:
+                    product_commissions_total += int(pc_match.group(1))
 
         total_tips = sum(getattr(v, 'tip', 0) or 0 for v in visits)
-        total_earned = commission_earned + total_tips
+        total_earned = commission_earned + product_commissions_total + total_tips
 
         # Count unpaid visits (no payment_id linked)
         unpaid_count = sum(1 for v in visits if not getattr(v, 'payment_id', None))

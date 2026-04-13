@@ -1178,6 +1178,16 @@ def get_staff_performance(
                     commission_breakdown_extra[key]["revenue"] += int(per_svc_amount)
                     commission_breakdown_extra[key]["commission"] += svc_comm
 
+        # Extract fixed product commissions from visit notes
+        import re as _re
+        product_commissions_total = 0
+        for v in visits:
+            if v.notes:
+                pc_match = _re.search(r'\[PRODUCT_COMMISSION:(\d+)\]', v.notes)
+                if pc_match:
+                    product_commissions_total += int(pc_match.group(1))
+        commission_amount += product_commissions_total
+
         # Merge: assigned first (sorted by commission desc), then extras
         commission_breakdown = sorted(assigned_services.values(), key=lambda x: -x["commission"])
         commission_breakdown += sorted(commission_breakdown_extra.values(), key=lambda x: -x["commission"])
