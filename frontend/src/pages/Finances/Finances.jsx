@@ -4253,31 +4253,6 @@ const TabNomina = () => {
                         onVisitsLoaded={(v) => setStaffVisitsMap(prev => ({ ...prev, [st.staff_id]: v }))}
                       />
                     </div>
-                    {/* Fines section in expanded */}
-                    {(st.fines_count || 0) > 0 && (
-                      <div className="finances__nom-expand-col" style={{ gridColumn: '1 / -1' }}>
-                        <div className="finances__nom-expand-title" style={{ color: '#DC2626' }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                          Multas ({st.fines_count})
-                          <span style={{ marginLeft: 'auto', fontWeight: 700 }}>-{formatCOP(st.fines_total)}</span>
-                        </div>
-                        <div className="finances__perf-fines-list">
-                          {(st.fines || []).map(f => (
-                            <div key={f.id} className="finances__perf-fine-item">
-                              <div className="finances__perf-fine-info">
-                                <strong>{f.reason}</strong>
-                                <span className="finances__perf-fine-date">
-                                  {new Date(f.fine_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                </span>
-                                {f.notes && <small className="finances__perf-fine-notes">{f.notes}</small>}
-                              </div>
-                              <span className="finances__perf-fine-amount">-{formatCOP(f.amount)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     <div className="finances__nom-expand-col">
                       <div className="finances__nom-expand-title">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
