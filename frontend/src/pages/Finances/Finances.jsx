@@ -574,7 +574,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
             </div>
           </div>
         )}
-        {isStaffView && staffTips > 0 && (
+        {isStaffView && (
           <div className="finances__kpi-card" style={{ borderLeft: '3px solid #8B5CF6' }}>
             <div className="finances__kpi-icon" style={{ color: '#8B5CF6', background: 'rgba(139,92,246,0.08)' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
@@ -585,7 +585,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
             </div>
           </div>
         )}
-        {isStaffView && staffFines > 0 && (
+        {isStaffView && (
           <div className="finances__kpi-card" style={{ borderLeft: '3px solid #EF4444' }}>
             <div className="finances__kpi-icon" style={{ color: '#EF4444', background: 'rgba(239,68,68,0.08)' }}>{Icons.alert}</div>
             <div className="finances__kpi-info">
