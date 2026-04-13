@@ -461,8 +461,24 @@ const Orders = () => {
         products: formProducts,
       };
       if (editOrder) {
-        await orderService.update(editOrder.id, payload);
-        addNotification('Orden actualizada', 'success');
+        if (editOrder._is_appointment) {
+          // Update the appointment via appointment endpoint
+          const aptPayload = {
+            client_name: form.client_name,
+            client_phone: form.client_phone,
+            staff_id: mainStaff ? parseInt(mainStaff) : undefined,
+            service_id: formItems[0]?.service_id || undefined,
+            date: orderDate,
+            time: firstTime || undefined,
+            visit_code: form.ticket_number || undefined,
+            notes: form.notes || undefined,
+          };
+          await appointmentService.update(editOrder._apt_id, aptPayload);
+          addNotification('Cita actualizada', 'success');
+        } else {
+          await orderService.update(editOrder.id, payload);
+          addNotification('Orden actualizada', 'success');
+        }
       } else {
         await orderService.create(payload);
         addNotification('Orden creada', 'success');
@@ -470,7 +486,8 @@ const Orders = () => {
       setShowModal(false);
       loadData();
     } catch (err) {
-      addNotification(err.message, 'error');
+      const msg = typeof err?.message === 'string' ? err.message : 'Error al guardar';
+      addNotification(msg, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -488,7 +505,7 @@ const Orders = () => {
       addNotification(`${order._is_appointment ? 'Cita' : 'Orden'}: ${STATUS_META[newStatus]?.label || newStatus}`, 'success');
       if (editOrder?.id === order.id) setEditOrder(prev => ({ ...prev, status: newStatus }));
       loadData();
-    } catch (err) { addNotification(err.message, 'error'); }
+    } catch (err) { addNotification(typeof err?.message === 'string' ? err.message : 'Error al actualizar', 'error'); }
   };
 
   const handlePay = (order) => {
