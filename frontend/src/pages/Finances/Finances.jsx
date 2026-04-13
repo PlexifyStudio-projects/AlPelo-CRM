@@ -2204,24 +2204,33 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         const isPdf = url.startsWith('data:application/pdf') || url.match(/\.pdf$/i);
                         const isDoc = !isImage && !isPdf;
                         const docLabel = isPdf ? 'Ver PDF' : isDoc ? 'Descargar documento' : 'Ver comprobante';
+                        // Convert data URI to Blob URL for secure viewing (no "Not secure" warning)
+                        const openBlob = (dataUri) => {
+                          try {
+                            const [header, b64] = dataUri.split(',');
+                            const mime = header.match(/:(.*?);/)?.[1] || 'application/octet-stream';
+                            const bytes = atob(b64);
+                            const arr = new Uint8Array(bytes.length);
+                            for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+                            const blob = new Blob([arr], { type: mime });
+                            window.open(URL.createObjectURL(blob), '_blank');
+                          } catch { window.open(dataUri, '_blank'); }
+                        };
                         return (
                           <div className="finances__sale-receipt">
                             <span className="finances__sale-receipt-label">Comprobante adjunto</span>
                             {isImage ? (
-                              <img src={url} alt="Comprobante" className="finances__sale-receipt-img" onClick={() => {
-                                const w = window.open('', '_blank');
-                                if (w) { w.document.write(`<html><body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111"><img src="${url}" style="max-width:100%;max-height:100vh;object-fit:contain"></body></html>`); w.document.close(); }
-                              }} />
+                              <img src={url} alt="Comprobante" className="finances__sale-receipt-img" onClick={() => openBlob(url)} />
                             ) : isPdf ? (
-                              <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#fef2f2', borderRadius: 8, color: '#dc2626', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
+                              <button onClick={() => openBlob(url)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#fef2f2', borderRadius: 8, color: '#dc2626', fontWeight: 600, fontSize: 13, border: 'none', cursor: 'pointer' }}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
                                 {docLabel}
-                              </a>
+                              </button>
                             ) : (
-                              <a href={url} download style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#f0f9ff', borderRadius: 8, color: '#1e40af', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>
+                              <button onClick={() => openBlob(url)} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: '#f0f9ff', borderRadius: 8, color: '#1e40af', fontWeight: 600, fontSize: 13, border: 'none', cursor: 'pointer' }}>
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                                 {docLabel}
-                              </a>
+                              </button>
                             )}
                           </div>
                         );
