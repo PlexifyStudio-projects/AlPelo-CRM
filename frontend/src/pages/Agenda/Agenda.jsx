@@ -757,24 +757,40 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     if (!searchQuery || searchQuery.length < 2) return [];
     const q = searchQuery.toLowerCase().trim();
     const qDigits = q.replace(/\D/g, '');
+    const isPhoneSearch = qDigits.length >= 7;
+
     const localMatches = appointments.filter(a => {
+      if (isPhoneSearch) {
+        // Phone search: ONLY match by client phone
+        if (!a.client_phone) return false;
+        const phoneDigits = a.client_phone.replace(/\D/g, '');
+        return phoneDigits.includes(qDigits);
+      }
+      // Text search: match by name, service, staff, ticket, etc.
       const haystack = [
-        String(a.id), `#${a.id}`,
         a.client_name, a.service_name, a.staff_name,
-        formatCOP(a.price), a.status, STATUS_META[a.status]?.label,
-        a.time, formatTime12(a.time), a.date, a.notes,
-        a.client_phone, a.visit_code,
+        a.visit_code, `#${a.visit_code}`,
+        a.status, STATUS_META[a.status]?.label,
       ].filter(Boolean).join(' ').toLowerCase();
       if (haystack.includes(q)) return true;
+      // Short digit search (4-6 digits): also check phone
       if (qDigits.length >= 4 && a.client_phone) {
         const phoneDigits = a.client_phone.replace(/\D/g, '');
         if (phoneDigits.includes(qDigits)) return true;
       }
       return false;
     });
-    // Merge backend results (avoids duplicates)
+
+    // Merge backend results — but for phone searches, also filter backend results by phone
     const localIds = new Set(localMatches.map(a => a.id));
-    const extra = backendSearchResults.filter(a => !localIds.has(a.id));
+    let extra = backendSearchResults.filter(a => !localIds.has(a.id));
+    if (isPhoneSearch) {
+      extra = extra.filter(a => {
+        if (!a.client_phone) return false;
+        return a.client_phone.replace(/\D/g, '').includes(qDigits);
+      });
+    }
+
     return [...localMatches, ...extra]
       .sort((a, b) => {
         const today = toISO(new Date());
@@ -783,7 +799,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
         const aToday = aDate === today ? 0 : aDate > today ? 1 : 2;
         const bToday = bDate === today ? 0 : bDate > today ? 1 : 2;
         if (aToday !== bToday) return aToday - bToday;
-        return aDate.localeCompare(bDate) || (a.time || '').localeCompare(b.time || '');
+        return bDate.localeCompare(aDate) || (b.time || '').localeCompare(a.time || '');
       })
       .slice(0, 20);
   }, [searchQuery, appointments, backendSearchResults]);
