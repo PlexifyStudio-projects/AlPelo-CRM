@@ -1,10 +1,8 @@
 @use '../abstracts/variables' as *;
 @use '../abstracts/mixins' as *;
 
-// Palette
 $_b: #1E40AF; $_bl: #3B82F6; $_bs: #60A5FA;
-$_e: #10B981; $_ed: #059669;
-$_am: #F59E0B;
+$_e: #10B981; $_ed: #059669; $_am: #F59E0B; $_ind: #6366F1;
 $_s1: #F8FAFC; $_s2: #F1F5F9; $_s3: #E2E8F0; $_s4: #CBD5E1; $_s5: #94A3B8;
 $_s6: #475569; $_s7: #334155; $_s8: #1E293B; $_s9: #0F172A;
 $_r: 14px; $_rs: 10px;
@@ -12,208 +10,188 @@ $_r: 14px; $_rs: 10px;
 .staff-dashboard {
   padding: 20px;
   width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
+  @include respond-to(md) { padding: 24px 32px; }
 
-  @include respond-to(md) { padding: 28px 36px; }
-
-  // ========== LOADER ==========
-  &__loader {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 16px; min-height: 400px; color: $_s5; font-size: 13px;
-  }
-  &__loader-spinner {
-    width: 32px; height: 32px; border: 3px solid $_s3; border-top-color: $_bl;
-    border-radius: 50%; animation: spin 0.8s linear infinite;
-  }
+  // Loader
+  &__loader { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; min-height: 400px; color: $_s5; font-size: 13px; }
+  &__loader-spinner { width: 28px; height: 28px; border: 3px solid $_s3; border-top-color: $_bl; border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  // ========== HERO CARD ==========
+  // ========== TOP SECTION ==========
+  &__top { margin-bottom: 24px; }
+
+  // Hero
   &__hero {
     position: relative; border-radius: $_r; overflow: hidden;
-    margin-bottom: 20px; background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #1E40AF 100%);
-    padding: 0;
+    background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, $_b 100%);
+    margin-bottom: 16px;
   }
   &__hero-bg {
-    position: absolute; inset: 0;
-    background:
-      radial-gradient(circle at 80% 20%, rgba(59,130,246,0.25) 0%, transparent 50%),
-      radial-gradient(circle at 20% 80%, rgba(16,185,129,0.15) 0%, transparent 50%);
-    pointer-events: none;
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at 85% 20%, rgba($_bl, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 15% 80%, rgba($_e, 0.15) 0%, transparent 50%);
   }
-  &__hero-content {
+  &__hero-inner {
     position: relative; z-index: 1; padding: 24px;
-    display: flex; justify-content: space-between; align-items: center; gap: 20px;
-    flex-wrap: wrap;
-    @include respond-to(md) { padding: 32px; }
+    display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap;
+    @include respond-to(md) { padding: 28px 32px; }
   }
-  &__hero-left {
-    display: flex; align-items: center; gap: 16px;
-  }
+  &__hero-left { display: flex; align-items: center; gap: 16px; }
   &__hero-avatar {
-    width: 56px; height: 56px; border-radius: 50%;
+    width: 52px; height: 52px; border-radius: 50%;
     background: rgba(255,255,255,0.12); backdrop-filter: blur(8px);
     border: 2px solid rgba(255,255,255,0.2);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem; font-weight: 800; color: white;
-    @include respond-to(md) { width: 64px; height: 64px; font-size: 1.6rem; }
+    font-size: 1.3rem; font-weight: 800; color: white;
+    @include respond-to(md) { width: 58px; height: 58px; }
   }
-  &__hero-greet {
-    margin: 0; font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.5);
-    text-transform: uppercase; letter-spacing: 0.08em;
-  }
-  &__hero-name {
-    margin: 2px 0 8px; font-size: 1.6rem; font-weight: 800; color: white;
-    letter-spacing: -0.02em; line-height: 1.1;
-    @include respond-to(md) { font-size: 2rem; }
-  }
-  &__hero-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  &__hero-greet { margin: 0; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.08em; }
+  &__hero-name { margin: 2px 0 8px; font-size: 1.5rem; font-weight: 800; color: white; letter-spacing: -0.02em; line-height: 1.1; @include respond-to(md) { font-size: 1.8rem; } }
+  &__hero-chips { display: flex; gap: 6px; }
   &__hero-chip {
     font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
-    padding: 3px 10px; border-radius: 20px; color: rgba(255,255,255,0.8);
-    background: rgba(255,255,255,0.1); backdrop-filter: blur(4px);
-    &--date { color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.06); text-transform: capitalize; }
+    padding: 2px 9px; border-radius: 20px; color: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.1);
+    &--date { color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.06); text-transform: capitalize; }
   }
-  &__hero-stats {
-    display: flex; align-items: center; gap: 0;
+  &__hero-counters {
+    display: flex; align-items: center;
     background: rgba(255,255,255,0.08); backdrop-filter: blur(12px);
-    border-radius: $_rs; border: 1px solid rgba(255,255,255,0.1);
-    padding: 12px 0;
+    border-radius: $_rs; border: 1px solid rgba(255,255,255,0.1); padding: 10px 0;
   }
-  &__hero-stat {
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    padding: 0 20px; min-width: 60px;
-  }
-  &__hero-stat-val {
-    font-size: 1.3rem; font-weight: 800; color: white; line-height: 1;
-  }
-  &__hero-stat-lbl {
-    font-size: 9px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.08em; color: rgba(255,255,255,0.45);
-  }
-  &__hero-stat-divider {
-    width: 1px; height: 28px; background: rgba(255,255,255,0.12);
-  }
+  &__hero-counter { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 18px; min-width: 52px; }
+  &__hero-counter-val { font-size: 1.2rem; font-weight: 800; color: white; line-height: 1; }
+  &__hero-counter-lbl { font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); }
+  &__hero-counter-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.12); }
 
-  // ========== KPI CARDS ==========
+  // KPIs
   &__kpis {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-    margin-bottom: 20px;
-    @include respond-to(md) { gap: 16px; }
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
   }
   &__kpi {
-    display: flex; align-items: center; gap: 14px;
-    padding: 18px 20px; background: white; border: 1px solid $_s3;
-    border-radius: $_r; cursor: pointer; transition: all 200ms;
-    &:hover { border-color: $_s4; box-shadow: 0 4px 16px rgba(0,0,0,0.05); transform: translateY(-1px); }
+    background: white; border: 1px solid $_s3; border-radius: $_r;
+    padding: 16px 18px; cursor: pointer; transition: all 200ms;
+    display: flex; flex-direction: column; gap: 6px;
+    &:hover { border-color: $_s4; box-shadow: 0 4px 16px rgba(0,0,0,0.04); transform: translateY(-1px); }
   }
-  &__kpi-icon {
-    width: 44px; height: 44px; border-radius: $_rs;
-    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  }
-  &__kpi--earnings &__kpi-icon { background: rgba($_e, 0.1); color: $_e; }
-  &__kpi--pending &__kpi-icon { background: rgba($_am, 0.1); color: $_am; }
-  &__kpi-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
-  &__kpi-value {
-    font-size: 1.25rem; font-weight: 800; color: $_s9; letter-spacing: -0.02em;
-    @include truncate;
-  }
-  &__kpi-label { font-size: 11px; font-weight: 600; color: $_s5; text-transform: uppercase; letter-spacing: 0.04em; }
-  &__kpi-badge {
-    font-size: 11px; font-weight: 700; color: $_e; background: rgba($_e, 0.1);
-    padding: 3px 8px; border-radius: 20px; flex-shrink: 0;
-  }
+  &__kpi-top { display: flex; align-items: center; justify-content: space-between; }
+  &__kpi--green &__kpi-top svg { color: $_e; }
+  &__kpi--amber &__kpi-top svg { color: $_am; }
+  &__kpi--blue &__kpi-top svg { color: $_bl; }
+  &__kpi-pct { font-size: 11px; font-weight: 700; color: $_e; background: rgba($_e, 0.08); padding: 2px 7px; border-radius: 20px; }
+  &__kpi-val { font-size: 1.3rem; font-weight: 800; color: $_s9; letter-spacing: -0.02em; @include truncate; }
+  &__kpi-lbl { font-size: 10px; font-weight: 600; color: $_s5; text-transform: uppercase; letter-spacing: 0.04em; }
 
-  // ========== NEXT APPOINTMENT ==========
+  // ========== MAIN GRID ==========
+  &__grid {
+    display: grid; grid-template-columns: 1fr; gap: 20px;
+    @include respond-to(md) { grid-template-columns: 3fr 2fr; }
+  }
+  &__col { display: flex; flex-direction: column; gap: 16px; }
+
+  // Next appointment
   &__next {
-    display: flex; align-items: center; gap: 14px;
-    padding: 16px 20px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px;
     background: white; border: 1px solid $_s3; border-left: 4px solid $_bl;
-    border-radius: $_r; cursor: pointer; transition: all 200ms;
-    position: relative; overflow: hidden;
-    &:hover { border-left-color: $_b; box-shadow: 0 4px 16px rgba(0,0,0,0.05); }
+    border-radius: $_r; cursor: pointer; transition: all 200ms; position: relative;
+    &:hover { border-left-color: $_b; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
   }
-  &__next-pulse {
+  &__next-dot {
     position: absolute; left: -2px; top: 50%; transform: translateY(-50%);
-    width: 8px; height: 8px; border-radius: 50%; background: $_bl;
-    &::after {
-      content: ''; position: absolute; inset: -4px;
-      border-radius: 50%; border: 2px solid $_bl; opacity: 0;
-      animation: pulse-ring 2s infinite;
-    }
-  }
-  @keyframes pulse-ring {
-    0% { transform: scale(0.8); opacity: 0.8; }
-    100% { transform: scale(2.5); opacity: 0; }
+    width: 6px; height: 6px; border-radius: 50%; background: $_bl;
   }
   &__next-icon {
-    width: 40px; height: 40px; border-radius: 50%;
+    width: 36px; height: 36px; border-radius: 50%;
     background: rgba($_bl, 0.08); color: $_bl;
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  &__next-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  &__next-tag { font-size: 10px; font-weight: 700; color: $_bl; text-transform: uppercase; letter-spacing: 0.08em; }
-  &__next-client { font-size: 14px; font-weight: 700; color: $_s8; @include truncate; }
-  &__next-detail { font-size: 12px; color: $_s5; @include truncate; }
-  &__next-time {
-    font-size: 1.1rem; font-weight: 800; color: $_b; flex-shrink: 0;
-    background: rgba($_bl, 0.06); padding: 6px 12px; border-radius: 8px;
-  }
+  &__next-body { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  &__next-tag { font-size: 9px; font-weight: 700; color: $_bl; text-transform: uppercase; letter-spacing: 0.08em; }
+  &__next-name { font-size: 13px; font-weight: 700; color: $_s8; @include truncate; }
+  &__next-svc { font-size: 11px; color: $_s5; @include truncate; }
+  &__next-time { font-size: 1rem; font-weight: 800; color: $_b; background: rgba($_bl, 0.06); padding: 5px 10px; border-radius: 8px; flex-shrink: 0; }
 
-  // ========== SECTION ==========
-  &__section { margin-bottom: 24px; }
-  &__section-top {
+  // Panel (generic card container)
+  &__panel {
+    background: white; border: 1px solid $_s3; border-radius: $_r; padding: 18px;
+  }
+  &__panel-top {
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
-    h2 { font-size: 15px; font-weight: 700; color: $_s8; margin: 0; }
+    h2 { font-size: 14px; font-weight: 700; color: $_s8; margin: 0; }
     button {
       display: flex; align-items: center; gap: 4px;
-      font-size: 12px; font-weight: 600; color: $_bl;
+      font-size: 11px; font-weight: 600; color: $_bl;
       background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px;
       &:hover { background: rgba($_bl, 0.06); }
     }
   }
 
-  // ========== APPOINTMENT CARDS ==========
-  &__cards { display: flex; flex-direction: column; gap: 8px; }
-  &__card {
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px 16px; background: white; border: 1px solid $_s3;
-    border-radius: $_rs; transition: all 200ms;
-    &:hover { border-color: $_s4; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-
-    &--past { opacity: 0.5; }
-    &--active {
-      border-color: $_bl; background: rgba($_bl, 0.02);
-      box-shadow: 0 0 0 3px rgba($_bl, 0.08);
-    }
+  // Appointment list
+  &__appt-list { display: flex; flex-direction: column; gap: 4px; }
+  &__appt {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: $_rs; transition: all 150ms;
+    &:hover { background: $_s1; }
+    &--past { opacity: 0.45; }
+    &--active { background: rgba($_bl, 0.04); border: 1px solid rgba($_bl, 0.12); }
   }
-  &__card-time {
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    min-width: 65px; flex-shrink: 0;
-  }
-  &__card-hour { font-size: 13px; font-weight: 700; color: $_s7; }
-  &__card-dur { font-size: 10px; color: $_s5; }
-  &__card-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  &__card-client { font-size: 13px; font-weight: 600; color: $_s8; @include truncate; }
-  &__card-service { font-size: 11px; color: $_s5; @include truncate; }
-  &__card-status { flex-shrink: 0; display: flex; align-items: center; }
-  &__card-live {
-    width: 10px; height: 10px; border-radius: 50%; background: $_bl;
+  &__appt-time { font-size: 12px; font-weight: 700; color: $_s6; min-width: 60px; flex-shrink: 0; }
+  &__appt-info { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  &__appt-client { font-size: 13px; font-weight: 600; color: $_s8; @include truncate; }
+  &__appt-svc { font-size: 11px; color: $_s5; @include truncate; }
+  &__appt-state { flex-shrink: 0; display: flex; align-items: center; }
+  &__appt-live {
+    width: 8px; height: 8px; border-radius: 50%; background: $_bl;
     box-shadow: 0 0 0 3px rgba($_bl, 0.2);
     animation: pulse-dot 2s infinite;
   }
   @keyframes pulse-dot {
     0%, 100% { box-shadow: 0 0 0 3px rgba($_bl, 0.2); }
-    50% { box-shadow: 0 0 0 6px rgba($_bl, 0.1); }
+    50% { box-shadow: 0 0 0 6px rgba($_bl, 0.08); }
   }
 
-  // ========== EMPTY ==========
+  // Empty
   &__empty {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 8px; padding: 48px 24px; background: $_s1; border: 1px dashed $_s3;
-    border-radius: $_r; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 36px 16px; text-align: center;
+    h3 { margin: 0; font-size: 14px; font-weight: 700; color: $_s7; }
+    p { margin: 0; font-size: 12px; color: $_s5; }
   }
-  &__empty-icon { color: $_s4; margin-bottom: 4px; }
-  &__empty h3 { margin: 0; font-size: 16px; font-weight: 700; color: $_s7; }
-  &__empty p { margin: 0; font-size: 13px; color: $_s5; max-width: 280px; }
+
+  // ========== WEEK CHART ==========
+  &__week {
+    display: flex; gap: 0; align-items: flex-end; height: 120px;
+  }
+  &__week-day {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    &--today .staff-dashboard__week-bar { background: $_bl; }
+    &--today .staff-dashboard__week-label { color: $_bl; font-weight: 700; }
+    &--today .staff-dashboard__week-count { color: $_bl; font-weight: 700; }
+  }
+  &__week-bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+  &__week-bar {
+    width: 24px; border-radius: 6px 6px 2px 2px; background: $_s3;
+    transition: height 400ms ease; min-height: 4px;
+    @include respond-to(md) { width: 28px; }
+  }
+  &__week-count { font-size: 11px; font-weight: 600; color: $_s6; }
+  &__week-label { font-size: 10px; color: $_s5; font-weight: 500; }
+
+  // ========== QUICK LINKS ==========
+  &__links { display: flex; flex-direction: column; gap: 6px; }
+  &__link {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    background: none; border: none; border-radius: $_rs; cursor: pointer;
+    text-align: left; width: 100%; transition: background 150ms;
+    &:hover { background: $_s1; }
+    div:nth-child(2) { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+  }
+  &__link-icon {
+    width: 36px; height: 36px; border-radius: $_rs;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    &--indigo { background: rgba($_ind, 0.08); color: $_ind; }
+    &--emerald { background: rgba($_e, 0.08); color: $_e; }
+  }
+  &__link-title { font-size: 13px; font-weight: 600; color: $_s8; display: block; }
+  &__link-desc { font-size: 11px; color: $_s5; display: block; }
 }
