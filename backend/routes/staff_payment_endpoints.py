@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from datetime import date, datetime
@@ -224,8 +224,6 @@ def get_payroll_summary(
 # ============================================================================
 # STAFF VISITS (from visit_history — includes agenda + orders)
 # ============================================================================
-
-from fastapi import Query
 
 @router.get("/visits")
 def get_staff_visits(
