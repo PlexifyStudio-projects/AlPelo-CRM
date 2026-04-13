@@ -218,13 +218,13 @@ const PAYMENT_METHODS = [
 ];
 
 const TAB_OPTIONS = [
-  { value: 'resumen', label: 'Resumen', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
-  { value: 'reportes', label: 'Reportes', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> },
-  { value: 'rendimiento', label: 'Rendimiento', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
-  { value: 'gastos', label: 'Gastos', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
-  { value: 'facturas', label: 'Facturas', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
-  { value: 'nomina', label: 'Nomina', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
-  { value: 'dian', label: 'DIAN', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
+  { value: 'resumen', label: 'Resumen', color: '#2D5A3D', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
+  { value: 'reportes', label: 'Reportes', color: '#3B82F6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> },
+  { value: 'rendimiento', label: 'Rendimiento', color: '#8B5CF6', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> },
+  { value: 'gastos', label: 'Gastos', color: '#DC2626', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
+  { value: 'facturas', label: 'Facturas', color: '#059669', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
+  { value: 'nomina', label: 'Nomina', color: '#F59E0B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
+  { value: 'dian', label: 'DIAN', color: '#6366F1', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
 ];
 
 const AnimatedNumber = ({ value, prefix = '', suffix = '' }) => {
@@ -545,96 +545,32 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
         )}
       </div>
 
-      {!loading && hasData && <InsightsPanel data={data} />}
-      <div className="finances__body">
-        <div className="finances__card finances__card--chart">
-          <div className="finances__card-header">
-            <h2 className="finances__card-title">{Icons.barChart} Ingresos por Dia</h2>
-            {!loading && hasData && (
-              <span className="finances__card-badge">{data.revenue_by_day.length} {data.revenue_by_day.length === 1 ? 'dia' : 'dias'}</span>
-            )}
-          </div>
-          {loading ? (
-            <div className="finances__chart-skeleton">
-              {[...Array(8)].map((_, i) => <SkeletonBlock key={i} width="24px" height={`${25 + Math.random() * 65}%`} />)}
-            </div>
-          ) : (
-            <RevenueAreaChart data={data?.revenue_by_day || []} />
+      {/* Revenue chart — full width */}
+      <div className="finances__card finances__card--chart">
+        <div className="finances__card-header">
+          <h2 className="finances__card-title">{Icons.barChart} Ingresos por dia</h2>
+          {!loading && hasData && (
+            <span className="finances__card-badge">{data.revenue_by_day.length} dias</span>
           )}
         </div>
+        {loading ? (
+          <div className="finances__chart-skeleton">
+            {[...Array(8)].map((_, i) => <SkeletonBlock key={i} width="24px" height={`${25 + Math.random() * 65}%`} />)}
+          </div>
+        ) : (
+          <RevenueAreaChart data={data?.revenue_by_day || []} />
+        )}
+      </div>
 
-        <div className="finances__card">
-          <div className="finances__card-header">
-            <h2 className="finances__card-title">{Icons.scissors} Top Servicios</h2>
-            {!loading && hasData && <span className="finances__card-badge">{data.revenue_by_service.length} servicios</span>}
-          </div>
-          {loading ? (
-            <div className="finances__list-skeleton">{[...Array(5)].map((_, i) => <SkeletonBlock key={i} width="100%" height="44px" />)}</div>
-          ) : (
-            <div className="finances__ranking-list">
-              {(data?.revenue_by_service || []).slice(0, 10).map((svc, i) => {
-                const maxRev = (data?.revenue_by_service?.[0]?.revenue) || 1;
-                const pct = Math.round((svc.revenue / maxRev) * 100);
-                const isTop3 = i < 3;
-                return (
-                  <div key={i} className={`finances__ranking-item ${isTop3 ? 'finances__ranking-item--top' : ''}`}>
-                    <span className={`finances__ranking-pos ${isTop3 ? 'finances__ranking-pos--highlight' : ''}`}>
-                      {i === 0 ? Icons.star : i + 1}
-                    </span>
-                    <div className="finances__ranking-info">
-                      <div className="finances__ranking-top">
-                        <div className="finances__ranking-name-wrap">
-                          <span className="finances__ranking-name">{svc.service_name.split(',').filter(s => !s.trim().startsWith('[Producto]')).join(', ').trim() || svc.service_name.split(',')[0]}</span>
-                          {svc.category && <span className="finances__ranking-cat" style={{ color: CATEGORY_COLORS[svc.category] || CATEGORY_COLORS['Otros'] }}>{svc.category}</span>}
-                        </div>
-                        <div className="finances__ranking-amounts">
-                          <span className="finances__ranking-amount">{formatCOP(svc.revenue)}</span>
-                          <span className="finances__ranking-pct">{svc.pct_of_total}%</span>
-                        </div>
-                      </div>
-                      <div className="finances__ranking-bar-bg">
-                        <div className="finances__ranking-bar" style={{ width: `${pct}%`, background: CATEGORY_COLORS[svc.category] || CATEGORY_COLORS['Otros'] }} />
-                      </div>
-                      <span className="finances__ranking-count">{svc.count} {svc.count === 1 ? 'servicio' : 'servicios'}</span>
-                    </div>
-                  </div>
-                );
-              })}
-              {(!data?.revenue_by_service || data.revenue_by_service.length === 0) && <div className="finances__empty">Sin datos para este periodo</div>}
-            </div>
-          )}
+      {/* Owner profit + Payment methods side by side */}
+      {!loading && (
+        <div className="finances__body">
+          <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />
+          <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />
         </div>
-      </div>
-      <div className="finances__body finances__body--bottom">
-        <div className="finances__card">
-          <div className="finances__card-header">
-            <h2 className="finances__card-title">{Icons.pieChart} Distribucion por Categoria</h2>
-          </div>
-          {loading ? (
-            <div className="finances__list-skeleton">
-              <SkeletonBlock width="100%" height="12px" />
-              {[...Array(4)].map((_, i) => <SkeletonBlock key={i} width="100%" height="32px" />)}
-            </div>
-          ) : (
-            <CategoryBreakdown categories={data?.revenue_by_category || []} />
-          )}
-        </div>
+      )}
 
-        <div className="finances__card">
-          <div className="finances__card-header">
-            <h2 className="finances__card-title">{Icons.users} Rendimiento por Profesional</h2>
-          </div>
-          {loading ? (
-            <div className="finances__list-skeleton">{[...Array(3)].map((_, i) => <SkeletonBlock key={i} width="100%" height="64px" />)}</div>
-          ) : (
-            <StaffBarChart data={data?.revenue_by_staff || []} />
-          )}
-        </div>
-      </div>
-      {!loading && <OwnerProfitPanel period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-      <div className="finances__body finances__body--bottom">
-        {!loading && <PaymentMethodsCard period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-      </div>
+      {/* AI Widget */}
       {!loading && <FinanceAIWidget period={period} dateFrom={dateFrom} dateTo={dateTo} />}
     </>
   );
@@ -4695,6 +4631,7 @@ const Finances = () => {
           <button
             key={tab.value}
             className={`finances__tab-btn ${activeTab === tab.value ? 'finances__tab-btn--active' : ''}`}
+            style={activeTab === tab.value ? { color: tab.color, '--tab-color': tab.color } : { '--tab-color': tab.color }}
             onClick={() => setActiveTab(tab.value)}
           >
             {tab.icon}{tab.label}
