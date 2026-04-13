@@ -219,7 +219,7 @@ const PAYMENT_METHODS = [
 
 const TAB_OPTIONS = [
   { value: 'resumen', label: 'Resumen' },
-  { value: 'forecast', label: 'Proyección' },
+  // { value: 'forecast', label: 'Proyección' },  // Removed — let owners do their own projections
   { value: 'reportes', label: 'Reportes' },
   { value: 'rendimiento', label: 'Rendimiento' },
   { value: 'gastos', label: 'Gastos' },
