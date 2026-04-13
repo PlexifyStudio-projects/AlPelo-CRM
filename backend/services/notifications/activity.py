@@ -134,7 +134,7 @@ def log_event(event_type: str, description: str, detail: str = "",
     ).start()
 
 
-def get_recent_events(limit: int = 100, offset: int = 0, tenant_id: int = None):
+def get_recent_events(limit: int = 100, offset: int = 0, tenant_id: int = None, conv_id: int = None):
     """Return recent events — from DB for persistence, fallback to in-memory."""
     # Try DB first (persistent, survives restarts)
     try:
@@ -145,6 +145,8 @@ def get_recent_events(limit: int = 100, offset: int = 0, tenant_id: int = None):
             q = db.query(LinaActivityEvent)
             if tenant_id:
                 q = q.filter(LinaActivityEvent.tenant_id == tenant_id)
+            if conv_id:
+                q = q.filter(LinaActivityEvent.conv_id == conv_id)
             events = (
                 q.order_by(LinaActivityEvent.created_at.desc())
                 .offset(offset)

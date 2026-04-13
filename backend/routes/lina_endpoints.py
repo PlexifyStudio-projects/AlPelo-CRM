@@ -25,10 +25,10 @@ router = APIRouter(prefix="/lina", tags=["Lina IA"])
 # ============================================================================
 
 @router.get("/activity")
-async def lina_activity(limit: int = 100, offset: int = 0, db: Session = Depends(get_db), user=Depends(get_current_user)):
+async def lina_activity(limit: int = 100, offset: int = 0, conv_id: int = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Real-time Lina activity events for the monitoring dashboard."""
     tid = safe_tid(user, db)
-    events = get_recent_events(limit=limit, offset=offset, tenant_id=tid)
+    events = get_recent_events(limit=limit, offset=offset, tenant_id=tid, conv_id=conv_id)
     stats = get_activity_stats(tenant_id=tid)
     return {"events": events, "stats": stats}
 

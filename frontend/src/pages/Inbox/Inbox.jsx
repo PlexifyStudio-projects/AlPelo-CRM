@@ -667,39 +667,59 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
   );
 };
 
-const LINA_PIPELINE = [
-  { icon: '💬', text: 'Leyendo mensajes del chat...', duration: 3000 },
-  { icon: '👤', text: 'Verificando cliente en el sistema...', duration: 3000 },
-  { icon: '📅', text: 'Revisando agenda y disponibilidad...', duration: 4000 },
-  { icon: '🔍', text: 'Verificando conflictos de horario...', duration: 3500 },
-  { icon: '👥', text: 'Comprobando personal disponible...', duration: 3000 },
-  { icon: '🧠', text: 'Analizando y preparando respuesta...', duration: 4000 },
-  { icon: '✅', text: 'Verificación final antes de responder...', duration: 3000 },
-];
-
-const LinaThinking = () => {
-  const [stepIdx, setStepIdx] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState([]);
+const LinaThinking = ({ convId }) => {
+  const [steps, setSteps] = useState([]);
+  const [currentStep, setCurrentStep] = useState(null);
+  const seenIdsRef = useRef(new Set());
+  const startTimeRef = useRef(Date.now());
 
   useEffect(() => {
-    setStepIdx(0);
-    setCompletedSteps([]);
+    if (!convId) return;
+    seenIdsRef.current = new Set();
+    setSteps([]);
+    setCurrentStep({ text: 'Procesando mensaje...', icon: '💬' });
+    startTimeRef.current = Date.now();
 
-    let currentStep = 0;
-    const advanceStep = () => {
-      if (currentStep < LINA_PIPELINE.length - 1) {
-        setCompletedSteps(prev => [...prev, currentStep]);
-        currentStep += 1;
-        setStepIdx(currentStep);
-        timeout = setTimeout(advanceStep, LINA_PIPELINE[currentStep].duration);
-      }
+    const poll = async () => {
+      try {
+        const resp = await fetch(`${API_BASE}/lina/activity?conv_id=${convId}&limit=10`, { credentials: 'include' });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const events = (data.events || []).reverse();
+        // Only show events from the last 60 seconds (current processing)
+        const cutoff = new Date(Date.now() - 60000).toISOString();
+        const recent = events.filter(e => e.timestamp > cutoff && !seenIdsRef.current.has(e.id));
+        if (recent.length > 0) {
+          recent.forEach(e => seenIdsRef.current.add(e.id));
+          setSteps(prev => {
+            const newSteps = [...prev];
+            recent.forEach(e => {
+              const icon = e.description.includes('Paso 1') ? '💬'
+                : e.description.includes('Paso 2') ? '👤'
+                : e.description.includes('Paso 3') ? '🧠'
+                : e.description.includes('Paso 4') ? '✅'
+                : e.event_type === 'accion' ? '⚡'
+                : e.status === 'warning' ? '⚠️'
+                : e.status === 'error' ? '❌'
+                : '🔍';
+              // Clean description: remove emoji prefix
+              const text = e.description.replace(/^[^\w]*/, '').trim();
+              newSteps.push({ text, icon, status: e.status });
+            });
+            return newSteps;
+          });
+          // Update current step to the latest event
+          const last = recent[recent.length - 1];
+          const lastText = last.description.replace(/^[^\w]*/, '').trim();
+          setCurrentStep({ text: lastText + '...', icon: last.status === 'ok' ? '✅' : '🔄' });
+        }
+      } catch { /* silent */ }
     };
 
-    let timeout = setTimeout(advanceStep, LINA_PIPELINE[0].duration);
-    return () => clearTimeout(timeout);
-  }, []);
-
-  const currentPipe = LINA_PIPELINE[stepIdx];
+    const interval = setInterval(poll, 2000);
+    poll(); // First poll immediately
+    return () => clearInterval(interval);
+  }, [convId]);
 
   return (
     <div className={`${b}__lina-thinking`}>
@@ -709,19 +729,21 @@ const LinaThinking = () => {
           <span className={`${b}__lina-thinking-label`}>Lina IA</span>
         </div>
         <div className={`${b}__lina-thinking-pipeline`}>
-          {completedSteps.map(idx => (
-            <div key={idx} className={`${b}__lina-thinking-done`}>
+          {steps.map((s, i) => (
+            <div key={i} className={`${b}__lina-thinking-done`}>
               <span className={`${b}__lina-thinking-check`}>✓</span>
-              <span className={`${b}__lina-thinking-done-text`}>{LINA_PIPELINE[idx].text.replace('...', '')}</span>
+              <span className={`${b}__lina-thinking-done-text`}>{s.text}</span>
             </div>
           ))}
-          <div className={`${b}__lina-thinking-step`}>
-            <span className={`${b}__lina-thinking-step-icon`}>{currentPipe.icon}</span>
-            <span className={`${b}__lina-thinking-text`}>{currentPipe.text}</span>
-            <span className={`${b}__lina-thinking-dots`}>
-              <span /><span /><span />
-            </span>
-          </div>
+          {currentStep && (
+            <div className={`${b}__lina-thinking-step`}>
+              <span className={`${b}__lina-thinking-step-icon`}>{currentStep.icon}</span>
+              <span className={`${b}__lina-thinking-text`}>{currentStep.text}</span>
+              <span className={`${b}__lina-thinking-dots`}>
+                <span /><span /><span />
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -870,21 +892,51 @@ const Inbox = () => {
     return updated;
   }, []);
 
-  const playNotificationSound = useCallback(() => {
+  // WhatsApp-style incoming message sound (two-tone pop, louder)
+  const playIncomingSound = useCallback(() => {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 830;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.5);
+      const t = ctx.currentTime;
+      // First tone — low pop
+      const osc1 = ctx.createOscillator();
+      const g1 = ctx.createGain();
+      osc1.connect(g1); g1.connect(ctx.destination);
+      osc1.frequency.value = 600;
+      osc1.type = 'sine';
+      g1.gain.setValueAtTime(0.6, t);
+      g1.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+      osc1.start(t); osc1.stop(t + 0.08);
+      // Second tone — higher pop
+      const osc2 = ctx.createOscillator();
+      const g2 = ctx.createGain();
+      osc2.connect(g2); g2.connect(ctx.destination);
+      osc2.frequency.value = 900;
+      osc2.type = 'sine';
+      g2.gain.setValueAtTime(0.6, t + 0.08);
+      g2.gain.exponentialRampToValueAtTime(0.01, t + 0.18);
+      osc2.start(t + 0.08); osc2.stop(t + 0.18);
     } catch { /* silent */ }
   }, []);
+
+  // WhatsApp-style sent message sound (soft swoosh)
+  const playSentSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.frequency.setValueAtTime(500, t);
+      osc.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
+      osc.type = 'sine';
+      g.gain.setValueAtTime(0.25, t);
+      g.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+      osc.start(t); osc.stop(t + 0.15);
+    } catch { /* silent */ }
+  }, []);
+
+  // Legacy alias for places that use the old name
+  const playNotificationSound = playIncomingSound;
 
   const handleGlobalSearch = useCallback(async (query) => {
     if (!query.trim()) {
@@ -947,7 +999,7 @@ const Inbox = () => {
       }
     }, 10000);
     return () => { if (convIntervalRef.current) clearInterval(convIntervalRef.current); };
-  }, [playNotificationSound]);
+  }, [playIncomingSound]);
 
   const loadMessages = useCallback(async (convId) => {
     if (!convId) return;
@@ -983,7 +1035,8 @@ const Inbox = () => {
           const lastMsg = data[data.length - 1];
           if (lastMsgIdRef.current && lastMsg.id !== lastMsgIdRef.current) {
             const isInbound = lastMsg.direction === 'inbound' || lastMsg.from === 'client';
-            if (isInbound) playNotificationSound();
+            if (isInbound) playIncomingSound();
+            else playSentSound();
           }
           lastMsgIdRef.current = lastMsg.id;
         }
@@ -995,7 +1048,7 @@ const Inbox = () => {
       }
     }, 5000);
     return () => { if (msgIntervalRef.current) clearInterval(msgIntervalRef.current); };
-  }, [selectedConvId, playNotificationSound]);
+  }, [selectedConvId, playIncomingSound, playSentSound]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -2122,7 +2175,7 @@ const Inbox = () => {
                     })
                   )}
                   {selectedConv?.is_ai_active && messages.length > 0 && messages[messages.length - 1]?.direction === 'inbound' && !typingState[selectedConvId] && (
-                    <LinaThinking />
+                    <LinaThinking convId={selectedConvId} />
                   )}
                   {typingState[selectedConvId] && (
                     <div className={`${b}__message ${typingState[selectedConvId] === 'business' ? `${b}__message--sent` : `${b}__message--received`}`}>
