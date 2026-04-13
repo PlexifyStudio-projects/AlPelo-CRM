@@ -54,6 +54,17 @@ def _check_30min_reminders(db):
                 print(f"[SCHEDULER] Rate-limited: skipping 30min reminder for {appt.client_name} (too many messages)")
                 continue
 
+            # DON'T send reminder if client is waiting for a response (last msg is inbound)
+            _last_msg = (
+                db.query(WhatsAppMessage)
+                .filter(WhatsAppMessage.conversation_id == conv.id)
+                .order_by(WhatsAppMessage.created_at.desc())
+                .first()
+            )
+            if _last_msg and _last_msg.direction == "inbound":
+                print(f"[SCHEDULER] Skipping 30min reminder for {appt.client_name} — client has pending inbound message")
+                continue
+
             client_first, service_name, staff_first = _get_appt_details(db, appt)
 
             # Check if this is the first message ever to this client
