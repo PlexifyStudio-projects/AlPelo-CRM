@@ -31,6 +31,118 @@ from activity_log import log_event
 from routes._helpers import normalize_phone, safe_tid, now_colombia as _now_colombia
 
 
+def _build_action_from_text(ai_text, inbound_text, conv, db, tenant_id):
+    """Last-resort: extract appointment data from Lina's text + conversation context.
+    Returns action dict or None if cannot determine enough data."""
+    import re
+    from datetime import date as _date_cls
+    from routes._helpers import now_colombia as _nc
+
+    text = (ai_text or "").lower()
+    inp = (inbound_text or "").lower()
+
+    # Only handle appointment creation for now
+    appointment_words = ["te agend", "queda agendad", "ya te agend", "te program", "cita para", "te agendo para"]
+    if not any(w in text for w in appointment_words):
+        return None
+
+    try:
+        # --- Extract staff name ---
+        staff_name = None
+        staff_q = db.query(Staff).filter(Staff.is_active == True)
+        if tenant_id:
+            staff_q = staff_q.filter(Staff.tenant_id == tenant_id)
+        all_staff = staff_q.all()
+        combined = text + " " + inp
+        for s in all_staff:
+            if s.name.lower() in combined:
+                staff_name = s.name
+                break
+            # Try first name only
+            first = s.name.split()[0].lower() if s.name else ""
+            if first and len(first) > 2 and first in combined:
+                staff_name = s.name
+                break
+        if not staff_name:
+            return None
+
+        # --- Extract service name ---
+        service_name = None
+        svc_q = db.query(Service).filter(Service.is_active == True)
+        if tenant_id:
+            svc_q = svc_q.filter(Service.tenant_id == tenant_id)
+        all_services = svc_q.all()
+        for svc in all_services:
+            if svc.name.lower() in combined:
+                service_name = svc.name
+                break
+        if not service_name:
+            return None
+
+        # --- Extract time (e.g. "1:15pm", "13:15", "a las 2") ---
+        apt_time = None
+        # Pattern: H:MM am/pm or HH:MM
+        time_patterns = [
+            r'(\d{1,2}):(\d{2})\s*(pm|am|p\.m\.|a\.m\.)',  # 1:15pm
+            r'(\d{1,2}):(\d{2})',                             # 13:15
+            r'a\s+las?\s+(\d{1,2})\s*(pm|am|p\.m\.|a\.m\.)', # a las 2pm
+            r'a\s+las?\s+(\d{1,2})',                          # a las 2
+        ]
+        for pat in time_patterns:
+            m = re.search(pat, combined)
+            if m:
+                groups = m.groups()
+                if len(groups) == 3:  # H:MM am/pm
+                    h, mins, ampm = int(groups[0]), int(groups[1]), groups[2].replace(".", "").lower()
+                    if "pm" in ampm and h < 12:
+                        h += 12
+                    elif "am" in ampm and h == 12:
+                        h = 0
+                    apt_time = f"{h:02d}:{mins:02d}"
+                elif len(groups) == 2 and not groups[1].isdigit():  # "a las 2pm"
+                    h, ampm = int(groups[0]), groups[1].replace(".", "").lower()
+                    if "pm" in ampm and h < 12:
+                        h += 12
+                    apt_time = f"{h:02d}:00"
+                elif len(groups) == 2 and groups[1].isdigit():  # HH:MM
+                    h, mins = int(groups[0]), int(groups[1])
+                    if h < 6:  # Probably PM (nobody books at 1 AM)
+                        h += 12
+                    apt_time = f"{h:02d}:{mins:02d}"
+                elif len(groups) == 1:  # "a las 2"
+                    h = int(groups[0])
+                    if h < 6:
+                        h += 12
+                    apt_time = f"{h:02d}:00"
+                break
+        if not apt_time:
+            return None
+
+        # --- Date: default today ---
+        today = _nc().date() if _nc else _date_cls.today()
+        apt_date = today.strftime("%Y-%m-%d")
+        # Check for "manana"/"mañana"
+        if "mañana" in combined or "manana" in combined:
+            apt_date = (today + timedelta(days=1)).strftime("%Y-%m-%d")
+
+        # --- Client name: from conversation contact ---
+        client_name = conv.wa_contact_name or "Cliente"
+
+        action = {
+            "action": "create_appointment",
+            "client_name": client_name,
+            "staff_name": staff_name,
+            "service_name": service_name,
+            "date": apt_date,
+            "time": apt_time,
+        }
+        print(f"[Lina IA] Built action from text: {action}")
+        return action
+    except Exception as e:
+        print(f"[Lina IA] _build_action_from_text error: {e}")
+        return None
+
+
 async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_wa_msg_id: str = None, needs_transcription: bool = False, media_id: str = None, needs_vision: bool = False, media_mime: str = None, is_catchup: bool = False):
     """Background task: mark as read, wait, generate AI response, send. Supports image vision.
     When is_catchup=True, skips off-hours check and reduces delay (admin explicitly re-enabled AI)."""
@@ -468,23 +580,17 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         if action_type and action_type not in needed_actions:
                             needed_actions.append(action_type)
 
-                    # Retry with explicit instruction including exact action format
+                    # Retry with AGGRESSIVE instruction: output ONLY the JSON, no text
+                    # This prevents truncation — action JSON is ~80 tokens max
                     retry_msg = (
-                        f"[SISTEMA CRITICO: Tu respuesta anterior NO incluyo bloques ```action```. "
-                        f"Promesas detectadas: {', '.join(found_promises[:5])}. "
-                        f"DEBES incluir estos bloques al final de tu respuesta:\n"
+                        f"[SISTEMA CRITICO: Tu respuesta anterior NO incluyo el bloque action requerido. "
+                        f"Responde UNICAMENTE con el bloque action JSON. NADA de texto antes ni despues. "
+                        f"Solo el JSON puro dentro de ```action ... ```. "
+                        f"Contexto: el cliente dijo: {inbound_text}\n"
+                        f"Tu respuesta anterior fue: {ai_response[:200]}\n"
+                        f"Ahora genera SOLO el bloque action correspondiente:]"
                     )
-                    for na in needed_actions:
-                        if na == "create_appointment":
-                            retry_msg += '```action\n{"action":"create_appointment","client_name":"...","staff_name":"...","service_name":"...","date":"YYYY-MM-DD","time":"HH:MM"}\n```\n'
-                        elif na == "update_appointment":
-                            retry_msg += '```action\n{"action":"update_appointment","appointment_id":...,"time":"HH:MM"}\n```\n'
-                        elif na == "create_client":
-                            retry_msg += '```action\n{"action":"create_client","name":"...","phone":"..."}\n```\n'
-                        elif na == "add_note":
-                            retry_msg += '```action\n{"action":"add_note","search_name":"...","content":"PENDIENTE: ..."}\n```\n'
-                    retry_msg += f"Rellena los datos reales del cliente y responde.]\n\n{inbound_text}"
-                    retry_response = await _call_ai(system_prompt, history, retry_msg, tenant_id=_conv_tid, max_tokens=800)
+                    retry_response = await _call_ai(system_prompt, history, retry_msg, tenant_id=_conv_tid, max_tokens=300)
                     if retry_response:
                         # Re-parse actions from retry
                         for ch in '\u201c\u201d\u00ab\u00bb\u201e\u201f':
@@ -500,14 +606,23 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
                         if retry_actions:
                             action_matches = retry_actions
-                            ai_response = retry_response  # Use retry response (has action blocks)
+                            # Keep original ai_response text (the "Listo! Te agendo..." is fine IF action executes)
                             print(f"[Lina IA] Retry SUCCESS — found {len(retry_actions)} action(s)")
                             log_event("accion", "Reintento exitoso — acciones encontradas", detail=f"{len(retry_actions)} accion(es) recuperadas", conv_id=conv_id, status="ok")
                         else:
-                            print(f"[Lina IA] Retry FAILED — still no actions. Replacing 'Listo' with safe response.")
-                            log_event("error", "Reintento fallido — Lina no incluyo acciones", detail="Dos intentos sin bloque action. Respuesta reemplazada.", conv_id=conv_id, status="error")
-                            # SAFETY: NEVER send "Listo! Te agendo..." if no action was executed
-                            ai_response = "Disculpa, estoy teniendo un inconveniente tecnico para agendar. Por favor intenta de nuevo en un momento o comunicate directamente con nosotros."
+                            # LAST RESORT: Try to extract appointment data from the AI's own text
+                            # e.g. "Te agendo con Anderson hoy a la 1:15pm para corte hipster"
+                            print(f"[Lina IA] Retry FAILED — attempting to build action from response text...")
+                            _built_action = _build_action_from_text(ai_response, inbound_text, conv, db, _conv_tid)
+                            if _built_action:
+                                action_matches = [json.dumps(_built_action)]
+                                print(f"[Lina IA] Built action from text: {_built_action.get('action')}")
+                                log_event("accion", "Accion construida desde texto", detail=str(_built_action)[:200], conv_id=conv_id, status="ok")
+                            else:
+                                # Cannot build action — ask client to confirm details naturally
+                                print(f"[Lina IA] Could not build action. Asking client to confirm.")
+                                log_event("error", "No se pudo construir accion — pidiendo confirmacion", detail=f"Original: {ai_response[:100]}", conv_id=conv_id, status="warning")
+                                ai_response = "Me confirmas los datos para agendar? Necesito: nombre, servicio, fecha y hora por favor."
 
             for action_json in action_matches:
                 try:
@@ -652,9 +767,9 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                 response_lower = ai_response.lower()
                 _falsely_promised = any(w in response_lower for w in _PROMISE_WORDS)
                 if _falsely_promised:
-                    print(f"[Lina IA] SAFETY NET: AI promised action but 0 executed. Replacing response.")
-                    log_event("error", "Safety net: respuesta falsa reemplazada", detail=f"Original: {ai_response[:100]}", conv_id=conv_id, status="error")
-                    ai_response = "Disculpa, estoy teniendo un inconveniente para procesar tu solicitud. Por favor intenta de nuevo en un momento."
+                    print(f"[Lina IA] SAFETY NET: AI promised action but 0 executed. Asking for confirmation.")
+                    log_event("error", "Safety net: respuesta falsa reemplazada", detail=f"Original: {ai_response[:100]}", conv_id=conv_id, status="warning")
+                    ai_response = "Me confirmas los datos para agendar? Necesito: nombre, servicio, fecha y hora por favor."
 
             # ACTION RESULTS HANDLING: Generate follow-up response with action results
             _conflicts = [r for r in _all_results if "CONFLICTO" in r]
