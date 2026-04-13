@@ -3121,19 +3121,36 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
         })}
       </div>
 
-      <div className="finances__vl-summary">
-        <div className="finances__vl-summary-row"><span>{filtered.length} servicios</span><span>{formatCOP(totalRevenue)}</span></div>
-        {totalProducts > 0 && <div className="finances__vl-summary-row"><span>Productos vendidos</span><span>{formatCOP(totalProducts)}</span></div>}
-        <div className="finances__vl-summary-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 4 }}><span>Total ingresos generados</span><span>{formatCOP(totalRevenue + totalProducts)}</span></div>
+      {/* Summary — only when visits are selected */}
+      {selectedIds && selectedIds.length > 0 && (() => {
+        const sel = filtered.filter(v => selectedIds.includes(v.id));
+        const selRevenue = sel.reduce((s, v) => s + (v.price || 0), 0);
+        const selComm = sel.reduce((s, v) => s + getCommission(v), 0);
+        const selProducts = sel.reduce((s, v) => {
+          const prods = parseProducts(v.notes);
+          return s + prods.reduce((ps, p) => ps + ((p.sale || 0) * (p.qty || 1)), 0);
+        }, 0);
+        const selProdComm = sel.reduce((s, v) => s + (v.product_commission || 0), 0);
+        const selTips = sel.reduce((s, v) => s + (v.tip || 0), 0);
+        const selSvcComm = selComm - selProdComm;
+        const selTotal = selComm + selTips - finesTotal;
+        const selBusiness = (selRevenue + selProducts) - (selComm + selTips);
+        return (
+          <div className="finances__vl-summary">
+            <div className="finances__vl-summary-row"><span>{sel.length} servicios</span><span>{formatCOP(selRevenue)}</span></div>
+            {selProducts > 0 && <div className="finances__vl-summary-row"><span>Productos vendidos</span><span>{formatCOP(selProducts)}</span></div>}
+            <div className="finances__vl-summary-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 4 }}><span>Total ingresos generados</span><span>{formatCOP(selRevenue + selProducts)}</span></div>
 
-        <div className="finances__vl-summary-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.3)' }}><span>Reparticion</span><span></span></div>
-        <div className="finances__vl-summary-row"><span>Comisión servicios</span><span>{formatCOP(totalCommission - totalProductComm)}</span></div>
-        {totalProductComm > 0 && <div className="finances__vl-summary-row"><span>Comisión productos</span><span>{formatCOP(totalProductComm)}</span></div>}
-        {totalTips > 0 && <div className="finances__vl-summary-row" style={{ color: '#059669' }}><span>Propinas</span><span>+{formatCOP(totalTips)}</span></div>}
-        {finesTotal > 0 && <div className="finances__vl-summary-row" style={{ color: '#DC2626' }}><span>Multas</span><span>-{formatCOP(finesTotal)}</span></div>}
-        <div className="finances__vl-summary-total"><span>Total a pagar al profesional</span><span>{formatCOP(totalCommission + totalTips - finesTotal)}</span></div>
-        <div className="finances__vl-summary-row" style={{ color: '#2D5A3D', fontWeight: 700 }}><span>Ganancia del negocio</span><span>{formatCOP((totalRevenue + totalProducts) - (totalCommission + totalTips))}</span></div>
-      </div>
+            <div className="finances__vl-summary-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.3)' }}><span>Reparticion</span><span></span></div>
+            <div className="finances__vl-summary-row"><span>Comisión servicios</span><span>{formatCOP(selSvcComm)}</span></div>
+            {selProdComm > 0 && <div className="finances__vl-summary-row"><span>Comisión productos</span><span>{formatCOP(selProdComm)}</span></div>}
+            {selTips > 0 && <div className="finances__vl-summary-row" style={{ color: '#059669' }}><span>Propinas</span><span>+{formatCOP(selTips)}</span></div>}
+            {finesTotal > 0 && <div className="finances__vl-summary-row" style={{ color: '#DC2626' }}><span>Multas</span><span>-{formatCOP(finesTotal)}</span></div>}
+            <div className="finances__vl-summary-total"><span>Total a pagar al profesional</span><span>{formatCOP(selTotal)}</span></div>
+            <div className="finances__vl-summary-row" style={{ color: '#2D5A3D', fontWeight: 700 }}><span>Ganancia del negocio</span><span>{formatCOP(selBusiness)}</span></div>
+          </div>
+        );
+      })()}
 
       {voidConfirm && createPortal(
         <div className="finances__confirm-overlay" onClick={() => !voiding && setVoidConfirm(null)}>
