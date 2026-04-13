@@ -3941,7 +3941,7 @@ const TabNomina = () => {
       // Product commission only from parsed products with comm > 0
       const prodComm = selected.flatMap(v => parseProducts(v.notes)).filter(p => (p.comm || 0) > 0).reduce((s, p) => s + (p.comm || 0), 0);
       const selTips = selected.reduce((s, v) => s + (v.tip || 0), 0);
-      amount = svcComm + prodComm + selTips;
+      amount = Math.max(0, svcComm + prodComm + selTips - (staff.fines_total || 0));
     }
 
     setPayForm({
