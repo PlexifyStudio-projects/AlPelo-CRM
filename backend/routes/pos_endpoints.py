@@ -442,19 +442,43 @@ def create_checkout(
         cash_amount = sum(s.get('amount', 0) for s in splits if s.get('method') == 'efectivo')
     if cash_amount > 0 and tid:
         from database.models import CashMovement
+        # Cash received (what the client actually handed over)
+        cash_received = cash_amount
+        cash_change = 0
+        if data.payment_method == 'efectivo' and isinstance(data.payment_details, dict):
+            received = data.payment_details.get('received', 0)
+            if received and received > total:
+                cash_received = received
+                cash_change = received - total
+
         cur_balance = int(db.query(func.coalesce(func.sum(CashMovement.amount), 0)).filter(
             CashMovement.tenant_id == tid
         ).scalar() or 0)
+
+        # Register cash IN (what was received)
         db.add(CashMovement(
             tenant_id=tid,
             movement_type="sale",
-            amount=cash_amount,
-            balance_after=cur_balance + cash_amount,
+            amount=cash_received,
+            balance_after=cur_balance + cash_received,
             description=f"Cobro #{checkout.id} — {client_name}",
             reference_type="checkout",
             reference_id=checkout.id,
             created_by=getattr(current_user, "username", None),
         ))
+
+        # Register change OUT (vuelto)
+        if cash_change > 0:
+            db.add(CashMovement(
+                tenant_id=tid,
+                movement_type="withdrawal",
+                amount=-cash_change,
+                balance_after=cur_balance + cash_received - cash_change,
+                description=f"Vuelto cobro #{checkout.id} — {client_name}",
+                reference_type="checkout",
+                reference_id=checkout.id,
+                created_by=getattr(current_user, "username", None),
+            ))
 
     db.commit()
     db.refresh(checkout)
