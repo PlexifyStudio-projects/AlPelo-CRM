@@ -781,15 +781,21 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       return false;
     });
 
-    // Merge backend results — but for phone searches, also filter backend results by phone
-    const localIds = new Set(localMatches.map(a => a.id));
-    let extra = backendSearchResults.filter(a => !localIds.has(a.id));
-    if (isPhoneSearch) {
-      extra = extra.filter(a => {
+    // Merge backend results — apply SAME filter logic to avoid stale/irrelevant results
+    const matchFn = (a) => {
+      if (isPhoneSearch) {
         if (!a.client_phone) return false;
         return a.client_phone.replace(/\D/g, '').includes(qDigits);
-      });
-    }
+      }
+      const h = [a.client_name, a.service_name, a.staff_name, a.visit_code].filter(Boolean).join(' ').toLowerCase();
+      if (h.includes(q)) return true;
+      if (qDigits.length >= 4 && a.client_phone) {
+        return a.client_phone.replace(/\D/g, '').includes(qDigits);
+      }
+      return false;
+    };
+    const localIds = new Set(localMatches.map(a => a.id));
+    const extra = backendSearchResults.filter(a => !localIds.has(a.id) && matchFn(a));
 
     return [...localMatches, ...extra]
       .sort((a, b) => {
