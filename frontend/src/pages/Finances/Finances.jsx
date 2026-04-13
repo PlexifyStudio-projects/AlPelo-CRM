@@ -640,7 +640,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
               {/* Top clients */}
               <div className="finances__card">
                 <div className="finances__card-header">
-                  <h2 className="finances__card-title">{Icons.users} Clientes frecuentes</h2>
+                  <h2 className="finances__card-title">{Icons.users} Tus clientes frecuentes</h2>
                 </div>
                 {topClients.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -661,7 +661,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
               {/* Top services */}
               <div className="finances__card">
                 <div className="finances__card-header">
-                  <h2 className="finances__card-title">{Icons.receipt} Servicios mas realizados</h2>
+                  <h2 className="finances__card-title">{Icons.receipt} Tus servicios</h2>
                 </div>
                 {topServices.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -669,7 +669,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
                       <div key={i}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                           <span style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{name}</span>
-                          <span style={{ fontSize: 12, color: '#64748B', flexShrink: 0, marginLeft: 8 }}>{d.count}x · {formatCOP(d.revenue)}</span>
+                          <span style={{ fontSize: 12, color: '#64748B', flexShrink: 0, marginLeft: 8 }}>{d.count}x · Ganas {formatCOP(d.revenue)}</span>
                         </div>
                         <div style={{ height: 6, borderRadius: 3, background: '#F1F5F9', overflow: 'hidden' }}>
                           <div style={{ height: '100%', borderRadius: 3, background: ['#2D5A3D','#3B82F6','#F59E0B','#8B5CF6','#10B981'][i], width: `${(d.count / maxSvc) * 100}%`, transition: 'width 0.5s' }} />
