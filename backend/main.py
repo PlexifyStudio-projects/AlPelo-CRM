@@ -1,13 +1,27 @@
-import os
-from contextlib import asynccontextmanager
-from fastapi import FastAPI
-from middleware import setup_cors_middleware
-from auth import auth_router
-from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, template_router, lina_router, staff_router, settings_router, campaign_router, schedule_router, loyalty_router, review_router, pos_router, ai_strategy_router, push_router
-from routes.staff_payment_endpoints import router as staff_payment_router
-from routes.walkin_endpoints import router as walkin_router
-from database.connection import engine, Base
-from database.migrations import run_migrations, ensure_vapid_keys
+import os, sys, traceback
+print("[BOOT] main.py loading...", flush=True)
+try:
+    from contextlib import asynccontextmanager
+    from fastapi import FastAPI
+    print("[BOOT] FastAPI OK", flush=True)
+    from middleware import setup_cors_middleware
+    print("[BOOT] middleware OK", flush=True)
+    from auth import auth_router
+    print("[BOOT] auth OK", flush=True)
+    from routes import create_router, search_router, update_router, delete_router, ai_router, whatsapp_router, dev_router, finance_router, content_studio_router, template_router, lina_router, staff_router, settings_router, campaign_router, schedule_router, loyalty_router, review_router, pos_router, ai_strategy_router, push_router
+    print("[BOOT] routes OK", flush=True)
+    from routes.staff_payment_endpoints import router as staff_payment_router
+    print("[BOOT] staff_payment OK", flush=True)
+    from routes.walkin_endpoints import router as walkin_router
+    print("[BOOT] walkin OK", flush=True)
+    from database.connection import engine, Base
+    print("[BOOT] database OK", flush=True)
+    from database.migrations import run_migrations, ensure_vapid_keys
+    print("[BOOT] migrations OK", flush=True)
+except Exception as e:
+    print(f"[BOOT ERROR] {e}", flush=True)
+    traceback.print_exc()
+    sys.exit(1)
 
 
 
