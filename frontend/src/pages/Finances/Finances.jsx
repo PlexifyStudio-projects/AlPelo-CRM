@@ -570,8 +570,7 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo }) => {
         </div>
       )}
 
-      {/* AI Widget */}
-      {!loading && <FinanceAIWidget period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {/* AI Widget removed */}
     </>
   );
 };
