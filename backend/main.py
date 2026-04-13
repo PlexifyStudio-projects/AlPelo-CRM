@@ -13,17 +13,21 @@ from database.migrations import run_migrations, ensure_vapid_keys
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    run_migrations(engine)
-
-    # Start background scheduler for reminders and pending tasks
-    from scheduler import start_scheduler
-    start_scheduler()
-
-    # Auto-generate VAPID keys for Web Push if they don't exist
-    ensure_vapid_keys()
-
-    print("[STARTUP] Plexify Studio API ready")
+    import traceback
+    try:
+        print("[STARTUP] Step 1: create_all...")
+        Base.metadata.create_all(bind=engine)
+        print("[STARTUP] Step 2: migrations...")
+        run_migrations(engine)
+        print("[STARTUP] Step 3: scheduler...")
+        from scheduler import start_scheduler
+        start_scheduler()
+        print("[STARTUP] Step 4: VAPID keys...")
+        ensure_vapid_keys()
+        print("[STARTUP] Plexify Studio API ready")
+    except Exception as e:
+        print(f"[STARTUP ERROR] {e}")
+        traceback.print_exc()
     yield
     print("[SHUTDOWN] Stopped")
 
