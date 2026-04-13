@@ -4220,7 +4220,7 @@ const NOMINA_PERIODS = [
   { value: 'custom', label: 'Personalizado' },
 ];
 
-const TabNomina = () => {
+const TabNomina = ({ isStaffView = false, staffUser = null }) => {
   const { addNotification } = useNotification();
 
   const [nominaPeriod, setNominaPeriod] = useState('month');
@@ -4283,8 +4283,15 @@ const TabNomina = () => {
         fetchApi(`/staff-payments/summary?period_from=${dateFrom}&period_to=${dateTo}`),
         fetchApi('/staff-payments/'),
       ]);
-      setSummary(summ);
-      setPayments(pays);
+      // Staff: filter to only their own data
+      if (isStaffView && staffUser?.name) {
+        const sn = staffUser.name.toLowerCase();
+        setSummary(summ.filter(s => s.staff_name?.toLowerCase().includes(sn)));
+        setPayments(pays.filter(p => p.staff_name?.toLowerCase().includes(sn)));
+      } else {
+        setSummary(summ);
+        setPayments(pays);
+      }
     } catch (err) {
       addNotification('Error cargando nómina: ' + err.message, 'error');
     } finally {
@@ -4481,8 +4488,8 @@ const TabNomina = () => {
   return (
     <>
       <div className="finances__nom-stats">
-        {/* 1. Ganancia negocio — only show if backend provides total_revenue */}
-        {totalRevNom > 0 && (
+        {/* 1. Ganancia negocio — admin only */}
+        {!isStaffView && totalRevNom > 0 && (
           <div className="finances__nom-stat">
             <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #2D5A3D, #059669)' }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -4493,14 +4500,14 @@ const TabNomina = () => {
             </div>
           </div>
         )}
-        {/* 2. Comisiones personal */}
+        {/* 2. Total ganado */}
         <div className="finances__nom-stat">
           <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #059669, #10B981)' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           </div>
           <div className="finances__nom-stat-data">
             <span className="finances__nom-stat-value"><AnimatedNumber value={totalEarned} prefix="$" /></span>
-            <span className="finances__nom-stat-label">Comisiones personal</span>
+            <span className="finances__nom-stat-label">{isStaffView ? 'Total ganado' : 'Comisiones personal'}</span>
           </div>
         </div>
         {/* 3. Por pagar */}
@@ -4513,7 +4520,7 @@ const TabNomina = () => {
           </div>
           <div className="finances__nom-stat-data">
             <span className="finances__nom-stat-value" style={{ color: totalOwed > 0 ? '#DC2626' : '#059669' }}>{totalOwed > 0 ? <AnimatedNumber value={totalOwed} prefix="$" /> : 'Al día'}</span>
-            <span className="finances__nom-stat-label">Por pagar</span>
+            <span className="finances__nom-stat-label">{isStaffView ? 'Te deben' : 'Por pagar'}</span>
           </div>
         </div>
         {/* 4. Pagado */}
@@ -4536,16 +4543,18 @@ const TabNomina = () => {
             <span className="finances__nom-stat-label">Multas</span>
           </div>
         </div>
-        {/* 6. Profesionales */}
-        <div className="finances__nom-stat">
-          <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #7C3AED, #8B5CF6)' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        {/* 6. Profesionales — admin only */}
+        {!isStaffView && (
+          <div className="finances__nom-stat">
+            <div className="finances__nom-stat-icon" style={{ background: 'linear-gradient(135deg, #7C3AED, #8B5CF6)' }}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div className="finances__nom-stat-data">
+              <span className="finances__nom-stat-value">{summary.length}</span>
+              <span className="finances__nom-stat-label">Profesionales</span>
+            </div>
           </div>
-          <div className="finances__nom-stat-data">
-            <span className="finances__nom-stat-value">{summary.length}</span>
-            <span className="finances__nom-stat-label">Profesionales</span>
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="finances__nom-controls">
@@ -4568,7 +4577,7 @@ const TabNomina = () => {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             {fmtDate(dateFrom)} — {fmtDateFull(dateTo)}
           </span>
-          {staffWithBalance.length > 0 && (
+          {!isStaffView && staffWithBalance.length > 0 && (
             <button className="finances__nom-pay-all" onClick={openBulkModal}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               Liquidar nómina ({staffWithBalance.length})
@@ -5073,7 +5082,7 @@ const Finances = () => {
       {activeTab === 'rendimiento' && <TabRendimiento period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} staffUser={authUser} />}
-      {activeTab === 'nomina' && <TabNomina />}
+      {activeTab === 'nomina' && <TabNomina isStaffView={isStaffView} staffUser={authUser} />}
       {activeTab === 'caja' && <TabCaja />}
       {activeTab === 'dian' && <TabDian />}
     </div>
