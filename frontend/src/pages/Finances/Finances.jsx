@@ -4788,7 +4788,7 @@ const Finances = () => {
         const daysMap = {};
         (comm.items || []).forEach(i => { if (i.date) daysMap[i.date] = (daysMap[i.date] || 0) + i.commission; });
         json = {
-          total_revenue: (comm.total_commission || 0) + (comm.total_tips || 0),
+          total_revenue: comm.total_earnings || ((comm.total_commission || 0) + (comm.total_tips || 0)),
           total_visits: comm.services_count || 0,
           unique_clients: comm.unique_clients || 0,
           avg_ticket: 0,

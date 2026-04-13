@@ -486,6 +486,17 @@ def staff_commissions(
         "date": f.fine_date.isoformat() if f.fine_date else None, "is_paid": f.is_paid,
     } for f in fines]
 
+    # DEBUG: log everything for verification
+    print(f"[STAFF COMM DEBUG] Staff '{staff.name}' (id={staff.id}) period={period} ({d_from} to {d_to})")
+    print(f"[STAFF COMM DEBUG] Visits found: {len(items)}")
+    for it in items:
+        print(f"  [{it['date']}] {it['client_name']} - {it['service_name']} | amount={it['amount']} comm={it['commission']} tip={it.get('tip',0)} paid={it['is_paid']}")
+    print(f"[STAFF COMM DEBUG] TOTALS: revenue={total_revenue} commission={total_commission} paid={total_paid} pending={total_pending} tips={total_tips} fines={total_fines}")
+
+    # Paid includes tips (tips are always received immediately)
+    effective_paid = total_paid + total_tips
+    effective_total = total_commission + total_tips
+
     return {
         "period": period,
         "date_from": d_from.isoformat(),
@@ -493,10 +504,11 @@ def staff_commissions(
         "default_rate": default_rate,
         "total_revenue": total_revenue,
         "total_commission": total_commission,
-        "total_paid": total_paid,
+        "total_paid": effective_paid,
         "total_pending": total_pending,
         "total_tips": total_tips,
         "total_fines": total_fines,
+        "total_earnings": effective_total,
         "fines": fines_data,
         "services_count": len(items),
         "unique_clients": len(client_names),
