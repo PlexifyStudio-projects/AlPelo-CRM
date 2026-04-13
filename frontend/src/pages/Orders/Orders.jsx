@@ -145,12 +145,20 @@ const Orders = () => {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      // Build date range from monthFilter (YYYY-MM) to fetch only relevant appointments
+      let aptDateFrom, aptDateTo;
+      if (monthFilter) {
+        const [y, m] = monthFilter.split('-').map(Number);
+        aptDateFrom = `${y}-${pad2(m)}-01`;
+        const lastDay = new Date(y, m, 0).getDate();
+        aptDateTo = `${y}-${pad2(m)}-${pad2(lastDay)}`;
+      }
       const [orderData, svcList, staffData, invData, aptList] = await Promise.all([
         orderService.list({ page, limit: 50 }),
         servicesService.list(),
         staffService.list(),
         fetch(`${API}/inventory/products`, { credentials: 'include' }).then(r => r.ok ? r.json() : { products: [] }).catch(() => ({ products: [] })),
-        appointmentService.list({}).then(list => (Array.isArray(list) ? list.slice(0, 50) : [])).catch(() => []),
+        appointmentService.list({ date_from: aptDateFrom, date_to: aptDateTo }).then(list => (Array.isArray(list) ? list : [])).catch(() => []),
       ]);
       const orderList = orderData.orders || orderData || [];
       setTotalPages(orderData.pages || 1);
@@ -202,7 +210,7 @@ const Orders = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [monthFilter]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
