@@ -1331,16 +1331,48 @@ const Inbox = () => {
     }
   };
 
-  const handleMsgAction = (action, msg) => {
+  const [reactionMsgId, setReactionMsgId] = useState(null);
+
+  const handleMsgAction = async (action, msg) => {
+    setMsgContextMenu(null);
     switch (action) {
-      case 'reply': setReplyingTo(msg); inputRef.current?.focus(); break;
-      case 'star': toggleStar(msg.id); break;
+      case 'reply':
+        setReplyingTo(msg);
+        inputRef.current?.focus();
+        break;
+      case 'react':
+        // Toggle reaction picker for this message
+        setReactionMsgId(prev => prev === msg.id ? null : msg.id);
+        break;
+      case 'forward':
+        // Copy message text to input for manual forward
+        if (msg.content) {
+          setMessageInput(msg.content);
+          inputRef.current?.focus();
+        }
+        break;
+      case 'star':
+        toggleStar(msg.id);
+        break;
       case 'delete':
-        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+        try {
+          await whatsappService.deleteMessage(msg.id);
+          setMessages(prev => prev.filter(m => m.id !== msg.id));
+        } catch {
+          // Fallback: just remove from local state
+          setMessages(prev => prev.filter(m => m.id !== msg.id));
+        }
         break;
       default: break;
     }
-    setMsgContextMenu(null);
+  };
+
+  const handleReaction = async (msg, emoji) => {
+    setReactionMsgId(null);
+    if (!msg.wa_message_id || !selectedConvId) return;
+    try {
+      await whatsappService.sendReaction(selectedConvId, msg.wa_message_id, emoji);
+    } catch { /* silent — reaction is best-effort */ }
   };
 
   const handleEmojiSelect = (emoji) => {
@@ -2161,10 +2193,10 @@ const Inbox = () => {
                               {msg.status === 'failed' && <span className={`${b}__message-failed`}>!</span>}
                             </div>
                           </div>
-                          {msg._showReactions && (
+                          {reactionMsgId === msg.id && (
                             <div className={`${b}__quick-reactions`}>
                               {QUICK_REACTIONS.map((r, i) => (
-                                <button key={i} className={`${b}__quick-reaction`} onClick={() => { /* reaction logic */ }}>
+                                <button key={i} className={`${b}__quick-reaction`} onClick={() => handleReaction(msg, r)}>
                                   {r}
                                 </button>
                               ))}

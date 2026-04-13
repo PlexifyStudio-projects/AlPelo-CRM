@@ -1361,6 +1361,45 @@ def get_stats(db: Session = Depends(get_db), user=Depends(get_current_user)):
 
 
 # ============================================================================
+# REACTIONS — Send emoji reaction to a message via WhatsApp Cloud API
+# ============================================================================
+@router.post("/conversations/{conv_id}/react")
+def send_reaction(conv_id: int, body: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Send an emoji reaction to a WhatsApp message."""
+    tid = safe_tid(user, db)
+    conv = db.query(WhatsAppConversation).filter(WhatsAppConversation.id == conv_id).first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversacion no encontrada")
+
+    wa_msg_id = body.get("wa_message_id")
+    emoji = body.get("emoji", "")
+    if not wa_msg_id or not emoji:
+        raise HTTPException(status_code=400, detail="wa_message_id y emoji requeridos")
+
+    # Send reaction via WhatsApp Cloud API
+    token = get_wa_token(db, tid)
+    phone_id = get_wa_phone_id(db, tid)
+    if not token or not phone_id:
+        raise HTTPException(status_code=400, detail="WhatsApp no configurado")
+
+    import httpx
+    wa_version = os.getenv("WHATSAPP_API_VERSION", "v22.0")
+    url = f"https://graph.facebook.com/{wa_version}/{phone_id}/messages"
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": conv.wa_contact_phone,
+        "type": "reaction",
+        "reaction": {"message_id": wa_msg_id, "emoji": emoji},
+    }
+    resp = httpx.post(url, json=payload, headers={"Authorization": f"Bearer {token}"}, timeout=15)
+    if resp.status_code not in (200, 201):
+        raise HTTPException(status_code=502, detail=f"Error enviando reaccion: {resp.text[:200]}")
+
+    return {"ok": True, "emoji": emoji}
+
+
+# ============================================================================
 # CLEANUP — Delete failed messages
 # ============================================================================
 @router.delete("/messages/failed")

@@ -115,6 +115,20 @@ const whatsappService = {
     return handleResponse(res);
   },
 
+  deleteMessage: async (msgId) => {
+    const res = await authFetch(`${API}/whatsapp/messages/${msgId}`, { method: 'DELETE', headers });
+    return handleResponse(res);
+  },
+
+  sendReaction: async (conversationId, messageWaId, emoji) => {
+    const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/react`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ wa_message_id: messageWaId, emoji }),
+    });
+    return handleResponse(res);
+  },
+
   updateTags: async (conversationId, tags) => {
     const res = await authFetch(`${API}/whatsapp/conversations/${conversationId}/tags`, {
       method: 'PUT',
