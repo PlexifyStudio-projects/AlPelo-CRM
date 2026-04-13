@@ -1068,7 +1068,8 @@ const TabGastos = ({ period: parentPeriod, dateFrom: parentFrom, dateTo: parentT
   const [customTo, setCustomTo] = useState('');
 
   const computedDates = useMemo(() => {
-    const today = new Date();
+    const now = new Date(); now.setHours(now.getHours() - 5); // Colombia UTC-5
+    const today = now;
     const toStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     if (localPeriod === 'custom' && customFrom && customTo) return { from: customFrom, to: customTo };
     if (localPeriod === 'last_month') {
@@ -1095,7 +1096,8 @@ const TabGastos = ({ period: parentPeriod, dateFrom: parentFrom, dateTo: parentT
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const emptyForm = { category: '', subcategory: '', description: '', amount: '', date: new Date().toISOString().split('T')[0], payment_method: '', vendor: '', is_recurring: false, recurring_frequency: '' };
+  const todayCO = (() => { const d = new Date(); d.setHours(d.getHours() - 5); return d.toISOString().split('T')[0]; })();
+  const emptyForm = { category: '', subcategory: '', description: '', amount: '', date: todayCO, payment_method: '', vendor: '', is_recurring: false, recurring_frequency: '' };
   const [form, setForm] = useState(emptyForm);
 
   const buildParams = useCallback(() => {
