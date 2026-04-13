@@ -358,12 +358,25 @@ def list_invoices(
         data["receipt_url"] = checkout.receipt_url if checkout and getattr(checkout, 'receipt_url', None) else None
         data["payment_details"] = checkout.payment_details if checkout and getattr(checkout, 'payment_details', None) else None
 
-        # Get real commission rate for staff
+        # Get commission — prefer FROZEN rates from CheckoutItem, fallback to current rates
+        from database.models import CheckoutItem, StaffServiceCommission
         staff_name = None
-        commission_rate = 0.5  # default
-        if inv.items:
+        commission_rate = 0.5  # ultimate fallback
+        frozen_items = []
+        if checkout:
+            ci_list = db.query(CheckoutItem).filter(CheckoutItem.checkout_id == checkout.id).all()
+            frozen_items = [{"service_name": ci.service_name, "staff_id": ci.staff_id, "staff_name": ci.staff_name,
+                             "total": ci.total, "commission_rate": ci.commission_rate, "commission_amount": ci.commission_amount}
+                            for ci in ci_list]
+            # Use first frozen rate if available
+            for ci in ci_list:
+                if ci.commission_rate is not None:
+                    commission_rate = ci.commission_rate
+                    break
+            if ci_list:
+                staff_name = ci_list[0].staff_name
+        if not staff_name and inv.items:
             staff_name = inv.items[0].staff_name
-            # Find staff by name to get commission
             staff = db.query(Staff).filter(Staff.name == staff_name).first() if staff_name else None
             if staff:
                 comm = db.query(StaffCommission).filter(StaffCommission.staff_id == staff.id).first()
@@ -372,6 +385,7 @@ def list_invoices(
 
         data["staff_commission_rate"] = commission_rate
         data["staff_name_primary"] = staff_name
+        data["frozen_items"] = frozen_items  # Per-item frozen commissions
         result.append(data)
 
     return result

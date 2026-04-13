@@ -1074,6 +1074,8 @@ class CheckoutItem(Base):
     total = Column(Integer, nullable=False)  # quantity * unit_price
     staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=True)
     staff_name = Column(String, nullable=True)
+    commission_rate = Column(Float, nullable=True)      # Frozen at payment time (0.40 = 40%)
+    commission_amount = Column(Integer, nullable=True)  # Frozen COP amount at payment time
 
     checkout = relationship("Checkout", back_populates="items")
 

@@ -2028,13 +2028,22 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
             .sort((a, b) => new Date(b.paid_at || b.created_at) - new Date(a.paid_at || a.created_at))
             .map((inv) => {
             const isExpanded = expandedId === inv.id;
-            const commissionRate = inv.staff_commission_rate || 0.5;
             const tipAmount = inv.tip || 0;
-            // Commission on full price. IVA is business cost, not staff's.
             const serviceRevenue = inv.total - tipAmount;
-            const staffCommission = Math.round(serviceRevenue * commissionRate);
-            const staffEarnings = staffCommission + tipAmount;
             const ivaAmount = inv.tax_amount || 0;
+            // Use FROZEN commission from checkout if available (immutable after payment)
+            let staffCommission;
+            let commissionRate = inv.staff_commission_rate || 0.5;
+            const frozenItems = inv.frozen_items || [];
+            const hasFrozen = frozenItems.some(fi => fi.commission_amount != null);
+            if (hasFrozen) {
+              staffCommission = frozenItems.reduce((sum, fi) => sum + (fi.commission_amount || 0), 0);
+              const firstRate = frozenItems.find(fi => fi.commission_rate != null);
+              if (firstRate) commissionRate = firstRate.commission_rate;
+            } else {
+              staffCommission = Math.round(serviceRevenue * commissionRate);
+            }
+            const staffEarnings = staffCommission + tipAmount;
             const businessEarnings = serviceRevenue - staffCommission - ivaAmount;
             const staffNames = [...new Set((inv.items || []).filter(it => it.staff_name).map(it => it.staff_name))];
             const primaryStaff = staffNames.length > 0 ? staffNames[0] : null;

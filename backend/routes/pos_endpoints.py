@@ -13,7 +13,7 @@ from database.connection import get_db
 from database.models import (
     Admin, Checkout, CheckoutItem, CashRegister,
     Appointment, Client, Staff, Service, Tenant,
-    VisitHistory, Invoice, InvoiceItem, StaffCommission,
+    VisitHistory, Invoice, InvoiceItem, StaffCommission, StaffServiceCommission,
     Product, InventoryMovement,
 )
 from middleware.auth_middleware import get_current_user
@@ -266,8 +266,27 @@ def create_checkout(
     db.add(checkout)
     db.flush()  # get checkout.id
 
-    # ---- Create CheckoutItems ----
+    # ---- Create CheckoutItems (freeze commission rates at payment time) ----
     for item in data.items:
+        item_staff = item.staff_id or staff_id
+        item_total = item.unit_price * item.quantity
+        # Freeze commission: look up current rate and lock it
+        frozen_rate = None
+        frozen_amount = None
+        if item_staff and item.service_id:
+            ssc = db.query(StaffServiceCommission).filter(
+                StaffServiceCommission.staff_id == item_staff,
+                StaffServiceCommission.service_id == item.service_id,
+            ).first()
+            if ssc and ssc.commission_rate:
+                frozen_rate = ssc.commission_rate
+                frozen_amount = int(item_total * ssc.commission_rate)
+        # Fallback to staff default rate
+        if frozen_rate is None and item_staff:
+            sc = db.query(StaffCommission).filter(StaffCommission.staff_id == item_staff).first()
+            if sc and sc.default_rate:
+                frozen_rate = sc.default_rate
+                frozen_amount = int(item_total * sc.default_rate)
         ci = CheckoutItem(
             tenant_id=tid,
             checkout_id=checkout.id,
@@ -275,9 +294,11 @@ def create_checkout(
             service_name=item.service_name,
             quantity=item.quantity,
             unit_price=item.unit_price,
-            total=item.unit_price * item.quantity,
-            staff_id=item.staff_id or staff_id,
+            total=item_total,
+            staff_id=item_staff,
             staff_name=item.staff_name or staff_name,
+            commission_rate=frozen_rate,
+            commission_amount=frozen_amount,
         )
         db.add(ci)
 

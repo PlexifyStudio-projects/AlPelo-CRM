@@ -185,6 +185,9 @@ def run_migrations(engine):
         ("visit_history", "tip", "INTEGER NOT NULL DEFAULT 0"),
         # Fine paid status
         ("staff_fine", "is_paid", "BOOLEAN DEFAULT FALSE"),
+        # Frozen commission rates at payment time
+        ("checkout_item", "commission_rate", "FLOAT"),
+        ("checkout_item", "commission_amount", "INTEGER"),
     ]
 
     for table, column, col_type in migrations:
