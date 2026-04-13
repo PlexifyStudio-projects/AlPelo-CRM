@@ -1178,14 +1178,18 @@ def get_staff_performance(
                     commission_breakdown_extra[key]["revenue"] += int(per_svc_amount)
                     commission_breakdown_extra[key]["commission"] += svc_comm
 
-        # Extract fixed product commissions from visit notes
-        import re as _re
+        # Extract real product commissions from PRODUCTS JSON (comm field)
         product_commissions_total = 0
         for v in visits:
-            if v.notes:
-                pc_match = _re.search(r'\[PRODUCT_COMMISSION:(\d+)\]', v.notes)
-                if pc_match:
-                    product_commissions_total += int(pc_match.group(1))
+            if v.notes and '<!--PRODUCTS:' in v.notes:
+                import json as _json_pc
+                try:
+                    ps_pc = v.notes.index('<!--PRODUCTS:') + len('<!--PRODUCTS:')
+                    pe_pc = v.notes.index(':PRODUCTS-->')
+                    prods_pc = _json_pc.loads(v.notes[ps_pc:pe_pc])
+                    product_commissions_total += sum(p.get('comm', 0) or 0 for p in prods_pc)
+                except Exception:
+                    pass
         commission_amount += product_commissions_total
 
         # Merge: assigned first (sorted by commission desc), then extras

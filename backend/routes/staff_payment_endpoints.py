@@ -146,11 +146,16 @@ def get_payroll_summary(
                 else:
                     rate = default_rate
                 commission_earned += round(per_svc_amount * rate)
-            # Extract fixed product commission from notes
-            if v.notes:
-                pc_match = _re.search(r'\[PRODUCT_COMMISSION:(\d+)\]', v.notes)
-                if pc_match:
-                    product_commissions_total += int(pc_match.group(1))
+            # Extract real product commission from PRODUCTS JSON (comm field)
+            if v.notes and '<!--PRODUCTS:' in v.notes:
+                import json as _json2
+                try:
+                    ps2 = v.notes.index('<!--PRODUCTS:') + len('<!--PRODUCTS:')
+                    pe2 = v.notes.index(':PRODUCTS-->')
+                    prods2 = _json2.loads(v.notes[ps2:pe2])
+                    product_commissions_total += sum(p.get('comm', 0) or 0 for p in prods2)
+                except Exception:
+                    pass
 
         total_tips = sum(getattr(v, 'tip', 0) or 0 for v in visits)
         total_earned = commission_earned + product_commissions_total + total_tips
@@ -279,12 +284,18 @@ def get_staff_visits(
             if not is_product:
                 svc_breakdown.append({"name": name_clean, "price": int(per_svc), "rate": rate, "commission": comm_amt})
 
-        # Product commission from notes
+        # Product commission from PRODUCTS JSON (comm field), NOT from [PRODUCT_COMMISSION:X] tag
+        # The tag stored revenue in legacy data, the JSON comm field has the real commission
         prod_comm = 0
-        if v.notes:
-            pc = _re.search(r'\[PRODUCT_COMMISSION:(\d+)\]', v.notes)
-            if pc:
-                prod_comm = int(pc.group(1))
+        if v.notes and '<!--PRODUCTS:' in v.notes:
+            import json as _json
+            try:
+                ps = v.notes.index('<!--PRODUCTS:') + len('<!--PRODUCTS:')
+                pe = v.notes.index(':PRODUCTS-->')
+                prods = _json.loads(v.notes[ps:pe])
+                prod_comm = sum(p.get('comm', 0) or 0 for p in prods)
+            except Exception:
+                pass
 
         client = db.query(Client).filter(Client.id == v.client_id).first()
         result.append({
