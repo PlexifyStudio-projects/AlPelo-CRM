@@ -16,12 +16,12 @@ fi
 APP_PORT="${PORT:-8000}"
 echo "Starting API on port $APP_PORT..."
 if [ "$ENVIRONMENT" = "production" ]; then
-  echo "Mode: Production (1 worker, debug startup)"
+  echo "Mode: Production (2 workers, proxy headers)"
   exec uvicorn main:app --host 0.0.0.0 --port "$APP_PORT" \
-    --workers 1 \
+    --workers 2 \
     --proxy-headers \
     --forwarded-allow-ips="*" \
-    --log-level info
+    --log-level warning
 else
   echo "Mode: Development (auto-reload enabled)"
   exec uvicorn main:app --host 0.0.0.0 --port "$APP_PORT" --reload
