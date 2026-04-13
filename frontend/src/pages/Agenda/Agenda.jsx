@@ -128,10 +128,11 @@ class AgendaErrorBoundary extends React.Component {
   }
 }
 
-const AgendaInner = ({ staffOnlyId = null }) => {
+const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
   const isStaffMode = !!staffOnlyId;
+  const staffPrice = (price) => isStaffMode && staffCommissionRate ? formatCOP(Math.round((price || 0) * staffCommissionRate)) : formatCOP(price);
 
-  const [view, setView] = useState(() => window.innerWidth < 576 ? 'day' : 'staff');
+  const [view, setView] = useState(() => isStaffMode ? 'day' : (window.innerWidth < 576 ? 'day' : 'staff'));
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
   const [staff, setStaff] = useState([]);
@@ -407,6 +408,12 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   const staffColumns = useMemo(() => {
     if (!isStaffView) return [];
     let result = staff;
+
+    // Staff mode: only show this staff member's column
+    if (isStaffMode && staffOnlyId) {
+      result = result.filter(s => s.id === staffOnlyId || String(s.id) === String(staffOnlyId));
+      if (!searchQuery || searchQuery.length < 2) return result;
+    }
 
     if (searchQuery && searchQuery.length >= 2) {
       const q = searchQuery.toLowerCase().trim();
@@ -760,20 +767,20 @@ const AgendaInner = ({ staffOnlyId = null }) => {
     const isPhoneSearch = qDigits.length >= 7;
 
     const localMatches = appointments.filter(a => {
+      // Staff mode: only show this staff's appointments
+      if (isStaffMode && staffOnlyId && a.staff_id !== staffOnlyId && String(a.staff_id) !== String(staffOnlyId)) return false;
+
       if (isPhoneSearch) {
-        // Phone search: ONLY match by client phone
         if (!a.client_phone) return false;
         const phoneDigits = a.client_phone.replace(/\D/g, '');
         return phoneDigits.includes(qDigits);
       }
-      // Text search: match by name, service, staff, ticket, etc.
       const haystack = [
         a.client_name, a.service_name, a.staff_name,
         a.visit_code, `#${a.visit_code}`,
         a.status, STATUS_META[a.status]?.label,
       ].filter(Boolean).join(' ').toLowerCase();
       if (haystack.includes(q)) return true;
-      // Short digit search (4-6 digits): also check phone
       if (qDigits.length >= 4 && a.client_phone) {
         const phoneDigits = a.client_phone.replace(/\D/g, '');
         if (phoneDigits.includes(qDigits)) return true;
@@ -795,7 +802,11 @@ const AgendaInner = ({ staffOnlyId = null }) => {
       return false;
     };
     const localIds = new Set(localMatches.map(a => a.id));
-    const extra = backendSearchResults.filter(a => !localIds.has(a.id) && matchFn(a));
+    let extra = backendSearchResults.filter(a => !localIds.has(a.id) && matchFn(a));
+    // Staff mode: also filter backend results to only this staff
+    if (isStaffMode && staffOnlyId) {
+      extra = extra.filter(a => a.staff_id === staffOnlyId || String(a.staff_id) === String(staffOnlyId));
+    }
 
     return [...localMatches, ...extra]
       .sort((a, b) => {
@@ -1062,11 +1073,13 @@ const AgendaInner = ({ staffOnlyId = null }) => {
           <button className={`${b}__today-btn`} onClick={goToday}>Hoy</button>
         </div>
         <div className={`${b}__topbar-right`}>
-          <div className={`${b}__view-toggle`}>
-            <button className={`${b}__vt-btn ${view === 'staff' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('staff')}>Equipo</button>
-            <button className={`${b}__vt-btn ${view === 'week' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('week')}>Semana</button>
-            <button className={`${b}__vt-btn ${view === 'day' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('day')}>Dia</button>
-          </div>
+          {!isStaffMode && (
+            <div className={`${b}__view-toggle`}>
+              <button className={`${b}__vt-btn ${view === 'staff' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('staff')}>Equipo</button>
+              <button className={`${b}__vt-btn ${view === 'week' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('week')}>Semana</button>
+              <button className={`${b}__vt-btn ${view === 'day' ? `${b}__vt-btn--on` : ''}`} onClick={() => setView('day')}>Dia</button>
+            </div>
+          )}
           {!isStaffMode && (
             <button className={`${b}__create-btn`} onClick={() => openCreate()}>
               <PlusIcon /> Nueva cita
@@ -1252,7 +1265,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                                       <div className={`${b}__event-right`}>
                                         <span className={`${b}__event-service`}>{apt.service_name || ''}</span>
                                         <span className={`${b}__event-dur`}>{formatDur(apt.duration_minutes || svc?.duration_minutes)}</span>
-                                        <span className={`${b}__event-price`}>{formatCOP(apt.price)}</span>
+                                        <span className={`${b}__event-price`}>{staffPrice(apt.price)}</span>
                                       </div>
                                     </div>
                                   </div>
@@ -1466,7 +1479,7 @@ const AgendaInner = ({ staffOnlyId = null }) => {
                                 <div className={`${b}__event-right`}>
                                   <span className={`${b}__event-service`}>{apt.service_name || ''}</span>
                                   <span className={`${b}__event-dur`}>{formatDur(apt.duration_minutes || svc?.duration_minutes)}</span>
-                                  <span className={`${b}__event-price`}>{formatCOP(apt.price)}</span>
+                                  <span className={`${b}__event-price`}>{staffPrice(apt.price)}</span>
                                   <span className={`${b}__event-badge`} style={{ '--sc': statusColor }} title={statusLabel}>
                                     <span className={`${b}__event-badge-dot`} style={{ background: statusColor }} />
                                     {apt.staff_name || ''}
@@ -2138,5 +2151,5 @@ const AgendaInner = ({ staffOnlyId = null }) => {
   );
 };
 
-const Agenda = ({ staffOnlyId = null } = {}) => <AgendaErrorBoundary><AgendaInner staffOnlyId={staffOnlyId} /></AgendaErrorBoundary>;
+const Agenda = ({ staffOnlyId = null, staffCommissionRate = null } = {}) => <AgendaErrorBoundary><AgendaInner staffOnlyId={staffOnlyId} staffCommissionRate={staffCommissionRate} /></AgendaErrorBoundary>;
 export default Agenda;
