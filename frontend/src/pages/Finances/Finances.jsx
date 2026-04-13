@@ -1146,17 +1146,29 @@ const TabGastos = ({ period, dateFrom, dateTo }) => {
       {pnl && (
         <div className="finances__pnl-card">
           <div className="finances__pnl-row">
-            <span className="finances__pnl-label">Ingresos</span>
+            <span className="finances__pnl-label">Ingresos servicios y productos</span>
             <span className="finances__pnl-value finances__pnl-value--positive">{formatCOP(pnl.total_revenue)}</span>
           </div>
           <div className="finances__pnl-row">
-            <span className="finances__pnl-label">Gastos</span>
+            <span className="finances__pnl-label">Gastos operativos</span>
             <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_expenses)}</span>
           </div>
           <div className="finances__pnl-row">
-            <span className="finances__pnl-label">Comisiones</span>
+            <span className="finances__pnl-label">Comisiones personal</span>
             <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_commissions)}</span>
           </div>
+          {(pnl.total_tips || 0) > 0 && (
+            <div className="finances__pnl-row">
+              <span className="finances__pnl-label">Propinas (para personal)</span>
+              <span className="finances__pnl-value finances__pnl-value--negative">-{formatCOP(pnl.total_tips)}</span>
+            </div>
+          )}
+          {(pnl.total_fines || 0) > 0 && (
+            <div className="finances__pnl-row">
+              <span className="finances__pnl-label">Multas cobradas</span>
+              <span className="finances__pnl-value finances__pnl-value--positive">+{formatCOP(pnl.total_fines)}</span>
+            </div>
+          )}
           <div className="finances__pnl-divider" />
           <div className="finances__pnl-row finances__pnl-row--total">
             <span className="finances__pnl-label">Ganancia Neta</span>

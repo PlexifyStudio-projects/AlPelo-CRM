@@ -208,6 +208,8 @@ class PnLResponse(BaseModel):
     total_revenue: int = 0
     total_expenses: int = 0
     total_commissions: int = 0
+    total_tips: int = 0
+    total_fines: int = 0
     net_profit: int = 0
     margin_pct: float = 0.0
 

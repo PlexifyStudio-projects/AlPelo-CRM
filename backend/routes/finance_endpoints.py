@@ -564,20 +564,59 @@ def get_pnl(
     expenses = eq.all()
     total_expenses = sum(e.amount for e in expenses)
 
-    # Commissions
-    staff_rev = {}
-    for v in visits:
-        if v.staff_id not in staff_rev:
-            staff_rev[v.staff_id] = 0
-        staff_rev[v.staff_id] += v.amount
+    # Commissions — per-service rates (same logic as Nómina)
+    # Build service catalog
+    svc_cat_pnl = {}
+    svc_q_pnl = db.query(Service)
+    if tid:
+        svc_q_pnl = svc_q_pnl.filter(Service.tenant_id == tid)
+    for svc in svc_q_pnl.all():
+        svc_cat_pnl[svc.name.lower().strip()] = svc.id
+
+    # Load all commission configs
+    all_ssc = {}
+    for r in db.query(StaffServiceCommission).all():
+        all_ssc[(r.staff_id, r.service_id)] = r.commission_rate
+
+    all_default_rates = {}
+    for c in db.query(StaffCommission).all():
+        all_default_rates[c.staff_id] = c.default_rate
 
     total_commissions = 0
-    for sid, rev in staff_rev.items():
-        comm = db.query(StaffCommission).filter(StaffCommission.staff_id == sid).first()
-        rate = comm.default_rate if comm else 0.40
-        total_commissions += int(rev * rate)
+    total_tips = 0
+    for v in visits:
+        default_rate = all_default_rates.get(v.staff_id, 0.40)
+        names = v.service_name.split(',') if v.service_name else ['Otros']
+        per_svc = (v.amount or 0) / max(len(names), 1)
+        for name in names:
+            name_clean = name.strip()
+            if name_clean.startswith('[Producto]'):
+                continue  # Products: commission from notes, not %
+            svc_id = svc_cat_pnl.get(name_clean.lower().strip())
+            rate = all_ssc.get((v.staff_id, svc_id), default_rate) if svc_id else default_rate
+            total_commissions += round(per_svc * rate)
+        # Product commissions from notes
+        if v.notes and '<!--PRODUCTS:' in v.notes:
+            import json as _jpnl
+            try:
+                ps = v.notes.index('<!--PRODUCTS:') + len('<!--PRODUCTS:')
+                pe = v.notes.index(':PRODUCTS-->')
+                prods = _jpnl.loads(v.notes[ps:pe])
+                total_commissions += sum(p.get('comm', 0) or 0 for p in prods)
+            except Exception:
+                pass
+        total_tips += getattr(v, 'tip', 0) or 0
 
-    net_profit = total_revenue - total_expenses - total_commissions
+    # Fines (income for business)
+    fines_q = db.query(StaffFine).filter(
+        StaffFine.fine_date >= start,
+        StaffFine.fine_date <= end,
+    )
+    if tid:
+        fines_q = fines_q.filter(StaffFine.tenant_id == tid)
+    total_fines = sum(f.amount for f in fines_q.all())
+
+    net_profit = total_revenue - total_expenses - total_commissions - total_tips + total_fines
     margin_pct = round((net_profit / total_revenue * 100), 1) if total_revenue > 0 else 0.0
 
     return PnLResponse(
@@ -587,6 +626,8 @@ def get_pnl(
         total_revenue=total_revenue,
         total_expenses=total_expenses,
         total_commissions=total_commissions,
+        total_tips=total_tips,
+        total_fines=total_fines,
         net_profit=net_profit,
         margin_pct=margin_pct,
     )
