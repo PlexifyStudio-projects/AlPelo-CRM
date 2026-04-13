@@ -1071,63 +1071,56 @@
 
   &__tab-selector {
     display: flex;
-    gap: 2px;
-    background: $color-white;
-    border-radius: $border-radius-xl;
-    border: 1.5px solid $color-gray-200;
-    padding: 4px;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 14px;
+    padding: 5px;
     margin-bottom: $spacing-xl;
     width: 100%;
-    box-shadow: $shadow-sm;
-    position: relative;
 
     @media (max-width: $breakpoint-md) {
       overflow-x: auto;
 
-      &::-webkit-scrollbar {
-        display: block;
-        height: 6px;
-      }
-      &::-webkit-scrollbar-thumb {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 3px;
-      }
+      &::-webkit-scrollbar { display: none; }
     }
   }
 
   &__tab-btn {
     flex: 1;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border: none;
     background: transparent;
-    border-radius: calc(#{$border-radius-xl} - 3px);
+    border-radius: 10px;
     font-family: $font-primary;
-    font-size: $font-size-sm;
+    font-size: 13px;
     font-weight: 600;
-    color: $color-gray-400;
+    color: rgba(0, 0, 0, 0.4);
     cursor: pointer;
-    transition: all 250ms $ease-out-expo;
+    transition: all 200ms ease;
     white-space: nowrap;
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 7px;
 
-    svg { opacity: 0.5; transition: opacity 200ms; }
+    svg {
+      opacity: 0.4;
+      transition: opacity 200ms;
+      flex-shrink: 0;
+    }
 
     &:hover:not(&--active) {
-      color: $color-gray-900;
-      background: rgba(0, 0, 0, 0.02);
-      svg { opacity: 0.7; }
+      color: rgba(0, 0, 0, 0.7);
+      background: rgba(255, 255, 255, 0.6);
+      svg { opacity: 0.6; }
     }
 
     &--active {
       background: $color-white;
       color: $color-primary;
-      box-shadow: $shadow-sm, 0 0 0 1px rgba(30, 64, 175, 0.06);
-      font-weight: $font-weight-bold;
-      svg { opacity: 1; }
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
+      font-weight: 700;
+      svg { opacity: 1; color: $color-primary; }
     }
   }
 
