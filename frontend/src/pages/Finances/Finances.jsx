@@ -490,11 +490,12 @@ const PaymentMethodsCard = ({ period, dateFrom, dateTo }) => {
 
 const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = false }) => {
   const hasData = data && data.total_visits > 0;
-  // Staff: compute their commission from total_revenue * avg commission rate
-  // For now we approximate — the real data comes from the same summary endpoint
+  // Staff: data.total_revenue already IS the commission (transformed in fetchData)
   const staffCommRate = data?.staff_commission_rate || 0.45;
-  const staffEarnings = isStaffView ? Math.round((data?.total_revenue || 0) * staffCommRate) : null;
+  const staffEarnings = isStaffView ? (data?.total_revenue || 0) : null;
   const daysWorked = isStaffView ? (data?.revenue_by_day || []).filter(d => d.revenue > 0).length : null;
+  const staffPendingPay = isStaffView ? (data?._staff_data?.commission?.total_pending || 0) : 0;
+  const staffFines = isStaffView ? (data?._staff_data?.stats?.fines_total || 0) : 0;
 
   return (
     <>
@@ -549,6 +550,15 @@ const TabResumen = ({ data, loading, period, dateFrom, dateTo, isStaffView = fal
             <div className="finances__kpi-info">
               <span className="finances__kpi-value"><AnimatedNumber value={data?.pending_payments || 0} /></span>
               <span className="finances__kpi-label">Pagos Pendientes</span>
+            </div>
+          </div>
+        )}
+        {isStaffView && staffPendingPay > 0 && (
+          <div className="finances__kpi-card" style={{ borderLeft: '3px solid #F59E0B' }}>
+            <div className="finances__kpi-icon" style={{ color: '#F59E0B', background: 'rgba(245,158,11,0.08)' }}>{Icons.clock}</div>
+            <div className="finances__kpi-info">
+              <span className="finances__kpi-value"><AnimatedNumber value={staffPendingPay} prefix="$" /></span>
+              <span className="finances__kpi-label">Por Cobrar</span>
             </div>
           </div>
         )}
@@ -4733,19 +4743,45 @@ const Finances = () => {
   const fetchData = useCallback(async (p, isRefresh = false, customFrom, customTo) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     try {
-      let url = `${API_URL}/finances/summary?period=${p}`;
-      if (p === 'custom' && customFrom && customTo) {
-        url = `${API_URL}/finances/summary?period=custom&date_from=${customFrom}&date_to=${customTo}`;
+      let json;
+      if (isStaffView) {
+        // Staff: use /my/commissions for their own data
+        const commRes = await fetch(`${API_URL}/my/commissions?period=${p}`, { credentials: 'include' });
+        if (!commRes.ok) throw new Error('Error cargando datos');
+        const comm = await commRes.json();
+        // Also get stats for extra info
+        const statsRes = await fetch(`${API_URL}/my/stats`, { credentials: 'include' });
+        const stats = statsRes.ok ? await statsRes.json() : {};
+        // Transform to the format TabResumen expects
+        const daysMap = {};
+        (comm.items || []).forEach(i => { if (i.date) daysMap[i.date] = (daysMap[i.date] || 0) + i.commission; });
+        const uniqueClients = new Set((comm.items || []).map(i => i.client_name)).size;
+        json = {
+          total_revenue: comm.total_commission || 0,
+          total_visits: comm.services_count || 0,
+          unique_clients: uniqueClients,
+          avg_ticket: 0,
+          revenue_by_day: Object.entries(daysMap).sort().map(([d, r]) => ({ date: d, day: new Date(d + 'T12:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric' }), revenue: r })),
+          revenue_growth_pct: null,
+          visits_growth_pct: null,
+          staff_commission_rate: stats.commission_rate || 0.45,
+          _staff_data: { commission: comm, stats },
+        };
+      } else {
+        let url = `${API_URL}/finances/summary?period=${p}`;
+        if (p === 'custom' && customFrom && customTo) {
+          url = `${API_URL}/finances/summary?period=custom&date_from=${customFrom}&date_to=${customTo}`;
+        }
+        const res = await fetch(url, {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Error de servidor' }));
+          throw new Error(err.detail || `HTTP ${res.status}`);
+        }
+        json = await res.json();
       }
-      const res = await fetch(url, {
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'Error de servidor' }));
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-      const json = await res.json();
       setData(json);
       setError(null);
     } catch (err) {
