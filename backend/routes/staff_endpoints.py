@@ -94,6 +94,35 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
         VisitHistory.tenant_id == tid,
     ).count()
 
+    # Visits this month (with details for the list)
+    from datetime import timedelta as _td2
+    month_start = today.replace(day=1)
+    month_visits = db.query(VisitHistory).filter(
+        VisitHistory.staff_id == staff.id,
+        VisitHistory.status == "completed",
+        VisitHistory.tenant_id == tid,
+        VisitHistory.visit_date >= month_start,
+        VisitHistory.visit_date <= today,
+    ).order_by(VisitHistory.visit_date.desc(), VisitHistory.created_at.desc()).all()
+
+    month_visits_data = []
+    for v in month_visits:
+        client = db.query(Client).filter(Client.id == v.client_id).first()
+        month_visits_data.append({
+            "id": v.id,
+            "client_name": client.name if client else "Cliente",
+            "service_name": v.service_name,
+            "amount": v.amount,
+            "commission": int(v.amount * commission_rate),
+            "tip": v.tip or 0,
+            "visit_date": v.visit_date.isoformat() if v.visit_date else None,
+            "payment_method": v.payment_method,
+        })
+
+    month_commission = sum(int(v.amount * commission_rate) for v in month_visits)
+    month_tips = sum(v.tip or 0 for v in month_visits)
+    month_revenue = sum(v.amount for v in month_visits)
+
     return {
         "staff_name": staff.name,
         "staff_role": staff.role,
@@ -108,6 +137,10 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
         "revenue_yesterday": revenue_yesterday,
         "visits_today": visits_today,
         "total_visits": total_visits,
+        "month_visits": month_visits_data,
+        "month_commission": month_commission,
+        "month_tips": month_tips,
+        "month_revenue": month_revenue,
         "next_appointment": next_appt,
     }
 
@@ -166,11 +199,11 @@ def staff_notifications(db: Session = Depends(get_db), current_user=Depends(get_
     tid = staff.tenant_id
     today = now_colombia().date()
 
-    # Get today's confirmed appointments
+    # Get ALL today's appointments (confirmed, completed, paid — not cancelled/no_show)
     appts = db.query(Appointment).filter(
         Appointment.staff_id == staff.id,
         Appointment.date == today,
-        Appointment.status == "confirmed",
+        Appointment.status.in_(["confirmed", "completed", "paid"]),
         Appointment.tenant_id == tid,
     ).order_by(Appointment.time).all()
 
@@ -180,10 +213,13 @@ def staff_notifications(db: Session = Depends(get_db), current_user=Depends(get_
         notifications.append({
             "id": a.id,
             "type": "appointment",
+            "status": a.status,
             "message": f"Tienes una cita con {a.client_name} a las {a.time} por {svc.name if svc else 'Servicio'}",
             "time": a.time,
             "client_name": a.client_name,
             "service_name": svc.name if svc else "Servicio",
+            "duration_minutes": a.duration_minutes,
+            "price": a.price or 0,
         })
 
     return notifications
