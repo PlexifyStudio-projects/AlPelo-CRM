@@ -484,7 +484,7 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                         elif na == "add_note":
                             retry_msg += '```action\n{"action":"add_note","search_name":"...","content":"PENDIENTE: ..."}\n```\n'
                     retry_msg += f"Rellena los datos reales del cliente y responde.]\n\n{inbound_text}"
-                    retry_response = await _call_ai(system_prompt, history, retry_msg, tenant_id=_conv_tid, max_tokens=500)
+                    retry_response = await _call_ai(system_prompt, history, retry_msg, tenant_id=_conv_tid, max_tokens=800)
                     if retry_response:
                         # Re-parse actions from retry
                         for ch in '\u201c\u201d\u00ab\u00bb\u201e\u201f':
@@ -500,11 +500,14 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
 
                         if retry_actions:
                             action_matches = retry_actions
+                            ai_response = retry_response  # Use retry response (has action blocks)
                             print(f"[Lina IA] Retry SUCCESS — found {len(retry_actions)} action(s)")
                             log_event("accion", "Reintento exitoso — acciones encontradas", detail=f"{len(retry_actions)} accion(es) recuperadas", conv_id=conv_id, status="ok")
                         else:
-                            print(f"[Lina IA] Retry FAILED — still no actions")
-                            log_event("error", "Reintento fallido — Lina no incluyo acciones", detail="Dos intentos sin bloque action", conv_id=conv_id, status="error")
+                            print(f"[Lina IA] Retry FAILED — still no actions. Replacing 'Listo' with safe response.")
+                            log_event("error", "Reintento fallido — Lina no incluyo acciones", detail="Dos intentos sin bloque action. Respuesta reemplazada.", conv_id=conv_id, status="error")
+                            # SAFETY: NEVER send "Listo! Te agendo..." if no action was executed
+                            ai_response = "Disculpa, estoy teniendo un inconveniente tecnico para agendar. Por favor intenta de nuevo en un momento o comunicate directamente con nosotros."
 
             for action_json in action_matches:
                 try:
@@ -643,8 +646,17 @@ async def ai_auto_reply(conv_id: int, to_phone: str, inbound_text: str, inbound_
                     print(f"[Lina IA] Action parse error: {action_err}")
                     log_event("error", "Error parseando accion", detail=str(action_err)[:200], conv_id=conv_id, status="error")
 
-            # ACTION RESULTS HANDLING: Generate follow-up response with action results
+            # SAFETY NET: If AI promised an action but ZERO actions were executed, fix response
             _all_results = getattr(ai_auto_reply, '_action_results', [])
+            if not _all_results and not action_matches:
+                response_lower = ai_response.lower()
+                _falsely_promised = any(w in response_lower for w in _PROMISE_WORDS)
+                if _falsely_promised:
+                    print(f"[Lina IA] SAFETY NET: AI promised action but 0 executed. Replacing response.")
+                    log_event("error", "Safety net: respuesta falsa reemplazada", detail=f"Original: {ai_response[:100]}", conv_id=conv_id, status="error")
+                    ai_response = "Disculpa, estoy teniendo un inconveniente para procesar tu solicitud. Por favor intenta de nuevo en un momento."
+
+            # ACTION RESULTS HANDLING: Generate follow-up response with action results
             _conflicts = [r for r in _all_results if "CONFLICTO" in r]
             _errors = [r for r in _all_results if "ERROR" in r and "CONFLICTO" not in r]
             _successes = [r for r in _all_results if "CONFLICTO" not in r and "ERROR" not in r]
