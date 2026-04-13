@@ -2263,32 +2263,48 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                   <div className="finances__sale-detail">
                     <div className="finances__sale-detail-grid">
                       <div className="finances__sale-detail-col">
-                        <h4>Detalle de venta</h4>
+                        <h4>{isStaffView ? 'Servicios realizados' : 'Detalle de venta'}</h4>
                         <div className="finances__sale-detail-items">
-                          {(inv.items || []).map((item, idx) => (
-                            <div key={idx} className="finances__sale-detail-item">
-                              <div className="finances__sale-detail-item-main">
-                                <span className="finances__sale-detail-item-name">{item.service_name}</span>
-                                <span className="finances__sale-detail-item-price">{formatCOP(item.total)}</span>
+                          {(inv.items || []).map((item, idx) => {
+                            const itemComm = Math.round((item.total || 0) * commissionRate);
+                            return (
+                              <div key={idx} className="finances__sale-detail-item">
+                                <div className="finances__sale-detail-item-main">
+                                  <span className="finances__sale-detail-item-name">{item.service_name}</span>
+                                  <span className="finances__sale-detail-item-price" style={isStaffView ? { color: '#059669' } : {}}>
+                                    {isStaffView ? formatCOP(itemComm) : formatCOP(item.total)}
+                                  </span>
+                                </div>
+                                <div className="finances__sale-detail-item-meta">
+                                  {!isStaffView && item.staff_name && <span>Profesional: {item.staff_name}</span>}
+                                  <span>Cant: {item.quantity}</span>
+                                  {!isStaffView && <span>P/U: {formatCOP(item.unit_price)}</span>}
+                                  {isStaffView && <span>Tu ganancia ({Math.round(commissionRate * 100)}%)</span>}
+                                </div>
                               </div>
-                              <div className="finances__sale-detail-item-meta">
-                                {item.staff_name && <span>Profesional: {item.staff_name}</span>}
-                                <span>Cant: {item.quantity}</span>
-                                <span>P/U: {formatCOP(item.unit_price)}</span>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
 
                       <div className="finances__sale-detail-col">
-                        <h4>Resumen financiero</h4>
+                        <h4>{isStaffView ? 'Tu ganancia' : 'Resumen financiero'}</h4>
                         <div className="finances__sale-detail-summary">
-                          <div className="finances__sale-summary-line"><span>Subtotal</span><span>{formatCOP(inv.subtotal)}</span></div>
-                          {inv.discount_amount > 0 && <div className="finances__sale-summary-line finances__sale-summary-line--discount"><span>Descuento</span><span>-{formatCOP(inv.discount_amount)}</span></div>}
-                          {inv.tax_amount > 0 && <div className="finances__sale-summary-line"><span>IVA ({(inv.tax_rate * 100).toFixed(0)}%)</span><span>{formatCOP(inv.tax_amount)}</span></div>}
-                          {inv.tip > 0 && <div className="finances__sale-summary-line"><span>Propina</span><span>+{formatCOP(inv.tip)}</span></div>}
-                          <div className="finances__sale-summary-line finances__sale-summary-line--total"><span>TOTAL</span><span>{formatCOP(inv.total)}</span></div>
+                          {isStaffView ? (
+                            <>
+                              <div className="finances__sale-summary-line"><span>Tu comision</span><span>{formatCOP(staffCommission)}</span></div>
+                              {inv.tip > 0 && <div className="finances__sale-summary-line"><span>Propina</span><span style={{ color: '#10B981' }}>+{formatCOP(inv.tip)}</span></div>}
+                              <div className="finances__sale-summary-line finances__sale-summary-line--total"><span>TU TOTAL</span><span>{formatCOP(staffCommission + (inv.tip || 0))}</span></div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="finances__sale-summary-line"><span>Subtotal</span><span>{formatCOP(inv.subtotal)}</span></div>
+                              {inv.discount_amount > 0 && <div className="finances__sale-summary-line finances__sale-summary-line--discount"><span>Descuento</span><span>-{formatCOP(inv.discount_amount)}</span></div>}
+                              {inv.tax_amount > 0 && <div className="finances__sale-summary-line"><span>IVA ({(inv.tax_rate * 100).toFixed(0)}%)</span><span>{formatCOP(inv.tax_amount)}</span></div>}
+                              {inv.tip > 0 && <div className="finances__sale-summary-line"><span>Propina</span><span>+{formatCOP(inv.tip)}</span></div>}
+                              <div className="finances__sale-summary-line finances__sale-summary-line--total"><span>TOTAL</span><span>{formatCOP(inv.total)}</span></div>
+                            </>
+                          )}
                           {inv.payment_method === 'efectivo' && inv.payment_details?.received > 0 && (
                             <>
                               <div className="finances__sale-summary-line" style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed #e2e8f0' }}>
@@ -2352,14 +2368,16 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                               <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 6, paddingTop: 6 }}>
                                 <div className="finances__sale-commission-row">
                                   <span className="finances__sale-commission-dot finances__sale-commission-dot--staff" />
-                                  <span>Total comisiones</span>
+                                  <span>{isStaffView ? 'Tu ganancia' : 'Total comisiones'}</span>
                                   <strong style={{ color: '#059669' }}>{formatCOP(totalComm)}</strong>
                                 </div>
-                                <div className="finances__sale-commission-row">
-                                  <span className="finances__sale-commission-dot finances__sale-commission-dot--biz" />
-                                  <span>Ganancia negocio</span>
-                                  <strong>{formatCOP(bizEarnings)}</strong>
-                                </div>
+                                {!isStaffView && (
+                                  <div className="finances__sale-commission-row">
+                                    <span className="finances__sale-commission-dot finances__sale-commission-dot--biz" />
+                                    <span>Ganancia negocio</span>
+                                    <strong>{formatCOP(bizEarnings)}</strong>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           );
@@ -2415,12 +2433,12 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                         );
                       })()}
                       <div className="finances__sale-detail-actions">
-                        {(inv.status === 'draft' || inv.status === 'sent') && (
+                        {!isStaffView && (inv.status === 'draft' || inv.status === 'sent') && (
                           <button className="finances__btn-primary" style={{ padding: '6px 14px', fontSize: '12px' }} onClick={() => handleStatusChange(inv.id, 'paid')}>
                             {Icons.check} Marcar pagada
                           </button>
                         )}
-                        {inv.status !== 'cancelled' && (
+                        {!isStaffView && inv.status !== 'cancelled' && (
                           <button className="finances__icon-btn finances__icon-btn--danger" onClick={() => handleStatusChange(inv.id, 'cancelled')} title="Anular">
                             {Icons.trash}
                           </button>
