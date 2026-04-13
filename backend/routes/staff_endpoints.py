@@ -69,6 +69,31 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
     commission = db.query(StaffCommission).filter(StaffCommission.staff_id == staff.id).first()
     commission_rate = commission.default_rate if commission else 0.4
 
+    # Yesterday revenue (for comparison)
+    from datetime import timedelta as _td
+    yesterday = today - _td(days=1)
+    revenue_yesterday = db.query(func.coalesce(func.sum(VisitHistory.amount), 0)).filter(
+        VisitHistory.staff_id == staff.id,
+        VisitHistory.visit_date == yesterday,
+        VisitHistory.status == "completed",
+        VisitHistory.tenant_id == tid,
+    ).scalar() or 0
+
+    # Total visits (all time)
+    total_visits = db.query(func.count(VisitHistory.id)).filter(
+        VisitHistory.staff_id == staff.id,
+        VisitHistory.status == "completed",
+        VisitHistory.tenant_id == tid,
+    ).scalar() or 0
+
+    # Visits today
+    visits_today = db.query(VisitHistory).filter(
+        VisitHistory.staff_id == staff.id,
+        VisitHistory.visit_date == today,
+        VisitHistory.status == "completed",
+        VisitHistory.tenant_id == tid,
+    ).count()
+
     return {
         "staff_name": staff.name,
         "staff_role": staff.role,
@@ -79,6 +104,10 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
         "revenue_today": revenue_today,
         "commission_rate": commission_rate,
         "commission_today": int(revenue_today * commission_rate),
+        "commission_yesterday": int(revenue_yesterday * commission_rate),
+        "revenue_yesterday": revenue_yesterday,
+        "visits_today": visits_today,
+        "total_visits": total_visits,
         "next_appointment": next_appt,
     }
 
