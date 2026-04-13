@@ -1632,7 +1632,7 @@ const STATUS_ICONS = {
   cancelled: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
 };
 
-const TabFacturas = ({ period, dateFrom, dateTo }) => {
+const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser = null }) => {
   const { addNotification } = useNotification();
   const { tenant } = useTenant();
   const [invoices, setInvoices] = useState([]);
@@ -1674,7 +1674,15 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await financeService.listInvoices();
+      let data = await financeService.listInvoices();
+      // Staff: only show invoices where this staff is assigned
+      if (isStaffView && staffUser?.name) {
+        const staffName = staffUser.name.toLowerCase();
+        data = data.filter(inv =>
+          (inv.items || []).some(it => it.staff_name && it.staff_name.toLowerCase().includes(staffName)) ||
+          inv.staff_name_primary?.toLowerCase().includes(staffName)
+        );
+      }
       setInvoices(data);
     } catch (err) {
       addNotification('Error cargando facturas: ' + err.message, 'error');
@@ -1916,9 +1924,11 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
         <h3 className="finances__section-title">
           {invoices.length > 0 ? `${invoices.length} factura${invoices.length !== 1 ? 's' : ''}` : 'Facturas'}
         </h3>
-        <button className="finances__action-btn" onClick={() => { showForm ? resetForm() : setShowForm(true); }}>
-          {Icons.plus} Nueva Factura
-        </button>
+        {!isStaffView && (
+          <button className="finances__action-btn" onClick={() => { showForm ? resetForm() : setShowForm(true); }}>
+            {Icons.plus} Nueva Factura
+          </button>
+        )}
       </div>
       {showForm && (
         <form className="finances__invoice-form" onSubmit={handleSubmit}>
@@ -2226,9 +2236,9 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                   </span>
                   <span className="finances__sale-td finances__sale-td--client" style={{ flex: 1 }}>
                     <strong>{inv.client_name}</strong>
-                    {inv.client_phone && <small>{inv.client_phone}</small>}
-                    {inv.client_document && <small>{inv.client_document_type || 'CC'}: {inv.client_document}</small>}
-                    {inv.client_email && <small>{inv.client_email}</small>}
+                    {!isStaffView && inv.client_phone && <small>{inv.client_phone}</small>}
+                    {!isStaffView && inv.client_document && <small>{inv.client_document_type || 'CC'}: {inv.client_document}</small>}
+                    {!isStaffView && inv.client_email && <small>{inv.client_email}</small>}
                   </span>
                   <span className="finances__sale-td finances__sale-td--services" style={{ flex: 1.5 }}>
                     {(inv.items || []).map((item, idx) => (
@@ -2364,8 +2374,8 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
                         <span>Fecha: {new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         <span>Pago: {methodLabel}{inv.payment_terms === 'credito' ? ' (Credito)' : ''}</span>
                         {inv.due_date && <span style={{ color: new Date(inv.due_date) < new Date() && inv.status !== 'paid' ? '#DC2626' : '#D97706' }}>Vence: {new Date(inv.due_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
-                        {inv.client_document && <span>{inv.client_document_type || 'CC'}: {inv.client_document}</span>}
-                        {inv.client_email && <span>{inv.client_email}</span>}
+                        {!isStaffView && inv.client_document && <span>{inv.client_document_type || 'CC'}: {inv.client_document}</span>}
+                        {!isStaffView && inv.client_email && <span>{inv.client_email}</span>}
                       </div>
                       {inv.receipt_url && (() => {
                         const url = inv.receipt_url;
@@ -5007,7 +5017,7 @@ const Finances = () => {
       {activeTab === 'reportes' && <TabReportes period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'rendimiento' && <TabRendimiento period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-      {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} staffUser={authUser} />}
       {activeTab === 'nomina' && <TabNomina />}
       {activeTab === 'caja' && <TabCaja />}
       {activeTab === 'dian' && <TabDian />}
