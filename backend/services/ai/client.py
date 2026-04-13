@@ -209,8 +209,21 @@ async def call_ai(system_prompt: str, history: list, user_message: str, image_b6
     except Exception as e:
         error_str = str(e)[:200]
         print(f"[AI WhatsApp] Claude ({model}) failed: {error_str}")
-        from activity_log import log_event
-        log_event("error", f"Fallo llamada a Claude: {error_str}", detail=f"Modelo: {model}. Verificar API key y creditos.", status="error", tenant_id=tenant_id)
+
+        # Fallback: if Sonnet failed (529 overloaded), try Haiku
+        if model != HAIKU_MODEL and "529" in error_str:
+            try:
+                print(f"[AI WhatsApp] Sonnet 529 — falling back to Haiku")
+                text, tokens = await call_anthropic(anthropic_key, HAIKU_MODEL, system_prompt, messages, 0.4, max_tokens)
+                try:
+                    from routes._usage_tracker import track_ai_usage
+                    track_ai_usage(tokens, tenant_id=tenant_id)
+                except Exception:
+                    pass
+                return text.strip()
+            except Exception as e2:
+                print(f"[AI WhatsApp] Haiku fallback also failed: {str(e2)[:100]}")
+
         return None
 
 

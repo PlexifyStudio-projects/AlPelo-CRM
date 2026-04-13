@@ -670,6 +670,7 @@ const ClientSidebar = ({ conversation, onClose, starredMsgIds, onDelete, getNote
 const LinaThinking = ({ convId }) => {
   const [steps, setSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(null);
+  const [expired, setExpired] = useState(false);
   const seenIdsRef = useRef(new Set());
   const startTimeRef = useRef(Date.now());
 
@@ -677,8 +678,12 @@ const LinaThinking = ({ convId }) => {
     if (!convId) return;
     seenIdsRef.current = new Set();
     setSteps([]);
+    setExpired(false);
     setCurrentStep({ text: 'Procesando mensaje...', icon: '💬' });
     startTimeRef.current = Date.now();
+
+    // Auto-hide after 45s if no response comes
+    const timeout = setTimeout(() => setExpired(true), 45000);
 
     const poll = async () => {
       try {
@@ -721,8 +726,10 @@ const LinaThinking = ({ convId }) => {
 
     const interval = setInterval(poll, 2000);
     poll(); // First poll immediately
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
   }, [convId]);
+
+  if (expired) return null;
 
   return (
     <div className={`${b}__lina-thinking`}>
