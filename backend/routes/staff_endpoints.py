@@ -79,11 +79,14 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
         VisitHistory.tenant_id == tid,
     ).scalar() or 0
 
-    # Total visits (all time)
+    # Total visits this month
+    from datetime import timedelta as _td_early
+    _month_start = today.replace(day=1)
     total_visits = db.query(func.count(VisitHistory.id)).filter(
         VisitHistory.staff_id == staff.id,
         VisitHistory.status == "completed",
         VisitHistory.tenant_id == tid,
+        VisitHistory.visit_date >= _month_start,
     ).scalar() or 0
 
     # Visits today
@@ -151,6 +154,33 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
     month_tips = sum(v.tip or 0 for v in month_visits)
     month_revenue = sum(v.amount for v in month_visits)
 
+    # Product commissions this month (from CheckoutItem where staff sold products)
+    from database.models import CheckoutItem, Checkout
+    month_product_comm = 0
+    month_products = []
+    try:
+        product_items = (
+            db.query(CheckoutItem)
+            .join(Checkout, CheckoutItem.checkout_id == Checkout.id)
+            .filter(
+                CheckoutItem.staff_id == staff.id,
+                CheckoutItem.tenant_id == tid,
+                CheckoutItem.service_name.like("[Producto]%"),
+                Checkout.created_at >= datetime.combine(month_start, datetime.min.time()),
+            )
+            .all()
+        )
+        for pi in product_items:
+            pc = pi.commission_amount or (int(pi.total * commission_rate) if pi.total else 0)
+            month_product_comm += pc
+            month_products.append({
+                "name": pi.service_name.replace("[Producto] ", ""),
+                "amount": pi.total or 0,
+                "commission": pc,
+            })
+    except Exception:
+        pass
+
     return {
         "staff_name": staff.name,
         "staff_role": staff.role,
@@ -169,6 +199,8 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
         "month_commission": month_commission,
         "month_tips": month_tips,
         "month_revenue": month_revenue,
+        "month_product_comm": month_product_comm,
+        "month_products": month_products,
         "next_appointment": next_appt,
     }
 

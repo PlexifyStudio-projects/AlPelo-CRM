@@ -92,7 +92,7 @@ const StaffDashboard = ({ user, onNavigate }) => {
         <div className={`${b}__stat`}>
           <span className={`${b}__stat-ic ${b}__stat-ic--p`}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg></span>
           <span className={`${b}__stat-val`}>{s.total_visits || 0}</span>
-          <span className={`${b}__stat-lbl`}>Total visitas</span>
+          <span className={`${b}__stat-lbl`}>Visitas mes</span>
         </div>
       </div>
 
@@ -157,10 +157,21 @@ const StaffDashboard = ({ user, onNavigate }) => {
           <div className={`${b}__pnl`}>
             <div className={`${b}__pnl-h`}><h2>Resumen {monthName}</h2></div>
             <div className={`${b}__month-summary`}>
-              <div className={`${b}__month-row`}><span>Comisiones</span><span className={`${b}__month-val`}>{fmt(s.month_commission || 0)}</span></div>
+              <div className={`${b}__month-row`}><span>Comisiones servicios</span><span className={`${b}__month-val`}>{fmt(s.month_commission || 0)}</span></div>
+              {(s.month_product_comm || 0) > 0 && <div className={`${b}__month-row`}><span>Comisiones productos</span><span className={`${b}__month-val`}>{fmt(s.month_product_comm)}</span></div>}
               <div className={`${b}__month-row`}><span>Propinas</span><span className={`${b}__month-val ${b}__month-val--tip`}>+{fmt(s.month_tips || 0)}</span></div>
-              <div className={`${b}__month-row ${b}__month-row--total`}><span>Total a recibir</span><span>{fmt((s.month_commission || 0) + (s.month_tips || 0))}</span></div>
+              <div className={`${b}__month-row ${b}__month-row--total`}><span>Total a recibir</span><span>{fmt((s.month_commission || 0) + (s.month_product_comm || 0) + (s.month_tips || 0))}</span></div>
               <div className={`${b}__month-row ${b}__month-row--visits`}><span>Visitas del mes</span><span>{monthVisits.length}</span></div>
+              {(s.month_products || []).length > 0 && (
+                <>
+                  <div className={`${b}__month-row ${b}__month-row--visits`} style={{ marginTop: 8 }}><span>Productos vendidos</span><span>{(s.month_products || []).length}</span></div>
+                  {(s.month_products || []).map((p, i) => (
+                    <div key={i} className={`${b}__month-row`} style={{ fontSize: 11, paddingLeft: 8, color: '#94A3B8' }}>
+                      <span>{p.name}</span><span className={`${b}__month-val`}>{fmt(p.commission)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>
