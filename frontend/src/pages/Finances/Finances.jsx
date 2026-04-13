@@ -2266,7 +2266,11 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                         <h4>{isStaffView ? 'Servicios realizados' : 'Detalle de venta'}</h4>
                         <div className="finances__sale-detail-items">
                           {(inv.items || []).map((item, idx) => {
-                            const itemComm = Math.round((item.total || 0) * commissionRate);
+                            // Find frozen commission for this specific item
+                            const frozenItem = frozenItems.find(fi => fi.service_name === item.service_name && fi.staff_id === item.staff_id);
+                            const itemRate = frozenItem?.commission_rate || (item.staff_id && item.service_id ? (svcCommRates[`${item.staff_id}-${item.service_id}`] || commissionRate) : commissionRate);
+                            const itemComm = frozenItem?.commission_amount || Math.round((item.total || 0) * itemRate);
+                            const itemPct = Math.round(itemRate * 100);
                             return (
                               <div key={idx} className="finances__sale-detail-item">
                                 <div className="finances__sale-detail-item-main">
@@ -2279,7 +2283,7 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                                   {!isStaffView && item.staff_name && <span>Profesional: {item.staff_name}</span>}
                                   <span>Cant: {item.quantity}</span>
                                   {!isStaffView && <span>P/U: {formatCOP(item.unit_price)}</span>}
-                                  {isStaffView && <span>Tu ganancia ({Math.round(commissionRate * 100)}%)</span>}
+                                  {isStaffView && <span>Tu ganancia ({itemPct}%)</span>}
                                 </div>
                               </div>
                             );
@@ -2290,13 +2294,22 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                       <div className="finances__sale-detail-col">
                         <h4>{isStaffView ? 'Tu ganancia' : 'Resumen financiero'}</h4>
                         <div className="finances__sale-detail-summary">
-                          {isStaffView ? (
-                            <>
-                              <div className="finances__sale-summary-line"><span>Tu comision</span><span>{formatCOP(staffCommission)}</span></div>
-                              {inv.tip > 0 && <div className="finances__sale-summary-line"><span>Propina</span><span style={{ color: '#10B981' }}>+{formatCOP(inv.tip)}</span></div>}
-                              <div className="finances__sale-summary-line finances__sale-summary-line--total"><span>TU TOTAL</span><span>{formatCOP(staffCommission + (inv.tip || 0))}</span></div>
-                            </>
-                          ) : (
+                          {isStaffView ? (() => {
+                            // Calculate real commission from frozen items or per-item rates
+                            const realComm = hasFrozen
+                              ? frozenItems.reduce((s, fi) => s + (fi.commission_amount || 0), 0)
+                              : (inv.items || []).reduce((s, it) => {
+                                  const r = (it.staff_id && it.service_id && svcCommRates[`${it.staff_id}-${it.service_id}`]) || commissionRate;
+                                  return s + Math.round((it.total || 0) * r);
+                                }, 0);
+                            return (
+                              <>
+                                <div className="finances__sale-summary-line"><span>Tu comision</span><span>{formatCOP(realComm)}</span></div>
+                                {inv.tip > 0 && <div className="finances__sale-summary-line"><span>Propina</span><span style={{ color: '#10B981' }}>+{formatCOP(inv.tip)}</span></div>}
+                                <div className="finances__sale-summary-line finances__sale-summary-line--total"><span>TU TOTAL</span><span>{formatCOP(realComm + (inv.tip || 0))}</span></div>
+                              </>
+                            );
+                          })() : (
                             <>
                               <div className="finances__sale-summary-line"><span>Subtotal</span><span>{formatCOP(inv.subtotal)}</span></div>
                               {inv.discount_amount > 0 && <div className="finances__sale-summary-line finances__sale-summary-line--discount"><span>Descuento</span><span>-{formatCOP(inv.discount_amount)}</span></div>}
@@ -2319,8 +2332,8 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                           )}
                         </div>
 
-                        {(() => {
-                          // Group items by staff with per-service rates
+                        {!isStaffView && (() => {
+                          // Group items by staff with per-service rates (admin only)
                           const byStaff = {};
                           (inv.items || []).forEach(it => {
                             const name = it.staff_name || 'Sin asignar';
@@ -2477,21 +2490,45 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                           win.document.write(`<div class="biz"><div class="biz-left">${tn.logo_url ? `<img src="${tn.logo_url}" class="biz-logo">` : ''}<div><div class="biz-name">${tn.name || 'Negocio'}</div>${tn.nit ? `<span style="font-size:11px;color:#64748b">NIT: ${tn.nit}</span>` : ''}</div></div><div class="biz-info">${tn.address || ''}${tn.phone ? `<br>${tn.phone}` : ''}${tn.owner_email ? `<br>${tn.owner_email}` : ''}</div></div>`);
                           // Invoice header
                           win.document.write(`<div class="header"><div><h2>Factura ${inv.invoice_number}</h2><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — ' + timeStr : ''}${visitCode ? ' — Codigo: ' + visitCode : ''}${inv.payment_terms === 'credito' && inv.due_date ? ` — Vence: ${new Date(inv.due_date+'T12:00:00').toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}` : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}${inv.payment_terms === 'credito' ? ' — Credito' : ''}</div></div>`);
-                          // Client info
-                          win.document.write(`<div class="client"><div><strong>${inv.client_name || 'No registrado'}</strong><span>Cliente</span></div><div><strong>${inv.client_phone || 'No registrado'}</strong><span>Telefono</span></div><div><strong>${inv.client_document ? `${inv.client_document_type || 'CC'} ${inv.client_document}` : 'No registrado'}</strong><span>Documento</span></div><div><strong>${inv.client_email || 'No registrado'}</strong><span>Email</span></div>${visitCode ? `<div><strong>${visitCode}</strong><span>Ticket</span></div>` : ''}</div>`);
+                          // Client info (staff: only name + ticket)
+                          if (isStaffView) {
+                            win.document.write(`<div class="client"><div><strong>${inv.client_name || 'Cliente'}</strong><span>Cliente</span></div>${visitCode ? `<div><strong>${visitCode}</strong><span>Ticket</span></div>` : ''}</div>`);
+                          } else {
+                            win.document.write(`<div class="client"><div><strong>${inv.client_name || 'No registrado'}</strong><span>Cliente</span></div><div><strong>${inv.client_phone || 'No registrado'}</strong><span>Telefono</span></div><div><strong>${inv.client_document ? `${inv.client_document_type || 'CC'} ${inv.client_document}` : 'No registrado'}</strong><span>Documento</span></div><div><strong>${inv.client_email || 'No registrado'}</strong><span>Email</span></div>${visitCode ? `<div><strong>${visitCode}</strong><span>Ticket</span></div>` : ''}</div>`);
+                          }
                           // Items table
-                          win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
-                          (inv.items || []).forEach(it => {
-                            const isProduct = it.service_name?.startsWith('[Producto]');
-                            win.document.write(`<tr class="${isProduct ? 'product' : ''}"><td>${it.service_name}</td><td class="staff">${it.staff_name || '—'}</td><td>${it.quantity}</td><td class="r">${formatCOP(it.unit_price)}</td><td class="r">${formatCOP(it.total)}</td></tr>`);
-                          });
-                          win.document.write(`<tr class="subtotal-row"><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
-                          if (inv.discount_amount > 0) win.document.write(`<tr class="discount-row"><td colspan="4">Descuento${inv.discount_type === 'percent' ? ` (${inv.discount_value}%)` : ''}</td><td class="r">-${formatCOP(inv.discount_amount)}</td></tr>`);
-                          if (inv.tax_amount > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">IVA (${(inv.tax_rate*100).toFixed(0)}%)</td><td class="r">${formatCOP(inv.tax_amount)}</td></tr>`);
-                          if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">Propina</td><td class="r">+${formatCOP(inv.tip)}</td></tr>`);
-                          win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr></table>`);
-                          // Breakdown — per-staff commissions
+                          if (isStaffView) {
+                            win.document.write('<table><tr><th>Servicio</th><th>Cant.</th><th class="r">Tu ganancia</th></tr>');
+                            (inv.items || []).forEach(it => {
+                              const fi = frozenItems.find(f => f.service_name === it.service_name && f.staff_id === it.staff_id);
+                              const iRate = fi?.commission_rate || (it.staff_id && it.service_id && svcCommRates[`${it.staff_id}-${it.service_id}`]) || commissionRate;
+                              const iComm = fi?.commission_amount || Math.round((it.total || 0) * iRate);
+                              win.document.write(`<tr><td>${it.service_name}</td><td>${it.quantity}</td><td class="r" style="color:#059669;font-weight:700">${formatCOP(iComm)}</td></tr>`);
+                            });
+                            const printTotalComm = hasFrozen ? frozenItems.reduce((s, f) => s + (f.commission_amount || 0), 0) : (inv.items || []).reduce((s, it) => { const r = (it.staff_id && it.service_id && svcCommRates[`${it.staff_id}-${it.service_id}`]) || commissionRate; return s + Math.round((it.total || 0) * r); }, 0);
+                            if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="2">Propina</td><td class="r" style="color:#059669">+${formatCOP(inv.tip)}</td></tr>`);
+                            win.document.write(`<tr class="total-row"><td colspan="2">TU TOTAL</td><td class="r">${formatCOP(printTotalComm + (inv.tip || 0))}</td></tr></table>`);
+                          } else {
+                            win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
+                            (inv.items || []).forEach(it => {
+                              const isProduct = it.service_name?.startsWith('[Producto]');
+                              win.document.write(`<tr class="${isProduct ? 'product' : ''}"><td>${it.service_name}</td><td class="staff">${it.staff_name || '—'}</td><td>${it.quantity}</td><td class="r">${formatCOP(it.unit_price)}</td><td class="r">${formatCOP(it.total)}</td></tr>`);
+                            });
+                            win.document.write(`<tr class="subtotal-row"><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
+                            if (inv.discount_amount > 0) win.document.write(`<tr class="discount-row"><td colspan="4">Descuento${inv.discount_type === 'percent' ? ` (${inv.discount_value}%)` : ''}</td><td class="r">-${formatCOP(inv.discount_amount)}</td></tr>`);
+                            if (inv.tax_amount > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">IVA (${(inv.tax_rate*100).toFixed(0)}%)</td><td class="r">${formatCOP(inv.tax_amount)}</td></tr>`);
+                            if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4">Propina</td><td class="r">+${formatCOP(inv.tip)}</td></tr>`);
+                            win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr></table>`);
+                          }
+                          // Breakdown — per-staff commissions (admin only)
                           win.document.write('<div class="breakdown">');
+                          if (isStaffView) {
+                            // Staff print: just show their commission + tips
+                            const staffPrintComm = hasFrozen
+                              ? frozenItems.reduce((s, fi) => s + (fi.commission_amount || 0), 0)
+                              : (inv.items || []).reduce((s, it) => { const r = (it.staff_id && it.service_id && svcCommRates[`${it.staff_id}-${it.service_id}`]) || commissionRate; return s + Math.round((it.total || 0) * r); }, 0);
+                            win.document.write(`<div class="box"><h3>Tu ganancia</h3><div class="box-row"><span>Tu comision</span><strong style="color:#059669">${formatCOP(staffPrintComm)}</strong></div>${inv.tip > 0 ? `<div class="box-row"><span>Propina</span><strong style="color:#059669">+${formatCOP(inv.tip)}</strong></div>` : ''}<div class="box-row" style="font-weight:700;border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px"><span>TU TOTAL</span><strong>${formatCOP(staffPrintComm + (inv.tip || 0))}</strong></div></div>`);
+                          } else {
                           {
                             const byStaff = {};
                             (inv.items || []).forEach(it => {
@@ -2522,7 +2559,7 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                             });
                             distHtml += `<div style="border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px"><div class="box-row green"><span>Total comisiones</span><strong>${formatCOP(totalComm)}</strong></div><div class="box-row blue"><span>Ganancia negocio</span><strong>${formatCOP(bizEarn)}</strong></div></div></div>`;
                             win.document.write(distHtml);
-                          }
+                          }}
                           // Payment details
                           let payHtml = `<div class="box"><h3>Detalles de pago</h3><div class="box-row"><span>Metodo</span><strong>${ml}</strong></div>`;
                           if (inv.payment_method === 'efectivo' && inv.payment_details?.received > 0) {
