@@ -224,6 +224,7 @@ const TAB_OPTIONS = [
   { value: 'gastos', label: 'Gastos', color: '#DC2626', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> },
   { value: 'facturas', label: 'Facturas', color: '#059669', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
   { value: 'nomina', label: 'Nomina', color: '#F59E0B', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> },
+  { value: 'caja', label: 'Caja', color: '#0891B2', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg> },
   { value: 'dian', label: 'DIAN', color: '#6366F1', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> },
 ];
 
@@ -2368,15 +2369,8 @@ const TabFacturas = ({ period, dateFrom, dateTo }) => {
   );
 };
 
-const TabCaja = () => {
-  const { addNotification } = useNotification();
-  const [register, setRegister] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [openingAmount, setOpeningAmount] = useState('');
-  const [transactions, setTransactions] = useState([]);
-  const [history, setHistory] = useState([]);
-  const [subTab, setSubTab] = useState('hoy');
-  const [showCloseModal, setShowCloseModal] = useState(false);
+// Old TabCaja removed
+const _TabCaja_OLD = () => {
   const [countedCash, setCountedCash] = useState('');
   const [closeNotes, setCloseNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -3657,6 +3651,159 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
 };
 
 // ============================================================================
+// TAB CAJA — Cash register
+// ============================================================================
+const TabCaja = () => {
+  const { addNotification } = useNotification();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(null); // 'deposit' | 'withdrawal' | null
+  const [formAmount, setFormAmount] = useState('');
+  const [formDesc, setFormDesc] = useState('');
+  const [saving, setSaving] = useState(false);
+  const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+
+  const load = useCallback(() => {
+    setLoading(true);
+    fetch(`${API}/finances/cash-register`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setData(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleSubmit = async () => {
+    if (!formAmount || !formDesc.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API}/finances/cash-register/movement`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ type: showForm, amount: parseInt(formAmount), description: formDesc.trim() }),
+      });
+      if (res.ok) {
+        addNotification(showForm === 'deposit' ? 'Dinero agregado a la caja' : 'Retiro registrado', 'success');
+        setShowForm(null);
+        setFormAmount('');
+        setFormDesc('');
+        load();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        addNotification('Error: ' + (err.detail || 'Error'), 'error');
+      }
+    } catch { addNotification('Error de conexion', 'error'); }
+    setSaving(false);
+  };
+
+  if (loading) return <div className="finances__comm-skeleton">{[...Array(2)].map((_, i) => <div key={i} className="finances__card" style={{ padding: 20 }}><SkeletonBlock width="100%" height="80px" /></div>)}</div>;
+
+  const balance = data?.balance || 0;
+  const movements = data?.movements || [];
+  const fmtDt = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso + (iso.includes('Z') ? '' : 'Z'));
+    return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
+  };
+
+  const typeLabels = { sale: 'Venta', deposit: 'Deposito', withdrawal: 'Retiro', expense: 'Gasto', adjustment: 'Ajuste' };
+  const typeColors = { sale: '#059669', deposit: '#3B82F6', withdrawal: '#DC2626', expense: '#F59E0B', adjustment: '#8B5CF6' };
+
+  return (
+    <>
+      {/* Balance principal */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+        <div className="finances__pnl-card" style={{ margin: 0, textAlign: 'center', padding: '32px 24px', borderTop: '4px solid #0891B2' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(0,0,0,0.35)', marginBottom: 8 }}>Saldo en caja</div>
+          <div style={{ fontSize: 36, fontWeight: 800, color: balance >= 0 ? '#059669' : '#DC2626', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em' }}>{formatCOP(balance)}</div>
+        </div>
+        <div className="finances__pnl-card" style={{ margin: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, cursor: 'pointer', borderTop: '4px solid #3B82F6' }} onClick={() => { setShowForm('deposit'); setFormAmount(''); setFormDesc(''); }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#3B82F6', marginTop: 8 }}>Agregar dinero</span>
+          <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)' }}>Depositar efectivo</span>
+        </div>
+        <div className="finances__pnl-card" style={{ margin: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, cursor: 'pointer', borderTop: '4px solid #DC2626' }} onClick={() => { setShowForm('withdrawal'); setFormAmount(''); setFormDesc(''); }}>
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span style={{ fontSize: 13, fontWeight: 700, color: '#DC2626', marginTop: 8 }}>Retirar dinero</span>
+          <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.35)' }}>Sacar efectivo</span>
+        </div>
+      </div>
+
+      {/* Form modal */}
+      {showForm && createPortal(
+        <div className="finances__confirm-overlay" onClick={() => !saving && setShowForm(null)}>
+          <div className="finances__confirm-modal" onClick={e => e.stopPropagation()} style={{ textAlign: 'left' }}>
+            <h3 style={{ marginTop: 0 }}>{showForm === 'deposit' ? 'Agregar dinero a la caja' : 'Retirar dinero de la caja'}</h3>
+            <label className="finances__perf-fine-label">
+              Monto (COP) *
+              <input className="finances__input" type="number" placeholder="Ej: 50000" value={formAmount} onChange={e => setFormAmount(e.target.value)} autoFocus />
+            </label>
+            <label className="finances__perf-fine-label">
+              Descripcion *
+              <input className="finances__input" placeholder={showForm === 'deposit' ? 'Ej: Fondo inicial, cambio...' : 'Ej: Pago proveedor, gastos...'} value={formDesc} onChange={e => setFormDesc(e.target.value)} />
+            </label>
+            <div className="finances__confirm-actions" style={{ justifyContent: 'flex-end', marginTop: 16 }}>
+              <button className="finances__confirm-btn finances__confirm-btn--cancel" onClick={() => setShowForm(null)} disabled={saving}>Cancelar</button>
+              <button className={`finances__confirm-btn ${showForm === 'deposit' ? 'finances__confirm-btn--primary' : 'finances__confirm-btn--danger'}`} disabled={saving || !formAmount || !formDesc.trim()} onClick={handleSubmit}>
+                {saving ? 'Guardando...' : showForm === 'deposit' ? 'Depositar' : 'Retirar'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Today stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+        <div className="finances__report-summary-item" style={{ borderTop: '3px solid #059669' }}>
+          <span className="finances__report-summary-value" style={{ color: '#059669', fontSize: 20 }}>{formatCOP(data?.sales_today || 0)}</span>
+          <span className="finances__report-summary-label">Ventas en efectivo hoy</span>
+        </div>
+        <div className="finances__report-summary-item" style={{ borderTop: '3px solid #3B82F6' }}>
+          <span className="finances__report-summary-value" style={{ color: '#3B82F6', fontSize: 20 }}>{formatCOP(data?.deposits_today || 0)}</span>
+          <span className="finances__report-summary-label">Depositos hoy</span>
+        </div>
+        <div className="finances__report-summary-item" style={{ borderTop: '3px solid #DC2626' }}>
+          <span className="finances__report-summary-value" style={{ color: '#DC2626', fontSize: 20 }}>{formatCOP(data?.withdrawals_today || 0)}</span>
+          <span className="finances__report-summary-label">Retiros hoy</span>
+        </div>
+      </div>
+
+      {/* Movements list */}
+      <div className="finances__section-header">
+        <h3 className="finances__section-title">Movimientos de caja</h3>
+        <span style={{ fontSize: 12, color: 'rgba(0,0,0,0.35)' }}>Ultimos 50</span>
+      </div>
+      <div className="finances__perf-comm-table">
+        <div className="finances__perf-comm-row finances__perf-comm-row--header" style={{ gridTemplateColumns: '140px 100px 1fr 120px 120px' }}>
+          <span>Fecha</span>
+          <span>Tipo</span>
+          <span>Descripcion</span>
+          <span>Monto</span>
+          <span>Saldo</span>
+        </div>
+        {movements.length > 0 ? movements.map(m => (
+          <div key={m.id} className="finances__perf-comm-row" style={{ gridTemplateColumns: '140px 100px 1fr 120px 120px' }}>
+            <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.5)' }}>{fmtDt(m.created_at)}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: typeColors[m.type] || '#666' }}>{typeLabels[m.type] || m.type}</span>
+            <span style={{ fontSize: 12 }}>{m.description}{m.created_by ? <small style={{ color: 'rgba(0,0,0,0.3)', marginLeft: 6 }}>{m.created_by}</small> : ''}</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: m.amount >= 0 ? '#059669' : '#DC2626', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{m.amount >= 0 ? '+' : ''}{formatCOP(m.amount)}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, textAlign: 'right', color: 'rgba(0,0,0,0.5)', fontVariantNumeric: 'tabular-nums' }}>{formatCOP(m.balance_after)}</span>
+          </div>
+        )) : (
+          <div style={{ padding: 40, textAlign: 'center', color: 'rgba(0,0,0,0.3)', fontSize: 13 }}>
+            Sin movimientos registrados. Los cobros en efectivo aparecen automaticamente.
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+
+// ============================================================================
 // TAB DIAN — Electronic invoicing status and operations
 // ============================================================================
 const TabDian = () => {
@@ -4644,6 +4791,7 @@ const Finances = () => {
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'nomina' && <TabNomina />}
+      {activeTab === 'caja' && <TabCaja />}
       {activeTab === 'dian' && <TabDian />}
     </div>
   );

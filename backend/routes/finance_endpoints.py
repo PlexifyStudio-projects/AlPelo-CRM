@@ -11,7 +11,7 @@ from database.connection import get_db
 from database.models import (
     Admin, Staff, Client, VisitHistory, Expense, Invoice, InvoiceItem,
     StaffCommission, StaffServiceCommission, Service, StaffFine,
-    Checkout, Appointment, Product, InventoryMovement,
+    Checkout, Appointment, Product, InventoryMovement, CashMovement,
 )
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
@@ -1690,3 +1690,127 @@ def delete_fine(
     db.delete(fine)
     db.commit()
     return {"detail": "Multa eliminada"}
+
+
+# ─── CASH REGISTER (Caja Registradora) ───────────────────
+
+@router.get("/finances/cash-register")
+def get_cash_register(
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    """Get current cash balance + recent movements."""
+    tid = safe_tid(current_user, db)
+    
+    # Current balance = sum of all movements
+    q = db.query(func.coalesce(func.sum(CashMovement.amount), 0)).filter()
+    if tid:
+        q = q.filter(CashMovement.tenant_id == tid)
+    balance = int(q.scalar() or 0)
+    
+    # Today's movements
+    from routes._helpers import now_colombia
+    today = now_colombia().date()
+    today_q = db.query(func.coalesce(func.sum(CashMovement.amount), 0)).filter(
+        func.date(CashMovement.created_at) >= today,
+    )
+    if tid:
+        today_q = today_q.filter(CashMovement.tenant_id == tid)
+    today_total = int(today_q.scalar() or 0)
+    
+    # Recent movements (last 50)
+    mvq = db.query(CashMovement)
+    if tid:
+        mvq = mvq.filter(CashMovement.tenant_id == tid)
+    movements = mvq.order_by(CashMovement.created_at.desc()).limit(50).all()
+    
+    # Stats
+    sales_today = 0
+    deposits_today = 0
+    withdrawals_today = 0
+    for m in movements:
+        if m.created_at and m.created_at.date() >= today:
+            if m.movement_type == 'sale':
+                sales_today += m.amount
+            elif m.movement_type == 'deposit':
+                deposits_today += m.amount
+            elif m.movement_type == 'withdrawal':
+                withdrawals_today += abs(m.amount)
+    
+    return {
+        "balance": balance,
+        "today_total": today_total,
+        "sales_today": sales_today,
+        "deposits_today": deposits_today,
+        "withdrawals_today": withdrawals_today,
+        "movements": [
+            {
+                "id": m.id,
+                "type": m.movement_type,
+                "amount": m.amount,
+                "balance_after": m.balance_after,
+                "description": m.description,
+                "reference_type": m.reference_type,
+                "reference_id": m.reference_id,
+                "created_by": m.created_by,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in movements
+        ],
+    }
+
+
+@router.post("/finances/cash-register/movement")
+def add_cash_movement(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    """Add money (deposit) or remove money (withdrawal) from cash register."""
+    tid = safe_tid(current_user, db)
+    if not tid:
+        raise HTTPException(400, "Tenant requerido")
+    
+    movement_type = data.get("type", "deposit")  # deposit, withdrawal, adjustment
+    amount = int(data.get("amount", 0))
+    description = (data.get("description") or "").strip()
+    
+    if amount <= 0:
+        raise HTTPException(400, "Monto debe ser mayor a 0")
+    if not description:
+        raise HTTPException(400, "Descripcion requerida")
+    
+    # Get current balance
+    balance = int(db.query(func.coalesce(func.sum(CashMovement.amount), 0)).filter(
+        CashMovement.tenant_id == tid
+    ).scalar() or 0)
+    
+    # For withdrawals, amount is negative
+    if movement_type == "withdrawal":
+        actual_amount = -amount
+    else:
+        actual_amount = amount
+    
+    new_balance = balance + actual_amount
+    
+    mv = CashMovement(
+        tenant_id=tid,
+        movement_type=movement_type,
+        amount=actual_amount,
+        balance_after=new_balance,
+        description=description,
+        reference_type="manual",
+        created_by=current_user.username if hasattr(current_user, 'username') else str(current_user.id),
+    )
+    db.add(mv)
+    db.commit()
+    db.refresh(mv)
+    
+    return {
+        "id": mv.id,
+        "type": mv.movement_type,
+        "amount": mv.amount,
+        "balance_after": mv.balance_after,
+        "description": mv.description,
+        "created_at": mv.created_at.isoformat() if mv.created_at else None,
+    }

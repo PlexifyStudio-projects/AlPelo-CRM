@@ -1120,6 +1120,22 @@ class CashRegister(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+class CashMovement(Base):
+    """Every cash movement in/out of the register."""
+    __tablename__ = "cash_movement"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False)
+    movement_type = Column(String(20), nullable=False)  # sale, deposit, withdrawal, expense, adjustment
+    amount = Column(Integer, nullable=False)  # positive = in, negative = out
+    balance_after = Column(Integer, nullable=False, default=0)
+    description = Column(String(300), nullable=False)
+    reference_type = Column(String(30), nullable=True)  # checkout, manual, expense, nomina
+    reference_id = Column(Integer, nullable=True)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 # ============================================================================
 # AI PROVIDER — Multi-provider with failover
 # ============================================================================
