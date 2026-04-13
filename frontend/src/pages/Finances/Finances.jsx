@@ -1100,7 +1100,11 @@ const TabGastos = ({ period: parentPeriod, dateFrom: parentFrom, dateTo: parentT
   const [form, setForm] = useState(emptyForm);
 
   const buildParams = useCallback(() => {
-    return { period: 'custom', date_from: dateFrom, date_to: dateTo };
+    // Extend date_to +1 day to cover UTC offset (expenses saved in UTC may be +1 day)
+    const d = new Date(dateTo + 'T23:59:59');
+    d.setDate(d.getDate() + 1);
+    const extTo = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return { period: 'custom', date_from: dateFrom, date_to: extTo };
   }, [dateFrom, dateTo]);
 
   const load = useCallback(async () => {
