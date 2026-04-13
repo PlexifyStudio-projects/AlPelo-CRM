@@ -528,7 +528,7 @@ const Orders = () => {
     }));
     const prods = (showModal && formProducts.length ? formProducts : order.products || []);
     setCheckoutOrder({
-      id: order.id,
+      id: order._is_appointment ? order._apt_id : order.id,
       client_id: order.client_id,
       client_name: order.client_name || form.client_name,
       client_phone: order.client_phone || form.client_phone,
@@ -540,6 +540,8 @@ const Orders = () => {
       visit_code: order.ticket_number,
       notes: '',
       _order_id: order.id,
+      _apt_id: order._apt_id || null,
+      _is_appointment: order._is_appointment || false,
       _all_items: allItems,
       _products: prods,
     });
@@ -1211,9 +1213,13 @@ const Orders = () => {
           appointment={checkoutOrder}
           onClose={() => setCheckoutOrder(null)}
           onCompleted={async () => {
-            // Mark order as completed + paid
+            // Mark order/appointment as completed + paid
             try {
-              await orderService.update(checkoutOrder._order_id, { status: 'completed', payment_status: 'paid' });
+              if (checkoutOrder._is_appointment && checkoutOrder._apt_id) {
+                await appointmentService.update(checkoutOrder._apt_id, { status: 'completed' });
+              } else {
+                await orderService.update(checkoutOrder._order_id, { status: 'completed', payment_status: 'paid' });
+              }
             } catch {}
             setCheckoutOrder(null);
             loadData();
