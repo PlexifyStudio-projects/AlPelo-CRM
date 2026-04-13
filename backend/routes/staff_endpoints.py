@@ -477,13 +477,13 @@ def staff_commissions(
     fines = db.query(StaffFine).filter(
         StaffFine.staff_id == staff.id,
         StaffFine.tenant_id == tid,
-        StaffFine.date >= d_from,
-        StaffFine.date <= d_to,
+        StaffFine.fine_date >= d_from,
+        StaffFine.fine_date <= d_to,
     ).all()
     total_fines = sum(f.amount for f in fines if not f.is_paid)
     fines_data = [{
         "id": f.id, "reason": f.reason, "amount": f.amount,
-        "date": f.date.isoformat() if f.date else None, "is_paid": f.is_paid,
+        "date": f.fine_date.isoformat() if f.fine_date else None, "is_paid": f.is_paid,
     } for f in fines]
 
     return {
