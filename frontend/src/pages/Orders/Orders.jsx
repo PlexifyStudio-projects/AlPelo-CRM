@@ -1213,11 +1213,10 @@ const Orders = () => {
           appointment={checkoutOrder}
           onClose={() => setCheckoutOrder(null)}
           onCompleted={async () => {
-            // Mark order/appointment as completed + paid
+            // Backend checkout already marks appointment as 'paid' and order as 'completed'
+            // For pure orders (no appointment), update status manually
             try {
-              if (checkoutOrder._is_appointment && checkoutOrder._apt_id) {
-                await appointmentService.update(checkoutOrder._apt_id, { status: 'completed' });
-              } else {
+              if (!checkoutOrder._is_appointment && checkoutOrder._order_id) {
                 await orderService.update(checkoutOrder._order_id, { status: 'completed', payment_status: 'paid' });
               }
             } catch {}
