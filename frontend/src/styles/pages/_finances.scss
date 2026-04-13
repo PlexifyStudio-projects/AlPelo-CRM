@@ -1077,15 +1077,12 @@
     border: 1.5px solid $color-gray-200;
     padding: 4px;
     margin-bottom: $spacing-xl;
-    width: fit-content;
-    max-width: 100%;
+    width: 100%;
     box-shadow: $shadow-sm;
     position: relative;
 
     @media (max-width: $breakpoint-md) {
-      width: 100%;
       overflow-x: auto;
-      border-radius: $border-radius-xl;
 
       &::-webkit-scrollbar {
         display: block;
@@ -1099,23 +1096,30 @@
   }
 
   &__tab-btn {
-    padding: 10px $spacing-lg;
+    flex: 1;
+    padding: 10px 12px;
     border: none;
     background: transparent;
     border-radius: calc(#{$border-radius-xl} - 3px);
     font-family: $font-primary;
     font-size: $font-size-sm;
-    font-weight: 700;
+    font-weight: 600;
     color: $color-gray-400;
     cursor: pointer;
     transition: all 250ms $ease-out-expo;
     white-space: nowrap;
     position: relative;
-    letter-spacing: $letter-spacing-wide;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    svg { opacity: 0.5; transition: opacity 200ms; }
 
     &:hover:not(&--active) {
       color: $color-gray-900;
       background: rgba(0, 0, 0, 0.02);
+      svg { opacity: 0.7; }
     }
 
     &--active {
@@ -1123,6 +1127,7 @@
       color: $color-primary;
       box-shadow: $shadow-sm, 0 0 0 1px rgba(30, 64, 175, 0.06);
       font-weight: $font-weight-bold;
+      svg { opacity: 1; }
     }
   }
 
@@ -6003,40 +6008,47 @@
     font-weight: 700;
   }
 
+  // ── Reportes — Corporate + Vibrant ──
   &__comparison-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: $spacing-md;
-    margin-bottom: $spacing-xl;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+
+    @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
   }
 
   &__comparison-card {
     background: $color-white;
-    border: 1.5px solid $color-gray-100;
-    border-radius: $border-radius-xl;
-    padding: $spacing-md;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 16px;
+    padding: 22px 24px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    transition: box-shadow 200ms ease;
+    gap: 6px;
+    transition: all 250ms cubic-bezier(0.2, 0, 0, 1);
 
     &:hover {
-      box-shadow: $shadow-sm;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
     }
   }
 
   &__comparison-label {
-    font-size: $font-size-xs;
+    font-size: 10px;
     font-weight: 700;
-    color: $color-gray-400;
+    color: rgba(0, 0, 0, 0.4);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
   }
 
   &__comparison-values {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 4px;
   }
 
   &__comparison-current,
@@ -6044,114 +6056,144 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    flex: 1;
   }
 
   &__comparison-current-value {
-    font-size: $font-size-lg;
-    font-weight: $font-weight-bold;
-    color: $color-gray-800;
+    font-size: 26px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
   }
 
   &__comparison-previous-value {
-    font-size: $font-size-md;
-    font-weight: $font-weight-medium;
-    color: $color-gray-400;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.35);
+    font-variant-numeric: tabular-nums;
   }
 
   &__comparison-period-label {
-    font-size: 10px;
-    color: $color-gray-300;
+    font-size: 9px;
+    color: rgba(0, 0, 0, 0.3);
     text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.05em;
   }
 
   &__comparison-vs {
-    font-size: $font-size-xs;
-    color: $color-gray-300;
-    font-weight: $font-weight-medium;
-    padding: 0 4px;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.15);
+    font-weight: 700;
+    padding: 0 2px;
   }
 
   &__report-table {
-    margin-top: $spacing-md;
-    border-top: 1px solid $color-gray-100;
-    padding-top: $spacing-md;
+    margin-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    padding-top: 16px;
   }
 
   &__report-skeleton {
     display: flex;
     flex-direction: column;
-    gap: $spacing-md;
+    gap: 16px;
   }
 
   &__weekday-stats {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-    padding: $spacing-sm $spacing-md $spacing-md;
-    border-top: 1px solid $color-gray-100;
-    margin-top: $spacing-sm;
+    gap: 8px;
+    padding: 14px 18px 18px;
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+    margin-top: 8px;
 
-    @media (max-width: $breakpoint-md) {
-      grid-template-columns: repeat(4, 1fr);
-    }
+    @media (max-width: $breakpoint-md) { grid-template-columns: repeat(4, 1fr); }
   }
 
   &__weekday-stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: $spacing-xs;
-    border-radius: $border-radius-sm;
-    background: $color-gray-50;
+    gap: 4px;
+    padding: 12px 8px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.015);
+    border: 1px solid transparent;
+    transition: all 200ms;
+
+    &:hover {
+      background: rgba($color-primary, 0.04);
+      border-color: rgba($color-primary, 0.1);
+      transform: translateY(-1px);
+    }
   }
 
   &__weekday-label {
     font-size: 11px;
-    font-weight: 700;
-    color: $color-gray-500;
+    font-weight: 800;
+    color: rgba(0, 0, 0, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   &__weekday-value {
-    font-size: $font-size-xs;
-    font-weight: $font-weight-bold;
-    color: $color-gray-800;
+    font-size: 14px;
+    font-weight: 800;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
   }
 
   &__weekday-visits {
     font-size: 10px;
-    color: $color-gray-400;
+    color: rgba(0, 0, 0, 0.3);
+    font-weight: 500;
   }
 
   &__report-summary {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: $spacing-md;
-    margin-top: $spacing-xl;
-    padding: $spacing-lg;
-    background: $color-gray-50;
-    border-radius: $border-radius-xl;
-    border: 1.5px solid $color-gray-100;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 28px;
+
+    @media (max-width: $breakpoint-md) { grid-template-columns: repeat(2, 1fr); }
   }
 
   &__report-summary-item {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 6px;
     text-align: center;
+    padding: 24px 16px 20px;
+    background: $color-white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 16px;
+    transition: all 250ms cubic-bezier(0.2, 0, 0, 1);
+
+    svg { opacity: 0.7; }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+      svg { opacity: 1; }
+    }
   }
 
   &__report-summary-label {
-    font-size: $font-size-xs;
-    color: $color-gray-400;
-    font-weight: $font-weight-medium;
+    font-size: 10px;
+    color: rgba(0, 0, 0, 0.4);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 
   &__report-summary-value {
-    font-size: $font-size-xl;
-    font-weight: $font-weight-bold;
-    color: $color-primary;
+    font-size: 28px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    line-height: 1;
   }
 
   &__caja {
