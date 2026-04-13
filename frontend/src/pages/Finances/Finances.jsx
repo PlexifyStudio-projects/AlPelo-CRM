@@ -3126,24 +3126,29 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
         const sel = filtered.filter(v => selectedIds.includes(v.id));
         const selRevenue = sel.reduce((s, v) => s + (v.price || 0), 0);
         const selComm = sel.reduce((s, v) => s + getCommission(v), 0);
-        const selProducts = sel.reduce((s, v) => {
-          const prods = parseProducts(v.notes);
-          return s + prods.reduce((ps, p) => ps + ((p.sale || 0) * (p.qty || 1)), 0);
-        }, 0);
+        const selProductItems = sel.flatMap(v => parseProducts(v.notes));
+        const selProducts = selProductItems.reduce((s, p) => s + ((p.sale || 0) * (p.qty || 1)), 0);
+        const selProductQty = selProductItems.reduce((s, p) => s + (p.qty || 1), 0);
         const selProdComm = sel.reduce((s, v) => s + (v.product_commission || 0), 0);
         const selTips = sel.reduce((s, v) => s + (v.tip || 0), 0);
         const selSvcComm = selComm - selProdComm;
         const selTotal = selComm + selTips - finesTotal;
-        const selBusiness = (selRevenue + selProducts) - (selComm + selTips);
+        const selBusiness = (selRevenue + selProducts) - (selComm + selTips) + finesTotal;
         return (
           <div className="finances__vl-summary">
             <div className="finances__vl-summary-row"><span>{sel.length} servicios</span><span>{formatCOP(selRevenue)}</span></div>
-            {selProducts > 0 && <div className="finances__vl-summary-row"><span>Productos vendidos</span><span>{formatCOP(selProducts)}</span></div>}
+            {selProducts > 0 && <div className="finances__vl-summary-row"><span>Productos vendidos ({selProductQty} uds)</span><span>{formatCOP(selProducts)}</span></div>}
             <div className="finances__vl-summary-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 4 }}><span>Total ingresos generados</span><span>{formatCOP(selRevenue + selProducts)}</span></div>
 
             <div className="finances__vl-summary-row" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: 8, marginTop: 8, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'rgba(0,0,0,0.3)' }}><span>Reparticion</span><span></span></div>
             <div className="finances__vl-summary-row"><span>Comisión servicios</span><span>{formatCOP(selSvcComm)}</span></div>
-            {selProdComm > 0 && <div className="finances__vl-summary-row"><span>Comisión productos</span><span>{formatCOP(selProdComm)}</span></div>}
+            {selProdComm > 0 && <div className="finances__vl-summary-row"><span>Comisión productos ({selProductQty} uds)</span><span>{formatCOP(selProdComm)}</span></div>}
+            {selProductItems.length > 0 && selProductItems.map((p, i) => (
+              <div key={i} className="finances__vl-summary-row" style={{ fontSize: 11, color: 'rgba(0,0,0,0.4)', paddingLeft: 12 }}>
+                <span>{p.name} x{p.qty}</span>
+                <span>{formatCOP((p.sale || 0) * (p.qty || 1))}{(p.comm || 0) > 0 ? ` · com: ${formatCOP(p.comm)}` : ''}</span>
+              </div>
+            ))}
             {selTips > 0 && <div className="finances__vl-summary-row" style={{ color: '#059669' }}><span>Propinas</span><span>+{formatCOP(selTips)}</span></div>}
             {finesTotal > 0 && <div className="finances__vl-summary-row" style={{ color: '#DC2626' }}><span>Multas</span><span>-{formatCOP(finesTotal)}</span></div>}
             <div className="finances__vl-summary-total"><span>Total a pagar al profesional</span><span>{formatCOP(selTotal)}</span></div>
