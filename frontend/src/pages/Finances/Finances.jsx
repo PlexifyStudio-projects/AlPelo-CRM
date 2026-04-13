@@ -2927,7 +2927,7 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
   const [search, setSearch] = useState('');
   const [localFrom, setLocalFrom] = useState(parentFrom);
   const [localTo, setLocalTo] = useState(parentTo);
-  const [voidConfirm, setVoidConfirm] = useState(null); // appointment id to void
+  const [voidConfirm, setVoidConfirm] = useState(null); // visit_history id to unlink
   const [voiding, setVoiding] = useState(false);
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -2935,13 +2935,26 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
 
   const loadVisits = useCallback(() => {
     setLoading(true);
-    fetch(`${API}/appointments/?date_from=${localFrom}&date_to=${localTo}&staff_id=${staffId}`, { credentials: 'include' })
+    fetch(`${API}/staff-payments/visits?staff_id=${staffId}&date_from=${localFrom}&date_to=${localTo}`, { credentials: 'include' })
       .then(r => r.ok ? r.json() : [])
       .then(data => {
-        const completed = (Array.isArray(data) ? data : []).filter(a => a.status === 'completed' || a.status === 'paid');
-        const sorted = completed.sort((a, b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time));
-        setVisits(sorted);
-        if (onVisitsLoaded) onVisitsLoaded(sorted);
+        const rows = (Array.isArray(data) ? data : []).map(v => ({
+          id: v.id,
+          date: v.visit_date,
+          time: v.created_at ? new Date(v.created_at + 'Z').toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Bogota' }) : '',
+          client_name: v.client_name,
+          client_id: v.client_id,
+          service_name: v.service_name,
+          price: v.amount,
+          tip: v.tip || 0,
+          commission_amount: v.commission,
+          product_commission: v.product_commission || 0,
+          staff_payment_id: v.payment_id,
+          notes: v.notes,
+          visit_code: v.id,
+        }));
+        setVisits(rows);
+        if (onVisitsLoaded) onVisitsLoaded(rows);
       })
       .catch(() => setVisits([]))
       .finally(() => setLoading(false));
@@ -3128,10 +3141,8 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
               <button className="finances__confirm-btn finances__confirm-btn--cancel" onClick={() => setVoidConfirm(null)} disabled={voiding}>Cancelar</button>
               <button className="finances__confirm-btn finances__confirm-btn--primary" disabled={voiding} onClick={() => {
                 setVoiding(true);
-                fetch(`${API}/appointments/${voidConfirm}`, {
+                fetch(`${API}/staff-payments/visits/${voidConfirm}/unlink`, {
                   method: 'PUT', credentials: 'include',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ staff_payment_id: null }),
                 }).then(() => { setVoidConfirm(null); setVoiding(false); loadVisits(); }).catch(() => { setVoiding(false); });
               }}>
                 {voiding ? 'Procesando...' : 'Devolver'}

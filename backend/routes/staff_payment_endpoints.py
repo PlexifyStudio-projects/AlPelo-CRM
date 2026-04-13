@@ -214,6 +214,123 @@ def get_payroll_summary(
 
 
 # ============================================================================
+# STAFF VISITS (from visit_history — includes agenda + orders)
+# ============================================================================
+
+from fastapi import Query
+
+@router.get("/visits")
+def get_staff_visits(
+    staff_id: int = Query(...),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
+):
+    """Return visit_history records for a staff member — used by Nómina detail."""
+    tid = _tid(user, db)
+    d_from = date.fromisoformat(date_from) if date_from else date.today().replace(day=1)
+    d_to = date.fromisoformat(date_to) if date_to else date.today()
+
+    q = db.query(VisitHistory).filter(
+        VisitHistory.staff_id == staff_id,
+        VisitHistory.status == "completed",
+        VisitHistory.visit_date >= d_from,
+        VisitHistory.visit_date <= d_to,
+    )
+    if tid:
+        q = q.filter(VisitHistory.tenant_id == tid)
+    visits = q.order_by(VisitHistory.visit_date.desc(), VisitHistory.id.desc()).all()
+
+    # Build service catalog for commission lookup
+    svc_catalog = {}
+    svc_q = db.query(Service)
+    if tid:
+        svc_q = svc_q.filter(Service.tenant_id == tid)
+    for svc in svc_q.all():
+        svc_catalog[svc.name.lower().strip()] = svc.id
+
+    # Commission config
+    comm = db.query(StaffCommission).filter(StaffCommission.staff_id == staff_id).first()
+    default_rate = comm.default_rate if comm else 0.40
+    ssc_rows = db.query(StaffServiceCommission).filter(StaffServiceCommission.staff_id == staff_id).all()
+    ssc_map = {r.service_id: r.commission_rate for r in ssc_rows}
+
+    import re as _re
+    result = []
+    for v in visits:
+        # Calculate commission per-service
+        names = v.service_name.split(',') if v.service_name else ['Otros']
+        svc_commission = 0
+        for name in names:
+            name_clean = name.strip()
+            is_product = name_clean.startswith('[Producto]')
+            svc_id = svc_catalog.get(name_clean.lower().strip())
+            per_svc = (v.amount or 0) / max(len(names), 1)
+            if is_product:
+                rate = 0
+            elif svc_id and svc_id in ssc_map:
+                rate = ssc_map[svc_id]
+            else:
+                rate = default_rate
+            svc_commission += round(per_svc * rate)
+
+        # Product commission from notes
+        prod_comm = 0
+        if v.notes:
+            pc = _re.search(r'\[PRODUCT_COMMISSION:(\d+)\]', v.notes)
+            if pc:
+                prod_comm = int(pc.group(1))
+
+        client = db.query(Client).filter(Client.id == v.client_id).first()
+        result.append({
+            "id": v.id,
+            "visit_date": v.visit_date.isoformat(),
+            "client_id": v.client_id,
+            "client_name": client.name if client else "Desconocido",
+            "service_name": v.service_name,
+            "amount": v.amount or 0,
+            "tip": getattr(v, 'tip', 0) or 0,
+            "commission": svc_commission + prod_comm,
+            "product_commission": prod_comm,
+            "payment_method": v.payment_method,
+            "payment_id": v.payment_id,
+            "notes": v.notes,
+            "created_at": v.created_at.isoformat() if v.created_at else None,
+        })
+    return result
+
+
+@router.put("/visits/{visit_id}/unlink")
+def unlink_visit_payment(
+    visit_id: int,
+    db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
+):
+    """Remove payment_id from a visit_history record (return to unpaid)."""
+    tid = _tid(user, db)
+    q = db.query(VisitHistory).filter(VisitHistory.id == visit_id)
+    if tid:
+        q = q.filter(VisitHistory.tenant_id == tid)
+    visit = q.first()
+    if not visit:
+        raise HTTPException(404, "Visita no encontrada")
+    visit.payment_id = None
+    # Also unlink any associated appointment
+    if tid:
+        apt = db.query(Appointment).filter(
+            Appointment.client_id == visit.client_id,
+            Appointment.date == visit.visit_date,
+            Appointment.staff_id == visit.staff_id,
+            Appointment.tenant_id == tid,
+        ).first()
+        if apt and apt.staff_payment_id:
+            apt.staff_payment_id = None
+    db.commit()
+    return {"ok": True}
+
+
+# ============================================================================
 # LIST PAYMENTS
 # ============================================================================
 
