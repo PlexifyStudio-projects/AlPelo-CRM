@@ -175,15 +175,17 @@ const StaffDashboard = ({ user, onNavigate }) => {
           </div>
           <div className={`${b}__visits`}>
             <div className={`${b}__visits-head`}>
-              <span>Fecha</span><span>Cliente</span><span>Servicio</span><span>Comision</span><span>Propina</span>
+              <span>Ticket</span><span>Fecha / Hora</span><span>Cliente</span><span>Servicio</span><span>Comision</span><span>Propina</span><span>Estado</span>
             </div>
             {monthVisits.map((v, i) => (
               <div key={v.id || i} className={`${b}__visits-row`}>
-                <span className={`${b}__visits-date`}>{fmtDate(v.visit_date)}</span>
+                <span className={`${b}__visits-ticket`}>{v.ticket || '—'}</span>
+                <span className={`${b}__visits-date`}>{fmtDate(v.visit_date)} {v.time ? t12(v.time) : ''}</span>
                 <span className={`${b}__visits-name`}>{v.client_name}</span>
                 <span className={`${b}__visits-svc`}>{v.service_name}</span>
                 <span className={`${b}__visits-comm`}>{fmt(v.commission)}</span>
                 <span className={`${b}__visits-tip`}>{v.tip > 0 ? `+${fmt(v.tip)}` : '—'}</span>
+                <span className={`${b}__visits-paid`}>{v.is_paid ? <span className={`${b}__badge-paid`}>Pagada</span> : <span className={`${b}__badge-pend`}>Pendiente</span>}</span>
               </div>
             ))}
           </div>

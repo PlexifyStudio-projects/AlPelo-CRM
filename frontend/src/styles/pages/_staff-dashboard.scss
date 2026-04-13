@@ -197,22 +197,27 @@ $_r: 14px; $_rs: 10px;
   // Visits table
   &__visits { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   &__visits-head {
-    display: grid; grid-template-columns: 60px 1fr 1fr 90px 70px; gap: 8px;
-    padding: 8px 4px; font-size: 10px; font-weight: 600; color: $_s5;
+    display: grid; grid-template-columns: 65px 100px 1fr 1fr 80px 70px 70px; gap: 6px;
+    padding: 8px 4px; font-size: 9px; font-weight: 600; color: $_s5;
     text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid $_s3;
+    min-width: 600px;
   }
   &__visits-row {
-    display: grid; grid-template-columns: 60px 1fr 1fr 90px 70px; gap: 8px;
+    display: grid; grid-template-columns: 65px 100px 1fr 1fr 80px 70px 70px; gap: 6px;
     padding: 10px 4px; font-size: 12px; color: $_s7; border-bottom: 1px solid $_s2;
-    align-items: center;
+    align-items: center; min-width: 600px;
     &:last-child { border-bottom: none; }
     &:hover { background: $_s1; }
   }
-  &__visits-date { font-weight: 600; color: $_s5; font-size: 11px; }
+  &__visits-ticket { font-weight: 700; color: $_bl; font-size: 11px; }
+  &__visits-date { font-weight: 500; color: $_s5; font-size: 11px; }
   &__visits-name { font-weight: 600; color: $_s8; @include truncate; }
   &__visits-svc { color: $_s5; @include truncate; font-size: 11px; }
   &__visits-comm { font-weight: 700; color: $_e; }
   &__visits-tip { color: $_am; font-weight: 600; }
+  &__visits-paid { }
+  &__badge-paid { font-size: 10px; font-weight: 700; color: $_e; background: rgba($_e,.1); padding: 2px 6px; border-radius: 4px; }
+  &__badge-pend { font-size: 10px; font-weight: 600; color: $_am; background: rgba($_am,.1); padding: 2px 6px; border-radius: 4px; }
 
   // Appointment status label
   &__item-st {

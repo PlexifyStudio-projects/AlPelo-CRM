@@ -108,6 +108,31 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
     month_visits_data = []
     for v in month_visits:
         client = db.query(Client).filter(Client.id == v.client_id).first()
+        # Find linked appointment for ticket and time
+        ticket = None
+        appt_time = None
+        is_paid = v.payment_id is not None
+        # Try to find appointment by notes pattern or by matching client+date+service
+        note_match = None
+        if v.notes:
+            import re as _re
+            note_match = _re.search(r'\[APT:(\d+)\]', v.notes or '')
+            code_match = _re.search(r'\[CODIGO:([^\]]+)\]', v.notes or '')
+            if code_match:
+                ticket = code_match.group(1)
+        # Find appointment by client + date + staff
+        apt = db.query(Appointment).filter(
+            Appointment.staff_id == staff.id,
+            Appointment.date == v.visit_date,
+            Appointment.client_id == v.client_id,
+            Appointment.tenant_id == tid,
+        ).first()
+        if apt:
+            ticket = ticket or apt.visit_code or f"A-{apt.id}"
+            appt_time = apt.time
+            if apt.status == "paid":
+                is_paid = True
+
         month_visits_data.append({
             "id": v.id,
             "client_name": client.name if client else "Cliente",
@@ -116,6 +141,9 @@ def staff_dashboard_stats(db: Session = Depends(get_db), current_user=Depends(ge
             "commission": int(v.amount * commission_rate),
             "tip": v.tip or 0,
             "visit_date": v.visit_date.isoformat() if v.visit_date else None,
+            "time": appt_time,
+            "ticket": ticket,
+            "is_paid": is_paid,
             "payment_method": v.payment_method,
         })
 
