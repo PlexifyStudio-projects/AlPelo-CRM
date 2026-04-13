@@ -607,13 +607,7 @@ def _void_checkout_cascade(checkout, db, tid):
         if invoice:
             invoice.status = "cancelled"
 
-    # Cancel ALL linked visits (there can be multiple, one per staff)
-    visits = db.query(VisitHistory).filter(
-        VisitHistory.tenant_id == tid,
-        VisitHistory.status == "completed",
-    ).all()
-    # Match by checkout — visits don't have checkout_id, but were created at same time
-    # Use the checkout's appointment_id or fall back to visit_id
+    # Cancel linked visits
     if checkout.visit_id:
         visit = db.query(VisitHistory).filter(VisitHistory.id == checkout.visit_id).first()
         if visit:
