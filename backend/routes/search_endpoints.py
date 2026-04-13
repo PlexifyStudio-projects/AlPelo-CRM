@@ -662,11 +662,10 @@ def list_appointments(
     if search:
         term = f"%{search}%"
         digits = ''.join(c for c in search if c.isdigit())
-        conditions = [
-            Appointment.client_name.ilike(term),
-            Appointment.visit_code.ilike(term),
-        ]
-        if digits:
+        is_phone_search = len(digits) >= 7  # Phone numbers have 7+ digits
+
+        if is_phone_search:
+            # Phone search: find clients by phone ONLY, don't mix with name matches
             client_q = db.query(Client.id, Client.phone)
             if tid:
                 client_q = client_q.filter(Client.tenant_id == tid)
@@ -675,10 +674,28 @@ def list_appointments(
                 if phone and digits in ''.join(c for c in phone if c.isdigit())
             ]
             if phone_ids:
-                conditions.append(Appointment.client_id.in_(phone_ids))
+                query = query.filter(Appointment.client_id.in_(phone_ids))
+            else:
+                query = query.filter(Appointment.id == -1)  # No results
         else:
-            conditions.append(Appointment.client_phone.ilike(term))
-        query = query.filter(or_(*conditions))
+            # Text search: name, visit_code, or short phone digits
+            conditions = [
+                Appointment.client_name.ilike(term),
+                Appointment.visit_code.ilike(term),
+            ]
+            if digits and len(digits) >= 4:
+                client_q = db.query(Client.id, Client.phone)
+                if tid:
+                    client_q = client_q.filter(Client.tenant_id == tid)
+                phone_ids = [
+                    cid for cid, phone in client_q.all()
+                    if phone and digits in ''.join(c for c in phone if c.isdigit())
+                ]
+                if phone_ids:
+                    conditions.append(Appointment.client_id.in_(phone_ids))
+            else:
+                conditions.append(Appointment.client_phone.ilike(term))
+            query = query.filter(or_(*conditions))
 
     if date_from:
         query = query.filter(Appointment.date >= dt_date.fromisoformat(date_from))
