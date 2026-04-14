@@ -33,18 +33,20 @@ const StaffOrders = () => {
     setSearching(true);
     setSearched(false);
     try {
-      const res = await fetch(`${API}/appointments/?search=${encodeURIComponent(ticketSearch.trim())}`, { credentials: 'include' });
+      const q = ticketSearch.trim();
+      const res = await fetch(`${API}/appointments/?search=${encodeURIComponent(q)}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Error');
       const data = await res.json();
-      // Show all matches, sorted: pending first, then by date desc
-      const sorted = data
-        .filter(a => ['confirmed', 'completed', 'paid'].includes(a.status))
-        .sort((a, b) => {
-          if (a.status === 'confirmed' && b.status !== 'confirmed') return -1;
-          if (b.status === 'confirmed' && a.status !== 'confirmed') return 1;
-          return (b.date + b.time).localeCompare(a.date + a.time);
-        })
-        .slice(0, 10);
+      // STRICT: only show orders where visit_code matches EXACTLY
+      const exact = data.filter(a =>
+        ['confirmed', 'completed', 'paid'].includes(a.status) &&
+        (a.visit_code === q || String(a.visit_code) === q)
+      );
+      const sorted = exact.sort((a, b) => {
+        if (a.status === 'confirmed' && b.status !== 'confirmed') return -1;
+        if (b.status === 'confirmed' && a.status !== 'confirmed') return 1;
+        return (b.date + b.time).localeCompare(a.date + a.time);
+      });
       setSearchResults(sorted);
     } catch {
       setSearchResults([]);
