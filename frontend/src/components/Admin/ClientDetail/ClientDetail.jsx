@@ -486,11 +486,19 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                         <div className={`${b}__edit-phone`}>
                           <span className={`${b}__edit-phone-prefix`}>{countryPrefix}</span>
                           <input
-                            type="tel"
+                            type="text"
                             value={editForm.phone}
                             onChange={e => {
-                              const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              const el = e.target;
+                              const pos = el.selectionStart;
+                              const prev = editForm.phone;
+                              const digits = el.value.replace(/\D/g, '').slice(0, 10);
                               setEditForm(f => ({ ...f, phone: digits }));
+                              requestAnimationFrame(() => {
+                                const diff = digits.length - prev.length;
+                                const newPos = Math.max(0, pos + diff);
+                                el.setSelectionRange(newPos, newPos);
+                              });
                             }}
                             className={`${b}__edit-input`}
                             placeholder="3001234567"

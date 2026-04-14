@@ -179,10 +179,21 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
                 <span className={`${b}__phone-prefix`}>{countryPrefix}</span>
                 <input
                   className="input__field"
-                  type="tel"
+                  type="text"
                   name="phone"
                   value={form.phone}
-                  onChange={handleChange}
+                  onChange={e => {
+                    const el = e.target;
+                    const pos = el.selectionStart;
+                    const prev = form.phone;
+                    handleChange(e);
+                    requestAnimationFrame(() => {
+                      const newLen = el.value.length;
+                      const diff = newLen - prev.length;
+                      const newPos = Math.max(0, pos + diff);
+                      el.setSelectionRange(newPos, newPos);
+                    });
+                  }}
                   onBlur={handleBlur}
                   placeholder="3001234567"
                   required
