@@ -30,12 +30,22 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
   const [touched, setTouched] = useState({});
   const b = 'add-client-modal';
 
+  const stripPrefix = (raw) => {
+    if (!raw) return '';
+    const stripped = raw.replace(/[\s()\-]/g, '');
+    for (const pfx of Object.values(COUNTRY_PREFIXES)) {
+      if (stripped.startsWith(pfx)) return stripped.slice(pfx.length);
+    }
+    if (stripped.startsWith('+')) return stripped.replace(/^\+\d{1,3}/, '');
+    return stripped;
+  };
+
   useEffect(() => {
     if (editingClient) {
       setForm({
         client_id: editingClient.client_id || '',
         name: editingClient.name || '',
-        phone: editingClient.phone || '',
+        phone: stripPrefix(editingClient.phone),
         email: editingClient.email || '',
         document_type: editingClient.document_type || '',
         document_number: editingClient.document_number || '',
@@ -45,7 +55,7 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       });
     } else {
       setForm({
-        client_id: '', name: '', phone: countryPrefix + ' ', email: '', document_type: '', document_number: '',
+        client_id: '', name: '', phone: '', email: '', document_type: '', document_number: '',
         birthday: '', accepts_whatsapp: true, visit_code: '',
       });
     }
@@ -53,22 +63,11 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
     setTouched({});
   }, [editingClient, isOpen, countryPrefix]);
 
-  const formatPhone = useCallback((raw) => {
-    const prefixMatch = raw.match(/^(\+\d{1,3})\s*/);
-    const prefix = prefixMatch ? prefixMatch[1] : countryPrefix;
-    const afterPrefix = prefixMatch ? raw.slice(prefixMatch[0].length) : raw.replace(/^\+?\d{0,3}\s*/, '');
-    const digits = afterPrefix.replace(/\D/g, '');
-
-    if (digits.length === 0) return `${prefix} `;
-    if (digits.length <= 3) return `${prefix} (${digits}`;
-    if (digits.length <= 6) return `${prefix} (${digits.slice(0, 3)}) ${digits.slice(3)}`;
-    return `${prefix} (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
-  }, [countryPrefix]);
-
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     if (name === 'phone') {
-      setForm((f) => ({ ...f, phone: formatPhone(value) }));
+      const digits = value.replace(/\D/g, '').slice(0, 10);
+      setForm((f) => ({ ...f, phone: digits }));
     } else {
       setForm((f) => ({ ...f, [name]: value }));
     }
@@ -76,7 +75,7 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       if (prev[name]) return { ...prev, [name]: '' };
       return prev;
     });
-  }, [formatPhone]);
+  }, []);
 
   const validateField = useCallback((name, value) => {
     const fieldErrors = {};
@@ -97,12 +96,12 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
   const validate = useCallback(() => {
     const newErrors = {};
     if (!form.name.trim()) newErrors.name = 'El nombre es obligatorio';
-    if (!form.phone.trim() || form.phone.trim() === countryPrefix) newErrors.phone = 'El telefono es obligatorio';
+    if (!form.phone.trim()) newErrors.phone = 'El telefono es obligatorio';
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = 'Email invalido';
     }
     return newErrors;
-  }, [form, countryPrefix]);
+  }, [form]);
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
@@ -113,11 +112,10 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       return;
     }
 
-    // Store phone as clean digits only
-    const cleanPhone = form.phone.replace(/[\s()\-+]/g, '');
+    const fullPhone = countryPrefix.replace('+', '') + form.phone;
     const payload = {
       ...form,
-      phone: cleanPhone,
+      phone: fullPhone,
       birthday: form.birthday || null,
       email: form.email || null,
       document_type: form.document_type || null,
@@ -132,9 +130,9 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
 
     onSave(payload);
     onClose();
-  }, [validate, form, editingClient, onSave, onClose]);
+  }, [validate, form, editingClient, onSave, onClose, countryPrefix]);
 
-  const isFormValid = form.name.trim() && form.phone.trim() && form.phone.trim() !== countryPrefix;
+  const isFormValid = form.name.trim() && form.phone.trim();
 
   return (
     <Modal
@@ -175,17 +173,24 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
               error={touched.name ? errors.name : ''}
               required
             />
-            <Input
-              label="Telefono (WhatsApp)"
-              name="phone"
-              type="tel"
-              value={form.phone}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder={`${countryPrefix} 300 123 4567`}
-              error={touched.phone ? errors.phone : ''}
-              required
-            />
+            <div className={`input ${touched.phone && errors.phone ? 'input--error' : ''}`}>
+              <label className="input__label">Telefono (WhatsApp)<span className="input__required"> *</span></label>
+              <div className={`${b}__phone-field`}>
+                <span className={`${b}__phone-prefix`}>{countryPrefix}</span>
+                <input
+                  className="input__field"
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="3001234567"
+                  required
+                  inputMode="numeric"
+                />
+              </div>
+              {touched.phone && errors.phone && <span className="input__error-message">{errors.phone}</span>}
+            </div>
             <Input
               label="Email"
               name="email"

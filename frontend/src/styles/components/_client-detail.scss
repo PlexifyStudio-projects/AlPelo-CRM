@@ -680,6 +680,31 @@
     }
   }
 
+  &__edit-phone {
+    display: flex;
+    align-items: stretch;
+  }
+
+  &__edit-phone-prefix {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    background: $color-gray-100;
+    border: $border-width solid $color-gray-200;
+    border-right: none;
+    border-radius: $border-radius-sm 0 0 $border-radius-sm;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $color-gray-600;
+    white-space: nowrap;
+    user-select: none;
+
+    & + .client-detail__edit-input {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+
   &__edit-doc {
     display: flex;
     gap: $spacing-xs;

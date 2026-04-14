@@ -5,6 +5,14 @@ import { formatCurrency, formatDate, formatPhone } from '../../../utils/formatte
 import { STATUS_META } from '../../../utils/clientStatus';
 import clientService from '../../../services/clientService';
 import subscriptionService from '../../../services/subscriptionService';
+import { useTenant } from '../../../context/TenantContext';
+
+const COUNTRY_PREFIXES = {
+  CO: '+57', CL: '+56', AR: '+54', PE: '+51', VE: '+58', EC: '+593',
+  US: '+1', BR: '+55', MX: '+52', PA: '+507', CR: '+506', GT: '+502',
+  HN: '+504', SV: '+503', NI: '+505', DO: '+1', PY: '+595', UY: '+598',
+  BO: '+591', CU: '+53', PR: '+1',
+};
 
 const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -37,7 +45,19 @@ const STATUS_OPTIONS = [
   { value: 'nuevo', label: 'Nuevo' },
 ];
 
+const stripPhonePrefix = (raw) => {
+  if (!raw) return '';
+  const stripped = raw.replace(/[\s()\-]/g, '');
+  for (const pfx of Object.values(COUNTRY_PREFIXES)) {
+    if (stripped.startsWith(pfx)) return stripped.slice(pfx.length);
+  }
+  if (stripped.startsWith('+')) return stripped.replace(/^\+\d{1,3}/, '');
+  return stripped;
+};
+
 const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
+  const { tenant } = useTenant();
+  const countryPrefix = COUNTRY_PREFIXES[tenant?.country] || '+57';
   const [localClient, setLocalClient] = useState(clientProp);
   const [activeTab, setActiveTab] = useState('overview');
   const [visits, setVisits] = useState([]);
@@ -67,7 +87,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const startEditing = useCallback(() => {
     setEditForm({
       name: client.name || '',
-      phone: client.phone || '',
+      phone: stripPhonePrefix(client.phone),
       email: client.email || '',
       document_type: client.document_type || 'CC',
       document_number: client.document_number || '',
@@ -86,9 +106,10 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const saveEditing = useCallback(async () => {
     setSaving(true);
     try {
+      const fullPhone = countryPrefix.replace('+', '') + editForm.phone.replace(/\D/g, '');
       const payload = {
         name: editForm.name,
-        phone: editForm.phone.replace(/[\s()\-+]/g, ''),
+        phone: fullPhone,
         email: editForm.email || null,
         document_type: editForm.document_type || null,
         document_number: editForm.document_number || null,
@@ -462,13 +483,20 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                     <div className={`${b}__edit-row`}>
                       <div className={`${b}__edit-field`}>
                         <label className={`${b}__edit-label`}>Telefono (WhatsApp)</label>
-                        <input
-                          type="tel"
-                          value={editForm.phone}
-                          onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
-                          className={`${b}__edit-input`}
-                          placeholder="+57 300 000 0000"
-                        />
+                        <div className={`${b}__edit-phone`}>
+                          <span className={`${b}__edit-phone-prefix`}>{countryPrefix}</span>
+                          <input
+                            type="tel"
+                            value={editForm.phone}
+                            onChange={e => {
+                              const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              setEditForm(f => ({ ...f, phone: digits }));
+                            }}
+                            className={`${b}__edit-input`}
+                            placeholder="3001234567"
+                            inputMode="numeric"
+                          />
+                        </div>
                       </div>
                       <div className={`${b}__edit-field`}>
                         <label className={`${b}__edit-label`}>Email</label>
