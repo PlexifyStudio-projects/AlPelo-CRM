@@ -175,7 +175,8 @@ const StaffOrders = () => {
       fetch(`${API}/services/`, { credentials: 'include' })
         .then(r => r.ok ? r.json() : [])
         .then(data => {
-          const mine = data.filter(s => !s.staff_ids?.length || s.staff_ids.includes(staffId));
+          // Staff only sees services explicitly assigned to them
+          const mine = data.filter(s => s.staff_ids?.includes(staffId));
           setServices(mine);
         })
         .catch(() => setServices([]))
