@@ -316,7 +316,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       if (item.staff_id && !staffSchedules[item.staff_id]) {
         fetch(`${_API}/staff/${item.staff_id}/schedule`, { credentials: 'include' })
           .then(r => r.ok ? r.json() : null)
-          .then(data => { if (data) setStaffSchedules(prev => ({ ...prev, [item.staff_id]: data })); })
+          .then(data => { if (data) setStaffSchedules(prev => ({ ...prev, [item.staff_id]: data.schedule || data })); })
           .catch(() => {});
       }
     });
@@ -328,7 +328,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       const res = await fetch(`${_API}/staff/${staffId}/schedule`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setStaffSchedules(prev => ({ ...prev, [staffId]: data }));
+        setStaffSchedules(prev => ({ ...prev, [staffId]: data.schedule || data }));
       }
     } catch {}
   }, [staffSchedules]);
@@ -342,7 +342,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     let schedStart = HOURS_START * 60, schedEnd = HOURS_END * 60;
     let breakStart = -1, breakEnd = -1, isWorking = true;
     const sched = staffSchedules[staffId];
-    if (sched) {
+    if (Array.isArray(sched)) {
       const ds = sched.find(s => s.day_of_week === bdow);
       if (ds) {
         if (!ds.is_working) isWorking = false;
