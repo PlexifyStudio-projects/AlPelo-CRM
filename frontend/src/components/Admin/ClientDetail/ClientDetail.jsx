@@ -9,10 +9,23 @@ import subscriptionService from '../../../services/subscriptionService';
 const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
 const TIER_CONFIG = {
-  bronze: { label: 'Bronze', color: '#CD7F32' },
-  silver: { label: 'Silver', color: '#C0C0C0' },
-  gold:   { label: 'Gold',   color: '#FFD700' },
-  vip:    { label: 'VIP',    color: '#8B5CF6' },
+  bronze: { label: 'Bronze', color: '#CD7F32', bg: 'rgba(205,127,50,0.10)', next: 'silver', minPoints: 0 },
+  silver: { label: 'Silver', color: '#6B7280', bg: 'rgba(107,114,128,0.10)', next: 'gold', minPoints: 100 },
+  gold:   { label: 'Gold',   color: '#D97706', bg: 'rgba(217,119,6,0.10)', next: 'vip', minPoints: 300 },
+  vip:    { label: 'VIP',    color: '#7C3AED', bg: 'rgba(124,58,237,0.10)', next: null, minPoints: 500 },
+};
+
+const TIER_ORDER = ['bronze', 'silver', 'gold', 'vip'];
+
+const TX_TYPE_LABELS = {
+  earn_visit: { label: 'Puntos por visita', icon: '🏷️' },
+  earn_referral: { label: 'Referido', icon: '🤝' },
+  earn_birthday: { label: 'Bono cumpleaños', icon: '🎂' },
+  earn_review: { label: 'Reseña', icon: '⭐' },
+  earn_streak: { label: 'Racha de visitas', icon: '🔥' },
+  redeem: { label: 'Canje de puntos', icon: '🎁' },
+  adjustment: { label: 'Ajuste manual', icon: '✏️' },
+  expire: { label: 'Puntos expirados', icon: '⏰' },
 };
 
 const STATUS_OPTIONS = [
@@ -41,12 +54,57 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const [redeemPoints, setRedeemPoints] = useState('');
   const [redeemDesc, setRedeemDesc] = useState('');
   const [redeeming, setRedeeming] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
   const statusBtnRef = useRef(null);
   const b = 'client-detail';
 
   useEffect(() => { setLocalClient(clientProp); }, [clientProp]);
 
   const client = localClient;
+
+  const startEditing = useCallback(() => {
+    setEditForm({
+      name: client.name || '',
+      phone: client.phone || '',
+      email: client.email || '',
+      document_type: client.document_type || 'CC',
+      document_number: client.document_number || '',
+      birthday: client.birthday || '',
+      visit_code: client.visit_code || '',
+      accepts_whatsapp: client.accepts_whatsapp ?? true,
+    });
+    setIsEditing(true);
+  }, [client]);
+
+  const cancelEditing = useCallback(() => {
+    setIsEditing(false);
+    setEditForm({});
+  }, []);
+
+  const saveEditing = useCallback(async () => {
+    setSaving(true);
+    try {
+      const payload = {
+        name: editForm.name,
+        phone: editForm.phone.replace(/[\s()\-+]/g, ''),
+        email: editForm.email || null,
+        document_type: editForm.document_type || null,
+        document_number: editForm.document_number || null,
+        birthday: editForm.birthday || null,
+        visit_code: editForm.visit_code || null,
+        accepts_whatsapp: editForm.accepts_whatsapp,
+      };
+      const updated = await clientService.update(client.id, payload);
+      setLocalClient(updated);
+      setIsEditing(false);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      alert('Error al guardar: ' + (err.message || 'Error desconocido'));
+    }
+    setSaving(false);
+  }, [client?.id, editForm, onRefresh]);
 
   const loadLoyalty = useCallback(async (clientId) => {
     try {
@@ -99,11 +157,14 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   useEffect(() => {
     if (!client) return;
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (isEditing) { cancelEditing(); return; }
+        onClose();
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [client, onClose]);
+  }, [client, onClose, isEditing, cancelEditing]);
 
   useEffect(() => {
     if (!client) return;
@@ -244,6 +305,10 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
     },
     {
+      label: 'Ticket', value: client.visit_code || '\u2014',
+      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a4 4 0 0 0-8 0v2" /><line x1="12" y1="11" x2="12" y2="15" /></svg>,
+    },
+    {
       label: 'WhatsApp',
       value: client.accepts_whatsapp ? 'Acepta mensajes' : 'No acepta',
       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>,
@@ -266,7 +331,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
             </div>
             <div className={`${b}__header-info`}>
               <h2 className={`${b}__name`}>{client.name}</h2>
-              {(client.visit_code || client.client_id) && <span className={`${b}__client-id`}>Ticket: {client.visit_code || client.client_id}</span>}
+              <span className={`${b}__client-id`}>{client.client_id}</span>
               <div className={`${b}__status-wrapper`}>
                 <button
                   ref={statusBtnRef}
@@ -328,6 +393,159 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
         <div className={`${b}__content`}>
           {activeTab === 'overview' && (
             <div className={`${b}__overview`}>
+              {/* 1. Información de Contacto — primera */}
+              <div className={`${b}__info-section`}>
+                <div className={`${b}__section-header`}>
+                  <h4 className={`${b}__section-title`}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    Información de Contacto
+                  </h4>
+                  {isEditing ? (
+                    <div className={`${b}__section-actions`}>
+                      <button className={`${b}__btn-cancel`} onClick={cancelEditing} disabled={saving}>Cancelar</button>
+                      <button className={`${b}__btn-save`} onClick={saveEditing} disabled={saving || !editForm.name?.trim() || !editForm.phone?.trim()}>
+                        {saving ? (
+                          <>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className={`${b}__spin`}>
+                              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                            </svg>
+                            Guardando...
+                          </>
+                        ) : (
+                          <>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                            Guardar
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <button className={`${b}__btn-edit`} onClick={startEditing}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      Editar
+                    </button>
+                  )}
+                </div>
+
+                {isEditing ? (
+                  <div className={`${b}__edit-form`}>
+                    <div className={`${b}__edit-row`}>
+                      <div className={`${b}__edit-field`}>
+                        <label className={`${b}__edit-label`}>Nombre completo</label>
+                        <input
+                          type="text"
+                          value={editForm.name}
+                          onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                          className={`${b}__edit-input`}
+                          placeholder="Nombre del cliente"
+                        />
+                      </div>
+                      <div className={`${b}__edit-field`}>
+                        <label className={`${b}__edit-label`}>Ticket</label>
+                        <input
+                          type="text"
+                          value={editForm.visit_code}
+                          onChange={e => setEditForm(f => ({ ...f, visit_code: e.target.value }))}
+                          className={`${b}__edit-input`}
+                          placeholder="Ej: 1213"
+                        />
+                      </div>
+                    </div>
+                    <div className={`${b}__edit-row`}>
+                      <div className={`${b}__edit-field`}>
+                        <label className={`${b}__edit-label`}>Telefono (WhatsApp)</label>
+                        <input
+                          type="tel"
+                          value={editForm.phone}
+                          onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                          className={`${b}__edit-input`}
+                          placeholder="+57 300 000 0000"
+                        />
+                      </div>
+                      <div className={`${b}__edit-field`}>
+                        <label className={`${b}__edit-label`}>Email</label>
+                        <input
+                          type="email"
+                          value={editForm.email}
+                          onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+                          className={`${b}__edit-input`}
+                          placeholder="correo@ejemplo.com"
+                        />
+                      </div>
+                    </div>
+                    <div className={`${b}__edit-row`}>
+                      <div className={`${b}__edit-field`}>
+                        <label className={`${b}__edit-label`}>Documento</label>
+                        <div className={`${b}__edit-doc`}>
+                          <select
+                            value={editForm.document_type}
+                            onChange={e => setEditForm(f => ({ ...f, document_type: e.target.value }))}
+                            className={`${b}__edit-select`}
+                          >
+                            <option value="CC">CC</option>
+                            <option value="CE">CE</option>
+                            <option value="TI">TI</option>
+                            <option value="NIT">NIT</option>
+                            <option value="Pasaporte">Pasaporte</option>
+                          </select>
+                          <input
+                            type="text"
+                            value={editForm.document_number}
+                            onChange={e => setEditForm(f => ({ ...f, document_number: e.target.value }))}
+                            className={`${b}__edit-input`}
+                            placeholder="Numero de documento"
+                          />
+                        </div>
+                      </div>
+                      <div className={`${b}__edit-field`}>
+                        <label className={`${b}__edit-label`}>Cumpleanos</label>
+                        <input
+                          type="date"
+                          value={editForm.birthday}
+                          onChange={e => setEditForm(f => ({ ...f, birthday: e.target.value }))}
+                          className={`${b}__edit-input`}
+                        />
+                      </div>
+                    </div>
+                    <div className={`${b}__edit-row`}>
+                      <div className={`${b}__edit-field`}>
+                        <label className={`${b}__edit-label`}>WhatsApp</label>
+                        <label className={`${b}__edit-toggle`}>
+                          <input
+                            type="checkbox"
+                            checked={editForm.accepts_whatsapp}
+                            onChange={e => setEditForm(f => ({ ...f, accepts_whatsapp: e.target.checked }))}
+                          />
+                          <span className={`${b}__edit-toggle-slider`} />
+                          <span className={`${b}__edit-toggle-text`}>{editForm.accepts_whatsapp ? 'Acepta mensajes' : 'No acepta'}</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`${b}__info-grid`}>
+                    {contactItems.map((item) => (
+                      <div key={item.label} className={`${b}__info-item`}>
+                        <div className={`${b}__info-icon`}>{item.icon}</div>
+                        <div className={`${b}__info-text`}>
+                          <span className={`${b}__info-label`}>{item.label}</span>
+                          <span className={`${b}__info-value`}>{item.value}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Stats Grid — segundo */}
               <div className={`${b}__stats-grid`}>
                 {statItems.map((stat) => (
                   <div key={stat.label} className={`${b}__stat ${b}__stat--${stat.accent}`}>
@@ -338,140 +556,158 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                 ))}
               </div>
 
-              {loyalty?.account && (
-                <div className={`${b}__info-section`}>
-                  <h4 className={`${b}__section-title`}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-                    </svg>
-                    Programa de Lealtad
-                  </h4>
-                  <div className={`${b}__loyalty-section`}>
-                    <div className={`${b}__loyalty-top`}>
-                      <div className={`${b}__loyalty-points`}>
-                        <span className={`${b}__loyalty-available`}>{(loyalty.account.available_points ?? 0).toLocaleString('es-CO')}</span>
-                        <span className={`${b}__loyalty-points-label`}>puntos disponibles</span>
-                        <span className={`${b}__loyalty-total`}>de {(loyalty.account.total_points ?? 0).toLocaleString('es-CO')} acumulados</span>
-                      </div>
-                      <div className={`${b}__loyalty-tier-area`}>
-                        {(() => {
-                          const tierKey = (loyalty.account.tier || 'bronze').toLowerCase();
-                          const tier = TIER_CONFIG[tierKey] || TIER_CONFIG.bronze;
-                          return (
-                            <span
-                              className={`${b}__loyalty-tier`}
-                              style={{ '--tier-color': tier.color }}
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-                              </svg>
-                              {tier.label}
-                            </span>
-                          );
-                        })()}
-                        {loyalty.account.available_points > 0 && (
-                          <button className={`${b}__loyalty-redeem`} onClick={() => { setShowRedeem(true); setRedeemPoints(''); setRedeemDesc(''); }}>
-                            Canjear puntos
-                          </button>
-                        )}
-                      </div>
-                    </div>
+              {/* 3. Programa de Lealtad — rediseñado */}
+              {loyalty?.account && (() => {
+                const tierKey = (loyalty.account.tier || 'bronze').toLowerCase();
+                const tier = TIER_CONFIG[tierKey] || TIER_CONFIG.bronze;
+                const currentIdx = TIER_ORDER.indexOf(tierKey);
+                const nextTierKey = tier.next;
+                const nextTier = nextTierKey ? TIER_CONFIG[nextTierKey] : null;
+                const totalPts = loyalty.account.total_points ?? 0;
+                const availPts = loyalty.account.available_points ?? 0;
+                const progressPct = nextTier
+                  ? Math.min(100, Math.round(((totalPts - tier.minPoints) / (nextTier.minPoints - tier.minPoints)) * 100))
+                  : 100;
 
-                    {loyalty.transactions?.length > 0 && (
-                      <div className={`${b}__loyalty-txns`}>
-                        <span className={`${b}__loyalty-txns-title`}>Últimas transacciones</span>
-                        {loyalty.transactions.slice(0, 5).map((tx, idx) => {
-                          const isPositive = tx.points > 0;
-                          return (
-                            <div key={tx.id || idx} className={`${b}__loyalty-txn`}>
-                              <div className={`${b}__loyalty-txn-left`}>
-                                <span className={`${b}__loyalty-txn-type`}>{tx.type || tx.description}</span>
-                                <span className={`${b}__loyalty-txn-date`}>{tx.created_at ? formatDate(tx.created_at.split('T')[0]) : ''}</span>
-                              </div>
-                              <span className={`${b}__loyalty-txn-points ${b}__loyalty-txn-points--${isPositive ? 'positive' : 'negative'}`}>
-                                {isPositive ? '+' : ''}{tx.points}
+                return (
+                  <div className={`${b}__info-section`}>
+                    <h4 className={`${b}__section-title`}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                      </svg>
+                      Programa de Lealtad
+                    </h4>
+                    <div className={`${b}__loyalty-card`} style={{ '--tier-accent': tier.color, '--tier-bg': tier.bg }}>
+                      {/* Header con puntos y nivel */}
+                      <div className={`${b}__loyalty-header`}>
+                        <div className={`${b}__loyalty-points-block`}>
+                          <span className={`${b}__loyalty-pts-number`}>{availPts.toLocaleString('es-CO')}</span>
+                          <span className={`${b}__loyalty-pts-label`}>puntos disponibles</span>
+                        </div>
+                        <div className={`${b}__loyalty-tier-badge`}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                          </svg>
+                          {tier.label}
+                        </div>
+                      </div>
+
+                      {/* Barra de progreso hacia siguiente nivel */}
+                      <div className={`${b}__loyalty-progress`}>
+                        <div className={`${b}__loyalty-progress-info`}>
+                          <span>{totalPts.toLocaleString('es-CO')} pts acumulados</span>
+                          {nextTier ? (
+                            <span>{nextTier.minPoints - totalPts > 0 ? `${(nextTier.minPoints - totalPts).toLocaleString('es-CO')} pts para ${nextTier.label}` : `${nextTier.label} desbloqueado`}</span>
+                          ) : (
+                            <span>Nivel máximo alcanzado</span>
+                          )}
+                        </div>
+                        <div className={`${b}__loyalty-progress-bar`}>
+                          <div className={`${b}__loyalty-progress-fill`} style={{ width: `${progressPct}%` }} />
+                        </div>
+                        {/* Tier milestones */}
+                        <div className={`${b}__loyalty-tiers-row`}>
+                          {TIER_ORDER.map((tk, i) => {
+                            const tc = TIER_CONFIG[tk];
+                            const reached = i <= currentIdx;
+                            return (
+                              <span key={tk} className={`${b}__loyalty-tier-dot ${reached ? `${b}__loyalty-tier-dot--reached` : ''}`} style={{ '--dot-color': tc.color }}>
+                                {tc.label}
                               </span>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
-                    )}
-                  </div>
 
-                  {showRedeem && (
-                    <div className={`${b}__loyalty-redeem-panel`}>
-                      <div className={`${b}__loyalty-redeem-header`}>
-                        <strong>Canjear puntos</strong>
-                        <span>Disponibles: {(loyalty.account.available_points ?? 0).toLocaleString('es-CO')}</span>
-                      </div>
-                      <div className={`${b}__loyalty-redeem-form`}>
-                        <input
-                          type="number"
-                          min="1"
-                          max={loyalty.account.available_points}
-                          placeholder="Puntos a canjear"
-                          value={redeemPoints}
-                          onChange={e => setRedeemPoints(e.target.value)}
-                          className={`${b}__input`}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Motivo (ej: Descuento en servicio)"
-                          value={redeemDesc}
-                          onChange={e => setRedeemDesc(e.target.value)}
-                          className={`${b}__input`}
-                        />
-                      </div>
-                      <div className={`${b}__loyalty-redeem-actions`}>
-                        <button className={`${b}__btn-ghost`} onClick={() => setShowRedeem(false)}>Cancelar</button>
-                        <button
-                          className={`${b}__btn-primary`}
-                          disabled={redeeming || !redeemPoints || parseInt(redeemPoints) <= 0 || parseInt(redeemPoints) > loyalty.account.available_points}
-                          onClick={async () => {
-                            setRedeeming(true);
-                            try {
-                              const res = await fetch(`${_API}/loyalty/redeem`, {
-                                method: 'POST', credentials: 'include',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ client_id: client.id, points: parseInt(redeemPoints), description: redeemDesc || 'Canje de puntos' }),
-                              });
-                              if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
-                              setShowRedeem(false);
-                              loadLoyalty(client.id);
-                            } catch (err) {
-                              alert(err.message);
-                            }
-                            setRedeeming(false);
-                          }}
-                        >
-                          {redeeming ? 'Canjeando...' : `Canjear ${redeemPoints || 0} puntos`}
+                      {/* Botón canjear */}
+                      {availPts > 0 && !showRedeem && (
+                        <button className={`${b}__loyalty-redeem-btn`} onClick={() => { setShowRedeem(true); setRedeemPoints(''); setRedeemDesc(''); }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <polyline points="20 12 20 22 4 22 4 12" /><rect x="2" y="7" width="20" height="5" /><line x1="12" y1="22" x2="12" y2="7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+                          </svg>
+                          Canjear puntos
                         </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+                      )}
 
-              <div className={`${b}__info-section`}>
-                <h4 className={`${b}__section-title`}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  Información de Contacto
-                </h4>
-                <div className={`${b}__info-grid`}>
-                  {contactItems.map((item) => (
-                    <div key={item.label} className={`${b}__info-item`}>
-                      <div className={`${b}__info-icon`}>{item.icon}</div>
-                      <div className={`${b}__info-text`}>
-                        <span className={`${b}__info-label`}>{item.label}</span>
-                        <span className={`${b}__info-value`}>{item.value}</span>
-                      </div>
+                      {/* Panel canjear */}
+                      {showRedeem && (
+                        <div className={`${b}__loyalty-redeem-panel`}>
+                          <div className={`${b}__loyalty-redeem-header`}>
+                            <strong>Canjear puntos</strong>
+                            <span>Disponibles: {availPts.toLocaleString('es-CO')}</span>
+                          </div>
+                          <div className={`${b}__loyalty-redeem-form`}>
+                            <input
+                              type="number"
+                              min="1"
+                              max={availPts}
+                              placeholder="Puntos a canjear"
+                              value={redeemPoints}
+                              onChange={e => setRedeemPoints(e.target.value)}
+                              className={`${b}__input`}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Motivo (ej: Descuento en servicio)"
+                              value={redeemDesc}
+                              onChange={e => setRedeemDesc(e.target.value)}
+                              className={`${b}__input`}
+                            />
+                          </div>
+                          <div className={`${b}__loyalty-redeem-actions`}>
+                            <button className={`${b}__btn-ghost`} onClick={() => setShowRedeem(false)}>Cancelar</button>
+                            <button
+                              className={`${b}__btn-primary`}
+                              disabled={redeeming || !redeemPoints || parseInt(redeemPoints) <= 0 || parseInt(redeemPoints) > availPts}
+                              onClick={async () => {
+                                setRedeeming(true);
+                                try {
+                                  const res = await fetch(`${_API}/loyalty/redeem`, {
+                                    method: 'POST', credentials: 'include',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ client_id: client.id, points: parseInt(redeemPoints), description: redeemDesc || 'Canje de puntos' }),
+                                  });
+                                  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
+                                  setShowRedeem(false);
+                                  loadLoyalty(client.id);
+                                } catch (err) {
+                                  alert(err.message);
+                                }
+                                setRedeeming(false);
+                              }}
+                            >
+                              {redeeming ? 'Canjeando...' : `Canjear ${redeemPoints || 0} puntos`}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Transacciones recientes */}
+                      {loyalty.transactions?.length > 0 && (
+                        <div className={`${b}__loyalty-txns`}>
+                          <span className={`${b}__loyalty-txns-title`}>Últimas transacciones</span>
+                          {loyalty.transactions.slice(0, 5).map((tx, idx) => {
+                            const isPositive = tx.points > 0;
+                            const txMeta = TX_TYPE_LABELS[tx.type] || { label: tx.type || tx.description || 'Transacción', icon: '📌' };
+                            return (
+                              <div key={tx.id || idx} className={`${b}__loyalty-txn`}>
+                                <div className={`${b}__loyalty-txn-icon`}>{txMeta.icon}</div>
+                                <div className={`${b}__loyalty-txn-left`}>
+                                  <span className={`${b}__loyalty-txn-type`}>{txMeta.label}</span>
+                                  <span className={`${b}__loyalty-txn-date`}>{tx.created_at ? formatDate(tx.created_at.split('T')[0]) : ''}</span>
+                                </div>
+                                <span className={`${b}__loyalty-txn-points ${b}__loyalty-txn-points--${isPositive ? 'positive' : 'negative'}`}>
+                                  {isPositive ? '+' : ''}{tx.points}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                );
+              })()}
 
               {(client.favorite_service || client.preferred_barber_name) && (
                 <div className={`${b}__info-section`}>
@@ -751,13 +987,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
               WhatsApp
             </Button>
           )}
-          <Button variant="primary" size="md" onClick={() => onEdit(client)}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            Editar
-          </Button>
         </div>
       </div>
     </div>,

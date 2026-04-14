@@ -17,7 +17,7 @@ const Clients = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'updated_at', direction: 'desc' });
   const [selectedClient, setSelectedClient] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
@@ -67,6 +67,7 @@ const Clients = () => {
         if (c.name.toLowerCase().includes(q)) return true;
         if (c.email && c.email.toLowerCase().includes(q)) return true;
         if (c.client_id.toLowerCase().includes(q)) return true;
+        if (c.visit_code && c.visit_code.toLowerCase().includes(q)) return true;
         if (qDigits && c.phone) {
           const phoneDigits = c.phone.replace(/\D/g, '');
           if (phoneDigits.includes(qDigits)) return true;
@@ -89,6 +90,8 @@ const Clients = () => {
     result.sort((a, bClient) => {
       let aVal = a[sortConfig.key];
       let bVal = bClient[sortConfig.key];
+      if (aVal == null) aVal = '';
+      if (bVal == null) bVal = '';
       if (typeof aVal === 'string') aVal = aVal.toLowerCase();
       if (typeof bVal === 'string') bVal = bVal.toLowerCase();
       if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -99,13 +102,9 @@ const Clients = () => {
     return result;
   }, [clients, searchQuery, statusFilter, sortConfig, rfmFilter, rfmData]);
 
-  const handleSaveClient = async (clientData, visitCode) => {
+  const handleSaveClient = async (clientData) => {
     try {
       let savedClientId = editingClient?.id;
-      // Include visit_code in the client data
-      if (visitCode !== undefined) {
-        clientData.visit_code = visitCode || null;
-      }
       if (editingClient) {
         await clientService.update(editingClient.id, clientData);
         addNotification('Cliente actualizado correctamente', 'success');

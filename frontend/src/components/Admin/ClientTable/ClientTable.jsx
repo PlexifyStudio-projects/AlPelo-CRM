@@ -45,7 +45,7 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
           <thead className={`${b}__head`}>
             <tr>
               <th className={`${b}__th ${b}__th--id`}>
-                <span className={`${b}__th-content`}>ID</span>
+                <span className={`${b}__th-content`}>Ticket</span>
               </th>
               <th className={`${b}__th`} onClick={() => onSort('name')}>
                 <span className={`${b}__th-content`}>

@@ -132,7 +132,7 @@ def list_clients(
     status: Optional[str] = Query(None),
     active: Optional[bool] = Query(None),
     tag: Optional[str] = Query(None),
-    sort_by: Optional[str] = Query("name"),
+    sort_by: Optional[str] = Query("updated_at"),
     db: Session = Depends(get_db),
     user: Admin = Depends(get_current_user),
 ):
@@ -165,7 +165,9 @@ def list_clients(
     if tag:
         query = query.filter(cast(Client.tags, String).ilike(f"%{tag}%"))
 
-    if sort_by == "created_at":
+    if sort_by == "updated_at":
+        query = query.order_by(Client.updated_at.desc().nullslast())
+    elif sort_by == "created_at":
         query = query.order_by(Client.created_at.desc())
     elif sort_by == "client_id":
         query = query.order_by(Client.client_id)

@@ -79,6 +79,7 @@ class ClientListResponse(BaseModel):
     last_visit: Optional[date] = None
     days_since_last_visit: Optional[int] = None
     status: str = "nuevo"
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

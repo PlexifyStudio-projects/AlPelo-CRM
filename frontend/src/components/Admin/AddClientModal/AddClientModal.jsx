@@ -123,15 +123,14 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
       document_type: form.document_type || null,
       document_number: form.document_number || null,
       client_id: form.client_id || null,
+      visit_code: form.visit_code || null,
     };
 
     if (!editingClient && !payload.client_id) {
       delete payload.client_id;
     }
 
-    const visitCode = payload.visit_code;
-    delete payload.visit_code;
-    onSave(payload, visitCode);
+    onSave(payload);
     onClose();
   }, [validate, form, editingClient, onSave, onClose]);
 

@@ -450,4 +450,5 @@ def compute_client_list_item(client: Client, db: Session):
         last_visit=last_visit,
         days_since_last_visit=days_since,
         status=status,
+        updated_at=getattr(client, 'updated_at', None),
     )
