@@ -294,8 +294,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     } catch {}
   }, [loadNotes]);
 
-  if (!client) return null;
-
   const getInitials = (name) =>
     name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
@@ -477,6 +475,8 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       setSvcSubmitting(false);
     }
   }, [svcItems, svcDate, svcNotes, client, addNotification, onRefresh]);
+
+  if (!client) return null;
 
   const contactItems = [
     {
