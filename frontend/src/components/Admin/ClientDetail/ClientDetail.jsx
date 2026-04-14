@@ -48,8 +48,14 @@ const STATUS_OPTIONS = [
 const stripPhonePrefix = (raw) => {
   if (!raw) return '';
   const stripped = raw.replace(/[\s()\-]/g, '');
+  // Try with + first (e.g. +573001234567)
   for (const pfx of Object.values(COUNTRY_PREFIXES)) {
     if (stripped.startsWith(pfx)) return stripped.slice(pfx.length);
+  }
+  // Try without + (e.g. 573001234567)
+  for (const pfx of Object.values(COUNTRY_PREFIXES)) {
+    const digits = pfx.replace('+', '');
+    if (stripped.startsWith(digits)) return stripped.slice(digits.length);
   }
   if (stripped.startsWith('+')) return stripped.replace(/^\+\d{1,3}/, '');
   return stripped;

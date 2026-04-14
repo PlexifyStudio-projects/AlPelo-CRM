@@ -36,6 +36,10 @@ const AddClientModal = ({ isOpen, onClose, onSave, editingClient }) => {
     for (const pfx of Object.values(COUNTRY_PREFIXES)) {
       if (stripped.startsWith(pfx)) return stripped.slice(pfx.length);
     }
+    for (const pfx of Object.values(COUNTRY_PREFIXES)) {
+      const digits = pfx.replace('+', '');
+      if (stripped.startsWith(digits)) return stripped.slice(digits.length);
+    }
     if (stripped.startsWith('+')) return stripped.replace(/^\+\d{1,3}/, '');
     return stripped;
   };
