@@ -310,6 +310,18 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       .catch(() => setDayApts([]));
   }, [activeTab, svcDate]);
 
+  // Auto-load staff schedules when items change
+  useEffect(() => {
+    svcItems.forEach(item => {
+      if (item.staff_id && !staffSchedules[item.staff_id]) {
+        fetch(`${_API}/staff/${item.staff_id}/schedule`, { credentials: 'include' })
+          .then(r => r.ok ? r.json() : null)
+          .then(data => { if (data) setStaffSchedules(prev => ({ ...prev, [item.staff_id]: data })); })
+          .catch(() => {});
+      }
+    });
+  }, [svcItems, staffSchedules]);
+
   const loadStaffSchedule = useCallback(async (staffId) => {
     if (staffSchedules[staffId]) return;
     try {
@@ -998,8 +1010,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                       ? staffList.filter(st => item.staff_ids.includes(st.id))
                       : staffList;
 
-                    if (item.staff_id && !staffSchedules[item.staff_id]) loadStaffSchedule(item.staff_id);
-                    const slotData = item.staff_id ? computeSlots(parseInt(item.staff_id), item.service_id, idx) : null;
+                    const slotData = item.staff_id && staffSchedules[item.staff_id] ? computeSlots(parseInt(item.staff_id), item.service_id, idx) : null;
 
                     return (
                       <div key={idx} className={`${b}__svc-item`}>
