@@ -107,6 +107,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const [svcSubmitting, setSvcSubmitting] = useState(false);
   const [staffSchedules, setStaffSchedules] = useState({});
   const [dayApts, setDayApts] = useState([]);
+  const [svcTicket, setSvcTicket] = useState('');
 
   const statusBtnRef = useRef(null);
   const b = 'client-detail';
@@ -200,6 +201,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       setNewNote('');
       setAddingNote(false);
       setShowStatusMenu(false);
+      setSvcTicket(client?.visit_code || '');
       loadVisits();
       loadNotes();
       loadLoyalty(client.id);
@@ -391,6 +393,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const svcSubtotal = useMemo(() => svcItems.reduce((s, i) => s + (i.price || 0), 0), [svcItems]);
 
   const handleCreateOrder = useCallback(async () => {
+    if (!svcTicket.trim()) { addNotification('El ticket es obligatorio', 'error'); return; }
     if (!svcItems.length) { addNotification('Agrega al menos un servicio', 'error'); return; }
     setSvcSubmitting(true);
     try {
@@ -405,7 +408,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
         service_date: svcDate,
         service_time: firstTime,
         notes: svcNotes,
-        ticket_number: client.visit_code || '',
+        ticket_number: svcTicket.trim(),
         items: svcItems.map(it => ({ service_id: it.service_id, service_name: it.service_name, price: it.price, duration_minutes: it.duration_minutes, staff_id: it.staff_id ? parseInt(it.staff_id) : null })),
         products: [],
       };
@@ -442,7 +445,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     } finally {
       setSvcSubmitting(false);
     }
-  }, [svcItems, svcDate, svcNotes, client, addNotification, onRefresh]);
+  }, [svcItems, svcDate, svcNotes, svcTicket, client, addNotification, onRefresh]);
 
   if (!client) return null;
 
@@ -971,22 +974,53 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
 
           {activeTab === 'services' && (
             <div className={`${b}__services-tab`}>
+              {/* Ticket number (required) */}
+              <div className={`${b}__svc-ticket-row`}>
+                <label className={`${b}__svc-label`}>Ticket *</label>
+                <div className={`${b}__svc-ticket-input`}>
+                  <span className={`${b}__svc-ticket-prefix`}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" /></svg>
+                  </span>
+                  <input type="text" value={svcTicket} onChange={e => setSvcTicket(e.target.value)} placeholder="Ej: T-001" className={`${b}__svc-ticket-field`} />
+                </div>
+              </div>
+
               {/* Date picker */}
               <div className={`${b}__svc-date-row`}>
                 <label className={`${b}__svc-label`}>Fecha</label>
-                <input type="date" value={svcDate} onChange={e => { setSvcDate(e.target.value); setSvcItems(prev => prev.map(it => ({ ...it, time: '' }))); }} className={`${b}__edit-input`} min={toISO(new Date())} />
+                <div className={`${b}__svc-date-input`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`${b}__svc-date-icon`}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                  <input type="date" value={svcDate} onChange={e => { setSvcDate(e.target.value); setSvcItems(prev => prev.map(it => ({ ...it, time: '' }))); }} className={`${b}__svc-date-field`} min={toISO(new Date())} />
+                </div>
               </div>
 
-              {/* Service search + add */}
+              {/* Quick services chips */}
+              {svcCatalog.length > 0 && (
+                <div className={`${b}__svc-quick`}>
+                  <label className={`${b}__svc-label`}>Acceso rapido</label>
+                  <div className={`${b}__svc-quick-list`}>
+                    {svcCatalog.slice(0, 6).map(s => (
+                      <button key={s.id} type="button" className={`${b}__svc-quick-chip`} onClick={() => addSvcItem(s)}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        <span>{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Search */}
               <div className={`${b}__svc-search-wrap`}>
-                <label className={`${b}__svc-label`}>Agregar servicio</label>
-                <input
-                  type="text"
-                  value={svcSearch}
-                  onChange={e => setSvcSearch(e.target.value)}
-                  placeholder="Buscar servicio..."
-                  className={`${b}__edit-input`}
-                />
+                <div className={`${b}__svc-search-inner`}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={`${b}__svc-search-icon`}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  <input
+                    type="text"
+                    value={svcSearch}
+                    onChange={e => setSvcSearch(e.target.value)}
+                    placeholder="Buscar servicio..."
+                    className={`${b}__svc-search-field`}
+                  />
+                </div>
                 {svcSearch.trim() && (
                   <div className={`${b}__svc-dropdown`}>
                     {svcCatalog.filter(s => s.name.toLowerCase().includes(svcSearch.toLowerCase())).slice(0, 8).map(s => (
@@ -1017,7 +1051,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                         <div className={`${b}__svc-item-header`}>
                           <div className={`${b}__svc-item-info`}>
                             <span className={`${b}__svc-item-name`}>{item.service_name}</span>
-                            <span className={`${b}__svc-item-meta`}>{item.duration_minutes} min &middot; {formatCOP(item.price)}</span>
+                            <span className={`${b}__svc-item-price`}>{formatCOP(item.price)}</span>
                           </div>
                           <button type="button" className={`${b}__svc-item-remove`} onClick={() => removeSvcItem(idx)}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -1025,16 +1059,19 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                             </svg>
                           </button>
                         </div>
+                        <div className={`${b}__svc-item-meta`}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                          <span>{item.duration_minutes} min</span>
+                        </div>
                         <div className={`${b}__svc-item-fields`}>
                           <div className={`${b}__edit-field`}>
-                            <label className={`${b}__edit-label`}>Profesional</label>
+                            <label className={`${b}__edit-label`}>Profesional (opcional)</label>
                             <select
                               value={item.staff_id}
                               onChange={e => { updateSvcItem(idx, 'staff_id', e.target.value); updateSvcItem(idx, 'time', ''); if (e.target.value) loadStaffSchedule(e.target.value); }}
                               className={`${b}__edit-select`}
-                              style={{ width: '100%' }}
                             >
-                              <option value="">Seleccionar</option>
+                              <option value="">Sin asignar</option>
                               {eligibleStaff.map(st => (
                                 <option key={st.id} value={st.id}>{st.name}</option>
                               ))}
@@ -1076,31 +1113,37 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                 </div>
               )}
 
-              {/* Total + Submit */}
+              {/* Summary footer */}
               {svcItems.length > 0 && (
                 <div className={`${b}__svc-footer`}>
-                  <div className={`${b}__svc-total`}>
-                    <span>Total</span>
+                  <div className={`${b}__svc-summary`}>
+                    <span className={`${b}__svc-count`}>{svcItems.length} servicio{svcItems.length !== 1 ? 's' : ''}</span>
                     <span className={`${b}__svc-total-amount`}>{formatCOP(svcSubtotal)}</span>
                   </div>
                   <button
                     type="button"
-                    className={`${b}__btn-save`}
-                    style={{ width: '100%', padding: '10px 0', borderRadius: '8px', fontSize: '14px' }}
-                    disabled={svcSubmitting || !svcItems.some(it => it.staff_id && it.time)}
+                    className={`${b}__svc-submit`}
+                    disabled={svcSubmitting}
                     onClick={handleCreateOrder}
                   >
-                    {svcSubmitting ? 'Creando...' : 'Crear orden y agendar cita'}
+                    {svcSubmitting ? (
+                      'Creando...'
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                        Crear orden y agendar
+                      </>
+                    )}
                   </button>
                 </div>
               )}
 
-              {svcItems.length === 0 && (
+              {svcItems.length === 0 && !svcSearch.trim() && (
                 <div className={`${b}__svc-empty`}>
-                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: '#94A3B8' }}>
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.4 }}>
                     <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a4 4 0 0 0-8 0v2" />
                   </svg>
-                  <p>Busca y agrega servicios para crear una orden</p>
+                  <p>Selecciona servicios desde el acceso rapido o busca arriba</p>
                 </div>
               )}
             </div>

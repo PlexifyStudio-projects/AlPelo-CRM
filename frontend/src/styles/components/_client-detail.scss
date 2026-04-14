@@ -1745,28 +1745,184 @@
     gap: $spacing-md;
   }
 
-  &__svc-date-row {
-    @include flex-column;
-    gap: 4px;
-  }
-
   &__svc-label {
-    font-size: 11px;
+    font-size: $font-size-2xs;
     font-weight: $font-weight-semibold;
     color: $color-gray-500;
     text-transform: uppercase;
-    letter-spacing: $letter-spacing-wider;
+    letter-spacing: 0.06em;
+    margin-bottom: $spacing-2xs;
   }
 
-  &__svc-search-wrap {
+  // Ticket row
+  &__svc-ticket-row {
     @include flex-column;
+    gap: $spacing-2xs;
+  }
+
+  &__svc-ticket-input {
+    display: flex;
+    align-items: center;
+    background: $color-white;
+    border: $border-width solid $color-gray-200;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    transition: border-color $transition-fast;
+
+    &:focus-within {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
+  }
+
+  &__svc-ticket-prefix {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 $spacing-sm;
+    color: $color-gray-400;
+    background: $color-gray-50;
+    border-right: $border-width solid $color-gray-200;
+    height: 38px;
+    min-width: 38px;
+  }
+
+  &__svc-ticket-field {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: $spacing-xs $spacing-sm;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-gray-900;
+    background: transparent;
+
+    &::placeholder {
+      color: $color-gray-400;
+    }
+  }
+
+  // Date row
+  &__svc-date-row {
+    @include flex-column;
+    gap: $spacing-2xs;
+  }
+
+  &__svc-date-input {
+    display: flex;
+    align-items: center;
+    background: $color-white;
+    border: $border-width solid $color-gray-200;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    transition: border-color $transition-fast;
+
+    &:focus-within {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
+  }
+
+  &__svc-date-icon {
+    margin-left: $spacing-sm;
+    color: $color-gray-400;
+    flex-shrink: 0;
+  }
+
+  &__svc-date-field {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: $spacing-xs $spacing-sm;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-gray-900;
+    background: transparent;
+  }
+
+  // Quick access chips
+  &__svc-quick {
+    @include flex-column;
+    gap: $spacing-2xs;
+  }
+
+  &__svc-quick-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__svc-quick-chip {
+    display: inline-flex;
+    align-items: center;
     gap: 4px;
+    padding: 5px 10px;
+    background: $color-white;
+    border: $border-width solid $color-gray-200;
+    border-radius: $border-radius-full;
+    font-family: $font-primary;
+    font-size: $font-size-2xs;
+    color: $color-gray-700;
+    cursor: pointer;
+    transition: all $transition-fast;
+    white-space: nowrap;
+
+    svg {
+      color: $color-primary;
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      border-color: $color-primary;
+      color: $color-primary;
+      background: rgba($color-primary, 0.04);
+    }
+  }
+
+  // Search
+  &__svc-search-wrap {
     position: relative;
+  }
+
+  &__svc-search-inner {
+    display: flex;
+    align-items: center;
+    background: $color-white;
+    border: $border-width solid $color-gray-200;
+    border-radius: $border-radius-md;
+    overflow: hidden;
+    transition: border-color $transition-fast;
+
+    &:focus-within {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
+  }
+
+  &__svc-search-icon {
+    margin-left: $spacing-sm;
+    color: $color-gray-400;
+    flex-shrink: 0;
+  }
+
+  &__svc-search-field {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: $spacing-xs $spacing-sm;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    color: $color-gray-900;
+    background: transparent;
+
+    &::placeholder {
+      color: $color-gray-400;
+    }
   }
 
   &__svc-dropdown {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 4px);
     left: 0;
     right: 0;
     background: $color-white;
@@ -1813,40 +1969,69 @@
     font-size: $font-size-sm;
   }
 
+  // Service cards
   &__svc-items {
     @include flex-column;
     gap: $spacing-sm;
   }
 
   &__svc-item {
-    background: $color-gray-50;
+    background: $color-white;
     border: $border-width solid $color-gray-200;
+    border-left: 3px solid $color-primary;
     border-radius: $border-radius-md;
     padding: $spacing-md;
     @include flex-column;
     gap: $spacing-sm;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: box-shadow $transition-fast;
+
+    &:hover {
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    }
   }
 
   &__svc-item-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
   }
 
   &__svc-item-info {
-    @include flex-column;
-    gap: 2px;
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    min-width: 0;
+    flex: 1;
   }
 
   &__svc-item-name {
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
     color: $color-gray-900;
+    @include truncate;
+  }
+
+  &__svc-item-price {
+    font-size: $font-size-xs;
+    font-weight: $font-weight-semibold;
+    color: $color-primary;
+    background: rgba($color-primary, 0.08);
+    padding: 2px 8px;
+    border-radius: $border-radius-full;
+    white-space: nowrap;
   }
 
   &__svc-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: $font-size-xs;
     color: $color-gray-500;
+
+    svg {
+      color: $color-gray-400;
+    }
   }
 
   &__svc-item-remove {
@@ -1857,6 +2042,7 @@
     cursor: pointer;
     border-radius: $border-radius-sm;
     transition: all $transition-fast;
+    flex-shrink: 0;
 
     &:hover {
       color: $color-error;
@@ -1887,7 +2073,7 @@
   &__svc-slot {
     padding: 5px 10px;
     font-family: $font-primary;
-    font-size: 12px;
+    font-size: $font-size-2xs;
     background: $color-white;
     border: $border-width solid $color-gray-200;
     border-radius: $border-radius-full;
@@ -1918,25 +2104,62 @@
     }
   }
 
+  // Footer / Summary
   &__svc-footer {
     @include flex-column;
     gap: $spacing-sm;
-    padding-top: $spacing-sm;
-    border-top: $border-width solid $color-gray-200;
+    padding-top: $spacing-md;
+    border-top: 2px solid $color-gray-100;
+    position: sticky;
+    bottom: 0;
+    background: $color-white;
+    margin: 0 (-$spacing-lg);
+    padding: $spacing-md $spacing-lg $spacing-sm;
   }
 
-  &__svc-total {
+  &__svc-summary {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: $font-size-sm;
-    color: $color-gray-600;
+  }
+
+  &__svc-count {
+    font-size: $font-size-xs;
+    color: $color-gray-500;
   }
 
   &__svc-total-amount {
     font-size: $font-size-lg;
     font-weight: 700;
-    color: $color-gray-900;
+    color: $color-primary;
+  }
+
+  &__svc-submit {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $spacing-xs;
+    padding: $spacing-sm 0;
+    background: linear-gradient(135deg, $color-primary, $color-primary-light);
+    color: $color-white;
+    border: none;
+    border-radius: $border-radius-md;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, $color-primary-dark, $color-primary);
+      box-shadow: 0 4px 12px rgba($color-primary, 0.3);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 
   &__svc-empty {
