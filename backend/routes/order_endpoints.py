@@ -124,6 +124,8 @@ def list_orders(
         ]
         if digits:
             conditions.append(Order.client_phone.ilike(f"%{digits}%"))
+            # Also match ticket by digits only (e.g. search "M8824" finds ticket "8824")
+            conditions.append(Order.ticket_number.ilike(f"%{digits}%"))
         q = q.filter(or_(*conditions))
 
     total = q.count()

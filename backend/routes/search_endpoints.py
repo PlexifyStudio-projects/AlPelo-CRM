@@ -685,6 +685,8 @@ def list_appointments(
                 Appointment.client_name.ilike(term),
                 Appointment.visit_code.ilike(term),
             ]
+            if digits:
+                conditions.append(Appointment.visit_code.ilike(f"%{digits}%"))
             if digits and len(digits) >= 4:
                 client_q = db.query(Client.id, Client.phone)
                 if tid:
