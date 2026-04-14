@@ -230,6 +230,30 @@ def create_checkout(
             client_document_type = client_obj.document_type
             client_email = client_obj.email
 
+    # ---- Ensure client_id is not None (visit_history requires it) ----
+    if not client_id and client_name:
+        # Try to find by name or phone
+        if client_phone:
+            existing = db.query(Client).filter(Client.tenant_id == tid, Client.phone.ilike(f"%{client_phone.replace('+', '').strip()}%")).first()
+        else:
+            existing = db.query(Client).filter(Client.tenant_id == tid, Client.name == client_name).first()
+        if existing:
+            client_id = existing.id
+        else:
+            # Create a minimal client record
+            import random, string
+            random_id = "C" + "".join(random.choices(string.digits, k=5))
+            new_client = Client(
+                tenant_id=tid,
+                client_id=random_id,
+                name=client_name,
+                phone=client_phone or "0000000000",
+                is_active=True,
+            )
+            db.add(new_client)
+            db.flush()
+            client_id = new_client.id
+
     # ---- Calculate pricing ----
     subtotal = sum(item.unit_price * item.quantity for item in data.items)
 
