@@ -5,7 +5,12 @@ import { formatCurrency, formatDate, formatPhone } from '../../../utils/formatte
 import { STATUS_META } from '../../../utils/clientStatus';
 import clientService from '../../../services/clientService';
 import subscriptionService from '../../../services/subscriptionService';
+import orderService from '../../../services/orderService';
+import appointmentService from '../../../services/appointmentService';
+import servicesService from '../../../services/servicesService';
+import staffService from '../../../services/staffService';
 import { useTenant } from '../../../context/TenantContext';
+import { useNotification } from '../../../context/NotificationContext';
 
 const COUNTRY_PREFIXES = {
   CO: '+57', CL: '+56', AR: '+54', PE: '+51', VE: '+58', EC: '+593',
@@ -61,8 +66,17 @@ const stripPhonePrefix = (raw) => {
   return stripped;
 };
 
+const HOURS_START = 7, HOURS_END = 21, SLOT_MIN = 15;
+const pad2 = (n) => String(n).padStart(2, '0');
+const timeToMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const minToTime = (m) => `${pad2(Math.floor(m / 60))}:${pad2(m % 60)}`;
+const formatTime12 = (t) => { if (!t) return ''; const [h, mn] = t.split(':').map(Number); return `${h % 12 || 12}:${pad2(mn)} ${h >= 12 ? 'p.m.' : 'a.m.'}`; };
+const toISO = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const formatCOP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
+
 const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const { tenant } = useTenant();
+  const { addNotification } = useNotification();
   const countryPrefix = COUNTRY_PREFIXES[tenant?.country] || '+57';
   const [localClient, setLocalClient] = useState(clientProp);
   const [activeTab, setActiveTab] = useState('overview');
@@ -83,6 +97,17 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
+  // Services tab state
+  const [svcCatalog, setSvcCatalog] = useState([]);
+  const [staffList, setStaffList] = useState([]);
+  const [svcItems, setSvcItems] = useState([]);
+  const [svcSearch, setSvcSearch] = useState('');
+  const [svcDate, setSvcDate] = useState(toISO(new Date()));
+  const [svcNotes, setSvcNotes] = useState('');
+  const [svcSubmitting, setSvcSubmitting] = useState(false);
+  const [staffSchedules, setStaffSchedules] = useState({});
+  const [dayApts, setDayApts] = useState([]);
+
   const statusBtnRef = useRef(null);
   const b = 'client-detail';
 
@@ -277,6 +302,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   const activeSubCount = subscriptions.filter(s => s.status === 'active').length;
   const tabs = [
     { id: 'overview', label: 'Resumen' },
+    { id: 'services', label: 'Servicios' },
     { id: 'subscriptions', label: `Planes${activeSubCount ? ` (${activeSubCount})` : ''}` },
     { id: 'history', label: 'Historial' },
     { id: 'notes', label: 'Notas' },
@@ -313,6 +339,144 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
     },
   ];
+
+  // ── Services tab logic ──
+  useEffect(() => {
+    if (activeTab === 'services' && !svcCatalog.length) {
+      Promise.all([servicesService.list(), staffService.list()])
+        .then(([svcs, staff]) => { setSvcCatalog(svcs); setStaffList(staff); })
+        .catch(() => {});
+    }
+  }, [activeTab, svcCatalog.length]);
+
+  useEffect(() => {
+    if (activeTab !== 'services' || !svcDate) return;
+    appointmentService.list({ date_from: svcDate, date_to: svcDate })
+      .then(list => setDayApts(Array.isArray(list) ? list : []))
+      .catch(() => setDayApts([]));
+  }, [activeTab, svcDate]);
+
+  const loadStaffSchedule = useCallback(async (staffId) => {
+    if (staffSchedules[staffId]) return;
+    try {
+      const res = await fetch(`${_API}/staff/${staffId}/schedule`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setStaffSchedules(prev => ({ ...prev, [staffId]: data }));
+      }
+    } catch {}
+  }, [staffSchedules]);
+
+  const computeSlots = useCallback((staffId, serviceId, itemIndex) => {
+    const svc = svcCatalog.find(s => s.id === serviceId);
+    const dur = svc?.duration_minutes || 30;
+    const dateObj = new Date(svcDate + 'T12:00:00');
+    const dow = dateObj.getDay();
+    const bdow = dow === 0 ? 6 : dow - 1;
+    let schedStart = HOURS_START * 60, schedEnd = HOURS_END * 60;
+    let breakStart = -1, breakEnd = -1, isWorking = true;
+    const sched = staffSchedules[staffId];
+    if (sched) {
+      const ds = sched.find(s => s.day_of_week === bdow);
+      if (ds) {
+        if (!ds.is_working) isWorking = false;
+        else {
+          if (ds.start_time && ds.end_time) { schedStart = timeToMin(ds.start_time); schedEnd = timeToMin(ds.end_time); }
+          if (ds.break_start && ds.break_end) { breakStart = timeToMin(ds.break_start); breakEnd = timeToMin(ds.break_end); }
+        }
+      }
+    }
+    if (!isWorking) return { slots: [], closed: true };
+    const busy = dayApts
+      .filter(a => a.staff_id === staffId && a.status !== 'cancelled' && a.status !== 'no_show')
+      .map(a => ({ s: timeToMin(a.time), e: timeToMin(a.time) + (a.duration_minutes || 30) }));
+    svcItems.forEach((other, j) => {
+      if (j === itemIndex || !other.time) return;
+      const otherDur = svcCatalog.find(s => s.id === other.service_id)?.duration_minutes || 30;
+      busy.push({ s: timeToMin(other.time), e: timeToMin(other.time) + otherDur });
+    });
+    const isToday = svcDate === toISO(new Date());
+    const now = new Date();
+    const nowMin = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
+    const slots = [];
+    for (let m = Math.max(HOURS_START * 60, schedStart); m < Math.min(HOURS_END * 60, schedEnd); m += SLOT_MIN) {
+      if (isToday && m < nowMin) continue;
+      const end = m + dur;
+      if (end > schedEnd) break;
+      if (breakStart >= 0 && m < breakEnd && end > breakStart) continue;
+      if (!busy.some(bb => m < bb.e && end > bb.s)) slots.push(m);
+    }
+    return { slots, closed: false };
+  }, [svcCatalog, staffSchedules, dayApts, svcItems, svcDate]);
+
+  const addSvcItem = useCallback((svc) => {
+    setSvcItems(prev => [...prev, { service_id: svc.id, service_name: svc.name, price: svc.price, duration_minutes: svc.duration_minutes, staff_id: '', time: '', staff_ids: svc.staff_ids || [] }]);
+    setSvcSearch('');
+  }, []);
+
+  const updateSvcItem = useCallback((idx, field, val) => {
+    setSvcItems(prev => prev.map((it, i) => i === idx ? { ...it, [field]: val } : it));
+  }, []);
+
+  const removeSvcItem = useCallback((idx) => {
+    setSvcItems(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const svcSubtotal = useMemo(() => svcItems.reduce((s, i) => s + (i.price || 0), 0), [svcItems]);
+
+  const handleCreateOrder = useCallback(async () => {
+    if (!svcItems.length) { addNotification('Agrega al menos un servicio', 'error'); return; }
+    setSvcSubmitting(true);
+    try {
+      const mainStaff = svcItems.find(it => it.staff_id)?.staff_id || null;
+      const firstTime = svcItems.find(it => it.time)?.time || null;
+      const payload = {
+        client_id: client.id,
+        client_name: client.name,
+        client_phone: client.phone || '',
+        client_email: client.email || '',
+        staff_id: mainStaff ? parseInt(mainStaff) : null,
+        service_date: svcDate,
+        service_time: firstTime,
+        notes: svcNotes,
+        ticket_number: client.visit_code || '',
+        items: svcItems.map(it => ({ service_id: it.service_id, service_name: it.service_name, price: it.price, duration_minutes: it.duration_minutes, staff_id: it.staff_id ? parseInt(it.staff_id) : null })),
+        products: [],
+      };
+      await orderService.create(payload);
+
+      // Create appointment for each service item that has staff + time
+      for (const item of svcItems) {
+        if (item.staff_id && item.time) {
+          try {
+            await appointmentService.create({
+              client_id: client.id,
+              client_name: client.name,
+              client_phone: client.phone || '',
+              staff_id: parseInt(item.staff_id),
+              service_id: item.service_id,
+              date: svcDate,
+              time: item.time,
+              duration_minutes: item.duration_minutes,
+              price: item.price,
+              status: 'confirmed',
+              visit_code: client.visit_code || '',
+              notes: svcNotes,
+            });
+          } catch {}
+        }
+      }
+
+      addNotification('Orden creada y cita agendada', 'success');
+      setSvcItems([]);
+      setSvcNotes('');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      addNotification(err.message || 'Error al crear orden', 'error');
+    } finally {
+      setSvcSubmitting(false);
+    }
+  }, [svcItems, svcDate, svcNotes, client, addNotification, onRefresh]);
 
   const contactItems = [
     {
@@ -788,6 +952,144 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                       );
                     })}
                   </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'services' && (
+            <div className={`${b}__services-tab`}>
+              {/* Date picker */}
+              <div className={`${b}__svc-date-row`}>
+                <label className={`${b}__svc-label`}>Fecha</label>
+                <input type="date" value={svcDate} onChange={e => { setSvcDate(e.target.value); setSvcItems(prev => prev.map(it => ({ ...it, time: '' }))); }} className={`${b}__edit-input`} min={toISO(new Date())} />
+              </div>
+
+              {/* Service search + add */}
+              <div className={`${b}__svc-search-wrap`}>
+                <label className={`${b}__svc-label`}>Agregar servicio</label>
+                <input
+                  type="text"
+                  value={svcSearch}
+                  onChange={e => setSvcSearch(e.target.value)}
+                  placeholder="Buscar servicio..."
+                  className={`${b}__edit-input`}
+                />
+                {svcSearch.trim() && (
+                  <div className={`${b}__svc-dropdown`}>
+                    {svcCatalog.filter(s => s.name.toLowerCase().includes(svcSearch.toLowerCase())).slice(0, 8).map(s => (
+                      <button key={s.id} type="button" className={`${b}__svc-dropdown-item`} onClick={() => addSvcItem(s)}>
+                        <span>{s.name}</span>
+                        <span className={`${b}__svc-dropdown-price`}>{formatCOP(s.price)}</span>
+                      </button>
+                    ))}
+                    {svcCatalog.filter(s => s.name.toLowerCase().includes(svcSearch.toLowerCase())).length === 0 && (
+                      <div className={`${b}__svc-dropdown-empty`}>Sin resultados</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Added services */}
+              {svcItems.length > 0 && (
+                <div className={`${b}__svc-items`}>
+                  {svcItems.map((item, idx) => {
+                    const eligibleStaff = item.staff_ids?.length
+                      ? staffList.filter(st => item.staff_ids.includes(st.id))
+                      : staffList;
+
+                    if (item.staff_id && !staffSchedules[item.staff_id]) loadStaffSchedule(item.staff_id);
+                    const slotData = item.staff_id ? computeSlots(parseInt(item.staff_id), item.service_id, idx) : null;
+
+                    return (
+                      <div key={idx} className={`${b}__svc-item`}>
+                        <div className={`${b}__svc-item-header`}>
+                          <div className={`${b}__svc-item-info`}>
+                            <span className={`${b}__svc-item-name`}>{item.service_name}</span>
+                            <span className={`${b}__svc-item-meta`}>{item.duration_minutes} min &middot; {formatCOP(item.price)}</span>
+                          </div>
+                          <button type="button" className={`${b}__svc-item-remove`} onClick={() => removeSvcItem(idx)}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                          </button>
+                        </div>
+                        <div className={`${b}__svc-item-fields`}>
+                          <div className={`${b}__edit-field`}>
+                            <label className={`${b}__edit-label`}>Profesional</label>
+                            <select
+                              value={item.staff_id}
+                              onChange={e => { updateSvcItem(idx, 'staff_id', e.target.value); updateSvcItem(idx, 'time', ''); if (e.target.value) loadStaffSchedule(e.target.value); }}
+                              className={`${b}__edit-select`}
+                              style={{ width: '100%' }}
+                            >
+                              <option value="">Seleccionar</option>
+                              {eligibleStaff.map(st => (
+                                <option key={st.id} value={st.id}>{st.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          {item.staff_id && slotData && (
+                            <div className={`${b}__edit-field`}>
+                              <label className={`${b}__edit-label`}>Hora</label>
+                              {slotData.closed ? (
+                                <span className={`${b}__svc-closed`}>No disponible este dia</span>
+                              ) : slotData.slots.length === 0 ? (
+                                <span className={`${b}__svc-closed`}>Sin horarios disponibles</span>
+                              ) : (
+                                <div className={`${b}__svc-slots`}>
+                                  {slotData.slots.map(m => {
+                                    const t = minToTime(m);
+                                    return (
+                                      <button key={m} type="button" className={`${b}__svc-slot ${item.time === t ? `${b}__svc-slot--active` : ''}`} onClick={() => updateSvcItem(idx, 'time', t)}>
+                                        {formatTime12(t)}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Notes */}
+              {svcItems.length > 0 && (
+                <div className={`${b}__svc-notes`}>
+                  <label className={`${b}__svc-label`}>Notas (opcional)</label>
+                  <textarea value={svcNotes} onChange={e => setSvcNotes(e.target.value)} className={`${b}__edit-input`} rows={2} placeholder="Observaciones..." />
+                </div>
+              )}
+
+              {/* Total + Submit */}
+              {svcItems.length > 0 && (
+                <div className={`${b}__svc-footer`}>
+                  <div className={`${b}__svc-total`}>
+                    <span>Total</span>
+                    <span className={`${b}__svc-total-amount`}>{formatCOP(svcSubtotal)}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`${b}__btn-save`}
+                    style={{ width: '100%', padding: '10px 0', borderRadius: '8px', fontSize: '14px' }}
+                    disabled={svcSubmitting || !svcItems.some(it => it.staff_id && it.time)}
+                    onClick={handleCreateOrder}
+                  >
+                    {svcSubmitting ? 'Creando...' : 'Crear orden y agendar cita'}
+                  </button>
+                </div>
+              )}
+
+              {svcItems.length === 0 && (
+                <div className={`${b}__svc-empty`}>
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ color: '#94A3B8' }}>
+                    <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a4 4 0 0 0-8 0v2" />
+                  </svg>
+                  <p>Busca y agrega servicios para crear una orden</p>
                 </div>
               )}
             </div>

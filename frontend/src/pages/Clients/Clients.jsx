@@ -3,7 +3,6 @@ import ClientTable from '../../components/Admin/ClientTable/ClientTable';
 import ClientDetail from '../../components/Admin/ClientDetail/ClientDetail';
 import ClientFilters from '../../components/Admin/ClientFilters/ClientFilters';
 import AddClientModal from '../../components/Admin/AddClientModal/AddClientModal';
-import AddVisitModal from '../../components/Admin/AddVisitModal/AddVisitModal';
 import ImportClientsModal from '../../components/Admin/ImportClientsModal/ImportClientsModal';
 import Button from '../../components/common/Button/Button';
 import { useNotification } from '../../context/NotificationContext';
@@ -20,7 +19,6 @@ const Clients = () => {
   const [sortConfig, setSortConfig] = useState({ key: 'updated_at', direction: 'desc' });
   const [selectedClient, setSelectedClient] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isVisitModalOpen, setIsVisitModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -238,21 +236,6 @@ const Clients = () => {
               Importar
             </Button>
             <Button
-              variant="secondary"
-              size="md"
-              onClick={() => setIsVisitModalOpen(true)}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-                <line x1="12" y1="14" x2="12" y2="18" />
-                <line x1="10" y1="16" x2="14" y2="16" />
-              </svg>
-              Registrar Visita
-            </Button>
-            <Button
               variant="primary"
               size="md"
               onClick={() => { setEditingClient(null); setIsAddModalOpen(true); }}
@@ -367,12 +350,6 @@ const Clients = () => {
         editingClient={editingClient}
       />
 
-      <AddVisitModal
-        isOpen={isVisitModalOpen}
-        onClose={() => setIsVisitModalOpen(false)}
-        onSaved={loadClients}
-        onNewClient={() => { setEditingClient(null); setIsAddModalOpen(true); }}
-      />
 
       <ImportClientsModal
         isOpen={isImportModalOpen}
