@@ -294,50 +294,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
     } catch {}
   }, [loadNotes]);
 
-  const getInitials = (name) =>
-    name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
-
-  const activeSubCount = subscriptions.filter(s => s.status === 'active').length;
-  const tabs = [
-    { id: 'overview', label: 'Resumen' },
-    { id: 'services', label: 'Servicios' },
-    { id: 'subscriptions', label: `Planes${activeSubCount ? ` (${activeSubCount})` : ''}` },
-    { id: 'history', label: 'Historial' },
-    { id: 'notes', label: 'Notas' },
-  ];
-
-  const statusMeta = STATUS_META[client.status] || { label: client.status, color: 'default' };
-  const daysAgo = client.days_since_last_visit;
-
-  const statItems = [
-    {
-      label: 'Total Visitas', value: client.total_visits, accent: 'primary',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>,
-    },
-    {
-      label: 'Total Gastado', value: formatCurrency(client.total_spent), accent: 'accent',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
-    },
-    {
-      label: 'Ticket Promedio', value: formatCurrency(client.avg_ticket || 0), accent: 'info',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>,
-    },
-    {
-      label: 'Días sin Visitar', value: daysAgo ?? '—',
-      accent: daysAgo > 60 ? 'danger' : daysAgo > 45 ? 'warning' : daysAgo > 20 ? 'warning' : 'success',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
-    },
-    {
-      label: 'No-Shows', value: client.no_show_count ?? 0,
-      accent: (client.no_show_count ?? 0) > 0 ? 'danger' : 'success',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>,
-    },
-    {
-      label: 'Cliente Desde', value: client.created_at ? formatDate(client.created_at.split('T')[0]) : '—', accent: 'primary',
-      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
-    },
-  ];
-
   // ── Services tab logic ──
   useEffect(() => {
     if (activeTab === 'services' && !svcCatalog.length) {
@@ -477,6 +433,50 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
   }, [svcItems, svcDate, svcNotes, client, addNotification, onRefresh]);
 
   if (!client) return null;
+
+  const getInitials = (name) =>
+    name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+
+  const activeSubCount = subscriptions.filter(s => s.status === 'active').length;
+  const tabs = [
+    { id: 'overview', label: 'Resumen' },
+    { id: 'services', label: 'Servicios' },
+    { id: 'subscriptions', label: `Planes${activeSubCount ? ` (${activeSubCount})` : ''}` },
+    { id: 'history', label: 'Historial' },
+    { id: 'notes', label: 'Notas' },
+  ];
+
+  const statusMeta = STATUS_META[client.status] || { label: client.status, color: 'default' };
+  const daysAgo = client.days_since_last_visit;
+
+  const statItems = [
+    {
+      label: 'Total Visitas', value: client.total_visits, accent: 'primary',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" /><line x1="23" y1="11" x2="17" y2="11" /></svg>,
+    },
+    {
+      label: 'Total Gastado', value: formatCurrency(client.total_spent), accent: 'accent',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>,
+    },
+    {
+      label: 'Ticket Promedio', value: formatCurrency(client.avg_ticket || 0), accent: 'info',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>,
+    },
+    {
+      label: 'Días sin Visitar', value: daysAgo ?? '—',
+      accent: daysAgo > 60 ? 'danger' : daysAgo > 45 ? 'warning' : daysAgo > 20 ? 'warning' : 'success',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
+    },
+    {
+      label: 'No-Shows', value: client.no_show_count ?? 0,
+      accent: (client.no_show_count ?? 0) > 0 ? 'danger' : 'success',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>,
+    },
+    {
+      label: 'Cliente Desde', value: client.created_at ? formatDate(client.created_at.split('T')[0]) : '—', accent: 'primary',
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
+    },
+  ];
 
   const contactItems = [
     {
