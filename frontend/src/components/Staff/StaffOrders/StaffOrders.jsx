@@ -184,19 +184,53 @@ const StaffOrders = () => {
     }
   }, [tab, staffId, services.length]);
 
-  // Auto-lookup client info when ticket changes
-  const lookupClient = useCallback(async (ticket) => {
-    if (!ticket.trim()) { setCClientName(''); return; }
-    try {
-      const res = await fetch(`${API}/orders/?search=${encodeURIComponent(ticket.trim())}`, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        const orders = data.orders || data || [];
-        const match = orders.find(o => o.ticket_number === ticket.trim() || o.ticket_number?.includes(ticket.trim()));
-        if (match) setCClientName(match.client_name || '');
-      }
-    } catch {}
-  }, []);
+  const [cLookingUp, setCLookingUp] = useState(false);
+
+  // Auto-lookup client on ticket change (debounced)
+  useEffect(() => {
+    if (!cTicket.trim() || cTicket.trim().length < 2) { setCClientName(''); return; }
+    setCLookingUp(true);
+    const timer = setTimeout(async () => {
+      try {
+        const q = cTicket.trim();
+        // Search orders + appointments + clients by ticket
+        const [ordRes, aptRes, cliRes] = await Promise.all([
+          fetch(`${API}/orders/?search=${encodeURIComponent(q)}`, { credentials: 'include' }),
+          fetch(`${API}/appointments/?search=${encodeURIComponent(q)}`, { credentials: 'include' }),
+          fetch(`${API}/clients/?search=${encodeURIComponent(q)}`, { credentials: 'include' }),
+        ]);
+        let name = '';
+        if (ordRes.ok) {
+          const data = await ordRes.json();
+          const orders = data.orders || data || [];
+          const match = orders.find(o => {
+            const tk = String(o.ticket_number || '');
+            return tk === q || tk.includes(q);
+          });
+          if (match?.client_name) name = match.client_name;
+        }
+        if (!name && aptRes.ok) {
+          const apts = await aptRes.json();
+          const match = (Array.isArray(apts) ? apts : []).find(a => {
+            const vc = String(a.visit_code || '');
+            return vc === q || vc.includes(q);
+          });
+          if (match?.client_name) name = match.client_name;
+        }
+        if (!name && cliRes.ok) {
+          const clients = await cliRes.json();
+          const match = (Array.isArray(clients) ? clients : []).find(c => {
+            const vc = String(c.visit_code || '');
+            return vc === q || vc.includes(q);
+          });
+          if (match?.name) name = match.name;
+        }
+        setCClientName(name);
+      } catch {}
+      finally { setCLookingUp(false); }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [cTicket]);
 
   const handleCreateOrder = useCallback(async () => {
     if (!cTicket.trim()) { addNotification('El ticket es obligatorio', 'error'); return; }
@@ -337,38 +371,37 @@ const StaffOrders = () => {
 
       {tab === 'create' && (
         <div className={`${b}__create`}>
-          {/* Ticket */}
-          <div className={`${b}__field`}>
+          {/* Ticket + Client lookup */}
+          <div className={`${b}__ticket-block`}>
             <label className={`${b}__field-label`}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /></svg>
-              Ticket del cliente *
+              Ticket del cliente
             </label>
-            <input
-              type="text"
-              value={cTicket}
-              onChange={e => setCTicket(e.target.value)}
-              onBlur={() => lookupClient(cTicket)}
-              placeholder="Ej: M8824"
-              className={`${b}__field-input ${b}__field-input--lg`}
-            />
-          </div>
-
-          {/* Client name (auto or manual) */}
-          {cTicket.trim() && (
-            <div className={`${b}__field`}>
-              <label className={`${b}__field-label`}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                Nombre del cliente
-              </label>
+            <div className={`${b}__ticket-input-wrap`}>
+              <span className={`${b}__ticket-hash`}>#</span>
               <input
                 type="text"
-                value={cClientName}
-                onChange={e => setCClientName(e.target.value)}
-                placeholder="Se busca automaticamente por ticket"
-                className={`${b}__field-input`}
+                value={cTicket}
+                onChange={e => setCTicket(e.target.value)}
+                placeholder="Numero de ticket"
+                className={`${b}__ticket-input`}
+                autoFocus
               />
+              {cLookingUp && <div className={`${b}__spinner`} style={{ width: 18, height: 18, borderWidth: 2 }} />}
             </div>
-          )}
+            {cClientName && (
+              <div className={`${b}__client-found`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                <span>{cClientName}</span>
+              </div>
+            )}
+            {cTicket.trim().length >= 2 && !cClientName && !cLookingUp && (
+              <div className={`${b}__client-not-found`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                <span>Cliente no encontrado — se registrara como nuevo</span>
+              </div>
+            )}
+          </div>
 
           {/* Service selection */}
           <div className={`${b}__field`}>
