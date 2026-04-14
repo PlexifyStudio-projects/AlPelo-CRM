@@ -37,11 +37,20 @@ const StaffOrders = () => {
       const res = await fetch(`${API}/appointments/?search=${encodeURIComponent(q)}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Error');
       const data = await res.json();
-      // STRICT: only show orders where visit_code matches EXACTLY
-      const exact = data.filter(a =>
-        ['confirmed', 'completed', 'paid'].includes(a.status) &&
-        (a.visit_code === q || String(a.visit_code) === q)
-      );
+      // Match by ticket: visit_code exact, or visit_code contains query, or appointment ID
+      const exact = data.filter(a => {
+        if (!['confirmed', 'completed', 'paid'].includes(a.status)) return false;
+        const vc = String(a.visit_code || '');
+        const aid = String(a.id);
+        // Exact match on visit_code or ID
+        if (vc === q || aid === q) return true;
+        // visit_code contains the query (e.g. "A-193" contains "193")
+        if (vc && vc.includes(q)) return true;
+        // Query matches the numeric part of visit_code
+        const vcDigits = vc.replace(/\D/g, '');
+        if (vcDigits && vcDigits === q) return true;
+        return false;
+      });
       const sorted = exact.sort((a, b) => {
         if (a.status === 'confirmed' && b.status !== 'confirmed') return -1;
         if (b.status === 'confirmed' && a.status !== 'confirmed') return 1;
