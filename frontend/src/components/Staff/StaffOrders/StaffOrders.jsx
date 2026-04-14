@@ -38,6 +38,8 @@ const StaffOrders = () => {
   const [cPrice, setCPrice] = useState(0);
   const [cSubmitting, setCSubmitting] = useState(false);
   const [cSvcSearch, setCSvcSearch] = useState('');
+  const [cClientId, setCClientId] = useState(null);
+  const [cClientPhone, setCClientPhone] = useState('');
 
   const staffId = user?.id;
   const staffName = user?.name || '';
@@ -188,44 +190,34 @@ const StaffOrders = () => {
 
   // Auto-lookup client on ticket change (debounced)
   useEffect(() => {
-    if (!cTicket.trim() || cTicket.trim().length < 2) { setCClientName(''); return; }
+    if (!cTicket.trim() || cTicket.trim().length < 2) { setCClientName(''); setCClientId(null); setCClientPhone(''); return; }
     setCLookingUp(true);
     const timer = setTimeout(async () => {
       try {
         const q = cTicket.trim();
-        // Search orders + appointments + clients by ticket
         const [ordRes, aptRes, cliRes] = await Promise.all([
           fetch(`${API}/orders/?search=${encodeURIComponent(q)}`, { credentials: 'include' }),
           fetch(`${API}/appointments/?search=${encodeURIComponent(q)}`, { credentials: 'include' }),
           fetch(`${API}/clients/?search=${encodeURIComponent(q)}`, { credentials: 'include' }),
         ]);
-        let name = '';
+        let name = '', clientId = null, phone = '';
         if (ordRes.ok) {
           const data = await ordRes.json();
           const orders = data.orders || data || [];
-          const match = orders.find(o => {
-            const tk = String(o.ticket_number || '');
-            return tk === q || tk.includes(q);
-          });
-          if (match?.client_name) name = match.client_name;
+          const match = orders.find(o => { const tk = String(o.ticket_number || ''); return tk === q || tk.includes(q); });
+          if (match) { name = match.client_name || ''; clientId = match.client_id || null; phone = match.client_phone || ''; }
         }
         if (!name && aptRes.ok) {
           const apts = await aptRes.json();
-          const match = (Array.isArray(apts) ? apts : []).find(a => {
-            const vc = String(a.visit_code || '');
-            return vc === q || vc.includes(q);
-          });
-          if (match?.client_name) name = match.client_name;
+          const match = (Array.isArray(apts) ? apts : []).find(a => { const vc = String(a.visit_code || ''); return vc === q || vc.includes(q); });
+          if (match) { name = match.client_name || ''; clientId = match.client_id || null; phone = match.client_phone || ''; }
         }
-        if (!name && cliRes.ok) {
+        if (!clientId && cliRes.ok) {
           const clients = await cliRes.json();
-          const match = (Array.isArray(clients) ? clients : []).find(c => {
-            const vc = String(c.visit_code || '');
-            return vc === q || vc.includes(q);
-          });
-          if (match?.name) name = match.name;
+          const match = (Array.isArray(clients) ? clients : []).find(c => { const vc = String(c.visit_code || ''); return vc === q || vc.includes(q); });
+          if (match) { name = match.name || name; clientId = match.id || null; phone = match.phone || phone; }
         }
-        setCClientName(name);
+        setCClientName(name); setCClientId(clientId); setCClientPhone(phone);
       } catch {}
       finally { setCLookingUp(false); }
     }, 400);
@@ -242,7 +234,8 @@ const StaffOrders = () => {
       const payload = {
         ticket_number: cTicket.trim(),
         client_name: clientName,
-        client_phone: '',
+        client_phone: cClientPhone || '',
+        client_id: cClientId || null,
         staff_id: staffId,
         service_date: toISO(new Date()),
         service_time: cTime || nowTime(),
@@ -265,8 +258,9 @@ const StaffOrders = () => {
       await fetch(`${API}/appointments/`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         credentials: 'include', body: JSON.stringify({
+          client_id: cClientId || null,
           client_name: clientName,
-          client_phone: '',
+          client_phone: cClientPhone || '',
           staff_id: staffId,
           service_id: cServiceId,
           date: toISO(new Date()),
@@ -279,7 +273,7 @@ const StaffOrders = () => {
       }).catch(() => {});
 
       addNotification(`Orden #${cTicket.trim()} creada`, 'success');
-      setCTicket(''); setCServiceId(null); setCPrice(0); setCClientName(''); setCTime(nowTime()); setCSvcSearch('');
+      setCTicket(''); setCServiceId(null); setCPrice(0); setCClientName(''); setCClientId(null); setCClientPhone(''); setCTime(nowTime()); setCSvcSearch('');
       setTab('mine');
       loadMyOrders();
     } catch (err) {
