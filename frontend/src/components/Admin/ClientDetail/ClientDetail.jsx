@@ -414,22 +414,23 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
       };
       await orderService.create(payload);
 
-      // Create appointment for each service item that has staff + time
+      // Create appointment for each service item that has staff assigned
       for (const item of svcItems) {
-        if (item.staff_id && item.time) {
+        const itemStaff = item.staff_id ? parseInt(item.staff_id) : (mainStaff ? parseInt(mainStaff) : null);
+        if (itemStaff) {
           try {
             await appointmentService.create({
               client_id: client.id,
               client_name: client.name,
               client_phone: client.phone || '',
-              staff_id: parseInt(item.staff_id),
+              staff_id: itemStaff,
               service_id: item.service_id,
               date: svcDate,
-              time: item.time,
+              time: item.time || firstTime || '09:00',
               duration_minutes: item.duration_minutes,
               price: item.price,
               status: 'confirmed',
-              visit_code: client.visit_code || '',
+              visit_code: svcTicket.trim(),
               notes: svcNotes,
             });
           } catch {}

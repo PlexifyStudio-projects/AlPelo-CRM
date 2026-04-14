@@ -34,29 +34,62 @@ const StaffOrders = () => {
     setSearched(false);
     try {
       const q = ticketSearch.trim();
-      const res = await fetch(`${API}/appointments/?search=${encodeURIComponent(q)}`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Error');
-      const data = await res.json();
-      // Match by ticket: visit_code exact, or visit_code contains query, or appointment ID
-      const exact = data.filter(a => {
+      // Search both appointments AND orders
+      const [aptRes, ordRes] = await Promise.all([
+        fetch(`${API}/appointments/?search=${encodeURIComponent(q)}`, { credentials: 'include' }),
+        fetch(`${API}/orders/?search=${encodeURIComponent(q)}`, { credentials: 'include' }),
+      ]);
+
+      const aptData = aptRes.ok ? await aptRes.json() : [];
+      const ordRaw = ordRes.ok ? await ordRes.json() : [];
+      const ordData = Array.isArray(ordRaw) ? ordRaw : (ordRaw.orders || []);
+
+      // Filter appointments by ticket match
+      const matchApt = (Array.isArray(aptData) ? aptData : []).filter(a => {
         if (!['confirmed', 'completed', 'paid'].includes(a.status)) return false;
         const vc = String(a.visit_code || '');
         const aid = String(a.id);
-        // Exact match on visit_code or ID
         if (vc === q || aid === q) return true;
-        // visit_code contains the query (e.g. "A-193" contains "193")
         if (vc && vc.includes(q)) return true;
-        // Query matches the numeric part of visit_code
         const vcDigits = vc.replace(/\D/g, '');
         if (vcDigits && vcDigits === q) return true;
         return false;
       });
-      const sorted = exact.sort((a, b) => {
+
+      // Convert orders to appointment-like objects for display
+      const matchOrd = ordData.filter(o => {
+        if (o.status === 'cancelled' || o.status === 'no_show') return false;
+        const tk = String(o.ticket_number || '');
+        if (tk === q || tk.includes(q)) return true;
+        return false;
+      }).map(o => ({
+        id: o.id,
+        _is_order: true,
+        visit_code: o.ticket_number,
+        client_name: o.client_name,
+        client_phone: o.client_phone,
+        service_name: o.items?.map(i => i.service_name).join(', ') || 'Servicio',
+        staff_id: o.staff_id,
+        staff_name: o.staff_name,
+        date: o.service_date,
+        time: o.service_time,
+        status: o.status === 'completed' ? 'completed' : 'confirmed',
+        price: o.total || o.subtotal,
+      }));
+
+      // Merge, dedup by visit_code, sort
+      const seen = new Set();
+      const merged = [];
+      for (const item of [...matchApt, ...matchOrd]) {
+        const key = `${item.visit_code || ''}_${item.id}_${item._is_order ? 'o' : 'a'}`;
+        if (!seen.has(key)) { seen.add(key); merged.push(item); }
+      }
+      merged.sort((a, b) => {
         if (a.status === 'confirmed' && b.status !== 'confirmed') return -1;
         if (b.status === 'confirmed' && a.status !== 'confirmed') return 1;
-        return (b.date + b.time).localeCompare(a.date + a.time);
+        return ((b.date || '') + (b.time || '')).localeCompare((a.date || '') + (a.time || ''));
       });
-      setSearchResults(sorted);
+      setSearchResults(merged);
     } catch {
       setSearchResults([]);
     } finally {
@@ -69,18 +102,26 @@ const StaffOrders = () => {
     if (!staffId) return;
     setAssigning(apt.id);
     try {
-      const res = await fetch(`${API}/appointments/${apt.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ staff_id: staffId, status: 'completed' }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Error');
+      if (apt._is_order) {
+        // Update order
+        const res = await fetch(`${API}/orders/${apt.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ staff_id: staffId, status: 'completed' }),
+        });
+        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || 'Error'); }
+      } else {
+        // Update appointment
+        const res = await fetch(`${API}/appointments/${apt.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ staff_id: staffId, status: 'completed' }),
+        });
+        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || 'Error'); }
       }
       addNotification(`Orden #${apt.visit_code || apt.id} completada`, 'success');
-      // Update in list
       setSearchResults(prev => prev.map(a => a.id === apt.id ? { ...a, status: 'completed', staff_name: staffName, staff_id: staffId } : a));
       loadMyOrders();
     } catch (err) {
