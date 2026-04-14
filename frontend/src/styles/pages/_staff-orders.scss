@@ -7,11 +7,9 @@ $_s6: #475569; $_s7: #334155; $_s8: #1E293B; $_s9: #0F172A;
 $_r: 16px; $_rs: 10px;
 
 .staff-orders {
-  padding: 24px;
+  padding: 16px;
   width: 100%;
-  max-width: 680px;
-  margin: 0 auto;
-  @include respond-to(md) { padding: 32px 24px; }
+  @include respond-to(md) { padding: 28px 36px; }
 
   &__header {
     text-align: center; margin-bottom: 28px;
@@ -41,6 +39,7 @@ $_r: 16px; $_rs: 10px;
   &__search-section { }
   &__search-box {
     display: flex; gap: 8px; margin-bottom: 24px;
+    @media (max-width: 480px) { flex-direction: column; }
   }
   &__search-input-wrap {
     flex: 1; display: flex; align-items: center; gap: 10px;
@@ -133,8 +132,9 @@ $_r: 16px; $_rs: 10px;
   }
 
   // My orders
-  &__list { display: grid; grid-template-columns: 1fr; gap: 10px;
+  &__list { display: grid; grid-template-columns: 1fr; gap: 12px;
     @include respond-to(sm) { grid-template-columns: repeat(2, 1fr); }
+    @include respond-to(md) { grid-template-columns: repeat(3, 1fr); }
   }
   &__card {
     background: white; border: 1px solid $_s3; border-radius: $_r;
