@@ -1,0 +1,139 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+$_bl: #3B82F6; $_b: #1E40AF; $_e: #10B981; $_am: #F59E0B;
+$_s1: #F8FAFC; $_s2: #F1F5F9; $_s3: #E2E8F0; $_s4: #CBD5E1; $_s5: #94A3B8;
+$_s6: #475569; $_s7: #334155; $_s8: #1E293B; $_s9: #0F172A;
+$_r: 14px; $_rs: 10px;
+
+.staff-orders {
+  padding: 24px;
+  width: 100%;
+  @include respond-to(md) { padding: 28px 36px; }
+
+  &__header {
+    margin-bottom: 20px;
+    h1 { font-size: 1.5rem; font-weight: 800; color: $_s9; margin: 0 0 4px; }
+    p { font-size: 13px; color: $_s5; margin: 0; }
+  }
+
+  &__tabs {
+    display: flex; gap: 8px; margin-bottom: 24px;
+    border-bottom: 1px solid $_s3; padding-bottom: 12px;
+  }
+  &__tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 18px; border-radius: $_rs; border: 1px solid $_s3;
+    background: white; font-family: $font-primary; font-size: 13px; font-weight: 600;
+    color: $_s6; cursor: pointer; transition: all 150ms;
+    svg { color: $_s5; }
+    &:hover { border-color: $_bl; color: $_bl; svg { color: $_bl; } }
+    &--active { background: $_bl; color: white; border-color: $_bl; svg { color: white; } }
+  }
+
+  // Search section
+  &__search-section { max-width: 600px; }
+  &__search-box {
+    display: flex; gap: 8px; margin-bottom: 20px;
+  }
+  &__search-input-wrap {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: white; border: 1px solid $_s3;
+    border-radius: $_r; transition: border-color 150ms;
+    &:focus-within { border-color: $_bl; box-shadow: 0 0 0 3px rgba($_bl, 0.08); }
+    input {
+      flex: 1; border: none; outline: none; font-size: 15px; font-weight: 600;
+      font-family: $font-primary; color: $_s9; letter-spacing: 0.02em;
+      &::placeholder { color: $_s4; font-weight: 400; }
+    }
+  }
+  &__search-clear {
+    color: $_s4; background: none; border: none; cursor: pointer; padding: 0;
+    &:hover { color: $_s6; }
+  }
+  &__search-btn {
+    padding: 10px 20px; background: $_bl; color: white; border: none;
+    border-radius: $_rs; font-family: $font-primary; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background 150ms; white-space: nowrap;
+    &:hover { background: $_b; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  // Result card
+  &__result {
+    background: white; border: 1px solid $_s3; border-radius: $_r;
+    overflow: hidden; animation: slideIn 200ms ease;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  &__result-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; border-bottom: 1px solid $_s2;
+  }
+  &__result-ticket { font-size: 1.2rem; font-weight: 800; color: $_bl; }
+  &__result-status {
+    font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  &__result-body { padding: 16px 20px; }
+  &__result-row {
+    display: flex; justify-content: space-between; padding: 8px 0;
+    border-bottom: 1px solid $_s2;
+    &:last-child { border-bottom: none; }
+  }
+  &__result-label { font-size: 13px; color: $_s5; }
+  &__result-value { font-size: 13px; font-weight: 600; color: $_s8; }
+
+  &__assign-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 14px; margin: 0;
+    background: linear-gradient(135deg, $_e, #059669); color: white;
+    border: none; border-radius: 0 0 $_r $_r;
+    font-family: $font-primary; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: opacity 150ms;
+    &:hover { opacity: 0.9; }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__result-done {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px; font-size: 13px; font-weight: 600; color: $_e;
+    background: rgba($_e, 0.06); border-radius: 0 0 $_r $_r;
+  }
+
+  &__empty-search {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 48px 24px; text-align: center;
+    p { font-size: 14px; color: $_s5; margin: 0; }
+  }
+
+  // My orders
+  &__mine { }
+  &__list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  &__card {
+    background: white; border: 1px solid $_s3; border-radius: $_r;
+    padding: 16px; transition: all 150ms;
+    &:hover { border-color: $_s4; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  }
+  &__card-top {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+  }
+  &__card-ticket { font-size: 14px; font-weight: 800; color: $_bl; }
+  &__card-status {
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  &__card-client { font-size: 14px; font-weight: 600; color: $_s8; margin-bottom: 2px; }
+  &__card-service { font-size: 12px; color: $_s5; margin-bottom: 8px; }
+  &__card-meta { font-size: 11px; color: $_s5; }
+
+  &__loading { display: flex; align-items: center; justify-content: center; min-height: 200px; }
+  &__spinner { width: 28px; height: 28px; border: 3px solid $_s3; border-top-color: $_bl; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  &__empty {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 48px 24px; text-align: center; background: $_s1; border: 1px dashed $_s3; border-radius: $_r;
+    p { font-size: 13px; color: $_s5; margin: 0; }
+  }
+}

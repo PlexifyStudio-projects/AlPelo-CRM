@@ -4,10 +4,9 @@ import Sidebar from '../../layout/Sidebar/Sidebar';
 import StaffDashboard from '../StaffDashboard/StaffDashboard';
 import StaffAgenda from '../StaffAgenda/StaffAgenda';
 import StaffFinances from '../StaffFinances/StaffFinances';
+import StaffOrders from '../StaffOrders/StaffOrders';
 import staffMeService from '../../../services/staffMeService';
 import { useNotification } from '../../../context/NotificationContext';
-
-const Orders = lazy(() => import('../../../pages/Orders/Orders'));
 
 const MENU_ITEMS = [
   { id: 'staff-dashboard', label: 'Mi Panel', icon: 'dashboard' },
@@ -73,7 +72,7 @@ const StaffRouter = ({ user, onLogout }) => {
     switch (activeSection) {
       case 'staff-dashboard': return <StaffDashboard user={user} onNavigate={setActiveSection} />;
       case 'staff-agenda': return <StaffAgenda user={user} />;
-      case 'staff-orders': return <Suspense fallback={<div style={{ padding: 32, textAlign: 'center', color: '#94A3B8' }}>Cargando...</div>}><Orders /></Suspense>;
+      case 'staff-orders': return <StaffOrders />;
       case 'staff-finances': return <StaffFinances />;
       default: return <StaffDashboard user={user} onNavigate={setActiveSection} />;
     }
