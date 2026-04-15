@@ -527,6 +527,17 @@ class Invoice(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # DIAN POS fields
+    pos_number = Column(Integer, nullable=True)  # Consecutivo POS (1, 2, 3... 4000)
+    pos_prefix = Column(String(10), nullable=True)  # Prefijo al momento de asignar (POS, FV, PLXF)
+    pos_full_number = Column(String(20), nullable=True)  # Numero completo: POS-0001
+    is_pos = Column(Boolean, default=False)  # Es factura POS electronica?
+    dian_status = Column(String(20), nullable=True)  # pending, sent, accepted, rejected, voided
+    cufe = Column(String(200), nullable=True)  # Codigo Unico Factura Electronica
+    dian_sent_at = Column(DateTime, nullable=True)
+    dian_response = Column(Text, nullable=True)  # JSON respuesta de DIAN/Alegra
+    alegra_id = Column(String(50), nullable=True)  # ID en Alegra
+
     client = relationship("Client", foreign_keys=[client_id])
     items = relationship("InvoiceItem", back_populates="invoice", cascade="all, delete-orphan")
 

@@ -131,6 +131,16 @@ def run_migrations(engine):
         ("invoice", "client_document_type", "VARCHAR(5)"),
         ("invoice", "client_email", "VARCHAR(200)"),
         ("invoice", "client_address", "TEXT"),
+        # DIAN POS electronic invoicing
+        ("invoice", "pos_number", "INTEGER"),
+        ("invoice", "pos_prefix", "VARCHAR(10)"),
+        ("invoice", "pos_full_number", "VARCHAR(20)"),
+        ("invoice", "is_pos", "BOOLEAN DEFAULT false"),
+        ("invoice", "dian_status", "VARCHAR(20)"),
+        ("invoice", "cufe", "VARCHAR(200)"),
+        ("invoice", "dian_sent_at", "TIMESTAMP"),
+        ("invoice", "dian_response", "TEXT"),
+        ("invoice", "alegra_id", "VARCHAR(50)"),
         # Campaign template media header
         ("message_template", "header_type", "VARCHAR(10)"),
         ("message_template", "header_media_url", "TEXT"),
