@@ -209,7 +209,7 @@ const TabDian = () => {
                   </div>
                   <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#64748B', flexWrap: 'wrap' }}>
                     <span><strong style={{ color: '#334155' }}>{inv.client_name}</strong></span>
-                    <span>{inv.client_document_type || 'CC'}: {inv.client_document || '—'}</span>
+                    {inv.client_document && <span>{inv.client_document_type || 'CC'}: {inv.client_document}</span>}
                     <span style={{ textTransform: 'capitalize' }}>{inv.payment_method || '—'}</span>
                     <span>{inv.issued_date}</span>
                   </div>
@@ -224,7 +224,7 @@ const TabDian = () => {
                   {/* Receptor info */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px 24px', marginBottom: 20, padding: '14px 18px', background: '#F8FAFC', borderRadius: 10 }}>
                     <div><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(0,0,0,0.3)' }}>Receptor</span><div style={{ fontSize: 14, fontWeight: 700, color: '#1E293B', marginTop: 2 }}>{inv.client_name}</div></div>
-                    <div><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(0,0,0,0.3)' }}>Documento</span><div style={{ fontSize: 13, color: '#475569', marginTop: 2 }}>{inv.client_document_type || 'CC'} {inv.client_document || '—'}</div></div>
+                    <div><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(0,0,0,0.3)' }}>Documento</span><div style={{ fontSize: 13, color: inv.client_document ? '#475569' : 'rgba(0,0,0,0.2)', marginTop: 2 }}>{inv.client_document ? `${inv.client_document_type || 'CC'} ${inv.client_document}` : 'Sin registrar'}</div></div>
                     <div><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(0,0,0,0.3)' }}>Email</span><div style={{ fontSize: 13, color: '#475569', marginTop: 2 }}>{inv.client_email || '—'}</div></div>
                     <div><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(0,0,0,0.3)' }}>Telefono</span><div style={{ fontSize: 13, color: '#475569', marginTop: 2 }}>{inv.client_phone || '—'}</div></div>
                     {inv.client_address && <div><span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(0,0,0,0.3)' }}>Direccion</span><div style={{ fontSize: 13, color: '#475569', marginTop: 2 }}>{inv.client_address}</div></div>}
@@ -238,7 +238,7 @@ const TabDian = () => {
                         <thead>
                           <tr style={{ borderBottom: '2px solid rgba(0,0,0,0.08)' }}>
                             <th style={{ textAlign: 'left', padding: '8px 0', fontSize: 11, fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Servicio</th>
-                            <th style={{ textAlign: 'left', padding: '8px 0', fontSize: 11, fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase' }}>Profesional</th>
+                            {/* Profesional column removed per user request */}
                             <th style={{ textAlign: 'center', padding: '8px 0', fontSize: 11, fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase' }}>Cant.</th>
                             <th style={{ textAlign: 'right', padding: '8px 0', fontSize: 11, fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase' }}>P/U</th>
                             <th style={{ textAlign: 'right', padding: '8px 0', fontSize: 11, fontWeight: 700, color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase' }}>Total</th>
@@ -248,7 +248,7 @@ const TabDian = () => {
                           {items.map((it, idx) => (
                             <tr key={idx} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
                               <td style={{ padding: '8px 0', fontSize: 13, color: '#1E293B' }}>{it.service_name}</td>
-                              <td style={{ padding: '8px 0', fontSize: 12, color: '#64748B' }}>{it.staff_name || '—'}</td>
+                              {/* staff_name column removed */}
                               <td style={{ padding: '8px 0', fontSize: 12, color: '#64748B', textAlign: 'center' }}>{it.quantity}</td>
                               <td style={{ padding: '8px 0', fontSize: 13, color: '#64748B', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCOP(it.unit_price)}</td>
                               <td style={{ padding: '8px 0', fontSize: 13, fontWeight: 600, color: '#1E293B', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCOP(it.total || it.unit_price * it.quantity)}</td>
@@ -266,7 +266,7 @@ const TabDian = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13, color: '#475569' }}><span>Subtotal</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCOP(inv.subtotal)}</span></div>
                       {inv.discount_amount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13, color: '#DC2626' }}><span>Descuento</span><span>-{formatCOP(inv.discount_amount)}</span></div>}
                       {inv.tax_amount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13, color: '#475569' }}><span>IVA ({((inv.tax_rate || 0.19) * 100).toFixed(0)}%)</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCOP(inv.tax_amount)}</span></div>}
-                      {(inv.tip || 0) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 13, color: '#8B5CF6' }}><span>Propina</span><span>+{formatCOP(inv.tip)}</span></div>}
+                      {/* Propina removed from DIAN view */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0 0', marginTop: 4, borderTop: '2px solid #1E293B', fontSize: 15, fontWeight: 800, color: '#1E293B' }}><span>TOTAL</span><span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatCOP(inv.total)}</span></div>
                     </div>
                     <div style={{ padding: '14px 18px', background: '#F8FAFC', borderRadius: 10 }}>
