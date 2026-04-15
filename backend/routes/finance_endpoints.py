@@ -1949,11 +1949,12 @@ def assign_pos_numbers(data: dict, db: Session = Depends(get_db), user=Depends(g
         remaining = range_to - last_pos
         raise HTTPException(400, f"Rango insuficiente. Solo quedan {remaining} consecutivos POS.")
 
-    # Fetch invoices
+    # Fetch invoices (is_pos can be NULL or False for unassigned)
+    from sqlalchemy import or_
     invoices = db.query(Invoice).filter(
         Invoice.id.in_(invoice_ids),
         Invoice.tenant_id == tid,
-        Invoice.is_pos == False,
+        or_(Invoice.is_pos == False, Invoice.is_pos == None),
     ).order_by(Invoice.issued_date, Invoice.id).all()
 
     if not invoices:
