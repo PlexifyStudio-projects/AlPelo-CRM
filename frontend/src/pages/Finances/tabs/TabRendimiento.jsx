@@ -36,7 +36,9 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
       const d = await res.json();
       setData(Array.isArray(d) ? d : []);
     } catch (err) {
-      addNotification('Error: ' + err.message, 'error');
+      if (err.name !== 'AbortError' && err.message !== 'Failed to fetch') {
+        addNotification('Error: ' + err.message, 'error');
+      }
       setData([]);
     } finally {
       setLoading(false);
@@ -53,7 +55,9 @@ const TabRendimiento = ({ period, dateFrom, dateTo }) => {
         const d = await res.json();
         setStaffList(Array.isArray(d) ? d : d.staff || []);
       } catch (err) {
-        addNotification('Error: ' + err.message, 'error');
+        if (err.name !== 'AbortError' && err.message !== 'Failed to fetch') {
+          addNotification('Error: ' + err.message, 'error');
+        }
       }
     };
     fetchStaff();
