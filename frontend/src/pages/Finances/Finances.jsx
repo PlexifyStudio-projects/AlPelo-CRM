@@ -2298,12 +2298,17 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
                   <span className="finances__sale-td finances__sale-td--time" style={{ width: '80px' }}>
                     <span className="finances__sale-time">{paidTime || '—'}</span>
                     <span className="finances__sale-invnum">{inv.invoice_number}</span>
-                    {inv.is_pos && <span style={{ fontSize: 9, fontWeight: 700, color: '#6366F1', background: 'rgba(99,102,241,0.08)', padding: '1px 5px', borderRadius: 4, marginTop: 2, display: 'inline-block' }}>DIAN</span>}
                   </span>
                   <span className="finances__sale-td" style={{ width: '80px' }}>
                     <span className={`finances__inv-badge finances__inv-badge--${inv.status}`}>
                       {STATUS_LABELS[inv.status]}
                     </span>
+                    {inv.is_pos && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 4, fontSize: 10, fontWeight: 700, color: '#6366F1', background: 'rgba(99,102,241,0.08)', padding: '2px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        En DIAN
+                      </span>
+                    )}
                   </span>
                   <span className="finances__sale-td finances__sale-td--client" style={{ flex: 1 }}>
                     <strong>{inv.client_name}</strong>
@@ -4173,9 +4178,9 @@ const TabDian = () => {
   useEffect(() => { loadData(); }, [loadData]);
 
   const filteredInvoices = useMemo(() => {
-    let list = invoices.filter(i => i.status !== 'cancelled');
-    if (filter === 'no_pos') list = list.filter(i => !i.is_pos);
-    else if (filter === 'pending') list = list.filter(i => i.dian_status === 'pending');
+    // DIAN tab only shows invoices that have been sent here (is_pos = true)
+    let list = invoices.filter(i => i.status !== 'cancelled' && i.is_pos);
+    if (filter === 'pending') list = list.filter(i => i.dian_status === 'pending');
     else if (filter === 'sent') list = list.filter(i => i.dian_status === 'sent' || i.dian_status === 'accepted');
     else if (filter === 'voided') list = list.filter(i => i.dian_status === 'voided');
     return list.sort((a, b) => (b.issued_date || '').localeCompare(a.issued_date || ''));
@@ -4304,10 +4309,9 @@ const TabDian = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {[
-            { v: 'all', l: 'Todas', c: invoices.filter(i => i.status !== 'cancelled').length },
-            { v: 'no_pos', l: 'Sin POS', c: noPos },
-            { v: 'pending', l: 'Con POS', c: invoices.filter(i => i.dian_status === 'pending').length },
-            { v: 'sent', l: 'Enviadas', c: invoices.filter(i => i.dian_status === 'sent' || i.dian_status === 'accepted').length },
+            { v: 'all', l: 'Todas', c: invoices.filter(i => i.is_pos && i.status !== 'cancelled').length },
+            { v: 'pending', l: 'Listas para enviar', c: invoices.filter(i => i.dian_status === 'pending').length },
+            { v: 'sent', l: 'Enviadas DIAN', c: invoices.filter(i => i.dian_status === 'sent' || i.dian_status === 'accepted').length },
           ].map(f => (
             <button key={f.v} onClick={() => { setFilter(f.v); setSelected(new Set()); }}
               style={{ padding: '6px 14px', borderRadius: 20, border: filter === f.v ? '1.5px solid #6366F1' : '1px solid rgba(0,0,0,0.1)', background: filter === f.v ? 'rgba(99,102,241,0.06)' : 'white', fontSize: 12, fontWeight: 600, color: filter === f.v ? '#6366F1' : 'rgba(0,0,0,0.5)', cursor: 'pointer', fontFamily: 'inherit' }}>
