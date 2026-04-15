@@ -24,36 +24,76 @@ const MOVEMENT_ICONS = {
   adjustment: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
 };
 
+const CAJA_PERIODS = [
+  { value: 'today', label: 'Hoy' },
+  { value: 'yesterday', label: 'Ayer' },
+  { value: 'week', label: 'Esta Semana' },
+  { value: 'last_week', label: 'Semana Pasada' },
+  { value: 'month', label: 'Este Mes' },
+  { value: 'custom', label: 'Personalizado' },
+];
+
 // ─── CajaView: Cuadre de caja del dia ───
 const CajaView = () => {
   const { addNotification } = useNotification();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [actionModal, setActionModal] = useState(null); // 'deposit' | 'withdrawal' | null
+  const [actionModal, setActionModal] = useState(null);
   const [formAmount, setFormAmount] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [saving, setSaving] = useState(false);
+  const [cajaPeriod, setCajaPeriod] = useState('today');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
 
-  const [payMethods, setPayMethods] = useState(null); // from /finances/payment-methods?period=today
-  const [summary, setSummary] = useState(null); // from /finances/summary?period=today
+  const [payMethods, setPayMethods] = useState(null);
+  const [cajaSum, setCajaSum] = useState(null);
+
+  const periodParams = useMemo(() => {
+    const today = new Date(Date.now() - 5 * 3600000);
+    const toStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const todayStr = toStr(today);
+    if (cajaPeriod === 'custom' && customFrom && customTo) return { period: 'custom', date_from: customFrom, date_to: customTo };
+    if (cajaPeriod === 'yesterday') {
+      const y = new Date(today); y.setDate(today.getDate() - 1);
+      return { period: 'custom', date_from: toStr(y), date_to: toStr(y) };
+    }
+    if (cajaPeriod === 'last_week') {
+      const end = new Date(today); end.setDate(today.getDate() - today.getDay());
+      const start = new Date(end); start.setDate(end.getDate() - 6);
+      return { period: 'custom', date_from: toStr(start), date_to: toStr(end) };
+    }
+    return { period: cajaPeriod };
+  }, [cajaPeriod, customFrom, customTo]);
+
+  const periodLabel = useMemo(() => {
+    if (cajaPeriod === 'today') return 'Hoy';
+    if (cajaPeriod === 'yesterday') return 'Ayer';
+    if (periodParams.date_from && periodParams.date_to) {
+      const f = (d) => new Date(d + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+      return `${f(periodParams.date_from)} — ${f(periodParams.date_to)}`;
+    }
+    return CAJA_PERIODS.find(p => p.value === cajaPeriod)?.label || '';
+  }, [cajaPeriod, periodParams]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
+      const qs = new URLSearchParams(periodParams).toString();
       const [cajaRes, pmRes, sumRes] = await Promise.all([
         fetch(`${API_URL}/finances/cash-register`, { credentials: 'include' }),
-        fetch(`${API_URL}/finances/payment-methods?period=today`, { credentials: 'include' }),
-        fetch(`${API_URL}/finances/summary?period=today`, { credentials: 'include' }),
+        fetch(`${API_URL}/finances/payment-methods?${qs}`, { credentials: 'include' }),
+        fetch(`${API_URL}/finances/summary?${qs}`, { credentials: 'include' }),
       ]);
       if (cajaRes.ok) setData(await cajaRes.json());
       if (pmRes.ok) setPayMethods(await pmRes.json());
-      if (sumRes.ok) setSummary(await sumRes.json());
+      if (sumRes.ok) setCajaSum(await sumRes.json());
     } catch (err) {
       if (err.message !== 'Failed to fetch') addNotification(err.message, 'error');
     } finally {
       setLoading(false);
     }
-  }, [addNotification]);
+  }, [addNotification, periodParams]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -102,10 +142,10 @@ const CajaView = () => {
   const totalDaviplata = getMethodTotal('daviplata');
   const totalTransfer = getMethodTotal('transferencia') + getMethodTotal('bancolombia');
   const totalSales = pmItems.reduce((s, p) => s + (p.total || 0), 0);
-  const txCount = summary?.total_visits || pmItems.reduce((s, p) => s + (p.count || 0), 0);
+  const txCount = cajaSum?.total_visits || pmItems.reduce((s, p) => s + (p.count || 0), 0);
 
   // Summary data
-  const totalRevenue = summary?.total_revenue || totalSales;
+  const totalRevenue = cajaSum?.total_revenue || totalSales;
 
   const fmtDt = (iso) => {
     if (!iso) return '';
@@ -136,6 +176,25 @@ const CajaView = () => {
 
   return (
     <>
+      {/* ─── Period selector ─── */}
+      <div className="gastos__controls">
+        <div className="gastos__periods">
+          {CAJA_PERIODS.map(p => (
+            <button key={p.value} className={`gastos__period ${cajaPeriod === p.value ? 'gastos__period--active' : ''}`} onClick={() => setCajaPeriod(p.value)}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {cajaPeriod === 'custom' && (
+          <div className="gastos__custom-dates">
+            <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+            <span>—</span>
+            <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} />
+          </div>
+        )}
+        <span className="gastos__date-label">{Icons.calendar} {periodLabel}</span>
+      </div>
+
       {/* ─── Hero: Saldo + Acciones ─── */}
       <div className="gastos__bento">
         <div className="gastos__hero-card">
@@ -167,12 +226,12 @@ const CajaView = () => {
       <div className="gastos__card" style={{ marginBottom: 16 }}>
         <div className="gastos__card-header">
           <span className="gastos__card-title">Resumen</span>
-          <span className="gastos__card-badge">{new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
+          <span className="gastos__card-badge">{cajaPeriod === 'today' ? new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }) : periodLabel}</span>
         </div>
         <div className="gastos__cuadre">
           {/* Info general del dia */}
           <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Ingresos del dia</span>
+            <span className="gastos__cuadre-label">Ingresos del periodo</span>
             <span className="gastos__cuadre-value" style={{ fontWeight: 700, color: '#059669' }}>{formatCOP(totalRevenue)}</span>
           </div>
           <div className="gastos__cuadre-row">
