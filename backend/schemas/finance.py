@@ -204,6 +204,8 @@ class InvoiceResponse(BaseModel):
     is_pos: Optional[bool] = False
     dian_status: Optional[str] = None
     cufe: Optional[str] = None
+    dian_sent_at: Optional[datetime] = None
+    dian_response: Optional[str] = None
     alegra_id: Optional[str] = None
 
     class Config:

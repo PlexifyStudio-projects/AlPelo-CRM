@@ -459,7 +459,12 @@ def assign_pos_numbers_v2(data: dict, db: Session = Depends(get_db), user=Depend
     prefix = tenant.invoice_prefix or 'POS'
     range_from = tenant.invoice_range_from or 1
     range_to = tenant.invoice_range_to or 4000
-    last_pos = db.query(func.max(Invoice.pos_number)).filter(Invoice.tenant_id == tid, Invoice.is_pos == True).scalar() or (range_from - 1)
+    # Thread-safe: SELECT FOR UPDATE to prevent race condition on POS number assignment
+    from sqlalchemy import text as sa_text
+    result = db.execute(sa_text(
+        "SELECT COALESCE(MAX(pos_number), :range_start) FROM invoice WHERE tenant_id = :tid AND is_pos = true FOR UPDATE"
+    ), {"tid": tid, "range_start": range_from - 1})
+    last_pos = result.scalar() or (range_from - 1)
     next_pos = last_pos + 1
     all_invs = db.query(Invoice).filter(Invoice.id.in_(invoice_ids), Invoice.tenant_id == tid).order_by(Invoice.issued_date, Invoice.id).all()
     invoices = [inv for inv in all_invs if not inv.is_pos]

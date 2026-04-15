@@ -34,11 +34,11 @@ const TabDian = () => {
   useEffect(() => { loadData(); }, [loadData]);
 
   const filteredInvoices = useMemo(() => {
-    // DIAN tab only shows invoices that have been sent here (is_pos = true)
-    let list = invoices.filter(i => i.status !== 'cancelled' && i.is_pos);
-    if (filter === 'pending') list = list.filter(i => i.dian_status === 'pending');
-    else if (filter === 'sent') list = list.filter(i => i.dian_status === 'sent' || i.dian_status === 'accepted');
-    else if (filter === 'voided') list = list.filter(i => i.dian_status === 'voided');
+    let list = invoices.filter(i => i.status !== 'cancelled');
+    if (filter === 'no_pos') list = list.filter(i => !i.is_pos);
+    else if (filter === 'all') list = list.filter(i => i.is_pos);
+    else if (filter === 'pending') list = list.filter(i => i.is_pos && i.dian_status === 'pending');
+    else if (filter === 'sent') list = list.filter(i => i.is_pos && (i.dian_status === 'sent' || i.dian_status === 'accepted'));
     return list.sort((a, b) => (b.issued_date || '').localeCompare(a.issued_date || ''));
   }, [invoices, filter]);
 
@@ -157,7 +157,8 @@ const TabDian = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
           {[
-            { v: 'all', l: 'Todas', c: invoices.filter(i => i.is_pos && i.status !== 'cancelled').length },
+            { v: 'no_pos', l: 'Sin POS', c: invoices.filter(i => !i.is_pos && i.status !== 'cancelled').length },
+            { v: 'all', l: 'Con POS', c: invoices.filter(i => i.is_pos && i.status !== 'cancelled').length },
             { v: 'pending', l: 'Listas para enviar', c: invoices.filter(i => i.dian_status === 'pending').length },
             { v: 'sent', l: 'Enviadas DIAN', c: invoices.filter(i => i.dian_status === 'sent' || i.dian_status === 'accepted').length },
           ].map(f => (
@@ -196,9 +197,13 @@ const TabDian = () => {
           const isExpanded = expandedId === inv.id;
           const items = inv.items || [];
           return (
-            <div key={inv.id} className="liq__card" style={isExpanded ? {} : {}}>
+            <div key={inv.id} className="liq__card">
               {/* Header row — clickable */}
               <div className="liq__header" onClick={() => setExpandedId(isExpanded ? null : inv.id)} style={{ padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
+                {!inv.is_pos && (
+                  <input type="checkbox" checked={selected.has(inv.id)} onChange={(e) => { e.stopPropagation(); toggleSelect(inv.id); }}
+                    style={{ width: 18, height: 18, cursor: 'pointer', accentColor: '#6366F1', flexShrink: 0 }} />
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                     <span style={{ fontSize: 15, fontWeight: 800, color: '#1E293B' }}>{inv.pos_full_number || inv.invoice_number}</span>
