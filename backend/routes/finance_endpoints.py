@@ -1949,16 +1949,17 @@ def assign_pos_numbers(data: dict, db: Session = Depends(get_db), user=Depends(g
         remaining = range_to - last_pos
         raise HTTPException(400, f"Rango insuficiente. Solo quedan {remaining} consecutivos POS.")
 
-    # Fetch invoices (is_pos can be NULL or False for unassigned)
-    from sqlalchemy import or_
+    # Fetch invoices — skip any that already have POS assigned
     invoices = db.query(Invoice).filter(
         Invoice.id.in_(invoice_ids),
         Invoice.tenant_id == tid,
-        or_(Invoice.is_pos == False, Invoice.is_pos == None),
     ).order_by(Invoice.issued_date, Invoice.id).all()
 
+    # Filter out already-assigned ones
+    invoices = [inv for inv in invoices if not inv.is_pos]
+
     if not invoices:
-        raise HTTPException(400, "No se encontraron facturas validas para asignar POS")
+        raise HTTPException(400, "Todas las facturas seleccionadas ya tienen POS asignado")
 
     assigned = []
     for inv in invoices:
