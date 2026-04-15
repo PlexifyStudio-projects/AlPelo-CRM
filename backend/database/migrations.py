@@ -198,6 +198,9 @@ def run_migrations(engine):
         # Frozen commission rates at payment time
         ("checkout_item", "commission_rate", "FLOAT"),
         ("checkout_item", "commission_amount", "INTEGER"),
+        # Soft delete
+        ("expense", "deleted_at", "TIMESTAMP"),
+        ("invoice", "deleted_at", "TIMESTAMP"),
     ]
 
     for table, column, col_type in migrations:
