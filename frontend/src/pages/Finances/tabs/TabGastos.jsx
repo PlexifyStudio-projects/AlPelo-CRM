@@ -34,17 +34,20 @@ const CajaView = () => {
   const [formDesc, setFormDesc] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const [register, setRegister] = useState(null); // from /cash-register/today
+  const [payMethods, setPayMethods] = useState(null); // from /finances/payment-methods?period=today
+  const [summary, setSummary] = useState(null); // from /finances/summary?period=today
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [cajaRes, regRes] = await Promise.all([
+      const [cajaRes, pmRes, sumRes] = await Promise.all([
         fetch(`${API_URL}/finances/cash-register`, { credentials: 'include' }),
-        fetch(`${API_URL}/cash-register/today`, { credentials: 'include' }),
+        fetch(`${API_URL}/finances/payment-methods?period=today`, { credentials: 'include' }),
+        fetch(`${API_URL}/finances/summary?period=today`, { credentials: 'include' }),
       ]);
       if (cajaRes.ok) setData(await cajaRes.json());
-      if (regRes.ok) setRegister(await regRes.json());
+      if (pmRes.ok) setPayMethods(await pmRes.json());
+      if (sumRes.ok) setSummary(await sumRes.json());
     } catch (err) {
       if (err.message !== 'Failed to fetch') addNotification(err.message, 'error');
     } finally {
@@ -90,21 +93,19 @@ const CajaView = () => {
   const depositsTotal = data?.deposits_today || 0;
   const withdrawalsTotal = data?.withdrawals_today || 0;
 
-  // Register data (from /cash-register/today)
-  const reg = register || {};
-  const totalSales = reg.total_sales || 0;
-  const totalCash = reg.total_cash || 0;
-  const totalNequi = reg.total_nequi || 0;
-  const totalDaviplata = reg.total_daviplata || 0;
-  const totalTransfer = reg.total_transfer || 0;
-  const totalCard = reg.total_card || 0;
-  const totalTips = reg.total_tips || 0;
-  const totalDiscounts = reg.total_discounts || 0;
-  const txCount = reg.transaction_count || 0;
-  const openedBy = reg.opened_by || '';
-  const openedAt = reg.opened_at;
-  const regStatus = reg.status || 'closed';
-  const openingAmount = reg.opening_amount || 0;
+  // Payment methods breakdown (from /finances/payment-methods?period=today)
+  const pmItems = payMethods?.items || [];
+  const getMethodTotal = (method) => pmItems.find(p => p.method === method)?.total || 0;
+  const totalCash = getMethodTotal('efectivo');
+  const totalCard = getMethodTotal('tarjeta') + getMethodTotal('tarjeta_debito') + getMethodTotal('tarjeta_credito');
+  const totalNequi = getMethodTotal('nequi');
+  const totalDaviplata = getMethodTotal('daviplata');
+  const totalTransfer = getMethodTotal('transferencia') + getMethodTotal('bancolombia');
+  const totalSales = pmItems.reduce((s, p) => s + (p.total || 0), 0);
+  const txCount = summary?.total_visits || pmItems.reduce((s, p) => s + (p.count || 0), 0);
+
+  // Summary data
+  const totalRevenue = summary?.total_revenue || totalSales;
 
   const fmtDt = (iso) => {
     if (!iso) return '';
@@ -166,25 +167,18 @@ const CajaView = () => {
       <div className="gastos__card" style={{ marginBottom: 16 }}>
         <div className="gastos__card-header">
           <span className="gastos__card-title">Resumen</span>
-          {regStatus === 'open' && <span className="gastos__card-badge" style={{ color: '#059669', background: 'rgba(5,150,105,0.08)' }}>Caja abierta</span>}
-          {regStatus === 'closed' && <span className="gastos__card-badge">Caja cerrada</span>}
+          <span className="gastos__card-badge">{new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
         </div>
         <div className="gastos__cuadre">
-          {/* Info de apertura */}
+          {/* Info general del dia */}
           <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Responsable</span>
-            <span className="gastos__cuadre-value" style={{ fontWeight: 700 }}>{openedBy || '—'}</span>
+            <span className="gastos__cuadre-label">Ingresos del dia</span>
+            <span className="gastos__cuadre-value" style={{ fontWeight: 700, color: '#059669' }}>{formatCOP(totalRevenue)}</span>
           </div>
           <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Fecha de apertura</span>
-            <span className="gastos__cuadre-value">{openedAt ? fmtDateOnly(openedAt) : '—'}</span>
+            <span className="gastos__cuadre-label">Servicios realizados</span>
+            <span className="gastos__cuadre-value">{txCount}</span>
           </div>
-          {openingAmount > 0 && (
-            <div className="gastos__cuadre-row">
-              <span className="gastos__cuadre-label">Base de apertura</span>
-              <span className="gastos__cuadre-value">{formatCOP(openingAmount)}</span>
-            </div>
-          )}
 
           <div className="gastos__cuadre-divider" />
 
@@ -214,27 +208,6 @@ const CajaView = () => {
             <span className="gastos__cuadre-label">Total en ventas</span>
             <span className="gastos__cuadre-value">{formatCOP(totalSales)}</span>
           </div>
-
-          <div className="gastos__cuadre-divider" />
-
-          {/* Facturado */}
-          <div className="gastos__cuadre-section-label">Facturado</div>
-          <div className="gastos__cuadre-row">
-            <span className="gastos__cuadre-label">Transacciones realizadas</span>
-            <span className="gastos__cuadre-value">{txCount}</span>
-          </div>
-          {totalTips > 0 && (
-            <div className="gastos__cuadre-row">
-              <span className="gastos__cuadre-label">Propinas recibidas</span>
-              <span className="gastos__cuadre-value">{formatCOP(totalTips)}</span>
-            </div>
-          )}
-          {totalDiscounts > 0 && (
-            <div className="gastos__cuadre-row">
-              <span className="gastos__cuadre-label">Descuentos aplicados</span>
-              <span className="gastos__cuadre-value" style={{ color: '#DC2626' }}>-{formatCOP(totalDiscounts)}</span>
-            </div>
-          )}
 
           <div className="gastos__cuadre-divider" />
 
