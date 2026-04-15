@@ -49,6 +49,7 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
         service_name: v.service_name,
         price: v.amount,
         tip: v.tip || 0,
+        payment_method: v.payment_method || '',
         commission_amount: v.commission,
         product_commission: v.product_commission || 0,
         service_breakdown: v.service_breakdown || [],
@@ -153,13 +154,16 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
       <div className="finances__vl-table">
         <div className="finances__vl-thead">
           {selectable && <span style={{ width: 32 }} />}
-          <span style={{ width: 70 }}>Ticket</span>
-          <span style={{ width: 120 }}>Fecha</span>
-          <span style={{ width: 50 }}>Hora</span>
-          <span style={{ flex: 1 }}>Cliente</span>
-          {!isStaffView && <span className="finances__vl-thead-r" style={{ width: 90 }}>Precio</span>}
-          <span className="finances__vl-thead-r" style={{ width: 90 }}>{isStaffView ? 'Tu ganancia' : 'Comision'}</span>
-          <span style={{ width: 100 }}>Estado</span>
+          <span style={{ width: 60 }}>Ticket</span>
+          <span style={{ width: 110 }}>Fecha</span>
+          <span style={{ width: 45 }}>Hora</span>
+          <span style={{ flex: 1 }}>Cliente / Servicio</span>
+          {!isStaffView && <span className="finances__vl-thead-r" style={{ width: 80 }}>Valor</span>}
+          <span className="finances__vl-thead-r" style={{ width: 80 }}>{isStaffView ? 'Ganancia' : 'Comision'}</span>
+          {!isStaffView && <span className="finances__vl-thead-r" style={{ width: 75 }}>Negocio</span>}
+          <span className="finances__vl-thead-r" style={{ width: 60 }}>Propina</span>
+          <span style={{ width: 80 }}>Metodo</span>
+          <span style={{ width: 80 }}>Estado</span>
         </div>
         {filtered.map(v => {
           const commission = getCommission(v);
@@ -181,16 +185,19 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
                     }
                   </span>
                 )}
-                <span className="finances__vl-ticket" style={{ width: 70 }}>{v.visit_code ? `#${v.visit_code}` : `#${v.id}`}</span>
-                <span className="finances__vl-date" style={{ width: 120 }}>{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                <span className="finances__vl-time" style={{ width: 50 }}>{v.time}</span>
+                <span className="finances__vl-ticket" style={{ width: 60 }}>{v.visit_code ? `#${v.visit_code}` : `#${v.id}`}</span>
+                <span className="finances__vl-date" style={{ width: 110 }}>{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                <span className="finances__vl-time" style={{ width: 45 }}>{v.time}</span>
                 <span className="finances__vl-client" style={{ flex: 1 }}>
                   <strong>{v.client_name}</strong>
                   <small>{v.service_name}{dur ? ` · ${dur}min` : ''}</small>
                 </span>
-                {!isStaffView && <span className="finances__vl-price" style={{ width: 90 }}>{formatCOP(v.price || 0)}</span>}
-                <span className="finances__vl-comm" style={{ width: 90 }}>{formatCOP(commission)}</span>
-                <span style={{ width: 100 }}>
+                {!isStaffView && <span className="finances__vl-price" style={{ width: 80 }}>{formatCOP(v.price || 0)}</span>}
+                <span className="finances__vl-comm" style={{ width: 80 }}>{formatCOP(commission)}</span>
+                {!isStaffView && <span className="finances__vl-price" style={{ width: 75, color: '#2D5A3D' }}>{formatCOP((v.price || 0) - commission)}</span>}
+                <span style={{ width: 60, fontSize: 12, color: v.tip > 0 ? '#8B5CF6' : 'rgba(0,0,0,0.2)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{v.tip > 0 ? formatCOP(v.tip) : '—'}</span>
+                <span style={{ width: 80, fontSize: 11, textTransform: 'capitalize', color: '#64748B' }}>{v.payment_method || '—'}</span>
+                <span style={{ width: 80 }}>
                   {paid ? (
                     <div className="finances__vl-status-wrap">
                       <span className="finances__vl-badge finances__vl-badge--paid">Pagada</span>
