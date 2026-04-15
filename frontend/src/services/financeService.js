@@ -5,165 +5,108 @@ const headers = { 'Content-Type': 'application/json' };
 const handleResponse = async (res) => {
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Error de servidor' }));
-    throw new Error(err.detail || `HTTP ${res.status}`);
+    const msg = typeof err.detail === 'string'
+      ? err.detail
+      : Array.isArray(err.detail)
+        ? err.detail.map(e => e.msg || JSON.stringify(e)).join(', ')
+        : `HTTP ${res.status}`;
+    throw new Error(msg);
   }
   return res.json();
+};
+
+const handleBlobResponse = async (res) => {
+  if (!res.ok) throw new Error('Error al exportar');
+  return res.blob();
 };
 
 const authFetch = (url, opts = {}) => fetch(url, { ...opts, credentials: 'include' });
 
 const buildQuery = (params = {}) => {
   const query = new URLSearchParams();
-  if (params.period) query.set('period', params.period);
-  if (params.date_from) query.set('date_from', params.date_from);
-  if (params.date_to) query.set('date_to', params.date_to);
-  if (params.category) query.set('category', params.category);
-  if (params.status) query.set('status', params.status);
-  if (params.client_id) query.set('client_id', params.client_id);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') query.set(k, v);
+  });
   return query.toString();
 };
 
+const qs = (params) => { const s = buildQuery(params); return s ? `?${s}` : ''; };
+
 const financeService = {
-  listExpenses: async (params = {}) => {
-    const qs = buildQuery(params);
-    const res = await authFetch(`${API}/expenses/${qs ? `?${qs}` : ''}`, { headers });
-    return handleResponse(res);
-  },
+  // ── Expenses ──
+  listExpenses: async (params = {}) => handleResponse(await authFetch(`${API}/expenses/${qs(params)}`, { headers })),
+  createExpense: async (data) => handleResponse(await authFetch(`${API}/expenses/`, { method: 'POST', headers, body: JSON.stringify(data) })),
+  updateExpense: async (id, data) => handleResponse(await authFetch(`${API}/expenses/${id}`, { method: 'PUT', headers, body: JSON.stringify(data) })),
+  deleteExpense: async (id) => handleResponse(await authFetch(`${API}/expenses/${id}`, { method: 'DELETE', headers })),
+  expensesSummary: async (params = {}) => handleResponse(await authFetch(`${API}/expenses/summary${qs(params)}`, { headers })),
 
-  createExpense: async (data) => {
-    const res = await authFetch(`${API}/expenses/`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-    });
-    return handleResponse(res);
-  },
+  // ── Commissions ──
+  listCommissions: async () => handleResponse(await authFetch(`${API}/finances/commissions/config`, { headers })),
+  updateCommission: async (staffId, data) => handleResponse(await authFetch(`${API}/finances/commissions/config/${staffId}`, { method: 'PUT', headers, body: JSON.stringify(data) })),
+  commissionPayouts: async (params = {}) => handleResponse(await authFetch(`${API}/finances/commissions/payouts${qs(params)}`, { headers })),
+  getAllCommissionRates: async () => handleResponse(await authFetch(`${API}/services/all-commissions`, { headers })),
 
-  updateExpense: async (id, data) => {
-    const res = await authFetch(`${API}/expenses/${id}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data),
-    });
-    return handleResponse(res);
-  },
+  // ── Invoices ──
+  listInvoices: async (params = {}) => handleResponse(await authFetch(`${API}/invoices/${qs(params)}`, { headers })),
+  getInvoice: async (id) => handleResponse(await authFetch(`${API}/invoices/${id}`, { headers })),
+  createInvoice: async (data) => handleResponse(await authFetch(`${API}/invoices/`, { method: 'POST', headers, body: JSON.stringify(data) })),
+  updateInvoice: async (id, data) => handleResponse(await authFetch(`${API}/invoices/${id}`, { method: 'PUT', headers, body: JSON.stringify(data) })),
+  cancelInvoice: async (id) => handleResponse(await authFetch(`${API}/invoices/${id}`, { method: 'DELETE', headers })),
+  getUninvoicedVisits: async (params = {}) => handleResponse(await authFetch(`${API}/finances/uninvoiced-visits${qs(params)}`, { headers })),
 
-  deleteExpense: async (id) => {
-    const res = await authFetch(`${API}/expenses/${id}`, {
-      method: 'DELETE',
-      headers,
-    });
-    return handleResponse(res);
-  },
+  // ── DIAN / POS ──
+  getPosStatus: async () => handleResponse(await authFetch(`${API}/invoices/pos-status`, { headers })),
+  assignPos: async (invoiceIds) => handleResponse(await authFetch(`${API}/invoices/assign-pos`, { method: 'POST', headers, body: JSON.stringify({ invoice_ids: invoiceIds }) })),
+  voidPos: async (id) => handleResponse(await authFetch(`${API}/invoices/${id}/void-pos`, { method: 'PUT', headers })),
 
-  expensesSummary: async (params = {}) => {
-    const qs = buildQuery(params);
-    const res = await authFetch(`${API}/expenses/summary${qs ? `?${qs}` : ''}`, { headers });
-    return handleResponse(res);
-  },
+  // ── P&L / Analytics ──
+  getPnL: async (params = {}) => handleResponse(await authFetch(`${API}/finances/pnl${qs(params)}`, { headers })),
+  paymentMethods: async (params = {}) => handleResponse(await authFetch(`${API}/finances/payment-methods${qs(params)}`, { headers })),
+  getAnalytics: async (params = {}) => handleResponse(await authFetch(`${API}/finances/analytics${qs(params)}`, { headers })),
+  getForecast: async () => handleResponse(await authFetch(`${API}/finances/forecast`, { headers })),
+  getStaffPerformance: async (params = {}) => handleResponse(await authFetch(`${API}/finances/staff-performance${qs(params)}`, { headers })),
 
-  listCommissions: async () => {
-    const res = await authFetch(`${API}/finances/commissions/config`, { headers });
-    return handleResponse(res);
-  },
+  // ── Cash Register ──
+  getCashRegister: async () => handleResponse(await authFetch(`${API}/finances/cash-register`, { headers })),
+  cashMovement: async (data) => handleResponse(await authFetch(`${API}/finances/cash-register/movement`, { method: 'POST', headers, body: JSON.stringify(data) })),
 
-  updateCommission: async (staffId, data) => {
-    const res = await authFetch(`${API}/finances/commissions/config/${staffId}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data),
-    });
-    return handleResponse(res);
-  },
+  // ── Fines ──
+  createFine: async (data) => handleResponse(await authFetch(`${API}/finances/fines`, { method: 'POST', headers, body: JSON.stringify(data) })),
+  deleteFine: async (id) => handleResponse(await authFetch(`${API}/finances/fines/${id}`, { method: 'DELETE', headers })),
 
-  commissionPayouts: async (params = {}) => {
-    const qs = buildQuery(params);
-    const res = await authFetch(`${API}/finances/commissions/payouts${qs ? `?${qs}` : ''}`, { headers });
-    return handleResponse(res);
-  },
+  // ── Staff Payments (Nómina) ──
+  getPayrollSummary: async (params = {}) => handleResponse(await authFetch(`${API}/staff-payments/summary${qs(params)}`, { headers })),
+  listPayments: async (params = {}) => handleResponse(await authFetch(`${API}/staff-payments/${qs(params)}`, { headers })),
+  createPayment: async (data) => handleResponse(await authFetch(`${API}/staff-payments/`, { method: 'POST', headers, body: JSON.stringify(data) })),
+  deletePayment: async (id) => handleResponse(await authFetch(`${API}/staff-payments/${id}`, { method: 'DELETE', headers })),
+  getPaymentDetail: async (id) => handleResponse(await authFetch(`${API}/staff-payments/${id}/detail`, { headers })),
+  getStaffVisits: async (params = {}) => handleResponse(await authFetch(`${API}/staff-payments/visits${qs(params)}`, { headers })),
+  unlinkVisit: async (visitId) => handleResponse(await authFetch(`${API}/staff-payments/visits/${visitId}/unlink`, { method: 'PUT', headers })),
+  getBankInfo: async (staffId) => handleResponse(await authFetch(`${API}/staff-payments/bank-info/${staffId}`, { headers })),
 
-  listInvoices: async (params = {}) => {
-    const qs = buildQuery(params);
-    const res = await authFetch(`${API}/invoices/${qs ? `?${qs}` : ''}`, { headers });
-    return handleResponse(res);
-  },
+  // ── WhatsApp ──
+  sendDocument: async (data) => handleResponse(await authFetch(`${API}/whatsapp/send-document`, { method: 'POST', headers, body: JSON.stringify(data) })),
+  sendText: async (data) => handleResponse(await authFetch(`${API}/whatsapp/send-text`, { method: 'POST', headers, body: JSON.stringify(data) })),
 
-  getInvoice: async (id) => {
-    const res = await authFetch(`${API}/invoices/${id}`, { headers });
-    return handleResponse(res);
-  },
+  // ── Staff ──
+  getStaff: async (id) => handleResponse(await authFetch(`${API}/staff/${id}`, { headers })),
+  listStaff: async () => handleResponse(await authFetch(`${API}/staff`, { headers })),
 
-  createInvoice: async (data) => {
-    const res = await authFetch(`${API}/invoices/`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-    });
-    return handleResponse(res);
-  },
+  // ── My (Staff view) ──
+  getMyCommissions: async (params = {}) => handleResponse(await authFetch(`${API}/my/commissions${qs(params)}`, { headers })),
+  getMyStats: async () => handleResponse(await authFetch(`${API}/my/stats`, { headers })),
 
-  updateInvoice: async (id, data) => {
-    const res = await authFetch(`${API}/invoices/${id}`, {
-      method: 'PUT',
-      headers,
-      body: JSON.stringify(data),
-    });
-    return handleResponse(res);
-  },
+  // ── Summary ──
+  getSummary: async (params = {}) => handleResponse(await authFetch(`${API}/finances/summary${qs(params)}`, { headers })),
 
-  cancelInvoice: async (id) => {
-    const res = await authFetch(`${API}/invoices/${id}`, {
-      method: 'DELETE',
-      headers,
-    });
-    return handleResponse(res);
-  },
-
-  getUninvoicedVisits: async (params = {}) => {
-    const qs = buildQuery(params);
-    const res = await authFetch(`${API}/finances/uninvoiced-visits${qs ? `?${qs}` : ''}`, { headers });
-    return handleResponse(res);
-  },
-
-  getPnL: async (params = {}) => {
-    const qs = buildQuery(params);
-    const res = await authFetch(`${API}/finances/pnl${qs ? `?${qs}` : ''}`, { headers });
-    return handleResponse(res);
-  },
-
-  paymentMethods: async (params = {}) => {
-    const qs = buildQuery(params);
-    const res = await authFetch(`${API}/finances/payment-methods${qs ? `?${qs}` : ''}`, { headers });
-    return handleResponse(res);
-  },
-
-  getAnalytics: async (params = {}) => {
-    const qs = buildQuery(params);
-    const res = await authFetch(`${API}/finances/analytics${qs ? `?${qs}` : ''}`, { headers });
-    return handleResponse(res);
-  },
-
-  exportTransactions: async (params = {}) => {
-    const qs = buildQuery(params);
-    const res = await authFetch(`${API}/finances/export${qs ? `?${qs}` : ''}`, { headers: {} });
-    if (!res.ok) throw new Error('Error al exportar');
-    return res.blob();
-  },
-
-  exportClients: async () => {
-    const res = await authFetch(`${API}/clients/export`, { headers: {} });
-    if (!res.ok) throw new Error('Error al exportar');
-    return res.blob();
-  },
-
+  // ── Export ──
+  exportTransactions: async (params = {}) => handleBlobResponse(await authFetch(`${API}/finances/export${qs(params)}`)),
+  exportExcel: async (params = {}) => handleBlobResponse(await authFetch(`${API}/finances/export-excel${qs(params)}`)),
+  exportClients: async () => handleBlobResponse(await authFetch(`${API}/clients/export`)),
   importClients: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await authFetch(`${API}/clients/import`, {
-      method: 'POST',
-      body: formData,
-    });
-    return handleResponse(res);
+    return handleResponse(await authFetch(`${API}/clients/import`, { method: 'POST', body: formData }));
   },
 };
 

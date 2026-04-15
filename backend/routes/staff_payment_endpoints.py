@@ -153,9 +153,12 @@ def get_payroll_summary(
                     ps2 = v.notes.index('<!--PRODUCTS:') + len('<!--PRODUCTS:')
                     pe2 = v.notes.index(':PRODUCTS-->')
                     prods2 = _json2.loads(v.notes[ps2:pe2])
-                    product_commissions_total += sum(p.get('comm', 0) or 0 for p in prods2)
-                except Exception:
-                    pass
+                    if not isinstance(prods2, list):
+                        raise ValueError(f"Expected list, got {type(prods2)}")
+                    product_commissions_total += sum(p.get('comm', 0) or 0 for p in prods2 if isinstance(p, dict))
+                except Exception as e:
+                    import logging
+                    logging.warning(f"Failed to parse product commissions for visit {v.id}: {e}")
 
         total_revenue = sum(v.amount or 0 for v in visits)
         total_tips = sum(getattr(v, 'tip', 0) or 0 for v in visits)
@@ -286,7 +289,6 @@ def get_staff_visits(
                 svc_breakdown.append({"name": name_clean, "price": int(per_svc), "rate": rate, "commission": comm_amt})
 
         # Product commission from PRODUCTS JSON (comm field), NOT from [PRODUCT_COMMISSION:X] tag
-        # The tag stored revenue in legacy data, the JSON comm field has the real commission
         prod_comm = 0
         if v.notes and '<!--PRODUCTS:' in v.notes:
             import json as _json
@@ -294,9 +296,12 @@ def get_staff_visits(
                 ps = v.notes.index('<!--PRODUCTS:') + len('<!--PRODUCTS:')
                 pe = v.notes.index(':PRODUCTS-->')
                 prods = _json.loads(v.notes[ps:pe])
-                prod_comm = sum(p.get('comm', 0) or 0 for p in prods)
-            except Exception:
-                pass
+                if not isinstance(prods, list):
+                    raise ValueError(f"Expected list, got {type(prods)}")
+                prod_comm = sum(p.get('comm', 0) or 0 for p in prods if isinstance(p, dict))
+            except Exception as e:
+                import logging
+                logging.warning(f"Failed to parse product commissions for visit {v.id}: {e}")
 
         client = db.query(Client).filter(Client.id == v.client_id).first()
         # Find appointment for visit_code and time

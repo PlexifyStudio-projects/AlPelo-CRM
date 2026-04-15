@@ -467,7 +467,7 @@ class StaffCommission(Base):
     tenant_id = Column(Integer, nullable=True)
     staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False, unique=True)
     default_rate = Column(Float, nullable=False, default=0.40)  # e.g. 0.40 = 40%
-    service_overrides = Column(JSON, default=dict)  # {service_id: rate}
+    service_overrides = Column(JSON, default=dict)  # DEPRECATED: use StaffServiceCommission table instead
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -492,6 +492,7 @@ class Expense(Base):
     is_recurring = Column(Boolean, default=False)
     recurring_frequency = Column(String, nullable=True)  # mensual, semanal, quincenal
     created_by = Column(String, nullable=True)
+    deleted_at = Column(DateTime, nullable=True)  # Soft delete
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -524,6 +525,7 @@ class Invoice(Base):
     issued_date = Column(Date, nullable=False)
     paid_at = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
+    deleted_at = Column(DateTime, nullable=True)  # Soft delete
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

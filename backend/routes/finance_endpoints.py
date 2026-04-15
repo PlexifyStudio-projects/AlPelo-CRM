@@ -55,22 +55,29 @@ def _tenant_filter(query, model, tid):
 # EXPENSES
 # ============================================================================
 
-@router.get("/expenses/", response_model=list[ExpenseResponse])
+@router.get("/expenses/")
 def list_expenses(
     period: str = Query("month"),
     category: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
     tid = safe_tid(current_user, db)
     start, end = _parse_period(period, date_from, date_to)
-    q = db.query(Expense).filter(Expense.date >= start, Expense.date <= end)
+    q = db.query(Expense).filter(Expense.date >= start, Expense.date <= end, Expense.deleted_at.is_(None))
     q = _tenant_filter(q, Expense, tid)
     if category:
         q = q.filter(Expense.category == category)
-    return q.order_by(Expense.date.desc()).all()
+    q = q.order_by(Expense.date.desc())
+    if limit is not None:
+        total = q.count()
+        items = q.offset(offset).limit(limit).all()
+        return {"items": items, "total": total, "limit": limit, "offset": offset}
+    return q.all()
 
 
 @router.post("/expenses/", response_model=ExpenseResponse)
@@ -106,7 +113,7 @@ def delete_expense(expense_id: int, db: Session = Depends(get_db), current_user:
     expense = q.first()
     if not expense:
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
-    db.delete(expense)
+    expense.deleted_at = datetime.utcnow()
     db.commit()
     return {"ok": True}
 
@@ -333,15 +340,22 @@ def get_uninvoiced_visits(
 @router.get("/invoices/")
 def list_invoices(
     status: Optional[str] = Query(None),
+    limit: Optional[int] = Query(None, ge=1, le=500),
+    offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: Admin = Depends(get_current_user),
 ):
     tid = safe_tid(current_user, db)
-    q = db.query(Invoice)
+    q = db.query(Invoice).filter(Invoice.deleted_at.is_(None))
     q = _tenant_filter(q, Invoice, tid)
     if status:
         q = q.filter(Invoice.status == status)
-    invoices = q.order_by(Invoice.issued_date.desc()).all()
+    q = q.order_by(Invoice.issued_date.desc())
+    total_count = q.count() if limit is not None else None
+    if limit is not None:
+        invoices = q.offset(offset).limit(limit).all()
+    else:
+        invoices = q.all()
 
     # Enrich with tip + real commission from linked checkout
     from database.models import Checkout, StaffCommission
@@ -389,6 +403,8 @@ def list_invoices(
         data["frozen_items"] = frozen_items  # Per-item frozen commissions
         result.append(data)
 
+    if total_count is not None:
+        return {"items": result, "total": total_count, "limit": limit, "offset": offset}
     return result
 
 
@@ -627,13 +643,21 @@ def cancel_invoice(invoice_id: int, db: Session = Depends(get_db), current_user:
     if not inv:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
     inv.status = "cancelled"
+    inv.deleted_at = datetime.utcnow()
     _cancel_invoice_cascade(inv, db, tid)
     db.commit()
     return {"ok": True}
 
 
 def _cancel_invoice_cascade(inv, db, tid):
-    """When cancelling an invoice, find and void the linked checkout + cascade."""
+    """Cancel invoice triggers full cascade:
+    1. Invoice → status='cancelled', deleted_at set
+    2. Checkout → status='voided'
+    3. Checkout.invoice → status='cancelled' (redundant but safe)
+    4. VisitHistory → status='cancelled' (single + multi-staff via appointment)
+    5. Appointment → status reverts from 'paid' to 'confirmed'
+    6. Product stock → restored via reversal InventoryMovement
+    """
     from routes.pos_endpoints import _void_checkout_cascade
     # Find checkout linked to this invoice
     checkout_q = db.query(Checkout).filter(Checkout.invoice_id == inv.id)
