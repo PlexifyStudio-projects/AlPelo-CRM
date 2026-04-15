@@ -34,13 +34,22 @@ const CajaView = () => {
   const [formDesc, setFormDesc] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(() => {
+  const [register, setRegister] = useState(null); // from /cash-register/today
+
+  const load = useCallback(async () => {
     setLoading(true);
-    fetch(`${API_URL}/finances/cash-register`, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : Promise.reject(new Error('Error cargando caja')))
-      .then(d => setData(d))
-      .catch(err => addNotification(err.message, 'error'))
-      .finally(() => setLoading(false));
+    try {
+      const [cajaRes, regRes] = await Promise.all([
+        fetch(`${API_URL}/finances/cash-register`, { credentials: 'include' }),
+        fetch(`${API_URL}/cash-register/today`, { credentials: 'include' }),
+      ]);
+      if (cajaRes.ok) setData(await cajaRes.json());
+      if (regRes.ok) setRegister(await regRes.json());
+    } catch (err) {
+      if (err.message !== 'Failed to fetch') addNotification(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
   }, [addNotification]);
 
   useEffect(() => { load(); }, [load]);
@@ -80,126 +89,199 @@ const CajaView = () => {
   const salesTotal = data?.sales_today || 0;
   const depositsTotal = data?.deposits_today || 0;
   const withdrawalsTotal = data?.withdrawals_today || 0;
-  const egresosTotal = withdrawalsTotal;
 
-  const fmtTime = (iso) => {
-    if (!iso) return '';
-    const d = new Date(iso + (iso.includes('Z') ? '' : 'Z'));
-    return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
-  };
+  // Register data (from /cash-register/today)
+  const reg = register || {};
+  const totalSales = reg.total_sales || 0;
+  const totalCash = reg.total_cash || 0;
+  const totalNequi = reg.total_nequi || 0;
+  const totalDaviplata = reg.total_daviplata || 0;
+  const totalTransfer = reg.total_transfer || 0;
+  const totalCard = reg.total_card || 0;
+  const totalTips = reg.total_tips || 0;
+  const totalDiscounts = reg.total_discounts || 0;
+  const txCount = reg.transaction_count || 0;
+  const openedBy = reg.opened_by || '';
+  const openedAt = reg.opened_at;
+  const regStatus = reg.status || 'closed';
+  const openingAmount = reg.opening_amount || 0;
+
   const fmtDt = (iso) => {
     if (!iso) return '';
-    const d = new Date(iso + (iso.includes('Z') ? '' : 'Z'));
+    const d = new Date(iso + (iso.includes('Z') || iso.includes('+') ? '' : 'Z'));
     return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
   };
+  const fmtDateOnly = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso + (iso.includes('Z') || iso.includes('+') ? '' : 'Z'));
+    return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' });
+  };
+  const fmtTimeOnly = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso + (iso.includes('Z') || iso.includes('+') ? '' : 'Z'));
+    return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' });
+  };
+
+  // Calculate gastos + retiros + nomina from movements
+  const todayMovements = movements.filter(m => {
+    if (!m.created_at) return false;
+    const d = new Date(m.created_at + (m.created_at.includes('Z') ? '' : 'Z'));
+    return d.toDateString() === new Date().toDateString();
+  });
+  const gastosHoy = todayMovements.filter(m => m.type === 'expense').reduce((s, m) => s + Math.abs(m.amount), 0);
+  const retirosHoy = todayMovements.filter(m => m.type === 'withdrawal').reduce((s, m) => s + Math.abs(m.amount), 0);
+  const nominaHoy = todayMovements.filter(m => m.type === 'nomina').reduce((s, m) => s + Math.abs(m.amount), 0);
+  const otrosIngresos = depositsTotal;
 
   return (
     <>
-      {/* ─── KPI Bento Grid ─── */}
+      {/* ─── Hero: Saldo + Acciones ─── */}
       <div className="gastos__bento">
-        {/* Hero: Saldo en caja */}
         <div className="gastos__hero-card">
-          <div className="gastos__hero-label">Saldo en caja</div>
+          <div className="gastos__hero-label">Cuadre de caja del dia</div>
           <div className={`gastos__hero-value ${balance < 0 ? 'gastos__hero-value--negative' : ''}`}>
             <AnimatedNumber value={balance} prefix="$" />
           </div>
-          <div className="gastos__hero-sub">Balance acumulado de todos los movimientos</div>
+          <div className="gastos__hero-sub">Corte cuadre de caja actual</div>
         </div>
 
-        {/* Ingresos hoy */}
-        <div className="gastos__kpi-card gastos__kpi-card--income">
-          <div className="gastos__kpi-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          </div>
+        <div className="gastos__kpi-card gastos__kpi-card--income" style={{ cursor: 'pointer' }} onClick={() => { setActionModal('deposit'); setFormAmount(''); setFormDesc(''); }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <div className="gastos__kpi-data">
-            <span className="gastos__kpi-value">{formatCOP(salesTotal + depositsTotal)}</span>
-            <span className="gastos__kpi-label">Ingresos hoy</span>
+            <span className="gastos__action-label" style={{ color: '#059669' }}>Registrar ingreso</span>
+            <span className="gastos__action-hint">Depositar efectivo</span>
           </div>
         </div>
 
-        {/* Egresos hoy */}
-        <div className="gastos__kpi-card gastos__kpi-card--expense">
-          <div className="gastos__kpi-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
-          </div>
+        <div className="gastos__kpi-card gastos__kpi-card--expense" style={{ cursor: 'pointer' }} onClick={() => { setActionModal('withdrawal'); setFormAmount(''); setFormDesc(''); }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
           <div className="gastos__kpi-data">
-            <span className="gastos__kpi-value">{formatCOP(egresosTotal)}</span>
-            <span className="gastos__kpi-label">Egresos hoy</span>
+            <span className="gastos__action-label" style={{ color: '#DC2626' }}>Retiro de dinero</span>
+            <span className="gastos__action-hint">Sacar efectivo</span>
           </div>
         </div>
       </div>
 
-      {/* ─── Main Content: Desglose + Acciones ─── */}
-      <div className="gastos__content-grid">
-        {/* Desglose del dia */}
-        <div className="gastos__card">
-          <div className="gastos__card-header">
-            <span className="gastos__card-title">Desglose del dia</span>
-          </div>
-          <div className="gastos__breakdown">
-            <div className="gastos__breakdown-section">
-              <div className="gastos__breakdown-label">Entradas</div>
-              <div className="gastos__breakdown-row">
-                <span className="gastos__breakdown-dot" style={{ background: '#059669' }} />
-                <span className="gastos__breakdown-name">Ventas en efectivo</span>
-                <span className="gastos__breakdown-amount gastos__breakdown-amount--positive">{formatCOP(salesTotal)}</span>
-              </div>
-              <div className="gastos__breakdown-row">
-                <span className="gastos__breakdown-dot" style={{ background: '#3B82F6' }} />
-                <span className="gastos__breakdown-name">Depositos</span>
-                <span className="gastos__breakdown-amount gastos__breakdown-amount--positive">{formatCOP(depositsTotal)}</span>
-              </div>
-            </div>
-            <div className="gastos__breakdown-divider" />
-            <div className="gastos__breakdown-section">
-              <div className="gastos__breakdown-label">Salidas</div>
-              <div className="gastos__breakdown-row">
-                <span className="gastos__breakdown-dot" style={{ background: '#DC2626' }} />
-                <span className="gastos__breakdown-name">Retiros</span>
-                <span className="gastos__breakdown-amount gastos__breakdown-amount--negative">{egresosTotal > 0 ? `-${formatCOP(egresosTotal)}` : '$0'}</span>
-              </div>
-            </div>
-            <div className="gastos__breakdown-divider" />
-            <div className="gastos__breakdown-total">
-              <span>Total en caja</span>
-              <span className={balance >= 0 ? 'gastos__breakdown-amount--positive' : 'gastos__breakdown-amount--negative'}>{formatCOP(balance)}</span>
-            </div>
-          </div>
+      {/* ─── Resumen detallado (estilo cuadre de caja) ─── */}
+      <div className="gastos__card" style={{ marginBottom: 16 }}>
+        <div className="gastos__card-header">
+          <span className="gastos__card-title">Resumen</span>
+          {regStatus === 'open' && <span className="gastos__card-badge" style={{ color: '#059669', background: 'rgba(5,150,105,0.08)' }}>Caja abierta</span>}
+          {regStatus === 'closed' && <span className="gastos__card-badge">Caja cerrada</span>}
         </div>
-
-        {/* Acciones rapidas */}
-        <div className="gastos__card">
-          <div className="gastos__card-header">
-            <span className="gastos__card-title">Acciones rapidas</span>
+        <div className="gastos__cuadre">
+          {/* Info de apertura */}
+          <div className="gastos__cuadre-row">
+            <span className="gastos__cuadre-label">Responsable</span>
+            <span className="gastos__cuadre-value" style={{ fontWeight: 700 }}>{openedBy || '—'}</span>
           </div>
-          <div className="gastos__actions-grid">
-            <button className="gastos__action-btn gastos__action-btn--deposit" onClick={() => { setActionModal('deposit'); setFormAmount(''); setFormDesc(''); }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              <span className="gastos__action-label">Depositar</span>
-              <span className="gastos__action-hint">Agregar dinero</span>
-            </button>
-            <button className="gastos__action-btn gastos__action-btn--withdraw" onClick={() => { setActionModal('withdrawal'); setFormAmount(''); setFormDesc(''); }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              <span className="gastos__action-label">Retirar</span>
-              <span className="gastos__action-hint">Sacar efectivo</span>
-            </button>
+          <div className="gastos__cuadre-row">
+            <span className="gastos__cuadre-label">Fecha de apertura</span>
+            <span className="gastos__cuadre-value">{openedAt ? fmtDateOnly(openedAt) : '—'}</span>
           </div>
-          <div className="gastos__actions-info">
-            <div className="gastos__actions-info-row">
-              <span className="gastos__actions-info-label">Movimientos hoy</span>
-              <span className="gastos__actions-info-value">{movements.filter(m => {
-                if (!m.created_at) return false;
-                const d = new Date(m.created_at + (m.created_at.includes('Z') ? '' : 'Z'));
-                const today = new Date();
-                return d.toDateString() === today.toDateString();
-              }).length}</span>
+          {openingAmount > 0 && (
+            <div className="gastos__cuadre-row">
+              <span className="gastos__cuadre-label">Base de apertura</span>
+              <span className="gastos__cuadre-value">{formatCOP(openingAmount)}</span>
             </div>
+          )}
+
+          <div className="gastos__cuadre-divider" />
+
+          {/* Dinero por metodo de pago */}
+          <div className="gastos__cuadre-section-label">Dinero por metodo de pago</div>
+          <div className="gastos__cuadre-row">
+            <span className="gastos__cuadre-label">Dinero en efectivo</span>
+            <span className="gastos__cuadre-value">{formatCOP(totalCash)}</span>
+          </div>
+          <div className="gastos__cuadre-row">
+            <span className="gastos__cuadre-label">Dinero en datafono (tarjeta)</span>
+            <span className="gastos__cuadre-value">{formatCOP(totalCard)}</span>
+          </div>
+          <div className="gastos__cuadre-row">
+            <span className="gastos__cuadre-label">Nequi</span>
+            <span className="gastos__cuadre-value">{formatCOP(totalNequi)}</span>
+          </div>
+          <div className="gastos__cuadre-row">
+            <span className="gastos__cuadre-label">Daviplata</span>
+            <span className="gastos__cuadre-value">{formatCOP(totalDaviplata)}</span>
+          </div>
+          <div className="gastos__cuadre-row">
+            <span className="gastos__cuadre-label">Transferencia</span>
+            <span className="gastos__cuadre-value">{formatCOP(totalTransfer)}</span>
+          </div>
+          <div className="gastos__cuadre-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 8, marginTop: 4 }}>
+            <span className="gastos__cuadre-label">Total en ventas</span>
+            <span className="gastos__cuadre-value">{formatCOP(totalSales)}</span>
+          </div>
+
+          <div className="gastos__cuadre-divider" />
+
+          {/* Facturado */}
+          <div className="gastos__cuadre-section-label">Facturado</div>
+          <div className="gastos__cuadre-row">
+            <span className="gastos__cuadre-label">Transacciones realizadas</span>
+            <span className="gastos__cuadre-value">{txCount}</span>
+          </div>
+          {totalTips > 0 && (
+            <div className="gastos__cuadre-row">
+              <span className="gastos__cuadre-label">Propinas recibidas</span>
+              <span className="gastos__cuadre-value">{formatCOP(totalTips)}</span>
+            </div>
+          )}
+          {totalDiscounts > 0 && (
+            <div className="gastos__cuadre-row">
+              <span className="gastos__cuadre-label">Descuentos aplicados</span>
+              <span className="gastos__cuadre-value" style={{ color: '#DC2626' }}>-{formatCOP(totalDiscounts)}</span>
+            </div>
+          )}
+
+          <div className="gastos__cuadre-divider" />
+
+          {/* Otros ingresos y egresos */}
+          <div className="gastos__cuadre-section-label">Otros movimientos del dia</div>
+          {otrosIngresos > 0 && (
+            <div className="gastos__cuadre-row">
+              <span className="gastos__cuadre-label">Otro tipo de dinero ingresado</span>
+              <span className="gastos__cuadre-value" style={{ color: '#059669' }}>{formatCOP(otrosIngresos)}</span>
+            </div>
+          )}
+          <div className="gastos__cuadre-row" style={{ fontWeight: 700, borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 8, marginTop: 4 }}>
+            <span className="gastos__cuadre-label">Total de dinero en efectivo</span>
+            <span className="gastos__cuadre-value">{formatCOP(totalCash + otrosIngresos)}</span>
+          </div>
+
+          <div className="gastos__cuadre-divider" />
+
+          {gastosHoy > 0 && (
+            <div className="gastos__cuadre-row">
+              <span className="gastos__cuadre-label">Dinero en gastos</span>
+              <span className="gastos__cuadre-value" style={{ color: '#DC2626' }}>-{formatCOP(gastosHoy)}</span>
+            </div>
+          )}
+          {retirosHoy > 0 && (
+            <div className="gastos__cuadre-row">
+              <span className="gastos__cuadre-label">Dinero extraido</span>
+              <span className="gastos__cuadre-value" style={{ color: '#DC2626' }}>-{formatCOP(retirosHoy)}</span>
+            </div>
+          )}
+          {nominaHoy > 0 && (
+            <div className="gastos__cuadre-row">
+              <span className="gastos__cuadre-label">Pago de colaboradores</span>
+              <span className="gastos__cuadre-value" style={{ color: '#DC2626' }}>-{formatCOP(nominaHoy)}</span>
+            </div>
+          )}
+
+          {/* TOTAL EN CAJA */}
+          <div className="gastos__cuadre-total">
+            <span>Total en caja</span>
+            <span className={balance >= 0 ? '' : 'gastos__cuadre-total--negative'}>{formatCOP(balance)}</span>
           </div>
         </div>
       </div>
 
       {/* ─── Timeline de movimientos ─── */}
-      <div className="gastos__card" style={{ marginTop: 16 }}>
+      <div className="gastos__card">
         <div className="gastos__card-header">
           <span className="gastos__card-title">Movimientos de caja</span>
           <span className="gastos__card-badge">Ultimos 50</span>
