@@ -1645,6 +1645,8 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
   const [invDateFrom, setInvDateFrom] = useState('');
   const [invDateTo, setInvDateTo] = useState('');
   const [sendingWA, setSendingWA] = useState(null); // invoice id being sent
+  const [selectedInvs, setSelectedInvs] = useState(new Set());
+  const [bulkAction, setBulkAction] = useState(false);
 
   const [allClients, setAllClients] = useState([]);
   const [allServices, setAllServices] = useState([]);
@@ -2165,6 +2167,9 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
         </div>
         <div className="finances__sale-table">
           <div className="finances__sale-thead">
+            <span className="finances__sale-th" style={{ width: '36px' }}>
+              <input type="checkbox" checked={selectedInvs.size > 0 && selectedInvs.size === invoices.length} onChange={() => { if (selectedInvs.size === invoices.length) setSelectedInvs(new Set()); else setSelectedInvs(new Set(invoices.map(i => i.id))); }} style={{ cursor: 'pointer', accentColor: '#6366F1' }} />
+            </span>
             <span className="finances__sale-th" style={{ width: '80px' }}>Hora</span>
             <span className="finances__sale-th" style={{ width: '80px' }}>Estado</span>
             <span className="finances__sale-th" style={{ flex: 1 }}>Cliente</span>
@@ -2173,6 +2178,68 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
             <span className="finances__sale-th" style={{ width: '130px' }}>Medio de pago</span>
             <span className="finances__sale-th" style={{ width: '50px' }} />
           </div>
+          {/* Bulk action bar */}
+          {selectedInvs.size > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', marginBottom: 8, borderRadius: 10, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#4F46E5' }}>{selectedInvs.size} factura{selectedInvs.size !== 1 ? 's' : ''} seleccionada{selectedInvs.size !== 1 ? 's' : ''}</span>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={async () => {
+                  try {
+                    const res = await fetch(`${API_URL}/invoices/assign-pos`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ invoice_ids: [...selectedInvs] }) });
+                    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
+                    const d = await res.json();
+                    addNotification(`${d.count} factura(s) enviada(s) a DIAN`, 'success');
+                    setSelectedInvs(new Set()); load();
+                  } catch (err) { addNotification(err.message, 'error'); }
+                }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #6366F1, #4F46E5)', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                  Enviar a DIAN
+                </button>
+                <button onClick={() => {
+                  const sel = invoices.filter(i => selectedInvs.has(i.id));
+                  const headers = ['Factura', 'Cliente', 'Documento', 'Email', 'Telefono', 'Servicio', 'Valor', 'Metodo', 'Fecha'];
+                  const rows = sel.map(inv => [inv.invoice_number, inv.client_name, `${inv.client_document_type || 'CC'}: ${inv.client_document || ''}`, inv.client_email || '', inv.client_phone || '', (inv.items || []).map(i => i.service_name).join(', '), inv.total, inv.payment_method || '', inv.issued_date || '']);
+                  const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+                  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `facturas-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+                  addNotification(`${sel.length} factura(s) exportada(s) a CSV`, 'success');
+                }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)', background: 'white', fontSize: 12, fontWeight: 600, color: '#334155', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Exportar CSV
+                </button>
+                <button onClick={async () => {
+                  try {
+                    const sel = invoices.filter(i => selectedInvs.has(i.id));
+                    const res = await fetch(`${API_URL}/clients/export-excel`, { credentials: 'include' });
+                    // For now, use XLSX-like HTML table export
+                    const rows = sel.map(inv => `<tr><td>${inv.invoice_number}</td><td>${inv.client_name}</td><td>${inv.client_document_type || 'CC'}: ${inv.client_document || ''}</td><td>${inv.client_email || ''}</td><td>${inv.client_phone || ''}</td><td>${(inv.items || []).map(i => i.service_name).join(', ')}</td><td>${inv.total}</td><td>${inv.payment_method || ''}</td><td>${inv.issued_date || ''}</td></tr>`).join('');
+                    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body><h2>Facturas</h2><table border="1" cellpadding="4"><tr><th>Factura</th><th>Cliente</th><th>Documento</th><th>Email</th><th>Telefono</th><th>Servicio</th><th>Valor</th><th>Metodo</th><th>Fecha</th></tr>${rows}</table></body></html>`;
+                    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `facturas-${new Date().toISOString().slice(0,10)}.xls`; a.click();
+                    addNotification(`${sel.length} factura(s) exportada(s) a Excel`, 'success');
+                  } catch { addNotification('Error exportando', 'error'); }
+                }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(0,0,0,0.1)', background: 'white', fontSize: 12, fontWeight: 600, color: '#334155', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#217346" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                  Excel
+                </button>
+                <button onClick={async () => {
+                  if (!window.confirm(`Eliminar ${selectedInvs.size} factura(s)?`)) return;
+                  let ok = 0;
+                  for (const id of selectedInvs) {
+                    try {
+                      await fetch(`${API_URL}/invoices/${id}`, { method: 'DELETE', credentials: 'include' });
+                      ok++;
+                    } catch {}
+                  }
+                  addNotification(`${ok} factura(s) eliminada(s)`, 'success');
+                  setSelectedInvs(new Set()); load();
+                }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid rgba(220,38,38,0.2)', background: 'rgba(220,38,38,0.04)', fontSize: 12, fontWeight: 600, color: '#DC2626', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          )}
           {invoices
             .filter(inv => {
               if (methodFilter && inv.payment_method !== methodFilter) return false;
@@ -2225,9 +2292,13 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
             return (
               <div key={inv.id} className={`finances__sale-row-wrap ${isExpanded ? 'finances__sale-row-wrap--expanded' : ''}`}>
                 <div className="finances__sale-row" onClick={() => setExpandedId(isExpanded ? null : inv.id)}>
+                  <span className="finances__sale-td" style={{ width: '36px' }} onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={selectedInvs.has(inv.id)} onChange={() => setSelectedInvs(prev => { const n = new Set(prev); n.has(inv.id) ? n.delete(inv.id) : n.add(inv.id); return n; })} style={{ cursor: 'pointer', accentColor: '#6366F1' }} />
+                  </span>
                   <span className="finances__sale-td finances__sale-td--time" style={{ width: '80px' }}>
                     <span className="finances__sale-time">{paidTime || '—'}</span>
                     <span className="finances__sale-invnum">{inv.invoice_number}</span>
+                    {inv.is_pos && <span style={{ fontSize: 9, fontWeight: 700, color: '#6366F1', background: 'rgba(99,102,241,0.08)', padding: '1px 5px', borderRadius: 4, marginTop: 2, display: 'inline-block' }}>DIAN</span>}
                   </span>
                   <span className="finances__sale-td" style={{ width: '80px' }}>
                     <span className={`finances__inv-badge finances__inv-badge--${inv.status}`}>
