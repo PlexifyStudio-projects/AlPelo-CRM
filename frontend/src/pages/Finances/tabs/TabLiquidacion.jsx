@@ -185,7 +185,7 @@ const StaffVisitsList = ({ staffId, dateFrom: parentFrom, dateTo: parentTo, comm
                     }
                   </span>
                 )}
-                <span className="finances__vl-ticket" style={{ width: 60 }}>{v.visit_code ? `#${v.visit_code}` : `#${v.id}`}</span>
+                <span className="finances__vl-ticket" style={{ width: 60 }}>{v.visit_code ? `#${v.visit_code}` : <span style={{ color: 'rgba(0,0,0,0.2)', fontSize: 10 }}>#{v.id}</span>}</span>
                 <span className="finances__vl-date" style={{ width: 110 }}>{new Date(v.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                 <span className="finances__vl-time" style={{ width: 45 }}>{v.time}</span>
                 <span className="finances__vl-client" style={{ flex: 1 }}>
