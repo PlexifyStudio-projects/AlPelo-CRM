@@ -1921,11 +1921,17 @@ def get_pos_status(db: Session = Depends(get_db), user=Depends(get_current_user)
 @router.post("/invoices/assign-pos")
 def assign_pos_numbers(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
     """Assign POS consecutive numbers to selected invoices."""
+    import logging
+    logger = logging.getLogger(__name__)
+
     tid = safe_tid(user, db)
+    logger.info(f"[ASSIGN-POS] tid={tid}, user={getattr(user, 'username', '?')}, data={data}")
+
     if not tid:
         raise HTTPException(400, "Tenant requerido")
 
     invoice_ids = data.get("invoice_ids", [])
+    logger.info(f"[ASSIGN-POS] invoice_ids={invoice_ids}")
     if not invoice_ids:
         raise HTTPException(400, "Seleccione al menos una factura")
 
@@ -1936,6 +1942,7 @@ def assign_pos_numbers(data: dict, db: Session = Depends(get_db), user=Depends(g
     prefix = tenant.invoice_prefix or 'POS'
     range_from = tenant.invoice_range_from or 1
     range_to = tenant.invoice_range_to or 4000
+    logger.info(f"[ASSIGN-POS] prefix={prefix}, range={range_from}-{range_to}")
 
     # Get last used POS number
     last_pos = db.query(func.max(Invoice.pos_number)).filter(
@@ -1944,22 +1951,30 @@ def assign_pos_numbers(data: dict, db: Session = Depends(get_db), user=Depends(g
     ).scalar() or (range_from - 1)
 
     next_pos = last_pos + 1
+    logger.info(f"[ASSIGN-POS] last_pos={last_pos}, next_pos={next_pos}")
 
     if next_pos + len(invoice_ids) - 1 > range_to:
         remaining = range_to - last_pos
         raise HTTPException(400, f"Rango insuficiente. Solo quedan {remaining} consecutivos POS.")
 
-    # Fetch invoices — skip any that already have POS assigned
-    invoices = db.query(Invoice).filter(
+    # Fetch ALL invoices by ID
+    all_invs = db.query(Invoice).filter(
         Invoice.id.in_(invoice_ids),
         Invoice.tenant_id == tid,
     ).order_by(Invoice.issued_date, Invoice.id).all()
 
+    logger.info(f"[ASSIGN-POS] Found {len(all_invs)} invoices from DB. Details: {[(i.id, i.is_pos, i.dian_status, i.invoice_number) for i in all_invs]}")
+
     # Filter out already-assigned ones
-    invoices = [inv for inv in invoices if not inv.is_pos]
+    invoices = [inv for inv in all_invs if not inv.is_pos]
+    logger.info(f"[ASSIGN-POS] After filter (not is_pos): {len(invoices)} eligible")
 
     if not invoices:
-        raise HTTPException(400, "Todas las facturas seleccionadas ya tienen POS asignado")
+        # Return detailed error
+        already = [f"{i.invoice_number}(is_pos={i.is_pos})" for i in all_invs]
+        msg = f"Todas ya tienen POS: {', '.join(already)}" if all_invs else f"No se encontraron facturas con IDs {invoice_ids} para tenant {tid}"
+        logger.warning(f"[ASSIGN-POS] REJECTED: {msg}")
+        raise HTTPException(400, msg)
 
     assigned = []
     for inv in invoices:
