@@ -5,14 +5,17 @@ import whatsappService from '../../../services/whatsappService';
 
 const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard' },
+  { type: 'separator', label: 'Operaciones' },
   { id: 'agenda', label: 'Agenda' },
   { id: 'clients', label: 'Clientes' },
-  { id: 'orders', label: 'Órdenes' },
-  { id: 'campaigns', label: 'Campañas' },
+  { id: 'orders', label: 'Ordenes' },
+  { type: 'separator', label: 'Negocio' },
   { id: 'services', label: 'Servicios' },
   { id: 'inventory', label: 'Inventario' },
   { id: 'finances', label: 'Finanzas' },
   { id: 'team', label: 'Equipo' },
+  { type: 'separator', label: 'Marketing' },
+  { id: 'campaigns', label: 'Campanas' },
   { id: 'automations', label: 'Automatizaciones' },
   { id: 'inbox', label: 'WhatsApp' },
 ];

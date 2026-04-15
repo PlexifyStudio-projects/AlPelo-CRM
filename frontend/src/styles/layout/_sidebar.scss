@@ -159,6 +159,29 @@
     padding: 0 10px;
   }
 
+  &__separator {
+    list-style: none;
+    padding: 12px 14px 4px;
+    margin: 0;
+  }
+
+  &__separator-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(0, 0, 0, 0.3);
+    user-select: none;
+  }
+
+  &__separator-line {
+    display: block;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.06);
+    margin: 6px 4px;
+  }
+
   &__item {
     display: flex;
     align-items: center;
@@ -169,7 +192,7 @@
     cursor: pointer;
     white-space: nowrap;
     position: relative;
-    height: 36px;
+    height: 38px;
     transition: all 150ms ease;
     color: rgba(0, 0, 0, 0.5);
 

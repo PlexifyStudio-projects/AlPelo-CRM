@@ -273,39 +273,49 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
 
       <nav className={`${b}__nav`}>
         <ul className={`${b}__menu`}>
-          {menuItems.map((item, index) => (
-            <li
-              key={item.id}
-              className={`${b}__item ${activeItem === item.id ? `${b}__item--active` : ''} ${item.disabled ? `${b}__item--disabled` : ''}`}
-              onClick={() => !item.disabled && onItemClick(item.id)}
-              onMouseEnter={() => prefetchPage(item.id)}
-              data-tooltip={item.label}
-              data-id={item.id}
-              role="button"
-              tabIndex={item.disabled ? -1 : 0}
-              onKeyDown={(e) => e.key === 'Enter' && !item.disabled && onItemClick(item.id)}
-              style={{ '--item-index': index }}
-            >
-              <span className={`${b}__icon`}>
-                {SVG_ICONS[item.id] || SVG_ICONS[item.icon] || item.icon}
-              </span>
-              {!isCollapsed && (
-                <>
-                  <span className={`${b}__label`}>{item.label}</span>
-                  {item.disabled ? (
-                    <span className={`${b}__badge ${b}__badge--soon`}>Pronto</span>
-                  ) : badgeCounts[item.id] ? (
-                    <span className={`${b}__badge`}>
-                      {badgeCounts[item.id]}
-                    </span>
-                  ) : null}
-                </>
-              )}
-              {isCollapsed && badgeCounts[item.id] && !item.disabled && (
-                <span className={`${b}__badge ${b}__badge--dot`} />
-              )}
-            </li>
-          ))}
+          {menuItems.map((item, index) => {
+            if (item.type === 'separator') {
+              return (
+                <li key={`sep-${index}`} className={`${b}__separator`}>
+                  {!isCollapsed && <span className={`${b}__separator-label`}>{item.label}</span>}
+                  {isCollapsed && <span className={`${b}__separator-line`} />}
+                </li>
+              );
+            }
+            return (
+              <li
+                key={item.id}
+                className={`${b}__item ${activeItem === item.id ? `${b}__item--active` : ''} ${item.disabled ? `${b}__item--disabled` : ''}`}
+                onClick={() => !item.disabled && onItemClick(item.id)}
+                onMouseEnter={() => prefetchPage(item.id)}
+                data-tooltip={item.label}
+                data-id={item.id}
+                role="button"
+                tabIndex={item.disabled ? -1 : 0}
+                onKeyDown={(e) => e.key === 'Enter' && !item.disabled && onItemClick(item.id)}
+                style={{ '--item-index': index }}
+              >
+                <span className={`${b}__icon`}>
+                  {SVG_ICONS[item.id] || SVG_ICONS[item.icon] || item.icon}
+                </span>
+                {!isCollapsed && (
+                  <>
+                    <span className={`${b}__label`}>{item.label}</span>
+                    {item.disabled ? (
+                      <span className={`${b}__badge ${b}__badge--soon`}>Pronto</span>
+                    ) : badgeCounts[item.id] ? (
+                      <span className={`${b}__badge`}>
+                        {badgeCounts[item.id]}
+                      </span>
+                    ) : null}
+                  </>
+                )}
+                {isCollapsed && badgeCounts[item.id] && !item.disabled && (
+                  <span className={`${b}__badge ${b}__badge--dot`} />
+                )}
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
