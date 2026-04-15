@@ -392,6 +392,102 @@ def list_invoices(
     return result
 
 
+# ── DIAN POS (must be BEFORE /invoices/{invoice_id}) ──
+
+@router.get("/invoices/pos-status")
+def get_pos_status(db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "Tenant requerido")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(404, "Tenant no encontrado")
+    range_from = tenant.invoice_range_from or 1
+    range_to = tenant.invoice_range_to or 4000
+    total_range = range_to - range_from + 1
+    used = db.query(func.count(Invoice.id)).filter(Invoice.tenant_id == tid, Invoice.is_pos == True, Invoice.dian_status != 'voided').scalar() or 0
+    last_pos = db.query(func.max(Invoice.pos_number)).filter(Invoice.tenant_id == tid, Invoice.is_pos == True).scalar() or 0
+    remaining = total_range - used
+    prefix = tenant.invoice_prefix or 'POS'
+    pending = db.query(func.count(Invoice.id)).filter(Invoice.tenant_id == tid, Invoice.is_pos == True, Invoice.dian_status == 'pending').scalar() or 0
+    sent = db.query(func.count(Invoice.id)).filter(Invoice.tenant_id == tid, Invoice.is_pos == True, Invoice.dian_status.in_(['sent', 'accepted'])).scalar() or 0
+    alerts = []
+    if remaining <= 0:
+        alerts.append("Se agoto el rango POS. Solicite nueva resolucion DIAN.")
+    elif remaining <= 100:
+        alerts.append(f"Quedan {remaining} facturas POS disponibles.")
+    resolution_valid_to = tenant.resolution_valid_to
+    if resolution_valid_to:
+        days_left = (resolution_valid_to - date.today()).days
+        if days_left <= 30 and days_left > 0:
+            alerts.append(f"La resolucion vence en {days_left} dias.")
+        elif days_left <= 0:
+            alerts.append("La resolucion DIAN esta vencida.")
+    fields = [tenant.nit, tenant.legal_name, tenant.dian_resolution_number, tenant.invoice_prefix, tenant.invoice_range_from, tenant.invoice_range_to]
+    completeness = round(sum(1 for f in fields if f) / len(fields) * 100)
+    return {"prefix": prefix, "range_from": range_from, "range_to": range_to, "total_range": total_range, "used": used, "remaining": remaining, "last_pos_number": last_pos, "pending": pending, "sent": sent, "completeness": completeness, "resolution_number": tenant.dian_resolution_number, "resolution_valid_to": resolution_valid_to.isoformat() if resolution_valid_to else None, "alerts": alerts, "nit": tenant.nit, "legal_name": tenant.legal_name}
+
+
+@router.post("/invoices/assign-pos")
+def assign_pos_numbers_v2(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    import logging; logger = logging.getLogger(__name__)
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "Tenant requerido")
+    invoice_ids = data.get("invoice_ids", [])
+    if not invoice_ids:
+        raise HTTPException(400, "Seleccione al menos una factura")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(404, "Tenant no encontrado")
+    prefix = tenant.invoice_prefix or 'POS'
+    range_from = tenant.invoice_range_from or 1
+    range_to = tenant.invoice_range_to or 4000
+    last_pos = db.query(func.max(Invoice.pos_number)).filter(Invoice.tenant_id == tid, Invoice.is_pos == True).scalar() or (range_from - 1)
+    next_pos = last_pos + 1
+    all_invs = db.query(Invoice).filter(Invoice.id.in_(invoice_ids), Invoice.tenant_id == tid).order_by(Invoice.issued_date, Invoice.id).all()
+    invoices = [inv for inv in all_invs if not inv.is_pos]
+    logger.info(f"[ASSIGN-POS] ids={invoice_ids}, found={len(all_invs)}, eligible={len(invoices)}")
+    if not invoices:
+        already = [f"{i.invoice_number}(is_pos={i.is_pos})" for i in all_invs]
+        raise HTTPException(400, f"Ya tienen POS: {', '.join(already)}" if all_invs else f"No se encontraron facturas con IDs {invoice_ids}")
+    if next_pos + len(invoices) - 1 > range_to:
+        raise HTTPException(400, f"Rango insuficiente. Solo quedan {range_to - last_pos} consecutivos POS.")
+    assigned = []
+    for inv in invoices:
+        inv.pos_number = next_pos
+        inv.pos_prefix = prefix
+        inv.pos_full_number = f"{prefix}-{str(next_pos).zfill(4)}"
+        inv.is_pos = True
+        inv.dian_status = 'pending'
+        assigned.append({"id": inv.id, "invoice_number": inv.invoice_number, "pos_full_number": inv.pos_full_number, "pos_number": next_pos})
+        next_pos += 1
+    db.commit()
+    return {"assigned": assigned, "count": len(assigned)}
+
+
+@router.put("/invoices/{invoice_id}/void-pos")
+def void_pos_invoice(invoice_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "Tenant requerido")
+    inv = db.query(Invoice).filter(Invoice.id == invoice_id, Invoice.tenant_id == tid).first()
+    if not inv:
+        raise HTTPException(404, "Factura no encontrada")
+    if not inv.is_pos:
+        raise HTTPException(400, "Esta factura no tiene POS asignado")
+    if inv.dian_status in ('sent', 'accepted'):
+        raise HTTPException(400, "No se puede anular una factura ya enviada a la DIAN.")
+    old_pos = inv.pos_full_number
+    inv.pos_number = None
+    inv.pos_prefix = None
+    inv.pos_full_number = None
+    inv.is_pos = False
+    inv.dian_status = 'voided'
+    db.commit()
+    return {"message": f"Factura {old_pos} anulada", "invoice_id": invoice_id}
+
+
 @router.get("/invoices/{invoice_id}", response_model=InvoiceResponse)
 def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     tid = safe_tid(current_user, db)
@@ -1831,194 +1927,4 @@ def add_cash_movement(
     }
 
 
-# ============================================================================
-# DIAN POS INVOICING
-# ============================================================================
-
-@router.get("/invoices/pos-status")
-def get_pos_status(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Get POS invoicing status: range, used, remaining, alerts."""
-    tid = safe_tid(user, db)
-    if not tid:
-        raise HTTPException(400, "Tenant requerido")
-
-    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-    if not tenant:
-        raise HTTPException(404, "Tenant no encontrado")
-
-    range_from = tenant.invoice_range_from or 1
-    range_to = tenant.invoice_range_to or 4000
-    total_range = range_to - range_from + 1
-
-    # Count POS invoices for this tenant
-    used = db.query(func.count(Invoice.id)).filter(
-        Invoice.tenant_id == tid,
-        Invoice.is_pos == True,
-        Invoice.dian_status != 'voided',
-    ).scalar() or 0
-
-    last_pos = db.query(func.max(Invoice.pos_number)).filter(
-        Invoice.tenant_id == tid,
-        Invoice.is_pos == True,
-    ).scalar() or 0
-
-    remaining = total_range - used
-    prefix = tenant.invoice_prefix or 'POS'
-
-    # Pending (assigned but not sent)
-    pending = db.query(func.count(Invoice.id)).filter(
-        Invoice.tenant_id == tid,
-        Invoice.is_pos == True,
-        Invoice.dian_status == 'pending',
-    ).scalar() or 0
-
-    # Sent/accepted
-    sent = db.query(func.count(Invoice.id)).filter(
-        Invoice.tenant_id == tid,
-        Invoice.is_pos == True,
-        Invoice.dian_status.in_(['sent', 'accepted']),
-    ).scalar() or 0
-
-    alerts = []
-    if remaining <= 0:
-        alerts.append("Se agoto el rango POS. Solicite nueva resolucion DIAN.")
-    elif remaining <= 100:
-        alerts.append(f"Quedan {remaining} facturas POS disponibles.")
-
-    resolution_valid_to = tenant.resolution_valid_to
-    if resolution_valid_to:
-        days_left = (resolution_valid_to - date.today()).days
-        if days_left <= 30 and days_left > 0:
-            alerts.append(f"La resolucion vence en {days_left} dias.")
-        elif days_left <= 0:
-            alerts.append("La resolucion DIAN esta vencida.")
-
-    # Config completeness
-    fields = [tenant.nit, tenant.legal_name, tenant.dian_resolution_number,
-              tenant.invoice_prefix, tenant.invoice_range_from, tenant.invoice_range_to]
-    filled = sum(1 for f in fields if f)
-    completeness = round(filled / len(fields) * 100)
-
-    return {
-        "prefix": prefix,
-        "range_from": range_from,
-        "range_to": range_to,
-        "total_range": total_range,
-        "used": used,
-        "remaining": remaining,
-        "last_pos_number": last_pos,
-        "pending": pending,
-        "sent": sent,
-        "completeness": completeness,
-        "resolution_number": tenant.dian_resolution_number,
-        "resolution_valid_to": resolution_valid_to.isoformat() if resolution_valid_to else None,
-        "alerts": alerts,
-        "nit": tenant.nit,
-        "legal_name": tenant.legal_name,
-    }
-
-
-@router.post("/invoices/assign-pos")
-def assign_pos_numbers(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Assign POS consecutive numbers to selected invoices."""
-    import logging
-    logger = logging.getLogger(__name__)
-
-    tid = safe_tid(user, db)
-    logger.info(f"[ASSIGN-POS] tid={tid}, user={getattr(user, 'username', '?')}, data={data}")
-
-    if not tid:
-        raise HTTPException(400, "Tenant requerido")
-
-    invoice_ids = data.get("invoice_ids", [])
-    logger.info(f"[ASSIGN-POS] invoice_ids={invoice_ids}")
-    if not invoice_ids:
-        raise HTTPException(400, "Seleccione al menos una factura")
-
-    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-    if not tenant:
-        raise HTTPException(404, "Tenant no encontrado")
-
-    prefix = tenant.invoice_prefix or 'POS'
-    range_from = tenant.invoice_range_from or 1
-    range_to = tenant.invoice_range_to or 4000
-    logger.info(f"[ASSIGN-POS] prefix={prefix}, range={range_from}-{range_to}")
-
-    # Get last used POS number
-    last_pos = db.query(func.max(Invoice.pos_number)).filter(
-        Invoice.tenant_id == tid,
-        Invoice.is_pos == True,
-    ).scalar() or (range_from - 1)
-
-    next_pos = last_pos + 1
-    logger.info(f"[ASSIGN-POS] last_pos={last_pos}, next_pos={next_pos}")
-
-    if next_pos + len(invoice_ids) - 1 > range_to:
-        remaining = range_to - last_pos
-        raise HTTPException(400, f"Rango insuficiente. Solo quedan {remaining} consecutivos POS.")
-
-    # Fetch ALL invoices by ID
-    all_invs = db.query(Invoice).filter(
-        Invoice.id.in_(invoice_ids),
-        Invoice.tenant_id == tid,
-    ).order_by(Invoice.issued_date, Invoice.id).all()
-
-    logger.info(f"[ASSIGN-POS] Found {len(all_invs)} invoices from DB. Details: {[(i.id, i.is_pos, i.dian_status, i.invoice_number) for i in all_invs]}")
-
-    # Filter out already-assigned ones
-    invoices = [inv for inv in all_invs if not inv.is_pos]
-    logger.info(f"[ASSIGN-POS] After filter (not is_pos): {len(invoices)} eligible")
-
-    if not invoices:
-        # Return detailed error
-        already = [f"{i.invoice_number}(is_pos={i.is_pos})" for i in all_invs]
-        msg = f"Todas ya tienen POS: {', '.join(already)}" if all_invs else f"No se encontraron facturas con IDs {invoice_ids} para tenant {tid}"
-        logger.warning(f"[ASSIGN-POS] REJECTED: {msg}")
-        raise HTTPException(400, msg)
-
-    assigned = []
-    for inv in invoices:
-        inv.pos_number = next_pos
-        inv.pos_prefix = prefix
-        inv.pos_full_number = f"{prefix}-{str(next_pos).zfill(4)}"
-        inv.is_pos = True
-        inv.dian_status = 'pending'
-        assigned.append({
-            "id": inv.id,
-            "invoice_number": inv.invoice_number,
-            "pos_full_number": inv.pos_full_number,
-            "pos_number": next_pos,
-        })
-        next_pos += 1
-
-    db.commit()
-    return {"assigned": assigned, "count": len(assigned)}
-
-
-@router.put("/invoices/{invoice_id}/void-pos")
-def void_pos_invoice(invoice_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    """Void a POS invoice — remove POS number if not yet sent to DIAN."""
-    tid = safe_tid(user, db)
-    if not tid:
-        raise HTTPException(400, "Tenant requerido")
-
-    inv = db.query(Invoice).filter(Invoice.id == invoice_id, Invoice.tenant_id == tid).first()
-    if not inv:
-        raise HTTPException(404, "Factura no encontrada")
-
-    if not inv.is_pos:
-        raise HTTPException(400, "Esta factura no tiene POS asignado")
-
-    if inv.dian_status in ('sent', 'accepted'):
-        raise HTTPException(400, "No se puede anular una factura ya enviada a la DIAN. Genere una nota credito.")
-
-    # Remove POS assignment
-    old_pos = inv.pos_full_number
-    inv.pos_number = None
-    inv.pos_prefix = None
-    inv.pos_full_number = None
-    inv.is_pos = False
-    inv.dian_status = 'voided'
-
-    db.commit()
-    return {"message": f"Factura {old_pos} anulada", "invoice_id": invoice_id}
+# (DIAN POS endpoints moved before /invoices/{invoice_id} to avoid route conflict)
