@@ -1937,11 +1937,11 @@ def assign_pos_numbers(data: dict, db: Session = Depends(get_db), user=Depends(g
     range_from = tenant.invoice_range_from or 1
     range_to = tenant.invoice_range_to or 4000
 
-    # Get last used POS number (atomic)
+    # Get last used POS number
     last_pos = db.query(func.max(Invoice.pos_number)).filter(
         Invoice.tenant_id == tid,
         Invoice.is_pos == True,
-    ).with_for_update().scalar() or (range_from - 1)
+    ).scalar() or (range_from - 1)
 
     next_pos = last_pos + 1
 
