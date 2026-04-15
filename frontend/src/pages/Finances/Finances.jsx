@@ -10,10 +10,9 @@ import TabReportes from './tabs/TabReportes';
 import TabGastos from './tabs/TabGastos';
 import TabComisiones from './tabs/TabComisiones';
 import TabFacturas from './tabs/TabFacturas';
-import TabNomina from './tabs/TabNomina';
+import TabLiquidacion from './tabs/TabLiquidacion';
 import TabDian from './tabs/TabDian';
 import TabForecast from './tabs/TabForecast';
-import TabRendimiento from './tabs/TabRendimiento';
 
 const Finances = () => {
   const { tenant } = useTenant();
@@ -194,7 +193,7 @@ const Finances = () => {
         </div>
       </div>
       <div className="finances__tab-selector">
-        {(isStaffView ? TAB_OPTIONS.filter(t => ['resumen', 'facturas', 'nomina'].includes(t.value)) : TAB_OPTIONS).map((tab) => (
+        {(isStaffView ? TAB_OPTIONS.filter(t => ['resumen', 'facturas', 'liquidacion'].includes(t.value)) : TAB_OPTIONS).map((tab) => (
           <button
             key={tab.value}
             className={`finances__tab-btn ${activeTab === tab.value ? 'finances__tab-btn--active' : ''}`}
@@ -208,10 +207,9 @@ const Finances = () => {
       {activeTab === 'resumen' && <TabResumen data={data} loading={loading} period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} />}
       {activeTab === 'forecast' && <TabForecast />}
       {activeTab === 'reportes' && <TabReportes period={period} dateFrom={dateFrom} dateTo={dateTo} />}
-      {activeTab === 'rendimiento' && <TabRendimiento period={period} dateFrom={dateFrom} dateTo={dateTo} />}
+      {activeTab === 'liquidacion' && <TabLiquidacion period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} staffUser={authUser} />}
       {activeTab === 'gastos' && <TabGastos period={period} dateFrom={dateFrom} dateTo={dateTo} />}
       {activeTab === 'facturas' && <TabFacturas period={period} dateFrom={dateFrom} dateTo={dateTo} isStaffView={isStaffView} staffUser={authUser} />}
-      {activeTab === 'nomina' && <TabNomina isStaffView={isStaffView} staffUser={authUser} />}
       {activeTab === 'dian' && <TabDian />}
     </div>
   );
