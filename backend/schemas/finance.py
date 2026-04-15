@@ -197,6 +197,14 @@ class InvoiceResponse(BaseModel):
     items: List[InvoiceItemResponse] = []
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # DIAN POS
+    pos_number: Optional[int] = None
+    pos_prefix: Optional[str] = None
+    pos_full_number: Optional[str] = None
+    is_pos: Optional[bool] = False
+    dian_status: Optional[str] = None
+    cufe: Optional[str] = None
+    alegra_id: Optional[str] = None
 
     class Config:
         from_attributes = True
