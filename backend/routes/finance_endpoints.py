@@ -509,6 +509,107 @@ def void_pos_invoice(invoice_id: int, db: Session = Depends(get_db), user=Depend
     return {"message": f"Factura {old_pos} anulada", "invoice_id": invoice_id}
 
 
+@router.post("/invoices/send-dian")
+def send_invoices_to_dian(data: dict, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Send pending POS invoices to DIAN via Alegra."""
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "Tenant requerido")
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if not tenant:
+        raise HTTPException(404, "Tenant no encontrado")
+
+    # Check Alegra config
+    alegra_email = getattr(tenant, 'fiscal_email', None) or getattr(tenant, 'owner_email', None)
+    alegra_token = getattr(tenant, 'billing_provider_api_key', None)
+    alegra_env = getattr(tenant, 'billing_environment', 'production')
+
+    if not alegra_token:
+        raise HTTPException(400, "Alegra no configurado. Ve a Configuracion > Facturacion y agrega tu API Token de Alegra.")
+
+    from services.alegra import AlegraService
+    alegra = AlegraService(email=alegra_email, token=alegra_token, environment=alegra_env)
+
+    # Test connection
+    ok, msg = alegra.test_connection()
+    if not ok:
+        raise HTTPException(400, f"Error conectando con Alegra: {msg}")
+
+    invoice_ids = data.get("invoice_ids", [])
+    if not invoice_ids:
+        raise HTTPException(400, "Seleccione al menos una factura")
+
+    invoices = db.query(Invoice).filter(
+        Invoice.id.in_(invoice_ids),
+        Invoice.tenant_id == tid,
+        Invoice.is_pos == True,
+        Invoice.dian_status == 'pending',
+    ).all()
+
+    if not invoices:
+        raise HTTPException(400, "No hay facturas pendientes de envio a DIAN")
+
+    results = []
+    for inv in invoices:
+        # Build invoice data for Alegra
+        items_data = []
+        for item in inv.items:
+            items_data.append({
+                "service_name": item.service_name,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "total": item.total,
+            })
+
+        invoice_payload = {
+            "client_name": inv.client_name,
+            "client_document_type": inv.client_document_type or "CC",
+            "client_document": inv.client_document,
+            "client_email": inv.client_email,
+            "client_phone": inv.client_phone,
+            "client_address": getattr(inv, 'client_address', None),
+            "items": items_data,
+            "subtotal": inv.subtotal,
+            "tax_rate": inv.tax_rate,
+            "tax_amount": inv.tax_amount,
+            "total": inv.total,
+            "payment_method": inv.payment_method,
+            "issued_date": inv.issued_date.isoformat() if inv.issued_date else date.today().isoformat(),
+            "due_date": inv.due_date.isoformat() if inv.due_date else None,
+            "payment_terms": inv.payment_terms,
+            "notes": inv.notes,
+            "discount_amount": inv.discount_amount,
+        }
+
+        result = alegra.create_and_stamp_invoice(invoice_payload)
+
+        if result.get("error"):
+            results.append({"id": inv.id, "invoice_number": inv.invoice_number, "success": False, "error": result.get("detail", "Error desconocido")})
+            continue
+
+        # Update invoice with Alegra response
+        inv.alegra_id = result.get("alegra_id")
+        inv.cufe = result.get("cufe")
+        inv.dian_status = result.get("dian_status", "sent")
+        inv.dian_sent_at = datetime.utcnow()
+        inv.dian_response = result.get("raw_response", "")
+
+        results.append({
+            "id": inv.id,
+            "invoice_number": inv.invoice_number,
+            "pos_full_number": inv.pos_full_number,
+            "success": True,
+            "dian_status": inv.dian_status,
+            "cufe": inv.cufe,
+            "alegra_id": inv.alegra_id,
+        })
+
+    db.commit()
+    sent_count = sum(1 for r in results if r.get("success"))
+    failed_count = sum(1 for r in results if not r.get("success"))
+    return {"results": results, "sent": sent_count, "failed": failed_count}
+
+
 @router.get("/invoices/{invoice_id}", response_model=InvoiceResponse)
 def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
     tid = safe_tid(current_user, db)

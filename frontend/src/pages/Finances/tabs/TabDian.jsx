@@ -297,9 +297,22 @@ const TabDian = () => {
                       <button disabled={sendingDianId === inv.id} onClick={async () => {
                         setSendingDianId(inv.id);
                         try {
-                          // Simulate DIAN send — in production this calls Alegra API
-                          addNotification('Factura lista para enviar a DIAN. Integre con proveedor (Alegra) en Fase 2.', 'info');
-                        } finally { setSendingDianId(null); }
+                          const res = await fetch(`${API_URL}/invoices/send-dian`, {
+                            method: 'POST', credentials: 'include',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ invoice_ids: [inv.id] }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) { addNotification(data.detail || 'Error enviando a DIAN', 'error'); return; }
+                          if (data.sent > 0) {
+                            addNotification(`Factura ${inv.pos_full_number || inv.invoice_number} enviada a DIAN correctamente`, 'success');
+                            loadData();
+                          } else {
+                            const err = data.results?.[0]?.error || 'Error desconocido';
+                            addNotification(`Error: ${err}`, 'error');
+                          }
+                        } catch (err) { addNotification('Error de conexion: ' + err.message, 'error'); }
+                        finally { setSendingDianId(null); }
                       }}
                         style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #6366F1, #4F46E5)', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
