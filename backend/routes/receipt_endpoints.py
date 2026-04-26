@@ -21,15 +21,18 @@ def _build_from_invoice(inv: Invoice, db: Session) -> dict:
     items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == inv.id).all()
     items_payload = []
     for it in items:
-        staff_name = None
-        if getattr(it, 'staff_id', None):
+        staff_name = getattr(it, 'staff_name', None)
+        if not staff_name and getattr(it, 'staff_id', None):
             st = db.query(Staff).filter(Staff.id == it.staff_id).first()
             staff_name = st.name if st else None
+        qty = it.quantity or 1
+        unit_price = it.unit_price or 0
+        total = it.total or (qty * unit_price)
         items_payload.append({
-            "name": it.description or it.service_name or "Servicio",
-            "qty": it.quantity or 1,
-            "unit_price": it.unit_price or it.price or 0,
-            "total": (it.quantity or 1) * (it.unit_price or it.price or 0),
+            "name": it.service_name or "Servicio",
+            "qty": qty,
+            "unit_price": unit_price,
+            "total": total,
             "staff_name": staff_name,
         })
     client_name = None
@@ -37,16 +40,23 @@ def _build_from_invoice(inv: Invoice, db: Session) -> dict:
         cli = db.query(Client).filter(Client.id == inv.client_id).first()
         client_name = cli.name if cli else None
 
+    inv_status = (getattr(inv, 'status', '') or '').lower()
+    status_label_map = {
+        'paid': 'Pagado',
+        'sent': 'Emitida',
+        'draft': 'Borrador',
+        'cancelled': 'Cancelada',
+    }
     return {
         "id": inv.id,
         "kind": "invoice",
         "number": getattr(inv, 'invoice_number', None) or getattr(inv, 'pos_full_number', None) or f"#{inv.id}",
-        "status": "Pagado" if getattr(inv, 'is_paid', False) else "Emitida",
+        "status": status_label_map.get(inv_status, inv_status.title() or 'Emitida'),
         "issued_at": inv.created_at.isoformat() if inv.created_at else None,
         "items": items_payload,
-        "subtotal": getattr(inv, 'subtotal', None) or sum(i["total"] for i in items_payload),
+        "subtotal": getattr(inv, 'subtotal', 0) or sum(i["total"] for i in items_payload),
         "tax": getattr(inv, 'tax_amount', 0) or 0,
-        "total": getattr(inv, 'total', None) or sum(i["total"] for i in items_payload),
+        "total": getattr(inv, 'total', 0) or sum(i["total"] for i in items_payload),
         "payment_method": getattr(inv, 'payment_method', None) or None,
         "client_name": client_name or getattr(inv, 'client_name', None),
         "tenant": {
