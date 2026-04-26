@@ -2,7 +2,10 @@ import { memo } from 'react';
 import { daysSince, formatCurrency, formatDate, formatPhone } from '../../../utils/formatters';
 import { STATUS_META } from '../../../utils/clientStatus';
 
-const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort, onDelete }) => {
+const ClientTable = memo(({
+  clients, onClientClick, sortConfig, onSort, onDelete,
+  selectable = false, selectedIds, onToggleSelect, onToggleSelectAll,
+}) => {
   const b = 'client-table';
 
   const getStatusLabel = (status) => STATUS_META[status]?.label || status;
@@ -24,6 +27,14 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort, onDelete
     if (onDelete) onDelete(client);
   };
 
+  const handleCheckboxClick = (e, client) => {
+    e.stopPropagation();
+    if (onToggleSelect) onToggleSelect(client.id);
+  };
+
+  const allSelected = selectable && clients.length > 0 && clients.every((c) => selectedIds?.has(c.id));
+  const someSelected = selectable && !allSelected && clients.some((c) => selectedIds?.has(c.id));
+
   const SortIcon = ({ column }) => {
     if (sortConfig?.key !== column) {
       return (
@@ -43,6 +54,23 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort, onDelete
     );
   };
 
+  const Checkbox = ({ checked, indeterminate, onClick, ariaLabel }) => (
+    <button
+      type="button"
+      className={`${b}__check ${checked ? `${b}__check--on` : ''} ${indeterminate ? `${b}__check--ind` : ''}`}
+      onClick={onClick}
+      aria-label={ariaLabel}
+      aria-checked={indeterminate ? 'mixed' : !!checked}
+      role="checkbox"
+    >
+      {indeterminate ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      ) : checked ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      ) : null}
+    </button>
+  );
+
   const TrashIcon = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6" />
@@ -58,6 +86,16 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort, onDelete
         <table className={`${b}__table`}>
           <thead className={`${b}__head`}>
             <tr>
+              {selectable && (
+                <th className={`${b}__th ${b}__th--check`}>
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    onClick={() => onToggleSelectAll && onToggleSelectAll()}
+                    ariaLabel="Seleccionar todos"
+                  />
+                </th>
+              )}
               <th className={`${b}__th ${b}__th--id`}>
                 <span className={`${b}__th-content`}>Ticket</span>
               </th>
@@ -90,140 +128,162 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort, onDelete
             </tr>
           </thead>
           <tbody className={`${b}__body`}>
-            {clients.map((client, index) => (
-              <tr
-                key={client.id}
-                className={`${b}__row`}
-                onClick={() => onClientClick(client)}
-                style={{ animationDelay: `${index * 0.03}s` }}
-              >
-                <td className={`${b}__td ${b}__td--id`}>
-                  <span className={`${b}__client-id`}>{client.visit_code || client.client_id}</span>
-                </td>
-                <td className={`${b}__td`}>
-                  <div className={`${b}__client-cell`}>
-                    <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
-                      {getInitials(client.name)}
-                    </div>
-                    <div className={`${b}__client-info`}>
-                      <span className={`${b}__client-name`}>{client.name}</span>
-                      <span className={`${b}__client-phone`}>{formatPhone(client.phone)}</span>
-                    </div>
-                  </div>
-                </td>
-                <td className={`${b}__td ${b}__td--hide-md`}>
-                  {client.last_visit ? (
-                    <div className={`${b}__visit-cell`}>
-                      <span className={`${b}__date`}>{formatDate(client.last_visit)}</span>
-                      <span className={`${b}__days ${getDaysClass(client.last_visit)}`}>
-                        hace {daysSince(client.last_visit)}d
-                      </span>
-                    </div>
-                  ) : (
-                    <span className={`${b}__no-visit`}>Sin visitas</span>
+            {clients.map((client, index) => {
+              const isSelected = selectable && selectedIds?.has(client.id);
+              return (
+                <tr
+                  key={client.id}
+                  className={`${b}__row ${isSelected ? `${b}__row--selected` : ''}`}
+                  onClick={() => onClientClick(client)}
+                  style={{ animationDelay: `${index * 0.03}s` }}
+                >
+                  {selectable && (
+                    <td className={`${b}__td ${b}__td--check`} onClick={(e) => handleCheckboxClick(e, client)}>
+                      <Checkbox
+                        checked={isSelected}
+                        ariaLabel={`Seleccionar ${client.name}`}
+                        onClick={(e) => handleCheckboxClick(e, client)}
+                      />
+                    </td>
                   )}
-                </td>
-                <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
-                  <span className={`${b}__visits-count`}>{client.total_visits}</span>
-                </td>
-                <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
-                  <span className={`${b}__spent`}>{formatCurrency(client.total_spent)}</span>
-                  {client.avg_ticket > 0 && (
-                    <span className={`${b}__avg-ticket`}>prom. {formatCurrency(client.avg_ticket)}</span>
-                  )}
-                </td>
-                <td className={`${b}__td`}>
-                  <span className={`${b}__status ${b}__status--${client.status}`}>
-                    {client.status === 'vip' && (
-                      <svg className={`${b}__status-icon`} width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-                      </svg>
+                  <td className={`${b}__td ${b}__td--id`}>
+                    <span className={`${b}__client-id`}>{client.visit_code || client.client_id}</span>
+                  </td>
+                  <td className={`${b}__td`}>
+                    <div className={`${b}__client-cell`}>
+                      <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
+                        {getInitials(client.name)}
+                      </div>
+                      <div className={`${b}__client-info`}>
+                        <span className={`${b}__client-name`}>{client.name}</span>
+                        <span className={`${b}__client-phone`}>{formatPhone(client.phone)}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className={`${b}__td ${b}__td--hide-md`}>
+                    {client.last_visit ? (
+                      <div className={`${b}__visit-cell`}>
+                        <span className={`${b}__date`}>{formatDate(client.last_visit)}</span>
+                        <span className={`${b}__days ${getDaysClass(client.last_visit)}`}>
+                          hace {daysSince(client.last_visit)}d
+                        </span>
+                      </div>
+                    ) : (
+                      <span className={`${b}__no-visit`}>Sin visitas</span>
                     )}
-                    {client.status === 'en_riesgo' && (
-                      <svg className={`${b}__status-icon`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                      </svg>
+                  </td>
+                  <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
+                    <span className={`${b}__visits-count`}>{client.total_visits}</span>
+                  </td>
+                  <td className={`${b}__td ${b}__td--right ${b}__td--hide-sm`}>
+                    <span className={`${b}__spent`}>{formatCurrency(client.total_spent)}</span>
+                    {client.avg_ticket > 0 && (
+                      <span className={`${b}__avg-ticket`}>prom. {formatCurrency(client.avg_ticket)}</span>
                     )}
-                    {getStatusLabel(client.status)}
-                  </span>
-                </td>
-                <td className={`${b}__td ${b}__td--actions`}>
-                  {onDelete && (
-                    <button
-                      type="button"
-                      className={`${b}__action-btn ${b}__action-btn--delete`}
-                      onClick={(e) => handleDeleteClick(e, client)}
-                      aria-label={`Borrar ${client.name}`}
-                      title="Borrar cliente"
-                    >
-                      <TrashIcon />
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className={`${b}__td`}>
+                    <span className={`${b}__status ${b}__status--${client.status}`}>
+                      {client.status === 'vip' && (
+                        <svg className={`${b}__status-icon`} width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                        </svg>
+                      )}
+                      {client.status === 'en_riesgo' && (
+                        <svg className={`${b}__status-icon`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        </svg>
+                      )}
+                      {getStatusLabel(client.status)}
+                    </span>
+                  </td>
+                  <td className={`${b}__td ${b}__td--actions`}>
+                    {onDelete && (
+                      <button
+                        type="button"
+                        className={`${b}__action-btn ${b}__action-btn--delete`}
+                        onClick={(e) => handleDeleteClick(e, client)}
+                        aria-label={`Borrar ${client.name}`}
+                        title="Borrar cliente"
+                      >
+                        <TrashIcon />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       <div className={`${b}__cards`}>
-        {clients.map((client, index) => (
-          <div
-            key={client.id}
-            className={`${b}__card`}
-            onClick={() => onClientClick(client)}
-            style={{ animationDelay: `${index * 0.04}s` }}
-          >
-            <div className={`${b}__card-top`}>
-              <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
-                {getInitials(client.name)}
-              </div>
-              <div className={`${b}__card-info`}>
-                <span className={`${b}__client-name`}>{client.name}</span>
-                <span className={`${b}__client-phone`}>{client.visit_code || client.client_id} &middot; {formatPhone(client.phone)}</span>
-              </div>
-              <span className={`${b}__status ${b}__status--${client.status}`}>
-                {client.status === 'vip' && (
-                  <svg className={`${b}__status-icon`} width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-                  </svg>
+        {clients.map((client, index) => {
+          const isSelected = selectable && selectedIds?.has(client.id);
+          return (
+            <div
+              key={client.id}
+              className={`${b}__card ${isSelected ? `${b}__card--selected` : ''}`}
+              onClick={() => onClientClick(client)}
+              style={{ animationDelay: `${index * 0.04}s` }}
+            >
+              <div className={`${b}__card-top`}>
+                {selectable && (
+                  <Checkbox
+                    checked={isSelected}
+                    onClick={(e) => handleCheckboxClick(e, client)}
+                    ariaLabel={`Seleccionar ${client.name}`}
+                  />
                 )}
-                {getStatusLabel(client.status)}
-              </span>
+                <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
+                  {getInitials(client.name)}
+                </div>
+                <div className={`${b}__card-info`}>
+                  <span className={`${b}__client-name`}>{client.name}</span>
+                  <span className={`${b}__client-phone`}>{client.visit_code || client.client_id} &middot; {formatPhone(client.phone)}</span>
+                </div>
+                <span className={`${b}__status ${b}__status--${client.status}`}>
+                  {client.status === 'vip' && (
+                    <svg className={`${b}__status-icon`} width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                    </svg>
+                  )}
+                  {getStatusLabel(client.status)}
+                </span>
+              </div>
+              <div className={`${b}__card-stats`}>
+                <div className={`${b}__card-stat`}>
+                  <span className={`${b}__card-stat-label`}>Última visita</span>
+                  {client.last_visit ? (
+                    <span className={`${b}__days ${getDaysClass(client.last_visit)}`}>
+                      hace {daysSince(client.last_visit)}d
+                    </span>
+                  ) : (
+                    <span className={`${b}__no-visit`}>—</span>
+                  )}
+                </div>
+                <div className={`${b}__card-stat`}>
+                  <span className={`${b}__card-stat-label`}>Visitas</span>
+                  <span className={`${b}__visits-count`}>{client.total_visits}</span>
+                </div>
+                <div className={`${b}__card-stat`}>
+                  <span className={`${b}__card-stat-label`}>Total</span>
+                  <span className={`${b}__spent`}>{formatCurrency(client.total_spent)}</span>
+                </div>
+              </div>
+              {onDelete && (
+                <button
+                  type="button"
+                  className={`${b}__action-btn ${b}__action-btn--delete ${b}__card-delete`}
+                  onClick={(e) => handleDeleteClick(e, client)}
+                  aria-label={`Borrar ${client.name}`}
+                >
+                  <TrashIcon />
+                  <span>Borrar</span>
+                </button>
+              )}
             </div>
-            <div className={`${b}__card-stats`}>
-              <div className={`${b}__card-stat`}>
-                <span className={`${b}__card-stat-label`}>Última visita</span>
-                {client.last_visit ? (
-                  <span className={`${b}__days ${getDaysClass(client.last_visit)}`}>
-                    hace {daysSince(client.last_visit)}d
-                  </span>
-                ) : (
-                  <span className={`${b}__no-visit`}>—</span>
-                )}
-              </div>
-              <div className={`${b}__card-stat`}>
-                <span className={`${b}__card-stat-label`}>Visitas</span>
-                <span className={`${b}__visits-count`}>{client.total_visits}</span>
-              </div>
-              <div className={`${b}__card-stat`}>
-                <span className={`${b}__card-stat-label`}>Total</span>
-                <span className={`${b}__spent`}>{formatCurrency(client.total_spent)}</span>
-              </div>
-            </div>
-            {onDelete && (
-              <button
-                type="button"
-                className={`${b}__action-btn ${b}__action-btn--delete ${b}__card-delete`}
-                onClick={(e) => handleDeleteClick(e, client)}
-                aria-label={`Borrar ${client.name}`}
-              >
-                <TrashIcon />
-                <span>Borrar</span>
-              </button>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

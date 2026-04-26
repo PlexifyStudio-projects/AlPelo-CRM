@@ -571,6 +571,132 @@ $cl-tones: (
   }
 
   /* ============================================================
+     INLINE BULK ACTION BAR — sits next to the filters
+     ============================================================ */
+  &__filters-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__filters-wrap {
+    flex: 1;
+    min-width: 240px;
+  }
+
+  &__bulkbar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px 6px 12px;
+    background: $color-secondary;
+    border-radius: 12px;
+    color: $color-white;
+    box-shadow:
+      0 8px 24px rgba(15, 23, 42, 0.18),
+      0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+    animation: clientsBulkbarIn 240ms $ease-spring-gentle;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-self: flex-end;
+  }
+
+  &__bulkbar-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    border-radius: 7px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: all 150ms ease;
+    flex-shrink: 0;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: $color-white;
+    }
+  }
+
+  &__bulkbar-count {
+    font-size: $font-size-xs;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.82);
+    letter-spacing: -0.01em;
+    padding: 0 4px;
+    white-space: nowrap;
+
+    strong {
+      color: $color-white;
+      font-weight: 700;
+      margin-right: 3px;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__bulkbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 8px;
+    font-family: $font-primary;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 160ms $ease-smooth;
+    white-space: nowrap;
+
+    &--primary {
+      background: linear-gradient(135deg, $color-primary, $color-accent);
+      color: $color-white;
+      box-shadow: 0 3px 10px rgba($color-accent, 0.32);
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba($color-accent, 0.42);
+      }
+    }
+
+    &--danger {
+      background: rgba(244, 63, 94, 0.18);
+      color: #FCA5A5;
+      border: 1px solid rgba(244, 63, 94, 0.32);
+
+      &:hover {
+        background: linear-gradient(135deg, #F43F5E, #E11D48);
+        color: $color-white;
+        border-color: transparent;
+        box-shadow: 0 6px 16px rgba(244, 63, 94, 0.36);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    &__filters-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    &__bulkbar {
+      align-self: stretch;
+      justify-content: space-between;
+    }
+
+    &__bulkbar-btn {
+      flex: 1;
+      justify-content: center;
+      padding: 0 8px;
+    }
+  }
+
+  /* ============================================================
      CONFIRM DELETE DIALOG
      ============================================================ */
   &__confirm-backdrop {
@@ -769,6 +895,11 @@ $cl-tones: (
 @keyframes clientsFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes clientsBulkbarIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes clientsSpin {

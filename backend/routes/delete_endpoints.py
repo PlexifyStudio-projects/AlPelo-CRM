@@ -73,6 +73,52 @@ def delete_client(client_id: int, hard: bool = False, db: Session = Depends(get_
         return {"success": True, "message": f"Client '{client.name}' deactivated"}
 
 
+from pydantic import BaseModel
+from typing import List
+
+class BulkDeleteRequest(BaseModel):
+    ids: List[int]
+    hard: bool = True
+
+
+@router.post("/clients/bulk-delete")
+def bulk_delete_clients(payload: BulkDeleteRequest, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Delete many clients at once. Tenant-scoped — silently skips ids that don't belong."""
+    tid = safe_tid(user, db)
+    if not payload.ids:
+        return {"success": True, "deleted": 0, "skipped": 0}
+
+    q = db.query(Client).filter(Client.id.in_(payload.ids))
+    if tid:
+        q = q.filter(Client.tenant_id == tid)
+    clients = q.all()
+    valid_ids = [c.id for c in clients]
+    skipped = len(payload.ids) - len(valid_ids)
+
+    if not valid_ids:
+        return {"success": True, "deleted": 0, "skipped": skipped}
+
+    if payload.hard:
+        # Bulk-cascade related rows
+        db.query(VisitHistory).filter(VisitHistory.client_id.in_(valid_ids)).delete(synchronize_session=False)
+        db.query(ClientNote).filter(ClientNote.client_id.in_(valid_ids)).delete(synchronize_session=False)
+        db.query(Appointment).filter(Appointment.client_id.in_(valid_ids)).delete(synchronize_session=False)
+        # WA conversations + messages
+        convos = db.query(WhatsAppConversation).filter(WhatsAppConversation.client_id.in_(valid_ids)).all()
+        convo_ids = [c.id for c in convos]
+        if convo_ids:
+            db.query(WhatsAppMessage).filter(WhatsAppMessage.conversation_id.in_(convo_ids)).delete(synchronize_session=False)
+            db.query(WhatsAppConversation).filter(WhatsAppConversation.id.in_(convo_ids)).delete(synchronize_session=False)
+        # Finally clients
+        db.query(Client).filter(Client.id.in_(valid_ids)).delete(synchronize_session=False)
+    else:
+        for c in clients:
+            c.is_active = False
+
+    db.commit()
+    return {"success": True, "deleted": len(valid_ids), "skipped": skipped}
+
+
 # ============================================================================
 # VISIT HISTORY ENDPOINTS
 # ============================================================================

@@ -255,6 +255,27 @@ const Campaigns = () => {
     load();
   }, []);
 
+  // Pre-selected contacts handed off from Clients page
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('campaigns:preselected');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      sessionStorage.removeItem('campaigns:preselected');
+      // Stale check: ignore if older than 2 minutes
+      if (!data.contacts || !Array.isArray(data.contacts) || data.contacts.length === 0) return;
+      if (data.ts && Date.now() - data.ts > 120000) return;
+
+      setMainTab('send');
+      setSendStep(1);
+      setAudienceResults({ count: data.contacts.length, contacts: data.contacts });
+      setSelectedContacts(new Set(data.ids || data.contacts.map(c => c.id)));
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[Campaigns] preselected parse failed', err);
+    }
+  }, []);
+
   const reloadTemplates = useCallback(async () => {
     try {
       const tpls = await templateService.getTemplates();

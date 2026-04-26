@@ -148,6 +148,60 @@
     padding-right: 18px;
   }
 
+  /* Checkbox column — fixed narrow */
+  &__th--check,
+  &__td--check {
+    width: 44px;
+    min-width: 44px;
+    padding-left: 18px;
+    padding-right: 8px;
+    text-align: left;
+  }
+
+  &__check {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid $color-gray-200;
+    border-radius: 5px;
+    background: $color-white;
+    color: $color-white;
+    cursor: pointer;
+    transition: all 150ms $ease-smooth;
+    flex-shrink: 0;
+    padding: 0;
+
+    &:hover {
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.08);
+    }
+
+    &--on, &--ind {
+      background: $color-primary;
+      border-color: $color-primary;
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.25);
+    }
+  }
+
+  /* Selected row highlight */
+  &__row--selected {
+    background: rgba(30, 64, 175, 0.04) !important;
+    box-shadow: inset 3px 0 0 $color-primary;
+
+    &:hover { background: rgba(30, 64, 175, 0.07) !important; }
+  }
+
+  &__card--selected {
+    border-color: $color-primary !important;
+    box-shadow: 0 0 0 1px $color-primary, 0 4px 12px rgba(30, 64, 175, 0.12) !important;
+  }
+
   /* ---------- ACTION BUTTONS ---------- */
   &__action-btn {
     display: inline-flex;

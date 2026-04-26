@@ -50,6 +50,14 @@ const clientService = {
     return handleResponse(res);
   },
 
+  bulkDelete: async (ids, hard = true) => {
+    const res = await fetch(`${API}/clients/bulk-delete`, {
+      method: 'POST', ...opts,
+      body: JSON.stringify({ ids, hard }),
+    });
+    return handleResponse(res);
+  },
+
   // ── Bulk import history ──
   listImportHistory: async (limit = 30) => {
     const res = await fetch(`${API}/clients/import-history?limit=${limit}`, opts);

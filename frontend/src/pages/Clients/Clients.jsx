@@ -10,7 +10,7 @@ import { formatCurrency, daysSince } from '../../utils/formatters';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
 
-const Clients = () => {
+const Clients = ({ onNavigate }) => {
   const [clients, setClients] = useState([]);
   const [kpis, setKpis] = useState({ total_clients: 0, active_clients: 0, at_risk_clients: 0, inactive_clients: 0, vip_clients: 0, new_clients: 0, retention_rate: 0, total_revenue: 0, avg_ticket: 0 });
   const [loading, setLoading] = useState(true);
@@ -26,6 +26,9 @@ const Clients = () => {
   const [rfmFilter, setRfmFilter] = useState(null);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkConfirm, setBulkConfirm] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const exportMenuRef = useRef(null);
   const { addNotification } = useNotification();
   const b = 'clients';
@@ -157,20 +160,88 @@ const Clients = () => {
     setDeleteCandidate(client);
   }, []);
 
+  /* ─────────── Multi-select helpers ─────────── */
+  const handleToggleSelect = useCallback((id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleToggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const visibleIds = filteredClients.map((c) => c.id);
+      const allSel = visibleIds.length > 0 && visibleIds.every((id) => prev.has(id));
+      const next = new Set(prev);
+      if (allSel) {
+        visibleIds.forEach((id) => next.delete(id));
+      } else {
+        visibleIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }, [filteredClients]);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setBulkDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const res = await clientService.bulkDelete(ids, true);
+      addNotification(`${res.deleted} clientes borrados`, 'success');
+      setSelectedIds(new Set());
+      setBulkConfirm(false);
+      loadClients();
+    } catch (err) {
+      addNotification('No se pudo borrar: ' + err.message, 'error');
+    } finally {
+      setBulkDeleting(false);
+    }
+  }, [selectedIds, addNotification, loadClients]);
+
+  const handleSendCampaign = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    // Snapshot of selected clients (full data) — Campaigns reads this on mount
+    const ids = Array.from(selectedIds);
+    const contacts = clients
+      .filter((c) => selectedIds.has(c.id))
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        email: c.email || null,
+        client_id: c.client_id,
+        status: c.status,
+        total_visits: c.total_visits || 0,
+        total_spent: c.total_spent || 0,
+        last_visit: c.last_visit || null,
+      }));
+    sessionStorage.setItem('campaigns:preselected', JSON.stringify({ ids, contacts, ts: Date.now() }));
+    onNavigate?.('campaigns');
+  }, [selectedIds, clients]);
+
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteCandidate) return;
-    setDeletingId(deleteCandidate.id);
+    const name = deleteCandidate.name;
+    const id = deleteCandidate.id;
+    setDeletingId(id);
     try {
-      await clientService.delete(deleteCandidate.id, true); // hard delete
-      addNotification(`${deleteCandidate.name} fue borrado del sistema`, 'success');
-      setClients((prev) => prev.filter((c) => c.id !== deleteCandidate.id));
+      await clientService.delete(id, true); // hard delete
+      // Optimistic remove + then full reload so KPIs and filter counts refresh too
+      setClients((prev) => prev.filter((c) => c.id !== id));
+      if (selectedClient?.id === id) setSelectedClient(null);
       setDeleteCandidate(null);
+      addNotification(`${name} fue borrado del sistema`, 'success');
+      loadClients();
     } catch (err) {
       addNotification('No se pudo borrar: ' + err.message, 'error');
     } finally {
       setDeletingId(null);
     }
-  }, [deleteCandidate, addNotification]);
+  }, [deleteCandidate, selectedClient, addNotification, loadClients]);
 
   const counts = useMemo(() => ({
     total: kpis.total_clients,
@@ -522,13 +593,55 @@ const Clients = () => {
         </section>
       )}
 
-      {/* ---------- FILTERS ---------- */}
-      <ClientFilters
-        onSearch={setSearchQuery}
-        onFilterStatus={setStatusFilter}
-        activeStatus={statusFilter}
-        counts={counts}
-      />
+      {/* ---------- FILTERS + BULK BAR (inline) ---------- */}
+      <div className={`${b}__filters-row`}>
+        <div className={`${b}__filters-wrap`}>
+          <ClientFilters
+            onSearch={setSearchQuery}
+            onFilterStatus={setStatusFilter}
+            activeStatus={statusFilter}
+            counts={counts}
+          />
+        </div>
+
+        {selectedIds.size > 0 && (
+          <div className={`${b}__bulkbar`} role="region" aria-label="Acciones múltiples">
+            <button
+              className={`${b}__bulkbar-clear`}
+              onClick={clearSelection}
+              aria-label="Limpiar selección"
+              title="Limpiar selección"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <span className={`${b}__bulkbar-count`}>
+              <strong>{selectedIds.size}</strong> seleccionado{selectedIds.size === 1 ? '' : 's'}
+            </span>
+
+            <button
+              className={`${b}__bulkbar-btn ${b}__bulkbar-btn--primary`}
+              onClick={handleSendCampaign}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+              Enviar campaña
+            </button>
+
+            <button
+              className={`${b}__bulkbar-btn ${b}__bulkbar-btn--danger`}
+              onClick={() => setBulkConfirm(true)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" />
+              </svg>
+              Borrar todos
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ---------- TABLE ---------- */}
       <ClientTable
@@ -537,6 +650,10 @@ const Clients = () => {
         sortConfig={sortConfig}
         onSort={handleSort}
         onDelete={handleDeleteRequest}
+        selectable
+        selectedIds={selectedIds}
+        onToggleSelect={handleToggleSelect}
+        onToggleSelectAll={handleToggleSelectAll}
       />
 
       {filteredClients.length === 0 && !loading && (
@@ -576,7 +693,44 @@ const Clients = () => {
         onImported={loadClients}
       />
 
-      {/* ───────── Delete confirm dialog ───────── */}
+      {/* ───────── Bulk delete confirm dialog ───────── */}
+      {bulkConfirm && (
+        <div className={`${b}__confirm-backdrop`} onClick={() => !bulkDeleting && setBulkConfirm(false)}>
+          <div className={`${b}__confirm`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className={`${b}__confirm-icon`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+            </div>
+            <h3 className={`${b}__confirm-title`}>¿Borrar {selectedIds.size} cliente{selectedIds.size === 1 ? '' : 's'}?</h3>
+            <p className={`${b}__confirm-text`}>
+              Se eliminarán permanentemente del sistema, junto con su historial de visitas, citas, notas y conversaciones.
+              <strong> Esta acción no se puede deshacer.</strong>
+            </p>
+            <div className={`${b}__confirm-actions`}>
+              <button
+                className={`${b}__confirm-btn ${b}__confirm-btn--ghost`}
+                onClick={() => setBulkConfirm(false)}
+                disabled={bulkDeleting}
+              >
+                Cancelar
+              </button>
+              <button
+                className={`${b}__confirm-btn ${b}__confirm-btn--danger`}
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+              >
+                {bulkDeleting ? 'Borrando...' : `Sí, borrar ${selectedIds.size}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ───────── Single delete confirm dialog ───────── */}
       {deleteCandidate && (
         <div className={`${b}__confirm-backdrop`} onClick={() => deletingId == null && setDeleteCandidate(null)}>
           <div className={`${b}__confirm`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">

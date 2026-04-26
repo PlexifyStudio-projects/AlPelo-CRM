@@ -33,7 +33,7 @@ const SectionRenderer = memo(({ section, user, updateProfile, onNavigate }) => {
   switch (section) {
     case 'dashboard': return <Dashboard user={user} onNavigate={onNavigate} />;
     case 'agenda': return <Agenda />;
-    case 'clients': return <Clients />;
+    case 'clients': return <Clients onNavigate={onNavigate} />;
     case 'orders': return <Orders />;
     case 'campaigns': return <Campaigns />;
     case 'automations': return <Automations />;
