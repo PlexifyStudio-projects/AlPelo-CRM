@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { formatCOP } from './financeConstants';
 import financeService from '../../services/financeService';
 import { useNotification } from '../../context/NotificationContext';
@@ -358,8 +359,8 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
         )}
       </div>
 
-      {/* Confirm cancel */}
-      {confirmCancel && (
+      {/* Confirm cancel — rendered via portal to escape any transformed ancestor */}
+      {confirmCancel && createPortal(
         <div className="invoice-detail__confirm-backdrop" onClick={() => !cancelling && setConfirmCancel(false)}>
           <div className="invoice-detail__confirm" onClick={(e) => e.stopPropagation()}>
             <div className="invoice-detail__confirm-icon">
@@ -376,7 +377,8 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
