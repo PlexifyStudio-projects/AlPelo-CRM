@@ -9,6 +9,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { formatCurrency, daysSince } from '../../utils/formatters';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
+import templateService from '../../services/templateService';
 
 const Clients = ({ onNavigate }) => {
   const [clients, setClients] = useState([]);
@@ -29,6 +30,10 @@ const Clients = ({ onNavigate }) => {
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [bulkConfirm, setBulkConfirm] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [templatePicker, setTemplatePicker] = useState(false);
+  const [templates, setTemplates] = useState([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templateSearch, setTemplateSearch] = useState('');
   const exportMenuRef = useRef(null);
   const { addNotification } = useNotification();
   const b = 'clients';
@@ -202,9 +207,24 @@ const Clients = ({ onNavigate }) => {
     }
   }, [selectedIds, addNotification, loadClients]);
 
-  const handleSendCampaign = useCallback(() => {
+  const handleSendCampaign = useCallback(async () => {
     if (selectedIds.size === 0) return;
-    // Snapshot of selected clients (full data) — Campaigns reads this on mount
+    setTemplatePicker(true);
+    setTemplateSearch('');
+    setTemplatesLoading(true);
+    try {
+      const list = await templateService.getApprovedTemplates();
+      setTemplates(Array.isArray(list) ? list : []);
+    } catch (err) {
+      addNotification('No se pudieron cargar las plantillas: ' + err.message, 'error');
+      setTemplates([]);
+    } finally {
+      setTemplatesLoading(false);
+    }
+  }, [selectedIds, addNotification]);
+
+  const handlePickTemplate = useCallback((tpl) => {
+    if (!tpl) return;
     const ids = Array.from(selectedIds);
     const contacts = clients
       .filter((c) => selectedIds.has(c.id))
@@ -219,9 +239,23 @@ const Clients = ({ onNavigate }) => {
         total_spent: c.total_spent || 0,
         last_visit: c.last_visit || null,
       }));
-    sessionStorage.setItem('campaigns:preselected', JSON.stringify({ ids, contacts, ts: Date.now() }));
+    sessionStorage.setItem(
+      'campaigns:preselected',
+      JSON.stringify({ ids, contacts, templateId: tpl.id, ts: Date.now() })
+    );
+    setTemplatePicker(false);
     onNavigate?.('campaigns');
-  }, [selectedIds, clients]);
+  }, [selectedIds, clients, onNavigate]);
+
+  const filteredTemplates = useMemo(() => {
+    if (!templateSearch.trim()) return templates;
+    const q = templateSearch.toLowerCase();
+    return templates.filter((t) =>
+      (t.name || '').toLowerCase().includes(q) ||
+      (t.body || '').toLowerCase().includes(q) ||
+      (t.category || '').toLowerCase().includes(q)
+    );
+  }, [templates, templateSearch]);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteCandidate) return;
@@ -692,6 +726,84 @@ const Clients = ({ onNavigate }) => {
         onClose={() => setIsImportModalOpen(false)}
         onImported={loadClients}
       />
+
+      {/* ───────── Template picker (campaign launch) ───────── */}
+      {templatePicker && (
+        <div className={`${b}__confirm-backdrop`} onClick={() => setTemplatePicker(false)}>
+          <div className={`${b}__tpl-picker`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className={`${b}__tpl-head`}>
+              <div className={`${b}__tpl-head-title`}>
+                <h3>Elige la plantilla</h3>
+                <p>Se enviará a <strong>{selectedIds.size}</strong> {selectedIds.size === 1 ? 'cliente' : 'clientes'} seleccionado{selectedIds.size === 1 ? '' : 's'}.</p>
+              </div>
+              <button
+                type="button"
+                className={`${b}__tpl-close`}
+                onClick={() => setTemplatePicker(false)}
+                aria-label="Cerrar"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {!templatesLoading && templates.length > 0 && (
+              <div className={`${b}__tpl-search`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  value={templateSearch}
+                  onChange={(e) => setTemplateSearch(e.target.value)}
+                  placeholder="Buscar plantilla..."
+                />
+              </div>
+            )}
+
+            <div className={`${b}__tpl-list`}>
+              {templatesLoading ? (
+                <div className={`${b}__tpl-empty`}>Cargando plantillas...</div>
+              ) : filteredTemplates.length === 0 ? (
+                <div className={`${b}__tpl-empty`}>
+                  {templates.length === 0 ? (
+                    <>
+                      <p><strong>Aún no tienes plantillas aprobadas.</strong></p>
+                      <p>Crea una en Campañas y espera la aprobación de Meta antes de enviar.</p>
+                    </>
+                  ) : (
+                    <p>Ningún resultado para "{templateSearch}"</p>
+                  )}
+                </div>
+              ) : (
+                filteredTemplates.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className={`${b}__tpl-card`}
+                    onClick={() => handlePickTemplate(tpl)}
+                  >
+                    <div className={`${b}__tpl-card-head`}>
+                      <span className={`${b}__tpl-card-name`}>{tpl.name}</span>
+                      {tpl.category && (
+                        <span className={`${b}__tpl-card-cat`}>{tpl.category}</span>
+                      )}
+                    </div>
+                    {tpl.body && (
+                      <p className={`${b}__tpl-card-body`}>{tpl.body}</p>
+                    )}
+                    <span className={`${b}__tpl-card-cta`}>
+                      Usar esta plantilla
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ───────── Bulk delete confirm dialog ───────── */}
       {bulkConfirm && (

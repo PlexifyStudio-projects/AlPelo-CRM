@@ -255,26 +255,56 @@ const Campaigns = () => {
     load();
   }, []);
 
-  // Pre-selected contacts handed off from Clients page
+  // Pre-selected contacts (and optional pre-picked template) handed off from Clients page.
+  // Runs whenever templates load so we can resolve the templateId once it's available.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem('campaigns:preselected');
       if (!raw) return;
       const data = JSON.parse(raw);
-      sessionStorage.removeItem('campaigns:preselected');
       // Stale check: ignore if older than 2 minutes
-      if (!data.contacts || !Array.isArray(data.contacts) || data.contacts.length === 0) return;
-      if (data.ts && Date.now() - data.ts > 120000) return;
+      if (data.ts && Date.now() - data.ts > 120000) {
+        sessionStorage.removeItem('campaigns:preselected');
+        return;
+      }
+      if (!data.contacts || !Array.isArray(data.contacts) || data.contacts.length === 0) {
+        sessionStorage.removeItem('campaigns:preselected');
+        return;
+      }
 
+      // If a template was pre-picked, wait until templates are loaded to resolve it
+      if (data.templateId) {
+        if (!templates || templates.length === 0) return; // try again next render
+        const tpl = templates.find((t) => t.id === data.templateId);
+        if (!tpl) {
+          // Template no longer exists — drop the picked id but still preselect contacts
+          sessionStorage.removeItem('campaigns:preselected');
+          setMainTab('send');
+          setSendStep(1);
+          setAudienceResults({ count: data.contacts.length, contacts: data.contacts });
+          setSelectedContacts(new Set(data.ids || data.contacts.map(c => c.id)));
+          return;
+        }
+        setSelectedTemplate(tpl);
+        setMainTab('send');
+        setAudienceResults({ count: data.contacts.length, contacts: data.contacts });
+        setSelectedContacts(new Set(data.ids || data.contacts.map(c => c.id)));
+        setSendStep(2); // jump straight to "Contactos" review step
+        sessionStorage.removeItem('campaigns:preselected');
+        return;
+      }
+
+      // No template chosen — land on audience step (1)
       setMainTab('send');
       setSendStep(1);
       setAudienceResults({ count: data.contacts.length, contacts: data.contacts });
       setSelectedContacts(new Set(data.ids || data.contacts.map(c => c.id)));
+      sessionStorage.removeItem('campaigns:preselected');
     } catch (err) {
       // eslint-disable-next-line no-console
       console.warn('[Campaigns] preselected parse failed', err);
     }
-  }, []);
+  }, [templates]);
 
   const reloadTemplates = useCallback(async () => {
     try {
