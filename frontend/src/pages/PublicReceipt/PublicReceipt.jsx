@@ -1,4 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
+// Public receipt is rendered OUTSIDE CRMShell so it doesn't get the global
+// stylesheet. Import the styles bundle here so the page is fully themed.
+import '../../styles/main.scss';
 
 const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
