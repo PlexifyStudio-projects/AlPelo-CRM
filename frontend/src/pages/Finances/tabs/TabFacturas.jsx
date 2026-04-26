@@ -10,6 +10,7 @@ import {
   Icons, PAYMENT_METHODS, STATUS_COLORS, STATUS_LABELS, STATUS_ICONS,
   formatCOP, AnimatedNumber, SkeletonBlock, API_URL,
 } from '../financeConstants';
+import InvoiceDetail from '../InvoiceDetail';
 
 const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser = null }) => {
   const { addNotification } = useNotification();
@@ -42,6 +43,18 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
   const [showVisitImport, setShowVisitImport] = useState(false);
 
   const [sendingDianId, setSendingDianId] = useState(null); // single invoice DIAN send
+
+  // Detail-view state — shows the InvoiceDetail panel when set
+  const [detailInvoiceId, setDetailInvoiceId] = useState(() => {
+    try {
+      const raw = sessionStorage.getItem('finances:open_invoice');
+      if (!raw) return null;
+      sessionStorage.removeItem('finances:open_invoice');
+      const data = JSON.parse(raw);
+      if (data.ts && Date.now() - data.ts > 120000) return null;
+      return data.invoice_id || null;
+    } catch { return null; }
+  });
 
   const [form, setForm] = useState({
     client_name: '', client_phone: '', client_document: '', client_document_type: 'CC',
@@ -332,6 +345,17 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
           </div>
         ))}
       </div>
+    );
+  }
+
+  // Detail mode — show single-invoice detail and hide the list
+  if (detailInvoiceId) {
+    return (
+      <InvoiceDetail
+        invoiceId={detailInvoiceId}
+        onBack={() => setDetailInvoiceId(null)}
+        onCancelled={() => { setDetailInvoiceId(null); load(); }}
+      />
     );
   }
 

@@ -30,6 +30,9 @@ const Finances = () => {
         sessionStorage.removeItem('finances:initial-tab');
         return requested;
       }
+      // If we were asked to open an invoice, jump straight to the Facturas tab
+      const openInv = sessionStorage.getItem('finances:open_invoice');
+      if (openInv) return 'facturas';
     } catch {}
     return 'resumen';
   });
