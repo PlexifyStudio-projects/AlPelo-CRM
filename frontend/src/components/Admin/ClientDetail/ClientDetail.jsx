@@ -469,10 +469,14 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
         }
       }
 
-      addNotification(`Orden ${svcTicket.trim()} creada y cita agendada en la agenda`, 'success');
+      const newTicket = svcTicket.trim();
+      addNotification(`Orden ${newTicket} creada y cita agendada en la agenda`, 'success');
       setSvcItems([]);
       setSvcNotes('');
       setSvcTicket(''); // clear so user knows it went through and doesn't double-submit
+      // Optimistic update — visit_code on the panel hero so user sees the ticket
+      // immediately, before the parent reload finishes.
+      setLocalClient(prev => prev ? { ...prev, visit_code: newTicket } : prev);
       // Reload visits + parent table so counters refresh immediately
       loadVisits();
       if (onRefresh) onRefresh();
@@ -601,7 +605,18 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
             <div className={`${b}__hero-info`}>
               <h2 className={`${b}__name`}>{client.name}</h2>
               <div className={`${b}__hero-meta`}>
-                <span className={`${b}__client-id`}>{client.client_id}</span>
+                {client.visit_code ? (
+                  <>
+                    <span className={`${b}__ticket-chip`} title="Último ticket">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M2 9V5a2 2 0 0 1 2-2h4M22 9V5a2 2 0 0 0-2-2h-4M2 15v4a2 2 0 0 0 2 2h4M22 15v4a2 2 0 0 1-2 2h-4"/><line x1="9" y1="9" x2="9" y2="15"/><line x1="15" y1="9" x2="15" y2="15"/></svg>
+                      {client.visit_code}
+                    </span>
+                    <span className={`${b}__hero-dot`} />
+                    <span className={`${b}__client-id ${b}__client-id--muted`}>{client.client_id}</span>
+                  </>
+                ) : (
+                  <span className={`${b}__client-id`}>{client.client_id}</span>
+                )}
                 <span className={`${b}__hero-dot`} />
                 <button
                   ref={statusBtnRef}
