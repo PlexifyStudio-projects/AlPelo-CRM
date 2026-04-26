@@ -8,7 +8,7 @@ const formatDateLong = (iso) => {
   try {
     const safe = iso.length === 10 ? iso + 'T12:00:00' : iso;
     return new Intl.DateTimeFormat('es-CO', {
-      day: '2-digit', month: '2-digit', year: '2-digit',
+      day: 'numeric', month: 'long', year: 'numeric',
     }).format(new Date(safe));
   } catch { return iso; }
 };
@@ -26,15 +26,15 @@ const formatDateTime = (iso) => {
 };
 
 const STATUS_BADGES = {
-  paid: { label: 'Pagado', tone: 'paid' },
-  sent: { label: 'Emitida', tone: 'sent' },
-  draft: { label: 'Borrador', tone: 'draft' },
-  cancelled: { label: 'Cancelada', tone: 'cancelled' },
+  paid:     { label: 'Pagado',    tone: 'paid' },
+  sent:     { label: 'Emitida',   tone: 'sent' },
+  draft:    { label: 'Borrador',  tone: 'draft' },
+  cancelled:{ label: 'Cancelada', tone: 'cancelled' },
 };
 
 const PAYMENT_LABELS = {
   efectivo: 'Efectivo',
-  transferencia: 'Transferencia bancaria',
+  transferencia: 'Transferencia',
   tarjeta: 'Tarjeta',
   nequi: 'Nequi',
   daviplata: 'Daviplata',
@@ -66,10 +66,12 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
     setCancelling(true);
     try {
       await financeService.cancelInvoice(invoiceId);
-      addNotification('Factura anulada', 'success');
+      addNotification(`Factura ${invoice?.invoice_number || ''} anulada`, 'success');
       setConfirmCancel(false);
-      if (onCancelled) onCancelled();
-      else load();
+      // Reload locally so the badge flips to "Cancelada" without going back to the list
+      await load();
+      // Also notify parent so the list reload runs in the background
+      if (onCancelled) onCancelled({ silent: true });
     } catch (err) {
       addNotification('No se pudo anular: ' + err.message, 'error');
     } finally {
@@ -108,12 +110,10 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
   const total = invoice.total || (subtotal + tax + tip);
   const isCancelled = status === 'cancelled';
 
-  // Aggregate payment methods (single for now, but structured for future split-pay)
   const payments = invoice.payment_method ? [
     { method: invoice.payment_method, amount: total },
   ] : [];
 
-  // Derive commissions from items if available
   const commissions = items
     .filter(it => it.staff_id || it.staff_name)
     .map(it => ({
@@ -125,212 +125,228 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
 
   return (
     <div className="invoice-detail">
-      {/* Breadcrumb */}
-      <nav className="invoice-detail__breadcrumb">
-        <button className="invoice-detail__breadcrumb-back" onClick={onBack}>
+      {/* TOP BAR — back button always visible */}
+      <header className="invoice-detail__topbar">
+        <button className="invoice-detail__back-pill" onClick={onBack}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-          Historial de ventas
+          Volver al historial
         </button>
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-        <span className="invoice-detail__breadcrumb-current">{invoice.invoice_number || `#${invoice.id}`}</span>
-      </nav>
-
-      <div className="invoice-detail__layout">
-        {/* MAIN PANEL */}
-        <section className="invoice-detail__main">
-          <header className="invoice-detail__main-head">
-            <div>
-              <span className="invoice-detail__main-eyebrow">Detalle de la transacción</span>
-              <h2 className="invoice-detail__main-title">{invoice.invoice_number || `#${invoice.id}`}</h2>
-            </div>
-            <button className="invoice-detail__icon-btn" title="Descargar / compartir">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <div className="invoice-detail__topbar-actions">
+          <button className="invoice-detail__top-action" title="Compartir o descargar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Recibo
+          </button>
+          {!isCancelled && (
+            <button
+              className="invoice-detail__top-action invoice-detail__top-action--danger"
+              onClick={() => setConfirmCancel(true)}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+              Anular
             </button>
-          </header>
+          )}
+        </div>
+      </header>
 
-          {/* Status row */}
-          <div className="invoice-detail__badges">
-            <span className={`invoice-detail__badge invoice-detail__badge--${statusMeta.tone}`}>
+      {/* HERO STRIP — number + status + total + key meta */}
+      <section className={`invoice-detail__hero ${isCancelled ? 'invoice-detail__hero--cancelled' : ''}`}>
+        <div className="invoice-detail__hero-left">
+          <span className="invoice-detail__hero-eyebrow">Factura</span>
+          <div className="invoice-detail__hero-num-row">
+            <h1 className="invoice-detail__hero-num">{invoice.invoice_number || `#${invoice.id}`}</h1>
+            <span className={`invoice-detail__chip invoice-detail__chip--${statusMeta.tone}`}>
               {status === 'paid' && (
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
               )}
               {statusMeta.label}
             </span>
             {invoice.alegra_id && (
-              <span className="invoice-detail__badge invoice-detail__badge--paid">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Facturado electrónicamente
-              </span>
-            )}
-            {invoice.created_at && (
-              <span className="invoice-detail__time" title={formatDateTime(invoice.created_at)}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                {formatDateTime(invoice.created_at)}
+              <span className="invoice-detail__chip invoice-detail__chip--electronic">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Electrónica
               </span>
             )}
           </div>
+          <div className="invoice-detail__hero-meta">
+            <span className="invoice-detail__meta-pill">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              {formatDateTime(invoice.created_at)}
+            </span>
+            <span className="invoice-detail__meta-pill">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              {invoice.client_name || '—'}
+            </span>
+            {invoice.payment_method && (
+              <span className="invoice-detail__meta-pill">
+                <span className={`invoice-detail__pay-dot invoice-detail__pay-dot--${invoice.payment_method}`} />
+                {PAYMENT_LABELS[invoice.payment_method] || invoice.payment_method}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="invoice-detail__hero-right">
+          <span className="invoice-detail__hero-total-label">Valor final</span>
+          <span className="invoice-detail__hero-total">{formatCOP(total)}</span>
+          {tip > 0 && (
+            <span className="invoice-detail__hero-tip">incluye {formatCOP(tip)} de propina</span>
+          )}
+        </div>
+      </section>
 
-          {/* 3 info cards */}
-          <div className="invoice-detail__cards">
-            <div className="invoice-detail__card">
-              <div className="invoice-detail__card-icon invoice-detail__card-icon--client">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </div>
-              <div className="invoice-detail__card-body">
-                <span className="invoice-detail__card-label">Cobrado a</span>
-                <span className="invoice-detail__card-value">{invoice.client_name || '—'}</span>
-                {invoice.client_document && (
-                  <span className="invoice-detail__card-meta">{invoice.client_document_type || 'CC'} {invoice.client_document}</span>
-                )}
-              </div>
-            </div>
+      {/* MAIN GRID — different layout: items take full width, sidebar info below */}
+      <div className="invoice-detail__grid">
+        {/* CLIENT CARD */}
+        <div className="invoice-detail__panel invoice-detail__panel--client">
+          <span className="invoice-detail__panel-eyebrow">Cliente</span>
+          <h3 className="invoice-detail__client-name">{invoice.client_name || '—'}</h3>
+          <ul className="invoice-detail__client-list">
+            {invoice.client_document && (
+              <li>
+                <span>Documento</span>
+                <span>{invoice.client_document_type || 'CC'} {invoice.client_document}</span>
+              </li>
+            )}
+            {invoice.client_phone && (
+              <li>
+                <span>Teléfono</span>
+                <span>{invoice.client_phone}</span>
+              </li>
+            )}
+            {invoice.client_email && (
+              <li>
+                <span>Email</span>
+                <span className="invoice-detail__truncate">{invoice.client_email}</span>
+              </li>
+            )}
+            {invoice.client_address && (
+              <li>
+                <span>Dirección</span>
+                <span>{invoice.client_address}</span>
+              </li>
+            )}
+            <li>
+              <span>Emitida</span>
+              <span>{formatDateLong(invoice.issued_date || invoice.created_at)}</span>
+            </li>
+            <li>
+              <span>Responsable</span>
+              <span>{invoice.created_by || '—'}</span>
+            </li>
+          </ul>
+        </div>
 
-            <div className="invoice-detail__card">
-              <div className="invoice-detail__card-icon invoice-detail__card-icon--date">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-              </div>
-              <div className="invoice-detail__card-body">
-                <span className="invoice-detail__card-label">Fecha de la factura</span>
-                <span className="invoice-detail__card-value">{formatDateLong(invoice.issued_date || invoice.created_at)}</span>
-              </div>
-            </div>
-
-            <div className="invoice-detail__card">
-              <div className="invoice-detail__card-icon invoice-detail__card-icon--money">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1"/><path d="M21 12h-4a2 2 0 0 0 0 4h4z"/></svg>
-              </div>
-              <div className="invoice-detail__card-body">
-                <span className="invoice-detail__card-label">Valor final</span>
-                <span className="invoice-detail__card-value invoice-detail__card-value--big">{formatCOP(total)}</span>
-              </div>
-            </div>
+        {/* ITEMS — full-width with stripe header */}
+        <div className="invoice-detail__panel invoice-detail__panel--items">
+          <div className="invoice-detail__items-strip">
+            <span className="invoice-detail__panel-eyebrow">Items facturados</span>
+            <span className="invoice-detail__items-count">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
           </div>
 
-          {/* Items table */}
-          <div className="invoice-detail__items">
-            <div className="invoice-detail__items-head">
-              <span>Nombre del item</span>
-              <span className="invoice-detail__items-head--c">Cantidad</span>
-              <span className="invoice-detail__items-head--r">Valor</span>
-              <span className="invoice-detail__items-head--r">Valor final</span>
+          <div className="invoice-detail__items-table">
+            <div className="invoice-detail__items-thead">
+              <span>Servicio / Producto</span>
+              <span className="invoice-detail__align-c">Cant.</span>
+              <span className="invoice-detail__align-r">P. unitario</span>
+              <span className="invoice-detail__align-r">Total</span>
             </div>
             {items.map((it, idx) => (
-              <div key={idx} className="invoice-detail__item">
-                <div className="invoice-detail__item-info">
-                  <span className="invoice-detail__item-name">{it.service_name || 'Servicio'}</span>
-                  {it.staff_name && <span className="invoice-detail__item-meta">Colaborador: {it.staff_name}</span>}
+              <div key={idx} className="invoice-detail__items-tr">
+                <div className="invoice-detail__items-svc">
+                  <span className="invoice-detail__items-svc-name">{it.service_name || 'Servicio'}</span>
+                  {it.staff_name && (
+                    <span className="invoice-detail__items-svc-staff">
+                      <span className="invoice-detail__staff-avatar">{it.staff_name[0]?.toUpperCase()}</span>
+                      {it.staff_name}
+                    </span>
+                  )}
                 </div>
-                <span className="invoice-detail__item-qty">{it.quantity || 1}</span>
-                <span className="invoice-detail__item-price">{formatCOP(it.unit_price || 0)}</span>
-                <span className="invoice-detail__item-total">{formatCOP(it.total || (it.quantity || 1) * (it.unit_price || 0))}</span>
+                <span className="invoice-detail__align-c invoice-detail__items-qty">{it.quantity || 1}</span>
+                <span className="invoice-detail__align-r invoice-detail__items-unit">{formatCOP(it.unit_price || 0)}</span>
+                <span className="invoice-detail__align-r invoice-detail__items-total">{formatCOP(it.total || (it.quantity || 1) * (it.unit_price || 0))}</span>
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Notes & responsable */}
-          <div className="invoice-detail__footer-info">
-            <div>
-              <span className="invoice-detail__field-label">Notas</span>
-              <span className="invoice-detail__field-value">{invoice.notes || 'No registra'}</span>
-            </div>
-            <div>
-              <span className="invoice-detail__field-label">Responsable de venta</span>
-              <span className="invoice-detail__field-value invoice-detail__field-value--em">{invoice.created_by || invoice.responsible || '—'}</span>
-            </div>
-            <div>
-              <span className="invoice-detail__field-label">Fuente</span>
-              <span className="invoice-detail__field-value">{invoice.source || 'Administración'}</span>
-            </div>
-          </div>
-        </section>
-
-        {/* SIDEBAR */}
-        <aside className="invoice-detail__sidebar">
-          {/* Summary */}
-          <div className="invoice-detail__panel">
-            <h3 className="invoice-detail__panel-title">Resumen de la venta</h3>
-            <div className="invoice-detail__sum-row">
-              <span>Valor neto</span>
+        {/* TOTALS panel */}
+        <div className="invoice-detail__panel invoice-detail__panel--totals">
+          <span className="invoice-detail__panel-eyebrow">Resumen</span>
+          <div className="invoice-detail__totals-list">
+            <div className="invoice-detail__totals-line">
+              <span>Subtotal</span>
               <span>{formatCOP(subtotal)}</span>
             </div>
-            <div className="invoice-detail__sum-row">
-              <span>Total en propinas</span>
-              <span>{formatCOP(tip)}</span>
-            </div>
-            <div className="invoice-detail__sum-row">
-              <span>Valor ingresado</span>
-              <span>{formatCOP(total)}</span>
-            </div>
             {invoice.discount_amount > 0 && (
-              <div className="invoice-detail__sum-row invoice-detail__sum-row--neg">
+              <div className="invoice-detail__totals-line invoice-detail__totals-line--neg">
                 <span>Descuento</span>
                 <span>−{formatCOP(invoice.discount_amount)}</span>
               </div>
             )}
+            {tip > 0 && (
+              <div className="invoice-detail__totals-line">
+                <span>Propinas</span>
+                <span>{formatCOP(tip)}</span>
+              </div>
+            )}
             {tax > 0 && (
-              <div className="invoice-detail__sum-row">
+              <div className="invoice-detail__totals-line">
                 <span>Impuestos</span>
                 <span>{formatCOP(tax)}</span>
               </div>
             )}
-            <div className="invoice-detail__sum-row invoice-detail__sum-row--total">
+            <div className="invoice-detail__totals-grand">
               <span>Total</span>
               <span>{formatCOP(total)}</span>
             </div>
-
-            {!isCancelled && (
-              <button
-                type="button"
-                className="invoice-detail__cancel-btn"
-                onClick={() => setConfirmCancel(true)}
-              >
-                Anular venta
-              </button>
-            )}
           </div>
+        </div>
 
-          {/* Payment methods */}
-          {payments.length > 0 && (
-            <div className="invoice-detail__panel">
-              <h3 className="invoice-detail__panel-title">Métodos de pago</h3>
+        {/* PAYMENT METHODS */}
+        {payments.length > 0 && (
+          <div className="invoice-detail__panel invoice-detail__panel--payments">
+            <span className="invoice-detail__panel-eyebrow">Métodos de pago</span>
+            <ul className="invoice-detail__pay-list">
               {payments.map((p, idx) => (
-                <div key={idx} className="invoice-detail__sum-row">
+                <li key={idx}>
                   <span className="invoice-detail__pay-method">
                     <span className={`invoice-detail__pay-dot invoice-detail__pay-dot--${p.method}`} />
                     {PAYMENT_LABELS[p.method] || p.method}
                   </span>
                   <span>{formatCOP(p.amount)}</span>
-                </div>
+                </li>
               ))}
-              <div className="invoice-detail__sum-row invoice-detail__sum-row--total">
-                <span>Total</span>
-                <span>{formatCOP(total)}</span>
-              </div>
-            </div>
-          )}
+            </ul>
+          </div>
+        )}
 
-          {/* Commissions */}
-          {commissions.length > 0 && (
-            <div className="invoice-detail__panel">
-              <h3 className="invoice-detail__panel-title">Comisiones generadas</h3>
-              <div className="invoice-detail__comm-head">
-                <span>Item</span>
-                <span className="invoice-detail__comm-head--c">Cant.</span>
-                <span className="invoice-detail__comm-head--r">Comisión</span>
-              </div>
+        {/* COMMISSIONS */}
+        {commissions.length > 0 && (
+          <div className="invoice-detail__panel invoice-detail__panel--commissions">
+            <span className="invoice-detail__panel-eyebrow">Comisiones generadas</span>
+            <ul className="invoice-detail__comm-list">
               {commissions.map((c, idx) => (
-                <div key={idx} className="invoice-detail__comm-row">
-                  <div className="invoice-detail__comm-info">
-                    <span className="invoice-detail__comm-svc">{c.service_name}</span>
-                    <span className="invoice-detail__comm-staff">Colaborador: {c.staff_name}</span>
+                <li key={idx}>
+                  <div className="invoice-detail__comm-line">
+                    <span className="invoice-detail__staff-avatar">{c.staff_name[0]?.toUpperCase()}</span>
+                    <div className="invoice-detail__comm-text">
+                      <span className="invoice-detail__comm-name">{c.staff_name}</span>
+                      <span className="invoice-detail__comm-svc">{c.service_name} × {c.qty}</span>
+                    </div>
                   </div>
-                  <span className="invoice-detail__comm-qty">{c.qty}</span>
                   <span className="invoice-detail__comm-amount">{formatCOP(c.commission)}</span>
-                </div>
+                </li>
               ))}
-            </div>
-          )}
-        </aside>
+            </ul>
+          </div>
+        )}
+
+        {/* NOTES */}
+        {invoice.notes && (
+          <div className="invoice-detail__panel invoice-detail__panel--notes">
+            <span className="invoice-detail__panel-eyebrow">Notas</span>
+            <p className="invoice-detail__notes">{invoice.notes}</p>
+          </div>
+        )}
       </div>
 
       {/* Confirm cancel */}
@@ -338,16 +354,16 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
         <div className="invoice-detail__confirm-backdrop" onClick={() => !cancelling && setConfirmCancel(false)}>
           <div className="invoice-detail__confirm" onClick={(e) => e.stopPropagation()}>
             <div className="invoice-detail__confirm-icon">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
             </div>
             <h4>¿Anular esta venta?</h4>
-            <p>La factura quedará marcada como cancelada y se revertirán las comisiones asociadas. Esta acción no se puede deshacer.</p>
+            <p>La factura <strong>{invoice.invoice_number}</strong> quedará marcada como <strong>cancelada</strong>, como si nunca se hubiera realizado. Las comisiones asociadas se revertirán y no contará en los reportes financieros. Esta acción no se puede deshacer.</p>
             <div className="invoice-detail__confirm-actions">
               <button className="invoice-detail__confirm-ghost" onClick={() => setConfirmCancel(false)} disabled={cancelling}>
                 Cancelar
               </button>
               <button className="invoice-detail__confirm-danger" onClick={handleCancel} disabled={cancelling}>
-                {cancelling ? 'Anulando...' : 'Sí, anular'}
+                {cancelling ? 'Anulando...' : 'Sí, anular venta'}
               </button>
             </div>
           </div>

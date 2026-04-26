@@ -4,383 +4,523 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   padding-bottom: 32px;
 
   /* ============================================================
-     BREADCRUMB
+     TOP BAR — back + actions, sticky-feel
      ============================================================ */
-  &__breadcrumb {
-    display: inline-flex;
+  &__topbar {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: $font-size-sm;
-    color: $color-gray-500;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
-  &__breadcrumb-back {
+  &__back-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: none;
-    border: none;
-    color: $color-gray-600;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 0;
-    transition: color 150ms ease;
-
-    &:hover { color: $color-primary; }
-  }
-
-  &__breadcrumb-current {
-    color: $color-secondary;
-    font-weight: 600;
-    font-family: 'SF Mono', 'Consolas', monospace;
-  }
-
-  /* ============================================================
-     LAYOUT
-     ============================================================ */
-  &__layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-    gap: 16px;
-
-    @media (max-width: 1024px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* ============================================================
-     MAIN PANEL
-     ============================================================ */
-  &__main {
     background: $color-white;
     border: 1px solid $color-gray-100;
-    border-radius: 18px;
-    padding: 22px 24px 20px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 8px 24px rgba(15, 23, 42, 0.04);
-  }
-
-  &__main-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid $color-gray-100;
-    margin-bottom: 16px;
-  }
-
-  &__main-eyebrow {
-    display: block;
-    font-size: 0.62rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: $color-gray-400;
-    margin-bottom: 4px;
-  }
-
-  &__main-title {
-    margin: 0;
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: $color-secondary;
-    letter-spacing: -0.025em;
-    font-family: 'SF Mono', 'Consolas', monospace;
-  }
-
-  &__icon-btn {
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    background: $color-gray-50;
-    border: 1px solid $color-gray-100;
     border-radius: 10px;
-    color: $color-gray-500;
+    padding: 8px 14px;
+    color: $color-gray-700;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: 600;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     transition: all 160ms ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 
     &:hover {
       background: $color-secondary;
       color: $color-white;
       border-color: transparent;
+      transform: translateX(-2px);
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+    }
+  }
+
+  &__topbar-actions {
+    display: inline-flex;
+    gap: 6px;
+  }
+
+  &__top-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 10px;
+    padding: 8px 13px;
+    color: $color-gray-700;
+    font-family: $font-primary;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 160ms ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+    &:hover {
       transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    &--danger:hover {
+      background: linear-gradient(135deg, #F43F5E, #E11D48);
+      color: $color-white;
+      border-color: transparent;
+      box-shadow: 0 6px 16px rgba(244, 63, 94, 0.32);
     }
   }
 
   /* ============================================================
-     STATUS BADGES
+     HERO STRIP — split layout, gradient bg
      ============================================================ */
-  &__badges {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 18px;
+  &__hero {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    padding: 22px 26px;
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 60%, $color-primary 130%);
+    border-radius: 18px;
+    color: $color-white;
+    overflow: hidden;
+    isolation: isolate;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: -60%;
+      right: -10%;
+      width: 60%;
+      height: 220%;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.32) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    &--cancelled {
+      background: linear-gradient(135deg, #1E293B 0%, #475569 100%);
+      opacity: 0.92;
+    }
+
+    @media (max-width: 720px) {
+      grid-template-columns: 1fr;
+      padding: 18px 20px;
+    }
   }
 
-  &__badge {
+  &__hero-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  &__hero-eyebrow {
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  &__hero-num-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__hero-num {
+    margin: 0;
+    font-size: clamp(1.8rem, 3vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    color: $color-white;
+    line-height: 1;
+  }
+
+  &__chip {
     display: inline-flex;
     align-items: center;
     gap: 5px;
     padding: 5px 11px;
     border-radius: 999px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    border: 1px solid transparent;
-
-    &--paid     { background: rgba(16, 185, 129, 0.1); color: #047857; border-color: rgba(16, 185, 129, 0.22); }
-    &--sent     { background: rgba(14, 165, 233, 0.1); color: #0369A1; border-color: rgba(14, 165, 233, 0.22); }
-    &--draft    { background: $color-gray-50; color: $color-gray-500; border-color: $color-gray-100; }
-    &--cancelled { background: rgba(244, 63, 94, 0.1); color: #BE123C; border-color: rgba(244, 63, 94, 0.22); }
-  }
-
-  &__time {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.7rem;
-    color: $color-gray-500;
-    font-weight: 500;
-    margin-left: auto;
-  }
-
-  /* ============================================================
-     INFO CARDS
-     ============================================================ */
-  &__cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 18px;
-
-    @media (max-width: 720px) { grid-template-columns: 1fr; }
-  }
-
-  &__card {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 14px 14px 12px;
-    background: $color-off-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 12px;
-    transition: all 160ms ease;
-
-    &:hover { border-color: $color-gray-200; }
-  }
-
-  &__card-icon {
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-
-    &--client { background: rgba(99, 102, 241, 0.1); color: #4F46E5; }
-    &--date   { background: rgba(14, 165, 233, 0.1); color: #0369A1; }
-    &--money  { background: rgba(16, 185, 129, 0.1); color: #047857; }
-  }
-
-  &__card-body {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  &__card-label {
-    font-size: 0.6rem;
+    font-size: 0.65rem;
     font-weight: 800;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: $color-gray-400;
+    border: 1px solid transparent;
+    backdrop-filter: blur(6px);
+
+    &--paid {
+      color: #34D399;
+      background: rgba(16, 185, 129, 0.16);
+      border-color: rgba(16, 185, 129, 0.36);
+    }
+    &--sent {
+      color: #38BDF8;
+      background: rgba(14, 165, 233, 0.16);
+      border-color: rgba(14, 165, 233, 0.36);
+    }
+    &--draft {
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    &--cancelled {
+      color: #FCA5A5;
+      background: rgba(244, 63, 94, 0.18);
+      border-color: rgba(244, 63, 94, 0.4);
+    }
+    &--electronic {
+      color: #A78BFA;
+      background: rgba(139, 92, 246, 0.18);
+      border-color: rgba(139, 92, 246, 0.4);
+    }
   }
 
-  &__card-value {
-    font-size: 0.92rem;
-    font-weight: 700;
-    color: $color-secondary;
-    letter-spacing: -0.015em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    &--big { font-size: 1.1rem; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
+  &__hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
   }
 
-  &__card-meta {
+  &__meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
     font-size: 0.7rem;
-    color: $color-gray-500;
+    color: rgba(255, 255, 255, 0.85);
     font-weight: 500;
   }
 
-  /* ============================================================
-     ITEMS TABLE
-     ============================================================ */
-  &__items {
-    margin-bottom: 18px;
-  }
-
-  &__items-head {
-    display: grid;
-    grid-template-columns: 1fr 80px 110px 110px;
-    gap: 10px;
-    font-size: 0.64rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: $color-gray-500;
-    padding: 8px 0 10px;
-    border-bottom: 1px solid $color-gray-100;
-
-    &--c { text-align: center; }
-    &--r { text-align: right; }
-
-    @media (max-width: 720px) {
-      grid-template-columns: 1fr 50px 1fr;
-      .invoice-detail__items-head--r:nth-of-type(2) { display: none; }
-    }
-  }
-
-  &__item {
-    display: grid;
-    grid-template-columns: 1fr 80px 110px 110px;
-    gap: 10px;
-    padding: 12px 0;
-    border-bottom: 1px solid $color-gray-50;
-    align-items: center;
-
-    @media (max-width: 720px) {
-      grid-template-columns: 1fr 50px 1fr;
-      .invoice-detail__item-price { display: none; }
-    }
-  }
-
-  &__item-info {
+  &__hero-right {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  &__item-name {
-    font-size: 0.88rem;
-    font-weight: 700;
-    color: $color-secondary;
-    letter-spacing: -0.011em;
-  }
-
-  &__item-meta {
-    font-size: 0.68rem;
-    color: $color-gray-500;
-  }
-
-  &__item-qty {
-    text-align: center;
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: $color-gray-700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__item-price, &__item-total {
+    align-items: flex-end;
+    justify-content: center;
     text-align: right;
-    font-size: 0.92rem;
-    color: $color-gray-700;
-    font-variant-numeric: tabular-nums;
-  }
+    min-width: 0;
 
-  &__item-total { color: $color-secondary; font-weight: 700; }
-
-  /* ============================================================
-     FOOTER INFO
-     ============================================================ */
-  &__footer-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    padding-top: 16px;
-    border-top: 1px dashed $color-gray-100;
-
-    > div {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    @media (max-width: 720px) {
+      align-items: flex-start;
+      text-align: left;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
-
-    @media (max-width: 720px) { grid-template-columns: 1fr; }
   }
 
-  &__field-label {
+  &__hero-total-label {
     font-size: 0.62rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: $color-gray-400;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.55);
   }
 
-  &__field-value {
-    font-size: $font-size-sm;
-    color: $color-gray-700;
-    font-weight: 500;
+  &__hero-total {
+    margin-top: 4px;
+    font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    background: linear-gradient(135deg, $color-white 0%, rgba(255, 255, 255, 0.7) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 
-    &--em { color: $color-primary; font-weight: 700; }
+  &__hero-tip {
+    margin-top: 4px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.55);
   }
 
   /* ============================================================
-     SIDEBAR PANELS
+     GRID — bento with mixed sizes
      ============================================================ */
-  &__sidebar {
-    display: flex;
-    flex-direction: column;
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
     gap: 14px;
+    grid-auto-flow: dense;
   }
 
   &__panel {
     background: $color-white;
     border: 1px solid $color-gray-100;
-    border-radius: 18px;
-    padding: 18px 20px;
+    border-radius: 16px;
+    padding: 16px 18px;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 6px 18px rgba(15, 23, 42, 0.03);
+
+    /* Bento spans */
+    &--client      { grid-column: span 5; }
+    &--items       { grid-column: span 7; }
+    &--totals      { grid-column: span 4; }
+    &--payments    { grid-column: span 4; }
+    &--commissions { grid-column: span 4; }
+    &--notes       { grid-column: span 12; }
+
+    @media (max-width: 1100px) {
+      &--client, &--items { grid-column: span 12; }
+      &--totals, &--payments, &--commissions { grid-column: span 6; }
+    }
+
+    @media (max-width: 720px) {
+      &--totals, &--payments, &--commissions { grid-column: span 12; }
+    }
   }
 
-  &__panel-title {
-    margin: 0 0 12px;
-    font-size: $font-size-sm;
+  &__panel-eyebrow {
+    display: block;
+    font-size: 0.6rem;
     font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: $color-gray-400;
+    margin-bottom: 10px;
+  }
+
+  /* ============================================================
+     CLIENT CARD
+     ============================================================ */
+  &__client-name {
+    margin: 0 0 12px;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: $color-secondary;
+    letter-spacing: -0.025em;
+  }
+
+  &__client-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    li {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 10px;
+      font-size: 0.78rem;
+      padding: 6px 0;
+      border-bottom: 1px dashed $color-gray-100;
+
+      &:last-child { border-bottom: none; }
+
+      span:first-child {
+        color: $color-gray-500;
+        font-weight: 500;
+      }
+
+      span:last-child {
+        color: $color-secondary;
+        font-weight: 600;
+        text-align: right;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  &__truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ============================================================
+     ITEMS TABLE
+     ============================================================ */
+  &__items-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  &__items-count {
+    font-size: 0.66rem;
+    font-weight: 700;
+    color: $color-gray-500;
+    background: $color-gray-50;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid $color-gray-100;
+  }
+
+  &__items-table {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__items-thead {
+    display: grid;
+    grid-template-columns: 1fr 60px 110px 110px;
+    gap: 10px;
+    padding: 8px 10px;
+    background: $color-off-white;
+    border-radius: 10px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: $color-gray-500;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr 40px 100px;
+      span:nth-child(3) { display: none; }
+    }
+  }
+
+  &__align-c { text-align: center; }
+  &__align-r { text-align: right; }
+
+  &__items-tr {
+    display: grid;
+    grid-template-columns: 1fr 60px 110px 110px;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 10px;
+    border-bottom: 1px dashed $color-gray-100;
+
+    &:last-child { border-bottom: none; }
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr 40px 100px;
+      .invoice-detail__items-unit { display: none; }
+    }
+  }
+
+  &__items-svc {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  &__items-svc-name {
+    font-size: 0.9rem;
+    font-weight: 700;
     color: $color-secondary;
     letter-spacing: -0.011em;
   }
 
-  &__sum-row {
+  &__items-svc-staff {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.7rem;
+    color: $color-gray-500;
+    font-weight: 500;
+  }
+
+  &__staff-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $color-primary, $color-accent);
+    color: $color-white;
+    font-size: 0.6rem;
+    font-weight: 800;
+  }
+
+  &__items-qty {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__items-unit {
+    font-size: 0.85rem;
+    color: $color-gray-600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__items-total {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.015em;
+  }
+
+  /* ============================================================
+     TOTALS
+     ============================================================ */
+  &__totals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__totals-line {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    padding: 7px 0;
-    font-size: $font-size-sm;
+    font-size: 0.84rem;
     color: $color-gray-600;
     font-variant-numeric: tabular-nums;
 
     &--neg { color: $color-error-dark; }
+  }
 
-    &--total {
-      margin-top: 6px;
-      padding-top: 12px;
-      border-top: 1px solid $color-gray-100;
-      font-size: 0.95rem;
-      font-weight: 800;
-      color: $color-secondary;
-      letter-spacing: -0.015em;
+  &__totals-grand {
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 2px solid $color-gray-100;
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: $color-primary;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ============================================================
+     PAYMENTS
+     ============================================================ */
+  &__pay-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: $color-off-white;
+      border-radius: 9px;
+      font-size: 0.85rem;
+      font-variant-numeric: tabular-nums;
+
+      span:last-child { font-weight: 700; color: $color-secondary; }
     }
   }
 
@@ -388,6 +528,8 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    font-weight: 600;
+    color: $color-gray-700;
   }
 
   &__pay-dot {
@@ -404,91 +546,74 @@
     &--bancolombia   { background: #FFD500; }
   }
 
-  /* Cancel button */
-  &__cancel-btn {
-    margin-top: 14px;
-    width: 100%;
-    height: 44px;
-    border: none;
-    border-radius: 11px;
-    background: linear-gradient(135deg, $color-primary, $color-accent);
-    color: $color-white;
-    font-family: $font-primary;
-    font-size: $font-size-sm;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 180ms $ease-smooth;
-    box-shadow: 0 6px 16px rgba($color-accent, 0.28);
+  /* ============================================================
+     COMMISSIONS
+     ============================================================ */
+  &__comm-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 22px rgba($color-accent, 0.4);
+    li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      background: $color-off-white;
+      border-radius: 9px;
     }
   }
 
-  /* Commission rows */
-  &__comm-head {
-    display: grid;
-    grid-template-columns: 1fr 50px 90px;
-    gap: 8px;
-    font-size: 0.62rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: $color-gray-500;
-    padding-bottom: 8px;
-    border-bottom: 1px solid $color-gray-100;
-    margin-bottom: 6px;
-
-    &--c { text-align: center; }
-    &--r { text-align: right; }
-  }
-
-  &__comm-row {
-    display: grid;
-    grid-template-columns: 1fr 50px 90px;
-    gap: 8px;
-    padding: 10px 0;
-    border-bottom: 1px solid $color-gray-50;
-    align-items: center;
-
-    &:last-child { border-bottom: none; }
-  }
-
-  &__comm-info {
+  &__comm-line {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    align-items: center;
+    gap: 10px;
     min-width: 0;
   }
 
-  &__comm-svc {
-    font-size: 0.85rem;
+  &__comm-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__comm-name {
+    font-size: 0.82rem;
     font-weight: 700;
     color: $color-secondary;
     letter-spacing: -0.011em;
-    text-decoration: underline;
-    text-decoration-color: $color-gray-200;
-    text-underline-offset: 3px;
   }
 
-  &__comm-staff {
-    font-size: 0.68rem;
+  &__comm-svc {
+    font-size: 0.66rem;
     color: $color-gray-500;
   }
 
-  &__comm-qty {
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-    color: $color-gray-700;
-  }
-
   &__comm-amount {
-    text-align: right;
-    font-weight: 700;
+    font-size: 0.88rem;
+    font-weight: 800;
     color: $color-secondary;
     font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  /* ============================================================
+     NOTES
+     ============================================================ */
+  &__notes {
+    margin: 0;
+    padding: 14px 16px;
+    background: $color-off-white;
+    border-left: 3px solid $color-accent;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    color: $color-gray-700;
+    line-height: 1.55;
   }
 
   /* ============================================================
@@ -541,7 +666,7 @@
     background: $color-white;
     border-radius: 18px;
     padding: 26px 24px 22px;
-    max-width: 400px;
+    max-width: 420px;
     width: 100%;
     text-align: center;
     box-shadow: 0 24px 60px rgba(15, 23, 42, 0.32);
@@ -557,7 +682,9 @@
       margin: 0 0 18px;
       font-size: $font-size-sm;
       color: $color-gray-500;
-      line-height: 1.5;
+      line-height: 1.55;
+
+      strong { color: $color-secondary; font-weight: 700; }
     }
   }
 

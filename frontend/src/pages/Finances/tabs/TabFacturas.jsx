@@ -753,7 +753,7 @@ const TabFacturas = ({ period, dateFrom, dateTo, isStaffView = false, staffUser 
 
             return (
               <div key={inv.id} className={`finances__sale-row-wrap ${isExpanded ? 'finances__sale-row-wrap--expanded' : ''}`}>
-                <div className="finances__sale-row" onClick={() => setExpandedId(isExpanded ? null : inv.id)}>
+                <div className="finances__sale-row" onClick={() => setDetailInvoiceId(inv.id)} style={{ cursor: 'pointer' }} title="Abrir detalle de la transacción">
                   <span className="finances__sale-td" style={{ width: '36px' }} onClick={e => e.stopPropagation()}>
                     <input type="checkbox" checked={selectedInvs.has(inv.id)} onChange={() => setSelectedInvs(prev => { const n = new Set(prev); n.has(inv.id) ? n.delete(inv.id) : n.add(inv.id); return n; })} style={{ cursor: 'pointer', accentColor: '#6366F1' }} />
                   </span>
