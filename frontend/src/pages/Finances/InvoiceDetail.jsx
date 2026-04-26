@@ -62,6 +62,15 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
 
   useEffect(() => { load(); }, [load]);
 
+  const handleOpenReceipt = useCallback(() => {
+    if (!invoice) return;
+    // Public receipt page (already styled like the desired layout) with auto-print.
+    // The user can either print it physically or "Save as PDF" from the dialog.
+    const base = window.location.origin + (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+    const url = `${base}/receipt/${invoice.id}?print=1`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, [invoice]);
+
   const handleCancel = async () => {
     setCancelling(true);
     try {
@@ -132,9 +141,9 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
           Volver al historial
         </button>
         <div className="invoice-detail__topbar-actions">
-          <button className="invoice-detail__top-action" title="Compartir o descargar">
+          <button className="invoice-detail__top-action" title="Abrir e imprimir / guardar PDF" onClick={handleOpenReceipt}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Recibo
+            Descargar recibo
           </button>
           {!isCancelled && (
             <button

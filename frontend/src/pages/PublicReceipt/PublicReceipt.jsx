@@ -113,61 +113,75 @@ const PublicReceipt = ({ receiptId }) => {
 
       <main className="public-receipt__page">
         <div className="public-receipt__card">
+          {/* HEAD: Factura #X · STATUS · date in one row, client name below */}
           <div className="public-receipt__card-head">
-            <div>
-              <span className="public-receipt__doc-label">Recibo</span>
-              <h1 className="public-receipt__doc-num">{data.number}</h1>
+            <div className="public-receipt__head-left">
+              <h1 className="public-receipt__doc-num">Factura {data.number}</h1>
+              {data.client_name && (
+                <p className="public-receipt__client-line">{data.client_name}</p>
+              )}
             </div>
-            <span className={`public-receipt__status ${isPaid ? 'public-receipt__status--paid' : ''}`}>
-              {isPaid && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
-              {data.status}
-            </span>
+            <div className="public-receipt__head-right">
+              <span className={`public-receipt__status ${isPaid ? 'public-receipt__status--paid' : ''}`}>
+                {isPaid && <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                {(data.status || '').toUpperCase()}
+              </span>
+              <span className="public-receipt__date">{formatDateTime(data.issued_at)}</span>
+            </div>
           </div>
 
-          <div className="public-receipt__meta">
-            <div className="public-receipt__meta-row">
-              <span className="public-receipt__meta-label">Cliente</span>
-              <span className="public-receipt__meta-value">{data.client_name || '—'}</span>
-            </div>
-            <div className="public-receipt__meta-row">
-              <span className="public-receipt__meta-label">Emitido</span>
-              <span className="public-receipt__meta-value">{formatDateTime(data.issued_at)}</span>
-            </div>
-            {data.payment_method && (
-              <div className="public-receipt__meta-row">
-                <span className="public-receipt__meta-label">Método de pago</span>
-                <span className="public-receipt__meta-value public-receipt__meta-value--cap">{data.payment_method}</span>
-              </div>
-            )}
-          </div>
-
+          {/* ITEMS: PRODUCTOS / SERVICIOS · VALOR */}
           <div className="public-receipt__items">
             <div className="public-receipt__items-head">
-              <span>Detalle</span>
-              <span className="public-receipt__items-head-right">Total</span>
+              <span>Productos / Servicios</span>
+              <span className="public-receipt__items-head-right">Valor</span>
             </div>
             {(data.items || []).map((it, idx) => (
               <div key={idx} className="public-receipt__item">
                 <div className="public-receipt__item-info">
-                  <span className="public-receipt__item-name">{it.name}{it.qty > 1 ? <span className="public-receipt__item-qty"> × {it.qty}</span> : null}</span>
-                  {it.staff_name && <span className="public-receipt__item-meta">por {it.staff_name}</span>}
+                  <span className="public-receipt__item-name">
+                    {it.name?.toUpperCase()}
+                    {it.qty > 1 && <span className="public-receipt__item-qty"> (x{it.qty})</span>}
+                    {it.qty === 1 && <span className="public-receipt__item-qty"> (x1)</span>}
+                  </span>
+                  <span className="public-receipt__item-meta">
+                    {formatDateTime(data.issued_at)}{it.staff_name ? `, ${it.staff_name.toUpperCase()}` : ''}
+                  </span>
                 </div>
                 <span className="public-receipt__item-amount">{formatCOP(it.total)}</span>
               </div>
             ))}
           </div>
 
+          {/* MÉTODO DE PAGO — its own section like the screenshot */}
+          {data.payment_method && (
+            <div className="public-receipt__pay-section">
+              <span className="public-receipt__pay-section-label">Método de pago</span>
+              <div className="public-receipt__pay-line">
+                <span className="public-receipt__pay-name">
+                  {data.payment_method === 'efectivo' ? 'Efectivo'
+                    : data.payment_method === 'transferencia' ? 'Transferencia bancaria'
+                    : data.payment_method === 'tarjeta' ? 'Tarjeta'
+                    : data.payment_method === 'nequi' ? 'Nequi'
+                    : data.payment_method === 'daviplata' ? 'Daviplata'
+                    : data.payment_method === 'bancolombia' ? 'Bancolombia'
+                    : data.payment_method}
+                </span>
+                <span className="public-receipt__pay-amount">{formatCOP(data.total)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* TOTALS */}
           <div className="public-receipt__totals">
             <div className="public-receipt__totals-row">
               <span>Subtotal</span>
               <span>{formatCOP(data.subtotal)}</span>
             </div>
-            {data.tax > 0 && (
-              <div className="public-receipt__totals-row">
-                <span>Impuestos</span>
-                <span>{formatCOP(data.tax)}</span>
-              </div>
-            )}
+            <div className="public-receipt__totals-row">
+              <span>Impuestos</span>
+              <span>{formatCOP(data.tax || 0)}</span>
+            </div>
             <div className="public-receipt__totals-row public-receipt__totals-row--grand">
               <span>Total</span>
               <span>{formatCOP(data.total)}</span>
