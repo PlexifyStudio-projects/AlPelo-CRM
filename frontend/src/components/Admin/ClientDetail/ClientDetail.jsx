@@ -392,6 +392,34 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
 
   const svcSubtotal = useMemo(() => svcItems.reduce((s, i) => s + (i.price || 0), 0), [svcItems]);
 
+  // ── Most-used services for THIS client (used by quick-access in Servicios tab) ──
+  // We rank unique services by frequency in their visit history so the chips at
+  // the top are the ones they're most likely to ask for again.
+  const clientFavoriteServices = useMemo(() => {
+    if (!visits || visits.length === 0 || svcCatalog.length === 0) return [];
+    const counts = new Map(); // name → { count, lastDate, svc }
+    for (const v of visits) {
+      if (v.status !== 'completed' || !v.service_name) continue;
+      const cur = counts.get(v.service_name) || { count: 0, lastDate: null, svc: null };
+      cur.count += 1;
+      if (!cur.lastDate || (v.visit_date && v.visit_date > cur.lastDate)) cur.lastDate = v.visit_date;
+      counts.set(v.service_name, cur);
+    }
+    // Resolve to catalog entries (only services that still exist)
+    const result = [];
+    for (const [name, info] of counts) {
+      const svc = svcCatalog.find(s => s.name === name && s.is_active !== false);
+      if (svc) result.push({ ...svc, _count: info.count, _lastDate: info.lastDate });
+    }
+    result.sort((a, b) => b._count - a._count || (b._lastDate || '').localeCompare(a._lastDate || ''));
+    return result.slice(0, 6);
+  }, [visits, svcCatalog]);
+
+  // Whether to show the "favorite" set or fall back to the general catalog
+  const quickServices = clientFavoriteServices.length > 0
+    ? clientFavoriteServices
+    : svcCatalog.slice(0, 6);
+
   const handleCreateOrder = useCallback(async () => {
     if (!svcTicket.trim()) { addNotification('El ticket es obligatorio', 'error'); return; }
     if (!svcItems.length) { addNotification('Agrega al menos un servicio', 'error'); return; }
@@ -437,27 +465,28 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
         }
       }
 
-      addNotification('Orden creada y cita agendada', 'success');
+      addNotification(`Orden ${svcTicket.trim()} creada y cita agendada en la agenda`, 'success');
       setSvcItems([]);
       setSvcNotes('');
+      setSvcTicket(''); // clear so user knows it went through and doesn't double-submit
+      // Reload visits + parent table so counters refresh immediately
+      loadVisits();
       if (onRefresh) onRefresh();
     } catch (err) {
       addNotification(err.message || 'Error al crear orden', 'error');
     } finally {
       setSvcSubmitting(false);
     }
-  }, [svcItems, svcDate, svcNotes, svcTicket, client, addNotification, onRefresh]);
+  }, [svcItems, svcDate, svcNotes, svcTicket, client, addNotification, onRefresh, loadVisits]);
 
   if (!client) return null;
 
   const getInitials = (name) =>
     name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
 
-  const activeSubCount = subscriptions.filter(s => s.status === 'active').length;
   const tabs = [
     { id: 'overview', label: 'Resumen' },
     { id: 'services', label: 'Servicios' },
-    { id: 'subscriptions', label: `Planes${activeSubCount ? ` (${activeSubCount})` : ''}` },
     { id: 'history', label: 'Historial' },
     { id: 'notes', label: 'Notas' },
   ];
@@ -1051,6 +1080,43 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
 
           {activeTab === 'services' && (
             <div className={`${b}__services-tab`}>
+              {/* ─────────── Servicios anteriores del cliente (history) ─────────── */}
+              {visits.filter(v => v.status === 'completed').length > 0 && (
+                <div className={`${b}__svc-history`}>
+                  <div className={`${b}__svc-history-head`}>
+                    <h4 className={`${b}__svc-history-title`}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      Servicios anteriores
+                    </h4>
+                    <span className={`${b}__svc-history-count`}>{visits.filter(v => v.status === 'completed').length} en total</span>
+                  </div>
+                  <div className={`${b}__svc-history-list`}>
+                    {visits.filter(v => v.status === 'completed').slice(0, 5).map((v) => {
+                      const staffName = staffList.find(s => s.id === v.staff_id)?.name || v.staff_name || '—';
+                      return (
+                        <div key={v.id} className={`${b}__svc-history-row`}>
+                          <div className={`${b}__svc-history-svc`}>
+                            <span className={`${b}__svc-history-name`}>{v.service_name || 'Servicio'}</span>
+                            <span className={`${b}__svc-history-meta`}>
+                              {v.visit_date ? formatDate(v.visit_date) : ''} · {staffName}
+                            </span>
+                          </div>
+                          <span className={`${b}__svc-history-amount`}>{formatCOP(v.amount)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ─────────── Crear nueva orden ─────────── */}
+              <div className={`${b}__svc-new-head`}>
+                <h4 className={`${b}__svc-new-title`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  Crear nueva orden
+                </h4>
+              </div>
+
               {/* Ticket number (required) */}
               <div className={`${b}__svc-ticket-row`}>
                 <label className={`${b}__svc-label`}>Ticket *</label>
@@ -1071,15 +1137,18 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
                 </div>
               </div>
 
-              {/* Quick services chips */}
-              {svcCatalog.length > 0 && (
+              {/* Quick services chips — prioritises this client's most-used services */}
+              {quickServices.length > 0 && (
                 <div className={`${b}__svc-quick`}>
-                  <label className={`${b}__svc-label`}>Acceso rapido</label>
+                  <label className={`${b}__svc-label`}>
+                    {clientFavoriteServices.length > 0 ? 'Servicios habituales del cliente' : 'Acceso rápido'}
+                  </label>
                   <div className={`${b}__svc-quick-list`}>
-                    {svcCatalog.slice(0, 6).map(s => (
-                      <button key={s.id} type="button" className={`${b}__svc-quick-chip`} onClick={() => addSvcItem(s)}>
+                    {quickServices.map(s => (
+                      <button key={s.id} type="button" className={`${b}__svc-quick-chip`} onClick={() => addSvcItem(s)} title={s._count ? `${s._count} veces` : ''}>
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                         <span>{s.name}</span>
+                        {s._count > 1 && <span className={`${b}__svc-quick-count`}>×{s._count}</span>}
                       </button>
                     ))}
                   </div>

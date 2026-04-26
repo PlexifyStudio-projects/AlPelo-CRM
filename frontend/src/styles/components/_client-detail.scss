@@ -2476,6 +2476,137 @@
   }
 }
 
+/* ============================================================
+   SERVICIOS TAB — history section + new-order header
+   ============================================================ */
+.client-detail {
+  &__svc-history {
+    background: linear-gradient(180deg, $color-off-white 0%, $color-white 100%);
+    border: 1px solid $color-gray-100;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+  }
+
+  &__svc-history-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  &__svc-history-title {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: $font-size-sm;
+    font-weight: 700;
+    color: $color-secondary;
+    letter-spacing: -0.01em;
+
+    svg { color: $color-accent; }
+  }
+
+  &__svc-history-count {
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-gray-500;
+    background: $color-white;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid $color-gray-100;
+  }
+
+  &__svc-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__svc-history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 10px;
+    transition: all 160ms ease;
+
+    &:hover {
+      border-color: $color-gray-200;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+  }
+
+  &__svc-history-svc {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__svc-history-name {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $color-secondary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    letter-spacing: -0.011em;
+  }
+
+  &__svc-history-meta {
+    font-size: 0.7rem;
+    color: $color-gray-500;
+    font-weight: 500;
+  }
+
+  &__svc-history-amount {
+    font-size: $font-size-sm;
+    font-weight: 700;
+    color: $color-secondary;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+  }
+
+  /* "Crear nueva orden" header */
+  &__svc-new-head {
+    margin: 6px 0 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid $color-gray-100;
+  }
+
+  &__svc-new-title {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: $font-size-sm;
+    font-weight: 700;
+    color: $color-secondary;
+    letter-spacing: -0.01em;
+
+    svg { color: $color-primary; }
+  }
+
+  &__svc-quick-count {
+    margin-left: 4px;
+    padding: 1px 6px;
+    background: rgba(99, 102, 241, 0.12);
+    color: $color-accent;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 @keyframes cdRingSpin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
