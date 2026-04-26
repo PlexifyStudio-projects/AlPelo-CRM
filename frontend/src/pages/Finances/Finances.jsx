@@ -23,7 +23,16 @@ const Finances = () => {
   const [error, setError] = useState(null);
   const [period, setPeriod] = useState('month');
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState('resumen');
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const requested = sessionStorage.getItem('finances:initial-tab');
+      if (requested) {
+        sessionStorage.removeItem('finances:initial-tab');
+        return requested;
+      }
+    } catch {}
+    return 'resumen';
+  });
 
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');

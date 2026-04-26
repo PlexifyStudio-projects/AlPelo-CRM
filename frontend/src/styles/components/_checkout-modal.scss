@@ -128,6 +128,7 @@
 
   &__body {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: $spacing-lg $spacing-xl;
   }
@@ -1462,6 +1463,18 @@
         opacity: 0.5;
         cursor: not-allowed;
       }
+    }
+  }
+
+  @media (max-height: 820px) {
+    max-height: 96vh;
+
+    &__header {
+      padding: $spacing-md $spacing-lg;
+    }
+
+    &__body {
+      padding: $spacing-md $spacing-lg;
     }
   }
 }

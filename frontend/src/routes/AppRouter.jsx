@@ -29,9 +29,9 @@ const PageLoader = () => (
   </div>
 );
 
-const SectionRenderer = memo(({ section, user, updateProfile }) => {
+const SectionRenderer = memo(({ section, user, updateProfile, onNavigate }) => {
   switch (section) {
-    case 'dashboard': return <Dashboard />;
+    case 'dashboard': return <Dashboard user={user} onNavigate={onNavigate} />;
     case 'agenda': return <Agenda />;
     case 'clients': return <Clients />;
     case 'orders': return <Orders />;
@@ -45,7 +45,7 @@ const SectionRenderer = memo(({ section, user, updateProfile }) => {
     case 'team': return <Team />;
     case 'profile': return <AdminProfile user={user} onUpdate={updateProfile} />;
     case 'settings': return <Settings />;
-    default: return <Dashboard />;
+    default: return <Dashboard user={user} onNavigate={onNavigate} />;
   }
 });
 
@@ -90,7 +90,7 @@ const AppRouter = () => {
       onLogout={logout}
     >
       <Suspense fallback={<PageLoader />}>
-        <SectionRenderer section={activeSection} user={user} updateProfile={updateProfile} />
+        <SectionRenderer section={activeSection} user={user} updateProfile={updateProfile} onNavigate={setActiveSection} />
       </Suspense>
     </MainLayout>
   );

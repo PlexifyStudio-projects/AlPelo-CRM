@@ -586,14 +586,24 @@ const Settings = () => {
   const [openSection, setOpenSection] = useState(null);
   const toggleSection = (id) => setOpenSection(prev => prev === id ? null : id);
 
+  // Auto-open panel when navigated from Dashboard "Mi info" button
+  useEffect(() => {
+    try {
+      const requested = sessionStorage.getItem('settings:open-panel');
+      if (requested) {
+        sessionStorage.removeItem('settings:open-panel');
+        setOpenSection(requested === 'reservas' ? 'booking' : requested);
+      }
+    } catch {}
+  }, []);
+
   const sections = [
     { id: 'lina', title: 'Lina IA', desc: 'Prompt, contexto del negocio y pruebas de la asistente', color1: '#7C3AED', color2: '#A855F7' },
     { id: 'notif', title: 'Notificaciones', desc: 'Alertas de citas, mensajeria y sonidos', color1: '#3B82F6', color2: '#60A5FA' },
     { id: 'meta', title: 'Meta / WhatsApp', desc: 'Conexion, token, perfil y plantillas de WhatsApp Business', color1: '#1877F2', color2: '#00C6FF' },
     { id: 'loyalty', title: 'Programa de Lealtad', desc: 'Creditos, niveles, referidos y bonificaciones', color1: '#10B981', color2: '#34D399' },
     { id: 'google', title: 'Google Reviews', desc: 'Redirige clientes satisfechos a dejar resenas', color1: '#FBBC05', color2: '#EA4335' },
-    { id: 'booking', title: 'Reservas Online', desc: 'Pagina publica para que tus clientes agenden citas', color1: '#F59E0B', color2: '#FBBF24' },
-    { id: 'brand', title: 'Marca y Logo', desc: 'Logo, nombre y colores de tu negocio', color1: '#8B5CF6', color2: '#A78BFA' },
+    { id: 'booking', title: 'Reservas Online y Marca', desc: 'Pagina publica, logo, nombre y colores de tu negocio', color1: '#F59E0B', color2: '#FBBF24' },
     { id: 'tax', title: 'Impuestos / IVA', desc: 'Configura el IVA para facturas y cobros', color1: '#059669', color2: '#34D399' },
     { id: 'dian', title: 'Facturacion / DIAN', desc: 'Datos fiscales, NIT, resolucion y proveedor tecnologico', color1: '#DC2626', color2: '#F87171' },
   ];
@@ -1306,6 +1316,16 @@ const Settings = () => {
                   {bookingSaving ? 'Guardando...' : 'Guardar configuracion'}
                 </button>
               </div>
+
+              <div style={{ margin: '32px 0 20px', padding: '20px 0 0', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.01em' }}>
+                  Marca y Logo
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#94A3B8', margin: '0 0 18px' }}>
+                  Logo, nombre y colores que aparecen en tu pagina de reservas y en toda la plataforma.
+                </p>
+                <BrandingPanel addNotification={addNotification} />
+              </div>
               </>)}
             </div>
           )}
@@ -1334,10 +1354,6 @@ const Settings = () => {
             </button>
           </div>
             </div>
-          )}
-
-          {openSection === 'brand' && (
-            <BrandingPanel addNotification={addNotification} />
           )}
 
           {openSection === 'tax' && (

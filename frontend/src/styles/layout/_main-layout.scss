@@ -186,6 +186,12 @@
     }
   }
 
+  @media (max-height: 820px) {
+    &__main {
+      padding: $spacing-md $spacing-xl $spacing-md;
+    }
+  }
+
   &__main {
     > *:nth-child(1) { animation-delay: 0s; }
     > *:nth-child(2) { animation-delay: 0.03s; }

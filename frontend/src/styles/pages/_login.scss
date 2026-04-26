@@ -852,3 +852,15 @@
     &:nth-child(5) { animation-delay: 0.9s; }
   }
 }
+
+@media (max-height: 820px) {
+  .login {
+    &__wrapper {
+      min-height: 540px;
+    }
+
+    &__showcase {
+      padding: $spacing-2xl $spacing-xl;
+    }
+  }
+}

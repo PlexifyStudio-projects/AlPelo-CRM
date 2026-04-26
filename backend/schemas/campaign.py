@@ -41,7 +41,22 @@ class CampaignResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ImportRowResult(BaseModel):
+    line: int                                 # 1-indexed spreadsheet line (header is 1, data starts at 2)
+    status: str                               # "imported" | "duplicate" | "error"
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    birthday: Optional[str] = None
+    client_id: Optional[str] = None           # assigned id when imported
+    reason: Optional[str] = None              # why skipped/errored
+    existing_client_id: Optional[str] = None  # for duplicates: id of the client already in DB
+    existing_client_name: Optional[str] = None
+
+
 class ImportResult(BaseModel):
     imported: int = 0
     skipped: int = 0
     errors: List[str] = []
+    total: int = 0
+    rows: List[ImportRowResult] = []

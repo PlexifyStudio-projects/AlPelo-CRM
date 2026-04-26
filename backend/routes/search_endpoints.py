@@ -9,7 +9,7 @@ from sqlalchemy import cast, String, func, or_
 from database.connection import get_db
 from database.models import (
     Admin, Staff, Client, VisitHistory, ClientNote, Service, Appointment,
-    WhatsAppConversation, WhatsAppMessage, Tenant,
+    WhatsAppConversation, WhatsAppMessage, Tenant, Expense,
 )
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
@@ -1199,6 +1199,38 @@ def get_financial_summary(
     elif total_visits > 0:
         visits_growth_pct = 100.0
 
+    # Expenses (current + previous period)
+    eq = db.query(Expense).filter(
+        Expense.date >= start, Expense.date <= end, Expense.deleted_at.is_(None)
+    )
+    if tid:
+        eq = eq.filter(Expense.tenant_id == tid)
+    total_expenses = sum(e.amount or 0 for e in eq.all())
+
+    peq = db.query(Expense).filter(
+        Expense.date >= prev_start, Expense.date <= prev_end, Expense.deleted_at.is_(None)
+    )
+    if tid:
+        peq = peq.filter(Expense.tenant_id == tid)
+    prev_expenses = sum(e.amount or 0 for e in peq.all())
+
+    expenses_growth_pct = None
+    if prev_expenses > 0:
+        expenses_growth_pct = round(((total_expenses - prev_expenses) / prev_expenses) * 100, 1)
+    elif total_expenses > 0:
+        expenses_growth_pct = 100.0
+
+    # Unique clients in previous period (for client growth)
+    prev_unique_clients = len(set(v.client_id for v in prev_visits_list if v.client_id))
+    clients_growth_pct = None
+    if prev_unique_clients > 0:
+        clients_growth_pct = round(((unique_clients - prev_unique_clients) / prev_unique_clients) * 100, 1)
+    elif unique_clients > 0:
+        clients_growth_pct = 100.0
+
+    net_profit = total_revenue - total_expenses
+    prev_net_profit = prev_revenue - prev_expenses
+
     # Revenue by day
     day_map = {}
     for v in visits:
@@ -1341,6 +1373,13 @@ def get_financial_summary(
         best_day_revenue=best_day_revenue,
         busiest_day_date=busiest_day_date,
         busiest_day_visits=busiest_day_visits,
+        total_expenses=total_expenses,
+        prev_expenses=prev_expenses,
+        expenses_growth_pct=expenses_growth_pct,
+        prev_unique_clients=prev_unique_clients,
+        clients_growth_pct=clients_growth_pct,
+        net_profit=net_profit,
+        prev_net_profit=prev_net_profit,
     )
 
 

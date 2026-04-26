@@ -1,19 +1,22 @@
 @use '../abstracts/variables' as *;
 
+/* ============================================================
+   CLIENT TABLE — 2026 Premium
+   ============================================================ */
 .client-table {
-  margin-top: $spacing-md;
+  margin-top: $spacing-xs;
 
   &__wrapper {
+    position: relative;
     background: $color-white;
-    border: 1px solid $color-gray-200;
-    border-radius: $border-radius-xl;
-    box-shadow: $shadow-sm;
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 8px 24px rgba(15, 23, 42, 0.04);
     overflow: hidden;
     overflow-x: auto;
-    position: relative;
 
     &::-webkit-scrollbar { height: 6px; }
-    &::-webkit-scrollbar-thumb { background: $color-gray-200; border-radius: 6px; }
+    &::-webkit-scrollbar-thumb { background: $color-gray-100; border-radius: 6px; }
 
     @media (max-width: $breakpoint-sm) {
       display: none;
@@ -23,33 +26,34 @@
   &__table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 780px;
+    min-width: 820px;
   }
 
+  /* ---------- HEAD ---------- */
   &__head {
     position: sticky;
     top: 0;
     z-index: 2;
-    background: $color-gray-50;
-    border-bottom: 2px solid $color-gray-100;
+    background: rgba(248, 250, 252, 0.94);
+    backdrop-filter: blur(8px) saturate(160%);
+    border-bottom: 1px solid $color-gray-100;
   }
 
   &__th {
-    padding: 14px $spacing-lg;
+    padding: 14px 22px;
     text-align: left;
-    font-size: 0.65rem;
-    font-weight: 800;
+    font-size: 0.66rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: $color-gray-500;
+    letter-spacing: 0.07em;
+    color: $color-gray-400;
     cursor: pointer;
     user-select: none;
     white-space: nowrap;
-    transition: color $transition-fast, background $transition-fast;
+    transition: color 150ms ease;
 
     &:hover {
-      color: $color-gray-800;
-      background: rgba($color-gray-100, 0.6);
+      color: $color-secondary;
     }
 
     &--right { text-align: right; }
@@ -66,89 +70,55 @@
   &__th-content {
     display: inline-flex;
     align-items: center;
-    gap: $spacing-xs;
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -$spacing-sm;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: $color-gray-500;
-      border-radius: $border-radius-full;
-      transition: width 250ms cubic-bezier(0.16, 1, 0.3, 1);
-    }
-  }
-
-  &__th:hover &__th-content::after {
-    width: 100%;
+    gap: 5px;
   }
 
   &__sort-icon {
-    color: $color-gray-300;
+    color: $color-gray-200;
     flex-shrink: 0;
-    transition: color $transition-fast, transform 350ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 200ms $ease-smooth;
 
     &--active {
-      color: $color-gray-700;
-      transform: scale(1.15);
-    }
-
-    &--desc {
-      transform: rotate(180deg) scale(1.15);
+      color: $color-secondary;
     }
   }
 
-  &__body {
-    .client-table__row {
-      &:nth-child(even) {
-        background: rgba($color-gray-50, 0.4);
-      }
-
-      &:nth-child(odd) {
-        background: transparent;
-      }
-    }
-  }
-
+  /* ---------- BODY ---------- */
   &__row {
-    border-bottom: 1px solid $color-gray-100;
+    border-top: 1px solid rgba(15, 23, 42, 0.04);
     cursor: pointer;
-    transition: background $transition-fast, box-shadow $transition-fast;
+    transition: background 150ms ease;
+    background: $color-white;
+
+    &:first-child {
+      border-top: none;
+    }
 
     &:hover {
-      background: $color-gray-50 !important;
-      box-shadow: inset 3px 0 0 $color-gray-300;
+      background: rgba(248, 250, 252, 0.6);
 
-      .client-table__avatar { transform: scale(1.08); }
-      .client-table__client-name { color: $color-gray-900; }
-      .client-table__spent { color: $color-gray-900; }
-      .client-table__visits-count { color: $color-gray-900; }
+      .client-table__avatar {
+        transform: scale(1.06);
+        box-shadow: 0 0 0 2px $color-white, 0 0 0 5px var(--av-ring, rgba(99, 102, 241, 0.18));
+      }
+      .client-table__client-name { color: $color-secondary; }
     }
 
     &:active {
-      background: $color-gray-100 !important;
+      background: rgba(241, 245, 249, 0.7);
     }
-
-    &:last-child { border-bottom: none; }
 
     &:focus-visible {
       outline: none;
-      background: $color-gray-50 !important;
-      box-shadow: inset 3px 0 0 $color-gray-400, 0 0 0 1px $color-gray-200;
+      background: $color-off-white;
+      box-shadow: inset 3px 0 0 $color-primary;
     }
   }
 
-  &__row--vip {
-    position: relative;
-  }
-
   &__td {
-    padding: 14px $spacing-lg;
+    padding: 14px 22px;
     vertical-align: middle;
-    height: 56px;
+    height: 64px;
 
     &--right { text-align: right; }
 
@@ -161,98 +131,102 @@
     }
   }
 
+  /* ---------- ID / TICKET ---------- */
+  &__th--id,
+  &__td--id {
+    width: 96px;
+    min-width: 96px;
+    @media (max-width: 768px) { display: none; }
+  }
+
+  &__client-id {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: $color-gray-400;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  /* ---------- CLIENT CELL ---------- */
   &__client-cell {
     display: flex;
     align-items: center;
-    gap: $spacing-md;
+    gap: 12px;
   }
 
   &__avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: $border-radius-full;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: $font-size-xs;
-    font-weight: 800;
-    letter-spacing: 0.03em;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
     color: $color-white;
     flex-shrink: 0;
-    transition: transform $transition-base;
+    transition: all 220ms $ease-smooth;
+    box-shadow: 0 0 0 2px $color-white, 0 0 0 4px transparent;
 
-    &--activo {
-      background: linear-gradient(135deg, $color-success-dark, $color-success);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
+    &--activo,
+    &--active {
+      background: linear-gradient(135deg, #047857, #10B981);
+      --av-ring: rgba(16, 185, 129, 0.25);
     }
 
     &--vip {
-      background: linear-gradient(135deg, $color-accent-dark, $color-accent);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
+      background: linear-gradient(135deg, #6D28D9, #8B5CF6);
+      --av-ring: rgba(139, 92, 246, 0.28);
     }
 
-    &--inactivo {
+    &--inactivo,
+    &--inactive {
       background: linear-gradient(135deg, $color-gray-400, $color-gray-300);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
+      --av-ring: rgba(100, 116, 139, 0.2);
     }
 
     &--en_riesgo {
-      background: linear-gradient(135deg, #B5651D, #D4851A);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
+      background: linear-gradient(135deg, #B45309, #F59E0B);
+      --av-ring: rgba(245, 158, 11, 0.28);
     }
 
     &--nuevo {
-      background: linear-gradient(135deg, #2B6CB0, #3B7CD4);
-      box-shadow: 0 0 0 2px $color-white, 0 0 0 4px $color-gray-200;
+      background: linear-gradient(135deg, #0369A1, #38BDF8);
+      --av-ring: rgba(14, 165, 233, 0.28);
     }
-
-    &--active { @extend .client-table__avatar--activo; }
-    &--inactive { @extend .client-table__avatar--inactivo; }
   }
 
   &__client-info {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
     min-width: 0;
   }
 
   &__client-name {
     font-size: $font-size-sm;
-    font-weight: 700;
-    color: $color-gray-900;
+    font-weight: 600;
+    color: $color-gray-700;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: color $transition-fast;
+    transition: color 150ms ease;
     line-height: 1.3;
+    letter-spacing: -0.011em;
   }
 
   &__client-phone {
-    font-size: $font-size-2xs;
+    font-size: 0.72rem;
     color: $color-gray-400;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     font-variant-numeric: tabular-nums;
+    font-weight: 500;
   }
 
-  &__client-id {
-    font-size: $font-size-2xs;
-    font-weight: 700;
-    color: $color-gray-500;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    letter-spacing: 0.03em;
-  }
-
-  &__th--id,
-  &__td--id {
-    width: 80px;
-    min-width: 80px;
-
-    @media (max-width: 768px) { display: none; }
-  }
-
+  /* ---------- VISIT ---------- */
   &__visit-cell {
     display: flex;
     flex-direction: column;
@@ -261,41 +235,40 @@
 
   &__date {
     font-size: $font-size-sm;
-    color: $color-gray-600;
+    color: $color-gray-700;
+    font-weight: 500;
   }
 
   &__days {
-    font-size: $font-size-2xs;
-    font-weight: 800;
-    border-radius: $border-radius-full;
-    padding: 2px $spacing-sm;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 2px 9px;
     display: inline-flex;
     align-items: center;
     width: fit-content;
     font-variant-numeric: tabular-nums;
+    border: 1px solid transparent;
 
     &--ok {
-      color: #1B7A4A;
-      background: $color-success-bg;
-      border: 1px solid $color-success-border;
+      color: #047857;
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.18);
     }
-
     &--caution {
-      color: #8A6D14;
-      background: $color-warning-bg;
-      border: 1px solid $color-warning-border;
+      color: #B45309;
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.18);
     }
-
     &--warning {
-      color: #A85D1A;
-      background: rgba(245, 158, 66, 0.1);
-      border: 1px solid rgba(245, 158, 66, 0.2);
+      color: #C2410C;
+      background: rgba(249, 115, 22, 0.08);
+      border-color: rgba(249, 115, 22, 0.2);
     }
-
     &--danger {
-      color: #C23B3B;
-      background: $color-error-bg;
-      border: 1px solid $color-error-border;
+      color: #BE123C;
+      background: rgba(244, 63, 94, 0.08);
+      border-color: rgba(244, 63, 94, 0.2);
     }
   }
 
@@ -305,160 +278,148 @@
     font-style: italic;
   }
 
+  /* ---------- NUMBERS ---------- */
   &__visits-count {
-    font-family: $font-primary;
     font-size: $font-size-base;
-    font-weight: 800;
-    color: $color-gray-800;
+    font-weight: 700;
+    color: $color-secondary;
     font-variant-numeric: tabular-nums;
     text-align: right;
     display: block;
     line-height: 1.3;
-    transition: color $transition-fast;
   }
 
   &__spent {
-    font-family: $font-primary;
     font-size: $font-size-base;
-    font-weight: 800;
-    color: $color-gray-800;
+    font-weight: 700;
+    color: $color-secondary;
     font-variant-numeric: tabular-nums;
     text-align: right;
     display: block;
     white-space: nowrap;
     line-height: 1.3;
-    transition: color $transition-fast;
+    letter-spacing: -0.015em;
   }
 
   &__avg-ticket {
-    font-size: $font-size-2xs;
+    font-size: 0.7rem;
     color: $color-gray-400;
     display: block;
     text-align: right;
     font-variant-numeric: tabular-nums;
     margin-top: 2px;
+    font-weight: 500;
   }
 
-  &__source-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-size: $font-size-2xs;
-    font-weight: 600;
-    padding: 4px $spacing-sm;
-    border-radius: $border-radius-full;
-    white-space: nowrap;
-    transition: transform $transition-fast;
-
-    &--instagram {
-      color: #C026D3;
-      background: rgba(192, 38, 211, 0.06);
-      border: 1px solid rgba(192, 38, 211, 0.15);
-    }
-
-    &--referido {
-      color: #1B7A4A;
-      background: $color-success-bg;
-      border: 1px solid $color-success-border;
-    }
-
-    &--google {
-      color: #3B7CD4;
-      background: $color-info-bg;
-      border: 1px solid $color-info-border;
-    }
-
-    &--paso {
-      color: $color-gray-500;
-      background: $color-gray-50;
-      border: 1px solid $color-gray-200;
-    }
-
-    &--tiktok {
-      color: $color-gray-800;
-      background: $color-gray-50;
-      border: 1px solid $color-gray-200;
-    }
-
-    &--other {
-      color: $color-gray-500;
-      background: $color-gray-50;
-      border: 1px solid $color-gray-200;
-    }
-  }
-
+  /* ---------- STATUS PILL ---------- */
   &__status {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: $font-size-2xs;
-    font-weight: 800;
-    letter-spacing: 0.05em;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    border-radius: $border-radius-full;
-    padding: 4px $spacing-md;
+    border-radius: 999px;
+    padding: 4px 10px;
     white-space: nowrap;
+    border: 1px solid transparent;
 
-    &--activo {
-      color: #1B7A4A;
-      background: $color-success-bg;
-      border: 1px solid $color-success-border;
+    &--activo, &--active {
+      color: #047857;
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.18);
     }
-
     &--vip {
-      color: $color-accent-dark;
-      background: rgba($color-accent, 0.08);
-      border: 1px solid rgba($color-accent, 0.2);
+      color: #6D28D9;
+      background: rgba(139, 92, 246, 0.08);
+      border-color: rgba(139, 92, 246, 0.2);
     }
-
-    &--inactivo {
+    &--inactivo, &--inactive {
       color: $color-gray-500;
       background: $color-gray-50;
-      border: 1px solid $color-gray-200;
+      border-color: $color-gray-100;
     }
-
     &--en_riesgo {
-      color: #A85D1A;
-      background: rgba(245, 158, 66, 0.1);
-      border: 1px solid rgba(245, 158, 66, 0.25);
+      color: #B45309;
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.22);
     }
-
     &--nuevo {
-      color: #1D5DAB;
-      background: rgba(96, 165, 250, 0.1);
-      border: 1px solid $color-info-border;
+      color: #0369A1;
+      background: rgba(14, 165, 233, 0.08);
+      border-color: rgba(14, 165, 233, 0.2);
     }
-
-    &--active { @extend .client-table__status--activo; }
-    &--inactive { @extend .client-table__status--inactivo; }
   }
 
   &__status-icon {
     flex-shrink: 0;
   }
 
+  /* ---------- SOURCE TAG (kept for backward compat) ---------- */
+  &__source-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 4px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+    border: 1px solid transparent;
+
+    &--instagram {
+      color: #C026D3;
+      background: rgba(192, 38, 211, 0.06);
+      border-color: rgba(192, 38, 211, 0.15);
+    }
+    &--referido {
+      color: #047857;
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.18);
+    }
+    &--google {
+      color: #2563EB;
+      background: rgba(59, 130, 246, 0.08);
+      border-color: rgba(59, 130, 246, 0.18);
+    }
+    &--paso, &--other {
+      color: $color-gray-500;
+      background: $color-gray-50;
+      border-color: $color-gray-100;
+    }
+    &--tiktok {
+      color: $color-secondary;
+      background: $color-gray-50;
+      border-color: $color-gray-100;
+    }
+  }
+
+  /* ============================================================
+     MOBILE CARDS
+     ============================================================ */
   &__cards {
     display: none;
 
-    @media (max-width: 768px) {
+    @media (max-width: $breakpoint-sm) {
       display: flex;
       flex-direction: column;
-      gap: $spacing-sm;
+      gap: 10px;
     }
   }
 
   &__card {
     background: $color-white;
-    border: 1px solid $color-gray-200;
-    border-radius: $border-radius-xl;
-    box-shadow: $shadow-sm;
-    padding: $spacing-lg;
+    border: 1px solid rgba(15, 23, 42, 0.05);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.03);
+    padding: 14px;
     cursor: pointer;
-    transition: all $transition-base;
+    transition: all 200ms $ease-smooth;
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: $shadow-md;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 12px 28px rgba(15, 23, 42, 0.07);
     }
 
     &:active {
@@ -469,9 +430,9 @@
   &__card-top {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
-    margin-bottom: $spacing-sm;
-    padding-bottom: $spacing-sm;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
     border-bottom: 1px solid $color-gray-100;
   }
 
@@ -486,51 +447,24 @@
   &__card-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: $spacing-sm;
+    gap: 8px;
   }
 
   &__card-stat {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: $spacing-sm;
-    background: $color-gray-50;
-    border-radius: $border-radius-md;
+    gap: 3px;
+    padding: 8px;
+    background: $color-off-white;
+    border-radius: 10px;
   }
 
   &__card-stat-label {
-    font-size: $font-size-2xs;
+    font-size: 0.65rem;
     color: $color-gray-400;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-  }
-
-  &__empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: $spacing-3xl $spacing-xl;
-    gap: $spacing-md;
-
-    &-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: $border-radius-lg;
-      background: $color-gray-50;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: $color-gray-300;
-      margin-bottom: $spacing-sm;
-    }
-
-    &-text {
-      font-size: $font-size-sm;
-      color: $color-gray-400;
-      text-align: center;
-    }
   }
 }

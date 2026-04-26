@@ -302,30 +302,53 @@ def find_conversation(db: Session, search_name: str = "", phone: str = "", tenan
 # CLIENT STATUS ENGINE
 # ============================================================================
 
+def compute_active_streak(visit_dates: list) -> int:
+    """
+    Count the most recent unbroken streak of visits where every consecutive
+    gap is < 30 days. Streak counts back from the most recent visit.
+
+    visit_dates: list of date objects (any order). Returns 0 if empty.
+    """
+    if not visit_dates:
+        return 0
+    dates = sorted(visit_dates)
+    streak = 1
+    for i in range(len(dates) - 1, 0, -1):
+        gap = (dates[i] - dates[i - 1]).days
+        if gap < 30:
+            streak += 1
+        else:
+            break
+    return streak
+
+
 def compute_status(
     total_visits: int,
     days_since: int | None,
     status_override: str | None = None,
+    active_streak: int = 0,
 ) -> str:
     """
-    Status engine:
-    - Manual override takes priority
-    - VIP: 10+ completed services
-    - Nuevo: 0 visits (never came)
-    - Activo: <30 days since last visit (and 2+ services)
-    - En riesgo: 30-90 days since last visit
-    - Inactivo: >90 days since last visit
+    Status engine (priority order):
+    - Manual override wins.
+    - Nuevo: never came (days_since None) or only 1 visit ever.
+    - Inactivo: 60+ days since last visit.
+    - En riesgo: 30-59 days since last visit. (Breaks any VIP streak.)
+    - VIP: active_streak >= 10 AND last visit < 30 days ago.
+           Streak resets if any gap between visits >= 30 days.
+    - Activo: 2+ visits, last visit < 30 days ago, streak < 10.
     """
     if status_override:
         return status_override
     if days_since is None:
         return "nuevo"
-    if total_visits >= 10:
-        return "vip"
-    if days_since > 90:
+    if days_since >= 60:
         return "inactivo"
     if days_since >= 30:
         return "en_riesgo"
+    # Last visit < 30 days ago
+    if active_streak >= 10:
+        return "vip"
     if total_visits <= 1:
         return "nuevo"
     return "activo"
@@ -353,7 +376,8 @@ def compute_client_fields(client: Client, db: Session):
         last_visit = max(v.visit_date for v in completed)
         days_since = (date.today() - last_visit).days
 
-    status = compute_status(total_visits, days_since, client.status_override)
+    streak = compute_active_streak([v.visit_date for v in completed])
+    status = compute_status(total_visits, days_since, client.status_override, streak)
 
     # Calculate favorite service from visit history (3+ visits with same service)
     from collections import Counter
@@ -431,7 +455,18 @@ def compute_client_list_item(client: Client, db: Session):
     if last_visit:
         days_since = (date.today() - last_visit).days
 
-    status = compute_status(total_visits, days_since, client.status_override)
+    # VIP requires unbroken streak — only fetch dates when it could matter (10+ visits, recent)
+    streak = 0
+    if total_visits >= 10 and days_since is not None and days_since < 30:
+        dates = (
+            db.query(VisitHistory.visit_date)
+            .filter(VisitHistory.client_id == client.id, VisitHistory.status == "completed")
+            .order_by(VisitHistory.visit_date.asc())
+            .all()
+        )
+        streak = compute_active_streak([d[0] for d in dates])
+
+    status = compute_status(total_visits, days_since, client.status_override, streak)
 
     return ClientListResponse(
         id=client.id,

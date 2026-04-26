@@ -2126,6 +2126,8 @@ $_fg-payment: #14B8A6;
   }
 
   &__editor-body {
+    flex: 1;
+    min-height: 0;
     padding: $spacing-xl;
     display: flex;
     flex-direction: column;

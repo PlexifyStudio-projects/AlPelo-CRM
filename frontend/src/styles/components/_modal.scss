@@ -160,6 +160,22 @@
   &__overlay--exiting {
     animation: modalFadeOut 200ms $ease-smooth forwards;
   }
+
+  @media (max-height: 820px) {
+    max-height: 96vh;
+
+    &__header {
+      padding: $spacing-md 28px;
+    }
+
+    &__body {
+      padding: $spacing-md 28px;
+    }
+
+    &__overlay {
+      padding: $spacing-sm;
+    }
+  }
 }
 
 @keyframes modalScaleIn {

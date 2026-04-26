@@ -199,6 +199,12 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
   const userInitials = user?.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'AP';
   const userFirstName = user?.name?.split(' ')[0] || 'Admin';
   const userRole = user?.role === 'admin' ? 'Administrador' : user?.role === 'dev' ? 'Desarrollador' : 'Profesional';
+  const tenantInitials = (tenant?.name || 'AP').split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+  const planLabel = tenant?.plan ? tenant.plan.charAt(0).toUpperCase() + tenant.plan.slice(1) : null;
+
+  const handleItemClick = useCallback((id) => {
+    onItemClick(id);
+  }, [onItemClick]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -238,36 +244,58 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
 
   return (
     <aside className={`${b} ${isCollapsed ? `${b}--collapsed` : ''} ${isMobileOpen ? `${b}--mobile-open` : ''}`}>
+      {/* Brand card — single, clickable, navigates to profile */}
       <div className={`${b}__brand`}>
-        <div className={`${b}__brand-inner`}>
-          <div className={`${b}__logo-icon`}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="currentColor" opacity="0.15" />
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-              <path d="M8 12l2.5 2.5L16 9" stroke="currentColor" strokeWidth="2" fill="none" />
-            </svg>
+        <button
+          className={`${b}__brand-card`}
+          onClick={() => onItemClick('profile')}
+          title="Ver perfil del negocio"
+        >
+          <div className={`${b}__brand-avatar`}>
+            {tenant?.logo_url ? (
+              <img src={tenant.logo_url} alt={tenant.name} />
+            ) : (
+              <span>{tenantInitials}</span>
+            )}
+            <span className={`${b}__brand-status`} aria-hidden />
           </div>
           {!isCollapsed && (
-            <h1 className={`${b}__logo`}>{tenant.name || 'Mi Negocio'}</h1>
+            <div className={`${b}__brand-info`}>
+              <span className={`${b}__brand-name`}>{tenant?.name || 'Mi Negocio'}</span>
+              <span className={`${b}__brand-meta`}>
+                {tenant?.address ? (
+                  <>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                    <span className={`${b}__brand-address`}>{tenant.address}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`${b}__brand-status-dot`} />
+                    <span>Activo{planLabel ? ` · ${planLabel}` : ''}</span>
+                  </>
+                )}
+              </span>
+            </div>
           )}
-        </div>
+        </button>
         {isMobileOpen ? (
           <button className={`${b}__close-mobile`} onClick={onCloseMobile} aria-label="Cerrar menu">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         ) : !isCollapsed && (
           <button className={`${b}__toggle`} onClick={onToggleCollapse} aria-label="Colapsar sidebar">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
         )}
       </div>
-
-      <div className={`${b}__brand-divider`} />
 
       <LocationSelector />
 
@@ -286,13 +314,13 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
               <li
                 key={item.id}
                 className={`${b}__item ${activeItem === item.id ? `${b}__item--active` : ''} ${item.disabled ? `${b}__item--disabled` : ''}`}
-                onClick={() => !item.disabled && onItemClick(item.id)}
+                onClick={() => !item.disabled && handleItemClick(item.id)}
                 onMouseEnter={() => prefetchPage(item.id)}
                 data-tooltip={item.label}
                 data-id={item.id}
                 role="button"
                 tabIndex={item.disabled ? -1 : 0}
-                onKeyDown={(e) => e.key === 'Enter' && !item.disabled && onItemClick(item.id)}
+                onKeyDown={(e) => e.key === 'Enter' && !item.disabled && handleItemClick(item.id)}
                 style={{ '--item-index': index }}
               >
                 <span className={`${b}__icon`}>
@@ -450,6 +478,53 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
 
           {isUserDropdownOpen && !isCollapsed && (
             <div className={`${b}__user-dropdown`}>
+              <div className={`${b}__user-dropdown-head`}>
+                <div className={`${b}__user-avatar ${b}__user-avatar--lg`}>{userInitials}</div>
+                <div className={`${b}__user-dropdown-info`}>
+                  <span className={`${b}__user-dropdown-name`}>{user?.name || 'Admin'}</span>
+                  <span className={`${b}__user-dropdown-email`}>{user?.email || userRole}</span>
+                </div>
+              </div>
+
+              <button
+                className={`${b}__user-dropdown-item`}
+                onClick={() => { setIsUserDropdownOpen(false); onItemClick('profile'); }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span>Mi perfil</span>
+              </button>
+
+              <button
+                className={`${b}__user-dropdown-item`}
+                onClick={() => { setIsUserDropdownOpen(false); onItemClick('settings'); }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                <span>Configuración</span>
+              </button>
+
+              <a
+                className={`${b}__user-dropdown-item`}
+                href="https://wa.me/573000000000?text=Necesito%20ayuda%20con%20Plexify"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsUserDropdownOpen(false)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <span>Centro de ayuda</span>
+              </a>
+
+              <div className={`${b}__user-dropdown-divider`} />
+
               {onLogout && (
                 <button
                   className={`${b}__user-dropdown-item ${b}__user-dropdown-item--danger`}
@@ -460,7 +535,7 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
                     <polyline points="16 17 21 12 16 7" />
                     <line x1="21" y1="12" x2="9" y2="12" />
                   </svg>
-                  <span>Cerrar Sesion</span>
+                  <span>Cerrar sesión</span>
                 </button>
               )}
             </div>
@@ -473,6 +548,15 @@ const Sidebar = ({ menuItems, activeItem, onItemClick, user, isCollapsed, onTogg
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </button>
+        )}
+
+        {!isCollapsed && (
+          <div className={`${b}__brand-footer`}>
+            <span className={`${b}__brand-mark`}>
+              <span className={`${b}__brand-mark-dot`} />
+              Powered by <strong>Plexify Studio</strong>
+            </span>
+          </div>
         )}
       </div>
     </aside>

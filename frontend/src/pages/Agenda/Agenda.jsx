@@ -24,11 +24,11 @@ const CARD_H = 30;
 const STAFF_COLORS = ['#2D5A3D', '#3B82F6', '#E05292', '#C9A84C', '#8B5CF6', '#F97316', '#14B8A6', '#EC4899', '#06B6D4', '#EF4444'];
 
 const STATUS_META = {
-  confirmed: { label: 'Confirmada', color: '#2D5A3D', icon: 'check' },
-  completed: { label: 'Completada', color: '#22B07E', icon: 'done' },
-  paid: { label: 'Pagada', color: '#3B82F6', icon: 'done' },
-  cancelled: { label: 'Cancelada', color: '#E05252', icon: 'x' },
-  no_show: { label: 'No asistió', color: '#D4A017', icon: 'alert' },
+  confirmed: { label: 'Confirmada', color: '#10B981', icon: 'check' },
+  completed: { label: 'Completada', color: '#0EA5E9', icon: 'done' },
+  paid: { label: 'Pagada', color: '#6366F1', icon: 'done' },
+  cancelled: { label: 'Cancelada', color: '#F43F5E', icon: 'x' },
+  no_show: { label: 'No asistió', color: '#F59E0B', icon: 'alert' },
 };
 
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -141,6 +141,40 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
   const [staffFilter, setStaffFilter] = useState(staffOnlyId ? String(staffOnlyId) : '');
   const [showStaffDrop, setShowStaffDrop] = useState(false);
   const staffDropRef = useRef(null);
+
+  // Multi-select of professionals visible as columns. Empty Set = "show all"
+  const [selectedStaffIds, setSelectedStaffIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem('agenda:selected-staff');
+      if (raw) return new Set(JSON.parse(raw));
+    } catch {}
+    return new Set();
+  });
+  const [showProsDrop, setShowProsDrop] = useState(false);
+  const prosDropRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('agenda:selected-staff', JSON.stringify([...selectedStaffIds]));
+    } catch {}
+  }, [selectedStaffIds]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (prosDropRef.current && !prosDropRef.current.contains(e.target)) setShowProsDrop(false);
+    };
+    if (showProsDrop) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showProsDrop]);
+
+  const toggleStaffSelected = useCallback((id) => {
+    setSelectedStaffIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   const [showModal, setShowModal] = useState(false);
   const [editingApt, setEditingApt] = useState(null);
@@ -413,6 +447,9 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
     if (isStaffMode && staffOnlyId) {
       result = result.filter(s => s.id === staffOnlyId || String(s.id) === String(staffOnlyId));
       if (!searchQuery || searchQuery.length < 2) return result;
+    } else if (selectedStaffIds.size > 0) {
+      // Admin: respect multi-select. Empty Set = show all.
+      result = result.filter(s => selectedStaffIds.has(s.id));
     }
 
     if (searchQuery && searchQuery.length >= 2) {
@@ -439,7 +476,7 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
     }
 
     return result;
-  }, [isStaffView, staff, searchQuery, currentDate, appointments, services]);
+  }, [isStaffView, staff, searchQuery, currentDate, appointments, services, selectedStaffIds, isStaffMode, staffOnlyId]);
   const STAFF_PER_ROW = 10;
   const staffChunks = useMemo(() => {
     if (!isStaffView) return [];
@@ -1064,6 +1101,83 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
           <h1 className={`${b}__title`}>Agenda</h1>
           <span className={`${b}__subtitle`}>{navYear}</span>
         </div>
+
+        {!isStaffMode && view === 'staff' && staff.length > 0 && (
+          <div className={`${b}__pros`} ref={prosDropRef}>
+            <button
+              className={`${b}__pros-btn ${showProsDrop ? `${b}__pros-btn--open` : ''}`}
+              onClick={() => setShowProsDrop(v => !v)}
+            >
+              <span className={`${b}__pros-btn-label`}>Profesionales</span>
+              <span className={`${b}__pros-btn-count`}>
+                {selectedStaffIds.size === 0 ? `Todos · ${staff.length}` : `${selectedStaffIds.size}/${staff.length}`}
+              </span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className={`${b}__pros-btn-chev ${showProsDrop ? `${b}__pros-btn-chev--up` : ''}`}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {showProsDrop && (
+              <div className={`${b}__pros-menu`}>
+                <div className={`${b}__pros-menu-head`}>
+                  <span className={`${b}__pros-menu-title`}>Filtrar por profesional</span>
+                  <div className={`${b}__pros-menu-actions`}>
+                    <button
+                      className={`${b}__pros-action`}
+                      onClick={() => setSelectedStaffIds(new Set(staff.map(s => s.id)))}
+                    >
+                      Todos
+                    </button>
+                    <button
+                      className={`${b}__pros-action ${b}__pros-action--clear`}
+                      onClick={() => setSelectedStaffIds(new Set())}
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+                </div>
+                <div className={`${b}__pros-list`}>
+                  {staff.map(s => {
+                    const checked = selectedStaffIds.size === 0 || selectedStaffIds.has(s.id);
+                    const color = staffColorMap[s.id] || '#94A3B8';
+                    return (
+                      <button
+                        key={s.id}
+                        className={`${b}__pros-item ${checked ? `${b}__pros-item--checked` : ''}`}
+                        onClick={() => {
+                          if (selectedStaffIds.size === 0) {
+                            // First click: select all but this one (toggle off this)
+                            setSelectedStaffIds(new Set(staff.filter(x => x.id !== s.id).map(x => x.id)));
+                          } else {
+                            toggleStaffSelected(s.id);
+                          }
+                        }}
+                      >
+                        <span className={`${b}__pros-item-avatar`} style={{ background: s.photo_url ? 'transparent' : color }}>
+                          {s.photo_url
+                            ? <img src={s.photo_url} alt={s.name} />
+                            : <span>{s.name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()}</span>}
+                        </span>
+                        <div className={`${b}__pros-item-info`}>
+                          <span className={`${b}__pros-item-name`}>{s.name}</span>
+                          {s.role && <span className={`${b}__pros-item-role`}>{s.role}</span>}
+                        </div>
+                        <span className={`${b}__pros-item-check ${checked ? `${b}__pros-item-check--on` : ''}`}>
+                          {checked && (
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className={`${b}__topbar-center`}>
           <div className={`${b}__topbar-nav`}>
             <button className={`${b}__nav-arrow`} onClick={() => navigate(-1)} title="Anterior"><ChevronLeft /></button>
@@ -1546,14 +1660,15 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
             </div>
 
             <form onSubmit={handleSubmit} className={`${b}__modal-body`}>
+              <div className={`${b}__modal-col-left`}>
               <div className={`${b}__section ${b}__visit-code-section`}>
-                <span className={`${b}__section-label`}>Ticket / Código de visita</span>
+                <span className={`${b}__section-label ${b}__section-label--ticket`}>Ticket / Código de visita</span>
                 <input type="text" value={formData.visit_code || ''} onChange={e => setFormData({ ...formData, visit_code: e.target.value })}
                   placeholder="Ej: 1213" className={`${b}__visit-code-input`} />
               </div>
 
               <div className={`${b}__section`}>
-                <span className={`${b}__section-label`}>Cliente</span>
+                <span className={`${b}__section-label ${b}__section-label--client`}>Cliente</span>
                 {selectedClient && !isNewClient ? (
                   <div className={`${b}__client-chip`}>
                     <div className={`${b}__client-avatar`}>
@@ -1652,8 +1767,34 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
                   </div>
                 )}
               </div>
+
+              {editingApt && (
+                <div className={`${b}__section`}>
+                  <span className={`${b}__section-label ${b}__section-label--status`}>Estado</span>
+                  <div className={`${b}__status-row`}>
+                    {Object.entries(STATUS_META).map(([k, v]) => (
+                      <button key={k} type="button"
+                        className={`${b}__status-btn ${formData.status === k ? `${b}__status-btn--on` : ''}`}
+                        style={{ '--stc': v.color }}
+                        onClick={() => setFormData({ ...formData, status: k })}>
+                        <span className={`${b}__status-dot`} style={{ background: v.color }} />
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className={`${b}__section`}>
-                <span className={`${b}__section-label`}>
+                <span className={`${b}__section-label ${b}__section-label--notes`}>Notas (opcional)</span>
+                <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Preferencias, indicaciones especiales..." rows={2} className={`${b}__notes-input`} />
+              </div>
+              </div>{/* /modal-col-left */}
+
+              <div className={`${b}__modal-col-right`}>
+              <div className={`${b}__section`}>
+                <span className={`${b}__section-label ${b}__section-label--service`}>
                   {serviceAssignments.length > 1 ? `Servicios (${serviceAssignments.length})` : 'Servicio'}
                 </span>
                 {serviceAssignments.length > 0 && (
@@ -1760,7 +1901,7 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
                 )}
               </div>
               <div className={`${b}__section`}>
-                <span className={`${b}__section-label`}>
+                <span className={`${b}__section-label ${b}__section-label--products`}>
                   Productos utilizados {productItems.length > 0 ? `(${productItems.length})` : ''}
                 </span>
                 {productItems.length > 0 && (
@@ -1845,7 +1986,7 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
               </div>
               {serviceAssignments.length > 0 && (
                 <div className={`${b}__section`}>
-                  <span className={`${b}__section-label`}>Fecha</span>
+                  <span className={`${b}__section-label ${b}__section-label--date`}>Fecha</span>
                   <div className={`${b}__quick-dates`}>
                     {quickDates.map((d, i) => {
                       const iso = toISO(d);
@@ -1860,7 +2001,7 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
                       );
                     })}
                   </div>
-                  <input type="date" value={formData.date} onChange={e => handleDateChange(e.target.value)} required />
+                  <input type="date" value={formData.date} onChange={e => handleDateChange(e.target.value)} required className={`${b}__date-native`} />
                 </div>
               )}
               {serviceAssignments.length > 0 && formData.date && serviceAssignments.map((assignment, aIdx) => {
@@ -1875,7 +2016,7 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
 
                 return (
                   <div key={`avail-${aIdx}`} className={`${b}__section ${b}__svc-avail`}>
-                    <span className={`${b}__section-label`}>
+                    <span className={`${b}__section-label ${b}__section-label--staff`}>
                       {serviceAssignments.length > 1 ? `${aIdx + 1}. ` : ''}{svc.name} — {formatDur(svc.duration_minutes)}
                     </span>
 
@@ -1996,28 +2137,7 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
                 );
               })}
 
-              {editingApt && (
-                <div className={`${b}__section`}>
-                  <span className={`${b}__section-label`}>Estado</span>
-                  <div className={`${b}__status-row`}>
-                    {Object.entries(STATUS_META).map(([k, v]) => (
-                      <button key={k} type="button"
-                        className={`${b}__status-btn ${formData.status === k ? `${b}__status-btn--on` : ''}`}
-                        style={{ '--stc': v.color }}
-                        onClick={() => setFormData({ ...formData, status: k })}>
-                        <span className={`${b}__status-dot`} style={{ background: v.color }} />
-                        {v.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className={`${b}__section`}>
-                <span className={`${b}__section-label`}>Notas (opcional)</span>
-                <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Preferencias, indicaciones especiales..." rows={2} className={`${b}__notes-input`} />
-              </div>
+              </div>{/* /modal-col-right */}
 
               {modalError && (
                 <div className={`${b}__modal-error`}>
@@ -2039,7 +2159,7 @@ const AgendaInner = ({ staffOnlyId = null, staffCommissionRate = null }) => {
                       <>
                         <button type="button" className={`${b}__btn--danger`} onClick={handleDelete}><TrashIcon /> Eliminar</button>
                         {editingApt.status === 'confirmed' || editingApt.status === 'completed' ? (
-                          <button type="button" className={`${b}__btn--primary`} style={{ background: '#059669' }} onClick={async () => {
+                          <button type="button" className={`${b}__btn--success`} onClick={async () => {
                             setShowModal(false);
                             try {
                               const fresh = await appointmentService.get(editingApt.id);

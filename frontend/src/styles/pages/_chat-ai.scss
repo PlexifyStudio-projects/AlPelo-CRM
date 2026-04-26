@@ -761,6 +761,18 @@ $lina-assistant-bg: #F1F5F9;
   }
 }
 
+@media (max-height: 820px) {
+  .chat-ai {
+    height: calc(100vh - #{$header-height} - #{$spacing-md});
+    max-height: calc(100vh - #{$header-height} - #{$spacing-md});
+
+    &__header {
+      padding: $spacing-xs $spacing-md;
+      margin-bottom: $spacing-xs;
+    }
+  }
+}
+
 .chat-ai {
   &__strategy {
     @include flex-column;

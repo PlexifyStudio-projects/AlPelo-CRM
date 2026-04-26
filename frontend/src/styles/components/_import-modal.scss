@@ -1,68 +1,338 @@
 @use '../abstracts/variables' as *;
 
+/* ============================================================
+   IMPORT CLIENTS MODAL — wide layout, no inner scroll
+   ============================================================ */
 .import-modal {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 
   &__error {
     display: flex;
     align-items: center;
-    gap: $spacing-xs;
-    padding: $spacing-sm $spacing-md;
-    border-radius: $border-radius-md;
-    background: $color-error-bg;
-    color: $color-error-dark;
+    gap: 8px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.06);
+    color: #BE123C;
     font-size: $font-size-sm;
-    font-weight: 500;
-    border: 1px solid $color-error-border;
+    font-weight: 600;
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    flex-shrink: 0;
   }
 
-  &__instructions {
-    padding: $spacing-sm $spacing-md;
-    background: rgba(30, 64, 175, 0.04);
-    border: 1px solid rgba(30, 64, 175, 0.1);
-    border-radius: $border-radius-md;
-    font-size: $font-size-xs;
-    color: $color-gray-600;
-    line-height: 1.6;
+  &__hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    background: rgba(14, 165, 233, 0.06);
+    color: #0369A1;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    border: 1px solid rgba(14, 165, 233, 0.2);
+    flex-shrink: 0;
+    animation: import-line-in 220ms $ease-smooth;
+  }
 
-    p { margin: 0 0 2px; }
-    strong { color: $color-gray-800; }
+  /* ============================================================
+     LAYOUT — 2 columns: guide left, upload right
+     ============================================================ */
+  &__layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 18px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+
+    @media (max-width: 1100px) {
+      grid-template-columns: 1fr;
+      overflow-y: auto;
+    }
+  }
+
+  &__col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    min-width: 0;
+
+    &--guide {
+      padding: 16px;
+      background: $color-off-white;
+      border: 1px solid $color-gray-100;
+      border-radius: 14px;
+      overflow-y: auto;
+
+      @media (min-width: 1101px) {
+        max-height: 100%;
+      }
+    }
+
+    &--upload {
+      padding: 0;
+    }
+  }
+
+  &__col-title {
+    margin: 0 0 4px;
+    font-size: $font-size-sm;
+    font-weight: 800;
+    color: $color-secondary;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $color-gray-500;
+  }
+
+  /* ============================================================
+     VISUAL SHEET (mini spreadsheet)
+     ============================================================ */
+  &__sheet {
+    display: grid;
+    grid-template-columns: 28px repeat(4, minmax(0, 1fr));
+    background: $color-white;
+    border: 1px solid $color-gray-200;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    font-size: 0.72rem;
+    flex-shrink: 0;
+
+    > * {
+      padding: 6px 8px;
+      border-right: 1px solid $color-gray-100;
+      border-bottom: 1px solid $color-gray-100;
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      &:nth-child(5n) { border-right: none; }
+    }
+  }
+
+  &__sheet-corner {
+    background: $color-gray-50;
+    border-right: 1px solid $color-gray-200 !important;
+    border-bottom: 1px solid $color-gray-200 !important;
+  }
+
+  &__sheet-col-letter {
+    background: $color-gray-50;
+    color: $color-gray-500;
+    font-weight: 700;
+    font-size: 0.65rem;
+    justify-content: center;
+    border-bottom: 1px solid $color-gray-200 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__sheet-row-num {
+    background: $color-gray-50;
+    color: $color-gray-400;
+    font-weight: 600;
+    font-size: 0.65rem;
+    justify-content: center;
+    border-right: 1px solid $color-gray-200 !important;
+  }
+
+  &__sheet-cell {
+    color: $color-gray-700;
+    font-variant-numeric: tabular-nums;
+
+    &--header {
+      background: linear-gradient(180deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.04));
+      color: $color-secondary;
+      font-weight: 700;
+      font-size: 0.7rem;
+      gap: 4px;
+    }
+  }
+
+  &__req-dot {
+    color: #DC2626;
+    font-weight: 800;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
+  &__sheet-empty { color: $color-gray-300; }
+
+  &__sheet-caption {
+    font-size: 0.7rem;
+    color: $color-gray-500;
+    margin: 0;
+    line-height: 1.5;
+
+    strong { color: $color-secondary; font-weight: 700; }
+  }
+
+  /* ============================================================
+     FIELD CARDS — compact
+     ============================================================ */
+  &__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  &__field {
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 9px;
+    padding: 10px;
+
+    &--req {
+      border-color: rgba(220, 38, 38, 0.18);
+      background: linear-gradient(180deg, rgba(220, 38, 38, 0.02), $color-white 60%);
+    }
+  }
+
+  &__field-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  &__field-letter {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    background: $color-secondary;
+    color: $color-white;
+    border-radius: 5px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.62rem;
+    font-weight: 800;
+    font-family: 'SF Mono', 'Consolas', monospace;
+  }
+
+  &__field-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: $color-secondary;
+    flex: 1;
+    letter-spacing: -0.01em;
+  }
+
+  &__field-tag {
+    font-size: 0.55rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border: 1px solid transparent;
+
+    &--req {
+      color: #BE123C;
+      background: rgba(220, 38, 38, 0.08);
+      border-color: rgba(220, 38, 38, 0.18);
+    }
+    &--opt {
+      color: $color-gray-500;
+      background: $color-gray-50;
+      border-color: $color-gray-100;
+    }
+  }
+
+  &__field-format {
+    margin: 0 0 4px;
+    font-size: 0.68rem;
+    color: $color-gray-600;
+    line-height: 1.4;
+  }
+
+  &__field-example {
+    margin: 0;
+    font-size: 0.66rem;
+
+    code {
+      background: $color-gray-50;
+      color: $color-secondary;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 0.66rem;
+      font-weight: 600;
+      border: 1px solid $color-gray-100;
+    }
+  }
+
+  /* ============================================================
+     UPLOAD COLUMN
+     ============================================================ */
+  &__templates {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
   }
 
   &__template-btn {
     display: inline-flex;
     align-items: center;
-    gap: $spacing-2xs;
-    margin-top: $spacing-xs;
-    padding: $spacing-2xs $spacing-sm;
+    gap: 6px;
+    padding: 8px 12px;
     font-family: $font-primary;
-    font-size: $font-size-2xs;
-    font-weight: $font-weight-semibold;
-    color: $color-primary;
-    background: rgba($color-primary, 0.08);
-    border: 1px solid rgba($color-primary, 0.2);
-    border-radius: $border-radius-sm;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: $color-white;
+    background: $color-secondary;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all $transition-fast;
+    text-decoration: none;
+    transition: all 180ms $ease-smooth;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+    white-space: nowrap;
 
     &:hover {
-      background: rgba($color-primary, 0.15);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.22);
+    }
+
+    &--ghost {
+      color: $color-gray-700;
+      background: $color-white;
+      border: 1px solid $color-gray-200;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+      &:hover {
+        background: $color-off-white;
+        color: $color-secondary;
+      }
     }
   }
 
+  /* ============================================================
+     DROPZONE
+     ============================================================ */
   &__dropzone {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: $spacing-2xl $spacing-lg;
-    border: 2px dashed $color-gray-300;
-    border-radius: $border-radius-lg;
+    padding: 24px 18px;
+    border: 2px dashed $color-gray-200;
+    border-radius: 14px;
     background: $color-white;
     cursor: pointer;
-    transition: all $transition-base;
+    transition: all 200ms $ease-smooth;
+    flex-shrink: 0;
 
     &:hover {
       border-color: $color-primary;
@@ -72,8 +342,8 @@
     &--has-file {
       border-style: solid;
       border-color: $color-primary;
-      background: rgba($color-primary, 0.03);
-      padding: $spacing-lg;
+      background: rgba($color-primary, 0.04);
+      padding: 14px 18px;
     }
   }
 
@@ -81,202 +351,442 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: $spacing-sm;
+    gap: 6px;
     color: $color-gray-400;
     text-align: center;
 
     svg { color: $color-gray-300; }
 
     p {
-      font-size: $font-size-sm;
+      font-size: 0.85rem;
       font-weight: 600;
-      color: $color-gray-600;
+      color: $color-gray-700;
       margin: 0;
     }
 
-    span {
-      font-size: $font-size-xs;
-      color: $color-gray-400;
-    }
+    span { font-size: 0.7rem; color: $color-gray-400; }
   }
 
   &__file-info {
     display: flex;
     align-items: center;
-    gap: $spacing-sm;
+    gap: 10px;
+    width: 100%;
 
     svg { color: $color-primary; flex-shrink: 0; }
   }
 
+  &__file-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
   &__file-name {
-    font-size: $font-size-sm;
-    font-weight: 600;
-    color: $color-gray-900;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: $color-secondary;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   &__file-size {
-    font-size: $font-size-xs;
+    font-size: 0.7rem;
     color: $color-gray-400;
-    flex-shrink: 0;
+    font-weight: 500;
   }
 
+  /* ============================================================
+     PREVIEW
+     ============================================================ */
   &__preview {
     display: flex;
     flex-direction: column;
-    gap: $spacing-xs;
+    gap: 4px;
+    flex-shrink: 0;
   }
 
   &__preview-label {
-    font-size: $font-size-xs;
+    font-size: 0.68rem;
     font-weight: 700;
-    color: $color-gray-400;
+    color: $color-gray-500;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+    margin: 0;
   }
 
   &__preview-table-wrap {
     overflow-x: auto;
-    border: 1.5px solid $color-gray-200;
-    border-radius: $border-radius-md;
-    max-height: 200px;
+    border: 1px solid $color-gray-100;
+    border-radius: 8px;
+    max-height: 110px;
   }
 
   &__preview-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: $font-size-xs;
+    font-size: 0.7rem;
     white-space: nowrap;
 
     th {
-      padding: $spacing-xs $spacing-sm;
+      padding: 6px 9px;
       font-weight: 700;
       color: $color-gray-500;
       background: $color-gray-50;
-      border-bottom: 1.5px solid $color-gray-200;
+      border-bottom: 1px solid $color-gray-100;
       text-align: left;
       text-transform: uppercase;
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       letter-spacing: 0.06em;
       position: sticky;
       top: 0;
     }
 
     td {
-      padding: $spacing-xs $spacing-sm;
+      padding: 5px 9px;
       color: $color-gray-700;
-      border-bottom: 1px solid $color-gray-100;
-    }
-
-    tr:hover td {
-      background: rgba($color-primary, 0.02);
+      border-bottom: 1px solid $color-gray-50;
     }
   }
 
-  &__progress {
+  /* ============================================================
+     RULES
+     ============================================================ */
+  &__rules {
+    background: $color-off-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 10px;
+    padding: 10px 12px;
+    flex-shrink: 0;
+  }
+
+  &__rules-title {
+    margin: 0 0 6px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $color-gray-500;
+  }
+
+  &__rules-list {
+    margin: 0;
+    padding: 0 0 0 14px;
     display: flex;
     flex-direction: column;
-    gap: $spacing-xs;
-  }
-
-  &__progress-bar {
-    width: 100%;
-    height: 8px;
-    background: $color-gray-100;
-    border-radius: $border-radius-full;
-    overflow: hidden;
-  }
-
-  &__progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, $color-primary, $color-primary-light);
-    border-radius: $border-radius-full;
-    transition: width 300ms cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  &__progress-text {
-    font-size: $font-size-xs;
-    color: $color-gray-400;
-    font-weight: 500;
-    text-align: center;
-  }
-
-  &__result {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $spacing-md;
-    padding: $spacing-lg 0;
-  }
-
-  &__result-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 56px;
-    height: 56px;
-    border-radius: $border-radius-full;
-    background: $color-success-bg;
-    color: $color-success-dark;
-    box-shadow: 0 4px 16px rgba($color-success, 0.15);
-  }
-
-  &__result-stats {
-    display: flex;
-    gap: $spacing-xl;
-  }
-
-  &__stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     gap: 2px;
 
-    &--success .import-modal__stat-value { color: $color-success-dark; }
-    &--warning .import-modal__stat-value { color: $color-warning-dark; }
-    &--danger .import-modal__stat-value { color: $color-error; }
+    li {
+      font-size: 0.7rem;
+      color: $color-gray-600;
+      line-height: 1.45;
+
+      strong { color: $color-secondary; font-weight: 700; }
+    }
   }
 
-  &__stat-value {
-    font-family: $font-heading;
-    font-size: $font-size-2xl;
-    font-weight: 800;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__stat-label {
-    font-size: $font-size-xs;
-    color: $color-gray-400;
-    font-weight: 500;
-  }
-
-  &__error-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-height: 120px;
-    overflow-y: auto;
-    width: 100%;
-    padding: $spacing-sm;
-    background: $color-gray-50;
-    border-radius: $border-radius-md;
-    border: 1px solid $color-gray-100;
-  }
-
-  &__error-item {
-    font-size: $font-size-xs;
-    color: $color-error;
-    margin: 0;
-  }
-
+  /* ============================================================
+     ACTIONS
+     ============================================================ */
   &__actions {
     display: flex;
     justify-content: flex-end;
-    gap: $spacing-sm;
-    padding-top: $spacing-sm;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 10px;
     border-top: 1px solid $color-gray-100;
+    flex-shrink: 0;
   }
+
+  /* ============================================================
+     RUNNER (animated console view)
+     ============================================================ */
+  &__runner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  &__counters {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    flex-shrink: 0;
+
+    @media (max-width: 720px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  &__counter {
+    --c-base: #{$color-gray-500};
+    --c-bg: #{$color-gray-50};
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--c-base);
+    }
+
+    &--success {
+      --c-base: #10B981;
+      --c-bg: rgba(16, 185, 129, 0.1);
+    }
+    &--warning {
+      --c-base: #F59E0B;
+      --c-bg: rgba(245, 158, 11, 0.1);
+    }
+    &--danger {
+      --c-base: #EF4444;
+      --c-bg: rgba(239, 68, 68, 0.1);
+    }
+    &--total {
+      --c-base: #{$color-primary};
+      --c-bg: rgba(30, 64, 175, 0.08);
+    }
+  }
+
+  &__counter-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--c-bg);
+    color: var(--c-base);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__counter > div {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  &__counter-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: $color-secondary;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+  }
+
+  &__counter-of {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: $color-gray-400;
+  }
+
+  &__counter-label {
+    font-size: 0.64rem;
+    font-weight: 700;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+
+  /* ============================================================
+     PROGRESS BAR (running)
+     ============================================================ */
+  &__progress-track {
+    width: 100%;
+    height: 6px;
+    background: $color-gray-100;
+    border-radius: 999px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  &__progress-bar-anim {
+    height: 100%;
+    background: linear-gradient(90deg, $color-primary, $color-accent);
+    border-radius: 999px;
+    transition: width 240ms $ease-smooth;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      animation: import-shimmer 1.6s linear infinite;
+    }
+  }
+
+  /* ============================================================
+     CONSOLE (terminal-style log)
+     ============================================================ */
+  &__console {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    background: #0F172A;
+    color: #CBD5E1;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+      0 8px 24px rgba(0, 0, 0, 0.18);
+
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+  }
+
+  &__console-line {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    animation: import-line-in 240ms $ease-smooth both;
+    white-space: nowrap;
+
+    &--ok {
+      color: #34D399;
+      .import-modal__console-symbol { color: #10B981; }
+    }
+    &--dup {
+      color: #FBBF24;
+      .import-modal__console-symbol { color: #F59E0B; }
+    }
+    &--err {
+      color: #FB7185;
+      .import-modal__console-symbol { color: #EF4444; }
+    }
+    &--meta {
+      color: #94A3B8;
+      font-style: italic;
+    }
+  }
+
+  &__console-prefix {
+    color: #64748B;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  &__console-symbol {
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 14px;
+    text-align: center;
+  }
+
+  &__console-detail {
+    color: #E2E8F0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ============================================================
+     DONE STATE
+     ============================================================ */
+  &__done-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  &__report-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.03));
+    border: 1px solid rgba(245, 158, 11, 0.22);
+    border-radius: 12px;
+
+    &--ok {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.03));
+      border-color: rgba(16, 185, 129, 0.22);
+      color: #047857;
+      justify-content: center;
+      text-align: center;
+    }
+
+    &--err {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.03));
+      border-color: rgba(239, 68, 68, 0.22);
+      color: #BE123C;
+    }
+  }
+
+  &__report-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong {
+      font-size: $font-size-sm;
+      color: $color-secondary;
+      font-weight: 700;
+    }
+
+    span {
+      font-size: $font-size-xs;
+      color: $color-gray-600;
+      line-height: 1.45;
+    }
+  }
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+  @media (max-width: 640px) {
+    &__sheet {
+      grid-template-columns: 24px repeat(4, minmax(70px, 1fr));
+      overflow-x: auto;
+    }
+
+    &__fields { grid-template-columns: 1fr; }
+  }
+}
+
+/* ============================================================
+   Modal sizing override — make body fill, no inner scroll
+   when on the runner phase
+   ============================================================ */
+.modal--full .modal__body:has(.import-modal--running) {
+  overflow: hidden;
+}
+
+@keyframes import-shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes import-line-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
 }

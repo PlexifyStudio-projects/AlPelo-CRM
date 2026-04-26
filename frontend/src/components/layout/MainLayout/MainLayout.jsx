@@ -43,11 +43,23 @@ const AIPauseBanner = memo(() => {
   );
 });
 
+// Sections that auto-collapse the sidebar to give more workspace
+const DENSE_SECTIONS = new Set(['agenda']);
+
 const MainLayout = ({ children, user, activeSection, onNavigate, onLogout }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
   const [inboxUnread, setInboxUnread] = useState(0);
+  const lastSectionRef = useRef(activeSection);
+
+  // Auto-collapse for dense sections; expand otherwise. User can still toggle manually.
+  useEffect(() => {
+    if (activeSection !== lastSectionRef.current) {
+      setIsSidebarCollapsed(DENSE_SECTIONS.has(activeSection));
+      lastSectionRef.current = activeSection;
+    }
+  }, [activeSection]);
 
   useEffect(() => {
     const handleResize = () => {

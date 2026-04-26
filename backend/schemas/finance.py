@@ -49,6 +49,13 @@ class FinancialSummaryResponse(BaseModel):
     best_day_revenue: int = 0
     busiest_day_date: Optional[str] = None
     busiest_day_visits: int = 0
+    total_expenses: int = 0
+    prev_expenses: int = 0
+    expenses_growth_pct: Optional[float] = None
+    prev_unique_clients: int = 0
+    clients_growth_pct: Optional[float] = None
+    net_profit: int = 0
+    prev_net_profit: int = 0
 
 class ExpenseCreate(BaseModel):
     category: str

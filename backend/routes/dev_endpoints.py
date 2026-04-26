@@ -822,6 +822,7 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
         "timezone": getattr(tenant, 'timezone', 'America/Bogota'),
         "booking_url": getattr(tenant, 'booking_url', None),
         "city": getattr(tenant, 'city', None),
+        "address": getattr(tenant, 'address', None),
         "logo_url": None,
         "primary_color": "#1E40AF",
         # WhatsApp/Meta config (for Settings page)

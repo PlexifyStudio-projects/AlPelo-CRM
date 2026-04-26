@@ -1927,6 +1927,25 @@
   }
 }
 
+@media (max-height: 820px) {
+  .team {
+    &__drawer-hero {
+      padding: $spacing-lg $spacing-xl $spacing-md;
+    }
+
+    &__drawer-avatar {
+      width: 72px;
+      height: 72px;
+      margin-bottom: $spacing-sm;
+    }
+
+    &__form-modal,
+    &__deact-modal {
+      max-height: 96vh;
+    }
+  }
+}
+
 .team {
   &__form-divider {
     display: flex;

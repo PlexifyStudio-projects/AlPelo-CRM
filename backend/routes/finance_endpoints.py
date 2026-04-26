@@ -20,7 +20,7 @@ from schemas import (
     ExpenseCreate, ExpenseUpdate, ExpenseResponse, ExpenseSummaryItem,
     CommissionConfigResponse, CommissionConfigUpdate, CommissionPayoutItem,
     InvoiceCreate, InvoiceUpdate, InvoiceResponse, InvoiceItemResponse,
-    PnLResponse, PaymentMethodItem, ImportResult, UninvoicedVisitResponse,
+    PnLResponse, PaymentMethodItem, ImportResult, ImportRowResult, UninvoicedVisitResponse,
 )
 
 router = APIRouter()
@@ -996,6 +996,7 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
     imported = 0
     skipped = 0
     errors = []
+    row_results: list[ImportRowResult] = []
 
     # Normalize header keys (case-insensitive lookup)
     def get_val(row, *keys):
@@ -1017,20 +1018,40 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
         except ValueError:
             pass
 
-    phone_q = db.query(Client.phone)
-    phone_q = _tenant_filter(phone_q, Client, tid)
-    existing_phones = {c.phone for c in phone_q.all()}
+    # Build phone → (client_id, name) map so duplicates can reference the original
+    phones_q = db.query(Client.phone, Client.client_id, Client.name)
+    phones_q = _tenant_filter(phones_q, Client, tid)
+    existing_phone_map: dict[str, tuple[str, str]] = {
+        p: (cid, nm) for p, cid, nm in phones_q.all() if p
+    }
 
     for i, row in enumerate(rows):
+        line_no = i + 2  # +1 for header, +1 because spreadsheet rows are 1-indexed
+        name = get_val(row, "nombre", "name")
+        phone = get_val(row, "telefono", "phone", "tel")
+        email_raw = get_val(row, "email", "correo")
+        bday_str = get_val(row, "cumpleanos", "cumpleaños", "birthday")
+
         try:
-            name = get_val(row, "nombre", "name")
-            phone = get_val(row, "telefono", "phone", "tel")
             if not name or not phone:
-                errors.append(f"Fila {i+2}: nombre o telefono vacio")
+                reason = "Falta nombre" if not name else "Falta teléfono"
+                errors.append(f"Fila {line_no}: {reason.lower()}")
+                row_results.append(ImportRowResult(
+                    line=line_no, status="error", name=name or None, phone=phone or None,
+                    email=email_raw or None, birthday=bday_str or None, reason=reason,
+                ))
                 continue
 
-            if phone in existing_phones:
+            if phone in existing_phone_map:
+                existing_id, existing_name = existing_phone_map[phone]
                 skipped += 1
+                row_results.append(ImportRowResult(
+                    line=line_no, status="duplicate", name=name, phone=phone,
+                    email=email_raw or None, birthday=bday_str or None,
+                    reason="Teléfono ya registrado",
+                    existing_client_id=existing_id,
+                    existing_client_name=existing_name,
+                ))
                 continue
 
             max_num += 1
@@ -1039,18 +1060,16 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
                 max_num += 1
                 client_id = f"M{max_num:05d}"
 
-            email = get_val(row, "email", "correo") or None
+            email = email_raw or None
             birthday = None
-            bday_str = get_val(row, "cumpleanos", "cumpleaños", "birthday")
             if bday_str:
                 try:
                     birthday = date.fromisoformat(bday_str)
                 except ValueError:
                     pass
 
-            tags_str = get_val(row, "tags", "etiquetas")
-            tags = [t.strip() for t in tags_str.split(",") if t.strip()] if tags_str else []
-
+            # Tags are assigned automatically by our system based on behaviour —
+            # never imported from the client's spreadsheet.
             client = Client(
                 tenant_id=tid,
                 client_id=client_id,
@@ -1058,21 +1077,36 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
                 phone=phone,
                 email=email,
                 birthday=birthday,
-                tags=tags,
+                tags=[],
                 is_active=True,
                 accepts_whatsapp=True,
             )
             db.add(client)
             existing_ids.add(client_id)
-            existing_phones.add(phone)
+            existing_phone_map[phone] = (client_id, name)
             imported += 1
+            row_results.append(ImportRowResult(
+                line=line_no, status="imported", name=name, phone=phone,
+                email=email, birthday=bday_str or None, client_id=client_id,
+            ))
         except Exception as e:
-            errors.append(f"Fila {i+2}: {str(e)[:80]}")
+            msg = str(e)[:80]
+            errors.append(f"Fila {line_no}: {msg}")
+            row_results.append(ImportRowResult(
+                line=line_no, status="error", name=name or None, phone=phone or None,
+                reason=msg,
+            ))
 
     if imported > 0:
         db.commit()
 
-    return ImportResult(imported=imported, skipped=skipped, errors=errors[:20])
+    return ImportResult(
+        imported=imported,
+        skipped=skipped,
+        errors=errors[:20],
+        total=len(rows),
+        rows=row_results,
+    )
 
 
 # ============================================================================
@@ -1526,6 +1560,18 @@ def get_staff_performance(
         # Best day
         best_day = max(day_revenue.items(), key=lambda x: x[1]) if day_revenue else (None, 0)
 
+        # Last visit (most recent in period)
+        last_visit_data = None
+        if visits:
+            last_v = max(visits, key=lambda v: (v.visit_date, v.id))
+            last_client = db.query(Client).filter(Client.id == last_v.client_id).first() if last_v.client_id else None
+            last_visit_data = {
+                "client_name": last_client.name if last_client else "Sin cliente",
+                "service_name": last_v.service_name or "Servicio",
+                "amount": last_v.amount or 0,
+                "date": last_v.visit_date.isoformat(),
+            }
+
         result.append({
             "staff_id": s.id,
             "staff_name": s.name,
@@ -1555,6 +1601,7 @@ def get_staff_performance(
             "top_services": [{"name": n, "count": c} for n, c in top_services],
             "daily_revenue": [{"date": d, "revenue": r} for d, r in sorted(day_revenue.items())],
             "best_day": {"date": best_day[0], "revenue": best_day[1]} if best_day[0] else None,
+            "last_visit": last_visit_data,
         })
 
     return sorted(result, key=lambda x: -x["revenue"])

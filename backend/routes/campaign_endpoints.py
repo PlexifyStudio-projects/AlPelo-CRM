@@ -19,7 +19,8 @@ from database.models import (
 )
 from schemas import CampaignCreate, CampaignUpdate, CampaignResponse
 from routes._helpers import (
-    safe_tid, get_wa_token, get_wa_phone_id, normalize_phone, compute_status
+    safe_tid, get_wa_token, get_wa_phone_id, normalize_phone, compute_status,
+    compute_active_streak,
 )
 from middleware.auth_middleware import get_current_user
 
@@ -152,7 +153,8 @@ def _build_audience(db: Session, tenant_id: int, filters: dict) -> list[dict]:
         avg_ticket = round(total_spent / total_visits) if total_visits > 0 else 0
         last_visit_date = max((v.visit_date for v in completed), default=None)
         days_since = (date.today() - last_visit_date).days if last_visit_date else None
-        computed = compute_status(total_visits, days_since, client.status_override)
+        streak = compute_active_streak([v.visit_date for v in completed])
+        computed = compute_status(total_visits, days_since, client.status_override, streak)
 
         # Collect staff and services used (from visits + appointments)
         client_apts = apt_map.get(client.id, [])

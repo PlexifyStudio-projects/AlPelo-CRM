@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import ClientTable from '../../components/Admin/ClientTable/ClientTable';
 import ClientDetail from '../../components/Admin/ClientDetail/ClientDetail';
 import ClientFilters from '../../components/Admin/ClientFilters/ClientFilters';
@@ -6,7 +6,7 @@ import AddClientModal from '../../components/Admin/AddClientModal/AddClientModal
 import ImportClientsModal from '../../components/Admin/ImportClientsModal/ImportClientsModal';
 import Button from '../../components/common/Button/Button';
 import { useNotification } from '../../context/NotificationContext';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, daysSince } from '../../utils/formatters';
 import EmptyState from '../../components/common/EmptyState/EmptyState';
 import clientService from '../../services/clientService';
 
@@ -15,7 +15,7 @@ const Clients = () => {
   const [kpis, setKpis] = useState({ total_clients: 0, active_clients: 0, at_risk_clients: 0, inactive_clients: 0, vip_clients: 0, new_clients: 0, retention_rate: 0, total_revenue: 0, avg_ticket: 0 });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('nuevo');
   const [sortConfig, setSortConfig] = useState({ key: 'updated_at', direction: 'desc' });
   const [selectedClient, setSelectedClient] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -24,6 +24,7 @@ const Clients = () => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [rfmData, setRfmData] = useState(null);
   const [rfmFilter, setRfmFilter] = useState(null);
+  const exportMenuRef = useRef(null);
   const { addNotification } = useNotification();
   const b = 'clients';
 
@@ -47,6 +48,18 @@ const Clients = () => {
   useEffect(() => {
     loadClients();
   }, [loadClients]);
+
+  // Close export menu on outside click
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handler = (e) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showExportMenu]);
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -147,6 +160,151 @@ const Clients = () => {
     nuevo: kpis.new_clients,
   }), [kpis]);
 
+  // ---------- Smart insights derived from data ----------
+  const insights = useMemo(() => {
+    const list = [];
+    if (!clients.length) return list;
+
+    // 1) Top spender (este periodo total)
+    const topSpender = [...clients]
+      .filter((c) => c.total_spent > 0)
+      .sort((a, b) => b.total_spent - a.total_spent)[0];
+    if (topSpender) {
+      list.push({
+        id: 'top',
+        tone: 'amber',
+        icon: 'crown',
+        kicker: 'Top cliente',
+        title: topSpender.name,
+        meta: `${formatCurrency(topSpender.total_spent)} · ${topSpender.total_visits || 0} visitas`,
+        onClick: () => handleClientClick(topSpender),
+      });
+    }
+
+    // 2) Sin visita > 30d (potencial pérdida)
+    const dormant = clients.filter((c) => c.last_visit && daysSince(c.last_visit) >= 30);
+    if (dormant.length > 0) {
+      list.push({
+        id: 'dormant',
+        tone: 'rose',
+        icon: 'alert',
+        kicker: 'Atención',
+        title: `${dormant.length} ${dormant.length === 1 ? 'cliente' : 'clientes'} sin visita +30d`,
+        meta: 'Reactívalos con una campaña personalizada',
+        onClick: () => setStatusFilter('en_riesgo'),
+      });
+    }
+
+    // 3) Cumpleaños este mes
+    const month = new Date().getMonth() + 1;
+    const birthdays = clients.filter((c) => {
+      if (!c.birthday) return false;
+      const m = parseInt(String(c.birthday).slice(5, 7), 10);
+      return m === month;
+    });
+    if (birthdays.length > 0) {
+      list.push({
+        id: 'bday',
+        tone: 'pink',
+        icon: 'gift',
+        kicker: 'Cumpleaños',
+        title: `${birthdays.length} ${birthdays.length === 1 ? 'cumpleaños' : 'cumpleaños'} este mes`,
+        meta: birthdays.slice(0, 3).map((c) => c.name.split(' ')[0]).join(' · '),
+        onClick: () => { /* could open birthday filter */ },
+      });
+    }
+
+    // 4) Nuevos esta semana
+    if (kpis.new_clients > 0) {
+      list.push({
+        id: 'new',
+        tone: 'sky',
+        icon: 'sparkle',
+        kicker: 'Crecimiento',
+        title: `${kpis.new_clients} ${kpis.new_clients === 1 ? 'nuevo cliente' : 'nuevos clientes'}`,
+        meta: 'Bienvenida automática activada',
+        onClick: () => setStatusFilter('nuevo'),
+      });
+    }
+
+    // 5) VIP
+    if (kpis.vip_clients > 0) {
+      list.push({
+        id: 'vip',
+        tone: 'violet',
+        icon: 'star',
+        kicker: 'VIP',
+        title: `${kpis.vip_clients} ${kpis.vip_clients === 1 ? 'cliente VIP' : 'clientes VIP'}`,
+        meta: 'Tu núcleo de mayor valor',
+        onClick: () => setStatusFilter('vip'),
+      });
+    }
+
+    return list;
+  }, [clients, kpis]);
+
+  // ---------- KPI Hero Cards ----------
+  const heroKpis = useMemo(() => ([
+    {
+      key: 'total',
+      tone: 'indigo',
+      label: 'Total clientes',
+      value: kpis.total_clients,
+      hint: kpis.new_clients > 0 ? `+${kpis.new_clients} este mes` : 'Tu base completa',
+      trend: kpis.new_clients > 0 ? 'up' : 'flat',
+      icon: 'users',
+    },
+    {
+      key: 'retention',
+      tone: 'emerald',
+      label: 'Retención',
+      value: `${Number(kpis.retention_rate || 0).toFixed(1)}%`,
+      hint: kpis.retention_rate >= 60 ? 'Saludable' : kpis.retention_rate >= 40 ? 'En crecimiento' : 'Necesita atención',
+      trend: kpis.retention_rate >= 60 ? 'up' : kpis.retention_rate >= 40 ? 'flat' : 'down',
+      icon: 'pulse',
+    },
+    {
+      key: 'avg',
+      tone: 'sky',
+      label: 'Ticket promedio',
+      value: formatCurrency(kpis.avg_ticket),
+      hint: kpis.total_revenue > 0 ? `${formatCurrency(kpis.total_revenue)} total` : 'Sin ventas registradas',
+      trend: 'flat',
+      icon: 'wallet',
+    },
+    {
+      key: 'risk',
+      tone: kpis.at_risk_clients > 0 ? 'rose' : 'gray',
+      label: 'En riesgo',
+      value: kpis.at_risk_clients,
+      hint: kpis.at_risk_clients > 0 ? 'Requieren reactivación' : 'Todo bajo control',
+      trend: kpis.at_risk_clients > 0 ? 'down' : 'flat',
+      icon: 'shield',
+      onClick: kpis.at_risk_clients > 0 ? () => setStatusFilter('en_riesgo') : undefined,
+    },
+  ]), [kpis]);
+
+  // ---------- Icon library ----------
+  const Icon = ({ name, size = 18 }) => {
+    const sw = 1.8;
+    const props = { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: sw, strokeLinecap: 'round', strokeLinejoin: 'round' };
+    switch (name) {
+      case 'users': return (<svg {...props}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>);
+      case 'pulse': return (<svg {...props}><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>);
+      case 'wallet': return (<svg {...props}><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-1" /><path d="M21 12h-4a2 2 0 0 0 0 4h4z" /></svg>);
+      case 'shield': return (<svg {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>);
+      case 'crown': return (<svg {...props}><path d="M3 18h18" /><path d="M3 8l4 4 5-7 5 7 4-4-2 10H5z" /></svg>);
+      case 'alert': return (<svg {...props}><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>);
+      case 'gift': return (<svg {...props}><polyline points="20 12 20 22 4 22 4 12" /><rect x="2" y="7" width="20" height="5" /><line x1="12" y1="22" x2="12" y2="7" /><path d="M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7z" /><path d="M12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z" /></svg>);
+      case 'sparkle': return (<svg {...props}><path d="M12 2v6m0 8v6M2 12h6m8 0h6M5 5l4 4m6 6 4 4M5 19l4-4m6-6 4-4" /></svg>);
+      case 'star': return (<svg {...props} fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" /></svg>);
+      case 'arrow-up': return (<svg {...props}><line x1="7" y1="17" x2="17" y2="7" /><polyline points="7 7 17 7 17 17" /></svg>);
+      case 'arrow-down': return (<svg {...props}><line x1="7" y1="7" x2="17" y2="17" /><polyline points="17 7 17 17 7 17" /></svg>);
+      case 'minus': return (<svg {...props}><line x1="5" y1="12" x2="19" y2="12" /></svg>);
+      default: return null;
+    }
+  };
+
   if (loading) {
     return (
       <div className={b}>
@@ -160,151 +318,190 @@ const Clients = () => {
 
   return (
     <div className={b}>
-      <div className={`${b}__header`}>
-        <div className={`${b}__header-top`}>
-          <h2 className={`${b}__title`}>Gestión de Clientes</h2>
-          <div className={`${b}__header-actions`}>
-            <div style={{ position: 'relative' }}>
-              <Button
-                variant="ghost"
-                size="md"
-                onClick={() => setShowExportMenu(!showExportMenu)}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-                Exportar
-              </Button>
-              {showExportMenu && (
-                <div className={`${b}__export-menu`}>
-                  <button className={`${b}__export-option`} onClick={() => {
-                    const headers = ['ID', 'Nombre', 'Telefono', 'Email', 'Estado', 'Visitas', 'Total Gastado', 'Ultima Visita'];
-                    const rows = clients.map(c => [c.client_id, c.name, c.phone, c.email || '', c.status || '', c.total_visits || 0, c.total_spent || 0, c.last_visit || '']);
-                    const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
-                    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'clientes.csv'; a.click();
-                    addNotification('Exportado como CSV (Sheets)', 'success'); setShowExportMenu(false);
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34A853" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                    Sheets (CSV)
-                  </button>
-                  <button className={`${b}__export-option`} onClick={() => {
-                    const rows = clients.map(c => `<tr><td>${c.client_id}</td><td>${c.name}</td><td>${c.phone}</td><td>${c.email || ''}</td><td>${c.status || ''}</td><td>${c.total_visits || 0}</td><td>${c.total_spent || 0}</td><td>${c.last_visit || ''}</td></tr>`).join('');
-                    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body><h2>Clientes</h2><table border="1" cellpadding="4"><tr><th>ID</th><th>Nombre</th><th>Telefono</th><th>Email</th><th>Estado</th><th>Visitas</th><th>Total</th><th>Ultima Visita</th></tr>${rows}</table></body></html>`;
-                    const blob = new Blob([html], { type: 'application/msword' });
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'clientes.doc'; a.click();
-                    addNotification('Exportado como Word', 'success'); setShowExportMenu(false);
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B579A" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Word (DOC)
-                  </button>
-                  <button className={`${b}__export-option`} onClick={async () => {
-                    try {
-                      const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
-                      const res = await fetch(`${API}/clients/export-excel`, { credentials: 'include' });
-                      if (!res.ok) throw new Error('Error');
-                      const blob = await res.blob();
-                      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Clientes.xlsx'; a.click();
-                      addNotification('Excel descargado', 'success');
-                    } catch { addNotification('Error exportando Excel', 'error'); }
-                    setShowExportMenu(false);
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#217346" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-                    Excel (XLSX)
-                  </button>
-                  <button className={`${b}__export-option`} onClick={() => {
-                    const lines = clients.map(c => `${c.name} | ${c.phone} | ${c.email || 'Sin email'} | ${c.status || ''} | ${c.total_visits || 0} visitas | $${(c.total_spent || 0).toLocaleString('es-CO')}`);
-                    const txt = `CLIENTES (${clients.length})\n${'='.repeat(50)}\n\n${lines.join('\n')}`;
-                    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'clientes.txt'; a.click();
-                    addNotification('Exportado como texto', 'success'); setShowExportMenu(false);
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                    Texto (TXT)
-                  </button>
-                </div>
-              )}
-            </div>
-            <Button
-              variant="ghost"
-              size="md"
-              onClick={() => setIsImportModalOpen(true)}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              Importar
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              onClick={() => { setEditingClient(null); setIsAddModalOpen(true); }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              Nuevo Cliente
-            </Button>
-          </div>
-        </div>
-        <div className={`${b}__kpi-bar`}>
-          <div className={`${b}__kpi-card`}>
-            <span className={`${b}__kpi-value`}>{kpis.total_clients}</span>
-            <span className={`${b}__kpi-label`}>Total clientes</span>
-          </div>
-          <div className={`${b}__kpi-card`}>
-            <span className={`${b}__kpi-value ${b}__kpi-value--success`}>{kpis.retention_rate}%</span>
-            <span className={`${b}__kpi-label`}>Retención</span>
-          </div>
-          <div className={`${b}__kpi-card`}>
-            <span className={`${b}__kpi-value`}>{formatCurrency(kpis.avg_ticket)}</span>
-            <span className={`${b}__kpi-label`}>Ticket promedio</span>
-          </div>
-          <div className={`${b}__kpi-card${kpis.at_risk_clients > 0 ? ` ${b}__kpi-card--urgent` : ''}`}>
-            <span className={`${b}__kpi-value ${b}__kpi-value--warning`}>{kpis.at_risk_clients}</span>
-            <span className={`${b}__kpi-label`}>En riesgo</span>
-          </div>
-          <div className={`${b}__kpi-card`}>
-            <span className={`${b}__kpi-value ${b}__kpi-value--danger`}>{kpis.inactive_clients}</span>
-            <span className={`${b}__kpi-label`}>Inactivos</span>
-          </div>
-          <div className={`${b}__kpi-card`}>
-            <span className={`${b}__kpi-value ${b}__kpi-value--accent`}>{kpis.vip_clients}</span>
-            <span className={`${b}__kpi-label`}>VIP</span>
-          </div>
+      {/* ---------- HERO HEADER ---------- */}
+      <header className={`${b}__hero`}>
+        <div className={`${b}__hero-text`}>
+          <h1 className={`${b}__title`}>Clientes</h1>
+          <p className={`${b}__subtitle`}>
+            <span>{kpis.total_clients} contactos</span>
+            {kpis.active_clients > 0 && <><span className={`${b}__dot`} />{kpis.active_clients} activos</>}
+            {kpis.vip_clients > 0 && <><span className={`${b}__dot`} />{kpis.vip_clients} VIP</>}
+          </p>
         </div>
 
-        {rfmData?.summary && Object.keys(rfmData.summary).length > 0 && (
-          <div className={`${b}__rfm-bar`}>
-            <span className={`${b}__rfm-title`}>Segmentacion RFM</span>
-            <div className={`${b}__rfm-chips`}>
+        <div className={`${b}__hero-actions`}>
+          <div className={`${b}__export-wrap`} ref={exportMenuRef}>
+            <button
+              className={`${b}__action ${b}__action--ghost`}
+              onClick={() => setShowExportMenu((v) => !v)}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Exportar
+            </button>
+            {showExportMenu && (
+              <div className={`${b}__export-menu`}>
+                <button className={`${b}__export-option`} onClick={() => {
+                  const headers = ['ID', 'Nombre', 'Telefono', 'Email', 'Estado', 'Visitas', 'Total Gastado', 'Ultima Visita'];
+                  const rows = clients.map(c => [c.client_id, c.name, c.phone, c.email || '', c.status || '', c.total_visits || 0, c.total_spent || 0, c.last_visit || '']);
+                  const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
+                  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+                  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'clientes.csv'; a.click();
+                  addNotification('Exportado como CSV (Sheets)', 'success'); setShowExportMenu(false);
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34A853" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                  Sheets (CSV)
+                </button>
+                <button className={`${b}__export-option`} onClick={() => {
+                  const rows = clients.map(c => `<tr><td>${c.client_id}</td><td>${c.name}</td><td>${c.phone}</td><td>${c.email || ''}</td><td>${c.status || ''}</td><td>${c.total_visits || 0}</td><td>${c.total_spent || 0}</td><td>${c.last_visit || ''}</td></tr>`).join('');
+                  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"></head><body><h2>Clientes</h2><table border="1" cellpadding="4"><tr><th>ID</th><th>Nombre</th><th>Telefono</th><th>Email</th><th>Estado</th><th>Visitas</th><th>Total</th><th>Ultima Visita</th></tr>${rows}</table></body></html>`;
+                  const blob = new Blob([html], { type: 'application/msword' });
+                  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'clientes.doc'; a.click();
+                  addNotification('Exportado como Word', 'success'); setShowExportMenu(false);
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2B579A" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Word (DOC)
+                </button>
+                <button className={`${b}__export-option`} onClick={async () => {
+                  try {
+                    const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+                    const res = await fetch(`${API}/clients/export-excel`, { credentials: 'include' });
+                    if (!res.ok) throw new Error('Error');
+                    const blob = await res.blob();
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Clientes.xlsx'; a.click();
+                    addNotification('Excel descargado', 'success');
+                  } catch { addNotification('Error exportando Excel', 'error'); }
+                  setShowExportMenu(false);
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#217346" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                  Excel (XLSX)
+                </button>
+                <button className={`${b}__export-option`} onClick={() => {
+                  const lines = clients.map(c => `${c.name} | ${c.phone} | ${c.email || 'Sin email'} | ${c.status || ''} | ${c.total_visits || 0} visitas | $${(c.total_spent || 0).toLocaleString('es-CO')}`);
+                  const txt = `CLIENTES (${clients.length})\n${'='.repeat(50)}\n\n${lines.join('\n')}`;
+                  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
+                  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'clientes.txt'; a.click();
+                  addNotification('Exportado como texto', 'success'); setShowExportMenu(false);
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  Texto (TXT)
+                </button>
+              </div>
+            )}
+          </div>
+
+          <button
+            className={`${b}__action ${b}__action--ghost`}
+            onClick={() => setIsImportModalOpen(true)}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Importar
+          </button>
+
+          <button
+            className={`${b}__action ${b}__action--primary`}
+            onClick={() => { setEditingClient(null); setIsAddModalOpen(true); }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Nuevo cliente
+          </button>
+        </div>
+      </header>
+
+      {/* ---------- HERO KPI CARDS ---------- */}
+      <section className={`${b}__kpis`}>
+        {heroKpis.map((k) => (
+          <button
+            key={k.key}
+            type="button"
+            className={`${b}__kpi ${b}__kpi--${k.tone} ${k.onClick ? `${b}__kpi--clickable` : ''}`}
+            onClick={k.onClick}
+            disabled={!k.onClick}
+          >
+            <span className={`${b}__kpi-icon`}><Icon name={k.icon} size={20} /></span>
+            <div className={`${b}__kpi-body`}>
+              <span className={`${b}__kpi-label`}>{k.label}</span>
+              <span className={`${b}__kpi-value`}>{k.value}</span>
+              <span className={`${b}__kpi-hint`}>
+                {k.trend === 'up' && <Icon name="arrow-up" size={11} />}
+                {k.trend === 'down' && <Icon name="arrow-down" size={11} />}
+                {k.trend === 'flat' && <Icon name="minus" size={11} />}
+                {k.hint}
+              </span>
+            </div>
+          </button>
+        ))}
+      </section>
+
+      {/* ---------- AI INSIGHTS ---------- */}
+      {insights.length > 0 && (
+        <section className={`${b}__insights`}>
+          <div className={`${b}__insights-head`}>
+            <span className={`${b}__insights-title`}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.8.6 1 1.7 1 2.3v1h6v-1c0-.6.2-1.7 1-2.3A7 7 0 0 0 12 2z"/></svg>
+              Insights inteligentes
+            </span>
+          </div>
+          <div className={`${b}__insights-list`}>
+            {insights.map((ins) => (
               <button
-                className={`${b}__rfm-chip ${!rfmFilter ? `${b}__rfm-chip--active` : ''}`}
-                onClick={() => setRfmFilter(null)}
+                key={ins.id}
+                type="button"
+                className={`${b}__insight ${b}__insight--${ins.tone}`}
+                onClick={ins.onClick}
               >
-                Todos
+                <span className={`${b}__insight-icon`}><Icon name={ins.icon} size={16} /></span>
+                <div className={`${b}__insight-body`}>
+                  <span className={`${b}__insight-kicker`}>{ins.kicker}</span>
+                  <span className={`${b}__insight-title`}>{ins.title}</span>
+                  {ins.meta && <span className={`${b}__insight-meta`}>{ins.meta}</span>}
+                </div>
+                <span className={`${b}__insight-arrow`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
               </button>
-              {Object.entries(rfmData.segments).map(([key, meta]) => {
-                const count = rfmData.summary[key] || 0;
-                if (count === 0) return null;
-                return (
-                  <button
-                    key={key}
-                    className={`${b}__rfm-chip ${rfmFilter === key ? `${b}__rfm-chip--active` : ''}`}
-                    onClick={() => setRfmFilter(rfmFilter === key ? null : key)}
-                    style={rfmFilter === key ? { background: meta.color, borderColor: meta.color, color: '#fff' } : { borderColor: `${meta.color}40`, color: meta.color }}
-                  >
-                    <span className={`${b}__rfm-dot`} style={{ background: meta.color }} />
-                    {meta.label} ({count})
-                  </button>
-                );
-              })}
-            </div>
+            ))}
           </div>
-        )}
-      </div>
+        </section>
+      )}
 
+      {/* ---------- RFM segmentation (when present) ---------- */}
+      {rfmData?.summary && Object.keys(rfmData.summary).length > 0 && (
+        <section className={`${b}__rfm`}>
+          <span className={`${b}__rfm-label`}>Segmentación RFM</span>
+          <div className={`${b}__rfm-chips`}>
+            <button
+              className={`${b}__rfm-chip ${!rfmFilter ? `${b}__rfm-chip--active` : ''}`}
+              onClick={() => setRfmFilter(null)}
+            >
+              Todos
+            </button>
+            {Object.entries(rfmData.segments).map(([key, meta]) => {
+              const count = rfmData.summary[key] || 0;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={key}
+                  className={`${b}__rfm-chip ${rfmFilter === key ? `${b}__rfm-chip--active` : ''}`}
+                  onClick={() => setRfmFilter(rfmFilter === key ? null : key)}
+                  style={rfmFilter === key ? { background: meta.color, borderColor: meta.color, color: '#fff' } : { borderColor: `${meta.color}40`, color: meta.color }}
+                >
+                  <span className={`${b}__rfm-dot`} style={{ background: meta.color }} />
+                  {meta.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ---------- FILTERS ---------- */}
       <ClientFilters
         onSearch={setSearchQuery}
         onFilterStatus={setStatusFilter}
@@ -312,6 +509,7 @@ const Clients = () => {
         counts={counts}
       />
 
+      {/* ---------- TABLE ---------- */}
       <ClientTable
         clients={filteredClients}
         onClientClick={handleClientClick}
@@ -349,7 +547,6 @@ const Clients = () => {
         onSave={handleSaveClient}
         editingClient={editingClient}
       />
-
 
       <ImportClientsModal
         isOpen={isImportModalOpen}

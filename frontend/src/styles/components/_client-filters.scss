@@ -3,8 +3,9 @@
 .client-filters {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: $spacing-sm;
 
+  /* ---------- SEARCH ---------- */
   &__search {
     position: relative;
     width: 100%;
@@ -12,153 +13,147 @@
 
   &__search-icon {
     position: absolute;
-    left: $spacing-lg;
+    left: 18px;
     top: 50%;
     transform: translateY(-50%);
     color: $color-gray-300;
     pointer-events: none;
-    transition: color $transition-fast;
+    transition: color 200ms ease, transform 200ms ease;
     z-index: 1;
   }
 
   &__search-input {
     width: 100%;
-    height: 48px;
-    padding: 0 $spacing-2xl 0 48px;
+    height: 46px;
+    padding: 0 44px 0 46px;
     background: $color-white;
-    border: 1.5px solid $color-gray-200;
-    border-radius: $border-radius-md;
+    border: 1px solid $color-gray-100;
+    border-radius: 14px;
     font-family: $font-primary;
-    font-size: $font-size-base;
-    color: $color-gray-900;
+    font-size: $font-size-sm;
+    color: $color-secondary;
     outline: none;
-    transition: all $transition-base;
-    box-shadow: $shadow-xs;
+    transition: all 200ms $ease-smooth;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    letter-spacing: -0.01em;
 
     &::placeholder {
-      color: $color-gray-400;
+      color: $color-gray-300;
       font-weight: 400;
     }
 
     &:hover {
-      border-color: $color-gray-300;
-      box-shadow: $shadow-sm;
+      border-color: $color-gray-200;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
     }
 
     &:focus {
       border-color: $color-primary;
-      box-shadow: 0 0 0 3px rgba($color-primary, 0.08), $shadow-sm;
       background: $color-white;
+      box-shadow: 0 0 0 4px rgba($color-primary, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
 
       ~ .client-filters__search-icon {
         color: $color-primary;
+        transform: translateY(-50%) scale(1.05);
       }
     }
   }
 
   &__search-clear {
     position: absolute;
-    right: $spacing-sm;
+    right: 8px;
     top: 50%;
     transform: translateY(-50%);
     width: 28px;
     height: 28px;
-    background: $color-gray-100;
+    background: $color-gray-50;
     border: none;
-    border-radius: $border-radius-full;
+    border-radius: 50%;
     color: $color-gray-400;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all $transition-fast;
+    transition: all 150ms ease;
 
     &:hover {
-      background: $color-gray-200;
+      background: $color-gray-100;
       color: $color-gray-700;
     }
 
     &:active {
       transform: translateY(-50%) scale(0.92);
     }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px $color-primary;
-    }
   }
 
+  /* ---------- SEGMENTED CONTROL ---------- */
   &__status-tabs {
-    display: flex;
+    display: inline-flex;
+    align-items: center;
     gap: 2px;
     background: $color-white;
-    border-radius: $border-radius-full;
+    border: 1px solid $color-gray-100;
+    border-radius: 12px;
     padding: 4px;
-    border: 1.5px solid $color-gray-200;
-    box-shadow: $shadow-xs;
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+
+    &::-webkit-scrollbar { height: 0; }
   }
 
   &__status-tab {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: $spacing-xs;
-    padding: 8px $spacing-md;
+    gap: 6px;
+    padding: 7px 14px;
     background: none;
     border: none;
-    border-radius: $border-radius-full;
+    border-radius: 9px;
     font-family: $font-primary;
     font-size: $font-size-xs;
     font-weight: 600;
     color: $color-gray-400;
     cursor: pointer;
-    transition: all $transition-fast;
+    transition: all 200ms $ease-smooth;
     white-space: nowrap;
     letter-spacing: -0.01em;
-    position: relative;
 
-    &:hover {
-      color: $color-gray-600;
-      background: $color-gray-50;
+    &:hover:not(&--active) {
+      color: $color-gray-700;
+      background: $color-off-white;
     }
 
     &--active {
       color: $color-white;
-      background: $color-gray-900;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-
-      &:hover {
-        color: $color-white;
-        background: $color-gray-800;
-      }
+      background: $color-secondary;
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
 
       .client-filters__tab-count {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.18);
         color: $color-white;
       }
     }
 
+    /* segment-specific accent when active */
     &--vip.client-filters__status-tab--active {
-      background: $color-accent;
+      background: linear-gradient(135deg, #8B5CF6, #A78BFA);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
     }
-
     &--en_riesgo.client-filters__status-tab--active {
-      background: #D4851A;
+      background: linear-gradient(135deg, #F59E0B, #FBBF24);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.32);
     }
-
     &--nuevo.client-filters__status-tab--active {
-      background: #3B82F6;
+      background: linear-gradient(135deg, #0EA5E9, #38BDF8);
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.32);
     }
 
     &:active:not(:disabled) {
-      transform: scale(0.95);
-      transition: transform 80ms ease;
-    }
-
-    &:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px $color-primary;
+      transform: scale(0.96);
     }
   }
 
@@ -170,48 +165,32 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 22px;
-    height: 20px;
+    min-width: 20px;
+    height: 18px;
     padding: 0 6px;
-    border-radius: $border-radius-full;
+    border-radius: 999px;
     background: $color-gray-100;
-    font-size: $font-size-2xs;
+    font-size: 0.65rem;
     font-weight: 700;
     color: $color-gray-500;
     line-height: 1;
     font-variant-numeric: tabular-nums;
-    transition: all $transition-fast;
-
-    &--updated {
-      animation: cf-bounce 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    }
+    transition: all 200ms ease;
   }
 
-  @media (max-width: 768px) {
-    &__search {
-      max-width: 100%;
-    }
-
-    &__status-tabs {
-      overflow-x: auto;
-
-      &::-webkit-scrollbar { height: 0; }
-    }
-
+  @media (max-width: $breakpoint-md) {
     &__search-input {
-      height: 44px;
+      height: 42px;
       font-size: $font-size-sm;
     }
 
+    &__status-tabs {
+      width: 100%;
+    }
+
     &__status-tab {
-      padding: 6px $spacing-sm;
+      padding: 6px 10px;
       font-size: $font-size-2xs;
     }
   }
-}
-
-@keyframes cf-bounce {
-  0% { transform: scale(0.6); opacity: 0; }
-  60% { transform: scale(1.15); }
-  100% { transform: scale(1); opacity: 1; }
 }

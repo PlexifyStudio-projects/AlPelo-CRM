@@ -2,12 +2,49 @@ import { useState, useEffect } from 'react';
 import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
 
-const API_BASE = `${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/auth`;
+const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+const API_BASE = `${API_URL}/auth`;
 
 const AdminProfile = ({ user, onUpdate }) => {
   const b = 'admin-profile';
   const { addNotification } = useNotification();
-  const { tenant } = useTenant();
+  const { tenant, refreshTenant } = useTenant();
+
+  const [bizForm, setBizForm] = useState({ name: '', address: '', city: '' });
+  const [bizSaving, setBizSaving] = useState(false);
+
+  useEffect(() => {
+    setBizForm({
+      name: tenant?.name || '',
+      address: tenant?.address || '',
+      city: tenant?.city || '',
+    });
+  }, [tenant?.name, tenant?.address, tenant?.city]);
+
+  const handleBizChange = (e) => {
+    const { name, value } = e.target;
+    setBizForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSaveBusiness = async (e) => {
+    e.preventDefault();
+    setBizSaving(true);
+    try {
+      const res = await fetch(`${API_URL}/settings/booking`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(bizForm),
+      });
+      if (!res.ok) throw new Error('No se pudo guardar');
+      addNotification?.('success', 'Información del negocio actualizada');
+      if (refreshTenant) refreshTenant();
+    } catch (err) {
+      addNotification?.('error', err.message || 'Error al guardar');
+    } finally {
+      setBizSaving(false);
+    }
+  };
 
   const [form, setForm] = useState({
     name: user?.name || '',
@@ -307,6 +344,17 @@ const AdminProfile = ({ user, onUpdate }) => {
               <span>Seguridad</span>
             </button>
             <button
+              className={`${b}__tab ${activeTab === 'business' ? `${b}__tab--active` : ''}`}
+              onClick={() => setActiveTab('business')}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 21h18" />
+                <path d="M5 21V7l8-4v18" />
+                <path d="M19 21V11l-6-4" />
+              </svg>
+              <span>Mi Negocio</span>
+            </button>
+            <button
               className={`${b}__tab ${activeTab === 'session' ? `${b}__tab--active` : ''}`}
               onClick={() => setActiveTab('session')}
             >
@@ -487,6 +535,72 @@ const AdminProfile = ({ user, onUpdate }) => {
                           <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                         </svg>
                         Cambiar contraseña
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+          {activeTab === 'business' && (
+            <div className={`${b}__panel`}>
+              <div className={`${b}__panel-header`}>
+                <h3 className={`${b}__panel-title`}>Información del negocio</h3>
+                <p className={`${b}__panel-desc`}>Datos públicos que aparecen en tu sidebar y página de reservas</p>
+              </div>
+              <form className={`${b}__form`} onSubmit={handleSaveBusiness}>
+                <div className={`${b}__form-grid`}>
+                  <div className={`${b}__field`}>
+                    <label className={`${b}__label`}>Nombre del negocio</label>
+                    <input
+                      className={`${b}__input`}
+                      type="text"
+                      name="name"
+                      value={bizForm.name}
+                      onChange={handleBizChange}
+                      placeholder="Ej: AlPelo Peluquería"
+                    />
+                  </div>
+                  <div className={`${b}__field`}>
+                    <label className={`${b}__label`}>Ciudad</label>
+                    <input
+                      className={`${b}__input`}
+                      type="text"
+                      name="city"
+                      value={bizForm.city}
+                      onChange={handleBizChange}
+                      placeholder="Bucaramanga"
+                    />
+                  </div>
+                  <div className={`${b}__field ${b}__field--full`}>
+                    <label className={`${b}__label`}>Dirección</label>
+                    <input
+                      className={`${b}__input`}
+                      type="text"
+                      name="address"
+                      value={bizForm.address}
+                      onChange={handleBizChange}
+                      placeholder="Carrera 31 #50-21"
+                    />
+                  </div>
+                </div>
+                <div className={`${b}__form-actions`}>
+                  <button
+                    type="submit"
+                    className={`${b}__btn ${b}__btn--primary`}
+                    disabled={bizSaving}
+                  >
+                    {bizSaving ? (
+                      <>
+                        <span className={`${b}__spinner`} />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Guardar
                       </>
                     )}
                   </button>

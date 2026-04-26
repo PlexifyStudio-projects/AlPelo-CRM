@@ -8,14 +8,16 @@
   width: $sidebar-width;
   height: 100vh;
   height: 100dvh;
-  background: #FAFBFC;
+  background: linear-gradient(180deg, #FCFCFD 0%, #F8FAFC 100%);
   color: $color-secondary;
   @include flex-column;
-  transition: width 280ms cubic-bezier(0.2, 0, 0, 1);
+  transition: width 320ms cubic-bezier(0.2, 0, 0, 1);
   z-index: $z-fixed;
   overflow: hidden;
+  min-height: 0;
   will-change: width;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 1px 0 0 rgba(0, 0, 0, 0.02);
 
   > * {
     position: relative;
@@ -68,74 +70,204 @@
     }
   }
 
-  // Brand
+  // ========== BRAND CARD (consolidated, clickable to profile) ==========
   &__brand {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 16px 16px 10px;
+    gap: 6px;
+    padding: 12px 12px 8px;
     flex-shrink: 0;
+    position: relative;
   }
 
-  &__brand-inner {
+  &__brand-card {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 11px;
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    background: $color-white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 200ms $ease-smooth;
+    text-align: left;
+    font-family: $font-primary;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.02),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+
+    &:hover {
+      transform: translateY(-1px);
+      border-color: rgba($color-primary, 0.15);
+      box-shadow:
+        0 6px 18px rgba($color-primary, 0.08),
+        0 2px 4px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+
+    &:active { transform: translateY(0); }
   }
 
-  &__logo-icon {
+  &__brand-avatar {
     @include flex-center;
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 8%) 100%);
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, $color-primary 0%, $color-accent 100%);
     color: $color-white;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba($color-primary, 0.25);
+    box-shadow:
+      0 4px 12px rgba($color-primary, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
 
-    svg { width: 16px; height: 16px; }
+    img {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      object-fit: cover;
+    }
   }
 
-  &__logo {
-    font-family: $font-heading;
-    font-size: 15px;
+  &__brand-status {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: $color-success;
+    border: 2.5px solid $color-white;
+  }
+
+  &__brand-info {
+    @include flex-column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__brand-name {
+    font-size: 13px;
     font-weight: 700;
     color: $color-secondary;
-    letter-spacing: -0.02em;
-    line-height: 1;
+    @include truncate;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+  }
+
+  &__brand-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    color: rgba(0, 0, 0, 0.45);
+    font-weight: 500;
+    line-height: 1.2;
+    @include truncate;
+
+    svg { color: $color-primary; flex-shrink: 0; }
+  }
+
+  &__brand-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $color-success;
+    box-shadow: 0 0 0 2px rgba($color-success, 0.18);
+    flex-shrink: 0;
+  }
+
+  &__brand-address {
+    @include truncate;
   }
 
   &__brand-divider {
-    height: 1px;
-    margin: 0 16px 4px;
-    flex-shrink: 0;
-    background: rgba(0, 0, 0, 0.05);
+    display: none;
   }
+
+  // ========== POWERED BY FOOTER (premium signature) ==========
+  &__brand-footer {
+    padding: 10px 14px 4px;
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  &__brand-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9.5px;
+    color: rgba(0, 0, 0, 0.32);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+
+    strong {
+      background: linear-gradient(135deg, $color-primary, $color-accent);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+      letter-spacing: -0.005em;
+      text-transform: none;
+      font-size: 10px;
+    }
+  }
+
+  &__brand-mark-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, $color-primary, $color-accent);
+    box-shadow: 0 0 8px rgba($color-primary, 0.5);
+    animation: pulseDot 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulseDot {
+    0%, 100% { box-shadow: 0 0 8px rgba($color-primary, 0.5); }
+    50% { box-shadow: 0 0 14px rgba($color-primary, 0.8); }
+  }
+
 
   &__toggle {
     @include flex-center;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 8px;
-    color: rgba(0, 0, 0, 0.3);
-    transition: all 150ms ease;
+    color: rgba(0, 0, 0, 0.35);
+    background: transparent;
+    border: 1px solid transparent;
+    transition: all 150ms $ease-smooth;
+    cursor: pointer;
+    flex-shrink: 0;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
-      color: rgba(0, 0, 0, 0.5);
+      background: $color-white;
+      border-color: rgba(0, 0, 0, 0.06);
+      color: rgba(0, 0, 0, 0.6);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
     svg { width: 14px; height: 14px; }
 
     &--collapsed {
-      width: 34px;
-      height: 34px;
-      margin: 6px auto 0;
+      width: 32px;
+      height: 32px;
+      margin: 8px auto 0;
       border-radius: 10px;
-      background: rgba(0, 0, 0, 0.03);
+      background: $color-white;
+      border-color: rgba(0, 0, 0, 0.06);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
       &:hover {
-        background: rgba(0, 0, 0, 0.06);
+        background: $color-white;
+        border-color: rgba($color-primary, 0.2);
         color: $color-primary;
       }
     }
@@ -144,7 +276,8 @@
   // Nav
   &__nav {
     flex: 1;
-    padding: 4px 0;
+    min-height: 0;
+    padding: 6px 0;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: none;
@@ -155,79 +288,106 @@
   &__menu {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     padding: 0 10px;
   }
 
   &__separator {
     list-style: none;
-    padding: 12px 14px 4px;
+    padding: 14px 14px 6px;
     margin: 0;
   }
 
   &__separator-label {
     display: block;
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.1em;
+    color: rgba(0, 0, 0, 0.32);
     user-select: none;
   }
 
   &__separator-line {
     display: block;
     height: 1px;
-    background: rgba(0, 0, 0, 0.06);
-    margin: 6px 4px;
+    background: rgba(0, 0, 0, 0.05);
+    margin: 8px 6px;
   }
 
   &__item {
     display: flex;
     align-items: center;
     gap: 11px;
-    padding: 0 14px;
+    padding: 0 12px;
     margin: 0;
     border-radius: 10px;
     cursor: pointer;
     white-space: nowrap;
     position: relative;
-    height: 38px;
-    transition: all 150ms ease;
-    color: rgba(0, 0, 0, 0.5);
+    height: 36px;
+    transition: all 200ms $ease-smooth;
+    color: rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+
+    // Subtle glow trail on hover
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba($color-primary, 0.06), transparent);
+      opacity: 0;
+      transition: opacity 200ms ease;
+      pointer-events: none;
+    }
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
-      color: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.025);
+      color: rgba(0, 0, 0, 0.88);
 
-      .sidebar__icon { color: rgba(0, 0, 0, 0.55); }
-      .sidebar__label { color: rgba(0, 0, 0, 0.8); }
+      &::before { opacity: 1; }
+
+      .sidebar__label {
+        color: rgba(0, 0, 0, 0.88);
+        font-weight: 600;
+      }
     }
 
     &:active {
-      background: rgba(0, 0, 0, 0.06);
       transition-duration: 50ms;
+      transform: scale(0.98);
     }
 
     &--active {
-      background: $color-white;
+      background: linear-gradient(90deg, rgba($color-primary, 0.10) 0%, rgba($color-accent, 0.06) 100%);
       box-shadow:
-        0 1px 3px rgba(0, 0, 0, 0.06),
-        0 0 0 1px rgba(0, 0, 0, 0.04);
-      color: $color-secondary;
+        inset 0 0 0 1px rgba($color-primary, 0.12),
+        0 1px 3px rgba($color-primary, 0.06);
 
-      &:hover {
-        background: $color-white;
-        box-shadow:
-          0 2px 5px rgba(0, 0, 0, 0.08),
-          0 0 0 1px rgba(0, 0, 0, 0.04);
+      &::before {
+        opacity: 1;
+        background: linear-gradient(90deg, rgba($color-primary, 0.05), transparent);
       }
 
-      .sidebar__icon { color: $color-primary; }
+      &:hover {
+        background: linear-gradient(90deg, rgba($color-primary, 0.13) 0%, rgba($color-accent, 0.08) 100%);
+        transform: none;
+      }
+
+      .sidebar__icon {
+        background: linear-gradient(135deg, $color-primary 0%, $color-accent 100%);
+        color: $color-white !important;
+        box-shadow:
+          0 4px 10px rgba($color-primary, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        transform: scale(1);
+      }
 
       .sidebar__label {
         color: $color-secondary;
-        font-weight: 600;
+        font-weight: 700;
+        letter-spacing: -0.015em;
       }
     }
   }
@@ -235,12 +395,26 @@
   &__icon {
     flex-shrink: 0;
     @include flex-center;
-    width: 20px;
-    height: 20px;
-    color: rgba(0, 0, 0, 0.35);
-    transition: color 150ms ease;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(0, 0, 0, 0.4);
+    transition: all 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
 
-    svg { width: 20px; height: 20px; }
+    svg {
+      width: 16px;
+      height: 16px;
+      transition: transform 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .sidebar__item:hover & {
+      background: rgba(0, 0, 0, 0.04);
+      transform: scale(1.05);
+
+      svg { transform: scale(1.1) rotate(-3deg); }
+    }
   }
 
   // Icon colors per tab — color psychology
@@ -261,12 +435,12 @@
   &__item[data-id="staff-finances"] .sidebar__icon { color: #10B981; }
 
   &__label {
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 500;
-    color: rgba(0, 0, 0, 0.55);
+    color: rgba(0, 0, 0, 0.6);
     transition: color 150ms ease;
     line-height: 1;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 
   &__badge {
@@ -315,23 +489,23 @@
     pointer-events: none;
   }
 
-  // Footer
+  // ========== FOOTER ==========
   &__footer {
-    padding: 6px 8px 10px;
+    padding: 8px 10px 12px;
     flex-shrink: 0;
   }
 
   &__footer-divider {
     height: 1px;
-    margin: 0 8px 8px;
-    background: rgba(0, 0, 0, 0.05);
+    margin: 0 4px 8px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.06) 30%, rgba(0, 0, 0, 0.06) 70%, transparent);
   }
 
   &__footer-icons {
     display: flex;
     align-items: center;
-    gap: 2px;
-    padding: 0 4px 6px;
+    gap: 4px;
+    padding: 0 2px 8px;
   }
 
   &__footer-notif {
@@ -342,21 +516,29 @@
     @include flex-center;
     width: 32px;
     height: 32px;
-    border-radius: 8px;
-    color: rgba(0, 0, 0, 0.35);
+    border-radius: 9px;
+    background: transparent;
+    color: rgba(0, 0, 0, 0.4);
     position: relative;
-    transition: all 150ms ease;
+    transition: all 180ms $ease-smooth;
+    border: 1px solid transparent;
+    cursor: pointer;
 
     svg { width: 16px; height: 16px; }
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
-      color: rgba(0, 0, 0, 0.6);
+      background: $color-white;
+      border-color: rgba(0, 0, 0, 0.06);
+      color: $color-primary;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+      transform: translateY(-1px);
     }
 
     &--active {
-      background: rgba($color-primary, 0.08);
+      background: $color-white;
+      border-color: rgba($color-primary, 0.18);
       color: $color-primary;
+      box-shadow: 0 2px 8px rgba($color-primary, 0.1);
     }
   }
 
@@ -586,38 +768,52 @@
   &__user {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 6px 8px;
-    border-radius: 10px;
+    gap: 11px;
+    padding: 8px 10px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: background 120ms ease;
+    transition: all 180ms $ease-smooth;
+    background: $color-white;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.02),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
 
-    &:hover { background: rgba(0, 0, 0, 0.04); }
+    &:hover {
+      transform: translateY(-1px);
+      border-color: rgba($color-primary, 0.12);
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.05),
+        0 1px 3px rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
   }
 
   &__user-avatar {
     @include flex-center;
-    width: 30px;
-    height: 30px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 12%) 100%);
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, $color-primary 0%, $color-accent 100%);
     color: $color-white;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.02em;
     flex-shrink: 0;
     position: relative;
-    box-shadow: 0 2px 6px rgba($color-primary, 0.2);
+    box-shadow:
+      0 4px 10px rgba($color-primary, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
 
     &::after {
       content: '';
       position: absolute;
-      bottom: -1px;
-      right: -1px;
-      width: 9px;
-      height: 9px;
+      bottom: -2px;
+      right: -2px;
+      width: 11px;
+      height: 11px;
       background: #22C55E;
-      border: 2px solid #FAFBFC;
+      border: 2.5px solid $color-white;
       border-radius: 50%;
     }
   }
@@ -630,18 +826,19 @@
   }
 
   &__user-name {
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 700;
     color: $color-secondary;
     @include truncate;
     line-height: 1.2;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 
   &__user-role {
     font-size: 10px;
-    color: rgba(0, 0, 0, 0.35);
+    color: rgba(0, 0, 0, 0.4);
     line-height: 1.2;
+    font-weight: 500;
   }
 
   &__user-chevron {
@@ -654,44 +851,102 @@
 
   &__user-dropdown {
     position: absolute;
-    bottom: calc(100% + 4px);
+    bottom: calc(100% + 6px);
     left: 0;
     right: 0;
     background: $color-white;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
     box-shadow:
-      0 4px 16px rgba(0, 0, 0, 0.1),
+      0 8px 28px rgba(0, 0, 0, 0.12),
+      0 2px 6px rgba(0, 0, 0, 0.05),
       0 0 0 1px rgba(0, 0, 0, 0.02);
-    padding: 4px;
+    padding: 6px;
     z-index: $z-dropdown;
-    animation: sidebarPanelReveal 150ms cubic-bezier(0.2, 0, 0, 1) both;
+    animation: sidebarPanelReveal 180ms cubic-bezier(0.2, 0, 0, 1) both;
+    overflow: hidden;
+  }
+
+  &__user-dropdown-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 10px 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  }
+
+  &__user-avatar--lg {
+    width: 38px;
+    height: 38px;
+    font-size: 13px;
+
+    &::after { display: none; }
+  }
+
+  &__user-dropdown-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__user-dropdown-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-secondary;
+    @include truncate;
+    letter-spacing: -0.01em;
+  }
+
+  &__user-dropdown-email {
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.45);
+    @include truncate;
+  }
+
+  &__user-dropdown-divider {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.05);
+    margin: 4px 6px;
   }
 
   &__user-dropdown-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     width: 100%;
-    padding: 8px 10px;
-    border-radius: 7px;
+    padding: 9px 10px;
+    border-radius: 8px;
     font-family: $font-primary;
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 500;
-    color: rgba(0, 0, 0, 0.5);
+    color: rgba(0, 0, 0, 0.6);
     cursor: pointer;
     transition: all 120ms ease;
+    text-decoration: none;
 
-    svg { width: 14px; height: 14px; flex-shrink: 0; }
+    svg { width: 15px; height: 15px; flex-shrink: 0; color: rgba(0, 0, 0, 0.4); }
 
     &:hover {
       background: rgba(0, 0, 0, 0.04);
       color: $color-secondary;
+
+      svg { color: $color-primary; }
     }
 
     &--danger {
-      color: $color-error;
-      &:hover { background: rgba($color-error, 0.06); }
+      color: $color-error-dark;
+
+      svg { color: $color-error; }
+
+      &:hover {
+        background: rgba($color-error, 0.06);
+        color: $color-error-dark;
+
+        svg { color: $color-error-dark; }
+      }
     }
   }
 
@@ -735,6 +990,34 @@
         &::after { display: none; }
       }
       .sidebar__user { justify-content: flex-start; padding: 6px 8px; }
+    }
+  }
+
+  // Short viewports (Mac laptops)
+  @media (max-height: 820px) {
+    &__brand { padding: 10px 16px 6px; }
+    &__logo-icon {
+      width: 28px;
+      height: 28px;
+      svg { width: 14px; height: 14px; }
+    }
+
+    &__item { height: 34px; }
+    &__separator { padding: 8px 14px 2px; }
+
+    &__footer { padding: 4px 8px 6px; }
+    &__footer-icons { padding: 0 4px 2px; }
+    &__footer-btn {
+      width: 28px;
+      height: 28px;
+      svg { width: 14px; height: 14px; }
+    }
+
+    &__user { padding: 4px 8px; }
+    &__user-avatar {
+      width: 26px;
+      height: 26px;
+      font-size: 10px;
     }
   }
 }

@@ -20,6 +20,8 @@ const DEFAULT_TENANT = {
   logo_url: null,
   primary_color: '#2D5A3D',
   booking_url: null,
+  address: null,
+  city: null,
   staff_roles: null,
 };
 

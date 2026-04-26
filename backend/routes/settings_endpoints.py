@@ -949,6 +949,7 @@ def update_booking_settings(data: dict, db: Session = Depends(get_db), user=Depe
         "booking_cover_url", "booking_phone", "booking_whatsapp",
         "booking_instagram", "booking_facebook",
         "booking_tags", "booking_schedule", "google_place_id",
+        "name", "address", "city",
     ]
     for field in allowed:
         if field in data:
