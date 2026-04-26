@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import ClientTable from '../../components/Admin/ClientTable/ClientTable';
 import ClientDetail from '../../components/Admin/ClientDetail/ClientDetail';
 import ClientFilters from '../../components/Admin/ClientFilters/ClientFilters';
@@ -728,7 +729,7 @@ const Clients = ({ onNavigate }) => {
       />
 
       {/* ───────── Template picker (campaign launch) ───────── */}
-      {templatePicker && (
+      {templatePicker && createPortal(
         <div className={`${b}__confirm-backdrop`} onClick={() => setTemplatePicker(false)}>
           <div className={`${b}__tpl-picker`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className={`${b}__tpl-head`}>
@@ -802,11 +803,12 @@ const Clients = ({ onNavigate }) => {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ───────── Bulk delete confirm dialog ───────── */}
-      {bulkConfirm && (
+      {bulkConfirm && createPortal(
         <div className={`${b}__confirm-backdrop`} onClick={() => !bulkDeleting && setBulkConfirm(false)}>
           <div className={`${b}__confirm`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className={`${b}__confirm-icon`}>
@@ -839,11 +841,12 @@ const Clients = ({ onNavigate }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ───────── Single delete confirm dialog ───────── */}
-      {deleteCandidate && (
+      {deleteCandidate && createPortal(
         <div className={`${b}__confirm-backdrop`} onClick={() => deletingId == null && setDeleteCandidate(null)}>
           <div className={`${b}__confirm`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
             <div className={`${b}__confirm-icon`}>
@@ -876,7 +879,8 @@ const Clients = ({ onNavigate }) => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
