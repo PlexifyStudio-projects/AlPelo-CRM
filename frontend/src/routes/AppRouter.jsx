@@ -63,6 +63,15 @@ const AppRouter = () => {
     prevUserId.current = currentId;
   }, [user?.id, clearAll]);
 
+  // Cross-component navigation event (e.g. ClientDetail → Finanzas)
+  useEffect(() => {
+    const handler = (e) => {
+      if (typeof e?.detail === 'string') setActiveSection(e.detail);
+    };
+    window.addEventListener('plexify:navigate', handler);
+    return () => window.removeEventListener('plexify:navigate', handler);
+  }, []);
+
   if (loading) return null;
   if (!isAuthenticated) return <Login onLogin={login} />;
 

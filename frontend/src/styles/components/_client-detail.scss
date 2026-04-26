@@ -2598,6 +2598,40 @@
     flex-shrink: 0;
   }
 
+  &__svc-history-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-left: 4px;
+  }
+
+  &__svc-history-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: $color-gray-400;
+    cursor: pointer;
+    transition: all 150ms $ease-smooth;
+
+    &:hover:not(:disabled) {
+      background: $color-off-white;
+      border-color: $color-gray-100;
+      color: $color-primary;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
+
   /* "Crear nueva orden" header */
   &__svc-new-head {
     margin: 6px 0 12px;
@@ -2639,6 +2673,178 @@
 
     &:hover { transform: none !important; }
   }
+}
+
+/* ============================================================
+   SHARE RECEIPT MODAL
+   ============================================================ */
+.client-detail {
+  &__share-backdrop {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: $z-modal + 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: cdFadeIn 200ms $ease-smooth;
+  }
+
+  &__share-card {
+    position: relative;
+    background: $color-white;
+    border-radius: 20px;
+    padding: 32px 28px 24px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.32);
+    text-align: center;
+    animation: cdShareIn 240ms $ease-spring-gentle both;
+  }
+
+  &__share-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: $color-gray-50;
+    border-radius: 8px;
+    color: $color-gray-500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 150ms ease;
+
+    &:hover {
+      background: $color-gray-100;
+      color: $color-secondary;
+    }
+  }
+
+  &__share-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10B981, #34D399);
+    color: $color-white;
+    margin-bottom: 14px;
+    box-shadow: 0 12px 28px rgba(16, 185, 129, 0.32);
+  }
+
+  &__share-title {
+    margin: 0 0 4px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $color-secondary;
+    letter-spacing: -0.02em;
+  }
+
+  &__share-sub {
+    margin: 0 0 20px;
+    font-size: $font-size-xs;
+    color: $color-gray-500;
+
+    strong {
+      color: $color-secondary;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-weight: 700;
+    }
+  }
+
+  &__share-question {
+    margin: 0 0 14px;
+    font-size: $font-size-sm;
+    color: $color-gray-600;
+    padding-top: 14px;
+    border-top: 1px solid $color-gray-100;
+  }
+
+  &__share-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  &__share-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    background: $color-white;
+    border: 1px solid $color-gray-100;
+    border-radius: 12px;
+    color: $color-gray-700;
+    cursor: pointer;
+    transition: all 180ms $ease-smooth;
+    font-family: $font-primary;
+    font-size: 0.72rem;
+    font-weight: 600;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      border-color: $color-primary;
+      color: $color-primary;
+      box-shadow: 0 8px 18px rgba($color-primary, 0.12);
+    }
+
+    &--wa:hover:not(:disabled) {
+      border-color: #25D366;
+      color: #128C7E;
+      box-shadow: 0 8px 18px rgba(37, 211, 102, 0.2);
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  &__share-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: $color-gray-50;
+  }
+
+  &__share-link {
+    margin-top: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $color-primary;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 150ms ease;
+
+    &:hover {
+      background: rgba($color-primary, 0.06);
+    }
+  }
+}
+
+@keyframes cdShareIn {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 @keyframes cdRingSpin {

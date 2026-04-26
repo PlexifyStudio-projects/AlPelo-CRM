@@ -90,6 +90,9 @@ class VisitHistoryResponse(BaseModel):
     payment_method: Optional[str] = None
     notes: Optional[str] = None
     created_at: Optional[datetime] = None
+    # Optional invoice link — set when this visit appears on an invoice item.
+    # Frontend uses it to deep-link the receipt view from the client history.
+    invoice_id: Optional[int] = None
 
     class Config:
         from_attributes = True

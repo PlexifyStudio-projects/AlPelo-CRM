@@ -232,12 +232,23 @@ def list_client_visits(
         query = query.filter(VisitHistory.status == status)
 
     visits = query.all()
+    # Bulk-resolve invoice ids: invoice_item.visit_id → invoice.id
+    visit_ids = [v.id for v in visits]
+    invoice_map = {}
+    if visit_ids:
+        from database.models import InvoiceItem
+        items = db.query(InvoiceItem.visit_id, InvoiceItem.invoice_id).filter(InvoiceItem.visit_id.in_(visit_ids)).all()
+        for vid, iid in items:
+            if vid and iid:
+                invoice_map[vid] = iid
+
     result = []
     for v in visits:
         staff = db.query(Staff).filter(Staff.id == v.staff_id).first()
         result.append(VisitHistoryResponse(
             **{c.name: getattr(v, c.name) for c in v.__table__.columns},
             staff_name=staff.name if staff else None,
+            invoice_id=invoice_map.get(v.id),
         ))
 
     return result

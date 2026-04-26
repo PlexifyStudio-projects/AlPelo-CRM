@@ -110,6 +110,8 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
   const [staffSchedules, setStaffSchedules] = useState({});
   const [dayApts, setDayApts] = useState([]);
   const [svcTicket, setSvcTicket] = useState('');
+  const [shareReceipt, setShareReceipt] = useState(null); // { id, ticket, client, items, ... }
+  const [shareCopied, setShareCopied] = useState(false);
 
   const statusBtnRef = useRef(null);
   const b = 'client-detail';
@@ -489,6 +491,88 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
       setSvcSubmitting(false);
     }
   }, [svcItems, svcDate, svcNotes, svcTicket, client, addNotification, onRefresh, loadVisits]);
+
+  // ── History row actions (defined here to keep hook order stable) ──
+  const handleViewInvoice = useCallback((visit) => {
+    if (!visit?.invoice_id) {
+      addNotification('Esta visita aún no tiene factura emitida', 'warning');
+      return;
+    }
+    sessionStorage.setItem('finances:open_invoice', JSON.stringify({
+      invoice_id: visit.invoice_id,
+      visit_id: visit.id,
+      ts: Date.now(),
+    }));
+    onClose?.();
+    window.dispatchEvent(new CustomEvent('plexify:navigate', { detail: 'finances' }));
+  }, [addNotification, onClose]);
+
+  const handleShareVisit = useCallback((visit) => {
+    if (!client) return;
+    setShareReceipt({
+      ticket: visit.id,
+      visit_id: visit.id,
+      invoice_id: visit.invoice_id || null,
+      client_name: client.name,
+      client_phone: client.phone,
+      client_email: client.email,
+      date: visit.visit_date,
+      items: [{ service_name: visit.service_name, qty: 1, price: visit.amount }],
+      total: visit.amount,
+      payment_method: visit.payment_method || 'No registrado',
+      staff_name: visit.staff_name || (staffList.find(s => s.id === visit.staff_id)?.name) || '',
+    });
+    setShareCopied(false);
+  }, [client, staffList]);
+
+  const buildPublicReceiptUrl = useCallback((receipt) => {
+    if (!receipt) return '';
+    const base = window.location.origin + (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+    const id = receipt.invoice_id || receipt.visit_id;
+    return `${base}/receipt/${id}`;
+  }, []);
+
+  const handleCopyReceiptLink = useCallback(async () => {
+    if (!shareReceipt) return;
+    const url = buildPublicReceiptUrl(shareReceipt);
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch {
+      addNotification('No se pudo copiar el enlace', 'error');
+    }
+  }, [shareReceipt, buildPublicReceiptUrl, addNotification]);
+
+  const handleSendReceiptWA = useCallback(() => {
+    if (!shareReceipt?.client_phone) {
+      addNotification('Este cliente no tiene teléfono registrado', 'warning');
+      return;
+    }
+    const url = buildPublicReceiptUrl(shareReceipt);
+    const tenantName = tenant?.name || tenant?.brand_name || 'nuestro equipo';
+    const items = shareReceipt.items.map(i => `${i.service_name} (x${i.qty})`).join(', ');
+    const msg = `Hola ${shareReceipt.client_name.split(' ')[0]} 👋\n\nQuedamos felices de haberte atendido hoy en ${tenantName}. Aquí encontrarás el detalle de tu factura: ${items}\n\n${url}`;
+    const phone = shareReceipt.client_phone.replace(/\D/g, '');
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }, [shareReceipt, buildPublicReceiptUrl, tenant, addNotification]);
+
+  const handleSendReceiptEmail = useCallback(() => {
+    if (!shareReceipt?.client_email) {
+      addNotification('Este cliente no tiene email registrado', 'warning');
+      return;
+    }
+    const url = buildPublicReceiptUrl(shareReceipt);
+    const subject = `Tu recibo · ${tenant?.name || 'Recibo de servicio'}`;
+    const body = `Hola ${shareReceipt.client_name.split(' ')[0]},\n\nGracias por tu visita. Aquí está tu recibo: ${url}\n\nTotal: ${formatCOP(shareReceipt.total)}`;
+    window.open(`mailto:${shareReceipt.client_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+  }, [shareReceipt, buildPublicReceiptUrl, tenant, addNotification]);
+
+  const handlePrintReceipt = useCallback(() => {
+    const url = buildPublicReceiptUrl(shareReceipt);
+    if (!url) return;
+    window.open(`${url}?print=1`, '_blank');
+  }, [shareReceipt, buildPublicReceiptUrl]);
 
   if (!client) return null;
 
@@ -1403,6 +1487,29 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
                             </span>
                           </div>
                           <span className={`${b}__svc-history-amount`}>{formatCOP(v.amount)}</span>
+                          <div className={`${b}__svc-history-actions`}>
+                            <button
+                              type="button"
+                              className={`${b}__svc-history-action`}
+                              onClick={() => handleViewInvoice(v)}
+                              title={v.invoice_id ? 'Ver factura en Finanzas' : 'Sin factura emitida'}
+                              disabled={!v.invoice_id}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              className={`${b}__svc-history-action`}
+                              onClick={() => handleShareVisit(v)}
+                              title="Descargar / compartir recibo"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -1563,6 +1670,69 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
         </div>
 
       </div>
+
+      {/* ─────────── Share receipt modal ─────────── */}
+      {shareReceipt && createPortal(
+        <div className={`${b}__share-backdrop`} onClick={() => setShareReceipt(null)}>
+          <div className={`${b}__share-card`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <button className={`${b}__share-close`} onClick={() => setShareReceipt(null)} aria-label="Cerrar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+
+            <div className={`${b}__share-icon`}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+
+            <h3 className={`${b}__share-title`}>¡Recibo generado!</h3>
+            <p className={`${b}__share-sub`}>
+              <strong>#{shareReceipt.invoice_id || shareReceipt.visit_id}</strong> · {shareReceipt.client_name}
+            </p>
+
+            <p className={`${b}__share-question`}>¿Cómo te gustaría compartir el recibo?</p>
+
+            <div className={`${b}__share-actions`}>
+              <button type="button" className={`${b}__share-btn`} onClick={handlePrintReceipt}>
+                <span className={`${b}__share-btn-icon`}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                </span>
+                <span>Imprimir</span>
+              </button>
+
+              <button
+                type="button"
+                className={`${b}__share-btn`}
+                onClick={handleSendReceiptEmail}
+                disabled={!shareReceipt.client_email}
+                title={shareReceipt.client_email || 'Sin email registrado'}
+              >
+                <span className={`${b}__share-btn-icon`}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </span>
+                <span>Correo</span>
+              </button>
+
+              <button
+                type="button"
+                className={`${b}__share-btn ${b}__share-btn--wa`}
+                onClick={handleSendReceiptWA}
+                disabled={!shareReceipt.client_phone}
+                title={shareReceipt.client_phone ? 'Enviar por WhatsApp' : 'Sin teléfono registrado'}
+              >
+                <span className={`${b}__share-btn-icon`}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.243-1.214l-.257-.154-2.849.846.846-2.849-.154-.257A8 8 0 1 1 12 20z"/></svg>
+                </span>
+                <span>WhatsApp</span>
+              </button>
+            </div>
+
+            <button type="button" className={`${b}__share-link`} onClick={handleCopyReceiptLink}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              {shareCopied ? '¡Enlace copiado!' : 'Copiar enlace del recibo'}
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>,
     document.body
   );
