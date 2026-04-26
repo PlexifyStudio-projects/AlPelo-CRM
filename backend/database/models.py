@@ -76,12 +76,37 @@ class Client(Base):
     tags = Column(JSON, default=list)
     status_override = Column(String, nullable=True)  # manual override: activo, vip, en_riesgo, inactivo, nuevo
     is_active = Column(Boolean, default=True)
+    import_batch_id = Column(Integer, ForeignKey("public.import_batch.id"), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     preferred_barber = relationship("Staff", foreign_keys=[preferred_barber_id])
     visits = relationship("VisitHistory", back_populates="client", order_by="VisitHistory.visit_date.desc()")
     notes = relationship("ClientNote", back_populates="client", order_by="ClientNote.created_at.desc()")
+    import_batch = relationship("ImportBatch", foreign_keys=[import_batch_id], back_populates="clients")
+
+
+class ImportBatch(Base):
+    """History of bulk-imported client batches.
+    Every CSV/XLSX upload via /clients/import creates one of these so admins
+    can see who imported what, when, and review the resulting clients.
+    """
+    __tablename__ = "import_batch"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=False, index=True)
+    admin_id = Column(Integer, nullable=True)
+    admin_name = Column(String, nullable=True)         # snapshot at import time
+    filename = Column(String, nullable=True)
+    file_size = Column(Integer, nullable=True)         # bytes
+    total_rows = Column(Integer, nullable=False, default=0)
+    imported_count = Column(Integer, nullable=False, default=0)
+    skipped_count = Column(Integer, nullable=False, default=0)
+    error_count = Column(Integer, nullable=False, default=0)
+    error_log = Column(JSON, default=list)             # first ~50 error/skip messages for audit
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    clients = relationship("Client", back_populates="import_batch", foreign_keys="Client.import_batch_id")
 
 
 class VisitHistory(Base):

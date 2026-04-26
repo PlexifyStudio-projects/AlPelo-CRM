@@ -60,3 +60,4 @@ class ImportResult(BaseModel):
     errors: List[str] = []
     total: int = 0
     rows: List[ImportRowResult] = []
+    batch_id: Optional[int] = None

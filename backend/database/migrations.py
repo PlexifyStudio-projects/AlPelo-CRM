@@ -201,6 +201,8 @@ def run_migrations(engine):
         # Soft delete
         ("expense", "deleted_at", "TIMESTAMP"),
         ("invoice", "deleted_at", "TIMESTAMP"),
+        # Import batch tracking — link clients to the bulk-import they came from
+        ("client", "import_batch_id", "INTEGER"),
     ]
 
     for table, column, col_type in migrations:

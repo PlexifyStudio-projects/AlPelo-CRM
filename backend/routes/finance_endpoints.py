@@ -997,6 +997,7 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
     skipped = 0
     errors = []
     row_results: list[ImportRowResult] = []
+    new_client_objs: list = []  # collected to attach batch_id after batch is created
 
     # Normalize header keys (case-insensitive lookup)
     def get_val(row, *keys):
@@ -1082,6 +1083,7 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
                 accepts_whatsapp=True,
             )
             db.add(client)
+            new_client_objs.append(client)
             existing_ids.add(client_id)
             existing_phone_map[phone] = (client_id, name)
             imported += 1
@@ -1097,7 +1099,47 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
                 reason=msg,
             ))
 
-    if imported > 0:
+    # Always create a batch record (even with 0 imported) so the audit trail
+    # shows the user attempted an import — this matters for traceability.
+    batch_id = None
+    if len(rows) > 0:
+        from database.models import ImportBatch
+        # snapshot of admin name at import time
+        admin_obj = db.query(Admin).filter(Admin.id == current_user.id).first()
+        admin_name = admin_obj.name if admin_obj and getattr(admin_obj, 'name', None) else (
+            getattr(current_user, 'username', None) or 'Sistema'
+        )
+        # Capture skip/error reasons for audit (first 50)
+        audit_log = []
+        for r in row_results:
+            if r.status != 'imported':
+                msg = f"Fila {r.line} [{r.status}]: {r.reason or ''}"
+                if r.existing_client_id:
+                    msg += f" → ya pertenece a {r.existing_client_id}"
+                audit_log.append(msg)
+                if len(audit_log) >= 50:
+                    break
+
+        batch = ImportBatch(
+            tenant_id=tid,
+            admin_id=current_user.id,
+            admin_name=admin_name,
+            filename=file.filename,
+            file_size=len(content),
+            total_rows=len(rows),
+            imported_count=imported,
+            skipped_count=skipped,
+            error_count=sum(1 for r in row_results if r.status == 'error'),
+            error_log=audit_log,
+        )
+        db.add(batch)
+        db.flush()  # populate batch.id
+        batch_id = batch.id
+
+        # Tag every newly-imported client with the batch id
+        for c in new_client_objs:
+            c.import_batch_id = batch_id
+
         db.commit()
 
     return ImportResult(
@@ -1106,7 +1148,88 @@ async def import_clients(file: UploadFile = File(...), db: Session = Depends(get
         errors=errors[:20],
         total=len(rows),
         rows=row_results,
+        batch_id=batch_id,
     )
+
+
+# ============================================================================
+# IMPORT HISTORY
+# ============================================================================
+@router.get("/clients/import-history")
+async def list_import_batches(
+    limit: int = 30,
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    """List bulk-import batches for this tenant, most recent first."""
+    from database.models import ImportBatch
+    tid = safe_tid(current_user, db)
+
+    q = db.query(ImportBatch).filter(ImportBatch.tenant_id == tid)\
+        .order_by(ImportBatch.created_at.desc()).limit(min(limit, 100))
+
+    batches = q.all()
+    return [
+        {
+            "id": b.id,
+            "filename": b.filename,
+            "file_size": b.file_size,
+            "total_rows": b.total_rows,
+            "imported_count": b.imported_count,
+            "skipped_count": b.skipped_count,
+            "error_count": b.error_count,
+            "admin_name": b.admin_name,
+            "created_at": b.created_at.isoformat() if b.created_at else None,
+        }
+        for b in batches
+    ]
+
+
+@router.get("/clients/import-history/{batch_id}")
+async def get_import_batch(
+    batch_id: int,
+    db: Session = Depends(get_db),
+    current_user: Admin = Depends(get_current_user),
+):
+    """Get one import batch with the clients that came from it."""
+    from database.models import ImportBatch
+    tid = safe_tid(current_user, db)
+
+    batch = db.query(ImportBatch).filter(
+        ImportBatch.id == batch_id,
+        ImportBatch.tenant_id == tid,
+    ).first()
+    if not batch:
+        raise HTTPException(status_code=404, detail="Importación no encontrada")
+
+    clients_q = db.query(Client).filter(
+        Client.import_batch_id == batch_id,
+        Client.tenant_id == tid,
+    ).order_by(Client.id.asc()).all()
+
+    return {
+        "id": batch.id,
+        "filename": batch.filename,
+        "file_size": batch.file_size,
+        "total_rows": batch.total_rows,
+        "imported_count": batch.imported_count,
+        "skipped_count": batch.skipped_count,
+        "error_count": batch.error_count,
+        "admin_name": batch.admin_name,
+        "created_at": batch.created_at.isoformat() if batch.created_at else None,
+        "error_log": batch.error_log or [],
+        "clients": [
+            {
+                "id": c.id,
+                "client_id": c.client_id,
+                "name": c.name,
+                "phone": c.phone,
+                "email": c.email,
+                "is_active": c.is_active,
+            }
+            for c in clients_q
+        ],
+    }
 
 
 # ============================================================================

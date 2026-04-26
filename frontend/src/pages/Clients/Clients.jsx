@@ -24,6 +24,8 @@ const Clients = () => {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [rfmData, setRfmData] = useState(null);
   const [rfmFilter, setRfmFilter] = useState(null);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   const exportMenuRef = useRef(null);
   const { addNotification } = useNotification();
   const b = 'clients';
@@ -150,6 +152,25 @@ const Clients = () => {
     setIsAddModalOpen(true);
     setSelectedClient(null);
   };
+
+  const handleDeleteRequest = useCallback((client) => {
+    setDeleteCandidate(client);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteCandidate) return;
+    setDeletingId(deleteCandidate.id);
+    try {
+      await clientService.delete(deleteCandidate.id, true); // hard delete
+      addNotification(`${deleteCandidate.name} fue borrado del sistema`, 'success');
+      setClients((prev) => prev.filter((c) => c.id !== deleteCandidate.id));
+      setDeleteCandidate(null);
+    } catch (err) {
+      addNotification('No se pudo borrar: ' + err.message, 'error');
+    } finally {
+      setDeletingId(null);
+    }
+  }, [deleteCandidate, addNotification]);
 
   const counts = useMemo(() => ({
     total: kpis.total_clients,
@@ -515,6 +536,7 @@ const Clients = () => {
         onClientClick={handleClientClick}
         sortConfig={sortConfig}
         onSort={handleSort}
+        onDelete={handleDeleteRequest}
       />
 
       {filteredClients.length === 0 && !loading && (
@@ -553,6 +575,43 @@ const Clients = () => {
         onClose={() => setIsImportModalOpen(false)}
         onImported={loadClients}
       />
+
+      {/* ───────── Delete confirm dialog ───────── */}
+      {deleteCandidate && (
+        <div className={`${b}__confirm-backdrop`} onClick={() => deletingId == null && setDeleteCandidate(null)}>
+          <div className={`${b}__confirm`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <div className={`${b}__confirm-icon`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6M14 11v6" />
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+              </svg>
+            </div>
+            <h3 className={`${b}__confirm-title`}>¿Borrar a {deleteCandidate.name}?</h3>
+            <p className={`${b}__confirm-text`}>
+              Se eliminará permanentemente del sistema, junto con su historial de visitas, citas, notas y conversaciones.
+              <strong> Esta acción no se puede deshacer.</strong>
+            </p>
+            <div className={`${b}__confirm-actions`}>
+              <button
+                className={`${b}__confirm-btn ${b}__confirm-btn--ghost`}
+                onClick={() => setDeleteCandidate(null)}
+                disabled={deletingId != null}
+              >
+                Cancelar
+              </button>
+              <button
+                className={`${b}__confirm-btn ${b}__confirm-btn--danger`}
+                onClick={handleDeleteConfirm}
+                disabled={deletingId != null}
+              >
+                {deletingId != null ? 'Borrando...' : 'Sí, borrar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

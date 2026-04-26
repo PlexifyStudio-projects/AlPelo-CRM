@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, Fragment, useEffect } from 'react';
 import Modal from '../../common/Modal/Modal';
 import Button from '../../common/Button/Button';
 import financeService from '../../../services/financeService';
+import clientService from '../../../services/clientService';
 
 /* ────────────────────────────────────────────────────────────────
    Column spec — backend (finance_endpoints.py) accepts headers
@@ -69,6 +70,12 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
   const [counters, setCounters] = useState({ imported: 0, duplicate: 0, error: 0 });
   const [progressIdx, setProgressIdx] = useState(0);
   const [hint, setHint] = useState('');
+  const [view, setView] = useState('upload'); // 'upload' | 'history'
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [openBatchId, setOpenBatchId] = useState(null);
+  const [batchDetail, setBatchDetail] = useState(null);
+  const [batchLoading, setBatchLoading] = useState(false);
   const fileRef = useRef(null);
   const consoleRef = useRef(null);
   const animTimer = useRef(null);
@@ -224,6 +231,53 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
     if (animTimer.current) clearTimeout(animTimer.current);
   }, []);
 
+  /* ─────────── History loading ─────────── */
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const list = await clientService.listImportHistory(30);
+      setHistory(Array.isArray(list) ? list : []);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[Import] history load failed', err);
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && view === 'history') loadHistory();
+  }, [isOpen, view, loadHistory]);
+
+  const toggleBatch = useCallback(async (id) => {
+    if (openBatchId === id) {
+      setOpenBatchId(null);
+      setBatchDetail(null);
+      return;
+    }
+    setOpenBatchId(id);
+    setBatchLoading(true);
+    setBatchDetail(null);
+    try {
+      const detail = await clientService.getImportBatch(id);
+      setBatchDetail(detail);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[Import] batch detail load failed', err);
+    } finally {
+      setBatchLoading(false);
+    }
+  }, [openBatchId]);
+
+  const formatDateTime = (iso) => {
+    if (!iso) return '—';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+    } catch { return iso; }
+  };
+
   /* ─────────── Templates ─────────── */
   const openSheetsWithHeaders = async () => {
     // Tab-separated row → pasting in Sheets cell A1 fills A1..D1 across columns
@@ -306,10 +360,37 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
           </div>
         )}
 
+        {/* Tabs (hidden during running phase) */}
+        {!isImporting && !isDone && (
+          <div className={`${b}__tabs`} role="tablist">
+            <button
+              type="button"
+              className={`${b}__tab ${view === 'upload' ? `${b}__tab--active` : ''}`}
+              onClick={() => setView('upload')}
+              role="tab"
+              aria-selected={view === 'upload'}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Nueva importación
+            </button>
+            <button
+              type="button"
+              className={`${b}__tab ${view === 'history' ? `${b}__tab--active` : ''}`}
+              onClick={() => setView('history')}
+              role="tab"
+              aria-selected={view === 'history'}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Historial
+              {history.length > 0 && <span className={`${b}__tab-count`}>{history.length}</span>}
+            </button>
+          </div>
+        )}
+
         {/* ──────────────────────────────────────────────────────
             PHASE: PRE-UPLOAD — 2-column layout
             ────────────────────────────────────────────────────── */}
-        {phase === 'idle' && !result && (
+        {phase === 'idle' && !result && view === 'upload' && (
           <div className={`${b}__layout`}>
             {/* LEFT: Guide */}
             <div className={`${b}__col ${b}__col--guide`}>
@@ -446,6 +527,102 @@ const ImportClientsModal = ({ isOpen, onClose, onImported }) => {
                 </Button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ──────────────────────────────────────────────────────
+            VIEW: HISTORY
+            ────────────────────────────────────────────────────── */}
+        {phase === 'idle' && !result && view === 'history' && (
+          <div className={`${b}__history`}>
+            {historyLoading ? (
+              <div className={`${b}__history-loading`}>Cargando historial...</div>
+            ) : history.length === 0 ? (
+              <div className={`${b}__history-empty`}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <p>Aún no has hecho importaciones masivas.</p>
+                <span>Cuando importes tu primer archivo, aparecerá aquí.</span>
+              </div>
+            ) : (
+              <ul className={`${b}__history-list`}>
+                {history.map((batch) => (
+                  <li key={batch.id} className={`${b}__history-item`}>
+                    <button
+                      type="button"
+                      className={`${b}__history-row`}
+                      onClick={() => toggleBatch(batch.id)}
+                      aria-expanded={openBatchId === batch.id}
+                    >
+                      <div className={`${b}__history-icon`}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      </div>
+                      <div className={`${b}__history-meta`}>
+                        <div className={`${b}__history-row1`}>
+                          <span className={`${b}__history-filename`}>{batch.filename || `Importación #${batch.id}`}</span>
+                          <span className={`${b}__history-date`}>{formatDateTime(batch.created_at)}</span>
+                        </div>
+                        <div className={`${b}__history-row2`}>
+                          <span className={`${b}__history-by`}>por {batch.admin_name || 'Sistema'}</span>
+                          <div className={`${b}__history-stats`}>
+                            <span className={`${b}__history-stat ${b}__history-stat--ok`}>✓ {batch.imported_count}</span>
+                            {batch.skipped_count > 0 && <span className={`${b}__history-stat ${b}__history-stat--dup`}>⊘ {batch.skipped_count}</span>}
+                            {batch.error_count > 0 && <span className={`${b}__history-stat ${b}__history-stat--err`}>✗ {batch.error_count}</span>}
+                            <span className={`${b}__history-stat ${b}__history-stat--total`}>de {batch.total_rows}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <svg
+                        width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                        style={{ transform: openBatchId === batch.id ? 'rotate(180deg)' : 'none', transition: 'transform 200ms' }}
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+
+                    {openBatchId === batch.id && (
+                      <div className={`${b}__history-detail`}>
+                        {batchLoading ? (
+                          <p className={`${b}__history-loading`}>Cargando clientes...</p>
+                        ) : batchDetail ? (
+                          <>
+                            <p className={`${b}__history-detail-title`}>
+                              {batchDetail.clients?.length || 0} clientes importados en esta tanda
+                            </p>
+                            {batchDetail.clients?.length > 0 ? (
+                              <div className={`${b}__history-clients`}>
+                                {batchDetail.clients.map((c) => (
+                                  <div key={c.id} className={`${b}__history-client`}>
+                                    <span className={`${b}__history-client-id`}>{c.client_id}</span>
+                                    <span className={`${b}__history-client-name`}>{c.name}</span>
+                                    <span className={`${b}__history-client-phone`}>{c.phone}</span>
+                                    {!c.is_active && <span className={`${b}__history-client-tag`}>Inactivo</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className={`${b}__history-loading`}>Sin clientes en este lote.</p>
+                            )}
+
+                            {batchDetail.error_log?.length > 0 && (
+                              <details className={`${b}__history-errors`}>
+                                <summary>Ver registros de filas que no se importaron ({batchDetail.error_log.length})</summary>
+                                <ul>
+                                  {batchDetail.error_log.map((msg, i) => (
+                                    <li key={i}>{msg}</li>
+                                  ))}
+                                </ul>
+                              </details>
+                            )}
+                          </>
+                        ) : (
+                          <p className={`${b}__history-loading`}>No se pudo cargar el detalle.</p>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 

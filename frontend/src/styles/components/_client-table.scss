@@ -136,7 +136,54 @@
   &__td--id {
     width: 96px;
     min-width: 96px;
-    @media (max-width: 768px) { display: none; }
+    @media (max-width: 1024px) { display: none; }
+  }
+
+  /* Action column — fixed narrow, hides on small */
+  &__th--actions,
+  &__td--actions {
+    width: 56px;
+    min-width: 56px;
+    text-align: right;
+    padding-right: 18px;
+  }
+
+  /* ---------- ACTION BUTTONS ---------- */
+  &__action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: $color-gray-400;
+    cursor: pointer;
+    transition: all 160ms $ease-smooth;
+    opacity: 0;
+
+    &:hover {
+      background: rgba(244, 63, 94, 0.08);
+      border-color: rgba(244, 63, 94, 0.18);
+      color: #BE123C;
+      transform: scale(1.06);
+    }
+
+    &:active { transform: scale(0.95); }
+
+    &--delete:focus-visible {
+      outline: 2px solid #F43F5E;
+      outline-offset: 2px;
+    }
+  }
+
+  /* Show delete button on row hover (desktop), always on touch devices */
+  &__row:hover &__action-btn { opacity: 1; }
+
+  @media (hover: none) {
+    &__action-btn { opacity: 1; }
   }
 
   &__client-id {
@@ -396,7 +443,32 @@
   }
 
   /* ============================================================
-     MOBILE CARDS
+     RESPONSIVE — TABLET (laptop ≤1024)
+     ============================================================ */
+  @media (max-width: 1024px) {
+    &__th, &__td {
+      padding: 12px 14px;
+    }
+    &__td { height: 60px; }
+    &__avatar { width: 36px; height: 36px; font-size: 0.7rem; }
+    &__client-name { font-size: 0.82rem; }
+    &__client-phone { font-size: 0.68rem; }
+  }
+
+  /* ============================================================
+     RESPONSIVE — TABLET (≤768) — switch to compact rows
+     ============================================================ */
+  @media (max-width: 768px) {
+    &__th, &__td {
+      padding: 10px 12px;
+    }
+    &__td { height: 56px; }
+    &__th { font-size: 0.6rem; }
+    &__visits-count, &__spent { font-size: 0.85rem; }
+  }
+
+  /* ============================================================
+     MOBILE CARDS — phone (≤576)
      ============================================================ */
   &__cards {
     display: none;
@@ -409,6 +481,7 @@
   }
 
   &__card {
+    position: relative;
     background: $color-white;
     border: 1px solid rgba(15, 23, 42, 0.05);
     border-radius: 16px;
@@ -424,6 +497,24 @@
 
     &:active {
       transform: scale(0.98);
+    }
+  }
+
+  &__card-delete {
+    margin-top: 12px;
+    width: 100%;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(244, 63, 94, 0.06);
+    border: 1px solid rgba(244, 63, 94, 0.18);
+    color: #BE123C;
+    font-size: 0.78rem;
+    font-weight: 600;
+    opacity: 1;
+
+    &:hover {
+      background: rgba(244, 63, 94, 0.12);
+      transform: none;
     }
   }
 

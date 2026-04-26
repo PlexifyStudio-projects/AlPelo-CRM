@@ -44,10 +44,20 @@ const clientService = {
     return handleResponse(res);
   },
 
-  delete: async (id) => {
-    const res = await fetch(`${API}/clients/${id}`, {
-      method: 'DELETE', ...opts,
-    });
+  delete: async (id, hard = false) => {
+    const url = `${API}/clients/${id}${hard ? '?hard=true' : ''}`;
+    const res = await fetch(url, { method: 'DELETE', ...opts });
+    return handleResponse(res);
+  },
+
+  // ── Bulk import history ──
+  listImportHistory: async (limit = 30) => {
+    const res = await fetch(`${API}/clients/import-history?limit=${limit}`, opts);
+    return handleResponse(res);
+  },
+
+  getImportBatch: async (id) => {
+    const res = await fetch(`${API}/clients/import-history/${id}`, opts);
     return handleResponse(res);
   },
 

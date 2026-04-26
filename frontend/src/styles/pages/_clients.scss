@@ -571,36 +571,204 @@ $cl-tones: (
   }
 
   /* ============================================================
-     RESPONSIVE
+     CONFIRM DELETE DIALOG
+     ============================================================ */
+  &__confirm-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(6px);
+    z-index: $z-modal-backdrop;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: clientsFadeIn 200ms $ease-smooth;
+  }
+
+  &__confirm {
+    background: $color-white;
+    border-radius: 18px;
+    padding: 26px 24px 22px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+    text-align: center;
+    animation: clientsPopIn 220ms $ease-spring-gentle both;
+  }
+
+  &__confirm-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #F43F5E, #FB7185);
+    color: $color-white;
+    margin-bottom: 14px;
+    box-shadow: 0 12px 28px rgba(244, 63, 94, 0.32);
+  }
+
+  &__confirm-title {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: $color-secondary;
+    letter-spacing: -0.02em;
+  }
+
+  &__confirm-text {
+    margin: 0 0 20px;
+    font-size: $font-size-sm;
+    color: $color-gray-500;
+    line-height: 1.55;
+
+    strong { color: #BE123C; font-weight: 600; }
+  }
+
+  &__confirm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  &__confirm-btn {
+    flex: 1;
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 10px;
+    border: none;
+    font-family: $font-primary;
+    font-size: $font-size-sm;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 160ms $ease-smooth;
+
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    &--ghost {
+      background: $color-gray-50;
+      color: $color-gray-600;
+      border: 1px solid $color-gray-100;
+
+      &:hover:not(:disabled) {
+        background: $color-gray-100;
+        color: $color-secondary;
+      }
+    }
+
+    &--danger {
+      background: linear-gradient(135deg, #F43F5E, #E11D48);
+      color: $color-white;
+      box-shadow: 0 6px 16px rgba(244, 63, 94, 0.3);
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 22px rgba(244, 63, 94, 0.42);
+      }
+    }
+  }
+
+  /* ============================================================
+     RESPONSIVE — Laptop ≤1200
+     ============================================================ */
+  @media (max-width: 1200px) {
+    &__kpis { gap: 12px; }
+    &__kpi { padding: 16px 18px; }
+    &__kpi-value { font-size: 1.65rem; }
+  }
+
+  /* ============================================================
+     RESPONSIVE — Tablet ≤992
+     ============================================================ */
+  @media (max-width: $breakpoint-lg) {
+    &__title { font-size: clamp(1.5rem, 4vw, 1.9rem); }
+    &__kpis { grid-template-columns: repeat(2, 1fr); }
+    &__insights-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* ============================================================
+     RESPONSIVE — Tablet portrait ≤768
      ============================================================ */
   @media (max-width: $breakpoint-md) {
+    gap: $spacing-md;
+
     &__hero {
-      align-items: flex-start;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
     }
 
     &__hero-actions {
       width: 100%;
-      justify-content: flex-end;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+
+    &__action {
+      flex: 1;
+      min-width: 110px;
+      justify-content: center;
     }
 
     &__kpi { padding: 14px 16px; }
     &__kpi-value { font-size: 1.5rem; }
     &__kpi-icon { width: 38px; height: 38px; }
 
-    &__action--ghost span { display: none; }
+    &__insights-list { grid-template-columns: 1fr; }
+    &__insight { padding: 12px 14px; }
   }
 
+  /* ============================================================
+     RESPONSIVE — Phone ≤576
+     ============================================================ */
   @media (max-width: $breakpoint-sm) {
     &__hero-actions {
       gap: 6px;
     }
 
     &__action {
-      height: 36px;
-      padding: 0 12px;
+      height: 38px;
+      padding: 0 10px;
       font-size: $font-size-xs;
     }
+
+    &__kpis {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    &__kpi { padding: 14px 16px; }
+    &__kpi-value { font-size: 1.6rem; }
+
+    &__subtitle { font-size: $font-size-xs; flex-wrap: wrap; }
+
+    &__rfm { gap: 8px; }
+    &__rfm-chip { font-size: 0.68rem; padding: 4px 10px; }
+
+    &__confirm {
+      padding: 22px 18px 18px;
+      border-radius: 16px;
+    }
+    &__confirm-actions { flex-direction: column-reverse; }
   }
+
+  /* ============================================================
+     RESPONSIVE — Tiny phones ≤380
+     ============================================================ */
+  @media (max-width: 380px) {
+    &__action {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+    &__kpi-value { font-size: 1.45rem; }
+  }
+}
+
+@keyframes clientsFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes clientsSpin {

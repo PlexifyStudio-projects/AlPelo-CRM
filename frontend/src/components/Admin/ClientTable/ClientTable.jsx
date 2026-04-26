@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { daysSince, formatCurrency, formatDate, formatPhone } from '../../../utils/formatters';
 import { STATUS_META } from '../../../utils/clientStatus';
 
-const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
+const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort, onDelete }) => {
   const b = 'client-table';
 
   const getStatusLabel = (status) => STATUS_META[status]?.label || status;
@@ -17,6 +17,11 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
     if (days > 45) return `${b}__days--warning`;
     if (days >= 30) return `${b}__days--caution`;
     return `${b}__days--ok`;
+  };
+
+  const handleDeleteClick = (e, client) => {
+    e.stopPropagation();
+    if (onDelete) onDelete(client);
   };
 
   const SortIcon = ({ column }) => {
@@ -38,6 +43,15 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
     );
   };
 
+  const TrashIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+
   return (
     <div className={b}>
       <div className={`${b}__wrapper`}>
@@ -52,7 +66,7 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
                   Cliente <SortIcon column="name" />
                 </span>
               </th>
-              <th className={`${b}__th`} onClick={() => onSort('last_visit')}>
+              <th className={`${b}__th ${b}__th--hide-md`} onClick={() => onSort('last_visit')}>
                 <span className={`${b}__th-content`}>
                   Última visita <SortIcon column="last_visit" />
                 </span>
@@ -72,6 +86,7 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
                   Estado <SortIcon column="status" />
                 </span>
               </th>
+              <th className={`${b}__th ${b}__th--actions`} aria-label="Acciones" />
             </tr>
           </thead>
           <tbody className={`${b}__body`}>
@@ -96,7 +111,7 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
                     </div>
                   </div>
                 </td>
-                <td className={`${b}__td`}>
+                <td className={`${b}__td ${b}__td--hide-md`}>
                   {client.last_visit ? (
                     <div className={`${b}__visit-cell`}>
                       <span className={`${b}__date`}>{formatDate(client.last_visit)}</span>
@@ -132,6 +147,19 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
                     {getStatusLabel(client.status)}
                   </span>
                 </td>
+                <td className={`${b}__td ${b}__td--actions`}>
+                  {onDelete && (
+                    <button
+                      type="button"
+                      className={`${b}__action-btn ${b}__action-btn--delete`}
+                      onClick={(e) => handleDeleteClick(e, client)}
+                      aria-label={`Borrar ${client.name}`}
+                      title="Borrar cliente"
+                    >
+                      <TrashIcon />
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -165,13 +193,13 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
             </div>
             <div className={`${b}__card-stats`}>
               <div className={`${b}__card-stat`}>
-                <span className={`${b}__card-stat-label`}>Ultima visita</span>
+                <span className={`${b}__card-stat-label`}>Última visita</span>
                 {client.last_visit ? (
                   <span className={`${b}__days ${getDaysClass(client.last_visit)}`}>
                     hace {daysSince(client.last_visit)}d
                   </span>
                 ) : (
-                  <span className={`${b}__no-visit`}>--</span>
+                  <span className={`${b}__no-visit`}>—</span>
                 )}
               </div>
               <div className={`${b}__card-stat`}>
@@ -183,6 +211,17 @@ const ClientTable = memo(({ clients, onClientClick, sortConfig, onSort }) => {
                 <span className={`${b}__spent`}>{formatCurrency(client.total_spent)}</span>
               </div>
             </div>
+            {onDelete && (
+              <button
+                type="button"
+                className={`${b}__action-btn ${b}__action-btn--delete ${b}__card-delete`}
+                onClick={(e) => handleDeleteClick(e, client)}
+                aria-label={`Borrar ${client.name}`}
+              >
+                <TrashIcon />
+                <span>Borrar</span>
+              </button>
+            )}
           </div>
         ))}
       </div>
