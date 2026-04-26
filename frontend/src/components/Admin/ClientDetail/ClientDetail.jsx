@@ -676,10 +676,10 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
               className={`${b}__qa ${b}__qa--sell`}
               onClick={handleSellClick}
               disabled={!onSell}
-              title="Crear nueva orden"
+              title="Atender al cliente — crea una nueva orden"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-              <span>Vender</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>Atender</span>
             </button>
 
             <button
