@@ -74,7 +74,7 @@ const formatTime12 = (t) => { if (!t) return ''; const [h, mn] = t.split(':').ma
 const toISO = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 const formatCOP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
 
-const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
+const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete, onSell }) => {
   const { tenant } = useTenant();
   const { addNotification } = useNotification();
   const countryPrefix = COUNTRY_PREFIXES[tenant?.country] || '+57';
@@ -524,22 +524,52 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
 
   const visitStatusLabels = { completed: 'Completada', no_show: 'No asistió', cancelled: 'Cancelada' };
 
+  // ── Quick actions handlers ──
+  const handleWhatsApp = () => {
+    if (client.phone) {
+      window.open(`https://wa.me/${client.phone.replace(/\D/g, '')}`, '_blank');
+    }
+  };
+
+  const handleSellClick = () => {
+    if (onSell) onSell(client);
+  };
+
+  const handleEditClick = () => {
+    if (isEditing) return;
+    setActiveTab('overview');
+    startEditing();
+  };
+
+  const handleDeleteClick = () => {
+    if (onDelete) onDelete(client);
+  };
+
   return createPortal(
     <div className={`${b}__wrapper`}>
       <div className={`${b}__overlay`} onClick={onClose} />
 
       <div className={b}>
-        <div className={`${b}__accent-bar ${b}__accent-bar--${client.status}`} />
+        <button className={`${b}__close`} onClick={onClose} aria-label="Cerrar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
 
-        <div className={`${b}__header`}>
-          <div className={`${b}__header-left`}>
-            <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
-              {getInitials(client.name)}
+        <div className={`${b}__hero ${b}__hero--${client.status}`}>
+          <div className={`${b}__hero-glow`} />
+          <div className={`${b}__hero-top`}>
+            <div className={`${b}__avatar-wrap`}>
+              <div className={`${b}__avatar ${b}__avatar--${client.status}`}>
+                {getInitials(client.name)}
+              </div>
+              <span className={`${b}__avatar-ring`} aria-hidden="true" />
             </div>
-            <div className={`${b}__header-info`}>
+            <div className={`${b}__hero-info`}>
               <h2 className={`${b}__name`}>{client.name}</h2>
-              <span className={`${b}__client-id`}>{client.client_id}</span>
-              <div className={`${b}__status-wrapper`}>
+              <div className={`${b}__hero-meta`}>
+                <span className={`${b}__client-id`}>{client.client_id}</span>
+                <span className={`${b}__hero-dot`} />
                 <button
                   ref={statusBtnRef}
                   className={`${b}__status ${b}__status--${client.status}`}
@@ -574,15 +604,61 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
                   </div>,
                   document.body
                 )}
+                {client.email && (
+                  <>
+                    <span className={`${b}__hero-dot`} />
+                    <span className={`${b}__hero-email`} title={client.email}>{client.email}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
-          <button className={`${b}__close`} onClick={onClose} aria-label="Cerrar">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+
+          {/* Quick actions */}
+          <div className={`${b}__quick-actions`}>
+            <button
+              type="button"
+              className={`${b}__qa ${b}__qa--wa`}
+              onClick={handleWhatsApp}
+              disabled={!client.phone}
+              title="Contactar por WhatsApp"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.243-1.214l-.257-.154-2.849.846.846-2.849-.154-.257A8 8 0 1 1 12 20z"/></svg>
+              <span>WhatsApp</span>
+            </button>
+
+            <button
+              type="button"
+              className={`${b}__qa ${b}__qa--sell`}
+              onClick={handleSellClick}
+              disabled={!onSell}
+              title="Crear nueva orden"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              <span>Vender</span>
+            </button>
+
+            <button
+              type="button"
+              className={`${b}__qa ${b}__qa--edit`}
+              onClick={handleEditClick}
+              title="Editar información"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span>Editar</span>
+            </button>
+
+            <button
+              type="button"
+              className={`${b}__qa ${b}__qa--delete`}
+              onClick={handleDeleteClick}
+              disabled={!onDelete}
+              title="Eliminar cliente"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              <span>Eliminar</span>
+            </button>
+          </div>
         </div>
 
         <div className={`${b}__tabs`}>
@@ -1371,22 +1447,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh }) => {
           )}
         </div>
 
-        <div className={`${b}__footer`}>
-          <Button variant="ghost" size="md" onClick={onClose}>Cerrar</Button>
-          {client.accepts_whatsapp && client.phone && (
-            <Button
-              variant="ghost"
-              size="md"
-              onClick={() => window.open(`https://wa.me/${client.phone.replace(/\D/g, '')}`, '_blank')}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-                <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.243-1.214l-.257-.154-2.849.846.846-2.849-.154-.257A8 8 0 1 1 12 20z" />
-              </svg>
-              WhatsApp
-            </Button>
-          )}
-        </div>
       </div>
     </div>,
     document.body

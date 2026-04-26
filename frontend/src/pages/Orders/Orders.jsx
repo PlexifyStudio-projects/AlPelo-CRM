@@ -214,6 +214,45 @@ const Orders = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // ── Preselected client handoff from ClientDetail ──
+  // When user clicks "Vender" on a client profile, we land here with the
+  // client info in sessionStorage and auto-open the create modal.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('orders:preselected_client');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      sessionStorage.removeItem('orders:preselected_client');
+      if (!data.id) return;
+      if (data.ts && Date.now() - data.ts > 120000) return; // 2-min staleness
+
+      // Open create modal pre-filled with this client
+      setEditOrder(null);
+      setIsNewClient(false);
+      setSelectedClient({ id: data.id, name: data.name, phone: data.phone, email: data.email });
+      setClientSearchQ('');
+      setForm({
+        ticket_number: '',
+        client_name: data.name || '',
+        client_phone: data.phone || '',
+        client_email: data.email || '',
+        client_doc_type: data.document_type || '',
+        client_doc_number: data.document_number || '',
+        client_birthday: '',
+        staff_id: '',
+        notes: '',
+      });
+      setFormItems([]);
+      setFormProducts([]);
+      setSvcSearch('');
+      setProdSearch('');
+      setShowModal(true);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('[Orders] preselected client parse failed', err);
+    }
+  }, []);
+
   // Load staff schedules
   useEffect(() => {
     if (!staffList.length) return;

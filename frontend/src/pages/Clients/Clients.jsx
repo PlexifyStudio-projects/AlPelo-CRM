@@ -713,6 +713,17 @@ const Clients = ({ onNavigate }) => {
         onClose={() => setSelectedClient(null)}
         onEdit={handleEditClient}
         onRefresh={loadClients}
+        onDelete={(c) => { setDeleteCandidate(c); }}
+        onSell={(c) => {
+          // Hand the client off to Orders → opens create modal preselected
+          sessionStorage.setItem('orders:preselected_client', JSON.stringify({
+            id: c.id, name: c.name, phone: c.phone, email: c.email,
+            client_id: c.client_id, document_type: c.document_type,
+            document_number: c.document_number, ts: Date.now(),
+          }));
+          setSelectedClient(null);
+          onNavigate?.('orders');
+        }}
       />
 
       <AddClientModal
