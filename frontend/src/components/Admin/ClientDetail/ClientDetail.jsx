@@ -11,6 +11,7 @@ import servicesService from '../../../services/servicesService';
 import staffService from '../../../services/staffService';
 import { useTenant } from '../../../context/TenantContext';
 import { useNotification } from '../../../context/NotificationContext';
+import { useAuth } from '../../../context/AuthContext';
 
 const COUNTRY_PREFIXES = {
   CO: '+57', CL: '+56', AR: '+54', PE: '+51', VE: '+58', EC: '+593',
@@ -77,6 +78,7 @@ const formatCOP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', cur
 const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete, onSell }) => {
   const { tenant } = useTenant();
   const { addNotification } = useNotification();
+  const { user: authUser } = useAuth();
   const countryPrefix = COUNTRY_PREFIXES[tenant?.country] || '+57';
   const [localClient, setLocalClient] = useState(clientProp);
   const [activeTab, setActiveTab] = useState('overview');
@@ -277,17 +279,18 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
 
   const handleSaveNote = useCallback(async () => {
     if (!newNote.trim()) return;
+    const author = authUser?.name || authUser?.username || 'Sistema';
     try {
       await clientService.createNote({
         client_id: client.id,
         content: newNote.trim(),
-        created_by: 'Admin',
+        created_by: author,
       });
       setNewNote('');
       setAddingNote(false);
       loadNotes();
     } catch {}
-  }, [newNote, client?.id, loadNotes]);
+  }, [newNote, client?.id, loadNotes, authUser]);
 
   const handleDeleteNote = useCallback(async (noteId) => {
     try {
@@ -1511,13 +1514,34 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
                   <p>Sin notas registradas</p>
                 </div>
               ) : (
-                notes.map((note) => (
+                notes.map((note) => {
+                  // Build a precise local-time label for the note timestamp.
+                  // Backend stores UTC; we format in Colombia tz so the user
+                  // sees exactly when the note was added in their day.
+                  let when = '';
+                  if (note.created_at) {
+                    const iso = note.created_at.endsWith('Z') ? note.created_at : `${note.created_at}Z`;
+                    const d = new Date(iso);
+                    if (!isNaN(d)) {
+                      try {
+                        when = new Intl.DateTimeFormat('es-CO', {
+                          day: '2-digit', month: 'short', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit', hour12: true,
+                          timeZone: 'America/Bogota',
+                        }).format(d);
+                      } catch {
+                        when = formatDate(note.created_at.split('T')[0]);
+                      }
+                    }
+                  }
+                  return (
                   <div key={note.id} className={`${b}__notes-card`}>
                     <div className={`${b}__notes-card-header`}>
-                      <span className={`${b}__notes-author`}>{note.created_by || 'Sistema'}</span>
-                      <span className={`${b}__notes-date`}>
-                        {note.created_at ? formatDate(note.created_at.split('T')[0]) : ''}
+                      <span className={`${b}__notes-author`}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 4, verticalAlign: '-1px' }}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        {note.created_by || 'Sistema'}
                       </span>
+                      <span className={`${b}__notes-date`}>{when}</span>
                       <button
                         className={`${b}__notes-delete`}
                         onClick={() => handleDeleteNote(note.id)}
@@ -1531,7 +1555,8 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
                     </div>
                     <p className={`${b}__notes-text`}>{note.content}</p>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
