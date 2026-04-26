@@ -194,6 +194,10 @@ def create_order(data: dict, db: Session = Depends(get_db), user=Depends(get_cur
         if cli:
             cli.visit_code = ticket
 
+    # Orders created via this endpoint come from reception — the client is
+    # physically there with their ticket, so we mark them as in_progress
+    # immediately. Pre-bookings without arrival are managed via the agenda
+    # (Appointment), not this endpoint.
     order = Order(
         tenant_id=tid,
         ticket_number=ticket,
@@ -204,7 +208,7 @@ def create_order(data: dict, db: Session = Depends(get_db), user=Depends(get_cur
         client_doc_type=data.get("client_doc_type", ""),
         client_doc_number=data.get("client_doc_number", ""),
         staff_id=data.get("staff_id"),
-        status="pending",
+        status="in_progress",
         arrival_time=now_colombia(),
         service_date=data.get("service_date"),
         service_time=data.get("service_time"),

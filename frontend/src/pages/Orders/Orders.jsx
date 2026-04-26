@@ -111,7 +111,7 @@ const Orders = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`; });
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('pendientes');
   const [showModal, setShowModal] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
   const [checkoutOrder, setCheckoutOrder] = useState(null);
@@ -335,6 +335,9 @@ const Orders = () => {
     // Status filter
     if (statusFilter === 'paid') {
       list = list.filter(o => o.payment_status === 'paid');
+    } else if (statusFilter === 'pendientes') {
+      // "Pendientes" combines anything still active: scheduled + in-progress
+      list = list.filter(o => o.status === 'pending' || o.status === 'in_progress');
     } else if (statusFilter !== 'all') {
       list = list.filter(o => o.status === statusFilter);
     }
@@ -365,9 +368,10 @@ const Orders = () => {
   }, [orders, statusFilter, search, monthFilter]);
 
   const counts = useMemo(() => {
-    const c = { all: orders.length, pending: 0, in_progress: 0, completed: 0, paid: 0, no_show: 0, cancelled: 0 };
+    const c = { all: orders.length, pendientes: 0, pending: 0, in_progress: 0, completed: 0, paid: 0, no_show: 0, cancelled: 0 };
     orders.forEach(o => {
       if (c[o.status] !== undefined) c[o.status]++;
+      if (o.status === 'pending' || o.status === 'in_progress') c.pendientes++;
       if (o.payment_status === 'paid') c.paid++;
     });
     return c;
@@ -673,6 +677,7 @@ const Orders = () => {
         <input type="month" className={`${b}__month-filter`} value={monthFilter} onChange={e => setMonthFilter(e.target.value)} />
         <div className={`${b}__filters`}>
           {[
+            { key: 'pendientes', label: 'Pendientes' },
             { key: 'all', label: 'Todas' },
             { key: 'pending', label: 'Agendadas' },
             { key: 'in_progress', label: 'En proceso' },
