@@ -1478,12 +1478,35 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
                   <div className={`${b}__svc-history-list`}>
                     {visits.filter(v => v.status === 'completed').slice(0, 10).map((v) => {
                       const staffName = staffList.find(s => s.id === v.staff_id)?.name || v.staff_name || '—';
+                      const svcName = v.service_name || 'Servicio';
+                      // First two letters of the service for the icon
+                      const svcInitials = svcName
+                        .replace(/^\[Producto\]\s*/i, '')
+                        .split(' ')
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map(w => w[0])
+                        .join('')
+                        .toUpperCase();
+                      const staffInitial = staffName !== '—' ? staffName.split(' ')[0][0]?.toUpperCase() : '?';
                       return (
                         <div key={v.id} className={`${b}__svc-history-row`}>
+                          <div className={`${b}__svc-history-icon`}>{svcInitials}</div>
                           <div className={`${b}__svc-history-svc`}>
-                            <span className={`${b}__svc-history-name`}>{v.service_name || 'Servicio'}</span>
+                            <span className={`${b}__svc-history-name`}>{svcName}</span>
                             <span className={`${b}__svc-history-meta`}>
-                              {v.visit_date ? formatDate(v.visit_date) : ''} · {staffName}
+                              {v.visit_date && (
+                                <span className={`${b}__svc-history-date`}>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                  {formatDate(v.visit_date)}
+                                </span>
+                              )}
+                              {staffName !== '—' && (
+                                <span className={`${b}__svc-history-staff`}>
+                                  <span className={`${b}__svc-history-staff-avatar`}>{staffInitial}</span>
+                                  {staffName}
+                                </span>
+                              )}
                             </span>
                           </div>
                           <span className={`${b}__svc-history-amount`}>{formatCOP(v.amount)}</span>
@@ -1671,64 +1694,90 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
 
       </div>
 
-      {/* ─────────── Share receipt modal ─────────── */}
+      {/* ─────────── Share receipt panel — Plexify-style horizontal sheet ─────────── */}
       {shareReceipt && createPortal(
         <div className={`${b}__share-backdrop`} onClick={() => setShareReceipt(null)}>
-          <div className={`${b}__share-card`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-            <button className={`${b}__share-close`} onClick={() => setShareReceipt(null)} aria-label="Cerrar">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+          <div className={`${b}__share-sheet`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            {/* HEADER strip with gradient + receipt info */}
+            <div className={`${b}__share-head`}>
+              <div className={`${b}__share-head-glow`} />
+              <button className={`${b}__share-close`} onClick={() => setShareReceipt(null)} aria-label="Cerrar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
 
-            <div className={`${b}__share-icon`}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              <div className={`${b}__share-head-row`}>
+                <div className={`${b}__share-head-num`}>
+                  <span className={`${b}__share-head-hash`}>#</span>
+                  {shareReceipt.invoice_id || shareReceipt.visit_id}
+                </div>
+                <div className={`${b}__share-head-info`}>
+                  <span className={`${b}__share-head-eyebrow`}>RECIBO LISTO PARA COMPARTIR</span>
+                  <span className={`${b}__share-head-name`}>{shareReceipt.client_name}</span>
+                  <span className={`${b}__share-head-amount`}>{formatCOP(shareReceipt.total)}</span>
+                </div>
+              </div>
             </div>
 
-            <h3 className={`${b}__share-title`}>¡Recibo generado!</h3>
-            <p className={`${b}__share-sub`}>
-              <strong>#{shareReceipt.invoice_id || shareReceipt.visit_id}</strong> · {shareReceipt.client_name}
-            </p>
-
-            <p className={`${b}__share-question`}>¿Cómo te gustaría compartir el recibo?</p>
-
-            <div className={`${b}__share-actions`}>
-              <button type="button" className={`${b}__share-btn`} onClick={handlePrintReceipt}>
-                <span className={`${b}__share-btn-icon`}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            {/* CHANNELS — horizontal list rows, not Weibook's grid of cards */}
+            <div className={`${b}__share-list`}>
+              <button type="button" className={`${b}__share-row`} onClick={handleSendReceiptWA} disabled={!shareReceipt.client_phone}>
+                <span className={`${b}__share-row-icon ${b}__share-row-icon--wa`}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.243-1.214l-.257-.154-2.849.846.846-2.849-.154-.257A8 8 0 1 1 12 20z"/></svg>
                 </span>
-                <span>Imprimir</span>
+                <div className={`${b}__share-row-text`}>
+                  <span className={`${b}__share-row-title`}>Enviar por WhatsApp</span>
+                  <span className={`${b}__share-row-meta`}>{shareReceipt.client_phone || 'Sin teléfono'}</span>
+                </div>
+                <span className={`${b}__share-row-arrow`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
               </button>
 
-              <button
-                type="button"
-                className={`${b}__share-btn`}
-                onClick={handleSendReceiptEmail}
-                disabled={!shareReceipt.client_email}
-                title={shareReceipt.client_email || 'Sin email registrado'}
-              >
-                <span className={`${b}__share-btn-icon`}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <button type="button" className={`${b}__share-row`} onClick={handleSendReceiptEmail} disabled={!shareReceipt.client_email}>
+                <span className={`${b}__share-row-icon ${b}__share-row-icon--email`}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 </span>
-                <span>Correo</span>
+                <div className={`${b}__share-row-text`}>
+                  <span className={`${b}__share-row-title`}>Enviar por correo</span>
+                  <span className={`${b}__share-row-meta`}>{shareReceipt.client_email || 'Sin email'}</span>
+                </div>
+                <span className={`${b}__share-row-arrow`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
               </button>
 
-              <button
-                type="button"
-                className={`${b}__share-btn ${b}__share-btn--wa`}
-                onClick={handleSendReceiptWA}
-                disabled={!shareReceipt.client_phone}
-                title={shareReceipt.client_phone ? 'Enviar por WhatsApp' : 'Sin teléfono registrado'}
-              >
-                <span className={`${b}__share-btn-icon`}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 0 1-4.243-1.214l-.257-.154-2.849.846.846-2.849-.154-.257A8 8 0 1 1 12 20z"/></svg>
+              <button type="button" className={`${b}__share-row`} onClick={handlePrintReceipt}>
+                <span className={`${b}__share-row-icon ${b}__share-row-icon--print`}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </span>
-                <span>WhatsApp</span>
+                <div className={`${b}__share-row-text`}>
+                  <span className={`${b}__share-row-title`}>Descargar PDF</span>
+                  <span className={`${b}__share-row-meta`}>Para imprimir o guardar</span>
+                </div>
+                <span className={`${b}__share-row-arrow`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
               </button>
             </div>
 
-            <button type="button" className={`${b}__share-link`} onClick={handleCopyReceiptLink}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-              {shareCopied ? '¡Enlace copiado!' : 'Copiar enlace del recibo'}
-            </button>
+            {/* COPY LINK — pill at bottom */}
+            <div className={`${b}__share-copyrow`}>
+              <span className={`${b}__share-copyrow-label`}>Enlace</span>
+              <code className={`${b}__share-copyrow-url`}>{buildPublicReceiptUrl(shareReceipt).replace(/^https?:\/\//, '')}</code>
+              <button type="button" className={`${b}__share-copyrow-btn`} onClick={handleCopyReceiptLink}>
+                {shareCopied ? (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    Copiado
+                  </>
+                ) : (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copiar
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>,
         document.body

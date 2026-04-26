@@ -8,18 +8,20 @@ const LANDING_PATHS = [
   '/automatizaciones',
 ];
 
-function isLandingRoute() {
+function getRoute() {
   const raw = window.location.pathname;
   const path = raw.startsWith(BASE) ? raw.slice(BASE.length) || '/' : raw;
 
-  if (LANDING_PATHS.includes(path)) return true;
-  if (path.startsWith('/producto/')) return true;
-  if (path.startsWith('/book/')) return true;
-  return false;
+  if (path.startsWith('/receipt/')) return { kind: 'receipt', id: path.replace('/receipt/', '').split('/')[0] };
+  if (LANDING_PATHS.includes(path)) return { kind: 'landing' };
+  if (path.startsWith('/producto/')) return { kind: 'landing' };
+  if (path.startsWith('/book/')) return { kind: 'landing' };
+  return { kind: 'app' };
 }
 
 const LandingRouter = lazy(() => import('./routes/LandingRouter'));
 const CRMShell = lazy(() => import('./CRMShell'));
+const PublicReceipt = lazy(() => import('./pages/PublicReceipt/PublicReceipt'));
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -54,8 +56,21 @@ class ErrorBoundary extends Component {
 }
 
 function App() {
+  const route = getRoute();
   const hasToken = !!localStorage.getItem('plexify_token');
-  const showLanding = isLandingRoute() && !hasToken;
+
+  // Public receipt: render with no auth requirement, regardless of session
+  if (route.kind === 'receipt') {
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={null}>
+          <PublicReceipt receiptId={route.id} />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  const showLanding = route.kind === 'landing' && !hasToken;
 
   return (
     <ErrorBoundary>

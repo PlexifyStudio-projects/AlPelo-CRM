@@ -118,6 +118,9 @@ app.include_router(register_router, prefix="/api", tags=["Public Register"])
 from routes.booking_endpoints import router as booking_router
 app.include_router(booking_router, prefix="/api", tags=["Public Booking"])
 
+from routes.receipt_endpoints import router as receipt_router
+app.include_router(receipt_router, prefix="/api", tags=["Public Receipt"])
+
 from routes.automation_studio_endpoints import router as automation_studio_router
 app.include_router(automation_studio_router, prefix="/api", tags=["Automation Studio"])
 
