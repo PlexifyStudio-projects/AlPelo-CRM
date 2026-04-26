@@ -1,7 +1,7 @@
 /* Plexify Studio — Service Worker
    Push Notifications + Asset Caching para rendimiento */
 
-const CACHE_VERSION = 'plexify-v16';
+const CACHE_VERSION = 'plexify-v17';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 

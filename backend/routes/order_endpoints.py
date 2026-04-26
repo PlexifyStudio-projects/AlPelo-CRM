@@ -187,6 +187,13 @@ def create_order(data: dict, db: Session = Depends(get_db), user=Depends(get_cur
             db.flush()
             client_id = new_client.id
 
+    # Update the client's visit_code with the latest ticket so the Clients
+    # table reflects the most recent order at a glance.
+    if client_id and ticket:
+        cli = db.query(Client).filter(Client.id == client_id, Client.tenant_id == tid).first()
+        if cli:
+            cli.visit_code = ticket
+
     order = Order(
         tenant_id=tid,
         ticket_number=ticket,

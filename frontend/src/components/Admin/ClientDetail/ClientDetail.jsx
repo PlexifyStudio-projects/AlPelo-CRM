@@ -378,7 +378,11 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
   }, [svcCatalog, staffSchedules, dayApts, svcItems, svcDate]);
 
   const addSvcItem = useCallback((svc) => {
-    setSvcItems(prev => [...prev, { service_id: svc.id, service_name: svc.name, price: svc.price, duration_minutes: svc.duration_minutes, staff_id: '', time: '', staff_ids: svc.staff_ids || [] }]);
+    setSvcItems(prev => {
+      // Don't add the same service twice — second click is a no-op (visual feedback handled below)
+      if (prev.some(i => i.service_id === svc.id)) return prev;
+      return [...prev, { service_id: svc.id, service_name: svc.name, price: svc.price, duration_minutes: svc.duration_minutes, staff_id: '', time: '', staff_ids: svc.staff_ids || [] }];
+    });
     setSvcSearch('');
   }, []);
 
@@ -1080,43 +1084,6 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
 
           {activeTab === 'services' && (
             <div className={`${b}__services-tab`}>
-              {/* ─────────── Servicios anteriores del cliente (history) ─────────── */}
-              {visits.filter(v => v.status === 'completed').length > 0 && (
-                <div className={`${b}__svc-history`}>
-                  <div className={`${b}__svc-history-head`}>
-                    <h4 className={`${b}__svc-history-title`}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      Servicios anteriores
-                    </h4>
-                    <span className={`${b}__svc-history-count`}>{visits.filter(v => v.status === 'completed').length} en total</span>
-                  </div>
-                  <div className={`${b}__svc-history-list`}>
-                    {visits.filter(v => v.status === 'completed').slice(0, 5).map((v) => {
-                      const staffName = staffList.find(s => s.id === v.staff_id)?.name || v.staff_name || '—';
-                      return (
-                        <div key={v.id} className={`${b}__svc-history-row`}>
-                          <div className={`${b}__svc-history-svc`}>
-                            <span className={`${b}__svc-history-name`}>{v.service_name || 'Servicio'}</span>
-                            <span className={`${b}__svc-history-meta`}>
-                              {v.visit_date ? formatDate(v.visit_date) : ''} · {staffName}
-                            </span>
-                          </div>
-                          <span className={`${b}__svc-history-amount`}>{formatCOP(v.amount)}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ─────────── Crear nueva orden ─────────── */}
-              <div className={`${b}__svc-new-head`}>
-                <h4 className={`${b}__svc-new-title`}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Crear nueva orden
-                </h4>
-              </div>
-
               {/* Ticket number (required) */}
               <div className={`${b}__svc-ticket-row`}>
                 <label className={`${b}__svc-label`}>Ticket *</label>
@@ -1144,13 +1111,27 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
                     {clientFavoriteServices.length > 0 ? 'Servicios habituales del cliente' : 'Acceso rápido'}
                   </label>
                   <div className={`${b}__svc-quick-list`}>
-                    {quickServices.map(s => (
-                      <button key={s.id} type="button" className={`${b}__svc-quick-chip`} onClick={() => addSvcItem(s)} title={s._count ? `${s._count} veces` : ''}>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                        <span>{s.name}</span>
-                        {s._count > 1 && <span className={`${b}__svc-quick-count`}>×{s._count}</span>}
-                      </button>
-                    ))}
+                    {quickServices.map(s => {
+                      const added = svcItems.some(i => i.service_id === s.id);
+                      return (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className={`${b}__svc-quick-chip ${added ? `${b}__svc-quick-chip--added` : ''}`}
+                          onClick={() => addSvcItem(s)}
+                          disabled={added}
+                          title={added ? 'Ya agregado' : (s._count ? `${s._count} veces` : '')}
+                        >
+                          {added ? (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                          ) : (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                          )}
+                          <span>{s.name}</span>
+                          {s._count > 1 && <span className={`${b}__svc-quick-count`}>×{s._count}</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1386,7 +1367,36 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
 
           {activeTab === 'history' && (
             <div className={`${b}__history`}>
-              {allAppointments.length === 0 ? (
+              {/* Servicios completados — desde visit_history (lo que hizo, no lo agendado) */}
+              {visits.filter(v => v.status === 'completed').length > 0 && (
+                <div className={`${b}__svc-history`} style={{ marginBottom: 18 }}>
+                  <div className={`${b}__svc-history-head`}>
+                    <h4 className={`${b}__svc-history-title`}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      Servicios realizados
+                    </h4>
+                    <span className={`${b}__svc-history-count`}>{visits.filter(v => v.status === 'completed').length} en total</span>
+                  </div>
+                  <div className={`${b}__svc-history-list`}>
+                    {visits.filter(v => v.status === 'completed').slice(0, 10).map((v) => {
+                      const staffName = staffList.find(s => s.id === v.staff_id)?.name || v.staff_name || '—';
+                      return (
+                        <div key={v.id} className={`${b}__svc-history-row`}>
+                          <div className={`${b}__svc-history-svc`}>
+                            <span className={`${b}__svc-history-name`}>{v.service_name || 'Servicio'}</span>
+                            <span className={`${b}__svc-history-meta`}>
+                              {v.visit_date ? formatDate(v.visit_date) : ''} · {staffName}
+                            </span>
+                          </div>
+                          <span className={`${b}__svc-history-amount`}>{formatCOP(v.amount)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {allAppointments.length === 0 && visits.filter(v => v.status === 'completed').length === 0 ? (
                 <div className={`${b}__empty`}>
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                     <circle cx="12" cy="12" r="10" />
@@ -1394,7 +1404,7 @@ const ClientDetail = ({ client: clientProp, onClose, onEdit, onRefresh, onDelete
                   </svg>
                   <p>No hay historial disponible</p>
                 </div>
-              ) : (
+              ) : allAppointments.length > 0 && (
                 <div className={`${b}__history-section`}>
                   <h4 className={`${b}__history-section-title`}>Todas las visitas ({allAppointments.length})</h4>
                   <div className={`${b}__history-table`}>

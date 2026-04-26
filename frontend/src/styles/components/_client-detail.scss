@@ -2605,6 +2605,17 @@
     font-weight: 800;
     font-variant-numeric: tabular-nums;
   }
+
+  &__svc-quick-chip--added {
+    background: rgba(16, 185, 129, 0.08) !important;
+    border-color: rgba(16, 185, 129, 0.32) !important;
+    color: #047857 !important;
+    cursor: default;
+
+    svg { color: #10B981; }
+
+    &:hover { transform: none !important; }
+  }
 }
 
 @keyframes cdRingSpin {
