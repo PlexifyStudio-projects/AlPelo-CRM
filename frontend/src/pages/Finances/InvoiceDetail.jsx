@@ -79,17 +79,35 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
     return () => { mounted = false; };
   }, []);
 
-  const handleOpenStaffCommissions = useCallback((staffId, staffName) => {
-    if (!staffId) {
-      addNotification(`No se pudo abrir el perfil de ${staffName} (falta el ID).`, 'warning');
+  // Open commission editor at the right place:
+  //  · Service items → Servicios page, expand commissions panel of that service, highlight staff
+  //  · Product items → Inventario page, open that product
+  const handleConfigureCommission = useCallback((item, staffName) => {
+    const isProduct = (item.service_name || '').toLowerCase().startsWith('[producto]');
+
+    if (isProduct) {
+      // Product commission lives in Inventory → product editor
+      sessionStorage.setItem('inventory:open_product', JSON.stringify({
+        product_name: item.service_name?.replace(/^\[producto\]\s*/i, ''),
+        focus: 'commission',
+        ts: Date.now(),
+      }));
+      window.dispatchEvent(new CustomEvent('plexify:navigate', { detail: 'inventory' }));
       return;
     }
-    sessionStorage.setItem('team:open_staff', JSON.stringify({
-      staff_id: staffId,
-      focus: 'commissions',
+
+    if (!item.service_id) {
+      addNotification(`No se puede abrir la configuración: el servicio "${item.service_name}" no tiene ID asociado en esta factura.`, 'warning');
+      return;
+    }
+
+    sessionStorage.setItem('services:open_commission', JSON.stringify({
+      service_id: item.service_id,
+      highlight_staff_id: item.staff_id || null,
+      highlight_staff_name: staffName || null,
       ts: Date.now(),
     }));
-    window.dispatchEvent(new CustomEvent('plexify:navigate', { detail: 'team' }));
+    window.dispatchEvent(new CustomEvent('plexify:navigate', { detail: 'services' }));
   }, [addNotification]);
 
   const handleOpenReceipt = useCallback(() => {
@@ -427,8 +445,8 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
                       <button
                         type="button"
                         className="invoice-detail__comm-unset"
-                        onClick={() => handleOpenStaffCommissions(item.staff_id, c.staff_name)}
-                        title={`Abrir el perfil de ${c.staff_name} para configurar la comisión`}
+                        onClick={() => handleConfigureCommission(item, c.staff_name)}
+                        title={`Configurar la comisión de ${c.staff_name} para ${c.service_name}`}
                       >
                         Configurar
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>

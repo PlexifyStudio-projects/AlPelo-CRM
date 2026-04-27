@@ -195,6 +195,36 @@ const Services = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Open the commission editor for a specific service when navigated from
+  // InvoiceDetail (sessionStorage handoff). Highlights the staff row that
+  // triggered the request so the admin can configure it directly.
+  useEffect(() => {
+    if (!services || services.length === 0) return;
+    try {
+      const raw = sessionStorage.getItem('services:open_commission');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      sessionStorage.removeItem('services:open_commission');
+      if (data.ts && Date.now() - data.ts > 120000) return;
+      const target = services.find((s) => s.id === data.service_id);
+      if (target) {
+        toggleCommission(target.id);
+        // Highlight pulse on the relevant staff row
+        if (data.highlight_staff_id) {
+          setTimeout(() => {
+            const el = document.querySelector(`[data-comm-staff-id="${data.highlight_staff_id}"]`);
+            if (el) {
+              el.classList.add('services__comm-row--pulse');
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => el.classList.remove('services__comm-row--pulse'), 2400);
+            }
+          }, 300);
+        }
+      }
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [services]);
+
   const existingCategories = useMemo(() => [...new Set(services.map(s => s.category).filter(Boolean))], [services]);
   const categories = useMemo(() => ['Todos', ...existingCategories], [existingCategories]);
 
@@ -482,7 +512,7 @@ const Services = () => {
                               {commissionData.map(c => {
                                 const amount = Math.round(svc.price * c.commission_rate);
                                 return (
-                                  <div key={c.staff_id} className={`${b}__commission-row`}>
+                                  <div key={c.staff_id} className={`${b}__commission-row`} data-comm-staff-id={c.staff_id}>
                                     <span className={`${b}__commission-name`}>{c.staff_name}</span>
                                     <div className={`${b}__commission-input-wrap`}>
                                       <input

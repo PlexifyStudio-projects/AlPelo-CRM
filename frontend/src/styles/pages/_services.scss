@@ -483,8 +483,19 @@
     padding: 10px 16px;
     align-items: center;
     border-bottom: 1px solid $color-gray-50;
+    transition: background 200ms ease, box-shadow 200ms ease;
 
     &:last-child { border-bottom: none; }
+
+    &--pulse {
+      animation: svcCommPulse 2.4s $ease-smooth;
+    }
+  }
+
+  @keyframes svcCommPulse {
+    0%   { background: rgba(245, 158, 11, 0.18); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4); }
+    50%  { background: rgba(245, 158, 11, 0.1); box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+    100% { background: transparent; box-shadow: none; }
   }
 
   &__commission-name {
