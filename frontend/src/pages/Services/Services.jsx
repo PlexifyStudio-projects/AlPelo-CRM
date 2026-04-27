@@ -126,6 +126,9 @@ const Services = () => {
   // ─── DELETE CONFIRM ─────────────────────────────────
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
+  // ─── DISCARD CHANGES CONFIRM ────────────────────────
+  const [discardConfirm, setDiscardConfirm] = useState(false);
+
   // ─── IMPORT ─────────────────────────────────────────
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
@@ -264,7 +267,15 @@ const Services = () => {
   };
 
   const closeModal = () => {
-    if (commDirty && !window.confirm('Tienes cambios sin guardar en comisiones. ¿Cerrar sin guardar?')) return;
+    if (commDirty) {
+      setDiscardConfirm(true);
+      return;
+    }
+    setShowModal(false);
+  };
+
+  const confirmDiscard = () => {
+    setDiscardConfirm(false);
     setShowModal(false);
   };
 
@@ -627,6 +638,26 @@ const Services = () => {
         )}
       </div>
 
+      {/* ── DISCARD CHANGES CONFIRM ───────────────── */}
+      {discardConfirm && createPortal(
+        <div className={`${b}__confirm-overlay`} onClick={() => setDiscardConfirm(false)}>
+          <div className={`${b}__confirm`} onClick={e => e.stopPropagation()}>
+            <div className={`${b}__confirm-icon ${b}__confirm-icon--warn`}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h3 className={`${b}__confirm-title`}>Cambios sin guardar</h3>
+            <p className={`${b}__confirm-text`}>
+              Tienes cambios pendientes en las comisiones. Si cierras ahora se perderán.
+            </p>
+            <div className={`${b}__confirm-actions`}>
+              <button className={`${b}__confirm-cancel`} onClick={() => setDiscardConfirm(false)}>Seguir editando</button>
+              <button className={`${b}__confirm-delete`} onClick={confirmDiscard}>Descartar y cerrar</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {/* ── DELETE CONFIRM ─────────────────────────── */}
       {deleteConfirm && createPortal(
         <div className={`${b}__confirm-overlay`} onClick={() => setDeleteConfirm(null)}>
@@ -767,63 +798,53 @@ const Services = () => {
               </header>
 
               <div className={`${b}__modal-body`}>
-              {/* ─── TAB: INFORMACIÓN BÁSICA ─── */}
+              {/* ─── TAB: INFORMACIÓN BÁSICA — premium card sections ─── */}
               {modalTab === 'basic' && (
-                <div className={`${b}__tab-pane ${b}__tab-pane--basic`}>
-                  {/* Photo card */}
-                  <div className={`${b}__photo-card`}>
-                    <input
-                      ref={photoInputRef}
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      onChange={(e) => handlePhotoSelect(e.target.files?.[0])}
-                    />
-                    {photoPreview ? (
-                      <div className={`${b}__photo-preview`}>
-                        <img src={photoPreview} alt="Vista previa" />
-                        <div className={`${b}__photo-overlay`}>
-                          <button type="button" className={`${b}__photo-replace`} onClick={() => photoInputRef.current?.click()}>
-                            Reemplazar
-                          </button>
-                          <button type="button" className={`${b}__photo-delete`} onClick={handleRemovePhoto}>
-                            Quitar
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button type="button" className={`${b}__photo-empty`} onClick={() => photoInputRef.current?.click()}>
-                        <div className={`${b}__photo-empty-icon`}>
-                          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                        </div>
-                        <strong>Agregar imagen</strong>
-                        <span>JPG · PNG · WEBP — máx 2 MB</span>
-                      </button>
-                    )}
-                  </div>
+                <div className={`${b}__basic`}>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => handlePhotoSelect(e.target.files?.[0])}
+                  />
 
-                  {/* Form fields */}
-                  <div className={`${b}__form`}>
-                    <div className={`${b}__field`}>
-                      <label>Nombre del servicio *</label>
-                      <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Ej: Manicure semipermanente" />
+                  {/* ─── HERO MEDIA + IDENTITY ─── */}
+                  <section className={`${b}__sec ${b}__sec--hero`}>
+                    <div className={`${b}__hero-media`}>
+                      {photoPreview ? (
+                        <>
+                          <img src={photoPreview} alt="Vista previa" />
+                          <div className={`${b}__hero-media-actions`}>
+                            <button type="button" className={`${b}__hero-media-btn`} onClick={() => photoInputRef.current?.click()}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                              Cambiar imagen
+                            </button>
+                            <button type="button" className={`${b}__hero-media-btn ${b}__hero-media-btn--del`} onClick={handleRemovePhoto}>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <button type="button" className={`${b}__hero-media-empty`} onClick={() => photoInputRef.current?.click()}>
+                          <div className={`${b}__hero-media-empty-icon`}>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                          </div>
+                          <strong>Subir foto del servicio</strong>
+                          <span>1240×500 px · JPG / PNG / WEBP · máx 2 MB</span>
+                          <em>Haz clic para seleccionar</em>
+                        </button>
+                      )}
                     </div>
 
-                    <div className={`${b}__field`}>
-                      <label>Tipo de servicio</label>
-                      <div className={`${b}__type-picker`}>
-                        {Object.entries(SERVICE_TYPE_META).map(([key, m]) => (
-                          <button key={key} type="button"
-                            className={`${b}__type-btn ${formData.service_type === key ? `${b}__type-btn--active` : ''}`}
-                            onClick={() => setFormData({ ...formData, service_type: key })}
-                            style={formData.service_type === key ? { '--type-color': m.color } : {}}>
-                            {m.label}
-                          </button>
-                        ))}
+                    <div className={`${b}__hero-identity`}>
+                      <div className={`${b}__field ${b}__field--lg`}>
+                        <label>Nombre del servicio *</label>
+                        <input type="text" value={formData.name}
+                          onChange={e => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="Ej: Manicure semipermanente" />
                       </div>
-                    </div>
 
-                    <div className={`${b}__field-row`}>
                       <div className={`${b}__field`}>
                         <label>Categoría *</label>
                         {!newCategoryMode ? (
@@ -842,39 +863,125 @@ const Services = () => {
                           </div>
                         )}
                       </div>
-                      <div className={`${b}__field`}>
-                        <label>Precio (COP) *</label>
-                        <input type="number" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} placeholder="40000" />
+                    </div>
+                  </section>
+
+                  {/* ─── TYPE PICKER as descriptive cards ─── */}
+                  <section className={`${b}__sec`}>
+                    <div className={`${b}__sec-head`}>
+                      <div className={`${b}__sec-icon ${b}__sec-icon--type`}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </div>
+                      <div>
+                        <h4>Tipo de servicio</h4>
+                        <span>Define cómo se cobra y agenda</span>
                       </div>
                     </div>
+                    <div className={`${b}__type-cards`}>
+                      {[
+                        { key: 'cita', label: 'Cita', desc: 'Reserva en agenda con duración fija. El cliente elige día y hora.', color: '#3B82F6',
+                          icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        },
+                        { key: 'paquete', label: 'Paquete / Bono', desc: 'Pago único con vigencia en días. Útil para promociones y mensualidades.', color: '#8B5CF6',
+                          icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        },
+                        { key: 'reserva', label: 'Reserva', desc: 'Estancia o múltiples sesiones. Usa la duración como referencia.', color: '#F59E0B',
+                          icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                        },
+                      ].map(t => (
+                        <button key={t.key} type="button"
+                          className={`${b}__type-card ${formData.service_type === t.key ? `${b}__type-card--active` : ''}`}
+                          style={formData.service_type === t.key ? { '--type-color': t.color } : {}}
+                          onClick={() => setFormData({ ...formData, service_type: t.key })}>
+                          <span className={`${b}__type-card-icon`} style={{ background: t.color }}>{t.icon}</span>
+                          <span className={`${b}__type-card-text`}>
+                            <strong>{t.label}</strong>
+                            <span>{t.desc}</span>
+                          </span>
+                          <span className={`${b}__type-card-radio`}>
+                            {formData.service_type === t.key && (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            )}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
 
-                    <div className={`${b}__field`}>
-                      <label>{SERVICE_TYPE_META[formData.service_type]?.durationLabel}</label>
-                      <div className={`${b}__time-picker`}>
-                        <input
-                          type="number"
-                          value={formData.duration_minutes}
-                          onChange={e => setFormData({ ...formData, duration_minutes: e.target.value })}
-                          placeholder={formData.service_type === 'paquete' ? '30' : '40'}
-                          className={`${b}__time-input`}
-                        />
-                        <div className={`${b}__time-presets`}>
-                          {(formData.service_type === 'paquete' ? [7, 15, 30, 60, 90, 180, 365] : TIME_PRESETS).map(t => (
-                            <button key={t} type="button"
-                              className={`${b}__time-preset ${parseInt(formData.duration_minutes) === t ? `${b}__time-preset--active` : ''}`}
-                              onClick={() => setFormData({ ...formData, duration_minutes: String(t) })}>
-                              {formData.service_type === 'paquete' ? `${t} días` : (t < 60 ? `${t}m` : `${t / 60}h`)}
-                            </button>
-                          ))}
+                  {/* ─── PRICE + DURATION (split cards) ─── */}
+                  <div className={`${b}__split`}>
+                    <section className={`${b}__sec ${b}__sec--price`}>
+                      <div className={`${b}__sec-head`}>
+                        <div className={`${b}__sec-icon ${b}__sec-icon--price`}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        </div>
+                        <div>
+                          <h4>Precio</h4>
+                          <span>Valor fijo en pesos colombianos</span>
                         </div>
                       </div>
-                    </div>
+                      <div className={`${b}__price-input`}>
+                        <span className={`${b}__price-currency`}>$</span>
+                        <input type="number" value={formData.price}
+                          onChange={e => setFormData({ ...formData, price: e.target.value })}
+                          placeholder="40000"
+                          className={`${b}__price-field`} />
+                        <span className={`${b}__price-unit`}>COP</span>
+                      </div>
+                      <div className={`${b}__price-hint`}>
+                        {formData.price
+                          ? <>Se mostrará como <strong>{formatCurrency(parseInt(formData.price) || 0)}</strong></>
+                          : 'Define cuánto cuesta este servicio'}
+                      </div>
+                    </section>
 
-                    <div className={`${b}__field`}>
-                      <label>Descripción</label>
-                      <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} placeholder="Descripción visible al cliente (opcional)" rows={3} />
-                    </div>
+                    <section className={`${b}__sec ${b}__sec--duration`}>
+                      <div className={`${b}__sec-head`}>
+                        <div className={`${b}__sec-icon ${b}__sec-icon--time`}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <div>
+                          <h4>{formData.service_type === 'paquete' ? 'Vigencia' : 'Duración'}</h4>
+                          <span>{formData.service_type === 'paquete' ? 'Cuántos días dura el bono' : 'Cuánto tarda el servicio'}</span>
+                        </div>
+                      </div>
+                      <div className={`${b}__time-input-wrap`}>
+                        <input type="number" value={formData.duration_minutes}
+                          onChange={e => setFormData({ ...formData, duration_minutes: e.target.value })}
+                          placeholder={formData.service_type === 'paquete' ? '30' : '40'}
+                          className={`${b}__time-field`} />
+                        <span className={`${b}__time-unit`}>{formData.service_type === 'paquete' ? 'días' : 'min'}</span>
+                      </div>
+                      <div className={`${b}__time-presets`}>
+                        {(formData.service_type === 'paquete' ? [7, 15, 30, 60, 90, 180, 365] : TIME_PRESETS).map(t => (
+                          <button key={t} type="button"
+                            className={`${b}__time-preset ${parseInt(formData.duration_minutes) === t ? `${b}__time-preset--active` : ''}`}
+                            onClick={() => setFormData({ ...formData, duration_minutes: String(t) })}>
+                            {formData.service_type === 'paquete' ? `${t}d` : (t < 60 ? `${t}m` : `${t / 60}h`)}
+                          </button>
+                        ))}
+                      </div>
+                    </section>
                   </div>
+
+                  {/* ─── DESCRIPTION ─── */}
+                  <section className={`${b}__sec`}>
+                    <div className={`${b}__sec-head`}>
+                      <div className={`${b}__sec-icon ${b}__sec-icon--desc`}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                      </div>
+                      <div>
+                        <h4>Descripción</h4>
+                        <span>Texto visible para el cliente al reservar (opcional)</span>
+                      </div>
+                    </div>
+                    <textarea value={formData.description}
+                      onChange={e => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Ej: Incluye limpieza, exfoliación e hidratación. Recomendado cada 3 semanas."
+                      rows={3}
+                      className={`${b}__desc-field`} />
+                    <div className={`${b}__desc-count`}>{(formData.description || '').length} / 500</div>
+                  </section>
                 </div>
               )}
 
