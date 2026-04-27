@@ -344,16 +344,42 @@ const Orders = () => {
   };
 
   // ── Ticket-first search debounce ──
-  // The same /clients/?search= endpoint already matches on visit_code,
-  // client_id, name, phone, email — so we just send the raw query.
+  // /clients/?search= matches name, phone, email, document, client_id and
+  // client.visit_code. We ALSO scan the local orders list for matching
+  // ticket_number (so an active order ticket like M2828 finds the client
+  // even when client.visit_code is something different).
   useEffect(() => {
     if (!ticketLookup.trim() || selectedClient || isNewClient) { setTicketResults([]); return; }
     if (ticketSearchTimer.current) clearTimeout(ticketSearchTimer.current);
     ticketSearchTimer.current = setTimeout(async () => {
       setTicketSearching(true);
       try {
+        const q = ticketLookup.trim().toLowerCase();
         const res = await clientService.list({ search: ticketLookup });
-        setTicketResults(Array.isArray(res) ? res.slice(0, 6) : []);
+        const fromClients = Array.isArray(res) ? res : [];
+
+        // Add clients whose ACTIVE ORDER ticket matches (in-memory orders list)
+        const matchedOrders = (orders || []).filter(o =>
+          (o.ticket_number || '').toLowerCase().includes(q) &&
+          o.client_id &&
+          (o.status === 'pending' || o.status === 'in_progress')
+        );
+        const fromOrders = [];
+        for (const o of matchedOrders) {
+          if (fromClients.some(c => c.id === o.client_id)) continue;
+          if (fromOrders.some(c => c.id === o.client_id)) continue;
+          fromOrders.push({
+            id: o.client_id,
+            name: o.client_name,
+            phone: o.client_phone,
+            email: o.client_email,
+            client_id: '',
+            visit_code: o.ticket_number, // surface the active ticket
+            _from_active_order: true,
+          });
+        }
+
+        setTicketResults([...fromOrders, ...fromClients].slice(0, 6));
       } catch {
         setTicketResults([]);
       } finally {
@@ -361,7 +387,7 @@ const Orders = () => {
       }
     }, 250);
     return () => { if (ticketSearchTimer.current) clearTimeout(ticketSearchTimer.current); };
-  }, [ticketLookup, selectedClient, isNewClient]);
+  }, [ticketLookup, selectedClient, isNewClient, orders]);
 
   const pickTicketResult = useCallback((c) => {
     selectClient(c);
