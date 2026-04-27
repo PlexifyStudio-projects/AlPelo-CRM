@@ -69,19 +69,28 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
   useEffect(() => {
     let mounted = true;
     financeService.getAllCommissionRates?.()
-      .then((rows) => {
-        if (!mounted || !Array.isArray(rows)) return;
-        const map = {};
-        for (const r of rows) {
-          if (r.staff_id && r.service_id) {
-            map[`${r.staff_id}-${r.service_id}`] = r.rate ?? r.commission_rate ?? 0;
-          }
-        }
-        setCommRates(map);
+      .then((res) => {
+        if (!mounted) return;
+        // Backend returns { rates: { 'staffId-serviceId': rate, ... } }
+        const rates = res?.rates || res || {};
+        setCommRates(typeof rates === 'object' ? rates : {});
       })
       .catch(() => {});
     return () => { mounted = false; };
   }, []);
+
+  const handleOpenStaffCommissions = useCallback((staffId, staffName) => {
+    if (!staffId) {
+      addNotification(`No se pudo abrir el perfil de ${staffName} (falta el ID).`, 'warning');
+      return;
+    }
+    sessionStorage.setItem('team:open_staff', JSON.stringify({
+      staff_id: staffId,
+      focus: 'commissions',
+      ts: Date.now(),
+    }));
+    window.dispatchEvent(new CustomEvent('plexify:navigate', { detail: 'team' }));
+  }, [addNotification]);
 
   const handleOpenReceipt = useCallback(() => {
     if (!invoice) return;
@@ -144,36 +153,58 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
     { method: invoice.payment_method, amount: total },
   ] : [];
 
-  // ── Commissions: prefer frozen amounts on items, fall back to rate lookup, then default 50% ──
-  const fallbackRate = invoice.staff_commission_rate || 0.5;
+  // ── Commissions: PER-STAFF PER-SERVICE rate ──
+  // Each staff member has their own rate for each service (Anderson can be 40%
+  // on Corte while Ángel is 70% on the same Corte). We look up the rate from
+  // StaffServiceCommission for that exact (staff, service) pair.
+  // Priority:
+  //   1. frozen_items[i].commission_amount (locked at payment time, immutable)
+  //   2. item.commission_amount (already calculated by backend)
+  //   3. commRates['staffId-serviceId'] (the configured rate for THIS pair)
+  //   4. null → "No configurada" (do NOT silently fall back to a global default)
   const frozenItems = invoice.frozen_items || [];
 
   const commissions = items
     .filter(it => it.staff_id || it.staff_name)
     .map((it, idx) => {
       const frozen = frozenItems[idx] || frozenItems.find(fi => fi.service_id === it.service_id && fi.staff_id === it.staff_id);
-      let commission = 0;
-      let rate = fallbackRate;
+      const itemTotal = it.total || (it.quantity || 1) * (it.unit_price || 0);
+      let commission = null;
+      let rate = null;
+      let source = 'unset';
+
       if (frozen?.commission_amount != null) {
         commission = frozen.commission_amount;
-        rate = frozen.commission_rate || rate;
+        rate = frozen.commission_rate ?? null;
+        source = 'frozen';
       } else if (it.commission_amount != null) {
         commission = it.commission_amount;
-        rate = it.commission_rate || rate;
-      } else {
-        const itemTotal = it.total || (it.quantity || 1) * (it.unit_price || 0);
-        const lookupRate = (it.staff_id && it.service_id) ? commRates[`${it.staff_id}-${it.service_id}`] : null;
-        rate = lookupRate ?? fallbackRate;
-        commission = Math.round(itemTotal * rate);
+        rate = it.commission_rate ?? null;
+        source = 'item';
+      } else if (it.staff_id && it.service_id) {
+        const key = `${it.staff_id}-${it.service_id}`;
+        if (Object.prototype.hasOwnProperty.call(commRates, key)) {
+          rate = commRates[key];
+          commission = Math.round(itemTotal * rate);
+          source = 'lookup';
+        } else {
+          // Diagnostic — helps the user understand why it shows as 'Sin configurar'.
+          // eslint-disable-next-line no-console
+          console.log('[InvoiceDetail] no commission rate for', key, '— available keys:', Object.keys(commRates));
+        }
       }
+
       return {
         service_name: it.service_name,
         qty: it.quantity || 1,
         staff_name: it.staff_name || '—',
         commission,
         rate,
+        source,
       };
     });
+
+  const totalCommissions = commissions.reduce((s, c) => s + (c.commission || 0), 0);
 
   return (
     <div className="invoice-detail">
@@ -376,25 +407,44 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
           <div className="invoice-detail__panel invoice-detail__panel--commissions">
             <span className="invoice-detail__panel-eyebrow">Comisiones generadas</span>
             <ul className="invoice-detail__comm-list">
-              {commissions.map((c, idx) => (
-                <li key={idx}>
-                  <div className="invoice-detail__comm-line">
-                    <span className="invoice-detail__staff-avatar">{c.staff_name[0]?.toUpperCase()}</span>
-                    <div className="invoice-detail__comm-text">
-                      <span className="invoice-detail__comm-name">{c.staff_name}</span>
-                      <span className="invoice-detail__comm-svc">
-                        {c.service_name} × {c.qty}
-                        {c.rate > 0 && <span className="invoice-detail__comm-pct"> · {Math.round(c.rate * 100)}%</span>}
-                      </span>
+              {commissions.map((c, idx) => {
+                const hasRate = c.rate != null && c.rate > 0;
+                const unset = c.source === 'unset';
+                const item = items.find(it => (it.staff_name === c.staff_name) && it.service_name === c.service_name) || {};
+                return (
+                  <li key={idx}>
+                    <div className="invoice-detail__comm-line">
+                      <span className="invoice-detail__staff-avatar">{c.staff_name[0]?.toUpperCase()}</span>
+                      <div className="invoice-detail__comm-text">
+                        <span className="invoice-detail__comm-name">{c.staff_name}</span>
+                        <span className="invoice-detail__comm-svc">
+                          {c.service_name} × {c.qty}
+                          {hasRate && <span className="invoice-detail__comm-pct"> · {(c.rate * 100).toFixed(c.rate * 100 % 1 === 0 ? 0 : 1)}%</span>}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <span className="invoice-detail__comm-amount">{formatCOP(c.commission)}</span>
+                    {unset ? (
+                      <button
+                        type="button"
+                        className="invoice-detail__comm-unset"
+                        onClick={() => handleOpenStaffCommissions(item.staff_id, c.staff_name)}
+                        title={`Abrir el perfil de ${c.staff_name} para configurar la comisión`}
+                      >
+                        Configurar
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </button>
+                    ) : (
+                      <span className="invoice-detail__comm-amount">{formatCOP(c.commission)}</span>
+                    )}
+                  </li>
+                );
+              })}
+              {totalCommissions > 0 && (
+                <li className="invoice-detail__comm-total">
+                  <span>Total comisiones</span>
+                  <span>{formatCOP(totalCommissions)}</span>
                 </li>
-              ))}
-              <li className="invoice-detail__comm-total">
-                <span>Total comisiones</span>
-                <span>{formatCOP(commissions.reduce((s, c) => s + c.commission, 0))}</span>
-              </li>
+              )}
             </ul>
           </div>
         )}

@@ -1113,6 +1113,25 @@ const Team = () => {
 
   useEffect(() => { loadStaff(); }, [loadStaff]);
 
+  // Open a staff member's editor when InvoiceDetail (or other module) hands off
+  // the request via sessionStorage. Used by the "Configurar" button on
+  // commission rows that don't have a per-staff/per-service rate yet.
+  useEffect(() => {
+    if (!staff || staff.length === 0) return;
+    try {
+      const raw = sessionStorage.getItem('team:open_staff');
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      sessionStorage.removeItem('team:open_staff');
+      if (data.ts && Date.now() - data.ts > 120000) return;
+      const target = staff.find((s) => s.id === data.staff_id);
+      if (target) {
+        setEditingStaff(target);
+        setShowForm(true);
+      }
+    } catch { /* ignore */ }
+  }, [staff]);
+
   const filtered = useMemo(() => {
     let list = [...staff];
     if (roleFilter !== 'Todos') list = list.filter((s) => s.role === roleFilter);
