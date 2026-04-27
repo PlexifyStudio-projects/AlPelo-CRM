@@ -641,18 +641,51 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Ad
 
     if checkout:
         ci_list = db.query(CheckoutItem).filter(CheckoutItem.checkout_id == checkout.id).all()
-        frozen_items = [
-            {
+        # Build product-commission map by parsing <!--PRODUCTS:...:PRODUCTS--> JSON
+        # from any related visit notes. Products keep their commission as a fixed
+        # $ per-unit value in the inventory and that snapshot lives in the visit.
+        import json as _json_pc
+        product_comm_map = {}  # name (lowercase) → comm-per-unit
+        try:
+            from database.models import VisitHistory
+            v_q = db.query(VisitHistory).filter(VisitHistory.payment_id != None)
+            if checkout.client_id:
+                v_q = v_q.filter(VisitHistory.client_id == checkout.client_id)
+            for v in v_q.all():
+                if v.notes and '<!--PRODUCTS:' in v.notes:
+                    try:
+                        ps = v.notes.index('<!--PRODUCTS:') + len('<!--PRODUCTS:')
+                        pe = v.notes.index(':PRODUCTS-->')
+                        for p in _json_pc.loads(v.notes[ps:pe]):
+                            name = (p.get('name') or '').strip().lower()
+                            qty = max(int(p.get('qty') or 1), 1)
+                            comm_total = int(p.get('comm') or 0)
+                            if name and comm_total:
+                                product_comm_map[name] = max(product_comm_map.get(name, 0), comm_total // qty)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        frozen_items = []
+        for ci in ci_list:
+            ci_amount = ci.commission_amount
+            ci_rate = ci.commission_rate
+            # Product line — fixed $ per unit from inventory, no rate
+            if (ci.service_name or '').lower().startswith('[producto]') and ci_amount in (None, 0):
+                clean_name = ci.service_name.replace('[Producto] ', '').replace('[producto] ', '').strip().lower()
+                per_unit = product_comm_map.get(clean_name, 0)
+                if per_unit > 0:
+                    ci_amount = per_unit * (ci.quantity or 1)
+            frozen_items.append({
                 "service_id": getattr(ci, 'service_id', None),
                 "service_name": ci.service_name,
                 "staff_id": ci.staff_id,
                 "staff_name": ci.staff_name,
                 "total": ci.total,
-                "commission_rate": ci.commission_rate,
-                "commission_amount": ci.commission_amount,
-            }
-            for ci in ci_list
-        ]
+                "commission_rate": ci_rate,
+                "commission_amount": ci_amount,
+            })
         for ci in ci_list:
             if ci.commission_rate is not None:
                 commission_rate = ci.commission_rate

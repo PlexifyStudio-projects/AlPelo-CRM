@@ -184,6 +184,14 @@ def list_clients(
     return result
 
 
+# Forward-declared route — must come BEFORE /clients/{client_id} or FastAPI
+# tries to coerce "rfm" into the int client_id param and returns 422.
+# Body delegates to the real implementation defined later in the file.
+@router.get("/clients/rfm")
+def _clients_rfm_route(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    return get_clients_rfm(db=db, user=user)
+
+
 @router.get("/clients/{client_id}", response_model=ClientResponse)
 def get_client(client_id: int, db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
     from routes._helpers import compute_client_fields
@@ -372,8 +380,7 @@ RFM_META = {
 }
 
 
-@router.get("/clients/rfm")
-def get_clients_rfm(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+def get_clients_rfm(db: Session, user: Admin):
     """Calculate RFM scores for all clients. Returns segmented list."""
     tid = safe_tid(user, db)
 
