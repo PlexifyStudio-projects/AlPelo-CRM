@@ -182,10 +182,25 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
   //   4. null → "No configurada" (do NOT silently fall back to a global default)
   const frozenItems = invoice.frozen_items || [];
 
+  // Pair each invoice item with the frozen checkout item that captured the
+  // exact commission at payment time. Match priority:
+  //   1. By (service_id + staff_id) — most specific
+  //   2. By (service_name + staff_name) — handles items without IDs
+  //   3. By array position
+  const findFrozen = (it, idx) => {
+    if (!frozenItems.length) return null;
+    return (
+      frozenItems.find(fi => fi.service_id && it.service_id && fi.service_id === it.service_id && fi.staff_id === it.staff_id) ||
+      frozenItems.find(fi => fi.service_name === it.service_name && fi.staff_name === it.staff_name) ||
+      frozenItems[idx] ||
+      null
+    );
+  };
+
   const commissions = items
     .filter(it => it.staff_id || it.staff_name)
     .map((it, idx) => {
-      const frozen = frozenItems[idx] || frozenItems.find(fi => fi.service_id === it.service_id && fi.staff_id === it.staff_id);
+      const frozen = findFrozen(it, idx);
       const itemTotal = it.total || (it.quantity || 1) * (it.unit_price || 0);
       let commission = null;
       let rate = null;
@@ -194,6 +209,11 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
       if (frozen?.commission_amount != null) {
         commission = frozen.commission_amount;
         rate = frozen.commission_rate ?? null;
+        source = 'frozen';
+      } else if (frozen?.commission_rate != null) {
+        // Frozen rate but no amount — recompute
+        rate = frozen.commission_rate;
+        commission = Math.round(itemTotal * rate);
         source = 'frozen';
       } else if (it.commission_amount != null) {
         commission = it.commission_amount;
@@ -206,7 +226,6 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
           commission = Math.round(itemTotal * rate);
           source = 'lookup';
         } else {
-          // Diagnostic — helps the user understand why it shows as 'Sin configurar'.
           // eslint-disable-next-line no-console
           console.log('[InvoiceDetail] no commission rate for', key, '— available keys:', Object.keys(commRates));
         }

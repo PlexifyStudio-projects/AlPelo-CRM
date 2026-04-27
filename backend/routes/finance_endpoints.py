@@ -610,15 +610,69 @@ def send_invoices_to_dian(data: dict, db: Session = Depends(get_db), user=Depend
     return {"results": results, "sent": sent_count, "failed": failed_count}
 
 
-@router.get("/invoices/{invoice_id}", response_model=InvoiceResponse)
+@router.get("/invoices/{invoice_id}")
 def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Admin = Depends(get_current_user)):
+    """Single-invoice fetch — enriched with frozen commissions from CheckoutItem
+    so the detail panel shows the exact rates that were locked at payment time
+    (the same enrichment the list endpoint does)."""
     tid = safe_tid(current_user, db)
     q = db.query(Invoice).filter(Invoice.id == invoice_id)
     q = _tenant_filter(q, Invoice, tid)
     inv = q.first()
     if not inv:
         raise HTTPException(status_code=404, detail="Factura no encontrada")
-    return inv
+
+    # Build the base response from the ORM model
+    base = InvoiceResponse.model_validate(inv).model_dump()
+
+    # ── Mirror the enrichment list_invoices applies ──
+    from database.models import CheckoutItem, StaffServiceCommission
+    checkout = db.query(Checkout).filter(Checkout.invoice_id == inv.id)
+    if tid:
+        checkout = checkout.filter(Checkout.tenant_id == tid)
+    checkout = checkout.first()
+
+    base["tip_amount"] = checkout.tip_amount if checkout and getattr(checkout, 'tip_amount', None) else 0
+    base["receipt_url"] = checkout.receipt_url if checkout and getattr(checkout, 'receipt_url', None) else None
+
+    commission_rate = 0.5
+    frozen_items = []
+    staff_name_primary = None
+
+    if checkout:
+        ci_list = db.query(CheckoutItem).filter(CheckoutItem.checkout_id == checkout.id).all()
+        frozen_items = [
+            {
+                "service_id": getattr(ci, 'service_id', None),
+                "service_name": ci.service_name,
+                "staff_id": ci.staff_id,
+                "staff_name": ci.staff_name,
+                "total": ci.total,
+                "commission_rate": ci.commission_rate,
+                "commission_amount": ci.commission_amount,
+            }
+            for ci in ci_list
+        ]
+        for ci in ci_list:
+            if ci.commission_rate is not None:
+                commission_rate = ci.commission_rate
+                break
+        if ci_list:
+            staff_name_primary = ci_list[0].staff_name
+
+    if not staff_name_primary and inv.items:
+        staff_name_primary = inv.items[0].staff_name
+        st = db.query(Staff).filter(Staff.name == staff_name_primary).first() if staff_name_primary else None
+        if st:
+            comm = db.query(StaffCommission).filter(StaffCommission.staff_id == st.id).first()
+            if comm:
+                commission_rate = comm.default_rate
+
+    base["staff_commission_rate"] = commission_rate
+    base["staff_name_primary"] = staff_name_primary
+    base["frozen_items"] = frozen_items
+
+    return base
 
 
 @router.post("/invoices/", response_model=InvoiceResponse)
