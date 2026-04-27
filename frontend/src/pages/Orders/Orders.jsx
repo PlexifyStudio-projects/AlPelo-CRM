@@ -365,13 +365,19 @@ const Orders = () => {
 
   const pickTicketResult = useCallback((c) => {
     selectClient(c);
-    // Pre-fill the order's ticket field with the client's visit_code if any
-    if (c.visit_code) {
-      setForm(p => ({ ...p, ticket_number: c.visit_code }));
+    // Pre-fill ticket from client's visit_code OR from any open order they have
+    const openOrder = orders.find(o =>
+      o.client_id === c.id &&
+      (o.status === 'pending' || o.status === 'in_progress') &&
+      !o._is_appointment
+    );
+    const ticket = openOrder?.ticket_number || c.visit_code || '';
+    if (ticket) {
+      setForm(p => ({ ...p, ticket_number: ticket }));
     }
     setTicketLookup('');
     setTicketResults([]);
-  }, []);
+  }, [orders]);
 
   const filtered = useMemo(() => {
     let list = [...orders];
@@ -1685,8 +1691,8 @@ function CatalogPane({
                 </div>
                 <div className={`${b}__cart-client-text`}>
                   <span className={`${b}__cart-client-name`}>{selectedClient.name}</span>
-                  {selectedClient.client_id && (
-                    <span className={`${b}__cart-client-ticket`}>{selectedClient.client_id}</span>
+                  {selectedClient.phone && (
+                    <span className={`${b}__cart-client-ticket`}>{selectedClient.phone}</span>
                   )}
                 </div>
                 <button type="button" className={`${b}__cart-client-x`} onClick={clearClient} title="Quitar cliente">
@@ -1731,7 +1737,7 @@ function CatalogPane({
                   type="text"
                   value={ticketLookup}
                   onChange={(e) => setTicketLookup(e.target.value)}
-                  placeholder="Ticket (M1212), nombre o teléfono..."
+                  placeholder="Ticket, nombre, teléfono o correo..."
                 />
                 {ticketSearching && <div className={`${b}__cart-search-spin`} />}
               </div>
@@ -1761,7 +1767,36 @@ function CatalogPane({
 
         {/* Cart items */}
         <div className={`${b}__cart-list`}>
-          <span className={`${b}__cart-eyebrow`}>{cartCount === 0 ? 'Carrito vacío' : `${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}</span>
+          {/* Existing order items shown read-only so user knows what's already there */}
+          {existingOpenOrder && ((existingOpenOrder.items?.length || 0) + (existingOpenOrder.products?.length || 0)) > 0 && (
+            <>
+              <span className={`${b}__cart-eyebrow`}>Ya en la orden {existingOpenOrder.ticket_number}</span>
+              {(existingOpenOrder.items || []).map((it, idx) => (
+                <div key={`exs-${idx}`} className={`${b}__cart-item ${b}__cart-item--existing`}>
+                  <div className={`${b}__cart-item-top`}>
+                    <span className={`${b}__cart-item-name`}>{it.service_name}</span>
+                    <span className={`${b}__cart-item-price`}>{formatCOP(it.price)}</span>
+                  </div>
+                  {it.staff_name && <span className={`${b}__cart-item-existing-staff`}>{it.staff_name}</span>}
+                </div>
+              ))}
+              {(existingOpenOrder.products || []).map((p, idx) => (
+                <div key={`exp-${idx}`} className={`${b}__cart-item ${b}__cart-item--existing`}>
+                  <div className={`${b}__cart-item-top`}>
+                    <span className={`${b}__cart-item-name`}>{p.product_name} × {p.quantity}</span>
+                    <span className={`${b}__cart-item-price`}>{formatCOP((p.unit_price || 0) * (p.quantity || 1))}</span>
+                  </div>
+                </div>
+              ))}
+              <div className={`${b}__cart-divider`}>
+                <span>{cartCount > 0 ? 'Nuevos items para agregar' : 'Aún no agregas nada'}</span>
+              </div>
+            </>
+          )}
+
+          {!existingOpenOrder && (
+            <span className={`${b}__cart-eyebrow`}>{cartCount === 0 ? 'Carrito vacío' : `${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}</span>
+          )}
 
           {cartCount === 0 ? (
             <div className={`${b}__cart-empty`}>
