@@ -111,7 +111,7 @@ const Orders = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [monthFilter, setMonthFilter] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`; });
-  const [statusFilter, setStatusFilter] = useState('pendientes');
+  const [statusFilter, setStatusFilter] = useState('in_progress');
   const [showModal, setShowModal] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
   const [checkoutOrder, setCheckoutOrder] = useState(null);
@@ -418,8 +418,9 @@ const Orders = () => {
     if (statusFilter === 'paid') {
       list = list.filter(o => o.payment_status === 'paid');
     } else if (statusFilter === 'pendientes') {
-      // "Pendientes" combines anything still active: scheduled + in-progress
-      list = list.filter(o => o.status === 'pending' || o.status === 'in_progress');
+      // "Pendientes" = scheduled but not started (WhatsApp/agenda bookings).
+      // 'in_progress' (reception) has its own dedicated tab.
+      list = list.filter(o => o.status === 'pending');
     } else if (statusFilter !== 'all') {
       list = list.filter(o => o.status === statusFilter);
     }
@@ -453,7 +454,8 @@ const Orders = () => {
     const c = { all: orders.length, pendientes: 0, pending: 0, in_progress: 0, completed: 0, paid: 0, no_show: 0, cancelled: 0 };
     orders.forEach(o => {
       if (c[o.status] !== undefined) c[o.status]++;
-      if (o.status === 'pending' || o.status === 'in_progress') c.pendientes++;
+      // "Pendientes" filter = only scheduled (pending), not in_progress
+      if (o.status === 'pending') c.pendientes++;
       if (o.payment_status === 'paid') c.paid++;
     });
     return c;
@@ -764,8 +766,8 @@ const Orders = () => {
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 11H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2"/><path d="M9 11V7a3 3 0 0 1 6 0v4"/></svg>
           Órdenes en proceso
-          {(counts.pending + counts.in_progress) > 0 && (
-            <span className={`${b}__page-tab-count`}>{counts.pending + counts.in_progress}</span>
+          {counts.in_progress > 0 && (
+            <span className={`${b}__page-tab-count`}>{counts.in_progress}</span>
           )}
         </button>
       </div>
