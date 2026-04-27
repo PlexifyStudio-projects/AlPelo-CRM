@@ -1087,6 +1087,7 @@ def _execute_action(action: dict, db: Session) -> str:
                 pass
 
             # Now pause AI for this conversation
+            _conv_id = None
             try:
                 from database.models import WhatsAppConversation
                 conv_q = db.query(WhatsAppConversation).filter(WhatsAppConversation.wa_contact_phone.contains(client_phone[-10:]))
@@ -1095,9 +1096,26 @@ def _execute_action(action: dict, db: Session) -> str:
                 conv = conv_q.first()
                 if conv:
                     conv.is_ai_active = False
+                    _conv_id = conv.id
                     db.commit()
             except Exception:
                 pass
+
+            # Persistent notification + Web Push to all admin devices (phones, desktops)
+            try:
+                from notifications import notify
+                _link = f"/inbox?conv={_conv_id}" if _conv_id else "/inbox"
+                notify(
+                    _tid or 1,
+                    "lina_manual_alert",
+                    f"⚠️ {client_name} pidió {svc_obj.name}",
+                    f"Servicio MANUAL — Lina pausó la IA y un asesor debe atender. Tel: {client_phone}",
+                    "🔔",
+                    _link,
+                )
+            except Exception as _ne:
+                print(f"[MANUAL_PAUSE] notify failed: {_ne}")
+
             return f"MANUAL_PAUSE: El servicio '{svc_obj.name}' requiere atencion personalizada. Ya le envie un mensaje al cliente diciendo que un asesor lo atendera. La conversacion queda en modo MANUAL."
 
         apt_date = action.get("date")

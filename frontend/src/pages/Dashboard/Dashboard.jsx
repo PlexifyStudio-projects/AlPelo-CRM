@@ -258,6 +258,7 @@ const Dashboard = ({ user, onNavigate }) => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [topStaff, setTopStaff] = useState([]);
   const [lowStock, setLowStock] = useState([]);
+  const [manualAlerts, setManualAlerts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [, setTick] = useState(0);
 
@@ -280,7 +281,7 @@ const Dashboard = ({ user, onNavigate }) => {
     const opts = { headers, credentials: 'include' };
 
     try {
-      const [statsRes, finRes, cashRes, cashBalRes, methodsRes, staffRes, stockRes] = await Promise.allSettled([
+      const [statsRes, finRes, cashRes, cashBalRes, methodsRes, staffRes, stockRes, notifRes] = await Promise.allSettled([
         fetch(`${API_URL}/dashboard/stats`, opts),
         fetch(`${API_URL}/finances/summary?period=month`, opts),
         fetch(`${API_URL}/cash-register/today`, opts),
@@ -288,6 +289,7 @@ const Dashboard = ({ user, onNavigate }) => {
         fetch(`${API_URL}/finances/payment-methods?period=month`, opts),
         fetch(`${API_URL}/finances/staff-performance?period=month`, opts),
         fetch(`${API_URL}/inventory/alerts`, opts),
+        fetch(`${API_URL}/notifications?unread_only=true&limit=20`, opts),
       ]);
 
       if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
@@ -310,6 +312,10 @@ const Dashboard = ({ user, onNavigate }) => {
       }
       if (staffRes.status === 'fulfilled' && staffRes.value.ok) setTopStaff(await staffRes.value.json());
       if (stockRes.status === 'fulfilled' && stockRes.value.ok) setLowStock(await stockRes.value.json());
+      if (notifRes.status === 'fulfilled' && notifRes.value.ok) {
+        const nd = await notifRes.value.json();
+        setManualAlerts((nd.notifications || []).filter(n => n.type === 'lina_manual_alert'));
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -420,6 +426,9 @@ const Dashboard = ({ user, onNavigate }) => {
 
   const insights = useMemo(() => {
     const out = [];
+    if (manualAlerts && manualAlerts.length > 0) {
+      out.push({ id: 'manual', tone: 'error', icon: '🔔', label: `${manualAlerts.length} servicio${manualAlerts.length !== 1 ? 's' : ''} manual${manualAlerts.length !== 1 ? 'es' : ''} esperando asesor`, action: 'Atender', target: 'inbox' });
+    }
     if (noshowRiskCount > 0) {
       out.push({ id: 'noshow', tone: 'warning', icon: Icon.alertTri, label: `${noshowRiskCount} cita${noshowRiskCount !== 1 ? 's' : ''} con riesgo de no-show hoy`, action: 'Ver agenda', target: 'agenda' });
     }
@@ -437,7 +446,7 @@ const Dashboard = ({ user, onNavigate }) => {
       out.push({ id: 'ok', tone: 'success', icon: Icon.smile, label: 'Todo en orden — ningún punto crítico hoy', action: null, target: null });
     }
     return out.slice(0, 4);
-  }, [noshowRiskCount, lowStock, stats?.whatsapp_unread, cashRegister]);
+  }, [manualAlerts, noshowRiskCount, lowStock, stats?.whatsapp_unread, cashRegister]);
 
   const cashStatus = cashRegister?.status || 'not_opened';
   const cashCurrent = cashRegister
@@ -697,6 +706,51 @@ const Dashboard = ({ user, onNavigate }) => {
           </button>
         ))}
       </section>
+
+      {/* MANUAL SERVICE ALERTS — Lina paused, admin must attend */}
+      {manualAlerts.length > 0 && (
+        <section className="dashboard__manual-alerts">
+          <header className="dashboard__manual-alerts-head">
+            <div className="dashboard__manual-alerts-title">
+              <span className="dashboard__manual-alerts-icon">🔔</span>
+              <div>
+                <h3>Servicios manuales pendientes</h3>
+                <p>Lina pausó la conversación porque el servicio requiere tu atención personal</p>
+              </div>
+            </div>
+            <span className="dashboard__manual-alerts-count">{manualAlerts.length}</span>
+          </header>
+          <div className="dashboard__manual-alerts-list">
+            {manualAlerts.slice(0, 5).map(a => (
+              <div key={a.id} className="dashboard__manual-alert">
+                <div className="dashboard__manual-alert-info">
+                  <strong>{a.title.replace(/^⚠️\s*/, '')}</strong>
+                  <span>{a.detail}</span>
+                  <em>{new Date(a.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}</em>
+                </div>
+                <div className="dashboard__manual-alert-actions">
+                  <button className="dashboard__manual-alert-open" onClick={async () => {
+                    try { await fetch(`${API_URL}/notifications/${a.id}/read`, { method: 'POST', credentials: 'include' }); } catch {}
+                    setManualAlerts(prev => prev.filter(x => x.id !== a.id));
+                    onNavigate && onNavigate(a.link?.startsWith('/inbox') ? 'inbox' : 'inbox');
+                  }}>
+                    Atender ahora
+                  </button>
+                  <button className="dashboard__manual-alert-dismiss" onClick={async () => {
+                    try { await fetch(`${API_URL}/notifications/${a.id}/read`, { method: 'POST', credentials: 'include' }); } catch {}
+                    setManualAlerts(prev => prev.filter(x => x.id !== a.id));
+                  }} title="Descartar">×</button>
+                </div>
+              </div>
+            ))}
+            {manualAlerts.length > 5 && (
+              <div className="dashboard__manual-alerts-more">
+                +{manualAlerts.length - 5} más en el panel de notificaciones
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* CHARTS GRID */}
       <section className="dashboard__charts">
