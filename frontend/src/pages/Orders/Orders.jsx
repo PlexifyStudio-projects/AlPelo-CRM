@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import orderService from '../../services/orderService';
 import servicesService from '../../services/servicesService';
@@ -126,6 +126,15 @@ const Orders = () => {
   const [searchingClients, setSearchingClients] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   const [isNewClient, setIsNewClient] = useState(false);
+
+  // Ticket-first search — types like "M1212" or a phone number resolve to a client
+  const [ticketLookup, setTicketLookup] = useState('');
+  const [ticketResults, setTicketResults] = useState([]);
+  const [ticketSearching, setTicketSearching] = useState(false);
+  const ticketSearchTimer = useRef(null);
+
+  // Catalog tab inside the modal — Servicios | Productos
+  const [catalogTab, setCatalogTab] = useState('services');
 
   // Form state
   const [form, setForm] = useState({
@@ -320,8 +329,40 @@ const Orders = () => {
     setSelectedClient(null);
     setIsNewClient(false);
     setClientSearchQ('');
+    setTicketLookup('');
+    setTicketResults([]);
     setForm(p => ({ ...p, client_name: '', client_phone: '', client_email: '', client_doc_type: '', client_doc_number: '' }));
   };
+
+  // ── Ticket-first search debounce ──
+  // The same /clients/?search= endpoint already matches on visit_code,
+  // client_id, name, phone, email — so we just send the raw query.
+  useEffect(() => {
+    if (!ticketLookup.trim() || selectedClient || isNewClient) { setTicketResults([]); return; }
+    if (ticketSearchTimer.current) clearTimeout(ticketSearchTimer.current);
+    ticketSearchTimer.current = setTimeout(async () => {
+      setTicketSearching(true);
+      try {
+        const res = await clientService.list({ search: ticketLookup });
+        setTicketResults(Array.isArray(res) ? res.slice(0, 6) : []);
+      } catch {
+        setTicketResults([]);
+      } finally {
+        setTicketSearching(false);
+      }
+    }, 250);
+    return () => { if (ticketSearchTimer.current) clearTimeout(ticketSearchTimer.current); };
+  }, [ticketLookup, selectedClient, isNewClient]);
+
+  const pickTicketResult = useCallback((c) => {
+    selectClient(c);
+    // Pre-fill the order's ticket field with the client's visit_code if any
+    if (c.visit_code) {
+      setForm(p => ({ ...p, ticket_number: c.visit_code }));
+    }
+    setTicketLookup('');
+    setTicketResults([]);
+  }, []);
 
   const filtered = useMemo(() => {
     let list = [...orders];
@@ -972,6 +1013,73 @@ const Orders = () => {
             )}
 
             <div className={`${b}__drawer-body`}>
+              {/* ── PRIMARY: Ticket / Client lookup at the top ── */}
+              {!editOrder && !selectedClient && !isNewClient && (
+                <div className={`${b}__primary-search`}>
+                  <div className={`${b}__primary-search-head`}>
+                    <span className={`${b}__primary-search-eyebrow`}>Empieza por aquí</span>
+                    <h3>Busca el ticket o cliente</h3>
+                    <p>Escribe el número del ticket (ej. <code>M1212</code>), nombre, teléfono o documento.</p>
+                  </div>
+                  <div className={`${b}__primary-search-box`}>
+                    <SearchIcon />
+                    <input
+                      autoFocus
+                      type="text"
+                      value={ticketLookup}
+                      onChange={(e) => setTicketLookup(e.target.value)}
+                      placeholder="Ej: M1212, Luis Nava, 3105551234..."
+                    />
+                    {ticketSearching && <div className={`${b}__primary-search-spin`} />}
+                  </div>
+
+                  {ticketResults.length > 0 && (
+                    <div className={`${b}__primary-search-results`}>
+                      {ticketResults.map((c) => (
+                        <button key={c.id} type="button" className={`${b}__primary-search-result`} onClick={() => pickTicketResult(c)}>
+                          <div className={`${b}__primary-search-avatar`}>
+                            {c.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '?'}
+                          </div>
+                          <div className={`${b}__primary-search-info`}>
+                            <span className={`${b}__primary-search-name`}>{c.name}</span>
+                            <span className={`${b}__primary-search-meta`}>
+                              {c.visit_code && <span className={`${b}__primary-search-ticket`}>{c.visit_code}</span>}
+                              {c.client_id && c.client_id !== c.visit_code && <span>· {c.client_id}</span>}
+                              {c.phone && <span>· {formatPhone(c.phone)}</span>}
+                            </span>
+                          </div>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {ticketLookup.length >= 2 && !ticketSearching && ticketResults.length === 0 && (
+                    <div className={`${b}__primary-search-empty`}>
+                      No encontramos a nadie con "{ticketLookup}".
+                      <button type="button" className={`${b}__primary-search-new`} onClick={() => setIsNewClient(true)}>
+                        + Crear cliente nuevo
+                      </button>
+                    </div>
+                  )}
+
+                  <div className={`${b}__primary-search-divider`}>
+                    <span>o</span>
+                  </div>
+
+                  <div className={`${b}__primary-search-actions`}>
+                    <button type="button" className={`${b}__primary-search-action`} onClick={() => setIsNewClient(true)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                      Cliente nuevo
+                    </button>
+                    <button type="button" className={`${b}__primary-search-action`} onClick={() => { setSelectedClient({ id: null, name: 'Consumidor final' }); setForm(p => ({ ...p, client_name: 'Consumidor final' })); }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+                      Consumidor final
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* ── Ticket ── */}
               <div className={`${b}__ticket-section`}>
                 <div className={`${b}__ticket-icon`}><TicketIcon /></div>
