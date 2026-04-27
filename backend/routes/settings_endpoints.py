@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Tenant, PlatformConfig, Staff
+from database.models import Tenant, PlatformConfig, Staff, Service
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
 
@@ -1037,3 +1037,38 @@ async def upload_staff_photo(staff_id: int, file: UploadFile = File(...), db: Se
     staff.updated_at = datetime.utcnow()
     db.commit()
     return {"ok": True, "photo_url": data_uri}
+
+
+@router.post("/services/{service_id}/photo")
+async def upload_service_photo(service_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Upload an image for a service. Stored as base64 data URI on Service.photo_url."""
+    import base64
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    service = db.query(Service).filter(Service.id == service_id, Service.tenant_id == tid).first()
+    if not service:
+        raise HTTPException(404, "Servicio no encontrado")
+    content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(400, "Imagen demasiado grande (max 2MB)")
+    mime = file.content_type or "image/jpeg"
+    data_uri = f"data:{mime};base64,{base64.b64encode(content).decode('utf-8')}"
+    service.photo_url = data_uri
+    service.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True, "photo_url": data_uri}
+
+
+@router.delete("/services/{service_id}/photo")
+async def delete_service_photo(service_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    service = db.query(Service).filter(Service.id == service_id, Service.tenant_id == tid).first()
+    if not service:
+        raise HTTPException(404, "Servicio no encontrado")
+    service.photo_url = None
+    service.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True}

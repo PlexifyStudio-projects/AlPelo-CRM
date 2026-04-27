@@ -108,6 +108,12 @@ def run_migrations(engine):
         ("staff", "photo_url", "TEXT"),
         # Service AI mode
         ("service", "ai_mode", "VARCHAR(10) DEFAULT 'auto'"),
+        # Service photo
+        ("service", "photo_url", "TEXT"),
+        # Per-staff per-service commission: type (percentage|fixed) + fixed amount + enabled toggle
+        ("staff_service_commission", "commission_type", "VARCHAR(15) DEFAULT 'percentage'"),
+        ("staff_service_commission", "commission_amount", "INTEGER"),
+        ("staff_service_commission", "is_enabled", "BOOLEAN DEFAULT true"),
         # Nómina v2: link appointments/visits to payments
         ("appointment", "staff_payment_id", "INTEGER REFERENCES staff_payment(id)"),
         ("visit_history", "payment_id", "INTEGER REFERENCES staff_payment(id)"),

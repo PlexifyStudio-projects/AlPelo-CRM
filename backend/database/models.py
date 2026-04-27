@@ -176,19 +176,26 @@ class Service(Base):
     staff_ids = Column(JSON, default=list)  # IDs of staff who can perform this service
     ai_mode = Column(String(10), nullable=False, default='auto')  # auto = Lina can book, manual = Lina pauses and notifies admin
     is_active = Column(Boolean, default=True)
+    photo_url = Column(Text, nullable=True)  # base64 data URI o URL de la imagen del servicio
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class StaffServiceCommission(Base):
-    """Commission rate per staff member per service. Rate is 0.0 to 1.0 (e.g., 0.5 = 50%)."""
+    """Commission per staff member per service.
+    Si commission_type='percentage': commission_rate (0.0 a 1.0) aplica sobre el precio.
+    Si commission_type='fixed': commission_amount (COP) es la cantidad exacta a pagar.
+    """
     __tablename__ = "staff_service_commission"
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(Integer, nullable=True)
     staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
     service_id = Column(Integer, ForeignKey("public.service.id"), nullable=False)
-    commission_rate = Column(Float, nullable=False, default=0.0)  # 0.0 to 1.0
+    commission_rate = Column(Float, nullable=False, default=0.0)  # 0.0 to 1.0 (si type=percentage)
+    commission_type = Column(String(15), nullable=False, default='percentage')  # 'percentage' | 'fixed'
+    commission_amount = Column(Integer, nullable=True)  # COP (si type=fixed)
+    is_enabled = Column(Boolean, default=True)  # toggle on/off por staff (cuando False no realiza el servicio)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -9,7 +9,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, numbers
 from sqlalchemy.orm import Session
 from database.models import (
     Client, Staff, VisitHistory, Appointment, Expense, Invoice, InvoiceItem,
-    StaffPayment, StaffCommission, Tenant,
+    StaffPayment, StaffCommission, Tenant, Service, StaffServiceCommission,
 )
 
 # Styles
@@ -256,6 +256,152 @@ def generate_clients_report(db: Session, tenant_id: int) -> io.BytesIO:
         for cell in row:
             cell.number_format = MONEY_FORMAT
     _auto_width(ws)
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+def generate_services_report(db: Session, tenant_id: int) -> io.BytesIO:
+    """Premium services export — catalogo + comisiones por staff en hojas separadas."""
+    wb = Workbook()
+
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    biz_name = tenant.name if tenant else "Negocio"
+
+    # ===== SHEET 1: CATALOGO =====
+    ws = wb.active
+    ws.title = "Catalogo"
+    ws.append([f"Catalogo de Servicios — {biz_name}"])
+    ws.merge_cells('A1:K1')
+    ws['A1'].font = Font(name='Calibri', bold=True, size=16, color='1E40AF')
+    ws['A1'].alignment = Alignment(horizontal='center')
+    ws.append([f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}"])
+    ws.merge_cells('A2:K2')
+    ws['A2'].alignment = Alignment(horizontal='center')
+    ws['A2'].font = Font(name='Calibri', italic=True, size=10, color='64748B')
+    ws.append([])
+
+    headers = [
+        "ID", "Nombre", "Categoria", "Tipo", "Precio", "Duracion (min)",
+        "Estado", "Modo Lina", "# Personal", "Personal asignado", "Descripcion",
+    ]
+    ws.append(headers)
+    _style_header(ws, row=4, cols=len(headers))
+
+    services = db.query(Service)
+    if tenant_id:
+        services = services.filter(Service.tenant_id == tenant_id)
+    services = services.order_by(Service.category, Service.name).all()
+
+    # Pre-fetch staff names
+    all_staff_ids = set()
+    for s in services:
+        all_staff_ids.update(s.staff_ids or [])
+    staff_map = {st.id: st for st in db.query(Staff).filter(Staff.id.in_(all_staff_ids)).all()} if all_staff_ids else {}
+
+    for svc in services:
+        ids = svc.staff_ids or []
+        names = ", ".join([staff_map[i].name for i in ids if i in staff_map])
+        ws.append([
+            svc.id,
+            svc.name or '',
+            svc.category or '',
+            (svc.service_type or 'cita').capitalize(),
+            svc.price or 0,
+            svc.duration_minutes or 0,
+            'Activo' if svc.is_active else 'Inactivo',
+            (svc.ai_mode or 'auto').capitalize(),
+            len(ids),
+            names,
+            (svc.description or '')[:500],
+        ])
+
+    # Money column
+    for row in ws.iter_rows(min_row=5, min_col=5, max_col=5):
+        for cell in row:
+            cell.number_format = MONEY_FORMAT
+    _auto_width(ws)
+
+    # ===== SHEET 2: COMISIONES POR STAFF =====
+    ws2 = wb.create_sheet("Comisiones")
+    ws2.append([f"Comisiones por servicio y profesional — {biz_name}"])
+    ws2.merge_cells('A1:H1')
+    ws2['A1'].font = Font(name='Calibri', bold=True, size=14, color='1E40AF')
+    ws2['A1'].alignment = Alignment(horizontal='center')
+    ws2.append([])
+
+    headers2 = ["Servicio", "Categoria", "Precio", "Profesional", "Activo", "Tipo", "% / $", "Ganancia"]
+    ws2.append(headers2)
+    _style_header(ws2, row=3, cols=len(headers2))
+
+    comm_q = db.query(StaffServiceCommission)
+    if tenant_id:
+        comm_q = comm_q.filter(StaffServiceCommission.tenant_id == tenant_id)
+    all_comms = comm_q.all()
+    comm_map = {(c.service_id, c.staff_id): c for c in all_comms}
+
+    all_staff_q = db.query(Staff)
+    if tenant_id:
+        all_staff_q = all_staff_q.filter(Staff.tenant_id == tenant_id)
+    all_staff = all_staff_q.order_by(Staff.name).all()
+
+    for svc in services:
+        for st in all_staff:
+            c = comm_map.get((svc.id, st.id))
+            if not c:
+                continue
+            ctype = c.commission_type or 'percentage'
+            value = (
+                f"${c.commission_amount or 0}" if ctype == 'fixed'
+                else f"{int((c.commission_rate or 0) * 100)}%"
+            )
+            earnings = (
+                int(c.commission_amount or 0) if ctype == 'fixed'
+                else int((svc.price or 0) * (c.commission_rate or 0))
+            )
+            ws2.append([
+                svc.name or '',
+                svc.category or '',
+                svc.price or 0,
+                st.name or '',
+                'Si' if c.is_enabled else 'No',
+                'Fijo' if ctype == 'fixed' else 'Porcentaje',
+                value,
+                earnings,
+            ])
+
+    for row in ws2.iter_rows(min_row=4, min_col=3, max_col=3):
+        for cell in row:
+            cell.number_format = MONEY_FORMAT
+    for row in ws2.iter_rows(min_row=4, min_col=8, max_col=8):
+        for cell in row:
+            cell.number_format = MONEY_FORMAT
+    _auto_width(ws2)
+
+    # ===== SHEET 3: PLANTILLA IMPORTACION =====
+    ws3 = wb.create_sheet("Plantilla Import")
+    ws3.append([
+        "Para crear servicios masivamente: completa esta hoja y subela en 'Importar'. "
+        "Las columnas obligatorias son: Nombre, Categoria, Precio."
+    ])
+    ws3.merge_cells('A1:H1')
+    ws3['A1'].font = Font(name='Calibri', italic=True, size=10, color='64748B')
+    ws3['A1'].alignment = Alignment(horizontal='left', wrap_text=True)
+    ws3.row_dimensions[1].height = 30
+    ws3.append([])
+
+    template_headers = [
+        "Nombre*", "Categoria*", "Precio*", "Duracion (min)",
+        "Tipo (cita|paquete|reserva)", "Estado (activo|inactivo)",
+        "Modo Lina (auto|manual)", "Descripcion",
+    ]
+    ws3.append(template_headers)
+    _style_header(ws3, row=3, cols=len(template_headers))
+    ws3.append(["Corte cabello", "Barberia", 30000, 30, "cita", "activo", "auto", "Corte clasico de caballero"])
+    ws3.append(["Manicure semipermanente", "Arte en Unas", 45000, 60, "cita", "activo", "auto", ""])
+    _auto_width(ws3)
 
     buffer = io.BytesIO()
     wb.save(buffer)

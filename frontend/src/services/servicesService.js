@@ -71,6 +71,83 @@ const servicesService = {
     servicesService.invalidateCache();
     return res.json();
   },
+
+  uploadPhoto: async (id, file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_URL}/services/${id}/photo`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al subir foto');
+    }
+    servicesService.invalidateCache();
+    return res.json();
+  },
+
+  deletePhoto: async (id) => {
+    const res = await fetch(`${API_URL}/services/${id}/photo`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Error al eliminar foto');
+    servicesService.invalidateCache();
+    return res.json();
+  },
+
+  getCommissions: async (id) => {
+    const res = await fetch(`${API_URL}/services/${id}/commissions`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Error al cargar comisiones');
+    return res.json();
+  },
+
+  saveCommissions: async (id, items) => {
+    const res = await fetch(`${API_URL}/services/${id}/commissions`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(items),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al guardar comisiones');
+    }
+    servicesService.invalidateCache();
+    return res.json();
+  },
+
+  exportXlsx: async () => {
+    const res = await fetch(`${API_URL}/services/export`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Error al exportar');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `servicios_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
+
+  importXlsx: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_URL}/services/import`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al importar');
+    }
+    servicesService.invalidateCache();
+    return res.json();
+  },
 };
 
 export default servicesService;

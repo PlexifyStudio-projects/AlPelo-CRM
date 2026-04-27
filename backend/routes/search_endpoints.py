@@ -2,7 +2,7 @@ from typing import List, Optional
 from datetime import datetime, date, timedelta
 from collections import Counter
 
-from fastapi import APIRouter, HTTPException, Depends, Query, Body
+from fastapi import APIRouter, HTTPException, Depends, Query, Body, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import cast, String, func, or_
 
@@ -533,19 +533,174 @@ def list_services(
 # COMMISSION ENDPOINTS — must be BEFORE {service_id} routes
 # ============================================================================
 
+@router.get("/services/export")
+def export_services_xlsx(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Export full services catalog + commissions as a styled xlsx workbook."""
+    from fastapi.responses import StreamingResponse
+    from services.reports.excel_export import generate_services_report
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    buf = generate_services_report(db, tid)
+    filename = f"servicios_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/services/import")
+async def import_services_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Bulk-create services from xlsx/csv. Skips duplicates by name+category."""
+    import io as _io
+    import csv as _csv
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    if not file.filename:
+        raise HTTPException(400, "Archivo requerido")
+
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    content = await file.read()
+
+    rows = []
+    if ext == "csv":
+        text = content.decode("utf-8-sig")
+        rows = list(_csv.DictReader(_io.StringIO(text)))
+    elif ext in ("xlsx", "xls"):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(_io.BytesIO(content), read_only=True, data_only=True)
+            # Try sheet "Plantilla Import" first; fallback to "Catalogo" or active
+            ws = None
+            for name in ("Plantilla Import", "Catalogo", "Servicios"):
+                if name in wb.sheetnames:
+                    ws = wb[name]
+                    break
+            if ws is None:
+                ws = wb.active
+            # Find header row: first row with > 2 non-empty cells
+            header_row_idx = 1
+            headers = []
+            for ridx, row in enumerate(ws.iter_rows(min_row=1, max_row=10, values_only=True), start=1):
+                non_empty = [c for c in row if c is not None and str(c).strip()]
+                if len(non_empty) >= 3 and any('nombre' in str(c).lower() for c in row if c):
+                    header_row_idx = ridx
+                    headers = [str(c or '').strip() for c in row]
+                    break
+            if not headers:
+                raise HTTPException(400, "No se encontró fila de encabezados (Nombre, Categoria, Precio...)")
+            for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
+                if all(c is None or not str(c).strip() for c in row):
+                    continue
+                d = {}
+                for i, c in enumerate(row):
+                    if i < len(headers) and headers[i]:
+                        d[headers[i]] = c
+                rows.append(d)
+        except ImportError:
+            raise HTTPException(400, "Instala openpyxl para importar Excel")
+    else:
+        raise HTTPException(400, "Formato no soportado. Usa CSV o XLSX")
+
+    def gv(row, *keys):
+        for k in keys:
+            for rk in row:
+                if rk and str(rk).lower().strip().rstrip('*') == k.lower():
+                    v = row[rk]
+                    if v is None:
+                        return ""
+                    return str(v).strip()
+        return ""
+
+    # Existing names to dedupe
+    existing = {(s.name.lower().strip(), (s.category or '').lower().strip()): s.id
+                for s in db.query(Service).filter(Service.tenant_id == tid).all()}
+
+    imported, skipped, errors = 0, 0, []
+    for i, row in enumerate(rows):
+        line_no = i + 2
+        try:
+            name = gv(row, "nombre", "name")
+            category = gv(row, "categoria", "categoría", "category")
+            price_raw = gv(row, "precio", "costo", "price")
+            if not name or not category:
+                errors.append({"row": line_no, "reason": "Nombre y categoria requeridos"})
+                continue
+            try:
+                price = int(float(str(price_raw).replace('$', '').replace(',', '').replace('.', '').strip() or 0))
+            except Exception:
+                errors.append({"row": line_no, "name": name, "reason": "Precio inválido"})
+                continue
+            key = (name.lower().strip(), category.lower().strip())
+            if key in existing:
+                skipped += 1
+                continue
+            duration_raw = gv(row, "duracion (min)", "duracion", "duration", "duration_minutes", "tiempo")
+            try:
+                duration = int(float(duration_raw)) if duration_raw else None
+            except Exception:
+                duration = None
+            stype = (gv(row, "tipo (cita|paquete|reserva)", "tipo", "service_type") or "cita").lower()
+            if stype not in ("cita", "paquete", "reserva"):
+                stype = "cita"
+            estado = (gv(row, "estado (activo|inactivo)", "estado", "status") or "activo").lower()
+            is_active = estado not in ("inactivo", "inactive", "0", "false")
+            ai = (gv(row, "modo lina (auto|manual)", "modo lina", "ai_mode") or "auto").lower()
+            if ai not in ("auto", "manual"):
+                ai = "auto"
+            description = gv(row, "descripcion", "descripción", "description") or None
+
+            db.add(Service(
+                tenant_id=tid,
+                name=name,
+                category=category,
+                service_type=stype,
+                price=price,
+                duration_minutes=duration,
+                description=description,
+                staff_ids=[],
+                ai_mode=ai,
+                is_active=is_active,
+            ))
+            imported += 1
+            existing[key] = -1
+        except Exception as e:
+            errors.append({"row": line_no, "reason": str(e)[:200]})
+
+    db.commit()
+    return {"imported": imported, "skipped": skipped, "errors": errors, "total_rows": len(rows)}
+
+
 @router.get("/services/all-commissions")
 def get_all_commissions(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    """Get ALL commission rates for all staff x service combinations."""
+    """Get ALL commission config for all staff x service combinations.
+
+    Response shape:
+        {
+          "rates":   { "<staff_id>-<service_id>": <commission_rate float 0..1>, ... },
+          "configs": { "<staff_id>-<service_id>": {"type", "rate", "amount", "enabled"}, ... }
+        }
+    `rates` is kept for backward compatibility with older callers.
+    """
     from database.models import StaffServiceCommission
     tid = safe_tid(user, db)
     q = db.query(StaffServiceCommission)
     if tid:
         q = q.filter(StaffServiceCommission.tenant_id == tid)
     all_comms = q.all()
-    result = {}
+    rates, configs = {}, {}
     for c in all_comms:
-        result[f"{c.staff_id}-{c.service_id}"] = c.commission_rate or 0
-    return {"rates": result}
+        key = f"{c.staff_id}-{c.service_id}"
+        rates[key] = c.commission_rate or 0
+        configs[key] = {
+            "type": c.commission_type or "percentage",
+            "rate": c.commission_rate or 0,
+            "amount": c.commission_amount or 0,
+            "enabled": True if c.is_enabled is None else bool(c.is_enabled),
+        }
+    return {"rates": rates, "configs": configs}
 
 
 @router.get("/services/{service_id}", response_model=ServiceResponse)
@@ -590,12 +745,20 @@ def get_service_commissions(service_id: int, db: Session = Depends(get_db), user
     if tid:
         commissions = commissions.filter(StaffServiceCommission.tenant_id == tid)
     commissions = commissions.all()
-    commission_map = {c.staff_id: c.commission_rate for c in commissions}
+    commission_map = {c.staff_id: c for c in commissions}
 
-    # Build response: staff_ids + any staff with existing commission config
-    staff_ids = set(service.staff_ids or [])
-    staff_ids.update(commission_map.keys())
-    staff_list = db.query(Staff).filter(Staff.id.in_(staff_ids)).all() if staff_ids else []
+    # Return config for ALL staff in tenant so admin can toggle who does this service
+    all_staff_q = db.query(Staff)
+    if tid:
+        all_staff_q = all_staff_q.filter(Staff.tenant_id == tid)
+    all_staff = all_staff_q.all()
+
+    def _earnings(c):
+        if not c:
+            return 0
+        if (c.commission_type or 'percentage') == 'fixed':
+            return int(c.commission_amount or 0)
+        return int(service.price * (c.commission_rate or 0.0))
 
     return {
         "service_id": service_id,
@@ -605,17 +768,36 @@ def get_service_commissions(service_id: int, db: Session = Depends(get_db), user
             {
                 "staff_id": s.id,
                 "staff_name": s.name,
-                "commission_rate": commission_map.get(s.id, 0.0),
-                "commission_amount": int(service.price * commission_map.get(s.id, 0.0)),
+                "staff_role": s.role,
+                "staff_photo_url": s.photo_url,
+                "is_enabled": True if (commission_map.get(s.id) and commission_map[s.id].is_enabled) else False,
+                "commission_type": (commission_map[s.id].commission_type if commission_map.get(s.id) else 'percentage'),
+                "commission_rate": (commission_map[s.id].commission_rate if commission_map.get(s.id) else 0.0),
+                "commission_amount": (commission_map[s.id].commission_amount if commission_map.get(s.id) else 0) or 0,
+                "calculated_earnings": _earnings(commission_map.get(s.id)),
             }
-            for s in staff_list
+            for s in all_staff
         ],
     }
 
 
 @router.put("/services/{service_id}/commissions")
 def update_service_commissions(service_id: int, data: list = Body(...), db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
-    """Update commission rates for staff on this service. data = [{staff_id, commission_rate}, ...]"""
+    """Update commission config for staff on this service.
+
+    data = [
+        {
+            "staff_id": int,
+            "is_enabled": bool,                 # if False, this staff doesn't perform the service
+            "commission_type": "percentage"|"fixed",
+            "commission_rate": float (0..1),    # used when type == percentage
+            "commission_amount": int (COP),     # used when type == fixed
+        }, ...
+    ]
+
+    Also re-syncs Service.staff_ids to match enabled rows so the existing
+    `staff_ids` array stays in sync with the toggle.
+    """
     from database.models import StaffServiceCommission
     tid = safe_tid(user, db)
 
@@ -626,12 +808,19 @@ def update_service_commissions(service_id: int, data: list = Body(...), db: Sess
     if not service:
         raise HTTPException(status_code=404, detail="Service not found")
 
+    enabled_ids = []
     for item in data:
         staff_id = item.get("staff_id")
-        rate = item.get("commission_rate", 0.0)
         if staff_id is None:
             continue
-        rate = max(0.0, min(1.0, float(rate)))
+        ctype = (item.get("commission_type") or "percentage").lower()
+        if ctype not in ("percentage", "fixed"):
+            ctype = "percentage"
+        rate = max(0.0, min(1.0, float(item.get("commission_rate", 0.0) or 0.0)))
+        amount = max(0, int(item.get("commission_amount", 0) or 0))
+        enabled = bool(item.get("is_enabled", True))
+        if enabled:
+            enabled_ids.append(staff_id)
 
         existing = db.query(StaffServiceCommission).filter(
             StaffServiceCommission.staff_id == staff_id,
@@ -643,6 +832,9 @@ def update_service_commissions(service_id: int, data: list = Body(...), db: Sess
 
         if existing:
             existing.commission_rate = rate
+            existing.commission_type = ctype
+            existing.commission_amount = amount
+            existing.is_enabled = enabled
             existing.updated_at = datetime.utcnow()
         else:
             db.add(StaffServiceCommission(
@@ -650,10 +842,16 @@ def update_service_commissions(service_id: int, data: list = Body(...), db: Sess
                 staff_id=staff_id,
                 service_id=service_id,
                 commission_rate=rate,
+                commission_type=ctype,
+                commission_amount=amount,
+                is_enabled=enabled,
             ))
 
+    # Sync staff_ids to enabled list
+    service.staff_ids = enabled_ids
+    service.updated_at = datetime.utcnow()
     db.commit()
-    return {"status": "ok", "updated": len(data)}
+    return {"status": "ok", "updated": len(data), "staff_ids": enabled_ids}
 
 
 # ============================================================================
