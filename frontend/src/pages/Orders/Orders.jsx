@@ -529,12 +529,10 @@ const Orders = () => {
     return svcTotal + prodTotal;
   }, [formItems, formProducts]);
 
-  const handleSave = async () => {
+  const handleSave = async (opts = {}) => {
     if (!form.client_name.trim()) { addNotification('Nombre del cliente requerido', 'error'); return; }
-    if (!formItems.length) { addNotification('Agrega al menos un servicio', 'error'); return; }
     setSubmitting(true);
     try {
-      // Use first item's staff_id as order-level staff
       const mainStaff = formItems.find(it => it.staff_id)?.staff_id || null;
       const firstTime = formItems.find(it => it.time)?.time || null;
       const payload = {
@@ -546,9 +544,39 @@ const Orders = () => {
         items: formItems.map(it => ({ ...it, staff_id: it.staff_id ? parseInt(it.staff_id) : null })),
         products: formProducts,
       };
-      if (editOrder) {
+
+      // ── Append-to-existing flow (Servicios/Productos catalog) ──
+      // If the client has an open in-progress order we add the new items to
+      // it instead of opening a duplicate ticket. The ticket field overrides
+      // whatever was on the existing order so reception can update it.
+      const existing = opts.existingOpenOrder;
+      if (existing && !editOrder) {
+        const mergedItems = [
+          ...(existing.items || []).map(i => ({
+            service_id: i.service_id,
+            service_name: i.service_name,
+            price: i.price,
+            duration_minutes: i.duration_minutes,
+            staff_id: i.staff_id ? parseInt(i.staff_id) : null,
+          })),
+          ...payload.items,
+        ];
+        const mergedProducts = [
+          ...(existing.products || []),
+          ...payload.products,
+        ];
+        await orderService.update(existing.id, {
+          ...payload,
+          items: mergedItems,
+          products: mergedProducts,
+          ticket_number: form.ticket_number || existing.ticket_number,
+        });
+        addNotification(formItems.length + formProducts.length > 0
+          ? `Agregado a la orden ${form.ticket_number || existing.ticket_number}`
+          : `Ticket actualizado en la orden ${form.ticket_number || existing.ticket_number}`,
+          'success');
+      } else if (editOrder) {
         if (editOrder._is_appointment) {
-          // Update the appointment via appointment endpoint
           const aptPayload = {
             client_name: form.client_name,
             client_phone: form.client_phone,
@@ -567,9 +595,19 @@ const Orders = () => {
         }
       } else {
         await orderService.create(payload);
-        addNotification('Orden creada', 'success');
+        addNotification(formItems.length + formProducts.length > 0
+          ? `Orden ${form.ticket_number || 'nueva'} creada y en proceso`
+          : `Orden abierta con ticket ${form.ticket_number}`,
+          'success');
       }
+
+      // Reset cart + client + ticket so the user can attend the next person
       setShowModal(false);
+      setSelectedClient(null);
+      setIsNewClient(false);
+      setFormItems([]);
+      setFormProducts([]);
+      setForm(p => ({ ...p, ticket_number: '', client_name: '', client_phone: '', client_email: '', client_doc_type: '', client_doc_number: '', notes: '' }));
       loadData();
     } catch (err) {
       const msg = typeof err?.message === 'string' ? err.message : 'Error al guardar';
@@ -724,6 +762,7 @@ const Orders = () => {
           submitting={submitting}
           formatCOP={formatCOP}
           openCreate={openCreate}
+          orders={orders}
           b={b}
         />
       )}
@@ -1466,7 +1505,18 @@ function CatalogPane({
   form, setForm, selectedClient, setSelectedClient, isNewClient, setIsNewClient,
   ticketLookup, setTicketLookup, ticketResults, ticketSearching, pickTicketResult, clearClient,
   handleSave, submitting, formatCOP, openCreate, b,
+  orders, // full orders list (for finding existing in-progress order for this client)
 }) {
+  // If the selected client has an open in-progress / pending order, this is the
+  // order we'll merge into when "Crear orden" is clicked (instead of opening a new one).
+  const existingOpenOrder = useMemo(() => {
+    if (!selectedClient?.id || !Array.isArray(orders)) return null;
+    return orders.find(o =>
+      o.client_id === selectedClient.id &&
+      (o.status === 'pending' || o.status === 'in_progress') &&
+      !o._is_appointment
+    ) || null;
+  }, [selectedClient?.id, orders]);
   const isProducts = mode === 'products';
   const allItems = isProducts ? products : services;
 
@@ -1538,7 +1588,17 @@ function CatalogPane({
 
   const cartCount = formItems.length + formProducts.length;
 
-  const canSave = (selectedClient || isNewClient || form.client_name) && cartCount > 0;
+  // Save is allowed when there's a client + a ticket. Items are optional —
+  // you can open an order with just a ticket and add services later when the
+  // customer is being attended.
+  const canSave = !!(selectedClient || isNewClient || form.client_name) && !!(form.ticket_number && form.ticket_number.trim());
+
+  const isAppending = !!existingOpenOrder;
+  const saveLabel = submitting
+    ? (isAppending ? 'Agregando...' : 'Creando...')
+    : (isAppending
+        ? (cartCount > 0 ? `Agregar a orden ${existingOpenOrder.ticket_number}` : 'Actualizar ticket')
+        : (cartCount > 0 ? 'Crear orden' : 'Abrir orden con ticket'));
 
   return (
     <div className={`${b}__catalog`}>
@@ -1611,20 +1671,51 @@ function CatalogPane({
         <div className={`${b}__cart-client-head`}>
           <span className={`${b}__cart-eyebrow`}>Cliente</span>
           {selectedClient ? (
-            <div className={`${b}__cart-client-pill`}>
-              <div className={`${b}__cart-client-avatar`}>
-                {selectedClient.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '?'}
+            <>
+              <div className={`${b}__cart-client-pill`}>
+                <div className={`${b}__cart-client-avatar`}>
+                  {selectedClient.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '?'}
+                </div>
+                <div className={`${b}__cart-client-text`}>
+                  <span className={`${b}__cart-client-name`}>{selectedClient.name}</span>
+                  {selectedClient.client_id && (
+                    <span className={`${b}__cart-client-ticket`}>{selectedClient.client_id}</span>
+                  )}
+                </div>
+                <button type="button" className={`${b}__cart-client-x`} onClick={clearClient} title="Quitar cliente">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
-              <div className={`${b}__cart-client-text`}>
-                <span className={`${b}__cart-client-name`}>{selectedClient.name}</span>
-                {(selectedClient.visit_code || selectedClient.client_id) && (
-                  <span className={`${b}__cart-client-ticket`}>{selectedClient.visit_code || selectedClient.client_id}</span>
-                )}
+
+              {/* Existing open order banner */}
+              {existingOpenOrder && (
+                <div className={`${b}__cart-merge-banner`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <div>
+                    <strong>Tiene una orden abierta</strong>
+                    <span>Lo que agregues se sumará a la orden <code>{existingOpenOrder.ticket_number}</code> ({existingOpenOrder.items?.length || 0} servicio{(existingOpenOrder.items?.length || 0) === 1 ? '' : 's'})</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Ticket input — saved/updated on the client profile */}
+              <div className={`${b}__cart-ticket`}>
+                <label className={`${b}__cart-ticket-label`}>
+                  N° Ticket / Manilla
+                  <span className={`${b}__cart-ticket-hint`}>se guarda en el perfil del cliente</span>
+                </label>
+                <div className={`${b}__cart-ticket-input`}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 9V5a2 2 0 0 1 2-2h4M22 9V5a2 2 0 0 0-2-2h-4M2 15v4a2 2 0 0 0 2 2h4M22 15v4a2 2 0 0 1-2 2h-4"/><line x1="9" y1="9" x2="9" y2="15"/><line x1="15" y1="9" x2="15" y2="15"/></svg>
+                  <input
+                    type="text"
+                    value={form.ticket_number || ''}
+                    onChange={(e) => setForm(p => ({ ...p, ticket_number: e.target.value }))}
+                    placeholder="Ej: M1212"
+                    autoFocus={!form.ticket_number}
+                  />
+                </div>
               </div>
-              <button type="button" className={`${b}__cart-client-x`} onClick={clearClient} title="Quitar cliente">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </button>
-            </div>
+            </>
           ) : (
             <>
               <div className={`${b}__cart-search-wrap`}>
@@ -1655,11 +1746,11 @@ function CatalogPane({
               )}
               <div className={`${b}__cart-shortcuts`}>
                 <button type="button" className={`${b}__cart-shortcut`} onClick={openCreate}>+ Cliente nuevo</button>
-                <button type="button" className={`${b}__cart-shortcut`} onClick={() => { setSelectedClient({ id: null, name: 'Consumidor final' }); setForm(p => ({ ...p, client_name: 'Consumidor final' })); }}>Consumidor final</button>
               </div>
             </>
           )}
         </div>
+        {/* close client-head */}
 
         {/* Cart items */}
         <div className={`${b}__cart-list`}>
@@ -1668,7 +1759,11 @@ function CatalogPane({
           {cartCount === 0 ? (
             <div className={`${b}__cart-empty`}>
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-              <p>Agrega {isProducts ? 'productos' : 'servicios'} desde la izquierda</p>
+              <p>
+                {selectedClient && form.ticket_number
+                  ? 'Puedes crear la orden ya con solo el ticket y agregar servicios después, o agregar desde la izquierda ahora.'
+                  : `Agrega ${isProducts ? 'productos' : 'servicios'} desde la izquierda`}
+              </p>
             </div>
           ) : (
             <>
@@ -1730,9 +1825,9 @@ function CatalogPane({
             type="button"
             className={`${b}__cart-save`}
             disabled={!canSave || submitting}
-            onClick={handleSave}
+            onClick={() => handleSave({ existingOpenOrder })}
           >
-            {submitting ? 'Guardando...' : 'Crear orden'}
+            {saveLabel}
           </button>
         </div>
       </aside>
