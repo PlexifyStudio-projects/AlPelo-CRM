@@ -1565,6 +1565,20 @@ function CatalogPane({
     return ['all', ...Array.from(set).sort()];
   }, [allItems]);
 
+  // Build a Set of IDs that are ALREADY in either the new cart or the
+  // existing open order — those go to the bottom and render as disabled.
+  const inOrderIds = useMemo(() => {
+    const set = new Set();
+    if (isProducts) {
+      formProducts.forEach(p => set.add(p.product_id));
+      (existingOpenOrder?.products || []).forEach(p => p.product_id && set.add(p.product_id));
+    } else {
+      formItems.forEach(i => set.add(i.service_id));
+      (existingOpenOrder?.items || []).forEach(i => i.service_id && set.add(i.service_id));
+    }
+    return set;
+  }, [isProducts, formItems, formProducts, existingOpenOrder]);
+
   const filtered = useMemo(() => {
     let list = allItems;
     if (catalogCategory !== 'all') list = list.filter(it => it.category === catalogCategory);
@@ -1572,8 +1586,13 @@ function CatalogPane({
       const q = catalogSearch.toLowerCase();
       list = list.filter(it => (it.name || '').toLowerCase().includes(q) || (it.category || '').toLowerCase().includes(q));
     }
-    return list;
-  }, [allItems, catalogCategory, catalogSearch]);
+    // Sort: not-in-order first, then already-in-order at the bottom
+    return [...list].sort((a, b) => {
+      const aIn = inOrderIds.has(a.id) ? 1 : 0;
+      const bIn = inOrderIds.has(b.id) ? 1 : 0;
+      return aIn - bIn;
+    });
+  }, [allItems, catalogCategory, catalogSearch, inOrderIds]);
 
   const addToCart = (it) => {
     if (isProducts) {
@@ -1670,12 +1689,15 @@ function CatalogPane({
           {filtered.length === 0 ? (
             <div className={`${b}__catalog-empty`}>Sin resultados</div>
           ) : filtered.map(it => {
-            const inCart = isProducts
+            const inNewCart = isProducts
               ? formProducts.some(p => p.product_id === it.id)
               : formItems.some(i => i.service_id === it.id);
+            const inExistingOrder = !inNewCart && inOrderIds.has(it.id);
+            const isDisabled = inNewCart || inExistingOrder;
             const initials = (it.name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+            const badgeLabel = inExistingOrder ? 'Ya en la orden' : 'En carrito';
             return (
-              <div key={it.id} className={`${b}__catalog-card ${inCart ? `${b}__catalog-card--in` : ''}`}>
+              <div key={it.id} className={`${b}__catalog-card ${isDisabled ? `${b}__catalog-card--in` : ''} ${inExistingOrder ? `${b}__catalog-card--existing` : ''}`}>
                 <div className={`${b}__catalog-card-thumb`}>{initials}</div>
                 <div className={`${b}__catalog-card-info`}>
                   <span className={`${b}__catalog-card-name`}>{it.name}</span>
@@ -1687,12 +1709,13 @@ function CatalogPane({
                   <span className={`${b}__catalog-card-price`}>{formatCOP(it.price || 0)}</span>
                   <button
                     type="button"
-                    className={`${b}__catalog-card-add ${inCart ? `${b}__catalog-card-add--in` : ''}`}
+                    className={`${b}__catalog-card-add ${isDisabled ? `${b}__catalog-card-add--in` : ''}`}
                     onClick={() => addToCart(it)}
-                    disabled={inCart}
+                    disabled={isDisabled}
+                    title={inExistingOrder ? `Ya está en la orden ${existingOpenOrder?.ticket_number || ''}` : ''}
                   >
-                    {inCart ? (
-                      <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> En carrito</>
+                    {isDisabled ? (
+                      <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> {badgeLabel}</>
                     ) : (
                       <>+ Agregar</>
                     )}

@@ -2021,6 +2021,12 @@
       border-color: rgba(16, 185, 129, 0.32);
       background: rgba(16, 185, 129, 0.03);
     }
+
+    &--existing {
+      border-color: rgba(99, 102, 241, 0.32);
+      background: rgba(99, 102, 241, 0.04);
+      opacity: 0.85;
+    }
   }
 
   &__catalog-card-thumb {
@@ -2113,6 +2119,12 @@
       box-shadow: none;
       cursor: default;
     }
+  }
+
+  /* "Ya en la orden" tone — indigo so it differs from "En carrito" */
+  &__catalog-card--existing &__catalog-card-add--in {
+    background: rgba(99, 102, 241, 0.14);
+    color: $color-accent-dark;
   }
 
   /* ============================================================
