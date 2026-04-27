@@ -87,6 +87,16 @@ const XIcon = () => (
     <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+const DownloadIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+  </svg>
+);
+const FileIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="9" y1="13" x2="15" y2="13" /><line x1="9" y1="17" x2="15" y2="17" />
+  </svg>
+);
 
 const HOURS_START = 7, HOURS_END = 21, SLOT_MIN = 15;
 const pad2 = (n) => String(n).padStart(2, '0');
@@ -150,6 +160,10 @@ const Orders = () => {
   const [svcSearch, setSvcSearch] = useState('');
   const [prodSearch, setProdSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Delete confirm: null | { type: 'one', order } | { type: 'all', count }
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
 
@@ -677,7 +691,8 @@ const Orders = () => {
     const items = showModal && formItems.length ? formItems : order.items || [];
     const hasStaff = items.some(i => i.staff_id) || order.staff_id;
     if (!hasStaff) {
-      addNotification('Debes asignar personal a al menos un servicio antes de cobrar', 'error');
+      addNotification('Asigna el personal antes de cobrar', 'error');
+      openEdit(order);
       return;
     }
     const firstWithStaff = items.find(i => i.staff_id) || items[0] || {};
@@ -711,6 +726,82 @@ const Orders = () => {
       _products: prods,
     });
     setShowModal(false);
+  };
+
+  const handleDeleteOne = async (order) => {
+    if (order._is_appointment) {
+      addNotification('Las citas no se eliminan desde aquí. Cancélalas desde la Agenda.', 'error');
+      return;
+    }
+    setDeleting(true);
+    try {
+      await orderService.delete(order.id);
+      addNotification(`Orden ${order.ticket_number} eliminada`, 'success');
+      setConfirmDelete(null);
+      loadData();
+    } catch (err) {
+      addNotification(typeof err?.message === 'string' ? err.message : 'Error al eliminar', 'error');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    const targets = filtered.filter(o => !o._is_appointment);
+    if (!targets.length) { setConfirmDelete(null); return; }
+    setDeleting(true);
+    let ok = 0, fail = 0;
+    for (const o of targets) {
+      try { await orderService.delete(o.id); ok++; } catch { fail++; }
+    }
+    setDeleting(false);
+    setConfirmDelete(null);
+    addNotification(`${ok} orden${ok === 1 ? '' : 'es'} eliminada${ok === 1 ? '' : 's'}${fail ? ` (${fail} con error)` : ''}`, fail ? 'error' : 'success');
+    loadData();
+  };
+
+  const downloadInvoiceFor = async (o, cardEl) => {
+    let loader = null;
+    if (cardEl) {
+      loader = document.createElement('div');
+      loader.className = `${b}__card-loading`;
+      loader.innerHTML = `<div class="${b}__card-loading-spin"></div><span>Cargando factura...</span>`;
+      cardEl.appendChild(loader);
+    }
+    try {
+      const res = await fetch(`${API}/invoices/`, { credentials: 'include' });
+      if (!res.ok) throw new Error('No se pudo cargar la factura');
+      const allInvoices = await res.json();
+      const clientInvs = allInvoices
+        .filter(i => i.client_name === o.client_name && i.status === 'paid')
+        .sort((a, b) => (b.paid_at || b.issued_date || '').localeCompare(a.paid_at || a.issued_date || ''));
+      const inv = clientInvs[0];
+      if (!inv) { addNotification('No encontramos la factura asociada', 'error'); return; }
+      const dateStr = inv.issued_date ? new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      const timeStr = inv.paid_at ? new Date(inv.paid_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+      const ml = inv.payment_method || '—';
+      const win = window.open('', '_blank', 'width=900,height=700');
+      if (!win) { addNotification('Permite ventanas emergentes para imprimir', 'error'); return; }
+      win.document.write(`<html><head><title>Factura ${inv.invoice_number}</title><style>*{box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;padding:40px;max-width:750px;margin:0 auto;color:#1a1a1a;font-size:13px}hr{border:none;border-top:2px solid #1E40AF;margin:12px 0 20px}.biz-name{font-size:18px;font-weight:800}.header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}.header h2{font-size:16px;margin:0}.header-right{text-align:right}.header-right strong{font-size:20px;display:block}.client{display:flex;flex-wrap:wrap;gap:6px 24px;background:#f8fafc;padding:12px 16px;border-radius:8px;margin-bottom:16px}.client div{display:flex;flex-direction:column}.client strong{font-size:12px}.client span{font-size:10px;color:#64748b}table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:12px}th{text-align:left;padding:6px 10px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#1E40AF;border-bottom:2px solid #E5E7EB}td{padding:7px 10px;border-bottom:1px solid #F3F4F6}.r{text-align:right}.staff{color:#1E40AF;font-size:11px}.product{color:#D97706}.subtotal-row td{font-size:11px;color:#64748b;border-bottom:1px dashed #E5E7EB}.total-row td{font-size:15px;font-weight:800;border-top:2px solid #1a1a1a;border-bottom:none}.footer{margin-top:24px;padding-top:10px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:10px;color:#94a3b8}.no-print{text-align:center;margin-top:16px}button{background:#2D5A3D;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600}@media print{.no-print{display:none}}</style></head><body>`);
+      win.document.write(`<div class="biz-name">AlPelo</div><hr>`);
+      win.document.write(`<div class="header"><div><h2>Factura ${inv.invoice_number}</h2><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — ' + timeStr : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}</div></div>`);
+      win.document.write(`<div class="client"><div><strong>${inv.client_name || 'N/A'}</strong><span>Cliente</span></div><div><strong>${inv.client_phone || 'No registrado'}</strong><span>Teléfono</span></div></div>`);
+      win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
+      (inv.items || []).forEach(it => {
+        const isProd = it.service_name?.startsWith('[Producto]');
+        win.document.write(`<tr class="${isProd ? 'product' : ''}"><td>${it.service_name}</td><td class="staff">${it.staff_name || '—'}</td><td>${it.quantity}</td><td class="r">${formatCOP(it.unit_price)}</td><td class="r">${formatCOP(it.total)}</td></tr>`);
+      });
+      win.document.write(`<tr class="subtotal-row"><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
+      if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4" style="color:#059669">Propina</td><td class="r" style="color:#059669">+${formatCOP(inv.tip)}</td></tr>`);
+      win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr></table>`);
+      win.document.write(`<div class="footer"><span>Factura ${inv.invoice_number} — ${dateStr}</span><span>Generado por Plexify Studio</span></div>`);
+      win.document.write('<div class="no-print"><button onclick="window.print()">Imprimir</button></div></body></html>');
+      win.document.close();
+    } catch (err) {
+      addNotification(typeof err?.message === 'string' ? err.message : 'Error al cargar factura', 'error');
+    } finally {
+      if (loader) loader.remove();
+    }
   };
 
   const filteredSvc = svcSearch.length >= 2
@@ -906,6 +997,15 @@ const Orders = () => {
           <button className={`${b}__empty-btn`} onClick={openCreate}><PlusIcon /> Crear nueva orden</button>
         </div>
       ) : (
+        <>
+        {/* Bulk bar */}
+        <div className={`${b}__bulk-bar`}>
+          <span className={`${b}__bulk-info`}>
+            {filtered.length} orden{filtered.length === 1 ? '' : 'es'}
+            {statusFilter !== 'all' && ` · ${STATUS_META[statusFilter]?.label || statusFilter}`}
+          </span>
+        </div>
+
         <div className={`${b}__grid`}>
           {filtered.map(o => {
             const st = STATUS_META[o.status] || STATUS_META.pending;
@@ -913,189 +1013,134 @@ const Orders = () => {
             const initials = o.client_name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '?';
             const AVATAR_COLORS = ['#2D5A3D','#3B82F6','#E05292','#C9A84C','#8B5CF6','#F97316','#14B8A6','#EC4899','#06B6D4','#EF4444','#6366F1','#059669','#D946EF','#0EA5E9'];
             const avatarColor = AVATAR_COLORS[(o.client_name || '').charCodeAt(0) % AVATAR_COLORS.length];
-            const svcCount = o.items?.length || 0;
-            const prodCount = o.products?.length || 0;
+            const dateLine = `${fmtDate(o.service_date || o.arrival_time)} · ${o.service_time ? fmtTime(`2000-01-01T${o.service_time}`) : fmtTime(o.arrival_time)}`;
+            const hasItems = (o.items?.length || 0) + (o.products?.length || 0) > 0;
+            const canPay = o.payment_status !== 'paid' && o.status !== 'cancelled' && o.status !== 'no_show' && hasItems;
             return (
-              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`} onClick={async (e) => {
-                if (o.payment_status === 'paid') {
-                  const card = e.currentTarget;
-                  const loader = document.createElement('div');
-                  loader.className = `${b}__card-loading`;
-                  loader.innerHTML = `<div class="${b}__card-loading-spin"></div><span>Cargando factura...</span>`;
-                  card.appendChild(loader);
-                  try {
-                    const res = await fetch(`${API}/invoices/`, { credentials: 'include' });
-                    if (res.ok) {
-                      const allInvoices = await res.json();
-                      // Match by client name — find most recent invoice for this client
-                      const clientInvs = allInvoices
-                        .filter(i => i.client_name === o.client_name && i.status === 'paid')
-                        .sort((a, b) => (b.paid_at || b.issued_date || '').localeCompare(a.paid_at || a.issued_date || ''));
-                      const inv = clientInvs[0];
-                      console.log('[INVOICE] matched:', inv?.invoice_number, 'client matches:', clientInvs.length);
-                      if (inv) {
-                        // Redirect to Finanzas with the invoice expanded — but simpler: just open the print
-                        // Use the Finanzas print logic inline
-                        const dateStr = inv.issued_date ? new Date(inv.issued_date + 'T12:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-                        const timeStr = inv.paid_at ? new Date(inv.paid_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
-                        const ml = inv.payment_method || '—';
-                        const win = window.open('', '_blank', 'width=900,height=700');
-                        if (win) {
-                          win.document.write(`<html><head><title>Factura ${inv.invoice_number}</title><style>*{box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;padding:40px;max-width:750px;margin:0 auto;color:#1a1a1a;font-size:13px}hr{border:none;border-top:2px solid #1E40AF;margin:12px 0 20px}.biz{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.biz-name{font-size:18px;font-weight:800}.biz-info{text-align:right;font-size:11px;color:#64748b}.header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}.header h2{font-size:16px;margin:0}.header-right{text-align:right}.header-right strong{font-size:20px;display:block}.client{display:flex;flex-wrap:wrap;gap:6px 24px;background:#f8fafc;padding:12px 16px;border-radius:8px;margin-bottom:16px}.client div{display:flex;flex-direction:column}.client strong{font-size:12px}.client span{font-size:10px;color:#64748b}table{width:100%;border-collapse:collapse;margin-bottom:4px;font-size:12px}th{text-align:left;padding:6px 10px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#1E40AF;border-bottom:2px solid #E5E7EB}td{padding:7px 10px;border-bottom:1px solid #F3F4F6}.r{text-align:right}.staff{color:#1E40AF;font-size:11px}.product{color:#D97706}.subtotal-row td{font-size:11px;color:#64748b;border-bottom:1px dashed #E5E7EB}.discount-row td{color:#059669}.total-row td{font-size:15px;font-weight:800;border-top:2px solid #1a1a1a;border-bottom:none}.breakdown{display:flex;gap:20px;margin-top:16px}.box{flex:1;border:1px solid #E5E7EB;border-radius:8px;padding:12px}.box h3{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid #f1f1f1}.box-row{display:flex;justify-content:space-between;padding:3px 0;font-size:11px}.green strong{color:#059669}.blue strong{color:#2563EB}.footer{margin-top:24px;padding-top:10px;border-top:1px solid #E5E7EB;display:flex;justify-content:space-between;font-size:10px;color:#94a3b8}.no-print{text-align:center;margin-top:16px}button{background:#2D5A3D;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600}@media print{.no-print{display:none}}</style></head><body>`);
-                          win.document.write(`<div class="biz-name">AlPelo</div><hr>`);
-                          win.document.write(`<div class="header"><div><h2>Factura ${inv.invoice_number}</h2><span style="color:#64748b;font-size:12px">${dateStr}${timeStr ? ' — '+timeStr : ''}</span></div><div class="header-right"><strong>${formatCOP(inv.total)}</strong>${ml}</div></div>`);
-                          win.document.write(`<div class="client"><div><strong>${inv.client_name||'N/A'}</strong><span>Cliente</span></div><div><strong>${inv.client_phone||'No registrado'}</strong><span>Teléfono</span></div><div><strong>${inv.client_document?(inv.client_document_type||'CC')+' '+inv.client_document:'No registrado'}</strong><span>Documento</span></div><div><strong>${inv.client_email||'No registrado'}</strong><span>Email</span></div></div>`);
-                          win.document.write('<table><tr><th>Servicio / Producto</th><th>Profesional</th><th>Cant.</th><th class="r">P/U</th><th class="r">Total</th></tr>');
-                          (inv.items||[]).forEach(it => { const isProd = it.service_name?.startsWith('[Producto]'); win.document.write(`<tr class="${isProd?'product':''}"><td>${it.service_name}</td><td class="staff">${it.staff_name||'—'}</td><td>${it.quantity}</td><td class="r">${formatCOP(it.unit_price)}</td><td class="r">${formatCOP(it.total)}</td></tr>`); });
-                          win.document.write(`<tr class="subtotal-row"><td colspan="4">Subtotal</td><td class="r">${formatCOP(inv.subtotal)}</td></tr>`);
-                          if (inv.tip > 0) win.document.write(`<tr class="subtotal-row"><td colspan="4" style="color:#059669">Propina</td><td class="r" style="color:#059669">+${formatCOP(inv.tip)}</td></tr>`);
-                          win.document.write(`<tr class="total-row"><td colspan="4">TOTAL</td><td class="r">${formatCOP(inv.total)}</td></tr></table>`);
-                          // Load commission rates for distribution
-                          let svcCommRates = {}, staffDefaults = {};
-                          try {
-                            const [cr, sd] = await Promise.all([
-                              fetch(`${API}/services/all-commissions`, { credentials: 'include' }).then(r => r.ok ? r.json() : {}),
-                              fetch(`${API}/finances/commissions/config`, { credentials: 'include' }).then(r => r.ok ? r.json() : []),
-                            ]);
-                            svcCommRates = cr.rates || {};
-                            sd.forEach(c => { staffDefaults[c.staff_id] = c.default_rate || 0; });
-                          } catch {}
-                          // Distribution + Payment details
-                          const byStaff = {};
-                          (inv.items||[]).forEach(it => {
-                            const n = it.staff_name || '—';
-                            if (!byStaff[n]) byStaff[n] = { items: [], total: 0 };
-                            byStaff[n].items.push(it);
-                            byStaff[n].total += it.total || 0;
-                          });
-                          let distHtml = '<div class="box"><h3>Distribucion por profesional</h3>';
-                          Object.entries(byStaff).forEach(([name, s]) => {
-                            distHtml += `<div class="box-row" style="font-weight:700"><span>${name}</span><strong>${formatCOP(s.total)}</strong></div>`;
-                            s.items.forEach(it => {
-                              const isProd = it.service_name?.startsWith('[Producto]');
-                              const rate = svcCommRates[`${it.staff_id}-${it.service_id}`] || staffDefaults[it.staff_id] || 0;
-                              const comm = isProd ? 0 : Math.round(it.total * rate);
-                              distHtml += `<div class="box-row" style="font-size:11px;color:#64748b;padding-left:12px"><span>${it.service_name}${isProd ? '' : ` (${Math.round(rate*100)}%)`}</span><strong style="color:#059669">${formatCOP(comm)}</strong></div>`;
-                            });
-                          });
-                          const totalComm = Object.values(byStaff).reduce((s, st) => s + st.items.reduce((ss, it) => {
-                            const isProd = it.service_name?.startsWith('[Producto]');
-                            const rate = isProd ? 0 : (svcCommRates[`${it.staff_id}-${it.service_id}`] || staffDefaults[it.staff_id] || 0);
-                            return ss + Math.round((it.total||0) * rate);
-                          }, 0), 0);
-                          distHtml += `<div style="border-top:1px solid #e2e8f0;margin-top:6px;padding-top:6px"><div class="box-row green"><span>Total comisiones</span><strong>${formatCOP(totalComm)}</strong></div><div class="box-row blue"><span>Ganancia negocio</span><strong>${formatCOP((inv.total||0)-(inv.tip||0)-totalComm)}</strong></div></div></div>`;
-                          let payHtml = `<div class="box"><h3>Detalles de pago</h3><div class="box-row"><span>Metodo</span><strong>${ml}</strong></div>`;
-                          if (inv.payment_method === 'efectivo' && inv.payment_details?.received > 0) {
-                            payHtml += `<div class="box-row"><span>Efectivo recibido</span><strong>${formatCOP(inv.payment_details.received)}</strong></div>`;
-                            if (inv.payment_details.change > 0) payHtml += `<div class="box-row" style="color:#D97706"><span>Cambio entregado</span><strong>${formatCOP(inv.payment_details.change)}</strong></div>`;
-                          }
-                          payHtml += `<div class="box-row"><span>Condicion</span><strong>Contado</strong></div><div class="box-row"><span>Estado</span><strong>Pagada</strong></div><div class="box-row"><span>Fecha</span><strong>${dateStr}</strong></div>${timeStr ? `<div class="box-row"><span>Hora</span><strong>${timeStr}</strong></div>` : ''}</div>`;
-                          win.document.write(`<div class="breakdown">${distHtml}${payHtml}</div>`);
-                          win.document.write(`<div class="footer"><span>Factura ${inv.invoice_number} — ${dateStr}</span><span>Generado por Plexify Studio</span></div>`);
-                          win.document.write('<div class="no-print"><button onclick="window.print()">Imprimir</button></div></body></html>');
-                          win.document.close();
-                          loader.remove();
-                          return;
-                        }
-                      }
-                    }
-                  } catch (err) { console.error('[INVOICE]', err); }
-                  loader.remove();
-                  openEdit(o);
-                  return;
-                }
-                openEdit(o);
-              }}>
-                {/* Header: status accent bar */}
-                <div className={`${b}__card-accent`} style={{ background: st.color }} />
-
-                {/* Ticket + Status */}
-                <div className={`${b}__card-header`}>
-                  <div className={`${b}__card-header-left`}>
-                    <span className={`${b}__card-ticket`}>{o.ticket_number}</span>
-                    {o._is_appointment && <span className={`${b}__card-source`}>Agenda</span>}
-                  </div>
-                  <span className={`${b}__card-status`} style={{ color: st.color, background: st.bg }}>{st.label}</span>
-                </div>
-
-                {/* Client */}
-                <div className={`${b}__card-client`}>
-                  <div className={`${b}__card-avatar`} style={{ background: avatarColor }}>{initials}</div>
-                  <div className={`${b}__card-client-info`}>
-                    <strong>{o.client_name}</strong>
-                    {o.client_phone && <span>
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
-                      {o.client_phone}
-                    </span>}
-                  </div>
-                </div>
-
-                {/* Services & Products summary */}
-                <div className={`${b}__card-items`}>
-                  <div className={`${b}__card-item-group`}>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
-                    <span>{svcCount} servicio{svcCount !== 1 ? 's' : ''}</span>
-                  </div>
-                  {prodCount > 0 && (
-                    <div className={`${b}__card-item-group`}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg>
-                      <span>{prodCount} producto{prodCount !== 1 ? 's' : ''}</span>
+              <div key={o.id} className={`${b}__card ${b}__card--${o.status}`}>
+                {/* HEAD: avatar + client + meta + actions */}
+                <div className={`${b}__card-head`}>
+                  <div className={`${b}__card-id`}>
+                    <div className={`${b}__card-avatar`} style={{ background: avatarColor }}>{initials}</div>
+                    <div className={`${b}__card-id-info`}>
+                      <strong className={`${b}__card-name`}>{o.client_name || 'Cliente'}</strong>
+                      <span className={`${b}__card-meta`}>
+                        <span>{dateLine}</span>
+                        <span className={`${b}__card-dot`}>·</span>
+                        <span className={`${b}__card-ticket`}>{o.ticket_number}</span>
+                        {o._is_appointment && <span className={`${b}__card-source`}>Agenda</span>}
+                        <span className={`${b}__card-status`} style={{ color: st.color, background: st.bg }}>{st.label}</span>
+                      </span>
                     </div>
-                  )}
-                </div>
-
-                {/* Service tags */}
-                <div className={`${b}__card-tags`}>
-                  {o.items?.slice(0, 2).map((item, i) => (
-                    <span key={i} className={`${b}__card-tag`}>{item.service_name}</span>
-                  ))}
-                  {svcCount > 2 && <span className={`${b}__card-tag ${b}__card-tag--more`}>+{svcCount - 2}</span>}
-                </div>
-
-                {/* Staff — show all unique staff from items */}
-                <div className={`${b}__card-staff`}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                  {(() => {
-                    const names = [...new Set([
-                      ...(o.items || []).filter(i => i.staff_name).map(i => i.staff_name),
-                      ...(o.staff_name ? [o.staff_name] : []),
-                    ].filter(Boolean))];
-                    return names.length > 0
-                      ? names.map((n, i) => <span key={i} className={`${b}__card-staff-name`}>{n}{i < names.length - 1 ? ', ' : ''}</span>)
-                      : <span className={`${b}__card-staff-pending`}>Por asignar</span>;
-                  })()}
-                </div>
-
-                {/* Footer: time + total + payment */}
-                <div className={`${b}__card-footer`}>
-                  <div className={`${b}__card-time`}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    {fmtDate(o.service_date || o.arrival_time)}
-                    <ClockIcon /> {o.service_time ? fmtTime(`2000-01-01T${o.service_time}`) : fmtTime(o.arrival_time)}
                   </div>
-                  <div className={`${b}__card-money`}>
-                    <span className={`${b}__card-total`}>{formatCOP(o.total)}</span>
-                    {o.payment_status === 'unpaid' && o.status !== 'cancelled' && o.status !== 'no_show' && (o.staff_id || o.items?.some(it => it.staff_id)) ? (
-                      <button className={`${b}__card-pay-btn`} onClick={(e) => { e.stopPropagation(); handlePay(o); }}>
-                        Cobrar
+                  <div className={`${b}__card-actions`}>
+                    {o.payment_status === 'paid' && (
+                      <button className={`${b}__card-icon`} title="Descargar recibo"
+                        onClick={(e) => { e.stopPropagation(); downloadInvoiceFor(o, e.currentTarget.closest(`.${b}__card`)); }}>
+                        <DownloadIcon />
                       </button>
-                    ) : (
-                      <span className={`${b}__card-pay`} style={{ color: py.color }}>{py.label}</span>
+                    )}
+                    <button className={`${b}__card-icon`} title="Ver / editar orden"
+                      onClick={(e) => { e.stopPropagation(); openEdit(o); }}>
+                      <FileIcon />
+                    </button>
+                    {!o._is_appointment && (
+                      <button className={`${b}__card-icon ${b}__card-icon--danger`} title="Eliminar orden"
+                        onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: 'one', order: o }); }}>
+                        <TrashIcon />
+                      </button>
                     )}
                   </div>
                 </div>
 
-                {/* Quick actions for pending/in_progress */}
+                {/* TABLE */}
+                <div className={`${b}__card-table`}>
+                  <div className={`${b}__card-table-head`}>
+                    <span>Servicios o productos</span>
+                    <span>Cantidad</span>
+                    <span>Precio</span>
+                    <span>Total</span>
+                  </div>
+                  {hasItems ? (
+                    <>
+                      {(o.items || []).map((it, i) => {
+                        const staffName = it.staff_name
+                          || staffList.find(s => s.id === parseInt(it.staff_id))?.name
+                          || null;
+                        return (
+                          <div key={`s-${i}`} className={`${b}__card-row`}>
+                            <div className={`${b}__card-row-label`}>
+                              <span className={`${b}__card-row-name`}>{it.service_name}</span>
+                              {staffName
+                                ? <span className={`${b}__card-row-staff`}>{staffName}</span>
+                                : <span className={`${b}__card-row-staff ${b}__card-row-staff--pending`}>Por asignar</span>}
+                            </div>
+                            <span className={`${b}__card-row-qty`}>1</span>
+                            <span className={`${b}__card-row-price`}>{formatCOP(it.price || 0)}</span>
+                            <span className={`${b}__card-row-total`}>{formatCOP(it.price || 0)}</span>
+                          </div>
+                        );
+                      })}
+                      {(o.products || []).map((p, i) => {
+                        const isStaff = p.charged_to && p.charged_to !== 'client';
+                        const staffName = isStaff
+                          ? staffList.find(s => s.id === parseInt(p.charged_to))?.name
+                          : null;
+                        return (
+                          <div key={`p-${i}`} className={`${b}__card-row ${b}__card-row--product`}>
+                            <div className={`${b}__card-row-label`}>
+                              <span className={`${b}__card-row-name`}>
+                                {p.product_name}
+                                <em className={`${b}__card-row-tag`}>Producto</em>
+                              </span>
+                              {staffName && <span className={`${b}__card-row-staff`}>{staffName}</span>}
+                            </div>
+                            <span className={`${b}__card-row-qty`}>{p.quantity || 1}</span>
+                            <span className={`${b}__card-row-price`}>{formatCOP(p.unit_price || 0)}</span>
+                            <span className={`${b}__card-row-total`}>{formatCOP((p.quantity || 1) * (p.unit_price || 0))}</span>
+                          </div>
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <div className={`${b}__card-row ${b}__card-row--empty`}>
+                      <span>El personal aún no ha registrado servicios ni productos</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* BOTTOM: total + actions */}
+                <div className={`${b}__card-bottom`}>
+                  <div className={`${b}__card-total-line`}>
+                    Total: <strong>{formatCOP(o.total || 0)}</strong>
+                  </div>
+                  <div className={`${b}__card-cta`}>
+                    {o.payment_status === 'paid' ? (
+                      <span className={`${b}__card-paid`}>PAGADA</span>
+                    ) : (
+                      <>
+                        <button className={`${b}__card-edit-link`} onClick={(e) => { e.stopPropagation(); openEdit(o); }}>
+                          Editar orden
+                        </button>
+                        {canPay && (
+                          <button className={`${b}__card-pay-cta`} onClick={(e) => { e.stopPropagation(); handlePay(o); }}>
+                            Pagar orden
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Quick: no_show / cancel for pending/in_progress unpaid */}
                 {(o.status === 'pending' || o.status === 'in_progress') && o.payment_status !== 'paid' && (
                   <div className={`${b}__card-quick`}>
                     <button className={`${b}__card-quick-btn ${b}__card-quick-btn--noshow`}
-                      onClick={(e) => { e.stopPropagation(); handleStatusChange(o._is_appointment ? { ...o, id: o._apt_id, _is_appointment: true } : o, 'no_show'); }}
-                      title="No asistió">
+                      onClick={(e) => { e.stopPropagation(); handleStatusChange(o._is_appointment ? { ...o, id: o._apt_id, _is_appointment: true } : o, 'no_show'); }}>
                       No asistió
                     </button>
                     <button className={`${b}__card-quick-btn ${b}__card-quick-btn--cancel`}
-                      onClick={(e) => { e.stopPropagation(); handleStatusChange(o._is_appointment ? { ...o, id: o._apt_id, _is_appointment: true } : o, 'cancelled'); }}
-                      title="Cancelar">
+                      onClick={(e) => { e.stopPropagation(); handleStatusChange(o._is_appointment ? { ...o, id: o._apt_id, _is_appointment: true } : o, 'cancelled'); }}>
                       Cancelar
                     </button>
                   </div>
@@ -1104,6 +1149,7 @@ const Orders = () => {
             );
           })}
         </div>
+        </>
       )}
 
       {!loading && page < totalPages && (
@@ -1115,6 +1161,35 @@ const Orders = () => {
       )}
 
       </>)}
+
+      {/* ─── DELETE CONFIRM ─── */}
+      {confirmDelete && createPortal(
+        <div className={`${b}__overlay`} onClick={() => !deleting && setConfirmDelete(null)}>
+          <div className={`${b}__confirm`} onClick={e => e.stopPropagation()}>
+            <div className={`${b}__confirm-icon`}><TrashIcon /></div>
+            <h3 className={`${b}__confirm-title`}>
+              {confirmDelete.type === 'all'
+                ? `¿Eliminar ${confirmDelete.count} órden${confirmDelete.count === 1 ? '' : 'es'}?`
+                : `¿Eliminar la orden ${confirmDelete.order?.ticket_number || ''}?`}
+            </h3>
+            <p className={`${b}__confirm-text`}>
+              {confirmDelete.type === 'all'
+                ? 'Esta acción borra todas las órdenes visibles en el filtro actual. No incluye citas de la agenda.'
+                : 'La orden y sus servicios/productos asociados se eliminarán de forma permanente.'}
+            </p>
+            <div className={`${b}__confirm-actions`}>
+              <button className={`${b}__confirm-cancel`} disabled={deleting} onClick={() => setConfirmDelete(null)}>
+                Cancelar
+              </button>
+              <button className={`${b}__confirm-delete`} disabled={deleting}
+                onClick={() => confirmDelete.type === 'all' ? handleDeleteAll() : handleDeleteOne(confirmDelete.order)}>
+                {deleting ? 'Eliminando...' : 'Sí, eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ─── DRAWER (legacy "edit order" — still used for editing/cobro) ─── */}
       {showModal && createPortal(
