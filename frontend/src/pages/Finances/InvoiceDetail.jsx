@@ -48,6 +48,7 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [commRates, setCommRates] = useState({}); // { 'staffId-serviceId': rate }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,6 +63,25 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
   }, [invoiceId, addNotification]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Load commission rates so we can show per-staff per-service commissions
+  // when the invoice itself doesn't carry frozen amounts.
+  useEffect(() => {
+    let mounted = true;
+    financeService.getAllCommissionRates?.()
+      .then((rows) => {
+        if (!mounted || !Array.isArray(rows)) return;
+        const map = {};
+        for (const r of rows) {
+          if (r.staff_id && r.service_id) {
+            map[`${r.staff_id}-${r.service_id}`] = r.rate ?? r.commission_rate ?? 0;
+          }
+        }
+        setCommRates(map);
+      })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
 
   const handleOpenReceipt = useCallback(() => {
     if (!invoice) return;
@@ -124,14 +144,36 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
     { method: invoice.payment_method, amount: total },
   ] : [];
 
+  // ── Commissions: prefer frozen amounts on items, fall back to rate lookup, then default 50% ──
+  const fallbackRate = invoice.staff_commission_rate || 0.5;
+  const frozenItems = invoice.frozen_items || [];
+
   const commissions = items
     .filter(it => it.staff_id || it.staff_name)
-    .map(it => ({
-      service_name: it.service_name,
-      qty: it.quantity || 1,
-      staff_name: it.staff_name || '—',
-      commission: it.commission_amount || 0,
-    }));
+    .map((it, idx) => {
+      const frozen = frozenItems[idx] || frozenItems.find(fi => fi.service_id === it.service_id && fi.staff_id === it.staff_id);
+      let commission = 0;
+      let rate = fallbackRate;
+      if (frozen?.commission_amount != null) {
+        commission = frozen.commission_amount;
+        rate = frozen.commission_rate || rate;
+      } else if (it.commission_amount != null) {
+        commission = it.commission_amount;
+        rate = it.commission_rate || rate;
+      } else {
+        const itemTotal = it.total || (it.quantity || 1) * (it.unit_price || 0);
+        const lookupRate = (it.staff_id && it.service_id) ? commRates[`${it.staff_id}-${it.service_id}`] : null;
+        rate = lookupRate ?? fallbackRate;
+        commission = Math.round(itemTotal * rate);
+      }
+      return {
+        service_name: it.service_name,
+        qty: it.quantity || 1,
+        staff_name: it.staff_name || '—',
+        commission,
+        rate,
+      };
+    });
 
   return (
     <div className="invoice-detail">
@@ -340,12 +382,19 @@ const InvoiceDetail = ({ invoiceId, onBack, onCancelled }) => {
                     <span className="invoice-detail__staff-avatar">{c.staff_name[0]?.toUpperCase()}</span>
                     <div className="invoice-detail__comm-text">
                       <span className="invoice-detail__comm-name">{c.staff_name}</span>
-                      <span className="invoice-detail__comm-svc">{c.service_name} × {c.qty}</span>
+                      <span className="invoice-detail__comm-svc">
+                        {c.service_name} × {c.qty}
+                        {c.rate > 0 && <span className="invoice-detail__comm-pct"> · {Math.round(c.rate * 100)}%</span>}
+                      </span>
                     </div>
                   </div>
                   <span className="invoice-detail__comm-amount">{formatCOP(c.commission)}</span>
                 </li>
               ))}
+              <li className="invoice-detail__comm-total">
+                <span>Total comisiones</span>
+                <span>{formatCOP(commissions.reduce((s, c) => s + c.commission, 0))}</span>
+              </li>
             </ul>
           </div>
         )}

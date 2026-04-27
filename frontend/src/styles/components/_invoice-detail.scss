@@ -594,6 +594,28 @@
     color: $color-gray-500;
   }
 
+  &__comm-pct {
+    color: $color-accent;
+    font-weight: 700;
+    margin-left: 2px;
+  }
+
+  &__comm-total {
+    margin-top: 6px;
+    padding: 10px 12px !important;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(59, 130, 246, 0.05)) !important;
+    border: 1px dashed rgba(99, 102, 241, 0.32);
+    font-weight: 700;
+    color: $color-secondary;
+
+    span:last-child {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: $color-primary;
+      letter-spacing: -0.015em;
+    }
+  }
+
   &__comm-amount {
     font-size: 0.88rem;
     font-weight: 800;
