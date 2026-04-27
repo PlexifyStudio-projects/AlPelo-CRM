@@ -642,28 +642,41 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Ad
     if checkout:
         ci_list = db.query(CheckoutItem).filter(CheckoutItem.checkout_id == checkout.id).all()
         # Build product-commission map by parsing <!--PRODUCTS:...:PRODUCTS--> JSON
-        # from any related visit notes. Products keep their commission as a fixed
-        # $ per-unit value in the inventory and that snapshot lives in the visit.
+        # from related visit notes. The pos endpoint writes one VisitHistory per
+        # staff member when a checkout is created, with the products array in
+        # `notes`. Match by (client_id + staff_id) and same visit_date as the
+        # checkout — payment_id is only set later during nómina, so filtering
+        # on it would miss every recent sale.
         import json as _json_pc
-        product_comm_map = {}  # name (lowercase) → comm-per-unit
+        # Per-staff map so each staff's products are scoped to that staff
+        # → key: (staff_id, name_lower) → comm-per-unit
+        product_comm_map = {}
         try:
             from database.models import VisitHistory
-            v_q = db.query(VisitHistory).filter(VisitHistory.payment_id != None)
+            staff_ids_in_checkout = list({ci.staff_id for ci in ci_list if ci.staff_id})
+            checkout_date = checkout.created_at.date() if checkout.created_at else None
+            v_q = db.query(VisitHistory).filter(VisitHistory.notes.contains('<!--PRODUCTS:'))
             if checkout.client_id:
                 v_q = v_q.filter(VisitHistory.client_id == checkout.client_id)
+            if staff_ids_in_checkout:
+                v_q = v_q.filter(VisitHistory.staff_id.in_(staff_ids_in_checkout))
+            if checkout_date:
+                v_q = v_q.filter(VisitHistory.visit_date == checkout_date)
             for v in v_q.all():
-                if v.notes and '<!--PRODUCTS:' in v.notes:
-                    try:
-                        ps = v.notes.index('<!--PRODUCTS:') + len('<!--PRODUCTS:')
-                        pe = v.notes.index(':PRODUCTS-->')
-                        for p in _json_pc.loads(v.notes[ps:pe]):
-                            name = (p.get('name') or '').strip().lower()
-                            qty = max(int(p.get('qty') or 1), 1)
-                            comm_total = int(p.get('comm') or 0)
-                            if name and comm_total:
-                                product_comm_map[name] = max(product_comm_map.get(name, 0), comm_total // qty)
-                    except Exception:
-                        pass
+                if not v.notes or '<!--PRODUCTS:' not in v.notes:
+                    continue
+                try:
+                    ps = v.notes.index('<!--PRODUCTS:') + len('<!--PRODUCTS:')
+                    pe = v.notes.index(':PRODUCTS-->')
+                    for p in _json_pc.loads(v.notes[ps:pe]):
+                        name = (p.get('name') or '').strip().lower()
+                        qty = max(int(p.get('qty') or 1), 1)
+                        comm_total = int(p.get('comm') or 0)
+                        if name and comm_total:
+                            key = (v.staff_id, name)
+                            product_comm_map[key] = max(product_comm_map.get(key, 0), comm_total // qty)
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -671,10 +684,15 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), current_user: Ad
         for ci in ci_list:
             ci_amount = ci.commission_amount
             ci_rate = ci.commission_rate
-            # Product line — fixed $ per unit from inventory, no rate
+            # Product line — fixed $ per unit, snapshot lives in visit notes
             if (ci.service_name or '').lower().startswith('[producto]') and ci_amount in (None, 0):
                 clean_name = ci.service_name.replace('[Producto] ', '').replace('[producto] ', '').strip().lower()
-                per_unit = product_comm_map.get(clean_name, 0)
+                per_unit = product_comm_map.get((ci.staff_id, clean_name), 0)
+                if per_unit == 0:
+                    # Fallback: any staff with that product name
+                    for (_sid, _name), v in product_comm_map.items():
+                        if _name == clean_name and v > per_unit:
+                            per_unit = v
                 if per_unit > 0:
                     ci_amount = per_unit * (ci.quantity or 1)
             frozen_items.append({
