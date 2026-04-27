@@ -133,8 +133,10 @@ const Orders = () => {
   const [ticketSearching, setTicketSearching] = useState(false);
   const ticketSearchTimer = useRef(null);
 
-  // Catalog tab inside the modal — Servicios | Productos
-  const [catalogTab, setCatalogTab] = useState('services');
+  // 3 page tabs: 'services' (catálogo + carrito) | 'products' (mismo) | 'orders' (lista)
+  const [pageTab, setPageTab] = useState('services');
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogCategory, setCatalogCategory] = useState('all');
 
   // Form state
   const [form, setForm] = useState({
@@ -652,13 +654,82 @@ const Orders = () => {
       <div className={`${b}__header`}>
         <div className={`${b}__header-left`}>
           <h1 className={`${b}__title`}>Órdenes</h1>
-          <span className={`${b}__subtitle`}>Gestión de servicios en proceso</span>
+          <span className={`${b}__subtitle`}>
+            {pageTab === 'services' && 'Cobra servicios y agrega al cliente que está en recepción'}
+            {pageTab === 'products' && 'Vende productos y agrega al cliente que está en recepción'}
+            {pageTab === 'orders' && 'Órdenes en proceso y completadas'}
+          </span>
         </div>
-        <button className={`${b}__create-btn`} onClick={openCreate}>
-          <PlusIcon /> Nueva orden
+      </div>
+
+      {/* ─── Page tabs: Servicios | Productos | Órdenes ───── */}
+      <div className={`${b}__page-tabs`}>
+        <button
+          type="button"
+          className={`${b}__page-tab ${pageTab === 'services' ? `${b}__page-tab--active` : ''}`}
+          onClick={() => { setPageTab('services'); setCatalogSearch(''); setCatalogCategory('all'); }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Servicios
+        </button>
+        <button
+          type="button"
+          className={`${b}__page-tab ${pageTab === 'products' ? `${b}__page-tab--active` : ''}`}
+          onClick={() => { setPageTab('products'); setCatalogSearch(''); setCatalogCategory('all'); }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          Productos
+        </button>
+        <button
+          type="button"
+          className={`${b}__page-tab ${pageTab === 'orders' ? `${b}__page-tab--active` : ''}`}
+          onClick={() => setPageTab('orders')}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 11H7a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-2"/><path d="M9 11V7a3 3 0 0 1 6 0v4"/></svg>
+          Órdenes en proceso
+          {(counts.pending + counts.in_progress) > 0 && (
+            <span className={`${b}__page-tab-count`}>{counts.pending + counts.in_progress}</span>
+          )}
         </button>
       </div>
 
+      {/* ─── Catalog view (Servicios / Productos) ───── */}
+      {(pageTab === 'services' || pageTab === 'products') && (
+        <CatalogPane
+          mode={pageTab}
+          services={services}
+          products={products}
+          staff={staffList}
+          catalogSearch={catalogSearch}
+          setCatalogSearch={setCatalogSearch}
+          catalogCategory={catalogCategory}
+          setCatalogCategory={setCatalogCategory}
+          formItems={formItems}
+          setFormItems={setFormItems}
+          formProducts={formProducts}
+          setFormProducts={setFormProducts}
+          form={form}
+          setForm={setForm}
+          selectedClient={selectedClient}
+          setSelectedClient={setSelectedClient}
+          isNewClient={isNewClient}
+          setIsNewClient={setIsNewClient}
+          ticketLookup={ticketLookup}
+          setTicketLookup={setTicketLookup}
+          ticketResults={ticketResults}
+          ticketSearching={ticketSearching}
+          pickTicketResult={pickTicketResult}
+          clearClient={clearClient}
+          handleSave={handleSave}
+          submitting={submitting}
+          formatCOP={formatCOP}
+          openCreate={openCreate}
+          b={b}
+        />
+      )}
+
+      {/* ─── Orders list (only on 'orders' tab) ───── */}
+      {pageTab !== 'orders' ? null : (<>
       {/* ─── Metric Cards ────────────────────────────── */}
       <div className={`${b}__metrics`}>
         <div className={`${b}__metric`}>
@@ -963,7 +1034,9 @@ const Orders = () => {
         </div>
       )}
 
-      {/* ─── DRAWER ────────────────────────────────────── */}
+      </>)}
+
+      {/* ─── DRAWER (legacy "edit order" — still used for editing/cobro) ─── */}
       {showModal && createPortal(
         <div className={`${b}__overlay`} onClick={() => setShowModal(false)}>
           <div className={`${b}__drawer`} onClick={e => e.stopPropagation()}>
@@ -1381,5 +1454,290 @@ const Orders = () => {
     </div>
   );
 };
+
+// ============================================================================
+// CATALOG PANE — left: filterable services/products grid
+//                right: client search + cart + staff selectors + Crear orden
+// ============================================================================
+function CatalogPane({
+  mode, services, products, staff,
+  catalogSearch, setCatalogSearch, catalogCategory, setCatalogCategory,
+  formItems, setFormItems, formProducts, setFormProducts,
+  form, setForm, selectedClient, setSelectedClient, isNewClient, setIsNewClient,
+  ticketLookup, setTicketLookup, ticketResults, ticketSearching, pickTicketResult, clearClient,
+  handleSave, submitting, formatCOP, openCreate, b,
+}) {
+  const isProducts = mode === 'products';
+  const allItems = isProducts ? products : services;
+
+  const categories = useMemo(() => {
+    const set = new Set();
+    allItems.forEach(it => { if (it.category) set.add(it.category); });
+    return ['all', ...Array.from(set).sort()];
+  }, [allItems]);
+
+  const filtered = useMemo(() => {
+    let list = allItems;
+    if (catalogCategory !== 'all') list = list.filter(it => it.category === catalogCategory);
+    if (catalogSearch.trim()) {
+      const q = catalogSearch.toLowerCase();
+      list = list.filter(it => (it.name || '').toLowerCase().includes(q) || (it.category || '').toLowerCase().includes(q));
+    }
+    return list;
+  }, [allItems, catalogCategory, catalogSearch]);
+
+  const addToCart = (it) => {
+    if (isProducts) {
+      if (formProducts.some(p => p.product_id === it.id)) return;
+      setFormProducts(prev => [...prev, {
+        product_id: it.id,
+        product_name: it.name,
+        quantity: 1,
+        unit_price: it.price || 0,
+        commission: it.comm || 0,
+        charged_to: null,
+      }]);
+    } else {
+      if (formItems.some(i => i.service_id === it.id)) return;
+      setFormItems(prev => [...prev, {
+        service_id: it.id,
+        service_name: it.name,
+        price: it.price || 0,
+        duration_minutes: it.duration_minutes || 30,
+        staff_id: '',
+        time: '',
+        staff_ids: it.staff_ids || [],
+      }]);
+    }
+  };
+
+  const removeServiceItem = (idx) => setFormItems(prev => prev.filter((_, i) => i !== idx));
+  const removeProductItem = (idx) => setFormProducts(prev => prev.filter((_, i) => i !== idx));
+
+  const updateServiceStaff = (idx, staffId) => {
+    setFormItems(prev => prev.map((it, i) => i === idx ? { ...it, staff_id: staffId } : it));
+  };
+  const updateProductQty = (idx, qty) => {
+    setFormProducts(prev => prev.map((p, i) => i === idx ? { ...p, quantity: Math.max(1, qty) } : p));
+  };
+  const updateProductStaff = (idx, staffId) => {
+    setFormProducts(prev => prev.map((p, i) => i === idx ? { ...p, charged_to: staffId } : p));
+  };
+
+  // Filter staff list by who actually performs THIS service
+  const staffForService = (svcStaffIds) => {
+    if (!Array.isArray(svcStaffIds) || svcStaffIds.length === 0) return staff;
+    return staff.filter(s => svcStaffIds.includes(s.id));
+  };
+
+  const cartTotal = useMemo(() => {
+    const svc = formItems.reduce((s, i) => s + (i.price || 0), 0);
+    const prod = formProducts.reduce((s, p) => s + (p.unit_price || 0) * (p.quantity || 1), 0);
+    return svc + prod;
+  }, [formItems, formProducts]);
+
+  const cartCount = formItems.length + formProducts.length;
+
+  const canSave = (selectedClient || isNewClient || form.client_name) && cartCount > 0;
+
+  return (
+    <div className={`${b}__catalog`}>
+      {/* LEFT — catalog */}
+      <div className={`${b}__catalog-left`}>
+        <div className={`${b}__catalog-search`}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input
+            type="text"
+            value={catalogSearch}
+            onChange={(e) => setCatalogSearch(e.target.value)}
+            placeholder={`Buscador inteligente — ${isProducts ? 'productos' : 'servicios'}...`}
+          />
+        </div>
+
+        <div className={`${b}__catalog-cats`}>
+          {categories.map(cat => (
+            <button
+              key={cat}
+              type="button"
+              className={`${b}__catalog-cat ${catalogCategory === cat ? `${b}__catalog-cat--active` : ''}`}
+              onClick={() => setCatalogCategory(cat)}
+            >
+              {cat === 'all' ? 'TODOS' : cat.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        <div className={`${b}__catalog-grid`}>
+          {filtered.length === 0 ? (
+            <div className={`${b}__catalog-empty`}>Sin resultados</div>
+          ) : filtered.map(it => {
+            const inCart = isProducts
+              ? formProducts.some(p => p.product_id === it.id)
+              : formItems.some(i => i.service_id === it.id);
+            const initials = (it.name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+            return (
+              <div key={it.id} className={`${b}__catalog-card ${inCart ? `${b}__catalog-card--in` : ''}`}>
+                <div className={`${b}__catalog-card-thumb`}>{initials}</div>
+                <div className={`${b}__catalog-card-info`}>
+                  <span className={`${b}__catalog-card-name`}>{it.name}</span>
+                  <span className={`${b}__catalog-card-cat`}>{it.category || (isProducts ? 'Producto' : 'Servicio')}</span>
+                  {!isProducts && it.duration_minutes && <span className={`${b}__catalog-card-meta`}>{it.duration_minutes} min</span>}
+                  {isProducts && typeof it.stock === 'number' && <span className={`${b}__catalog-card-meta`}>Stock: {it.stock}</span>}
+                </div>
+                <div className={`${b}__catalog-card-foot`}>
+                  <span className={`${b}__catalog-card-price`}>{formatCOP(it.price || 0)}</span>
+                  <button
+                    type="button"
+                    className={`${b}__catalog-card-add ${inCart ? `${b}__catalog-card-add--in` : ''}`}
+                    onClick={() => addToCart(it)}
+                    disabled={inCart}
+                  >
+                    {inCart ? (
+                      <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> En carrito</>
+                    ) : (
+                      <>+ Agregar</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* RIGHT — client + cart */}
+      <aside className={`${b}__cart`}>
+        {/* Client header */}
+        <div className={`${b}__cart-client-head`}>
+          <span className={`${b}__cart-eyebrow`}>Cliente</span>
+          {selectedClient ? (
+            <div className={`${b}__cart-client-pill`}>
+              <div className={`${b}__cart-client-avatar`}>
+                {selectedClient.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() || '?'}
+              </div>
+              <div className={`${b}__cart-client-text`}>
+                <span className={`${b}__cart-client-name`}>{selectedClient.name}</span>
+                {(selectedClient.visit_code || selectedClient.client_id) && (
+                  <span className={`${b}__cart-client-ticket`}>{selectedClient.visit_code || selectedClient.client_id}</span>
+                )}
+              </div>
+              <button type="button" className={`${b}__cart-client-x`} onClick={clearClient} title="Quitar cliente">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className={`${b}__cart-search-wrap`}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input
+                  type="text"
+                  value={ticketLookup}
+                  onChange={(e) => setTicketLookup(e.target.value)}
+                  placeholder="Ticket (M1212), nombre o teléfono..."
+                />
+                {ticketSearching && <div className={`${b}__cart-search-spin`} />}
+              </div>
+              {ticketResults.length > 0 && (
+                <div className={`${b}__cart-results`}>
+                  {ticketResults.map(c => (
+                    <button key={c.id} type="button" className={`${b}__cart-result`} onClick={() => pickTicketResult(c)}>
+                      <div className={`${b}__cart-result-avatar`}>{c.name?.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}</div>
+                      <div className={`${b}__cart-result-info`}>
+                        <span>{c.name}</span>
+                        <small>{c.visit_code || c.client_id} · {c.phone || ''}</small>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {ticketLookup.length >= 2 && !ticketSearching && ticketResults.length === 0 && (
+                <p className={`${b}__cart-noresult`}>No encontramos a "{ticketLookup}".</p>
+              )}
+              <div className={`${b}__cart-shortcuts`}>
+                <button type="button" className={`${b}__cart-shortcut`} onClick={openCreate}>+ Cliente nuevo</button>
+                <button type="button" className={`${b}__cart-shortcut`} onClick={() => { setSelectedClient({ id: null, name: 'Consumidor final' }); setForm(p => ({ ...p, client_name: 'Consumidor final' })); }}>Consumidor final</button>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Cart items */}
+        <div className={`${b}__cart-list`}>
+          <span className={`${b}__cart-eyebrow`}>{cartCount === 0 ? 'Carrito vacío' : `${cartCount} ${cartCount === 1 ? 'item' : 'items'}`}</span>
+
+          {cartCount === 0 ? (
+            <div className={`${b}__cart-empty`}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              <p>Agrega {isProducts ? 'productos' : 'servicios'} desde la izquierda</p>
+            </div>
+          ) : (
+            <>
+              {formItems.map((it, idx) => {
+                const eligible = staffForService(it.staff_ids);
+                return (
+                  <div key={`s-${idx}`} className={`${b}__cart-item`}>
+                    <div className={`${b}__cart-item-top`}>
+                      <span className={`${b}__cart-item-name`}>{it.service_name}</span>
+                      <span className={`${b}__cart-item-price`}>{formatCOP(it.price)}</span>
+                      <button type="button" className={`${b}__cart-item-x`} onClick={() => removeServiceItem(idx)}>×</button>
+                    </div>
+                    <select
+                      value={it.staff_id}
+                      onChange={(e) => updateServiceStaff(idx, e.target.value)}
+                      className={`${b}__cart-item-select`}
+                    >
+                      <option value="">Profesional...</option>
+                      {eligible.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                );
+              })}
+              {formProducts.map((p, idx) => (
+                <div key={`p-${idx}`} className={`${b}__cart-item`}>
+                  <div className={`${b}__cart-item-top`}>
+                    <span className={`${b}__cart-item-name`}>{p.product_name}</span>
+                    <span className={`${b}__cart-item-price`}>{formatCOP((p.unit_price || 0) * (p.quantity || 1))}</span>
+                    <button type="button" className={`${b}__cart-item-x`} onClick={() => removeProductItem(idx)}>×</button>
+                  </div>
+                  <div className={`${b}__cart-item-row`}>
+                    <input
+                      type="number" min="1" value={p.quantity}
+                      onChange={(e) => updateProductQty(idx, parseInt(e.target.value) || 1)}
+                      className={`${b}__cart-item-qty`}
+                    />
+                    <select
+                      value={p.charged_to || ''}
+                      onChange={(e) => updateProductStaff(idx, e.target.value || null)}
+                      className={`${b}__cart-item-select`}
+                    >
+                      <option value="">Vendido por...</option>
+                      {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* Totals + Save */}
+        <div className={`${b}__cart-foot`}>
+          <div className={`${b}__cart-total`}>
+            <span>Total</span>
+            <strong>{formatCOP(cartTotal)}</strong>
+          </div>
+          <button
+            type="button"
+            className={`${b}__cart-save`}
+            disabled={!canSave || submitting}
+            onClick={handleSave}
+          >
+            {submitting ? 'Guardando...' : 'Crear orden'}
+          </button>
+        </div>
+      </aside>
+    </div>
+  );
+}
 
 export default Orders;
