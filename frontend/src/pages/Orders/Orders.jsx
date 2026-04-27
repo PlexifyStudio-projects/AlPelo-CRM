@@ -264,9 +264,15 @@ const Orders = () => {
     }
   }, []);
 
-  // Load staff schedules
+  // Load staff schedules — ONLY ONCE per staff set, and only when the modal
+  // is opened (avoid the N+1 storm on every render / auto-refresh).
+  // Using staff IDs string as the dep so we don't re-fetch when the array
+  // reference changes but the IDs are the same.
+  const staffIdsKey = useMemo(() => staffList.map(s => s.id).sort().join(','), [staffList]);
   useEffect(() => {
     if (!staffList.length) return;
+    if (!showModal) return;          // only when the editor modal is open
+    if (Object.keys(staffSchedules).length > 0) return; // already loaded
     const loadSchedules = async () => {
       const schedMap = {};
       await Promise.all(staffList.map(async (s) => {
@@ -278,7 +284,8 @@ const Orders = () => {
       setStaffSchedules(schedMap);
     };
     loadSchedules();
-  }, [staffList]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [staffIdsKey, showModal]);
 
   // Load appointments for selected date
   useEffect(() => {
