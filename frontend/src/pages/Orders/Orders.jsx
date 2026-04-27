@@ -1596,6 +1596,8 @@ function CatalogPane({
 
   const addToCart = (it) => {
     if (isProducts) {
+      const stock = Number(it.stock) || 0;
+      if (stock <= 0) return; // out of stock — button is already disabled
       if (formProducts.some(p => p.product_id === it.id)) return;
       setFormProducts(prev => [...prev, {
         product_id: it.id,
@@ -1604,6 +1606,7 @@ function CatalogPane({
         unit_price: it.price || 0,
         commission: it.comm || 0,
         charged_to: null,
+        _stock: stock, // snapshot of available stock for clamping
       }]);
     } else {
       if (formItems.some(i => i.service_id === it.id)) return;
@@ -1626,7 +1629,14 @@ function CatalogPane({
     setFormItems(prev => prev.map((it, i) => i === idx ? { ...it, staff_id: staffId } : it));
   };
   const updateProductQty = (idx, qty) => {
-    setFormProducts(prev => prev.map((p, i) => i === idx ? { ...p, quantity: Math.max(1, qty) } : p));
+    setFormProducts(prev => prev.map((p, i) => {
+      if (i !== idx) return p;
+      // Look up live stock from the products catalog (may have changed since we added it)
+      const live = products.find(pr => pr.id === p.product_id);
+      const maxStock = Number(live?.stock ?? p._stock ?? 0);
+      const clamped = Math.max(1, Math.min(qty, maxStock || 1));
+      return { ...p, quantity: clamped };
+    }));
   };
   const updateProductStaff = (idx, staffId) => {
     setFormProducts(prev => prev.map((p, i) => i === idx ? { ...p, charged_to: staffId } : p));
@@ -1693,9 +1703,12 @@ function CatalogPane({
               ? formProducts.some(p => p.product_id === it.id)
               : formItems.some(i => i.service_id === it.id);
             const inExistingOrder = !inNewCart && inOrderIds.has(it.id);
-            const isDisabled = inNewCart || inExistingOrder;
+            const outOfStock = isProducts && (Number(it.stock) || 0) <= 0;
+            const isDisabled = inNewCart || inExistingOrder || outOfStock;
             const initials = (it.name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-            const badgeLabel = inExistingOrder ? 'Ya en la orden' : 'En carrito';
+            const badgeLabel = outOfStock ? 'Sin stock'
+              : inExistingOrder ? 'Ya en la orden'
+              : 'En carrito';
             return (
               <div key={it.id} className={`${b}__catalog-card ${isDisabled ? `${b}__catalog-card--in` : ''} ${inExistingOrder ? `${b}__catalog-card--existing` : ''}`}>
                 <div className={`${b}__catalog-card-thumb`}>{initials}</div>
@@ -1878,30 +1891,42 @@ function CatalogPane({
                   </div>
                 );
               })}
-              {formProducts.map((p, idx) => (
-                <div key={`p-${idx}`} className={`${b}__cart-item`}>
-                  <div className={`${b}__cart-item-top`}>
-                    <span className={`${b}__cart-item-name`}>{p.product_name}</span>
-                    <span className={`${b}__cart-item-price`}>{formatCOP((p.unit_price || 0) * (p.quantity || 1))}</span>
-                    <button type="button" className={`${b}__cart-item-x`} onClick={() => removeProductItem(idx)}>×</button>
+              {formProducts.map((p, idx) => {
+                const live = products.find(pr => pr.id === p.product_id);
+                const maxStock = Number(live?.stock ?? p._stock ?? 0);
+                const atMax = (p.quantity || 1) >= maxStock;
+                return (
+                  <div key={`p-${idx}`} className={`${b}__cart-item`}>
+                    <div className={`${b}__cart-item-top`}>
+                      <span className={`${b}__cart-item-name`}>{p.product_name}</span>
+                      <span className={`${b}__cart-item-price`}>{formatCOP((p.unit_price || 0) * (p.quantity || 1))}</span>
+                      <button type="button" className={`${b}__cart-item-x`} onClick={() => removeProductItem(idx)}>×</button>
+                    </div>
+                    <div className={`${b}__cart-item-row`}>
+                      <input
+                        type="number"
+                        min="1"
+                        max={maxStock || 1}
+                        value={p.quantity}
+                        onChange={(e) => updateProductQty(idx, parseInt(e.target.value) || 1)}
+                        className={`${b}__cart-item-qty`}
+                      />
+                      <select
+                        value={p.charged_to || ''}
+                        onChange={(e) => updateProductStaff(idx, e.target.value || null)}
+                        className={`${b}__cart-item-select`}
+                      >
+                        <option value="">Vendido por...</option>
+                        {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      </select>
+                    </div>
+                    <span className={`${b}__cart-item-stock ${atMax ? `${b}__cart-item-stock--max` : ''}`}>
+                      Stock disponible: {maxStock}
+                      {atMax && ' · máximo alcanzado'}
+                    </span>
                   </div>
-                  <div className={`${b}__cart-item-row`}>
-                    <input
-                      type="number" min="1" value={p.quantity}
-                      onChange={(e) => updateProductQty(idx, parseInt(e.target.value) || 1)}
-                      className={`${b}__cart-item-qty`}
-                    />
-                    <select
-                      value={p.charged_to || ''}
-                      onChange={(e) => updateProductStaff(idx, e.target.value || null)}
-                      className={`${b}__cart-item-select`}
-                    >
-                      <option value="">Vendido por...</option>
-                      {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </>
           )}
         </div>

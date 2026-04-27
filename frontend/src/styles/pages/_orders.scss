@@ -2463,6 +2463,17 @@
     font-style: italic;
   }
 
+  &__cart-item-stock {
+    font-size: 0.66rem;
+    color: $color-gray-500;
+    font-weight: 500;
+
+    &--max {
+      color: #B45309;
+      font-weight: 700;
+    }
+  }
+
   &__cart-divider {
     display: flex;
     align-items: center;
