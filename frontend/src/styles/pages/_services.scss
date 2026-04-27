@@ -802,10 +802,10 @@
 
   &__modal {
     background: #F7F9FC;
-    width: min(1200px, 95vw);
+    width: min(1280px, 96vw);
     height: 100vh;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     box-shadow: -16px 0 60px rgba(0, 0, 0, 0.25);
     animation: services-modal-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
@@ -816,124 +816,326 @@
     to { transform: translateX(0); opacity: 1; }
   }
 
-  &__modal-header {
-    background: white;
-    border-bottom: 1px solid $color-gray-100;
-    padding: 18px 28px 0;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-rows: auto auto;
-    grid-template-areas:
-      "back title actions"
-      "tabs tabs tabs";
-    gap: 14px 18px;
-    align-items: center;
+  // ─── SIDEBAR (left rail — distinct from Weibook) ─────
+  &__rail {
+    width: 320px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 18px 22px;
+    gap: 18px;
+    overflow-y: auto;
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+    }
   }
 
-  &__modal-back {
-    grid-area: back;
-    width: 40px;
-    height: 40px;
-    border-radius: 11px;
-    background: $color-gray-50;
-    border: none;
-    color: $color-secondary;
+  &__rail-close {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.85);
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: all 150ms;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+    }
+  }
+
+  &__rail-id {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__rail-eyebrow {
+    font-size: 0.62rem;
+    color: rgba($color-primary, 1);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: $font-weight-bold;
+  }
+
+  &__rail-name {
+    font-size: 1.4rem;
+    font-weight: $font-weight-extrabold;
+    color: white;
+    margin: 0;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    word-break: break-word;
+  }
+
+  &__rail-cat {
+    display: inline-block;
+    margin-top: 4px;
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 3px 10px;
+    border-radius: $border-radius-full;
+    font-size: 0.68rem;
+    font-weight: $font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  &__rail-preview {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  &__rail-thumb {
+    width: 60px;
+    height: 60px;
+    border-radius: 13px;
+    overflow: hidden;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    transition: background 150ms;
+    color: white;
+    font-weight: $font-weight-extrabold;
+    font-size: 1rem;
+    flex-shrink: 0;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 
-    &:hover { background: $color-gray-100; }
+    img { width: 100%; height: 100%; object-fit: cover; }
   }
 
-  &__modal-title {
-    grid-area: title;
+  &__rail-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
     min-width: 0;
 
-    h2 {
-      font-size: 1.45rem;
-      font-weight: $font-weight-extrabold;
-      color: $color-secondary;
-      margin: 0;
-      letter-spacing: -0.025em;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    div {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+
+      span {
+        font-size: 0.66rem;
+        color: rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: $font-weight-bold;
+      }
+      strong {
+        font-size: 0.88rem;
+        color: white;
+        font-weight: $font-weight-bold;
+        font-variant-numeric: tabular-nums;
+      }
     }
   }
 
-  &__modal-eyebrow {
-    display: block;
-    font-size: 0.65rem;
-    font-weight: $font-weight-bold;
-    color: $color-primary;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: 2px;
-  }
-
-  &__modal-actions-top {
-    grid-area: actions;
+  &__rail-nav {
     display: flex;
-    gap: 8px;
-  }
-
-  &__modal-tabs {
-    grid-area: tabs;
-    display: flex;
+    flex-direction: column;
     gap: 4px;
-    border-top: 1px solid $color-gray-50;
-    padding-top: 6px;
-    margin-top: 6px;
+    margin-top: 4px;
   }
 
-  &__modal-tab {
+  &__rail-nav-item {
     background: transparent;
-    border: none;
-    padding: 13px 18px;
-    font-size: 0.85rem;
-    font-weight: $font-weight-semibold;
-    color: $color-gray-400;
+    border: 1px solid transparent;
+    color: rgba(255, 255, 255, 0.6);
+    text-align: left;
+    padding: 12px 14px;
+    border-radius: 11px;
     cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 150ms;
-    margin-bottom: -1px;
+    transition: all 180ms;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 
-    &:hover { color: $color-secondary; }
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: white;
+      .services__rail-nav-arrow { opacity: 0.5; transform: translateX(2px); }
+    }
 
     &--active {
-      color: $color-primary;
-      border-bottom-color: $color-primary;
+      background: linear-gradient(135deg, rgba($color-primary, 0.2), rgba($color-primary, 0.08));
+      border-color: rgba($color-primary, 0.35);
+      color: white;
+      box-shadow: 0 4px 14px rgba($color-primary, 0.25);
+
+      .services__rail-nav-icon {
+        background: $color-primary;
+        color: white;
+      }
+      .services__rail-nav-arrow { opacity: 1; color: $color-primary; }
     }
+  }
+
+  &__rail-nav-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.7);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 180ms;
+  }
+
+  &__rail-nav-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong {
+      font-size: 0.86rem;
+      font-weight: $font-weight-bold;
+      color: inherit;
+    }
+    span {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.45);
+      font-weight: $font-weight-medium;
+    }
+  }
+
+  &__rail-nav-arrow {
+    opacity: 0;
+    transition: all 180ms;
+    flex-shrink: 0;
+  }
+
+  &__rail-foot {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+    span {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.4);
+      line-height: 1.45;
+      display: block;
+    }
+  }
+
+  // ─── PANEL (right side) ──────────────────────────────
+  &__panel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: #F7F9FC;
+  }
+
+  &__panel-bar {
+    background: white;
+    border-bottom: 1px solid $color-gray-100;
+    padding: 22px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: $font-weight-extrabold;
+      color: $color-secondary;
+      margin: 0 0 4px;
+      letter-spacing: -0.02em;
+    }
+    > div > span {
+      font-size: 0.8rem;
+      color: $color-gray-400;
+    }
+  }
+
+  &__panel-dirty {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba($color-warning, 0.1);
+    color: $color-warning;
+    padding: 6px 12px;
+    border-radius: $border-radius-full;
+    font-size: 0.75rem;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__panel-dirty-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: $color-warning;
+    animation: services-pulse-dot 1.4s ease-in-out infinite;
+  }
+
+  @keyframes services-pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
   }
 
   &__modal-body {
     flex: 1;
     overflow-y: auto;
-    padding: 28px;
+    padding: 28px 32px;
   }
 
   &__modal-footer {
     background: white;
     border-top: 1px solid $color-gray-100;
-    padding: 14px 28px;
+    padding: 16px 32px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 14px;
+    flex-shrink: 0;
 
-    span {
+    > span {
       font-size: 0.85rem;
       color: $color-gray-400;
 
       strong {
         color: $color-success;
         font-weight: $font-weight-extrabold;
-        font-size: 1.05rem;
-        margin-left: 4px;
+        font-size: 1.1rem;
+        margin-left: 6px;
+        font-variant-numeric: tabular-nums;
       }
     }
+  }
+
+  &__modal-footer-actions {
+    display: flex;
+    gap: 10px;
   }
 
   &__btn-cancel {

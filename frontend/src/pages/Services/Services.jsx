@@ -676,42 +676,97 @@ const Services = () => {
         document.body
       )}
 
-      {/* ── EDIT/CREATE MODAL (drawer) ─────────────── */}
+      {/* ── EDIT/CREATE MODAL (sidebar layout) ─────── */}
       {showModal && createPortal(
         <div className={`${b}__modal-overlay`} onClick={closeModal}>
           <div className={`${b}__modal`} onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div className={`${b}__modal-header`}>
-              <button className={`${b}__modal-back`} onClick={closeModal}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+
+            {/* ───────── SIDEBAR (left rail) ───────── */}
+            <aside className={`${b}__rail`}>
+              <button className={`${b}__rail-close`} onClick={closeModal}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
+                <span>Volver</span>
               </button>
-              <div className={`${b}__modal-title`}>
-                <span className={`${b}__modal-eyebrow`}>{editingService ? 'Editar servicio' : 'Nuevo servicio'}</span>
-                <h2>{formData.name || 'Sin nombre'}</h2>
+
+              <div className={`${b}__rail-id`}>
+                <span className={`${b}__rail-eyebrow`}>{editingService ? 'Editar servicio' : 'Nuevo servicio'}</span>
+                <h2 className={`${b}__rail-name`}>{formData.name || 'Sin nombre'}</h2>
+                {formData.category && (
+                  <span className={`${b}__rail-cat`}>{formData.category}</span>
+                )}
               </div>
-              <div className={`${b}__modal-tabs`}>
+
+              <div className={`${b}__rail-preview`}>
+                <div className={`${b}__rail-thumb`}
+                  style={photoPreview
+                    ? {}
+                    : { background: getCategoryMeta(formData.category).gradient }}>
+                  {photoPreview
+                    ? <img src={photoPreview} alt="preview" />
+                    : <span>{initialsOf(formData.name || '?')}</span>}
+                </div>
+                <div className={`${b}__rail-stats`}>
+                  <div>
+                    <span>Precio</span>
+                    <strong>{formatCurrency(parseInt(formData.price) || 0)}</strong>
+                  </div>
+                  <div>
+                    <span>Duración</span>
+                    <strong>{formatDuration(parseInt(formData.duration_minutes) || 0, formData.service_type)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <nav className={`${b}__rail-nav`}>
                 {[
-                  { key: 'basic', label: 'Información básica' },
-                  { key: 'commissions', label: 'Configurar comisiones' },
-                  { key: 'advanced', label: 'Configuración avanzada' },
-                ].map(t => (
-                  <button key={t.key}
-                    className={`${b}__modal-tab ${modalTab === t.key ? `${b}__modal-tab--active` : ''}`}
-                    onClick={() => setModalTab(t.key)}>
-                    {t.label}
+                  { key: 'basic', label: 'General', sub: 'Nombre, foto, precio, tiempo',
+                    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  },
+                  { key: 'commissions', label: 'Comisiones', sub: `${enabledCount} de ${commData.length} activos`,
+                    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  },
+                  { key: 'advanced', label: 'Configuración', sub: 'Estado · IA · Eliminar',
+                    icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                  },
+                ].map(item => (
+                  <button key={item.key}
+                    className={`${b}__rail-nav-item ${modalTab === item.key ? `${b}__rail-nav-item--active` : ''}`}
+                    onClick={() => setModalTab(item.key)}>
+                    <span className={`${b}__rail-nav-icon`}>{item.icon}</span>
+                    <span className={`${b}__rail-nav-text`}>
+                      <strong>{item.label}</strong>
+                      <span>{item.sub}</span>
+                    </span>
+                    <svg className={`${b}__rail-nav-arrow`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
                   </button>
                 ))}
-              </div>
-              <div className={`${b}__modal-actions-top`}>
-                <button className={`${b}__btn-cancel`} onClick={closeModal}>Cancelar</button>
-                <button className={`${b}__btn-save`} onClick={handleSubmit} disabled={submitting}>
-                  {submitting ? 'Guardando...' : (editingService ? 'Guardar cambios' : 'Crear servicio')}
-                </button>
-              </div>
-            </div>
+              </nav>
 
-            {/* Body */}
-            <div className={`${b}__modal-body`}>
+              <div className={`${b}__rail-foot`}>
+                <span>El estado activo/inactivo del servicio se controla con el switch de cada fila en el listado.</span>
+              </div>
+            </aside>
+
+            {/* ───────── CONTENT (right) ───────── */}
+            <div className={`${b}__panel`}>
+              <header className={`${b}__panel-bar`}>
+                <div>
+                  <h3>{modalTab === 'basic' ? 'Información general' : modalTab === 'commissions' ? 'Comisiones por profesional' : 'Configuración avanzada'}</h3>
+                  <span>
+                    {modalTab === 'basic' && 'Datos visibles en el catálogo y para el cliente'}
+                    {modalTab === 'commissions' && 'Define quién realiza el servicio y cuánto gana'}
+                    {modalTab === 'advanced' && 'Estado, automatizaciones y zona de peligro'}
+                  </span>
+                </div>
+                {commDirty && modalTab === 'commissions' && (
+                  <span className={`${b}__panel-dirty`}>
+                    <span className={`${b}__panel-dirty-dot`} />
+                    Cambios sin guardar
+                  </span>
+                )}
+              </header>
+
+              <div className={`${b}__modal-body`}>
               {/* ─── TAB: INFORMACIÓN BÁSICA ─── */}
               {modalTab === 'basic' && (
                 <div className={`${b}__tab-pane ${b}__tab-pane--basic`}>
@@ -921,23 +976,9 @@ const Services = () => {
                 </div>
               )}
 
-              {/* ─── TAB: AVANZADA ─── */}
+              {/* ─── TAB: AVANZADA — solo Modo Lina + Eliminar ─── */}
               {modalTab === 'advanced' && (
                 <div className={`${b}__tab-pane ${b}__tab-pane--adv`}>
-                  <div className={`${b}__adv-card`}>
-                    <div className={`${b}__adv-row`}>
-                      <div>
-                        <strong>Servicio activo</strong>
-                        <p>Cuando está apagado, no se puede agendar ni vender.</p>
-                      </div>
-                      <button type="button"
-                        className={`${b}__toggle ${formData.is_active ? `${b}__toggle--on` : ''}`}
-                        onClick={() => setFormData({ ...formData, is_active: !formData.is_active })}>
-                        <span className={`${b}__toggle-knob`} />
-                      </button>
-                    </div>
-                  </div>
-
                   <div className={`${b}__adv-card`}>
                     <div className={`${b}__adv-row`}>
                       <div>
@@ -973,15 +1014,19 @@ const Services = () => {
                   )}
                 </div>
               )}
-            </div>
+              </div>{/* /__modal-body */}
 
-            {/* Footer total bar */}
-            <div className={`${b}__modal-footer`}>
-              <span>Precio fijo: <strong>{formatCurrency(parseInt(formData.price) || 0)}</strong></span>
-              <button className={`${b}__btn-save`} onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Guardando...' : (editingService ? 'Guardar cambios' : 'Crear servicio')}
-              </button>
-            </div>
+              {/* Footer total bar */}
+              <div className={`${b}__modal-footer`}>
+                <span>Precio fijo: <strong>{formatCurrency(parseInt(formData.price) || 0)}</strong></span>
+                <div className={`${b}__modal-footer-actions`}>
+                  <button className={`${b}__btn-cancel`} onClick={closeModal}>Cancelar</button>
+                  <button className={`${b}__btn-save`} onClick={handleSubmit} disabled={submitting}>
+                    {submitting ? 'Guardando...' : (editingService ? 'Guardar cambios' : 'Crear servicio')}
+                  </button>
+                </div>
+              </div>
+            </div>{/* /__panel */}
           </div>
         </div>,
         document.body
