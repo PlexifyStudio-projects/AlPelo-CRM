@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Optional
 
 from database.connection import get_db
-from database.models import Product, InventoryMovement, Admin, Checkout, CheckoutItem
+from database.models import Product, InventoryMovement, Admin, Checkout, CheckoutItem, Staff
 from routes._helpers import safe_tid
 
 
@@ -35,6 +35,35 @@ def _get_checkout_info(db, checkout_id):
         }
     except Exception:
         return {}
+
+
+def _resolve_user_name(db, tenant_id, username):
+    """Convert a stored `created_by` username string into a human name.
+    Looks up Admin then Staff. Falls back to the original string if nothing matches.
+    """
+    if not username:
+        return ""
+    try:
+        u = (username or "").strip()
+        if not u:
+            return ""
+        # Admin first
+        a_q = db.query(Admin).filter(Admin.username == u)
+        if tenant_id:
+            a_q = a_q.filter(Admin.tenant_id == tenant_id)
+        a = a_q.first()
+        if a and a.name:
+            return a.name
+        # Then Staff
+        s_q = db.query(Staff).filter(Staff.username == u)
+        if tenant_id:
+            s_q = s_q.filter(Staff.tenant_id == tenant_id)
+        s = s_q.first()
+        if s and s.name:
+            return s.name
+        return u
+    except Exception:
+        return username or ""
 from middleware.auth_middleware import get_current_user
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
@@ -284,6 +313,12 @@ def get_product(product_id: int, db: Session = Depends(get_db), user: Admin = De
 
     # Build combined list
     all_movements = []
+    name_cache = {}
+    def _name_of(u):
+        if u not in name_cache:
+            name_cache[u] = _resolve_user_name(db, tid, u)
+        return name_cache[u]
+
     for m in movements:
         entry = {
             "id": m.id,
@@ -293,6 +328,7 @@ def get_product(product_id: int, db: Session = Depends(get_db), user: Admin = De
             "note": m.note,
             "reference_id": m.reference_id,
             "created_by": m.created_by,
+            "created_by_name": _name_of(m.created_by),
             "created_at": m.created_at.isoformat() if m.created_at else None,
         }
         if m.movement_type == "sale" and m.reference_id:
@@ -311,6 +347,7 @@ def get_product(product_id: int, db: Session = Depends(get_db), user: Admin = De
             "note": f"Venta checkout #{co.id}",
             "reference_id": co.id,
             "created_by": co.created_by,
+            "created_by_name": _name_of(co.created_by),
             "created_at": co.created_at.isoformat() if co.created_at else None,
             "client_name": co.client_name,
             "client_phone": getattr(co, 'client_phone', None),
@@ -442,7 +479,10 @@ def adjust_stock(product_id: int, data: dict, db: Session = Depends(get_db), use
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    movement_type = data.get("type", "adjustment")  # purchase, adjustment, return, loss
+    movement_type = data.get("type", "adjustment")  # purchase, adjustment, return, loss, sale, consumption
+    # Whitelist
+    if movement_type not in ("purchase", "adjustment", "return", "loss", "sale", "consumption"):
+        movement_type = "adjustment"
     quantity = int(data.get("quantity", 0))
     if quantity == 0:
         raise HTTPException(status_code=400, detail="La cantidad no puede ser 0")
@@ -450,8 +490,8 @@ def adjust_stock(product_id: int, data: dict, db: Session = Depends(get_db), use
     unit_cost = data.get("unit_cost", product.cost)
     note = (data.get("note") or "").strip()
 
-    # For losses/sales, quantity should be negative
-    if movement_type in ("loss", "sale") and quantity > 0:
+    # For losses/sales/consumption, quantity should be negative (stock decreases)
+    if movement_type in ("loss", "sale", "consumption") and quantity > 0:
         quantity = -quantity
 
     # Validate stock won't go negative
@@ -508,6 +548,11 @@ def list_movements(
         q = q.filter(InventoryMovement.movement_type == movement_type)
 
     movements = q.order_by(InventoryMovement.created_at.desc()).limit(limit).all()
+    name_cache = {}
+    def _name_of(u):
+        if u not in name_cache:
+            name_cache[u] = _resolve_user_name(db, tid, u)
+        return name_cache[u]
 
     return [
         {
@@ -519,6 +564,7 @@ def list_movements(
             "unit_cost": m.unit_cost,
             "note": m.note,
             "created_by": m.created_by,
+            "created_by_name": _name_of(m.created_by),
             "created_at": m.created_at.isoformat() if m.created_at else None,
         }
         for m in movements

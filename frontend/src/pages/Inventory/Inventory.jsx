@@ -33,11 +33,12 @@ const fmtDateTime = (iso) => {
 };
 
 const MOVEMENT_META = {
-  purchase:   { label: 'Entrada',    color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' },
-  sale:       { label: 'Venta',      color: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)' },
-  adjustment: { label: 'Ajuste',     color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' },
-  return:     { label: 'Devolución', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' },
-  loss:       { label: 'Pérdida',    color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)' },
+  purchase:    { label: 'Entrada',     color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' },
+  sale:        { label: 'Venta',       color: '#06B6D4', bg: 'rgba(6, 182, 212, 0.1)' },
+  consumption: { label: 'Uso interno', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' },
+  adjustment:  { label: 'Ajuste',      color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.1)' },
+  return:      { label: 'Devolución',  color: '#22C55E', bg: 'rgba(34, 197, 94, 0.1)' },
+  loss:        { label: 'Pérdida',     color: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)' },
 };
 
 const Inventory = () => {
@@ -248,10 +249,10 @@ const Inventory = () => {
     setStockBusy(p.id);
     try {
       await inventoryService.adjustStock(p.id, {
-        type: delta > 0 ? 'purchase' : 'adjustment',
+        type: delta > 0 ? 'purchase' : 'consumption',
         quantity: delta,
         unit_cost: p.cost,
-        note: delta > 0 ? 'Reposición rápida' : 'Ajuste manual',
+        note: delta > 0 ? 'Reposición rápida' : 'Uso interno (rápido)',
       });
       setProducts(prev => prev.map(x => x.id === p.id ? { ...x, stock: (x.stock || 0) + delta, is_low_stock: ((x.stock || 0) + delta) <= (x.min_stock || 0) } : x));
     } catch (err) {
@@ -326,15 +327,16 @@ const Inventory = () => {
   };
 
   const movementStats = useMemo(() => {
-    if (!productDetail?.movements) return { entradas: 0, vendidas: 0, salidas: 0 };
-    let entradas = 0, vendidas = 0, salidas = 0;
+    if (!productDetail?.movements) return { entradas: 0, vendidas: 0, perdidas: 0 };
+    let entradas = 0, vendidas = 0, perdidas = 0;
     productDetail.movements.forEach(m => {
       const q = Math.abs(m.quantity || 0);
       if (m.type === 'purchase' || m.type === 'return') entradas += q;
-      else if (m.type === 'sale') vendidas += q;
-      else if (m.type === 'loss' || (m.type === 'adjustment' && (m.quantity || 0) < 0)) salidas += q;
+      else if (m.type === 'sale' || m.type === 'consumption') vendidas += q;
+      else if (m.type === 'loss') perdidas += q;
+      // adjustment counts in neither bucket — it's a manual correction
     });
-    return { entradas, vendidas, salidas };
+    return { entradas, vendidas, perdidas };
   }, [productDetail]);
 
   const margin = useMemo(() => {
@@ -799,12 +801,12 @@ const Inventory = () => {
                         <strong>{movementStats.entradas}</strong>
                       </div>
                       <div className={`${b}__mv-stat ${b}__mv-stat--sold`}>
-                        <span className={`${b}__mv-stat-label`}>Vendidas</span>
+                        <span className={`${b}__mv-stat-label`}>Vendidas / Usadas</span>
                         <strong>{movementStats.vendidas}</strong>
                       </div>
                       <div className={`${b}__mv-stat ${b}__mv-stat--out`}>
-                        <span className={`${b}__mv-stat-label`}>Salidas</span>
-                        <strong>{movementStats.salidas}</strong>
+                        <span className={`${b}__mv-stat-label`}>Pérdidas</span>
+                        <strong>{movementStats.perdidas}</strong>
                       </div>
                     </div>
 
@@ -868,8 +870,8 @@ const Inventory = () => {
                                   </div>
                                   <div className={`${b}__mv-card-meta`}>
                                     <span>📅 {fmtDateTime(m.created_at)}</span>
-                                    {m.created_by && <span>👤 {m.created_by}</span>}
-                                    {m.staff_name && <span>✂️ {m.staff_name}</span>}
+                                    {(m.created_by_name || m.created_by) && <span>👤 {m.created_by_name || m.created_by}</span>}
+                                    {m.staff_name && m.staff_name !== m.created_by_name && <span>✂️ {m.staff_name}</span>}
                                     {m.client_name && <span>🧑 {m.client_name}</span>}
                                     {m.unit_cost > 0 && <span>💰 {formatCurrency(m.unit_cost)}/u</span>}
                                   </div>
