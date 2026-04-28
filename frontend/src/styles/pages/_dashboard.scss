@@ -291,6 +291,262 @@
     &--neutral { color: $color-gray-500; }
   }
 
+  // ========== MONTHLY GOAL ==========
+  &__goal {
+    position: relative;
+    display: flex;
+    gap: 16px;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFF 100%);
+    border: 1px solid $border-color-light;
+    border-radius: $border-radius-lg;
+    padding: 16px 20px;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: linear-gradient(180deg, $color-info 0%, $color-info-dark 100%);
+    }
+
+    &--empty::before {
+      background: linear-gradient(180deg, $color-gray-300 0%, $color-gray-400 100%);
+    }
+  }
+
+  &__goal-icon {
+    @include flex-center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba($color-info, 0.12) 0%, rgba($color-info-dark, 0.18) 100%);
+    color: $color-info-dark;
+    flex-shrink: 0;
+  }
+
+  &__goal-body,
+  &__goal-empty-body,
+  &__goal-edit {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__goal-empty-body {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__goal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__goal-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: $color-gray-700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 2px;
+  }
+
+  &__goal-sub {
+    font-size: 12px;
+    color: $color-gray-500;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  &__goal-empty-text {
+    font-size: 12px;
+    color: $color-gray-500;
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  &__goal-pace {
+    font-weight: 700;
+
+    &--up { color: $color-success-dark; }
+    &--down { color: $color-error-dark; }
+  }
+
+  &__goal-amounts {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  &__goal-current {
+    font-size: 18px;
+    font-weight: 700;
+    color: $color-gray-800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__goal-target {
+    font-size: 12px;
+    color: $color-gray-400;
+    font-weight: 500;
+  }
+
+  &__goal-edit-btn {
+    @include flex-center;
+    width: 26px;
+    height: 26px;
+    border-radius: $border-radius-sm;
+    background: transparent;
+    border: 1px solid $border-color-light;
+    color: $color-gray-500;
+    cursor: pointer;
+    transition: all 150ms $ease-smooth;
+    margin-left: 4px;
+
+    &:hover {
+      background: rgba($color-info, 0.08);
+      border-color: rgba($color-info, 0.3);
+      color: $color-info-dark;
+    }
+  }
+
+  &__goal-track {
+    position: relative;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: $border-radius-full;
+    overflow: hidden;
+  }
+
+  &__goal-fill {
+    display: block;
+    height: 100%;
+    border-radius: $border-radius-full;
+    transition: width 800ms $ease-out-expo;
+
+    &--ahead { background: linear-gradient(90deg, $color-success 0%, $color-success-dark 100%); }
+    &--behind { background: linear-gradient(90deg, $color-warning 0%, $color-warning-dark 100%); }
+    &--done { background: linear-gradient(90deg, $color-info 0%, $color-info-dark 100%); }
+  }
+
+  &__goal-pace-marker {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 2px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 1px;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+
+  &__goal-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    color: $color-gray-500;
+  }
+
+  &__goal-pct {
+    color: $color-gray-700;
+    font-weight: 700;
+  }
+
+  &__goal-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: $color-info;
+    color: $color-white;
+    border: none;
+    border-radius: $border-radius-md;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 150ms $ease-smooth;
+    flex-shrink: 0;
+
+    &:hover { background: $color-info-dark; transform: translateX(2px); }
+    svg { width: 12px; height: 12px; }
+  }
+
+  &__goal-edit-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: $color-gray-500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__goal-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__goal-edit-currency {
+    font-size: 16px;
+    font-weight: 700;
+    color: $color-gray-500;
+  }
+
+  &__goal-edit-input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid $border-color-light;
+    border-radius: $border-radius-sm;
+    background: $color-white;
+    color: $color-gray-800;
+    font-variant-numeric: tabular-nums;
+    transition: border-color 150ms;
+
+    &:focus {
+      outline: none;
+      border-color: $color-info;
+      box-shadow: 0 0 0 3px rgba($color-info, 0.12);
+    }
+  }
+
+  &__goal-edit-save,
+  &__goal-edit-cancel {
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: $border-radius-sm;
+    cursor: pointer;
+    transition: all 150ms $ease-smooth;
+  }
+
+  &__goal-edit-save {
+    background: $color-info;
+    color: $color-white;
+    border: 1px solid $color-info;
+    &:hover:not(:disabled) { background: $color-info-dark; }
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+  }
+
+  &__goal-edit-cancel {
+    background: transparent;
+    color: $color-gray-500;
+    border: 1px solid $border-color-light;
+    &:hover:not(:disabled) { background: $color-gray-50; color: $color-gray-700; }
+  }
+
   // ========== INSIGHTS ==========
   &__insights {
     display: grid;

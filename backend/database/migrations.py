@@ -214,6 +214,8 @@ def run_migrations(engine):
         ("invoice", "deleted_at", "TIMESTAMP"),
         # Import batch tracking — link clients to the bulk-import they came from
         ("client", "import_batch_id", "INTEGER"),
+        # Monthly revenue goal (owner-set target shown on dashboard)
+        ("tenant", "monthly_revenue_goal", "INTEGER NOT NULL DEFAULT 0"),
     ]
 
     for table, column, col_type in migrations:

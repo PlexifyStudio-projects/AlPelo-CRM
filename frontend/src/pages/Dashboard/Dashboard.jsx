@@ -231,10 +231,13 @@ const SkeletonKpi = () => (
 );
 
 const Dashboard = ({ user, onNavigate }) => {
-  const { tenant } = useTenant();
+  const { tenant, refreshTenant } = useTenant();
   const [qrOpen, setQrOpen] = useState(false);
   const [activeBottomTab, setActiveBottomTab] = useState('tasks');
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState('');
+  const [savingGoal, setSavingGoal] = useState(false);
   const userFirstName = (user?.name || '').split(' ')[0] || 'Admin';
   const bookingUrl = useMemo(() => {
     if (tenant?.booking_url) return tenant.booking_url;
@@ -357,6 +360,40 @@ const Dashboard = ({ user, onNavigate }) => {
     if (typeof financeMonth.revenue_growth_pct === 'number') return Math.round(financeMonth.revenue_growth_pct);
     return null;
   }, [financeMonth]);
+
+  // Monthly revenue goal — pace, progress, days remaining
+  const goalProgress = useMemo(() => {
+    const goal = Number(tenant?.monthly_revenue_goal) || 0;
+    const current = Number(financeMonth?.total_revenue ?? stats?.revenue_this_month ?? 0);
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const dayOfMonth = now.getDate();
+    const daysRemaining = Math.max(0, daysInMonth - dayOfMonth);
+    const expectedByNow = goal > 0 ? Math.round(goal * (dayOfMonth / daysInMonth)) : 0;
+    const paceDelta = current - expectedByNow;
+    const pct = goal > 0 ? Math.min(999, Math.round((current / goal) * 100)) : 0;
+    return { goal, current, pct, paceDelta, daysRemaining, dayOfMonth, daysInMonth };
+  }, [tenant?.monthly_revenue_goal, financeMonth?.total_revenue, stats?.revenue_this_month]);
+
+  const saveGoal = async () => {
+    const parsed = parseInt(String(goalInput).replace(/[^\d]/g, ''), 10) || 0;
+    if (parsed < 0) return;
+    setSavingGoal(true);
+    try {
+      const res = await fetch(`${API_URL}/tenant/me/goal`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ monthly_revenue_goal: parsed }),
+      });
+      if (res.ok) {
+        await refreshTenant();
+        setEditingGoal(false);
+      }
+    } catch { /* silent */ } finally {
+      setSavingGoal(false);
+    }
+  };
 
   // Comparison chart data (financial scale + count scale separated)
   const compareFinancial = useMemo(() => {
@@ -689,6 +726,107 @@ const Dashboard = ({ user, onNavigate }) => {
             </span>
           </div>
         </article>
+      </section>
+
+      {/* MONTHLY GOAL — owner-set revenue target */}
+      <section className={`dashboard__goal ${goalProgress.goal === 0 ? 'dashboard__goal--empty' : ''}`}>
+        <span className="dashboard__goal-icon" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+          </svg>
+        </span>
+
+        {editingGoal ? (
+          <div className="dashboard__goal-edit">
+            <span className="dashboard__goal-edit-label">Nueva meta del mes</span>
+            <div className="dashboard__goal-edit-row">
+              <span className="dashboard__goal-edit-currency">$</span>
+              <input
+                className="dashboard__goal-edit-input"
+                type="text"
+                inputMode="numeric"
+                autoFocus
+                value={goalInput}
+                placeholder="Ej: 10.000.000"
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/[^\d]/g, '');
+                  setGoalInput(digits ? Number(digits).toLocaleString('es-CO') : '');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveGoal();
+                  if (e.key === 'Escape') setEditingGoal(false);
+                }}
+              />
+              <button className="dashboard__goal-edit-save" onClick={saveGoal} disabled={savingGoal}>
+                {savingGoal ? 'Guardando…' : 'Guardar'}
+              </button>
+              <button className="dashboard__goal-edit-cancel" onClick={() => setEditingGoal(false)} disabled={savingGoal}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : goalProgress.goal === 0 ? (
+          <div className="dashboard__goal-empty-body">
+            <div>
+              <h3 className="dashboard__goal-title">Define tu meta del mes</h3>
+              <p className="dashboard__goal-empty-text">
+                Establecer una meta te ayuda a medir tu desempeño día a día y motivar al equipo.
+              </p>
+            </div>
+            <button
+              className="dashboard__goal-cta"
+              onClick={() => { setGoalInput(''); setEditingGoal(true); }}
+            >
+              Definir meta {Icon.arrowRight}
+            </button>
+          </div>
+        ) : (
+          <div className="dashboard__goal-body">
+            <div className="dashboard__goal-head">
+              <div>
+                <h3 className="dashboard__goal-title">Meta del mes</h3>
+                <p className="dashboard__goal-sub">
+                  {goalProgress.paceDelta >= 0
+                    ? <>Vas <strong className="dashboard__goal-pace dashboard__goal-pace--up">{formatCOPFull(goalProgress.paceDelta)}</strong> por encima del pace</>
+                    : <>Te faltan <strong className="dashboard__goal-pace dashboard__goal-pace--down">{formatCOPFull(Math.abs(goalProgress.paceDelta))}</strong> para estar al pace</>}
+                  {' · '}
+                  {goalProgress.daysRemaining === 0
+                    ? 'Último día del mes'
+                    : `${goalProgress.daysRemaining} día${goalProgress.daysRemaining !== 1 ? 's' : ''} restantes`}
+                </p>
+              </div>
+              <div className="dashboard__goal-amounts">
+                <span className="dashboard__goal-current">{formatCOPFull(goalProgress.current)}</span>
+                <span className="dashboard__goal-target">de {formatCOPFull(goalProgress.goal)}</span>
+                <button
+                  className="dashboard__goal-edit-btn"
+                  onClick={() => { setGoalInput(Number(goalProgress.goal).toLocaleString('es-CO')); setEditingGoal(true); }}
+                  title="Editar meta"
+                  aria-label="Editar meta"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="dashboard__goal-track">
+              <span
+                className={`dashboard__goal-fill dashboard__goal-fill--${goalProgress.pct >= 100 ? 'done' : goalProgress.paceDelta >= 0 ? 'ahead' : 'behind'}`}
+                style={{ width: `${Math.min(100, goalProgress.pct)}%` }}
+              />
+              <span
+                className="dashboard__goal-pace-marker"
+                style={{ left: `${Math.min(100, Math.round((goalProgress.dayOfMonth / goalProgress.daysInMonth) * 100))}%` }}
+                title={`Pace esperado al día ${goalProgress.dayOfMonth}`}
+              />
+            </div>
+            <div className="dashboard__goal-foot">
+              <span className="dashboard__goal-pct">{goalProgress.pct}% completado</span>
+              <span className="dashboard__goal-pace-label">Pace ideal: {Math.round((goalProgress.dayOfMonth / goalProgress.daysInMonth) * 100)}%</span>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* SMART INSIGHTS BAR */}

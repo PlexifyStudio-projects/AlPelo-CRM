@@ -830,12 +830,37 @@ def get_my_tenant(db: Session = Depends(get_db), user: Admin = Depends(get_curre
         "wa_business_account_id": getattr(tenant, 'wa_business_account_id', None),
         "wa_access_token": getattr(tenant, 'wa_access_token', None),
         "wa_phone_display": getattr(tenant, 'wa_phone_display', None),
+        # Owner-set monthly revenue target
+        "monthly_revenue_goal": getattr(tenant, 'monthly_revenue_goal', 0) or 0,
         # Monthly usage stats
         "ai_tokens_month": ai_tokens_month,
         "wa_sent_month": wa_sent_month,
         "campaigns_month": campaigns_month,
         "ai_cost_month_usd": round((ai_tokens_month / 1_000_000) * 5.4, 3) if ai_tokens_month else 0,
     }
+
+
+@router.patch("/tenant/me/goal")
+def update_my_tenant_goal(
+    payload: dict,
+    db: Session = Depends(get_db),
+    user: Admin = Depends(get_current_user),
+):
+    """Update the monthly revenue goal for the current user's tenant."""
+    if not user.tenant_id:
+        raise HTTPException(status_code=403, detail="No tenant assigned")
+    tenant = db.query(Tenant).filter(Tenant.id == user.tenant_id, Tenant.is_active == True).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    try:
+        goal = int(payload.get("monthly_revenue_goal", 0) or 0)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="monthly_revenue_goal must be an integer")
+    if goal < 0:
+        raise HTTPException(status_code=400, detail="monthly_revenue_goal cannot be negative")
+    tenant.monthly_revenue_goal = goal
+    db.commit()
+    return {"monthly_revenue_goal": goal}
 
 
 # ============================================================================

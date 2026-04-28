@@ -379,6 +379,7 @@ class Tenant(Base):
     monthly_price = Column(Integer, nullable=False, default=0)
     paid_until = Column(Date, nullable=True)  # Service paid until this date
     default_tax_rate = Column(Float, nullable=False, default=0)  # 0 = no IVA, 0.19 = 19% IVA
+    monthly_revenue_goal = Column(Integer, nullable=False, default=0)  # COP — owner-set monthly revenue target
     # DIAN / Fiscal config
     nit = Column(String(20), nullable=True)  # NIT con dígito verificación: 901234567-8
     legal_name = Column(String(300), nullable=True)  # Razón social
