@@ -71,7 +71,7 @@ const Team = () => {
   // Form data — single source of truth across tabs
   const [form, setForm] = useState({
     name: '', phone: '', email: '', role: 'Profesional', specialty: '',
-    bio: '', hire_date: '', is_active: true, color: '#06B6D4',
+    bio: '', hire_date: new Date().toISOString().slice(0, 10), is_active: true, color: '#06B6D4',
     skills: [], salary_base: '', bookable_online: true,
   });
   const [skillInput, setSkillInput] = useState('');
@@ -166,7 +166,7 @@ const Team = () => {
     setDrawerTab('general');
     setForm({
       name: '', phone: '', email: '', role: 'Profesional', specialty: '',
-      bio: '', hire_date: '', is_active: true, color: '#06B6D4',
+      bio: '', hire_date: new Date().toISOString().slice(0, 10), is_active: true, color: '#06B6D4',
       skills: [], salary_base: '', bookable_online: true,
     });
     setSkillInput('');
