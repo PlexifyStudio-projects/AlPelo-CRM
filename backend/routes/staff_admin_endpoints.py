@@ -196,17 +196,17 @@ def clients_attended_detail(
     if dto: a_q = a_q.filter(Appointment.date <= dto)
     apts = a_q.order_by(Appointment.date.desc()).limit(limit).all()
 
-    # Build a set of (client_id, date_str, service_id) keys from VisitHistory so we don't double-count
-    # appointments that already have a corresponding visit record. Using ISO string for date safety.
+    # Build dedup keys from VisitHistory so we don't double-count appointments.
+    # VisitHistory only has service_name (string), not service_id, so we key by name.
     visit_keys = set()
     for v in visits:
         cid = getattr(v, 'client_id', None)
         if not cid:
             continue
         vdate = getattr(v, 'visit_date', None)
-        sid = getattr(v, 'service_id', None)
+        sname = (getattr(v, 'service_name', '') or '').lower()
         try:
-            visit_keys.add((cid, vdate.isoformat() if vdate else None, sid))
+            visit_keys.add((cid, vdate.isoformat() if vdate else None, sname))
         except Exception:
             pass
 
@@ -216,10 +216,9 @@ def clients_attended_detail(
     client_ids = [c for c in (v_client_ids | a_client_ids) if c]
     client_map = {c.id: c for c in db.query(Client).filter(Client.id.in_(client_ids)).all()} if client_ids else {}
 
-    # Pre-fetch services
-    v_svc_ids = {getattr(v, 'service_id', None) for v in visits}
-    a_svc_ids = {getattr(a, 'service_id', None) for a in apts}
-    svc_ids = [s for s in (v_svc_ids | a_svc_ids) if s]
+    # Pre-fetch services for appointments (VisitHistory doesn't have service_id)
+    a_svc_ids = [getattr(a, 'service_id', None) for a in apts]
+    svc_ids = [s for s in set(a_svc_ids) if s]
     svc_map = {s.id: s for s in db.query(Service).filter(Service.id.in_(svc_ids)).all()} if svc_ids else {}
 
     # Visit count per client (lifetime — count appointments + visits, dedup'd by date)
@@ -241,7 +240,6 @@ def clients_attended_detail(
     # Add visits
     for v in visits:
         c = client_map.get(v.client_id)
-        svc = svc_map.get(v.service_id)
         amt = v.amount or 0
         total_amount += amt
         items.append({
@@ -252,8 +250,8 @@ def clients_attended_detail(
             "client_phone": c.phone if c else None,
             "client_ticket": c.client_id if c else None,
             "client_visits": visit_count_per_client.get(v.client_id, 0),
-            "service_id": v.service_id,
-            "service_name": v.service_name or (svc.name if svc else "Servicio"),
+            "service_id": None,
+            "service_name": v.service_name or "Servicio",
             "amount": amt,
             "tip": getattr(v, 'tip', 0) or 0,
             "payment_method": v.payment_method,
@@ -265,16 +263,17 @@ def clients_attended_detail(
     # Add appointments (skipping ones already captured as visits)
     for a in apts:
         a_date_str = a.date.isoformat() if a.date else None
-        key = (a.client_id, a_date_str, a.service_id)
+        svc = svc_map.get(a.service_id)
+        sname_lower = (svc.name if svc else "").lower()
+        key = (a.client_id, a_date_str, sname_lower)
         if key in visit_keys:
             continue
         c = client_map.get(a.client_id)
-        svc = svc_map.get(a.service_id)
         amt = int(a.price or 0)
         total_amount += amt
         items.append({
             "id": f"a-{a.id}",
-            "date": a.date.isoformat() if a.date else None,
+            "date": a_date_str,
             "client_id": a.client_id,
             "client_name": c.name if c else (a.client_name or 'Sin registro'),
             "client_phone": c.phone if c else None,
@@ -345,30 +344,34 @@ def commissions_summary(
         v_q = v_q.filter(or_(VisitHistory.tenant_id == tid, VisitHistory.tenant_id.is_(None)))
     visits = v_q.all()
 
-    # Commission config per service
+    # Commission config per service (keyed by service_id)
     comm_q = db.query(StaffServiceCommission).filter(StaffServiceCommission.staff_id == staff_id)
     if tid:
         comm_q = comm_q.filter(StaffServiceCommission.tenant_id == tid)
     comm_map = {c.service_id: c for c in comm_q.all()}
 
-    # Service info
-    svc_ids = list({v.service_id for v in visits if v.service_id})
-    svc_map = {s.id: s for s in db.query(Service).filter(Service.id.in_(svc_ids)).all()} if svc_ids else {}
+    # All services (we'll match VisitHistory.service_name → Service.name)
+    all_svc_q = db.query(Service)
+    if tid:
+        all_svc_q = all_svc_q.filter(Service.tenant_id == tid)
+    all_svcs = all_svc_q.all()
+    name_to_svc = {(s.name or '').lower(): s for s in all_svcs}
 
-    # Aggregate per service
+    # Aggregate per service (keyed by service name since VisitHistory has no service_id)
     by_service = {}
     for v in visits:
-        sid = v.service_id
+        sname = v.service_name or "Servicio"
+        svc = name_to_svc.get(sname.lower())
+        sid = svc.id if svc else f"name:{sname}"
         if sid not in by_service:
-            svc = svc_map.get(sid)
-            comm = comm_map.get(sid)
+            comm = comm_map.get(svc.id) if svc else None
             by_service[sid] = {
-                "service_id": sid,
-                "service_name": svc.name if svc else (v.service_name or "Servicio"),
+                "service_id": svc.id if svc else None,
+                "service_name": svc.name if svc else sname,
                 "service_price": svc.price if svc else 0,
-                "commission_type": (comm.commission_type if comm else "percentage") if comm else "percentage",
-                "commission_rate": (comm.commission_rate if comm else 0.0) if comm else 0.0,
-                "commission_amount": (comm.commission_amount if comm else 0) if comm else 0,
+                "commission_type": (comm.commission_type if comm else "percentage"),
+                "commission_rate": (comm.commission_rate if comm else 0.0),
+                "commission_amount": (comm.commission_amount if comm else 0) or 0,
                 "visits": 0,
                 "revenue": 0,
                 "earned": 0,
@@ -378,7 +381,7 @@ def commissions_summary(
         amt = v.amount or 0
         item["revenue"] += amt
         # Earnings calc per visit
-        comm = comm_map.get(sid)
+        comm = comm_map.get(svc.id) if svc else None
         if comm and comm.commission_type == 'fixed':
             item["earned"] += int(comm.commission_amount or 0)
         else:
