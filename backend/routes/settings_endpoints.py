@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
-from database.models import Tenant, PlatformConfig, Staff, Service
+from database.models import Tenant, PlatformConfig, Staff, Service, Product
 from middleware.auth_middleware import get_current_user
 from routes._helpers import safe_tid
 
@@ -1070,5 +1070,40 @@ async def delete_service_photo(service_id: int, db: Session = Depends(get_db), u
         raise HTTPException(404, "Servicio no encontrado")
     service.photo_url = None
     service.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/inventory/products/{product_id}/photo")
+async def upload_product_photo(product_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(get_current_user)):
+    """Upload an image for a product. Stored as base64 data URI on Product.image_url."""
+    import base64
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    product = db.query(Product).filter(Product.id == product_id, Product.tenant_id == tid).first()
+    if not product:
+        raise HTTPException(404, "Producto no encontrado")
+    content = await file.read()
+    if len(content) > 2 * 1024 * 1024:
+        raise HTTPException(400, "Imagen demasiado grande (max 2MB)")
+    mime = file.content_type or "image/jpeg"
+    data_uri = f"data:{mime};base64,{base64.b64encode(content).decode('utf-8')}"
+    product.image_url = data_uri
+    product.updated_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True, "image_url": data_uri}
+
+
+@router.delete("/inventory/products/{product_id}/photo")
+async def delete_product_photo(product_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    product = db.query(Product).filter(Product.id == product_id, Product.tenant_id == tid).first()
+    if not product:
+        raise HTTPException(404, "Producto no encontrado")
+    product.image_url = None
+    product.updated_at = datetime.utcnow()
     db.commit()
     return {"ok": True}

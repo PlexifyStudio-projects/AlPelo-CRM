@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from database.models import (
     Client, Staff, VisitHistory, Appointment, Expense, Invoice, InvoiceItem,
     StaffPayment, StaffCommission, Tenant, Service, StaffServiceCommission,
+    Product, InventoryMovement,
 )
 
 # Styles
@@ -407,3 +408,109 @@ def generate_services_report(db: Session, tenant_id: int) -> io.BytesIO:
     wb.save(buffer)
     buffer.seek(0)
     return buffer
+
+def generate_inventory_report(db: Session, tenant_id: int) -> io.BytesIO:
+    """Premium inventory export — productos + movimientos + plantilla."""
+    wb = Workbook()
+
+    tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+    biz_name = tenant.name if tenant else 'Negocio'
+
+    # ===== SHEET 1: PRODUCTOS =====
+    ws = wb.active
+    ws.title = 'Productos'
+    ws.append([f'Inventario — {biz_name}'])
+    ws.merge_cells('A1:K1')
+    ws['A1'].font = Font(name='Calibri', bold=True, size=16, color='1E40AF')
+    ws['A1'].alignment = Alignment(horizontal='center')
+    ws.append([f'Generado: {datetime.now().strftime("%d/%m/%Y %H:%M")}'])
+    ws.merge_cells('A2:K2')
+    ws['A2'].alignment = Alignment(horizontal='center')
+    ws['A2'].font = Font(name='Calibri', italic=True, size=10, color='64748B')
+    ws.append([])
+
+    headers = ['ID', 'Nombre', 'SKU / Codigo', 'Categoria', 'Precio venta', 'Costo', 'Margen %', 'Stock', 'Min stock', 'Estado', 'Proveedor']
+    ws.append(headers)
+    _style_header(ws, row=4, cols=len(headers))
+
+    products = db.query(Product)
+    if tenant_id:
+        products = products.filter(Product.tenant_id == tenant_id)
+    products = products.order_by(Product.category, Product.name).all()
+
+    for p in products:
+        margin = 0
+        if (p.price or 0) > 0:
+            margin = round((((p.price or 0) - (p.cost or 0)) / (p.price or 1)) * 100, 1)
+        ws.append([
+            p.id,
+            p.name or '',
+            p.sku or '',
+            p.category or '',
+            p.price or 0,
+            p.cost or 0,
+            margin,
+            p.stock or 0,
+            p.min_stock or 0,
+            'Activo' if p.is_active else 'Inactivo',
+            p.supplier or '',
+        ])
+
+    # Money columns
+    for row in ws.iter_rows(min_row=5, min_col=5, max_col=6):
+        for cell in row:
+            cell.number_format = MONEY_FORMAT
+    _auto_width(ws)
+
+    # ===== SHEET 2: MOVIMIENTOS =====
+    ws2 = wb.create_sheet('Movimientos')
+    ws2.append([f'Movimientos de inventario — {biz_name}'])
+    ws2.merge_cells('A1:G1')
+    ws2['A1'].font = Font(name='Calibri', bold=True, size=14, color='1E40AF')
+    ws2['A1'].alignment = Alignment(horizontal='center')
+    ws2.append([])
+
+    headers2 = ['Fecha', 'Producto', 'Tipo', 'Cantidad', 'Costo unidad', 'Usuario', 'Nota']
+    ws2.append(headers2)
+    _style_header(ws2, row=3, cols=len(headers2))
+
+    mvs = db.query(InventoryMovement).filter(InventoryMovement.tenant_id == tenant_id).order_by(InventoryMovement.created_at.desc()).limit(2000).all() if tenant_id else []
+    prod_map = {p.id: p for p in products}
+    for m in mvs:
+        prod = prod_map.get(m.product_id)
+        ws2.append([
+            m.created_at.strftime('%d/%m/%Y %H:%M') if m.created_at else '',
+            prod.name if prod else f'#{m.product_id}',
+            (m.movement_type or '').capitalize(),
+            m.quantity or 0,
+            m.unit_cost or 0,
+            m.created_by or '',
+            (m.note or '')[:300],
+        ])
+
+    for row in ws2.iter_rows(min_row=4, min_col=5, max_col=5):
+        for cell in row:
+            cell.number_format = MONEY_FORMAT
+    _auto_width(ws2)
+
+    # ===== SHEET 3: PLANTILLA IMPORT =====
+    ws3 = wb.create_sheet('Plantilla Import')
+    ws3.append(['Para crear productos masivamente: completa esta hoja y subela en Importar. Obligatorios: Nombre, Precio venta, Costo.'])
+    ws3.merge_cells('A1:H1')
+    ws3['A1'].font = Font(name='Calibri', italic=True, size=10, color='64748B')
+    ws3['A1'].alignment = Alignment(horizontal='left', wrap_text=True)
+    ws3.row_dimensions[1].height = 30
+    ws3.append([])
+
+    template_headers = ['Nombre*', 'Categoria', 'SKU / Codigo', 'Precio venta*', 'Costo*', 'Stock inicial', 'Min stock', 'Proveedor']
+    ws3.append(template_headers)
+    _style_header(ws3, row=3, cols=len(template_headers))
+    ws3.append(['Shampoo profesional 250ml', 'Cuidado capilar', 'SHA-001', 35000, 18000, 10, 3, 'Distribuidora XYZ'])
+    ws3.append(['Cera para cabello 100ml', 'Styling', 'WAX-002', 28000, 12000, 6, 2, ''])
+    _auto_width(ws3)
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return buffer
+

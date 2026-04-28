@@ -4,7 +4,7 @@ CRUD products, stock movements, low-stock alerts, reports.
 Multi-tenant isolated via safe_tid().
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime
@@ -38,6 +38,150 @@ def _get_checkout_info(db, checkout_id):
 from middleware.auth_middleware import get_current_user
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
+
+
+# ============================================================================
+# IMPORT / EXPORT — must be BEFORE /products/{id} routes
+# ============================================================================
+
+@router.get("/export")
+def export_products_xlsx(db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Export full inventory + movements + plantilla as styled xlsx."""
+    from fastapi.responses import StreamingResponse
+    from services.reports.excel_export import generate_inventory_report
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    buf = generate_inventory_report(db, tid)
+    filename = f"inventario_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/import")
+async def import_products_xlsx(file: UploadFile = File(...), db: Session = Depends(get_db), user: Admin = Depends(get_current_user)):
+    """Bulk-create products from xlsx/csv. Skips duplicates by name+sku."""
+    import io as _io
+    import csv as _csv
+    tid = safe_tid(user, db)
+    if not tid:
+        raise HTTPException(400, "No tenant assigned")
+    if not file.filename:
+        raise HTTPException(400, "Archivo requerido")
+
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    content = await file.read()
+
+    rows = []
+    if ext == "csv":
+        text = content.decode("utf-8-sig")
+        rows = list(_csv.DictReader(_io.StringIO(text)))
+    elif ext in ("xlsx", "xls"):
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(_io.BytesIO(content), read_only=True, data_only=True)
+            ws = None
+            for name in ("Plantilla Import", "Productos"):
+                if name in wb.sheetnames:
+                    ws = wb[name]
+                    break
+            if ws is None:
+                ws = wb.active
+            header_row_idx = 1
+            headers = []
+            for ridx, row in enumerate(ws.iter_rows(min_row=1, max_row=10, values_only=True), start=1):
+                non_empty = [c for c in row if c is not None and str(c).strip()]
+                if len(non_empty) >= 3 and any('nombre' in str(c).lower() for c in row if c):
+                    header_row_idx = ridx
+                    headers = [str(c or '').strip() for c in row]
+                    break
+            if not headers:
+                raise HTTPException(400, "No se encontró fila de encabezados")
+            for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
+                if all(c is None or not str(c).strip() for c in row):
+                    continue
+                d = {}
+                for i, c in enumerate(row):
+                    if i < len(headers) and headers[i]:
+                        d[headers[i]] = c
+                rows.append(d)
+        except ImportError:
+            raise HTTPException(400, "Instala openpyxl para importar Excel")
+    else:
+        raise HTTPException(400, "Formato no soportado. Usa CSV o XLSX")
+
+    def gv(row, *keys):
+        for k in keys:
+            for rk in row:
+                if rk and str(rk).lower().strip().rstrip('*') == k.lower():
+                    v = row[rk]
+                    if v is None:
+                        return ""
+                    return str(v).strip()
+        return ""
+
+    existing = {(p.name.lower().strip(), (p.sku or '').lower().strip()): p.id
+                for p in db.query(Product).filter(Product.tenant_id == tid).all()}
+
+    imported, skipped, errors = 0, 0, []
+    for i, row in enumerate(rows):
+        line_no = i + 2
+        try:
+            name = gv(row, "nombre", "name")
+            sku = gv(row, "sku / codigo", "sku", "codigo", "code")
+            price_raw = gv(row, "precio venta", "precio", "price", "venta")
+            cost_raw = gv(row, "costo", "cost")
+            if not name:
+                errors.append({"row": line_no, "reason": "Nombre requerido"})
+                continue
+            try:
+                price = float(str(price_raw).replace('$', '').replace(',', '').strip() or 0)
+            except Exception:
+                errors.append({"row": line_no, "name": name, "reason": "Precio inválido"})
+                continue
+            try:
+                cost = float(str(cost_raw).replace('$', '').replace(',', '').strip() or 0)
+            except Exception:
+                cost = 0
+            key = (name.lower().strip(), sku.lower().strip())
+            if key in existing:
+                skipped += 1
+                continue
+            category = gv(row, "categoria", "categoría", "category") or None
+            stock_raw = gv(row, "stock inicial", "stock")
+            try:
+                stock = int(float(stock_raw)) if stock_raw else 0
+            except Exception:
+                stock = 0
+            min_stock_raw = gv(row, "min stock", "minimo", "mínimo")
+            try:
+                min_stock = int(float(min_stock_raw)) if min_stock_raw else 5
+            except Exception:
+                min_stock = 5
+            supplier = gv(row, "proveedor", "supplier") or None
+
+            db.add(Product(
+                tenant_id=tid,
+                name=name,
+                sku=sku or None,
+                category=category,
+                price=price,
+                cost=cost,
+                stock=stock,
+                min_stock=min_stock,
+                supplier=supplier,
+                is_active=True,
+            ))
+            imported += 1
+            existing[key] = -1
+        except Exception as e:
+            errors.append({"row": line_no, "reason": str(e)[:200]})
+
+    db.commit()
+    return {"imported": imported, "skipped": skipped, "errors": errors, "total_rows": len(rows)}
 
 
 # ============================================================================
