@@ -51,10 +51,33 @@ class Staff(Base):
     nequi_phone = Column(String(200), nullable=True)  # Encrypted
     daviplata_phone = Column(String(200), nullable=True)  # Encrypted
     preferred_payment_method = Column(String(20), nullable=True)  # nequi, bancolombia, daviplata, efectivo
+    bre_b_key = Column(String(200), nullable=True)  # Llave Bre-B (transferencias instantáneas)
+    bre_b_key_type = Column(String(20), nullable=True)  # phone | document | email | account
+    salary_base = Column(Integer, nullable=True)  # COP — salario base mensual (opcional)
+    bookable_online = Column(Boolean, default=True)  # Aparece en booking online
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     visits = relationship("VisitHistory", back_populates="staff")
+
+
+class StaffLoan(Base):
+    """Préstamos y abonos a colaboradores (anticipos de nómina)."""
+    __tablename__ = "staff_loan"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tenant_id = Column(Integer, nullable=True, index=True)
+    staff_id = Column(Integer, ForeignKey("public.staff.id"), nullable=False)
+    type = Column(String(15), nullable=False, default='prestamo')  # 'prestamo' | 'abono'
+    amount = Column(Integer, nullable=False)  # COP
+    date = Column(Date, nullable=False)
+    note = Column(Text, nullable=True)
+    status = Column(String(15), nullable=False, default='pendiente')  # 'pendiente' | 'pagado' | 'descontado'
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    staff = relationship("Staff", foreign_keys=[staff_id])
 
 
 class Client(Base):

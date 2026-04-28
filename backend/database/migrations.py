@@ -114,6 +114,11 @@ def run_migrations(engine):
         ("staff_service_commission", "commission_type", "VARCHAR(15) DEFAULT 'percentage'"),
         ("staff_service_commission", "commission_amount", "INTEGER"),
         ("staff_service_commission", "is_enabled", "BOOLEAN DEFAULT true"),
+        # Staff: Bre-B key, salary base, bookable online flag
+        ("staff", "bre_b_key", "VARCHAR(200)"),
+        ("staff", "bre_b_key_type", "VARCHAR(20)"),
+        ("staff", "salary_base", "INTEGER"),
+        ("staff", "bookable_online", "BOOLEAN DEFAULT true"),
         # Nómina v2: link appointments/visits to payments
         ("appointment", "staff_payment_id", "INTEGER REFERENCES staff_payment(id)"),
         ("visit_history", "payment_id", "INTEGER REFERENCES staff_payment(id)"),
@@ -611,6 +616,35 @@ def run_migrations(engine):
                 print("[MIGRATION] Created staff_service_commission table")
     except Exception as e:
         print(f"[MIGRATION] staff_service_commission table: {e}")
+
+    # --- staff_loan table (préstamos y abonos a colaboradores) ---
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' AND table_name='staff_loan'"
+            ))
+            if result.fetchone() is None:
+                conn.execute(text("""
+                    CREATE TABLE public.staff_loan (
+                        id SERIAL PRIMARY KEY,
+                        tenant_id INTEGER,
+                        staff_id INTEGER NOT NULL REFERENCES public.staff(id),
+                        type VARCHAR(15) NOT NULL DEFAULT 'prestamo',
+                        amount INTEGER NOT NULL,
+                        date DATE NOT NULL,
+                        note TEXT,
+                        status VARCHAR(15) NOT NULL DEFAULT 'pendiente',
+                        created_by VARCHAR(100),
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )
+                """))
+                conn.execute(text("CREATE INDEX idx_staff_loan_staff ON public.staff_loan(staff_id, date DESC)"))
+                conn.execute(text("CREATE INDEX idx_staff_loan_tenant ON public.staff_loan(tenant_id)"))
+                print("[MIGRATION] Created staff_loan table")
+    except Exception as e:
+        print(f"[MIGRATION] staff_loan table: {e}")
 
     # NOTE: Dev users, tenants, and admins are all created from the Developer panel — no seeds.
 

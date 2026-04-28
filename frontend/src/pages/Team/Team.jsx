@@ -1,1390 +1,1206 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import staffService from '../../services/staffService';
+import servicesService from '../../services/servicesService';
 import { useNotification } from '../../context/NotificationContext';
 import { useTenant } from '../../context/TenantContext';
+import EmptyState from '../../components/common/EmptyState/EmptyState';
 
 const b = 'team';
-const DEFAULT_ROLES = ['Todos'];
-const AVATAR_COLORS = [
-  '#E05292', '#3B82F6', '#F97316', '#8B5CF6', '#14B8A6',
-  '#EF4444', '#22B07E', '#C9A84C', '#06B6D4', '#D946EF',
-  '#6366F1', '#84CC16', '#EC4899', '#0EA5E9', '#F59E0B',
-  '#10B981', '#7C3AED', '#FB923C', '#2563EB', '#E11D48',
-  '#059669', '#9333EA', '#DC2626', '#0891B2', '#CA8A04',
-  '#4F46E5',
+
+const ROLES = ['Dueño', 'Recepcionista', 'Profesional', 'Bartender', 'Contador'];
+const ROLE_META = {
+  'Dueño':         { color: '#8B5CF6', gradient: 'linear-gradient(135deg, #8B5CF6, #A78BFA)' },
+  'Recepcionista': { color: '#06B6D4', gradient: 'linear-gradient(135deg, #06B6D4, #22D3EE)' },
+  'Profesional':   { color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #34D399)' },
+  'Bartender':     { color: '#F59E0B', gradient: 'linear-gradient(135deg, #F59E0B, #FBBF24)' },
+  'Contador':      { color: '#3B82F6', gradient: 'linear-gradient(135deg, #3B82F6, #60A5FA)' },
+};
+const roleMeta = (r) => ROLE_META[r] || { color: '#64748B', gradient: 'linear-gradient(135deg, #64748B, #94A3B8)' };
+
+const BRE_B_TYPES = [
+  { value: 'phone',    label: 'Teléfono' },
+  { value: 'document', label: 'Cédula' },
+  { value: 'email',    label: 'Correo' },
+  { value: 'account',  label: 'Cuenta bancaria' },
 ];
-const getAvatarColor = (name) => {
-  if (!name) return AVATAR_COLORS[0];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
 
-const getInitials = (name) => {
-  const parts = name.split(' ');
-  return parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0].substring(0, 2).toUpperCase();
-};
-
-const formatDate = (dateStr) => {
-  if (!dateStr) return '-';
-  return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
-};
-
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
-};
-
-const daysSince = (dateStr) => {
-  if (!dateStr) return null;
-  const diff = Date.now() - new Date(dateStr + 'T00:00:00').getTime();
-  return Math.floor(diff / 86400000);
-};
-const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>;
-const PlusIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>;
-const XIcon = ({ size = 16 }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>;
-const EditIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>;
-const PhoneIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" /></svg>;
-const MailIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>;
-const CalendarIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
-const StarIcon = ({ filled }) => <svg width="12" height="12" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>;
-const UserIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
-const ToggleIcon = ({ on }) => (
-  <svg width="36" height="20" viewBox="0 0 36 20">
-    <rect x="0" y="0" width="36" height="20" rx="10" fill={on ? '#34D399' : '#D8D8D4'} style={{ transition: 'fill 0.2s' }} />
-    <circle cx={on ? 26 : 10} cy="10" r="7" fill="white" style={{ transition: 'cx 0.2s' }} />
-  </svg>
-);
-const SendIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" /></svg>;
-const ChevronRight = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>;
-const WhatsAppIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" /></svg>;
-const CheckIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>;
-
-const getStaffClients = () => [];
-
-const DeactivateModal = ({ member, clients, onConfirm, onCancel, tenantName, bookingUrl }) => {
-  const [selected, setSelected] = useState(() => new Set(clients.map((c) => c.id)));
-  const bookingLink = bookingUrl ? ` Agenda aqui: ${bookingUrl}` : '';
-  const [template, setTemplate] = useState(
-    `Hola {{nombre}}, soy Lina de ${tenantName}. Queremos informarte que ${member.name} no estara disponible por el momento. Pero no te preocupes, tenemos un equipo increible listo para atenderte con la misma calidad de siempre. Como gesto especial, en tu proxima visita tienes un *10% de descuento*.${bookingLink}`
-  );
-
-  const toggleClient = (id) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAll = () => {
-    if (selected.size === clients.length) setSelected(new Set());
-    else setSelected(new Set(clients.map((c) => c.id)));
-  };
-
-  const selectedClients = clients.filter((c) => selected.has(c.id));
-
-  return createPortal(
-    <div className={`${b}__overlay`} onClick={onCancel}>
-      <div className={`${b}__deact-modal`} onClick={(e) => e.stopPropagation()}>
-        <div className={`${b}__deact-header`}>
-          <div className={`${b}__deact-icon`}><SendIcon /></div>
-          <h3>Desactivar a {member.name}</h3>
-          <p>{clients.length > 0
-            ? <>Selecciona los clientes a notificar para retenerlos</>
-            : 'Este miembro no tiene clientes registrados'
-          }</p>
-        </div>
-        <div className={`${b}__deact-body`}>
-          <label>Plantilla de retencion (WhatsApp Business)</label>
-          <textarea value={template} onChange={(e) => setTemplate(e.target.value)} rows={4} />
-          <span className={`${b}__deact-hint`}>
-            <WhatsAppIcon /> Usa {'{{nombre}}'} para personalizar. Cumple politicas de WhatsApp Business.
-          </span>
-        </div>
-        {clients.length > 0 && (
-          <div className={`${b}__deact-clients`}>
-            <div className={`${b}__deact-clients-header`}>
-              <label className={`${b}__deact-check-all`}>
-                <input
-                  type="checkbox"
-                  checked={selected.size === clients.length}
-                  onChange={toggleAll}
-                />
-                <span>Seleccionar todos</span>
-              </label>
-              <span className={`${b}__deact-clients-badge`}>
-                {selected.size} de {clients.length} seleccionados
-              </span>
-            </div>
-            <div className={`${b}__deact-clients-list`}>
-              {clients.map((c) => {
-                const days = daysSince(c.lastVisit);
-                const isChecked = selected.has(c.id);
-                return (
-                  <label key={c.id} className={`${b}__deact-client ${isChecked ? `${b}__deact-client--selected` : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => toggleClient(c.id)}
-                    />
-                    <div className={`${b}__deact-client-info`}>
-                      <span className={`${b}__deact-client-name`}>{c.name}</span>
-                      <span className={`${b}__deact-client-id`}>{c.clientId}</span>
-                    </div>
-                    <div className={`${b}__deact-client-meta`}>
-                      <span className={`${b}__deact-client-phone`}>{c.phone}</span>
-                      <span className={`${b}__deact-client-visit`}>
-                        Ultima visita: {formatDate(c.lastVisit)}
-                        {days !== null && days <= 7 && (
-                          <mark className={`${b}__deact-client-recent`}>Reciente ({days}d)</mark>
-                        )}
-                      </span>
-                    </div>
-                    <span className={`${b}__deact-client-tag`}>Recuperando</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        <div className={`${b}__deact-note`}>
-          <WhatsAppIcon />
-          <span>Al confirmar, se creara una conversacion en el <strong>Inbox</strong> con cada cliente seleccionado. Los clientes tendran la etiqueta <strong>"Recuperando"</strong>.</span>
-        </div>
-
-        <div className={`${b}__deact-actions`}>
-          <button className={`${b}__btn ${b}__btn--ghost`} onClick={onCancel}>Cancelar</button>
-          <button
-            className={`${b}__btn ${b}__btn--warning`}
-            disabled={selected.size === 0}
-            onClick={() => onConfirm(template, selectedClients)}
-          >
-            <SendIcon /> Desactivar y enviar a {selected.size} cliente{selected.size !== 1 ? 's' : ''}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
-const LockIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>;
-const EyeIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>;
-const EyeOffIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>;
-
-const StaffFormModal = ({ staff, onClose, onSaved, roles }) => {
-  const isEdit = !!staff;
-  const PRESET_COLORS = ['#2D5A3D', '#3B82F6', '#E05292', '#C9A84C', '#8B5CF6', '#F97316', '#14B8A6', '#EC4899', '#06B6D4', '#EF4444', '#22B07E', '#6366F1', '#D946EF', '#0EA5E9', '#84CC16'];
-  const editableRoles = (roles || DEFAULT_ROLES).filter(r => r !== 'Todos');
-  const [form, setForm] = useState({
-    name: staff?.name || '', phone: staff?.phone || '', email: staff?.email || '',
-    role: staff?.role || editableRoles[0] || 'Profesional', specialty: staff?.specialty || '', bio: staff?.bio || '',
-    hire_date: staff?.hire_date || '', skills: staff?.skills?.join(', ') || '',
-    color: staff?.color || '', photo_url: staff?.photo_url || null,
-    username: staff?.username || '', password: '',
-  });
-  const [photoFile, setPhotoFile] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleChange = (e) => { setForm({ ...form, [e.target.name]: e.target.value }); if (error) setError(''); };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.name.trim()) { setError('El nombre es obligatorio'); return; }
-    if (!isEdit && form.username.trim() && form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres'); return;
-    }
-    setSaving(true);
-    try {
-      const data = {
-        name: form.name.trim(), phone: form.phone.trim() || null, email: form.email.trim() || null,
-        role: form.role, specialty: form.specialty.trim() || null, bio: form.bio.trim() || null,
-        hire_date: form.hire_date || null,
-        skills: form.skills ? form.skills.split(',').map((s) => s.trim()).filter(Boolean) : [],
-        color: form.color || null,
-      };
-      if (form.username.trim()) data.username = form.username.trim();
-      if (form.password) data.password = form.password;
-      let savedStaff;
-      if (isEdit) { savedStaff = await staffService.update(staff.id, data); }
-      else { savedStaff = await staffService.create(data); }
-      if (photoFile && savedStaff?.id) {
-        try { await staffService.uploadPhoto(savedStaff.id, photoFile); } catch {}
-      }
-      onSaved();
-    } catch (err) { setError(err.message); }
-    finally { setSaving(false); }
-  };
-
-  return createPortal(
-    <div className={`${b}__overlay`} onClick={onClose}>
-      <div className={`${b}__form-modal`} onClick={(e) => e.stopPropagation()}>
-        <div className={`${b}__form-header`}>
-          <h3>{isEdit ? 'Editar miembro' : 'Nuevo miembro del equipo'}</h3>
-          <button className={`${b}__close-btn`} onClick={onClose}><XIcon /></button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className={`${b}__form-body`}>
-            <div className={`${b}__form-section`}>
-              <div className={`${b}__form-section-title`}>
-                <UserIcon /> Informacion personal
-              </div>
-              <div className={`${b}__form-section-fields`}>
-                <div className={`${b}__form-row`}>
-                  <div className={`${b}__form-field`}>
-                    <label>Nombre completo *</label>
-                    <input name="name" value={form.name} onChange={handleChange} placeholder="Ej: Juan Perez" required />
-                  </div>
-                  <div className={`${b}__form-field`}>
-                    <label>Rol en el equipo</label>
-                    <select name="role" value={editableRoles.includes(form.role) ? form.role : '__custom__'} onChange={e => {
-                      if (e.target.value === '__custom__') {
-                        setForm({ ...form, role: '' });
-                      } else {
-                        setForm({ ...form, role: e.target.value });
-                      }
-                    }}>
-                      {editableRoles.map(r => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                      <option value="__custom__">+ Crear nueva categoria...</option>
-                    </select>
-                    {(!editableRoles.includes(form.role) || form.role === '') && (
-                      <input
-                        name="role"
-                        value={form.role}
-                        onChange={handleChange}
-                        placeholder="Escribe el nombre de la nueva categoria..."
-                        autoFocus
-                        style={{ marginTop: '8px' }}
-                      />
-                    )}
-                  </div>
-                </div>
-                <div className={`${b}__form-row`}>
-                  <div className={`${b}__form-field`}>
-                    <label>Telefono</label>
-                    <input name="phone" value={form.phone} onChange={handleChange} placeholder="+57 3XX XXX XXXX" />
-                  </div>
-                  <div className={`${b}__form-field`}>
-                    <label>Email</label>
-                    <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="correo@ejemplo.com" />
-                  </div>
-                </div>
-                <div className={`${b}__form-row`}>
-                  <div className={`${b}__form-field`}>
-                    <label>Foto de perfil</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      {(photoFile || form.photo_url) && (
-                        <img src={photoFile ? URL.createObjectURL(photoFile) : form.photo_url} alt="preview" style={{ width: 56, height: 56, borderRadius: '50%', objectFit: 'cover', border: '2px solid #e5e7eb' }} />
-                      )}
-                      <input type="file" accept="image/*" onChange={e => { if (e.target.files[0]) setPhotoFile(e.target.files[0]); }} style={{ fontSize: '0.85rem' }} />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className={`${b}__form-section`}>
-              <div className={`${b}__form-section-title`}>
-                <LockIcon /> Acceso a la plataforma
-              </div>
-              <div className={`${b}__form-section-fields`}>
-                <div className={`${b}__form-row`}>
-                  <div className={`${b}__form-field`}>
-                    <label>Usuario de acceso</label>
-                    <input name="username" value={form.username} onChange={handleChange} placeholder="nombre.usuario" autoComplete="off" />
-                  </div>
-                  <div className={`${b}__form-field`}>
-                    <label>{isEdit ? 'Nueva contraseña' : 'Contraseña'}</label>
-                    <div className={`${b}__password-wrap`}>
-                      <input
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={form.password}
-                        onChange={handleChange}
-                        placeholder={isEdit ? 'Dejar vacio para mantener' : 'Min. 6 caracteres'}
-                        autoComplete="new-password"
-                      />
-                      <button type="button" className={`${b}__eye-btn`} onClick={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className={`${b}__form-section`}>
-              <div className={`${b}__form-section-title`}>
-                <StarIcon filled={false} /> Perfil profesional
-              </div>
-              <div className={`${b}__form-section-fields`}>
-                <div className={`${b}__form-row`}>
-                  <div className={`${b}__form-field`}>
-                    <label>Especialidad</label>
-                    <input name="specialty" value={form.specialty} onChange={handleChange} placeholder="Ej: Especialista en color" />
-                  </div>
-                  <div className={`${b}__form-field`}>
-                    <label>Fecha de ingreso</label>
-                    <input name="hire_date" type="date" value={form.hire_date} onChange={handleChange} />
-                  </div>
-                </div>
-                <div className={`${b}__form-field`}>
-                  <label>Habilidades</label>
-                  <input name="skills" value={form.skills} onChange={handleChange} placeholder="Separadas por coma: Degradados, Cortes clasicos" />
-                </div>
-                <div className={`${b}__form-row`}>
-                  <div className={`${b}__form-field`}>
-                    <label>Color en agenda</label>
-                    <div className={`${b}__color-picker`}>
-                      {PRESET_COLORS.map(c => (
-                        <button key={c} type="button"
-                          className={`${b}__color-swatch ${form.color === c ? `${b}__color-swatch--on` : ''}`}
-                          style={{ background: c }}
-                          onClick={() => setForm({ ...form, color: c })}
-                          title={c} />
-                      ))}
-                      <input type="color" value={form.color || '#2D5A3D'} onChange={e => setForm({ ...form, color: e.target.value })}
-                        className={`${b}__color-input`} title="Color personalizado" />
-                    </div>
-                  </div>
-                </div>
-                <div className={`${b}__form-field`}>
-                  <label>Biografia</label>
-                  <textarea name="bio" value={form.bio} onChange={handleChange} rows={3} placeholder="Breve descripcion del profesional..." />
-                </div>
-              </div>
-            </div>
-
-            {error && <div className={`${b}__form-error`}>{error}</div>}
-          </div>
-
-          <div className={`${b}__form-actions`}>
-            <button type="button" className={`${b}__btn ${b}__btn--ghost`} onClick={onClose}>Cancelar</button>
-            <button type="submit" className={`${b}__btn ${b}__btn--primary`} disabled={saving}>
-              {saving ? 'Guardando...' : isEdit ? 'Guardar cambios' : 'Crear miembro'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>,
-    document.body
-  );
-};
-const SkillEditor = ({ staff, onUpdated }) => {
-  const [newSkill, setNewSkill] = useState('');
-  const { addNotification } = useNotification();
-
-  const handleAdd = async () => {
-    const skill = newSkill.trim();
-    if (!skill) return;
-    try {
-      const updated = await staffService.addSkill(staff.id, skill);
-      onUpdated(updated);
-      setNewSkill('');
-    } catch (err) { addNotification(err.message, 'error'); }
-  };
-
-  const handleRemove = async (skill) => {
-    try {
-      const updated = await staffService.removeSkill(staff.id, skill);
-      onUpdated(updated);
-    } catch (err) { addNotification(err.message, 'error'); }
-  };
-
-  return (
-    <div className={`${b}__skill-editor`}>
-      <div className={`${b}__skill-tags`}>
-        {(staff.skills || []).map((skill) => (
-          <span key={skill} className={`${b}__skill-tag`}>
-            {skill}
-            <button onClick={() => handleRemove(skill)}><XIcon size={10} /></button>
-          </span>
-        ))}
-        {(!staff.skills || staff.skills.length === 0) && (
-          <span className={`${b}__skill-empty`}>Sin habilidades registradas</span>
-        )}
-      </div>
-      <div className={`${b}__skill-add`}>
-        <input
-          value={newSkill}
-          onChange={(e) => setNewSkill(e.target.value)}
-          placeholder="Agregar habilidad..."
-          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAdd())}
-        />
-        <button onClick={handleAdd} disabled={!newSkill.trim()}><PlusIcon /></button>
-      </div>
-    </div>
-  );
-};
-const CopyIcon = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>;
-const KeyIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" /></svg>;
-
-const CredentialEditor = ({ member, onUpdated }) => {
-  const { addNotification } = useNotification();
-  const [editing, setEditing] = useState(false);
-  const [username, setUsername] = useState(member.username || '');
-  const [password, setPassword] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [showPw, setShowPw] = useState(false);
-
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text).then(() => {
-      addNotification('Copiado al portapapeles', 'success');
-    }).catch(() => {});
-  };
-
-  const handleSave = async () => {
-    if (!username.trim()) return;
-    if (password.length < 6) { addNotification('La contraseña debe tener al menos 6 caracteres', 'error'); return; }
-    setSaving(true);
-    try {
-      await staffService.updateCredentials(member.id, { username: username.trim(), password });
-      addNotification('Credenciales actualizadas', 'success');
-      setEditing(false);
-      setPassword('');
-      if (onUpdated) onUpdated({ ...member, username: username.trim() });
-    } catch (err) { addNotification(err.message, 'error'); }
-    finally { setSaving(false); }
-  };
-
-  if (!editing) {
-    return (
-      <div className={`${b}__creds`}>
-        {member.username ? (
-          <>
-            <div className={`${b}__creds-card`}>
-              <div className={`${b}__creds-row`}>
-                <div className={`${b}__creds-label`}><UserIcon /> Usuario</div>
-                <div className={`${b}__creds-value`}>
-                  <strong>{member.username}</strong>
-                  <button className={`${b}__creds-copy`} onClick={() => copyToClipboard(member.username)} title="Copiar"><CopyIcon /></button>
-                </div>
-              </div>
-              <div className={`${b}__creds-row`}>
-                <div className={`${b}__creds-label`}><KeyIcon /> Contraseña</div>
-                <div className={`${b}__creds-value`}>
-                  <span className={`${b}__creds-masked`}>••••••••</span>
-                </div>
-              </div>
-            </div>
-            <button className={`${b}__btn ${b}__btn--outline-sm`} onClick={() => { setEditing(true); setUsername(member.username || ''); }}>
-              <EditIcon /> Cambiar credenciales
-            </button>
-          </>
-        ) : (
-          <div className={`${b}__creds-empty`}>
-            <LockIcon />
-            <div>
-              <span className={`${b}__creds-empty-title`}>Sin acceso configurado</span>
-              <span className={`${b}__creds-empty-desc`}>Este miembro no puede iniciar sesion en la plataforma</span>
-            </div>
-            <button className={`${b}__btn ${b}__btn--primary-sm`} onClick={() => setEditing(true)}>
-              Configurar acceso
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className={`${b}__creds-edit`}>
-      <div className={`${b}__creds-edit-header`}>
-        <LockIcon /> {member.username ? 'Cambiar credenciales' : 'Configurar acceso'}
-      </div>
-      <div className={`${b}__creds-field`}>
-        <label>Usuario de acceso</label>
-        <input value={username} onChange={e => setUsername(e.target.value)} placeholder="nombre.usuario" />
-      </div>
-      <div className={`${b}__creds-field`}>
-        <label>{member.username ? 'Nueva contraseña' : 'Contraseña'}</label>
-        <div className={`${b}__password-wrap`}>
-          <input
-            type={showPw ? 'text' : 'password'}
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="Min. 6 caracteres"
-          />
-          <button type="button" className={`${b}__eye-btn`} onClick={() => setShowPw(!showPw)}>
-            {showPw ? <EyeOffIcon /> : <EyeIcon />}
-          </button>
-        </div>
-      </div>
-      <div className={`${b}__creds-actions`}>
-        <button className={`${b}__btn ${b}__btn--ghost`} onClick={() => { setEditing(false); setPassword(''); }}>Cancelar</button>
-        <button className={`${b}__btn ${b}__btn--primary`} onClick={handleSave} disabled={saving || !username.trim() || password.length < 6}>
-          {saving ? 'Guardando...' : 'Guardar'}
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const ClockIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
-const TrashIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>;
-
-const DAY_NAMES = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'];
-const _API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
-
-const BANKS = [
-  'Bancolombia', 'Nequi', 'Daviplata', 'Davivienda',
-  'BBVA Colombia', 'Banco de Bogota', 'Banco de Occidente',
-  'Scotiabank Colpatria', 'Banco Popular', 'AV Villas',
-  'Banco Agrario', 'Banco Caja Social', 'Banco Falabella',
-  'Banco GNB Sudameris', 'Banco Pichincha', 'Banco Itau',
-  'Banco W', 'Bancoomeva', 'Banco Serfinanza',
-  'Lulo Bank', 'Ualá', 'RappiPay', 'Nu Colombia',
-  'Otro',
+const DAYS = [
+  { id: 0, name: 'Lunes' },
+  { id: 1, name: 'Martes' },
+  { id: 2, name: 'Miércoles' },
+  { id: 3, name: 'Jueves' },
+  { id: 4, name: 'Viernes' },
+  { id: 5, name: 'Sábado' },
+  { id: 6, name: 'Domingo' },
 ];
-const DOC_TYPES = [{ value: 'CC', label: 'Cedula de Ciudadania' }, { value: 'CE', label: 'Cedula de Extranjeria' }, { value: 'NIT', label: 'NIT' }];
-const PAY_METHODS = [{ value: 'nequi', label: 'Nequi' }, { value: 'daviplata', label: 'Daviplata' }, { value: 'transferencia', label: 'Transferencia bancaria' }, { value: 'efectivo', label: 'Efectivo' }];
-const WALLET_BANKS = new Set(['Nequi', 'Daviplata', 'RappiPay', 'Ualá', 'Nu Colombia', 'Lulo Bank']);
 
-const BankInfoEditor = ({ staffId, onUpdated }) => {
-  const { addNotification } = useNotification();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    document_type: 'CC', document_number: '', bank_name: '', bank_account_type: 'Ahorros',
-    bank_account_number: '', nequi_phone: '', daviplata_phone: '', preferred_payment_method: 'efectivo',
-  });
-
-  useEffect(() => {
-    if (!staffId) return;
-    setLoading(true);
-    fetch(`${_API}/staff-payments/bank-info/${staffId}`, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        if (d) {
-          setData(d);
-          setForm({
-            document_type: d.document_type || 'CC',
-            document_number: d.document_number || '',
-            bank_name: d.bank_name || '',
-            bank_account_type: d.bank_account_type || 'Ahorros',
-            bank_account_number: d.bank_account_number || '',
-            nequi_phone: d.nequi_phone || '',
-            daviplata_phone: d.daviplata_phone || '',
-            preferred_payment_method: d.preferred_payment_method || 'efectivo',
-          });
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [staffId]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch(`${_API}/staff-payments/bank-info/${staffId}`, {
-        method: 'PUT', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) throw new Error('Error guardando');
-      addNotification('Datos bancarios actualizados', 'success');
-      setData({ ...data, ...form });
-      setEditing(false);
-      if (onUpdated) onUpdated();
-    } catch (err) {
-      addNotification('Error: ' + err.message, 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const hasBankData = data && (data.bank_account_number || data.nequi_phone || data.daviplata_phone);
-  const mask = (v) => v ? '****' + v.slice(-4) : '—';
-
-  if (loading) return <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.3)', padding: 8 }}>Cargando...</p>;
-
-  if (!editing) {
-    const method = data?.preferred_payment_method || 'efectivo';
-    const methodLabel = PAY_METHODS.find(m => m.value === method)?.label || method;
-    return (
-      <div className={`${b}__bank-view`}>
-        {hasBankData ? (
-          <div className={`${b}__bank-grid`}>
-            <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Metodo</span><span className={`${b}__bank-value ${b}__bank-value--highlight`}>{methodLabel}</span></div>
-            {data.document_type && data.document_number && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Documento</span><span className={`${b}__bank-value`}>{data.document_type} {mask(data.document_number)}</span></div>}
-            {method === 'nequi' && data.nequi_phone && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Nequi</span><span className={`${b}__bank-value`}>{mask(data.nequi_phone)}</span></div>}
-            {method === 'daviplata' && data.daviplata_phone && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Daviplata</span><span className={`${b}__bank-value`}>{mask(data.daviplata_phone)}</span></div>}
-            {method === 'transferencia' && data.bank_name && <div className={`${b}__bank-item`}><span className={`${b}__bank-label`}>Cuenta</span><span className={`${b}__bank-value`}>{data.bank_name} · {data.bank_account_type} · {mask(data.bank_account_number)}</span></div>}
-          </div>
-        ) : (
-          <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.35)', padding: '4px 0' }}>Sin datos bancarios configurados</p>
-        )}
-        <button className={`${b}__btn ${b}__btn--outline-sm`} style={{ marginTop: 8 }} onClick={() => setEditing(true)}>
-          <EditIcon /> {hasBankData ? 'Editar' : 'Configurar'}
-        </button>
-      </div>
-    );
-  }
-
-  const isWallet = form.preferred_payment_method === 'nequi' || form.preferred_payment_method === 'daviplata';
-  const isTransfer = form.preferred_payment_method === 'transferencia';
-  const isCash = form.preferred_payment_method === 'efectivo';
-
-  return (
-    <div className={`${b}__bank-form`}>
-      {/* Metodo preferido PRIMERO — controla qué campos se muestran */}
-      <div className={`${b}__bank-field`}>
-        <label>Metodo preferido de pago</label>
-        <select value={form.preferred_payment_method} onChange={e => setForm(f => ({ ...f, preferred_payment_method: e.target.value }))} className={`${b}__input`}>
-          {PAY_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-        </select>
-      </div>
-
-      {/* Documento — siempre visible excepto efectivo */}
-      {!isCash && (
-        <div className={`${b}__bank-form-row`}>
-          <div className={`${b}__bank-field`}>
-            <label>Tipo documento</label>
-            <select value={form.document_type} onChange={e => setForm(f => ({ ...f, document_type: e.target.value }))} className={`${b}__input`}>
-              {DOC_TYPES.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
-            </select>
-          </div>
-          <div className={`${b}__bank-field`}>
-            <label>Numero documento</label>
-            <input value={form.document_number} onChange={e => setForm(f => ({ ...f, document_number: e.target.value }))} className={`${b}__input`} placeholder="1098765432" />
-          </div>
-        </div>
-      )}
-
-      {/* Nequi — solo teléfono */}
-      {form.preferred_payment_method === 'nequi' && (
-        <div className={`${b}__bank-field`}>
-          <label>Numero Nequi</label>
-          <input value={form.nequi_phone} onChange={e => setForm(f => ({ ...f, nequi_phone: e.target.value }))} className={`${b}__input`} placeholder="300 123 4567" />
-        </div>
-      )}
-
-      {/* Daviplata — solo teléfono */}
-      {form.preferred_payment_method === 'daviplata' && (
-        <div className={`${b}__bank-field`}>
-          <label>Numero Daviplata</label>
-          <input value={form.daviplata_phone} onChange={e => setForm(f => ({ ...f, daviplata_phone: e.target.value }))} className={`${b}__input`} placeholder="300 123 4567" />
-        </div>
-      )}
-
-      {/* Transferencia — banco + tipo cuenta + numero */}
-      {isTransfer && (
-        <>
-          <div className={`${b}__bank-form-row`}>
-            <div className={`${b}__bank-field`}>
-              <label>Banco</label>
-              <select value={form.bank_name} onChange={e => setForm(f => ({ ...f, bank_name: e.target.value }))} className={`${b}__input`}>
-                <option value="">— Seleccionar —</option>
-                {BANKS.filter(bk => !WALLET_BANKS.has(bk)).map(b2 => <option key={b2} value={b2}>{b2}</option>)}
-              </select>
-            </div>
-            <div className={`${b}__bank-field`}>
-              <label>Tipo cuenta</label>
-              <select value={form.bank_account_type} onChange={e => setForm(f => ({ ...f, bank_account_type: e.target.value }))} className={`${b}__input`}>
-                <option value="Ahorros">Ahorros</option>
-                <option value="Corriente">Corriente</option>
-              </select>
-            </div>
-          </div>
-          <div className={`${b}__bank-field`}>
-            <label>Numero de cuenta</label>
-            <input value={form.bank_account_number} onChange={e => setForm(f => ({ ...f, bank_account_number: e.target.value }))} className={`${b}__input`} placeholder="0000 0000 0000" />
-          </div>
-        </>
-      )}
-
-      {/* Efectivo — solo mensaje */}
-      {isCash && (
-        <p style={{ fontSize: 12, color: 'rgba(0,0,0,0.4)', padding: '8px 0' }}>Pago en efectivo — no requiere datos bancarios.</p>
-      )}
-
-      <div className={`${b}__bank-actions`}>
-        <button className={`${b}__btn ${b}__btn--outline-sm`} onClick={() => setEditing(false)}>Cancelar</button>
-        <button className={`${b}__btn ${b}__btn--primary-sm`} onClick={handleSave} disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
-      </div>
-    </div>
-  );
+const initialsOf = (n) => (n || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+const formatCOP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
+const fmtDate = (iso) => {
+  if (!iso) return '—';
+  try { return new Date(iso + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }); }
+  catch { return iso; }
+};
+const fmtTime = (t) => {
+  if (!t) return '—';
+  const [h, m] = t.split(':');
+  const hh = parseInt(h);
+  return `${hh % 12 || 12}:${m} ${hh >= 12 ? 'p.m.' : 'a.m.'}`;
 };
 
-const DEFAULT_SCHEDULE = DAY_NAMES.map((_, i) => ({
-  day_of_week: i,
-  start_time: '08:00',
-  end_time: '18:00',
-  break_start: '12:00',
-  break_end: '13:00',
-  is_working: i < 6,
-}));
-
-const ScheduleEditor = ({ staffId }) => {
-  const { addNotification } = useNotification();
-  const [schedule, setSchedule] = useState(DEFAULT_SCHEDULE);
-  const [daysOff, setDaysOff] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [newDayOff, setNewDayOff] = useState({ date: '', reason: '' });
-  const [addingDayOff, setAddingDayOff] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const [schedRes, daysRes] = await Promise.all([
-          fetch(`${_API}/staff/${staffId}/schedule`, { credentials: 'include' }),
-          fetch(`${_API}/staff/${staffId}/days-off`, { credentials: 'include' }),
-        ]);
-        if (!cancelled) {
-          if (schedRes.ok) {
-            const data = await schedRes.json();
-            if (data.schedule && data.schedule.length === 7) setSchedule(data.schedule);
-          }
-          if (daysRes.ok) {
-            const data = await daysRes.json();
-            setDaysOff(Array.isArray(data) ? data : []);
-          }
-        }
-      } catch { /* silently use defaults */ }
-      finally { if (!cancelled) setLoading(false); }
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [staffId]);
-
-  const updateDay = (idx, field, value) => {
-    setSchedule(prev => prev.map((d, i) => i === idx ? { ...d, [field]: value } : d));
-  };
-
-  const handleSaveSchedule = async () => {
-    setSaving(true);
-    try {
-      const cleanSchedule = schedule.map(day => ({
-        day_of_week: day.day_of_week,
-        is_working: day.is_working,
-        start_time: day.start_time || null,
-        end_time: day.end_time || null,
-        break_start: day.break_start || null,
-        break_end: day.break_end || null,
-      }));
-      const res = await fetch(`${_API}/staff/${staffId}/schedule`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cleanSchedule),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Error ${res.status}`);
-      }
-      const data = await res.json();
-      if (data.schedule?.length === 7) setSchedule(data.schedule);
-      addNotification('Horario guardado correctamente', 'success');
-    } catch (err) { addNotification('Error: ' + err.message, 'error'); }
-    finally { setSaving(false); }
-  };
-
-  const handleAddDayOff = async () => {
-    if (!newDayOff.date) return;
-    setAddingDayOff(true);
-    try {
-      const res = await fetch(`${_API}/staff/${staffId}/days-off`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDayOff),
-      });
-      if (!res.ok) throw new Error('Error al agregar dia libre');
-      const created = await res.json();
-      setDaysOff(prev => [...prev, created]);
-      setNewDayOff({ date: '', reason: '' });
-      addNotification('Dia libre agregado', 'success');
-    } catch (err) { addNotification(err.message, 'error'); }
-    finally { setAddingDayOff(false); }
-  };
-
-  const handleDeleteDayOff = async (id) => {
-    try {
-      const res = await fetch(`${_API}/staff/${staffId}/days-off/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Error al eliminar dia libre');
-      setDaysOff(prev => prev.filter(d => d.id !== id));
-      addNotification('Dia libre eliminado', 'success');
-    } catch (err) { addNotification(err.message, 'error'); }
-  };
-
-  if (loading) return <p className={`${b}__sched-loading`}>Cargando horario...</p>;
-
-  return (
-    <div className={`${b}__sched`}>
-      <div className={`${b}__sched-grid`}>
-        <div className={`${b}__sched-header`}>
-          <span className={`${b}__sched-hcol ${b}__sched-hcol--day`}>Dia</span>
-          <span className={`${b}__sched-hcol`}>Entrada</span>
-          <span className={`${b}__sched-hcol`}>Salida</span>
-          <span className={`${b}__sched-hcol`}>Inicio descanso</span>
-          <span className={`${b}__sched-hcol`}>Fin descanso</span>
-        </div>
-        {schedule.map((day, idx) => (
-          <div key={idx} className={`${b}__sched-row ${!day.is_working ? `${b}__sched-row--off` : ''}`}>
-            <div className={`${b}__sched-day`}>
-              <button
-                type="button"
-                className={`${b}__sched-toggle`}
-                onClick={() => updateDay(idx, 'is_working', !day.is_working)}
-                title={day.is_working ? 'Desactivar dia' : 'Activar dia'}
-              >
-                <ToggleIcon on={day.is_working} />
-              </button>
-              <span className={`${b}__sched-day-name`}>{DAY_NAMES[idx]}</span>
-            </div>
-            <input
-              type="time"
-              className={`${b}__sched-time`}
-              value={day.start_time || ''}
-              onChange={(e) => updateDay(idx, 'start_time', e.target.value)}
-              disabled={!day.is_working}
-            />
-            <input
-              type="time"
-              className={`${b}__sched-time`}
-              value={day.end_time || ''}
-              onChange={(e) => updateDay(idx, 'end_time', e.target.value)}
-              disabled={!day.is_working}
-            />
-            <input
-              type="time"
-              className={`${b}__sched-time`}
-              value={day.break_start || ''}
-              onChange={(e) => updateDay(idx, 'break_start', e.target.value)}
-              disabled={!day.is_working}
-            />
-            <input
-              type="time"
-              className={`${b}__sched-time`}
-              value={day.break_end || ''}
-              onChange={(e) => updateDay(idx, 'break_end', e.target.value)}
-              disabled={!day.is_working}
-            />
-          </div>
-        ))}
-      </div>
-
-      <button
-        className={`${b}__btn ${b}__btn--success`}
-        onClick={handleSaveSchedule}
-        disabled={saving}
-      >
-        {saving ? 'Guardando...' : 'Guardar Horario'}
-      </button>
-      <div className={`${b}__daysoff`}>
-        <h5 className={`${b}__daysoff-title`}>
-          <CalendarIcon /> Dias Libres
-          <span className={`${b}__drawer-section-badge`}>{daysOff.length}</span>
-        </h5>
-
-        {daysOff.length > 0 ? (
-          <div className={`${b}__daysoff-list`}>
-            {daysOff.map((d) => (
-              <div key={d.id} className={`${b}__daysoff-item`}>
-                <div className={`${b}__daysoff-info`}>
-                  <span className={`${b}__daysoff-date`}>{formatDate(d.date)}</span>
-                  {d.reason && <span className={`${b}__daysoff-reason`}>{d.reason}</span>}
-                </div>
-                <button
-                  className={`${b}__daysoff-delete`}
-                  onClick={() => handleDeleteDayOff(d.id)}
-                  title="Eliminar"
-                >
-                  <TrashIcon />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className={`${b}__daysoff-empty`}>Sin dias libres programados</p>
-        )}
-
-        <div className={`${b}__daysoff-add`}>
-          <input
-            type="date"
-            className={`${b}__daysoff-input`}
-            value={newDayOff.date}
-            onChange={(e) => setNewDayOff(prev => ({ ...prev, date: e.target.value }))}
-          />
-          <input
-            type="text"
-            className={`${b}__daysoff-input ${b}__daysoff-input--reason`}
-            placeholder="Motivo (opcional)"
-            value={newDayOff.reason}
-            onChange={(e) => setNewDayOff(prev => ({ ...prev, reason: e.target.value }))}
-          />
-          <button
-            className={`${b}__btn ${b}__btn--primary-sm`}
-            onClick={handleAddDayOff}
-            disabled={!newDayOff.date || addingDayOff}
-          >
-            {addingDayOff ? '...' : 'Agregar'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const DetailDrawer = ({ member, onClose, onEdit, onToggleActive, onUpdated }) => {
-  const [clientHistory, setClientHistory] = useState([]);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-
-  useEffect(() => {
-    if (!member?.id) return;
-    const loadClients = async () => {
-      try {
-        const res = await fetch(`${_API}/staff/${member.id}/clients-attended`, { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          setClientHistory(data.clients || []);
-          setTotalRevenue(data.total_revenue || 0);
-        }
-      } catch {}
-    };
-    loadClients();
-  }, [member?.id]);
-
-  return createPortal(
-    <div className={`${b}__drawer-overlay`} onClick={onClose}>
-      <div className={`${b}__drawer`} onClick={(e) => e.stopPropagation()}>
-        <div className={`${b}__drawer-hero`}>
-          <button className={`${b}__drawer-close`} onClick={onClose}><XIcon size={18} /></button>
-          <div className={`${b}__drawer-avatar`} style={{ background: member.photo_url ? 'transparent' : getAvatarColor(member.name) }}>
-            {member.photo_url ? <img src={member.photo_url} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : <span>{getInitials(member.name)}</span>}
-            <span className={`${b}__drawer-dot ${member.is_active ? `${b}__drawer-dot--on` : `${b}__drawer-dot--off`}`} />
-          </div>
-          <h2 className={`${b}__drawer-name`}>{member.name}</h2>
-          <p className={`${b}__drawer-role`}>{member.specialty || member.role}</p>
-          {member.rating && (
-            <div className={`${b}__drawer-rating`}>
-              <StarIcon filled /> {member.rating.toFixed(1)}
-            </div>
-          )}
-          <div className={`${b}__drawer-hero-actions`}>
-            <button className={`${b}__btn ${b}__btn--outline-sm`} onClick={() => onEdit(member)}>
-              <EditIcon /> Editar
-            </button>
-            <button
-              className={`${b}__btn ${member.is_active ? `${b}__btn--danger-sm` : `${b}__btn--success-sm`}`}
-              onClick={() => onToggleActive(member)}
-            >
-              <ToggleIcon on={member.is_active} />
-              {member.is_active ? 'Desactivar' : 'Activar'}
-            </button>
-          </div>
-        </div>
-        <div className={`${b}__drawer-stats`}>
-          <div className={`${b}__drawer-stat`}>
-            <span className={`${b}__drawer-stat-value`}>{clientHistory.length}</span>
-            <span className={`${b}__drawer-stat-label`}>Clientes</span>
-          </div>
-          <div className={`${b}__drawer-stat`}>
-            <span className={`${b}__drawer-stat-value`}>{clientHistory.reduce((sum, c) => sum + (c.totalVisits || 0), 0)}</span>
-            <span className={`${b}__drawer-stat-label`}>Atenciones</span>
-          </div>
-          <div className={`${b}__drawer-stat`}>
-            <span className={`${b}__drawer-stat-value`}>{formatCurrency(totalRevenue)}</span>
-            <span className={`${b}__drawer-stat-label`}>Ingresos</span>
-          </div>
-        </div>
-        <div className={`${b}__drawer-section`}>
-          <h4 className={`${b}__drawer-section-title`}>Informacion</h4>
-          <div className={`${b}__drawer-info-grid`}>
-            <div className={`${b}__drawer-info-item`}>
-              <PhoneIcon />
-              <span>{member.phone || 'No registrado'}</span>
-            </div>
-            <div className={`${b}__drawer-info-item`}>
-              <MailIcon />
-              <span>{member.email || 'No registrado'}</span>
-            </div>
-            <div className={`${b}__drawer-info-item`}>
-              <CalendarIcon />
-              <span>Ingreso: {formatDate(member.hire_date)}</span>
-            </div>
-            <div className={`${b}__drawer-info-item`}>
-              <UserIcon />
-              <span>{member.role}</span>
-            </div>
-          </div>
-          {member.bio && <p className={`${b}__drawer-bio`}>{member.bio}</p>}
-        </div>
-        <div className={`${b}__drawer-section`}>
-          <h4 className={`${b}__drawer-section-title`}>Acceso a la plataforma</h4>
-          <CredentialEditor member={member} onUpdated={onUpdated} />
-        </div>
-        <div className={`${b}__drawer-section`}>
-          <h4 className={`${b}__drawer-section-title`}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-            Datos bancarios
-          </h4>
-          <BankInfoEditor staffId={member.id} onUpdated={onUpdated} />
-        </div>
-        <div className={`${b}__drawer-section`}>
-          <h4 className={`${b}__drawer-section-title`}>Habilidades</h4>
-          <SkillEditor staff={member} onUpdated={onUpdated} />
-        </div>
-        <div className={`${b}__drawer-section`}>
-          <h4 className={`${b}__drawer-section-title`}>
-            <ClockIcon /> Horario
-          </h4>
-          <ScheduleEditor staffId={member.id} />
-        </div>
-        <div className={`${b}__drawer-section`}>
-          <h4 className={`${b}__drawer-section-title`}>
-            Clientes atendidos
-            <span className={`${b}__drawer-section-badge`}>{clientHistory.length}</span>
-          </h4>
-          {clientHistory.length > 0 ? (
-            <div className={`${b}__drawer-clients`}>
-              <div className={`${b}__drawer-client-header`}>
-                <span>ID</span>
-                <span>Cliente</span>
-                <span>Servicio</span>
-                <span>Ultima visita</span>
-                <span>Visitas</span>
-                <span>Total</span>
-              </div>
-              {clientHistory.map((c) => (
-                <div key={c.id} className={`${b}__drawer-client-row`}>
-                  <span className={`${b}__drawer-client-id`}>{c.clientId}</span>
-                  <span className={`${b}__drawer-client-name`}>{c.name}</span>
-                  <span className={`${b}__drawer-client-service`}>{c.lastService}</span>
-                  <span className={`${b}__drawer-client-date`}>
-                    {formatDate(c.lastVisit)}
-                    {daysSince(c.lastVisit) !== null && (
-                      <small> ({daysSince(c.lastVisit)}d)</small>
-                    )}
-                  </span>
-                  <span className={`${b}__drawer-client-visits`}>{c.totalVisits}</span>
-                  <span className={`${b}__drawer-client-total`}>{formatCurrency(c.totalSpent)}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className={`${b}__drawer-empty`}>Sin historial de clientes registrado</p>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
-  );
-};
 const Team = () => {
   const { addNotification } = useNotification();
   const { tenant } = useTenant();
-  const [staff, setStaff] = useState([]);
-  const ROLES = useMemo(() => {
-    if (tenant.staff_roles && tenant.staff_roles.length > 0) {
-      return ['Todos', ...tenant.staff_roles];
-    }
-    const rolesFromStaff = [...new Set(staff.map(s => s.role).filter(Boolean))];
-    return ['Todos', ...rolesFromStaff];
-  }, [tenant.staff_roles, staff]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('Todos');
-  const [activeFilter, setActiveFilter] = useState('active');
-  const [sortBy, setSortBy] = useState('name');
-  const [selectedId, setSelectedId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [editingStaff, setEditingStaff] = useState(null);
-  const [deactivating, setDeactivating] = useState(null);
-  const [simpleDeactivating, setSimpleDeactivating] = useState(null);
 
-  const loadStaff = useCallback(async () => {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('Todos');
+  const [statusFilter, setStatusFilter] = useState('active');
+
+  // Drawer state
+  const [showDrawer, setShowDrawer] = useState(false);
+  const [editing, setEditing] = useState(null);   // member object
+  const [drawerTab, setDrawerTab] = useState('general');
+  const [submitting, setSubmitting] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const photoInputRef = useRef(null);
+
+  // Form data — single source of truth across tabs
+  const [form, setForm] = useState({
+    name: '', phone: '', email: '', role: 'Profesional', specialty: '',
+    bio: '', hire_date: '', is_active: true, color: '#06B6D4',
+    skills: [], salary_base: '', bookable_online: true,
+  });
+  const [skillInput, setSkillInput] = useState('');
+
+  // Credentials
+  const [creds, setCreds] = useState({ username: '', password: '' });
+
+  // Bank info
+  const [bank, setBank] = useState({
+    document_type: 'CC', document_number: '',
+    bank_name: '', bank_account_type: 'Ahorros', bank_account_number: '',
+    nequi_phone: '', daviplata_phone: '',
+    bre_b_key: '', bre_b_key_type: 'phone',
+    preferred_payment_method: 'nequi',
+  });
+
+  // Schedule + days off
+  const [schedule, setSchedule] = useState([]);
+  const [daysOff, setDaysOff] = useState([]);
+  const [newDayOff, setNewDayOff] = useState({ start_date: '', end_date: '', reason: '' });
+
+  // Loans
+  const [loans, setLoans] = useState({ loans: [], summary: { balance: 0, total_pendiente: 0 } });
+  const [newLoan, setNewLoan] = useState({ type: 'prestamo', amount: '', date: new Date().toISOString().slice(0, 10), note: '' });
+
+  // Commissions per-service
+  const [services, setServices] = useState([]);
+  const [serviceCommissions, setServiceCommissions] = useState({}); // { service_id: { is_enabled, commission_type, commission_rate, commission_amount } }
+  const [commSummary, setCommSummary] = useState({ services: [], summary: { total_earned: 0, total_revenue: 0, total_visits: 0 } });
+
+  // Clients attended
+  const [clientsDetail, setClientsDetail] = useState({ items: [], summary: { total_amount: 0, total_visits: 0, unique_clients: 0 } });
+  const [clientsRange, setClientsRange] = useState({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10),
+    to:   new Date().toISOString().slice(0, 10),
+  });
+
+  // Delete confirm
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+
+  const loadList = useCallback(async () => {
     try {
       const data = await staffService.list();
-      setStaff(data);
-    } catch (err) { addNotification(err.message, 'error'); }
-    finally { setLoading(false); }
+      setMembers(Array.isArray(data) ? data : (data.staff || data.items || []));
+    } catch (err) {
+      addNotification('Error al cargar equipo: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
   }, [addNotification]);
 
-  useEffect(() => { loadStaff(); }, [loadStaff]);
+  useEffect(() => { loadList(); }, [loadList]);
 
-  // Open a staff member's editor when InvoiceDetail (or other module) hands off
-  // the request via sessionStorage. Used by the "Configurar" button on
-  // commission rows that don't have a per-staff/per-service rate yet.
+  // Load services list once for commissions tab
   useEffect(() => {
-    if (!staff || staff.length === 0) return;
-    try {
-      const raw = sessionStorage.getItem('team:open_staff');
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      sessionStorage.removeItem('team:open_staff');
-      if (data.ts && Date.now() - data.ts > 120000) return;
-      const target = staff.find((s) => s.id === data.staff_id);
-      if (target) {
-        setEditingStaff(target);
-        setShowForm(true);
-      }
-    } catch { /* ignore */ }
-  }, [staff]);
+    servicesService.list().then(setServices).catch(() => setServices([]));
+  }, []);
 
   const filtered = useMemo(() => {
-    let list = [...staff];
-    if (roleFilter !== 'Todos') list = list.filter((s) => s.role === roleFilter);
-    if (activeFilter === 'active') list = list.filter((s) => s.is_active);
-    if (activeFilter === 'inactive') list = list.filter((s) => !s.is_active);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((s) =>
-        s.name.toLowerCase().includes(q) || (s.specialty || '').toLowerCase().includes(q) || (s.skills || []).some((sk) => sk.toLowerCase().includes(q))
+    let list = members.slice();
+    if (statusFilter === 'active') list = list.filter(m => m.is_active);
+    else if (statusFilter === 'inactive') list = list.filter(m => !m.is_active);
+    if (roleFilter !== 'Todos') list = list.filter(m => (m.role || '').toLowerCase() === roleFilter.toLowerCase());
+    if (searchTerm.trim()) {
+      const t = searchTerm.toLowerCase();
+      list = list.filter(m =>
+        (m.name || '').toLowerCase().includes(t) ||
+        (m.role || '').toLowerCase().includes(t) ||
+        (m.specialty || '').toLowerCase().includes(t) ||
+        (m.skills || []).some(s => (s || '').toLowerCase().includes(t))
       );
     }
-    if (sortBy === 'name') list.sort((a, b_) => a.name.localeCompare(b_.name));
-    if (sortBy === 'hire_date') list.sort((a, b_) => (a.hire_date || '').localeCompare(b_.hire_date || ''));
-    if (sortBy === 'role') list.sort((a, b_) => a.role.localeCompare(b_.role) || a.name.localeCompare(b_.name));
-    if (sortBy === 'rating') list.sort((a, b_) => (b_.rating || 0) - (a.rating || 0));
     return list;
-  }, [staff, roleFilter, activeFilter, search, sortBy]);
+  }, [members, statusFilter, roleFilter, searchTerm]);
 
   const stats = useMemo(() => {
-    const rated = staff.filter((s) => s.rating);
-    const avgRating = rated.length ? (rated.reduce((sum, s) => sum + s.rating, 0) / rated.length).toFixed(1) : '-';
+    const active = members.filter(m => m.is_active);
+    const byRole = {};
+    active.forEach(m => { const r = m.role || 'Sin rol'; byRole[r] = (byRole[r] || 0) + 1; });
+    const ratings = active.map(m => m.rating).filter(Boolean);
     return {
-      total: staff.length,
-      active: staff.filter((s) => s.is_active).length,
-      roles: ROLES.slice(1).map((r) => ({ role: r, count: staff.filter((s) => s.role === r).length })),
-      avgRating,
+      total: active.length,
+      inactive: members.length - active.length,
+      byRole,
+      avgRating: ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1) : '—',
     };
-  }, [staff, ROLES]);
+  }, [members]);
 
-  const selectedMember = staff.find((s) => s.id === selectedId);
-
-  const handleEdit = (member) => { setEditingStaff(member); setShowForm(true); };
-
-  const handleFormSaved = () => {
-    setShowForm(false); setEditingStaff(null); loadStaff();
-    addNotification(editingStaff ? 'Miembro actualizado' : 'Miembro creado', 'success');
+  // ─── DRAWER OPEN / CLOSE ────────────────────────────
+  const resetDrawer = () => {
+    setEditing(null);
+    setDrawerTab('general');
+    setForm({
+      name: '', phone: '', email: '', role: 'Profesional', specialty: '',
+      bio: '', hire_date: '', is_active: true, color: '#06B6D4',
+      skills: [], salary_base: '', bookable_online: true,
+    });
+    setSkillInput('');
+    setCreds({ username: '', password: '' });
+    setBank({
+      document_type: 'CC', document_number: '',
+      bank_name: '', bank_account_type: 'Ahorros', bank_account_number: '',
+      nequi_phone: '', daviplata_phone: '',
+      bre_b_key: '', bre_b_key_type: 'phone',
+      preferred_payment_method: 'nequi',
+    });
+    setSchedule([]);
+    setDaysOff([]);
+    setLoans({ loans: [], summary: { balance: 0, total_pendiente: 0 } });
+    setServiceCommissions({});
+    setCommSummary({ services: [], summary: { total_earned: 0, total_revenue: 0, total_visits: 0 } });
+    setClientsDetail({ items: [], summary: { total_amount: 0, total_visits: 0, unique_clients: 0 } });
+    setPhotoPreview(null);
+    setPendingPhoto(null);
   };
 
-  const handleStaffUpdated = (updated) => {
-    setStaff((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+  const openCreate = () => {
+    resetDrawer();
+    setShowDrawer(true);
   };
 
-  const handleToggleActive = (member) => {
-    if (member.is_active) {
-      const clients = getStaffClients(member.name);
-      if (clients.length > 0) {
-        setDeactivating(member);
-      } else {
-        setSimpleDeactivating(member);
+  const openEdit = async (m, tab = 'general') => {
+    resetDrawer();
+    setEditing(m);
+    setForm({
+      name: m.name || '',
+      phone: m.phone || '',
+      email: m.email || '',
+      role: m.role || 'Profesional',
+      specialty: m.specialty || '',
+      bio: m.bio || '',
+      hire_date: m.hire_date || '',
+      is_active: m.is_active !== false,
+      color: m.color || '#06B6D4',
+      skills: m.skills || [],
+      salary_base: m.salary_base != null ? String(m.salary_base) : '',
+      bookable_online: m.bookable_online !== false,
+    });
+    setCreds({ username: m.username || '', password: '' });
+    setPhotoPreview(m.photo_url || null);
+    setDrawerTab(tab);
+    setShowDrawer(true);
+
+    // Background fetch additional data
+    try {
+      const [bankData, sched, off, loanData] = await Promise.allSettled([
+        staffService.getBankInfo(m.id),
+        staffService.getSchedule(m.id).catch(() => null),
+        staffService.getDaysOff(m.id).catch(() => null),
+        staffService.getLoans(m.id),
+      ]);
+      if (bankData.status === 'fulfilled') {
+        setBank(prev => ({ ...prev, ...(bankData.value || {}) }));
       }
-    } else {
-      handleActivate(member);
+      if (sched.status === 'fulfilled' && sched.value) {
+        setSchedule(sched.value.schedule || sched.value || []);
+      }
+      if (off.status === 'fulfilled' && off.value) {
+        setDaysOff(off.value.days_off || off.value || []);
+      }
+      if (loanData.status === 'fulfilled' && loanData.value) {
+        setLoans(loanData.value);
+      }
+    } catch { /* silent */ }
+  };
+
+  // Lazy-load tab data on demand
+  useEffect(() => {
+    if (!editing || !showDrawer) return;
+    if (drawerTab === 'commissions') {
+      // Service-level commission config per staff
+      Promise.all(services.map(s =>
+        fetch(`${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/services/${s.id}/commissions`, { credentials: 'include' })
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      )).then(results => {
+        const map = {};
+        results.forEach((data, i) => {
+          if (!data) return;
+          const svcId = services[i].id;
+          const mine = (data.commissions || []).find(c => c.staff_id === editing.id);
+          if (mine) map[svcId] = {
+            is_enabled: !!mine.is_enabled,
+            commission_type: mine.commission_type || 'percentage',
+            commission_rate: mine.commission_rate || 0,
+            commission_amount: mine.commission_amount || 0,
+          };
+        });
+        setServiceCommissions(map);
+      });
+
+      // Earnings summary
+      staffService.getCommissionsSummary(editing.id).then(setCommSummary).catch(() => {});
+    }
+    if (drawerTab === 'clients') {
+      staffService.getClientsDetail(editing.id, clientsRange)
+        .then(setClientsDetail)
+        .catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawerTab, editing?.id, showDrawer, services.length]);
+
+  const reloadClients = async () => {
+    if (!editing) return;
+    try {
+      const d = await staffService.getClientsDetail(editing.id, clientsRange);
+      setClientsDetail(d);
+    } catch (err) { addNotification(err.message, 'error'); }
+  };
+
+  // ─── PHOTO ──────────────────────────────────────────
+  const handlePhotoSelect = (file) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { addNotification('Imagen muy grande (máx 2MB)', 'error'); return; }
+    setPendingPhoto(file);
+    const r = new FileReader();
+    r.onload = (e) => setPhotoPreview(e.target.result);
+    r.readAsDataURL(file);
+  };
+
+  // ─── SAVE ───────────────────────────────────────────
+  const handleSave = async () => {
+    if (!form.name?.trim()) { addNotification('Nombre requerido', 'error'); return; }
+    setSubmitting(true);
+    try {
+      const payload = {
+        name: form.name.trim(),
+        phone: form.phone?.trim() || null,
+        email: form.email?.trim() || null,
+        role: form.role,
+        specialty: form.specialty?.trim() || null,
+        bio: form.bio?.trim() || null,
+        hire_date: form.hire_date || null,
+        is_active: !!form.is_active,
+        color: form.color,
+        skills: form.skills,
+        salary_base: form.salary_base ? parseInt(form.salary_base) : null,
+        bookable_online: !!form.bookable_online,
+      };
+      let saved;
+      if (editing) saved = await staffService.update(editing.id, payload);
+      else saved = await staffService.create(payload);
+      const id = saved?.id || editing?.id;
+
+      // Photo (if pending)
+      if (pendingPhoto && id) {
+        try { await staffService.uploadPhoto(id, pendingPhoto); }
+        catch (err) { addNotification('Guardado pero la foto falló: ' + err.message, 'error'); }
+      }
+
+      // Credentials (if filled)
+      if (creds.username && id) {
+        try {
+          const credPayload = { username: creds.username };
+          if (creds.password) credPayload.password = creds.password;
+          await staffService.updateCredentials(id, credPayload);
+        } catch (err) { addNotification('Datos básicos guardados, credenciales fallaron: ' + err.message, 'error'); }
+      }
+
+      // Bank info (always save what's in state)
+      if (id) {
+        try { await staffService.updateBankInfo(id, bank); }
+        catch (err) { /* silent — partial save */ }
+      }
+
+      addNotification(editing ? 'Miembro actualizado' : 'Miembro creado', 'success');
+      setShowDrawer(false);
+      loadList();
+    } catch (err) {
+      addNotification(err.message, 'error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleActivate = async (member) => {
-    try {
-      const updated = await staffService.update(member.id, { is_active: true });
-      handleStaffUpdated(updated);
-      addNotification(`${member.name} ha sido activado`, 'success');
-    } catch (err) { addNotification(err.message, 'error'); }
+  // ─── SKILLS ─────────────────────────────────────────
+  const addSkill = () => {
+    const s = (skillInput || '').trim();
+    if (!s) return;
+    if ((form.skills || []).includes(s)) return;
+    setForm(prev => ({ ...prev, skills: [...(prev.skills || []), s] }));
+    setSkillInput('');
   };
+  const removeSkill = (s) => setForm(prev => ({ ...prev, skills: (prev.skills || []).filter(x => x !== s) }));
 
-  const handleDeactivateConfirm = async (template, selectedClients) => {
-    const member = deactivating;
+  // ─── COMMISSION TOGGLE/EDIT ─────────────────────────
+  const updateCommissionForService = async (serviceId, patch) => {
+    if (!editing) return;
+    setServiceCommissions(prev => ({ ...prev, [serviceId]: { ...(prev[serviceId] || { is_enabled: true, commission_type: 'percentage', commission_rate: 0, commission_amount: 0 }), ...patch } }));
+    // Save to backend
+    const next = { ...(serviceCommissions[serviceId] || {}), ...patch };
     try {
-      const updated = await staffService.update(member.id, { is_active: false });
-      handleStaffUpdated(updated);
-
-      const roleText = 'nuestros profesionales';
-      const now = new Date();
-      const conversations = selectedClients.map((client, i) => {
-        const firstName = client.name.split(' ')[0];
-        const resolvedMsg = template.replace(/\{\{nombre\}\}/g, firstName);
-        const t1 = new Date(now.getTime() + i * 2000);
-        const t2 = new Date(t1.getTime() + 15 * 60000);
-        const t3 = new Date(t2.getTime() + 2 * 60000);
-        return {
-          convId: `deact-${member.id}-${client.id}`,
-          clientName: client.name,
-          clientPhone: client.phone,
-          clientId: client.clientId,
-          tag: 'Recuperando',
-          messages: [
-            { from: 'business', text: resolvedMsg, time: t1.toISOString() },
-            { from: 'client', text: `Hola! Gracias por avisarme. Me gustaria agendar con otro profesional entonces. El descuento aplica para cualquier servicio?`, time: t2.toISOString() },
-            { from: 'business', text: `Claro que si, ${firstName}! El 10% aplica en cualquier servicio. Te recomiendo a ${roleText} disponibles.${tenant.booking_url ? ` Agenda aqui y listo: ${tenant.booking_url}` : ''}`, time: t3.toISOString() },
-          ],
-        };
+      const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+      // Build payload: must include all enabled staff for this service so we don't wipe others
+      const fullRes = await fetch(`${API}/services/${serviceId}/commissions`, { credentials: 'include' });
+      const full = fullRes.ok ? await fullRes.json() : { commissions: [] };
+      const items = (full.commissions || []).map(c => ({
+        staff_id: c.staff_id,
+        is_enabled: c.staff_id === editing.id ? next.is_enabled : !!c.is_enabled,
+        commission_type: c.staff_id === editing.id ? next.commission_type : c.commission_type,
+        commission_rate: c.staff_id === editing.id ? (next.commission_rate || 0) : c.commission_rate,
+        commission_amount: c.staff_id === editing.id ? (next.commission_amount || 0) : c.commission_amount,
+      }));
+      // Make sure our staff is in the list
+      if (!items.some(i => i.staff_id === editing.id)) {
+        items.push({
+          staff_id: editing.id,
+          is_enabled: next.is_enabled,
+          commission_type: next.commission_type || 'percentage',
+          commission_rate: next.commission_rate || 0,
+          commission_amount: next.commission_amount || 0,
+        });
+      }
+      await fetch(`${API}/services/${serviceId}/commissions`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(items),
       });
-
-      const existing = JSON.parse(localStorage.getItem('alpelo_inbox_pending') || '[]');
-      localStorage.setItem('alpelo_inbox_pending', JSON.stringify([...existing, ...conversations]));
-
-      addNotification(`${member.name} desactivado. ${selectedClients.length} conversacion${selectedClients.length !== 1 ? 'es' : ''} creada${selectedClients.length !== 1 ? 's' : ''} en el Inbox.`, 'success');
-    } catch (err) { addNotification(err.message, 'error'); }
-    setDeactivating(null);
+    } catch (err) {
+      addNotification('Error al guardar comisión: ' + err.message, 'error');
+    }
   };
 
-  const handleSimpleDeactivate = async () => {
-    const member = simpleDeactivating;
+  // ─── LOANS ──────────────────────────────────────────
+  const submitLoan = async () => {
+    if (!editing || !newLoan.amount) return;
     try {
-      const updated = await staffService.update(member.id, { is_active: false });
-      handleStaffUpdated(updated);
-      addNotification(`${member.name} ha sido desactivado`, 'success');
+      await staffService.addLoan(editing.id, {
+        type: newLoan.type,
+        amount: parseInt(newLoan.amount),
+        date: newLoan.date,
+        note: newLoan.note,
+      });
+      const d = await staffService.getLoans(editing.id);
+      setLoans(d);
+      setNewLoan({ type: 'prestamo', amount: '', date: new Date().toISOString().slice(0, 10), note: '' });
+      addNotification('Movimiento registrado', 'success');
     } catch (err) { addNotification(err.message, 'error'); }
-    setSimpleDeactivating(null);
   };
 
-  const getClientCount = (member) => member?.client_count || 0;
+  const deleteLoan = async (loanId) => {
+    if (!editing) return;
+    try {
+      await staffService.removeLoan(editing.id, loanId);
+      const d = await staffService.getLoans(editing.id);
+      setLoans(d);
+    } catch (err) { addNotification(err.message, 'error'); }
+  };
 
-  if (loading) return <div className={b}><p style={{ padding: '2rem', color: '#8E8E85' }}>Cargando equipo...</p></div>;
+  // ─── DAYS OFF ───────────────────────────────────────
+  const addDayOff = async () => {
+    if (!editing || !newDayOff.start_date) return;
+    try {
+      await staffService.addDayOff(editing.id, {
+        start_date: newDayOff.start_date,
+        end_date: newDayOff.end_date || newDayOff.start_date,
+        reason: newDayOff.reason || 'Día libre',
+      });
+      const d = await staffService.getDaysOff(editing.id);
+      setDaysOff(d.days_off || d || []);
+      setNewDayOff({ start_date: '', end_date: '', reason: '' });
+      addNotification('Día libre programado', 'success');
+    } catch (err) { addNotification(err.message, 'error'); }
+  };
+
+  const removeDayOff = async (dayOffId) => {
+    if (!editing) return;
+    try {
+      await staffService.removeDayOff(editing.id, dayOffId);
+      const d = await staffService.getDaysOff(editing.id);
+      setDaysOff(d.days_off || d || []);
+    } catch (err) { addNotification(err.message, 'error'); }
+  };
+
+  // ─── SCHEDULE ───────────────────────────────────────
+  const updateScheduleDay = (dayIdx, patch) => {
+    setSchedule(prev => {
+      const list = [...prev];
+      const idx = list.findIndex(s => s.day_of_week === dayIdx);
+      if (idx >= 0) list[idx] = { ...list[idx], ...patch };
+      else list.push({ day_of_week: dayIdx, is_working: true, start_time: '08:00', end_time: '18:00', ...patch });
+      return list;
+    });
+  };
+
+  const saveScheduleDirect = async () => {
+    if (!editing) return;
+    try {
+      await staffService.saveSchedule(editing.id, schedule);
+      addNotification('Horario guardado', 'success');
+    } catch (err) { addNotification(err.message, 'error'); }
+  };
+
+  // ─── DELETE ─────────────────────────────────────────
+  const confirmDeleteAction = async () => {
+    if (!deleteConfirm) return;
+    try {
+      await staffService.remove(deleteConfirm.id);
+      addNotification('Miembro eliminado', 'success');
+      setDeleteConfirm(null);
+      loadList();
+    } catch (err) { addNotification(err.message, 'error'); }
+  };
+
+  if (loading) {
+    return (
+      <div className={b}>
+        <div className={`${b}__loading`}>
+          <div className={`${b}__spinner`} />
+          <span>Cargando equipo...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const closeDrawer = () => setShowDrawer(false);
 
   return (
     <div className={b}>
-      <div className={`${b}__topbar`}>
-        <div>
-          <h2 className={`${b}__title`}>Equipo</h2>
-          <p className={`${b}__subtitle`}>{stats.active} activos de {stats.total} miembros</p>
+      {/* ── HERO HEADER ─────────────────────────────── */}
+      <div className={`${b}__header`}>
+        <div className={`${b}__header-left`}>
+          <h1 className={`${b}__title`}>Equipo</h1>
+          <p className={`${b}__subtitle`}>{stats.total} activos · {members.length} miembros · {tenant?.name}</p>
         </div>
-        <button className={`${b}__btn ${b}__btn--primary`} onClick={() => { setEditingStaff(null); setShowForm(true); }}>
-          <PlusIcon /> Nuevo miembro
-        </button>
-      </div>
-      <div className={`${b}__kpis`}>
-        {stats.roles.map((r) => (
-          <div key={r.role} className={`${b}__kpi`}>
-            <span className={`${b}__kpi-num`}>{r.count}</span>
-            <span className={`${b}__kpi-label`}>{r.role}s</span>
-          </div>
-        ))}
-        <div className={`${b}__kpi ${b}__kpi--accent`}>
-          <span className={`${b}__kpi-num`}>{stats.avgRating}</span>
-          <span className={`${b}__kpi-label`}>Rating</span>
+        <div className={`${b}__header-actions`}>
+          <button className={`${b}__add-btn`} onClick={openCreate}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nuevo miembro
+          </button>
         </div>
-      </div>
-      <AdminsPanel />
-      <div className={`${b}__toolbar`}>
-        <div className={`${b}__search`}>
-          <SearchIcon />
-          <input type="text" placeholder="Buscar por nombre, especialidad o habilidad..." value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div className={`${b}__filters`}>
-          <div className={`${b}__tabs`}>
-            {ROLES.map((role) => (
-              <button key={role} className={`${b}__tab ${roleFilter === role ? `${b}__tab--active` : ''}`} onClick={() => setRoleFilter(role)}>{role}</button>
-            ))}
-          </div>
-          <div className={`${b}__tabs`}>
-            {[{ v: 'all', l: 'Todos' }, { v: 'active', l: 'Activos' }, { v: 'inactive', l: 'Inactivos' }].map((o) => (
-              <button key={o.v} className={`${b}__tab ${activeFilter === o.v ? `${b}__tab--active` : ''}`} onClick={() => setActiveFilter(o.v)}>{o.l}</button>
-            ))}
-          </div>
-          <select className={`${b}__select`} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-            <option value="name">Nombre</option>
-            <option value="rating">Rating</option>
-            <option value="hire_date">Antiguedad</option>
-            <option value="role">Rol</option>
-          </select>
-        </div>
-      </div>
-      <div className={`${b}__results`}>{filtered.length} miembro{filtered.length !== 1 ? 's' : ''}</div>
-      <div className={`${b}__grid`}>
-        {filtered.map((member, i) => {
-          const rating = member.rating;
-          const isSelected = selectedId === member.id;
-          return (
-            <div
-              key={member.id}
-              className={`${b}__card ${isSelected ? `${b}__card--selected` : ''} ${!member.is_active ? `${b}__card--inactive` : ''}`}
-              style={{ animationDelay: `${0.03 * (i + 1)}s` }}
-              onClick={() => setSelectedId(isSelected ? null : member.id)}
-            >
-              <div className={`${b}__card-photo`} style={{ background: member.photo_url ? 'transparent' : getAvatarColor(member.name) }}>
-                {member.photo_url ? <img src={member.photo_url} alt={member.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : <span className={`${b}__card-initials`}>{getInitials(member.name)}</span>}
-                <span className={`${b}__card-status ${member.is_active ? `${b}__card-status--on` : `${b}__card-status--off`}`} />
-              </div>
-              <div className={`${b}__card-body`}>
-                <span className={`${b}__card-name`}>{member.name}</span>
-                <span className={`${b}__card-role`}>{member.specialty || member.role}</span>
-                {rating && (
-                  <span className={`${b}__card-rating`}>
-                    <StarIcon filled /> {rating.toFixed(1)}
-                  </span>
-                )}
-              </div>
-              <div className={`${b}__card-status-badge`}>
-                <span className={`${b}__card-badge ${member.is_active ? `${b}__card-badge--active` : `${b}__card-badge--inactive`}`}>
-                  {member.is_active ? 'Activo' : 'Inactivo'}
-                </span>
-              </div>
-              {(member.skills || []).length > 0 && (
-                <div className={`${b}__card-skills`}>
-                  {member.skills.slice(0, 2).map((sk) => (
-                    <span key={sk} className={`${b}__card-chip`}>{sk}</span>
-                  ))}
-                  {member.skills.length > 2 && <span className={`${b}__card-chip ${b}__card-chip--more`}>+{member.skills.length - 2}</span>}
-                </div>
-              )}
-              <div className={`${b}__card-footer`}>
-                <span className={`${b}__card-clients`}><UserIcon /> {getClientCount(member)} clientes</span>
-                <ChevronRight />
-              </div>
-            </div>
-          );
-        })}
       </div>
 
-      {filtered.length === 0 && (
-        <div className={`${b}__empty`}>
-          <p>No se encontraron miembros con esos filtros</p>
+      {/* ── KPI STRIP ───────────────────────────────── */}
+      <div className={`${b}__stats`}>
+        <div className={`${b}__stat`}>
+          <span className={`${b}__stat-value`}>{stats.total}</span>
+          <span className={`${b}__stat-label`}>Activos</span>
+          {stats.inactive > 0 && <span className={`${b}__stat-sub`}>+{stats.inactive} inactivos</span>}
         </div>
-      )}
-      {selectedMember && (
-        <DetailDrawer
-          member={selectedMember}
-          onClose={() => setSelectedId(null)}
-          onEdit={(m) => { setSelectedId(null); handleEdit(m); }}
-          onToggleActive={handleToggleActive}
-          onUpdated={handleStaffUpdated}
-        />
-      )}
-      {showForm && (
-        <StaffFormModal
-          staff={editingStaff}
-          onClose={() => { setShowForm(false); setEditingStaff(null); }}
-          onSaved={handleFormSaved}
-          roles={ROLES}
-        />
-      )}
-      {deactivating && (
-        <DeactivateModal
-          member={deactivating}
-          clients={getStaffClients(deactivating.name)}
-          onConfirm={handleDeactivateConfirm}
-          onCancel={() => setDeactivating(null)}
-          tenantName={tenant.name}
-          bookingUrl={tenant.booking_url}
-        />
-      )}
-      {simpleDeactivating && createPortal(
-        <div className={`${b}__overlay`} onClick={() => setSimpleDeactivating(null)}>
-          <div className={`${b}__simple-confirm`} onClick={(e) => e.stopPropagation()}>
-            <div className={`${b}__simple-confirm-icon`}>
-              <ToggleIcon on={false} />
+        {ROLES.map(role => stats.byRole[role] ? (
+          <div key={role} className={`${b}__stat`}>
+            <span className={`${b}__stat-value`} style={{ color: roleMeta(role).color }}>{stats.byRole[role]}</span>
+            <span className={`${b}__stat-label`}>{role}{stats.byRole[role] !== 1 ? 's' : ''}</span>
+          </div>
+        ) : null)}
+        <div className={`${b}__stat`}>
+          <span className={`${b}__stat-value`}>★ {stats.avgRating}</span>
+          <span className={`${b}__stat-label`}>Rating promedio</span>
+        </div>
+      </div>
+
+      {/* ── FILTERS ────────────────────────────────── */}
+      <div className={`${b}__filters`}>
+        <div className={`${b}__search`}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Buscar por nombre, rol, especialidad o habilidad..."
+            value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+        </div>
+        <div className={`${b}__status-pills`}>
+          {[
+            { key: 'active', label: 'Activos', count: stats.total },
+            { key: 'inactive', label: 'Inactivos', count: stats.inactive },
+            { key: 'all', label: 'Todos', count: members.length },
+          ].map(p => (
+            <button key={p.key}
+              className={`${b}__status-pill ${statusFilter === p.key ? `${b}__status-pill--active` : ''}`}
+              onClick={() => setStatusFilter(p.key)}>
+              {p.label} <span>{p.count}</span>
+            </button>
+          ))}
+        </div>
+        <div className={`${b}__role-tabs`}>
+          {['Todos', ...ROLES].map(r => (
+            <button key={r}
+              className={`${b}__role-tab ${roleFilter === r ? `${b}__role-tab--active` : ''}`}
+              style={roleFilter === r && r !== 'Todos' ? { '--role-color': roleMeta(r).color } : {}}
+              onClick={() => setRoleFilter(r)}>
+              {r}
+              {r !== 'Todos' && <span className={`${b}__role-tab-count`}>{stats.byRole[r] || 0}</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── GRID ───────────────────────────────────── */}
+      <div className={`${b}__content`}>
+        {filtered.length === 0 ? (
+          <EmptyState
+            icon={<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
+            title="No hay miembros"
+            description="Agrega el primer miembro de tu equipo"
+            actionLabel="Nuevo miembro"
+            onAction={openCreate}
+          />
+        ) : (
+          <div className={`${b}__grid`}>
+            {filtered.map(m => {
+              const meta = roleMeta(m.role);
+              return (
+                <div key={m.id}
+                  className={`${b}__card ${!m.is_active ? `${b}__card--inactive` : ''}`}
+                  onClick={() => openEdit(m)}>
+                  <div className={`${b}__card-photo`}>
+                    {m.photo_url
+                      ? <img src={m.photo_url} alt={m.name} />
+                      : <div className={`${b}__card-initials`} style={{ background: meta.gradient }}>{initialsOf(m.name)}</div>}
+                    <span className={`${b}__card-status-dot ${m.is_active ? `${b}__card-status-dot--on` : ''}`} title={m.is_active ? 'Activo' : 'Inactivo'} />
+                  </div>
+                  <div className={`${b}__card-body`}>
+                    <h3 className={`${b}__card-name`}>{m.name}</h3>
+                    <span className={`${b}__card-role`} style={{ background: `${meta.color}1A`, color: meta.color }}>{m.role}</span>
+                    {m.specialty && <span className={`${b}__card-specialty`}>{m.specialty}</span>}
+                    <div className={`${b}__card-meta`}>
+                      {typeof m.rating === 'number' && (
+                        <span className={`${b}__card-rating`}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                          {m.rating.toFixed(1)}
+                        </span>
+                      )}
+                      {(m.skills || []).length > 0 && (
+                        <span className={`${b}__card-skill-count`}>{m.skills.length} habilidad{m.skills.length !== 1 ? 'es' : ''}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── DELETE CONFIRM ─────────────────────────── */}
+      {deleteConfirm && createPortal(
+        <div className={`${b}__confirm-overlay`} onClick={() => setDeleteConfirm(null)}>
+          <div className={`${b}__confirm`} onClick={e => e.stopPropagation()}>
+            <div className={`${b}__confirm-icon`}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </div>
-            <h3>Desactivar a {simpleDeactivating.name}?</h3>
-            <p>Este miembro no tiene clientes registrados. Se marcara como inactivo.</p>
-            <div className={`${b}__simple-confirm-actions`}>
-              <button className={`${b}__btn ${b}__btn--ghost`} onClick={() => setSimpleDeactivating(null)}>Cancelar</button>
-              <button className={`${b}__btn ${b}__btn--warning`} onClick={handleSimpleDeactivate}>
-                Si, desactivar
+            <h3 className={`${b}__confirm-title`}>Eliminar miembro</h3>
+            <p className={`${b}__confirm-text`}>¿Eliminar <strong>{deleteConfirm.name}</strong>? Esta acción no se puede deshacer.</p>
+            <div className={`${b}__confirm-actions`}>
+              <button className={`${b}__confirm-cancel`} onClick={() => setDeleteConfirm(null)}>Cancelar</button>
+              <button className={`${b}__confirm-delete`} onClick={confirmDeleteAction}>Sí, eliminar</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── DRAWER ──────────────────────────────────── */}
+      {showDrawer && createPortal(
+        <div className={`${b}__modal-overlay`} onClick={closeDrawer}>
+          <div className={`${b}__modal`} onClick={e => e.stopPropagation()}>
+
+            {/* RAIL */}
+            <aside className={`${b}__rail`}>
+              <button className={`${b}__rail-close`} onClick={closeDrawer}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                Volver
               </button>
+              <div className={`${b}__rail-id`}>
+                <span className={`${b}__rail-eyebrow`}>{editing ? 'Editar miembro' : 'Nuevo miembro'}</span>
+                <h2 className={`${b}__rail-name`}>{form.name || 'Sin nombre'}</h2>
+                <span className={`${b}__rail-role`} style={{ background: roleMeta(form.role).color, color: 'white' }}>{form.role}</span>
+              </div>
+
+              <div className={`${b}__rail-preview`}>
+                <div className={`${b}__rail-avatar`} style={photoPreview ? {} : { background: roleMeta(form.role).gradient }}>
+                  {photoPreview ? <img src={photoPreview} alt="preview" /> : initialsOf(form.name || '?')}
+                </div>
+                <div className={`${b}__rail-stats`}>
+                  <div><span>Estado</span><strong>{form.is_active ? 'Activo' : 'Inactivo'}</strong></div>
+                  <div><span>Habilidades</span><strong>{(form.skills || []).length}</strong></div>
+                  <div><span>Rating</span><strong>★ {editing?.rating?.toFixed?.(1) || '—'}</strong></div>
+                </div>
+              </div>
+
+              <nav className={`${b}__rail-nav`}>
+                {[
+                  { key: 'general',     label: 'General',          sub: 'Datos básicos y acceso', icon: '👤' },
+                  { key: 'skills',      label: 'Habilidades',      sub: `${(form.skills || []).length} registradas`, icon: '✨' },
+                  { key: 'commissions', label: 'Comisiones',       sub: 'Por servicio + ganancias', icon: '%' },
+                  { key: 'schedule',    label: 'Horario y descansos', sub: 'Días, horas y libres', icon: '📅' },
+                  { key: 'clients',     label: 'Clientes atendidos', sub: 'Detalle por reserva',  icon: '👥' },
+                  { key: 'loans',       label: 'Préstamos y abonos', sub: `Saldo: ${formatCOP(loans?.summary?.balance || 0)}`, icon: '$' },
+                  { key: 'bank',        label: 'Datos bancarios',  sub: 'Cuenta · Bre-B · Nequi', icon: '🏦' },
+                ].map(item => (
+                  <button key={item.key}
+                    className={`${b}__rail-nav-item ${drawerTab === item.key ? `${b}__rail-nav-item--active` : ''}`}
+                    onClick={() => setDrawerTab(item.key)}>
+                    <span className={`${b}__rail-nav-icon`}>{item.icon}</span>
+                    <span className={`${b}__rail-nav-text`}>
+                      <strong>{item.label}</strong>
+                      <span>{item.sub}</span>
+                    </span>
+                    <svg className={`${b}__rail-nav-arrow`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                ))}
+              </nav>
+
+              {editing && (
+                <button className={`${b}__rail-danger`} onClick={() => { setShowDrawer(false); setDeleteConfirm(editing); }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  Eliminar miembro
+                </button>
+              )}
+            </aside>
+
+            {/* PANEL */}
+            <div className={`${b}__panel`}>
+              <header className={`${b}__panel-bar`}>
+                <div>
+                  <h3>{
+                    drawerTab === 'general' ? 'Información general' :
+                    drawerTab === 'skills' ? 'Habilidades y especialidad' :
+                    drawerTab === 'commissions' ? 'Comisiones por servicio' :
+                    drawerTab === 'schedule' ? 'Horario y descansos' :
+                    drawerTab === 'clients' ? 'Clientes atendidos' :
+                    drawerTab === 'loans' ? 'Préstamos y abonos' :
+                    'Datos bancarios y Bre-B'
+                  }</h3>
+                  <span>{
+                    drawerTab === 'general' ? 'Identidad, foto, rol y acceso a la plataforma' :
+                    drawerTab === 'skills' ? 'Define qué sabe hacer este miembro' :
+                    drawerTab === 'commissions' ? `${commSummary?.summary?.total_visits || 0} servicios completados · ${formatCOP(commSummary?.summary?.total_earned || 0)} ganados` :
+                    drawerTab === 'schedule' ? 'Horario semanal y días libres programados' :
+                    drawerTab === 'clients' ? `${clientsDetail?.summary?.total_visits || 0} servicios · ${clientsDetail?.summary?.unique_clients || 0} clientes únicos · ${formatCOP(clientsDetail?.summary?.total_amount || 0)}` :
+                    drawerTab === 'loans' ? `Saldo pendiente: ${formatCOP(loans?.summary?.balance || 0)}` :
+                    'Información para transferencias y nómina'
+                  }</span>
+                </div>
+              </header>
+
+              <div className={`${b}__modal-body`}>
+                {/* ─── GENERAL ─── */}
+                {drawerTab === 'general' && (
+                  <div className={`${b}__sec-stack`}>
+                    <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handlePhotoSelect(e.target.files?.[0])} />
+
+                    {/* Hero */}
+                    <section className={`${b}__sec ${b}__sec--hero`}>
+                      <div className={`${b}__hero-photo`}>
+                        {photoPreview ? (
+                          <>
+                            <img src={photoPreview} alt="preview" />
+                            <button type="button" className={`${b}__hero-photo-edit`} onClick={() => photoInputRef.current?.click()}>Cambiar foto</button>
+                          </>
+                        ) : (
+                          <button type="button" className={`${b}__hero-photo-empty`} onClick={() => photoInputRef.current?.click()}>
+                            <div className={`${b}__hero-photo-empty-icon`} style={{ background: roleMeta(form.role).gradient }}>
+                              {form.name ? initialsOf(form.name) : '+'}
+                            </div>
+                            <strong>Subir foto</strong>
+                            <span>Cuadrada · máx 2MB</span>
+                          </button>
+                        )}
+                      </div>
+                      <div className={`${b}__hero-form`}>
+                        <div className={`${b}__field ${b}__field--lg`}>
+                          <label>Nombre completo *</label>
+                          <input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Juan Pérez" />
+                        </div>
+                        <div className={`${b}__field-row`}>
+                          <div className={`${b}__field`}>
+                            <label>Rol *</label>
+                            <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
+                              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                          </div>
+                          <div className={`${b}__field`}>
+                            <label>Especialidad</label>
+                            <input type="text" value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })} placeholder="Ej: Color, barba, manicure..." />
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Contact + dates */}
+                    <section className={`${b}__sec`}>
+                      <h4 className={`${b}__sec-title`}>Contacto</h4>
+                      <div className={`${b}__field-row`}>
+                        <div className={`${b}__field`}><label>Teléfono</label><input type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="3001234567" /></div>
+                        <div className={`${b}__field`}><label>Email</label><input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="correo@ejemplo.com" /></div>
+                        <div className={`${b}__field`}><label>Fecha de ingreso</label><input type="date" value={form.hire_date} onChange={e => setForm({ ...form, hire_date: e.target.value })} /></div>
+                      </div>
+                    </section>
+
+                    {/* Salary + bookable + status */}
+                    <section className={`${b}__sec`}>
+                      <h4 className={`${b}__sec-title`}>Configuración</h4>
+                      <div className={`${b}__field-row`}>
+                        <div className={`${b}__field`}>
+                          <label>Salario base (COP)</label>
+                          <input type="number" value={form.salary_base} onChange={e => setForm({ ...form, salary_base: e.target.value })} placeholder="0 = sin asignar" />
+                        </div>
+                        <div className={`${b}__field`}>
+                          <label>Color (calendario)</label>
+                          <input type="color" value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} style={{ height: '42px' }} />
+                        </div>
+                      </div>
+                      <div className={`${b}__toggle-row`}>
+                        <div>
+                          <strong>Activo</strong>
+                          <p>Aparece en agenda, pagos y reportes.</p>
+                        </div>
+                        <button type="button" className={`${b}__toggle ${form.is_active ? `${b}__toggle--on` : ''}`}
+                          onClick={() => setForm({ ...form, is_active: !form.is_active })}>
+                          <span className={`${b}__toggle-knob`} />
+                        </button>
+                      </div>
+                      <div className={`${b}__toggle-row`}>
+                        <div>
+                          <strong>Reservas online</strong>
+                          <p>Si está apagado no aparece en el booking público.</p>
+                        </div>
+                        <button type="button" className={`${b}__toggle ${form.bookable_online ? `${b}__toggle--on` : ''}`}
+                          onClick={() => setForm({ ...form, bookable_online: !form.bookable_online })}>
+                          <span className={`${b}__toggle-knob`} />
+                        </button>
+                      </div>
+                    </section>
+
+                    {/* Bio */}
+                    <section className={`${b}__sec`}>
+                      <h4 className={`${b}__sec-title`}>Biografía</h4>
+                      <textarea value={form.bio} onChange={e => setForm({ ...form, bio: e.target.value })} placeholder="Texto visible en booking online (opcional)..." rows={3} className={`${b}__textarea`} />
+                    </section>
+
+                    {/* Acceso plataforma */}
+                    <section className={`${b}__sec ${b}__sec--credentials`}>
+                      <h4 className={`${b}__sec-title`}>Acceso a la plataforma</h4>
+                      <p className={`${b}__sec-hint`}>Si llenas estos campos, el miembro podrá entrar al portal con sus propias credenciales.</p>
+                      <div className={`${b}__field-row`}>
+                        <div className={`${b}__field`}>
+                          <label>Usuario</label>
+                          <input type="text" value={creds.username} onChange={e => setCreds({ ...creds, username: e.target.value })} placeholder="ej: juanperez" />
+                        </div>
+                        <div className={`${b}__field`}>
+                          <label>{editing && editing.username ? 'Cambiar contraseña' : 'Contraseña'}</label>
+                          <input type="password" value={creds.password} onChange={e => setCreds({ ...creds, password: e.target.value })} placeholder={editing && editing.username ? 'Dejar vacío para no cambiar' : 'Mínimo 6 caracteres'} />
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                )}
+
+                {/* ─── SKILLS ─── */}
+                {drawerTab === 'skills' && (
+                  <div className={`${b}__sec-stack`}>
+                    <section className={`${b}__sec`}>
+                      <h4 className={`${b}__sec-title`}>Habilidades</h4>
+                      <p className={`${b}__sec-hint`}>Etiquetas que ayudan a filtrar y mostrar lo que sabe hacer.</p>
+                      <div className={`${b}__skill-input`}>
+                        <input type="text" value={skillInput} onChange={e => setSkillInput(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addSkill())}
+                          placeholder="Ej: degradado, color, manicure japonés..." />
+                        <button type="button" onClick={addSkill}>+ Agregar</button>
+                      </div>
+                      <div className={`${b}__skill-list`}>
+                        {(form.skills || []).length === 0
+                          ? <span className={`${b}__skill-empty`}>Sin habilidades registradas</span>
+                          : (form.skills || []).map(s => (
+                            <span key={s} className={`${b}__skill-chip`}>
+                              {s}
+                              <button type="button" onClick={() => removeSkill(s)}>×</button>
+                            </span>
+                          ))}
+                      </div>
+                    </section>
+                  </div>
+                )}
+
+                {/* ─── COMMISSIONS ─── */}
+                {drawerTab === 'commissions' && (
+                  <div className={`${b}__sec-stack`}>
+                    {!editing ? (
+                      <section className={`${b}__sec`}>
+                        <p className={`${b}__sec-hint`}>Guarda el miembro primero para configurar comisiones.</p>
+                      </section>
+                    ) : (
+                      <>
+                        <section className={`${b}__sec ${b}__sec--earnings`}>
+                          <div className={`${b}__earn-grid`}>
+                            <div className={`${b}__earn-card`}>
+                              <span>Ganado este mes</span>
+                              <strong>{formatCOP(commSummary?.summary?.total_earned || 0)}</strong>
+                            </div>
+                            <div className={`${b}__earn-card`}>
+                              <span>Servicios</span>
+                              <strong>{commSummary?.summary?.total_visits || 0}</strong>
+                            </div>
+                            <div className={`${b}__earn-card`}>
+                              <span>Ingresos generados</span>
+                              <strong>{formatCOP(commSummary?.summary?.total_revenue || 0)}</strong>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section className={`${b}__sec`}>
+                          <h4 className={`${b}__sec-title`}>Comisión por servicio</h4>
+                          <p className={`${b}__sec-hint`}>Activa los servicios que realiza y define el porcentaje o monto fijo.</p>
+                          <div className={`${b}__comm-list`}>
+                            {services.length === 0 && <div className={`${b}__skill-empty`}>No hay servicios registrados</div>}
+                            {services.map(svc => {
+                              const cfg = serviceCommissions[svc.id] || { is_enabled: false, commission_type: 'percentage', commission_rate: 0, commission_amount: 0 };
+                              const earn = cfg.commission_type === 'fixed'
+                                ? (cfg.commission_amount || 0)
+                                : Math.round((svc.price || 0) * (cfg.commission_rate || 0));
+                              return (
+                                <div key={svc.id} className={`${b}__comm-row ${cfg.is_enabled ? `${b}__comm-row--on` : ''}`}>
+                                  <div className={`${b}__comm-svc`}>
+                                    <strong>{svc.name}</strong>
+                                    <span>{formatCOP(svc.price)} · {svc.category || 'Sin categoría'}</span>
+                                  </div>
+                                  {cfg.is_enabled && (
+                                    <>
+                                      <div className={`${b}__comm-type`}>
+                                        <button type="button" className={cfg.commission_type === 'percentage' ? `${b}__comm-type-btn--active` : ''}
+                                          onClick={() => updateCommissionForService(svc.id, { commission_type: 'percentage' })}>%</button>
+                                        <button type="button" className={cfg.commission_type === 'fixed' ? `${b}__comm-type-btn--active` : ''}
+                                          onClick={() => updateCommissionForService(svc.id, { commission_type: 'fixed' })}>$</button>
+                                      </div>
+                                      <div className={`${b}__comm-input`}>
+                                        {cfg.commission_type === 'percentage' ? (
+                                          <>
+                                            <input type="number" min="0" max="100" value={Math.round((cfg.commission_rate || 0) * 100)}
+                                              onChange={e => updateCommissionForService(svc.id, { commission_rate: Math.min(100, Math.max(0, Number(e.target.value))) / 100 })} />
+                                            <span>%</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <span>$</span>
+                                            <input type="number" min="0" value={cfg.commission_amount || 0}
+                                              onChange={e => updateCommissionForService(svc.id, { commission_amount: Math.max(0, Number(e.target.value)) })} />
+                                          </>
+                                        )}
+                                      </div>
+                                      <div className={`${b}__comm-earn`}>
+                                        <span>Gana</span>
+                                        <strong>{formatCOP(earn)}</strong>
+                                      </div>
+                                    </>
+                                  )}
+                                  {!cfg.is_enabled && <span className={`${b}__comm-disabled`}>No realiza este servicio</span>}
+                                  <button type="button" className={`${b}__toggle ${cfg.is_enabled ? `${b}__toggle--on` : ''}`}
+                                    onClick={() => updateCommissionForService(svc.id, { is_enabled: !cfg.is_enabled })}>
+                                    <span className={`${b}__toggle-knob`} />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── SCHEDULE ─── */}
+                {drawerTab === 'schedule' && (
+                  <div className={`${b}__sec-stack`}>
+                    {!editing ? (
+                      <section className={`${b}__sec`}><p className={`${b}__sec-hint`}>Guarda el miembro primero.</p></section>
+                    ) : (
+                      <>
+                        <section className={`${b}__sec`}>
+                          <div className={`${b}__sec-head-row`}>
+                            <div>
+                              <h4 className={`${b}__sec-title`}>Horario semanal</h4>
+                              <p className={`${b}__sec-hint`}>Configura los días y horas en que trabaja.</p>
+                            </div>
+                            <button type="button" className={`${b}__btn-primary`} onClick={saveScheduleDirect}>Guardar horario</button>
+                          </div>
+                          <div className={`${b}__sched-list`}>
+                            {DAYS.map(day => {
+                              const s = schedule.find(x => x.day_of_week === day.id) || { day_of_week: day.id, is_working: false, start_time: '08:00', end_time: '18:00' };
+                              return (
+                                <div key={day.id} className={`${b}__sched-row ${s.is_working ? `${b}__sched-row--on` : ''}`}>
+                                  <span className={`${b}__sched-day`}>{day.name}</span>
+                                  <button type="button" className={`${b}__toggle ${s.is_working ? `${b}__toggle--on` : ''}`}
+                                    onClick={() => updateScheduleDay(day.id, { is_working: !s.is_working })}>
+                                    <span className={`${b}__toggle-knob`} />
+                                  </button>
+                                  {s.is_working && (
+                                    <>
+                                      <input type="time" value={s.start_time || ''} onChange={e => updateScheduleDay(day.id, { start_time: e.target.value })} />
+                                      <span className={`${b}__sched-arrow`}>→</span>
+                                      <input type="time" value={s.end_time || ''} onChange={e => updateScheduleDay(day.id, { end_time: e.target.value })} />
+                                    </>
+                                  )}
+                                  {!s.is_working && <span className={`${b}__sched-off`}>Día libre</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </section>
+
+                        <section className={`${b}__sec`}>
+                          <h4 className={`${b}__sec-title`}>Días libres programados</h4>
+                          <p className={`${b}__sec-hint`}>Vacaciones, citas médicas o cualquier ausencia puntual.</p>
+                          <div className={`${b}__day-off-form`}>
+                            <input type="date" value={newDayOff.start_date} onChange={e => setNewDayOff({ ...newDayOff, start_date: e.target.value })} placeholder="Inicio" />
+                            <input type="date" value={newDayOff.end_date} onChange={e => setNewDayOff({ ...newDayOff, end_date: e.target.value })} placeholder="Fin (opcional)" />
+                            <input type="text" value={newDayOff.reason} onChange={e => setNewDayOff({ ...newDayOff, reason: e.target.value })} placeholder="Motivo (opcional)" />
+                            <button type="button" className={`${b}__btn-primary`} onClick={addDayOff}>Programar</button>
+                          </div>
+                          <div className={`${b}__day-off-list`}>
+                            {daysOff.length === 0 && <span className={`${b}__skill-empty`}>Sin días libres registrados</span>}
+                            {daysOff.map(d => (
+                              <div key={d.id} className={`${b}__day-off-item`}>
+                                <span>{fmtDate(d.start_date)}{d.end_date && d.end_date !== d.start_date ? ` → ${fmtDate(d.end_date)}` : ''}</span>
+                                <span className={`${b}__day-off-reason`}>{d.reason || 'Sin motivo'}</span>
+                                <button type="button" onClick={() => removeDayOff(d.id)}>×</button>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── CLIENTS ATENDIDOS ─── */}
+                {drawerTab === 'clients' && (
+                  <div className={`${b}__sec-stack`}>
+                    {!editing ? (
+                      <section className={`${b}__sec`}><p className={`${b}__sec-hint`}>Guarda el miembro primero.</p></section>
+                    ) : (
+                      <>
+                        <section className={`${b}__sec`}>
+                          <div className={`${b}__sec-head-row`}>
+                            <div>
+                              <h4 className={`${b}__sec-title`}>Filtrar por fecha</h4>
+                            </div>
+                            <div className={`${b}__date-range`}>
+                              <input type="date" value={clientsRange.from} onChange={e => setClientsRange({ ...clientsRange, from: e.target.value })} />
+                              <span>→</span>
+                              <input type="date" value={clientsRange.to} onChange={e => setClientsRange({ ...clientsRange, to: e.target.value })} />
+                              <button type="button" className={`${b}__btn-primary`} onClick={reloadClients}>Aplicar</button>
+                            </div>
+                          </div>
+                        </section>
+
+                        <section className={`${b}__sec`}>
+                          <div className={`${b}__earn-grid`}>
+                            <div className={`${b}__earn-card`}><span>Servicios</span><strong>{clientsDetail?.summary?.total_visits || 0}</strong></div>
+                            <div className={`${b}__earn-card`}><span>Clientes únicos</span><strong>{clientsDetail?.summary?.unique_clients || 0}</strong></div>
+                            <div className={`${b}__earn-card`}><span>Ingresos</span><strong>{formatCOP(clientsDetail?.summary?.total_amount || 0)}</strong></div>
+                          </div>
+                        </section>
+
+                        <section className={`${b}__sec`}>
+                          <h4 className={`${b}__sec-title`}>Detalle de servicios</h4>
+                          <div className={`${b}__clients-table`}>
+                            <div className={`${b}__clients-thead`}>
+                              <span>Fecha</span><span>Cliente</span><span>Ticket</span><span>Servicio</span><span>Visitas</span><span>Total</span>
+                            </div>
+                            {(clientsDetail?.items || []).length === 0 && <div className={`${b}__skill-empty`}>Sin servicios en este rango</div>}
+                            {(clientsDetail?.items || []).map(it => (
+                              <div key={it.id} className={`${b}__clients-row`}>
+                                <span>{fmtDate(it.date)}</span>
+                                <span><strong>{it.client_name}</strong>{it.client_phone && <em>{it.client_phone}</em>}</span>
+                                <span className={`${b}__client-ticket`}>{it.client_ticket || '—'}</span>
+                                <span>{it.service_name}</span>
+                                <span>{it.client_visits || 1}</span>
+                                <span className={`${b}__client-amount`}>{formatCOP(it.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── LOANS ─── */}
+                {drawerTab === 'loans' && (
+                  <div className={`${b}__sec-stack`}>
+                    {!editing ? (
+                      <section className={`${b}__sec`}><p className={`${b}__sec-hint`}>Guarda el miembro primero.</p></section>
+                    ) : (
+                      <>
+                        <section className={`${b}__sec`}>
+                          <div className={`${b}__earn-grid`}>
+                            <div className={`${b}__earn-card`}><span>Pendientes</span><strong style={{ color: '#EF4444' }}>{formatCOP(loans?.summary?.total_pendiente || 0)}</strong></div>
+                            <div className={`${b}__earn-card`}><span>Abonos</span><strong style={{ color: '#10B981' }}>{formatCOP(loans?.summary?.total_abonos || 0)}</strong></div>
+                            <div className={`${b}__earn-card`}><span>Saldo</span><strong>{formatCOP(loans?.summary?.balance || 0)}</strong></div>
+                          </div>
+                        </section>
+
+                        <section className={`${b}__sec`}>
+                          <h4 className={`${b}__sec-title`}>Registrar movimiento</h4>
+                          <div className={`${b}__loan-form`}>
+                            <select value={newLoan.type} onChange={e => setNewLoan({ ...newLoan, type: e.target.value })}>
+                              <option value="prestamo">Préstamo (le doy)</option>
+                              <option value="abono">Abono (descuenta)</option>
+                            </select>
+                            <input type="number" value={newLoan.amount} onChange={e => setNewLoan({ ...newLoan, amount: e.target.value })} placeholder="Monto COP" />
+                            <input type="date" value={newLoan.date} onChange={e => setNewLoan({ ...newLoan, date: e.target.value })} />
+                            <input type="text" value={newLoan.note} onChange={e => setNewLoan({ ...newLoan, note: e.target.value })} placeholder="Nota (opcional)" />
+                            <button type="button" className={`${b}__btn-primary`} onClick={submitLoan}>Registrar</button>
+                          </div>
+                        </section>
+
+                        <section className={`${b}__sec`}>
+                          <h4 className={`${b}__sec-title`}>Historial</h4>
+                          <div className={`${b}__loan-list`}>
+                            {(loans?.loans || []).length === 0 && <span className={`${b}__skill-empty`}>Sin movimientos</span>}
+                            {(loans?.loans || []).map(l => (
+                              <div key={l.id} className={`${b}__loan-item`}>
+                                <span className={`${b}__loan-tag`} style={{ background: l.type === 'prestamo' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)', color: l.type === 'prestamo' ? '#EF4444' : '#10B981' }}>
+                                  {l.type === 'prestamo' ? 'Préstamo' : 'Abono'}
+                                </span>
+                                <span className={`${b}__loan-amount`} style={{ color: l.type === 'prestamo' ? '#EF4444' : '#10B981' }}>
+                                  {l.type === 'prestamo' ? '−' : '+'}{formatCOP(l.amount)}
+                                </span>
+                                <span>{fmtDate(l.date)}</span>
+                                <span className={`${b}__loan-note`}>{l.note || '—'}</span>
+                                <button type="button" onClick={() => deleteLoan(l.id)}>×</button>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* ─── BANK ─── */}
+                {drawerTab === 'bank' && (
+                  <div className={`${b}__sec-stack`}>
+                    <section className={`${b}__sec`}>
+                      <h4 className={`${b}__sec-title`}>Identificación</h4>
+                      <div className={`${b}__field-row`}>
+                        <div className={`${b}__field`}>
+                          <label>Tipo de documento</label>
+                          <select value={bank.document_type || 'CC'} onChange={e => setBank({ ...bank, document_type: e.target.value })}>
+                            <option value="CC">CC</option><option value="CE">CE</option><option value="NIT">NIT</option>
+                          </select>
+                        </div>
+                        <div className={`${b}__field`}>
+                          <label>Número de documento</label>
+                          <input type="text" value={bank.document_number || ''} onChange={e => setBank({ ...bank, document_number: e.target.value })} />
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className={`${b}__sec ${b}__sec--breb`}>
+                      <h4 className={`${b}__sec-title`}>Bre-B (transferencia instantánea)</h4>
+                      <p className={`${b}__sec-hint`}>La forma más rápida de transferir. Define la llave y su tipo.</p>
+                      <div className={`${b}__field-row`}>
+                        <div className={`${b}__field`}>
+                          <label>Tipo de llave</label>
+                          <select value={bank.bre_b_key_type || 'phone'} onChange={e => setBank({ ...bank, bre_b_key_type: e.target.value })}>
+                            {BRE_B_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                          </select>
+                        </div>
+                        <div className={`${b}__field`}>
+                          <label>Llave Bre-B</label>
+                          <input type="text" value={bank.bre_b_key || ''} onChange={e => setBank({ ...bank, bre_b_key: e.target.value })} placeholder="3001234567 / 1234567890 / correo@ejemplo.com" />
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className={`${b}__sec`}>
+                      <h4 className={`${b}__sec-title`}>Cuenta bancaria</h4>
+                      <div className={`${b}__field-row`}>
+                        <div className={`${b}__field`}>
+                          <label>Banco</label>
+                          <input type="text" value={bank.bank_name || ''} onChange={e => setBank({ ...bank, bank_name: e.target.value })} placeholder="Bancolombia, Davivienda..." />
+                        </div>
+                        <div className={`${b}__field`}>
+                          <label>Tipo de cuenta</label>
+                          <select value={bank.bank_account_type || 'Ahorros'} onChange={e => setBank({ ...bank, bank_account_type: e.target.value })}>
+                            <option value="Ahorros">Ahorros</option><option value="Corriente">Corriente</option>
+                          </select>
+                        </div>
+                        <div className={`${b}__field`}>
+                          <label>Número de cuenta</label>
+                          <input type="text" value={bank.bank_account_number || ''} onChange={e => setBank({ ...bank, bank_account_number: e.target.value })} />
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className={`${b}__sec`}>
+                      <h4 className={`${b}__sec-title`}>Billeteras digitales</h4>
+                      <div className={`${b}__field-row`}>
+                        <div className={`${b}__field`}>
+                          <label>Nequi (teléfono)</label>
+                          <input type="tel" value={bank.nequi_phone || ''} onChange={e => setBank({ ...bank, nequi_phone: e.target.value })} placeholder="3001234567" />
+                        </div>
+                        <div className={`${b}__field`}>
+                          <label>Daviplata (teléfono)</label>
+                          <input type="tel" value={bank.daviplata_phone || ''} onChange={e => setBank({ ...bank, daviplata_phone: e.target.value })} placeholder="3001234567" />
+                        </div>
+                      </div>
+                    </section>
+
+                    <section className={`${b}__sec`}>
+                      <h4 className={`${b}__sec-title`}>Método preferido para nómina</h4>
+                      <div className={`${b}__pref-pills`}>
+                        {[
+                          { v: 'bre_b', label: 'Bre-B' },
+                          { v: 'nequi', label: 'Nequi' },
+                          { v: 'daviplata', label: 'Daviplata' },
+                          { v: 'bancolombia', label: 'Banco' },
+                          { v: 'efectivo', label: 'Efectivo' },
+                        ].map(p => (
+                          <button key={p.v} type="button"
+                            className={`${b}__pref-pill ${bank.preferred_payment_method === p.v ? `${b}__pref-pill--active` : ''}`}
+                            onClick={() => setBank({ ...bank, preferred_payment_method: p.v })}>{p.label}</button>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+                )}
+              </div>
+
+              <div className={`${b}__modal-footer`}>
+                <span>{form.role}{form.salary_base && ` · Salario base ${formatCOP(parseInt(form.salary_base))}`}</span>
+                <div className={`${b}__modal-footer-actions`}>
+                  <button className={`${b}__btn-cancel`} onClick={closeDrawer}>Cancelar</button>
+                  <button className={`${b}__btn-save`} onClick={handleSave} disabled={submitting}>
+                    {submitting ? 'Guardando...' : (editing ? 'Guardar cambios' : 'Crear miembro')}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>,
@@ -1393,114 +1209,5 @@ const Team = () => {
     </div>
   );
 };
-const API_URL = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
-
-function AdminsPanel() {
-  const [admins, setAdmins] = useState([]);
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', username: '', password: '', phone: '' });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const { addNotification } = useNotification();
-
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_URL}/auth/users`, { credentials: 'include' });
-      if (res.ok) setAdmins(await res.json());
-    } catch {}
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const handleCreate = async () => {
-    setError('');
-    if (!form.name || !form.username || !form.password || !form.email) {
-      setError('Todos los campos son requeridos');
-      return;
-    }
-    if (form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
-      return;
-    }
-    setSaving(true);
-    try {
-      const res = await fetch(`${API_URL}/auth/users`, {
-        method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (res.ok) {
-        addNotification('Administrador creado exitosamente', 'success');
-        setForm({ name: '', email: '', username: '', password: '', phone: '' });
-        setShowAdd(false);
-        load();
-      } else {
-        const err = await res.json();
-        setError(err.detail || 'Error al crear');
-      }
-    } catch (e) { setError(e.message); }
-    setSaving(false);
-  };
-
-  const handleDeactivate = async (id, name) => {
-    if (!window.confirm(`¿Desactivar a ${name}?`)) return;
-    try {
-      const res = await fetch(`${API_URL}/auth/users/${id}`, { method: 'DELETE', credentials: 'include' });
-      if (res.ok) { addNotification(`${name} desactivado`, 'success'); load(); }
-    } catch {}
-  };
-
-  if (admins.length === 0) return null;
-
-  return (
-    <div className={`${b}__admins`}>
-      <div className={`${b}__admins-header`}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" />
-          <path d="M20 8v6" /><path d="M23 11h-6" />
-        </svg>
-        <h3>Administradores</h3>
-        <span className={`${b}__admins-count`}>{admins.length}</span>
-        <button className={`${b}__admins-add`} onClick={() => setShowAdd(!showAdd)}>
-          {showAdd ? 'Cancelar' : '+ Agregar admin'}
-        </button>
-      </div>
-
-      {showAdd && (
-        <div className={`${b}__admins-form`}>
-          <div className={`${b}__admins-form-grid`}>
-            <input placeholder="Nombre completo" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
-            <input placeholder="Correo electrónico" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
-            <input placeholder="Usuario" value={form.username} onChange={e => setForm({...form, username: e.target.value})} />
-            <input placeholder="Contraseña (mín 6 chars)" type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
-            <input placeholder="Teléfono (opcional)" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
-          </div>
-          {error && <p className={`${b}__admins-error`}>{error}</p>}
-          <button className={`${b}__btn ${b}__btn--primary`} onClick={handleCreate} disabled={saving} style={{ marginTop: 8 }}>
-            {saving ? 'Creando...' : 'Crear administrador'}
-          </button>
-        </div>
-      )}
-
-      <div className={`${b}__admins-list`}>
-        {admins.map(a => (
-          <div key={a.id} className={`${b}__admins-item`}>
-            <div className={`${b}__admins-avatar`}>{(a.name || 'A').charAt(0).toUpperCase()}</div>
-            <div className={`${b}__admins-info`}>
-              <strong>{a.name}</strong>
-              <span>{a.username} · {a.email}</span>
-            </div>
-            <span className={`${b}__admins-role`}>{a.role}</span>
-            {admins.length > 1 && (
-              <button className={`${b}__admins-deactivate`} onClick={() => handleDeactivate(a.id, a.name)} title="Desactivar">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export default Team;

@@ -122,6 +122,142 @@ const staffService = {
     }
     return res.json();
   },
+
+  // ─── Bank info (extended with Bre-B) ────────────────
+  getBankInfo: async (id) => {
+    const res = await fetch(`${_API}/staff-payments/bank-info/${id}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Error al cargar datos bancarios');
+    return res.json();
+  },
+
+  updateBankInfo: async (id, data) => {
+    const res = await fetch(`${_API}/staff-payments/bank-info/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al guardar datos bancarios');
+    }
+    return res.json();
+  },
+
+  // ─── Schedule (horario semanal) ─────────────────────
+  getSchedule: async (id) => {
+    const res = await fetch(`${API_BASE}/${id}/schedule`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Error al cargar horario');
+    return res.json();
+  },
+
+  saveSchedule: async (id, schedule) => {
+    const res = await fetch(`${API_BASE}/${id}/schedule`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schedule }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al guardar horario');
+    }
+    return res.json();
+  },
+
+  // ─── Days off (días libres programados) ─────────────
+  getDaysOff: async (id) => {
+    const res = await fetch(`${API_BASE}/${id}/days-off`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Error al cargar días libres');
+    return res.json();
+  },
+
+  addDayOff: async (id, payload) => {
+    const res = await fetch(`${API_BASE}/${id}/days-off`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al agregar día libre');
+    }
+    return res.json();
+  },
+
+  removeDayOff: async (id, dayOffId) => {
+    const res = await fetch(`${API_BASE}/${id}/days-off/${dayOffId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Error al eliminar día libre');
+    return res.json();
+  },
+
+  // ─── Loans / abonos ─────────────────────────────────
+  getLoans: async (id) => {
+    const res = await fetch(`${API_BASE}/${id}/loans`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Error al cargar préstamos');
+    return res.json();
+  },
+
+  addLoan: async (id, data) => {
+    const res = await fetch(`${API_BASE}/${id}/loans`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Error al registrar movimiento');
+    }
+    return res.json();
+  },
+
+  updateLoan: async (id, loanId, data) => {
+    const res = await fetch(`${API_BASE}/${id}/loans/${loanId}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Error al actualizar movimiento');
+    return res.json();
+  },
+
+  removeLoan: async (id, loanId) => {
+    const res = await fetch(`${API_BASE}/${id}/loans/${loanId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Error al eliminar movimiento');
+    return res.json();
+  },
+
+  // ─── Clients attended (detail) ──────────────────────
+  getClientsDetail: async (id, params = {}) => {
+    const q = new URLSearchParams();
+    if (params.date_from) q.set('date_from', params.date_from);
+    if (params.date_to) q.set('date_to', params.date_to);
+    if (params.limit) q.set('limit', params.limit);
+    const qs = q.toString();
+    const res = await fetch(`${API_BASE}/${id}/clients-detail${qs ? '?' + qs : ''}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Error al cargar clientes atendidos');
+    return res.json();
+  },
+
+  // ─── Commissions earned (per service) ───────────────
+  getCommissionsSummary: async (id, params = {}) => {
+    const q = new URLSearchParams();
+    if (params.date_from) q.set('date_from', params.date_from);
+    if (params.date_to) q.set('date_to', params.date_to);
+    const qs = q.toString();
+    const res = await fetch(`${API_BASE}/${id}/commissions-summary${qs ? '?' + qs : ''}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Error al cargar comisiones');
+    return res.json();
+  },
 };
 
 export default staffService;

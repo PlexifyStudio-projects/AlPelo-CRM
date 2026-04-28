@@ -677,6 +677,8 @@ def get_bank_info(
         "bank_account_number": getattr(staff, 'bank_account_number', None),
         "nequi_phone": getattr(staff, 'nequi_phone', None),
         "daviplata_phone": getattr(staff, 'daviplata_phone', None),
+        "bre_b_key": getattr(staff, 'bre_b_key', None),
+        "bre_b_key_type": getattr(staff, 'bre_b_key_type', None),
         "preferred_payment_method": getattr(staff, 'preferred_payment_method', None),
     }
 
@@ -699,6 +701,7 @@ def update_bank_info(
     allowed_fields = [
         'document_type', 'document_number', 'bank_name', 'bank_account_type',
         'bank_account_number', 'nequi_phone', 'daviplata_phone', 'preferred_payment_method',
+        'bre_b_key', 'bre_b_key_type',
     ]
     for field in allowed_fields:
         if field in data:
