@@ -7,32 +7,59 @@
 
 .orders {
   min-height: 100%;
+  background: linear-gradient(180deg, #F7F9FC 0%, #F0F3F8 100%);
+  margin: (-$spacing-xl) (-$spacing-xl) 0;
+  padding-bottom: $spacing-3xl;
 
-  // ─── Header ───────────────────────────────────────
+  // ─── HERO HEADER (premium banner) ────────────────────
   &__header {
+    position: relative;
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%);
+    color: white;
+    padding: 32px $spacing-xl 72px;
+    margin-bottom: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 24px;
+    gap: 24px;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 600px 400px at 90% 0%, rgba(99, 102, 241, 0.18), transparent 60%),
+        radial-gradient(ellipse 400px 300px at 10% 100%, rgba(#06B6D4, 0.12), transparent 60%);
+      pointer-events: none;
+    }
   }
 
   &__header-left {
+    position: relative;
+    z-index: 1;
     display: flex;
-    align-items: baseline;
-    gap: 12px;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
   }
 
   &__title {
-    font-size: 1.6rem;
-    font-weight: $font-weight-bold;
-    color: $color-secondary;
+    font-size: 2.2rem;
+    font-weight: $font-weight-extrabold;
+    color: white;
     margin: 0;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
   }
 
   &__subtitle {
-    font-size: 0.85rem;
-    color: $color-gray-400;
-    font-weight: $font-weight-medium;
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: $font-weight-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 
   &__create-btn {
@@ -54,10 +81,10 @@
 
   // ─── Metrics ─────────────────────────────────────
   &__metrics {
+    margin: 0 $spacing-xl 24px;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 14px;
-    margin-bottom: 24px;
 
     @media (max-width: 1200px) { grid-template-columns: repeat(3, 1fr); }
     @media (max-width: 700px) { grid-template-columns: repeat(2, 1fr); }
@@ -117,10 +144,10 @@
 
   // ─── Toolbar ──────────────────────────────────────
   &__toolbar {
+    margin: 0 $spacing-xl 24px;
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-bottom: 24px;
     flex-wrap: wrap;
   }
 
@@ -204,6 +231,7 @@
 
   // ─── Bulk bar (above grid) ────────────────────────
   &__bulk-bar {
+    margin: 0 $spacing-xl;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -238,6 +266,7 @@
 
   // ─── Grid (2 cards per row) ───────────────────────
   &__grid {
+    margin: 0 $spacing-xl;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
@@ -2053,45 +2082,49 @@
    ============================================================ */
 .orders {
   &__page-tabs {
+    position: relative;
+    margin: -44px $spacing-xl 22px;
+    z-index: 5;
     display: inline-flex;
     align-items: center;
     gap: 4px;
     background: $color-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 14px;
-    padding: 5px;
-    margin-bottom: 18px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    border-radius: 16px;
+    padding: 6px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(15, 23, 42, 0.04);
     flex-wrap: wrap;
   }
 
   &__page-tab {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
+    gap: 9px;
+    padding: 11px 20px;
     background: none;
     border: none;
-    border-radius: 10px;
+    border-radius: 11px;
     font-family: $font-primary;
-    font-size: 0.86rem;
-    font-weight: 600;
+    font-size: 0.88rem;
+    font-weight: 700;
     color: $color-gray-500;
     cursor: pointer;
-    transition: all 180ms ease;
+    transition: all 200ms ease;
     white-space: nowrap;
+    letter-spacing: -0.005em;
 
-    svg { color: $color-gray-400; transition: color 180ms ease; }
+    svg { color: $color-gray-400; transition: color 200ms ease; }
 
     &:hover:not(&--active) {
       color: $color-secondary;
       background: $color-off-white;
+
+      svg { color: $color-secondary; }
     }
 
     &--active {
       color: $color-white;
-      background: linear-gradient(135deg, $color-primary, $color-accent);
-      box-shadow: 0 4px 12px rgba($color-primary, 0.28);
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 
       svg { color: $color-white; }
     }
@@ -2102,12 +2135,12 @@
     align-items: center;
     justify-content: center;
     min-width: 20px;
-    height: 18px;
-    padding: 0 6px;
+    height: 19px;
+    padding: 0 7px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.18);
     color: inherit;
-    font-size: 0.65rem;
+    font-size: 0.66rem;
     font-weight: 800;
     line-height: 1;
     margin-left: 2px;
@@ -2122,9 +2155,10 @@
      CATALOG — 2 columns (catalog left + cart right)
      ============================================================ */
   &__catalog {
+    margin: 0 $spacing-xl;
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    gap: 18px;
     align-items: start;
 
     @media (max-width: 1100px) {
@@ -2134,10 +2168,9 @@
 
   &__catalog-left {
     background: $color-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 16px;
-    padding: 18px 20px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 6px 18px rgba(15, 23, 42, 0.03);
+    border-radius: 18px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 0 0 1px rgba(15, 23, 42, 0.04);
   }
 
   &__catalog-search {
@@ -2146,11 +2179,18 @@
     align-items: center;
     gap: 10px;
     background: $color-off-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 11px;
-    padding: 0 14px;
-    height: 44px;
-    margin-bottom: 12px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 0 16px;
+    height: 48px;
+    margin-bottom: 14px;
+    transition: all 200ms ease;
+
+    &:focus-within {
+      background: $color-white;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 4px rgba($color-primary, 0.1);
+    }
 
     svg { color: $color-gray-400; flex-shrink: 0; }
 
@@ -2160,7 +2200,7 @@
       outline: none;
       background: transparent;
       font-family: $font-primary;
-      font-size: 0.88rem;
+      font-size: 0.92rem;
       color: $color-secondary;
 
       &::placeholder { color: $color-gray-300; }
@@ -2171,38 +2211,38 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-bottom: 14px;
+    margin-bottom: 18px;
     max-height: 80px;
     overflow-y: auto;
   }
 
   &__catalog-cat {
-    padding: 5px 12px;
+    padding: 6px 14px;
     background: $color-white;
     border: 1px solid $color-gray-100;
     border-radius: 999px;
     font-family: $font-primary;
-    font-size: 0.66rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: $color-gray-500;
     cursor: pointer;
-    transition: all 150ms ease;
-    letter-spacing: 0.04em;
+    transition: all 180ms ease;
+    letter-spacing: 0.05em;
 
-    &:hover { border-color: $color-gray-200; color: $color-secondary; }
+    &:hover { border-color: $color-secondary; color: $color-secondary; }
 
     &--active {
       background: $color-secondary;
       color: $color-white;
       border-color: transparent;
-      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
     }
   }
 
   &__catalog-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 12px;
   }
 
   &__catalog-empty {
@@ -2214,59 +2254,87 @@
   }
 
   &__catalog-card {
-    background: $color-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 12px;
-    padding: 12px;
+    background: linear-gradient(135deg, #FAFBFC 0%, #F4F6FA 100%);
+    border: 1px solid transparent;
+    border-radius: 14px;
+    padding: 14px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    transition: all 180ms ease;
+    gap: 10px;
+    transition: all 220ms cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, $color-primary, lighten($color-primary, 12%));
+      opacity: 0;
+      transition: opacity 220ms;
+    }
 
     &:hover {
-      transform: translateY(-2px);
-      border-color: $color-primary;
-      box-shadow: 0 8px 18px rgba($color-primary, 0.1);
+      background: $color-white;
+      transform: translateY(-3px);
+      border-color: rgba($color-primary, 0.2);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+      &::before { opacity: 1; }
     }
 
     &--in {
       border-color: rgba(16, 185, 129, 0.32);
-      background: rgba(16, 185, 129, 0.03);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(16, 185, 129, 0.02));
+      &::before { background: linear-gradient(90deg, #10B981, #34D399); opacity: 1; }
     }
 
     &--existing {
       border-color: rgba(99, 102, 241, 0.32);
-      background: rgba(99, 102, 241, 0.04);
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.06), rgba(99, 102, 241, 0.02));
       opacity: 0.85;
+      &::before { background: linear-gradient(90deg, #6366F1, #818CF8); opacity: 1; }
     }
   }
 
   &__catalog-card-thumb {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(59, 130, 246, 0.06));
-    color: $color-accent;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, $color-primary, lighten($color-primary, 14%));
+    color: white;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     font-weight: 800;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba($color-primary, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: inherit;
+    }
   }
 
   &__catalog-card-info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     min-width: 0;
     flex: 1;
   }
 
   &__catalog-card-name {
-    font-size: 0.86rem;
+    font-size: 0.92rem;
     font-weight: 700;
     color: $color-secondary;
-    letter-spacing: -0.011em;
+    letter-spacing: -0.012em;
+    line-height: 1.25;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -2275,16 +2343,28 @@
   }
 
   &__catalog-card-cat {
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     color: $color-gray-400;
   }
 
   &__catalog-card-meta {
-    font-size: 0.66rem;
+    font-size: 0.7rem;
     color: $color-gray-500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    &::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.4;
+    }
   }
 
   &__catalog-card-foot {
@@ -2292,41 +2372,42 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed $color-gray-100;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    margin-top: auto;
   }
 
   &__catalog-card-price {
-    font-size: 0.88rem;
+    font-size: 1rem;
     font-weight: 800;
-    color: $color-secondary;
+    color: $color-success;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.018em;
   }
 
   &__catalog-card-add {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 5px 11px;
-    background: $color-primary;
+    gap: 5px;
+    padding: 7px 14px;
+    background: linear-gradient(135deg, $color-primary, lighten($color-primary, 10%));
     color: $color-white;
     border: none;
-    border-radius: 7px;
+    border-radius: 9px;
     font-family: $font-primary;
-    font-size: 0.7rem;
+    font-size: 0.74rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 150ms ease;
-    box-shadow: 0 2px 6px rgba($color-primary, 0.24);
+    transition: all 180ms ease;
+    box-shadow: 0 4px 12px rgba($color-primary, 0.3);
 
     &:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 5px 12px rgba($color-primary, 0.32);
+      box-shadow: 0 6px 16px rgba($color-primary, 0.42);
     }
 
     &--in, &:disabled {
-      background: rgba(16, 185, 129, 0.12);
+      background: rgba(16, 185, 129, 0.14);
       color: #047857;
       box-shadow: none;
       cursor: default;
@@ -2346,9 +2427,8 @@
     position: sticky;
     top: 14px;
     background: $color-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 16px;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 8px 24px rgba(15, 23, 42, 0.04);
+    border-radius: 18px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 12px 32px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.04);
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - 100px);
@@ -2362,29 +2442,36 @@
 
   &__cart-eyebrow {
     display: block;
-    font-size: 0.6rem;
+    font-size: 0.62rem;
     font-weight: 800;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: $color-gray-400;
-    margin-bottom: 8px;
+    color: $color-primary;
+    margin-bottom: 10px;
   }
 
   &__cart-client-head {
-    padding: 16px 16px 12px;
-    border-bottom: 1px solid $color-gray-100;
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid $color-gray-50;
   }
 
   &__cart-search-wrap {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     background: $color-off-white;
-    border: 1px solid $color-gray-100;
-    border-radius: 10px;
-    padding: 0 12px;
-    height: 38px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    padding: 0 14px;
+    height: 42px;
+    transition: all 200ms ease;
+
+    &:focus-within {
+      background: $color-white;
+      border-color: $color-primary;
+      box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
+    }
 
     svg { color: $color-gray-400; flex-shrink: 0; }
 
@@ -2394,7 +2481,7 @@
       outline: none;
       background: transparent;
       font-family: $font-primary;
-      font-size: 0.82rem;
+      font-size: 0.85rem;
       color: $color-secondary;
 
       &::placeholder { color: $color-gray-300; }
@@ -2777,50 +2864,57 @@
 
   /* Cart footer */
   &__cart-foot {
-    padding: 14px 16px;
+    padding: 18px 20px 20px;
     border-top: 1px solid $color-gray-100;
-    background: $color-white;
+    background: linear-gradient(180deg, $color-white 0%, #FAFBFC 100%);
   }
 
   &__cart-total {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
     font-size: 0.82rem;
     color: $color-gray-500;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
 
     strong {
-      font-size: 1.2rem;
+      font-size: 1.6rem;
       font-weight: 800;
-      color: $color-primary;
-      letter-spacing: -0.025em;
+      color: $color-success;
+      letter-spacing: -0.03em;
       font-variant-numeric: tabular-nums;
+      text-transform: none;
     }
   }
 
   &__cart-save {
     width: 100%;
-    height: 44px;
-    background: linear-gradient(135deg, $color-primary, $color-accent);
+    height: 50px;
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
     color: $color-white;
     border: none;
-    border-radius: 11px;
+    border-radius: 12px;
     font-family: $font-primary;
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 180ms ease;
-    box-shadow: 0 6px 16px rgba($color-primary, 0.28);
+    transition: all 200ms ease;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    letter-spacing: 0.01em;
 
     &:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 10px 22px rgba($color-primary, 0.4);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
 
     &:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       cursor: not-allowed;
+      background: linear-gradient(135deg, $color-gray-300, $color-gray-400);
+      box-shadow: none;
     }
   }
 }
