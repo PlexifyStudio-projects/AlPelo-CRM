@@ -196,16 +196,30 @@ def clients_attended_detail(
     if dto: a_q = a_q.filter(Appointment.date <= dto)
     apts = a_q.order_by(Appointment.date.desc()).limit(limit).all()
 
-    # Build a set of (client_id, date, service_id) keys from VisitHistory so we don't double-count
-    # appointments that already have a corresponding visit record
-    visit_keys = {(v.client_id, v.visit_date, v.service_id) for v in visits if v.client_id}
+    # Build a set of (client_id, date_str, service_id) keys from VisitHistory so we don't double-count
+    # appointments that already have a corresponding visit record. Using ISO string for date safety.
+    visit_keys = set()
+    for v in visits:
+        cid = getattr(v, 'client_id', None)
+        if not cid:
+            continue
+        vdate = getattr(v, 'visit_date', None)
+        sid = getattr(v, 'service_id', None)
+        try:
+            visit_keys.add((cid, vdate.isoformat() if vdate else None, sid))
+        except Exception:
+            pass
 
     # Pre-fetch clients
-    client_ids = list({v.client_id for v in visits if v.client_id} | {a.client_id for a in apts if a.client_id})
+    v_client_ids = {getattr(v, 'client_id', None) for v in visits}
+    a_client_ids = {getattr(a, 'client_id', None) for a in apts}
+    client_ids = [c for c in (v_client_ids | a_client_ids) if c]
     client_map = {c.id: c for c in db.query(Client).filter(Client.id.in_(client_ids)).all()} if client_ids else {}
 
     # Pre-fetch services
-    svc_ids = list({v.service_id for v in visits if v.service_id} | {a.service_id for a in apts if a.service_id})
+    v_svc_ids = {getattr(v, 'service_id', None) for v in visits}
+    a_svc_ids = {getattr(a, 'service_id', None) for a in apts}
+    svc_ids = [s for s in (v_svc_ids | a_svc_ids) if s]
     svc_map = {s.id: s for s in db.query(Service).filter(Service.id.in_(svc_ids)).all()} if svc_ids else {}
 
     # Visit count per client (lifetime — count appointments + visits, dedup'd by date)
@@ -250,7 +264,8 @@ def clients_attended_detail(
 
     # Add appointments (skipping ones already captured as visits)
     for a in apts:
-        key = (a.client_id, a.date, a.service_id)
+        a_date_str = a.date.isoformat() if a.date else None
+        key = (a.client_id, a_date_str, a.service_id)
         if key in visit_keys:
             continue
         c = client_map.get(a.client_id)
