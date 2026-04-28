@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from database.connection import get_db
 from database.models import (
@@ -161,9 +161,17 @@ def clients_attended_detail(
     """Returns full list of visits this staff has attended with client info, ticket, total, etc."""
     tid = safe_tid(user, db)
 
+    # Verify the staff belongs to this tenant (security)
+    if tid:
+        staff_check = db.query(Staff).filter(Staff.id == staff_id, Staff.tenant_id == tid).first()
+        if not staff_check:
+            raise HTTPException(404, "Colaborador no encontrado")
+
+    # Tenant filter — allow legacy rows where visit_history.tenant_id is NULL
+    # (column was added later; security still enforced via staff_id ownership above)
     q = db.query(VisitHistory).filter(VisitHistory.staff_id == staff_id)
     if tid:
-        q = q.filter(VisitHistory.tenant_id == tid)
+        q = q.filter(or_(VisitHistory.tenant_id == tid, VisitHistory.tenant_id.is_(None)))
     if date_from:
         try:
             q = q.filter(VisitHistory.visit_date >= date.fromisoformat(date_from))
@@ -251,7 +259,7 @@ def commissions_summary(
     else:
         dto = today
 
-    # Visits attended in range
+    # Visits attended in range — defensive tenant filter (NULL allowed for legacy rows)
     v_q = db.query(VisitHistory).filter(
         VisitHistory.staff_id == staff_id,
         VisitHistory.visit_date >= dfrom,
@@ -259,7 +267,7 @@ def commissions_summary(
         VisitHistory.status == 'completed',
     )
     if tid:
-        v_q = v_q.filter(VisitHistory.tenant_id == tid)
+        v_q = v_q.filter(or_(VisitHistory.tenant_id == tid, VisitHistory.tenant_id.is_(None)))
     visits = v_q.all()
 
     # Commission config per service

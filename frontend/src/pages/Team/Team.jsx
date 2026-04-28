@@ -25,6 +25,32 @@ const BRE_B_TYPES = [
   { value: 'account',  label: 'Cuenta bancaria' },
 ];
 
+// Bank options. `kind` controls which fields show:
+//   'bank'  → tipo de cuenta + número de cuenta
+//   'phone' → solo teléfono (Nequi, Daviplata)
+//   'cash'  → ningún campo
+const BANKS = [
+  { value: '',                  label: '— Selecciona —', kind: 'bank' },
+  { value: 'Nequi',             label: 'Nequi',          kind: 'phone' },
+  { value: 'Daviplata',         label: 'Daviplata',      kind: 'phone' },
+  { value: 'Bancolombia',       label: 'Bancolombia',    kind: 'bank' },
+  { value: 'Davivienda',        label: 'Davivienda',     kind: 'bank' },
+  { value: 'Banco de Bogotá',   label: 'Banco de Bogotá', kind: 'bank' },
+  { value: 'BBVA',              label: 'BBVA',           kind: 'bank' },
+  { value: 'Banco Popular',     label: 'Banco Popular',  kind: 'bank' },
+  { value: 'Banco Caja Social', label: 'Banco Caja Social', kind: 'bank' },
+  { value: 'Banco AV Villas',   label: 'Banco AV Villas', kind: 'bank' },
+  { value: 'Scotiabank Colpatria', label: 'Scotiabank Colpatria', kind: 'bank' },
+  { value: 'Banco Falabella',   label: 'Banco Falabella', kind: 'bank' },
+  { value: 'Banco Pichincha',   label: 'Banco Pichincha', kind: 'bank' },
+  { value: 'Banco GNB Sudameris', label: 'Banco GNB Sudameris', kind: 'bank' },
+  { value: 'Banco Itaú',        label: 'Banco Itaú',     kind: 'bank' },
+  { value: 'Bancoomeva',        label: 'Bancoomeva',     kind: 'bank' },
+  { value: 'Banco Agrario',     label: 'Banco Agrario',  kind: 'bank' },
+  { value: 'Efectivo',          label: 'Efectivo',       kind: 'cash' },
+  { value: 'Otro',              label: 'Otro',           kind: 'bank' },
+];
+
 const DAYS = [
   { id: 0, name: 'Lunes' },
   { id: 1, name: 'Martes' },
@@ -1154,37 +1180,70 @@ const Team = () => {
                     </section>
 
                     <section className={`${b}__sec`}>
-                      <h4 className={`${b}__sec-title`}>Cuenta bancaria</h4>
-                      <div className={`${b}__field-row`}>
-                        <div className={`${b}__field`}>
-                          <label>Banco</label>
-                          <input type="text" value={bank.bank_name || ''} onChange={e => setBank({ ...bank, bank_name: e.target.value })} placeholder="Bancolombia, Davivienda..." />
-                        </div>
-                        <div className={`${b}__field`}>
-                          <label>Tipo de cuenta</label>
-                          <select value={bank.bank_account_type || 'Ahorros'} onChange={e => setBank({ ...bank, bank_account_type: e.target.value })}>
-                            <option value="Ahorros">Ahorros</option><option value="Corriente">Corriente</option>
-                          </select>
-                        </div>
-                        <div className={`${b}__field`}>
-                          <label>Número de cuenta</label>
-                          <input type="text" value={bank.bank_account_number || ''} onChange={e => setBank({ ...bank, bank_account_number: e.target.value })} />
-                        </div>
-                      </div>
-                    </section>
+                      <h4 className={`${b}__sec-title`}>Medio de pago</h4>
+                      <p className={`${b}__sec-hint`}>Selecciona el banco o billetera. Los campos cambian según el medio.</p>
+                      {(() => {
+                        const selected = BANKS.find(b2 => b2.value === (bank.bank_name || ''));
+                        const kind = selected?.kind || 'bank';
+                        return (
+                          <>
+                            <div className={`${b}__field-row`}>
+                              <div className={`${b}__field`}>
+                                <label>Banco / Billetera</label>
+                                <select value={bank.bank_name || ''}
+                                  onChange={e => {
+                                    const newBank = e.target.value;
+                                    const newKind = BANKS.find(b2 => b2.value === newBank)?.kind || 'bank';
+                                    // Reset incompatible fields when switching kinds
+                                    setBank({
+                                      ...bank,
+                                      bank_name: newBank,
+                                      ...(newKind !== 'bank' ? { bank_account_type: '', bank_account_number: '' } : {}),
+                                      ...(newKind !== 'phone' && newBank !== 'Nequi' ? { } : {}),
+                                    });
+                                  }}>
+                                  {BANKS.map(b2 => <option key={b2.value} value={b2.value}>{b2.label}</option>)}
+                                </select>
+                              </div>
 
-                    <section className={`${b}__sec`}>
-                      <h4 className={`${b}__sec-title`}>Billeteras digitales</h4>
-                      <div className={`${b}__field-row`}>
-                        <div className={`${b}__field`}>
-                          <label>Nequi (teléfono)</label>
-                          <input type="tel" value={bank.nequi_phone || ''} onChange={e => setBank({ ...bank, nequi_phone: e.target.value })} placeholder="3001234567" />
-                        </div>
-                        <div className={`${b}__field`}>
-                          <label>Daviplata (teléfono)</label>
-                          <input type="tel" value={bank.daviplata_phone || ''} onChange={e => setBank({ ...bank, daviplata_phone: e.target.value })} placeholder="3001234567" />
-                        </div>
-                      </div>
+                              {kind === 'bank' && (
+                                <>
+                                  <div className={`${b}__field`}>
+                                    <label>Tipo de cuenta</label>
+                                    <select value={bank.bank_account_type || 'Ahorros'} onChange={e => setBank({ ...bank, bank_account_type: e.target.value })}>
+                                      <option value="Ahorros">Ahorros</option>
+                                      <option value="Corriente">Corriente</option>
+                                    </select>
+                                  </div>
+                                  <div className={`${b}__field`}>
+                                    <label>Número de cuenta</label>
+                                    <input type="text" value={bank.bank_account_number || ''} onChange={e => setBank({ ...bank, bank_account_number: e.target.value })} placeholder="1234567890" />
+                                  </div>
+                                </>
+                              )}
+
+                              {kind === 'phone' && bank.bank_name === 'Nequi' && (
+                                <div className={`${b}__field`} style={{ gridColumn: 'span 2' }}>
+                                  <label>Teléfono Nequi</label>
+                                  <input type="tel" value={bank.nequi_phone || ''} onChange={e => setBank({ ...bank, nequi_phone: e.target.value })} placeholder="3001234567" />
+                                </div>
+                              )}
+                              {kind === 'phone' && bank.bank_name === 'Daviplata' && (
+                                <div className={`${b}__field`} style={{ gridColumn: 'span 2' }}>
+                                  <label>Teléfono Daviplata</label>
+                                  <input type="tel" value={bank.daviplata_phone || ''} onChange={e => setBank({ ...bank, daviplata_phone: e.target.value })} placeholder="3001234567" />
+                                </div>
+                              )}
+
+                              {kind === 'cash' && (
+                                <div className={`${b}__field`} style={{ gridColumn: 'span 2', alignSelf: 'end' }}>
+                                  <p className={`${b}__sec-hint`} style={{ margin: 0 }}>Pago en efectivo, no se requieren más datos.</p>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </section>
 
                     <section className={`${b}__sec`}>
