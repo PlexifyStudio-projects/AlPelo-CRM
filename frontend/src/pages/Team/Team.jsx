@@ -242,26 +242,28 @@ const Team = () => {
   useEffect(() => {
     if (!editing || !showDrawer) return;
     if (drawerTab === 'commissions') {
-      // Service-level commission config per staff
-      Promise.all(services.map(s =>
-        fetch(`${import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api'}/services/${s.id}/commissions`, { credentials: 'include' })
-          .then(r => r.ok ? r.json() : null)
-          .catch(() => null)
-      )).then(results => {
-        const map = {};
-        results.forEach((data, i) => {
+      // SINGLE request — get ALL commissions config for the tenant in one shot
+      const API = import.meta.env.VITE_API_URL || 'https://alpelo-crm-production.up.railway.app/api';
+      fetch(`${API}/services/all-commissions`, { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
           if (!data) return;
-          const svcId = services[i].id;
-          const mine = (data.commissions || []).find(c => c.staff_id === editing.id);
-          if (mine) map[svcId] = {
-            is_enabled: !!mine.is_enabled,
-            commission_type: mine.commission_type || 'percentage',
-            commission_rate: mine.commission_rate || 0,
-            commission_amount: mine.commission_amount || 0,
-          };
-        });
-        setServiceCommissions(map);
-      });
+          const map = {};
+          const configs = data.configs || {};
+          Object.entries(configs).forEach(([key, cfg]) => {
+            const [staffId, svcId] = key.split('-').map(Number);
+            if (staffId === editing.id) {
+              map[svcId] = {
+                is_enabled: !!cfg.enabled,
+                commission_type: cfg.type || 'percentage',
+                commission_rate: cfg.rate || 0,
+                commission_amount: cfg.amount || 0,
+              };
+            }
+          });
+          setServiceCommissions(map);
+        })
+        .catch(() => {});
 
       // Earnings summary
       staffService.getCommissionsSummary(editing.id).then(setCommSummary).catch(() => {});
@@ -272,7 +274,7 @@ const Team = () => {
         .catch(() => {});
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawerTab, editing?.id, showDrawer, services.length]);
+  }, [drawerTab, editing?.id, showDrawer]);
 
   const reloadClients = async () => {
     if (!editing) return;
