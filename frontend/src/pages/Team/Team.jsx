@@ -873,23 +873,36 @@ const Team = () => {
                         </section>
 
                         <section className={`${b}__sec`}>
-                          <h4 className={`${b}__sec-title`}>Comisión por servicio</h4>
-                          <p className={`${b}__sec-hint`}>Activa los servicios que realiza y define el porcentaje o monto fijo.</p>
-                          <div className={`${b}__comm-list`}>
-                            {services.length === 0 && <div className={`${b}__skill-empty`}>No hay servicios registrados</div>}
-                            {services.map(svc => {
-                              const cfg = serviceCommissions[svc.id] || { is_enabled: false, commission_type: 'percentage', commission_rate: 0, commission_amount: 0 };
-                              const earn = cfg.commission_type === 'fixed'
-                                ? (cfg.commission_amount || 0)
-                                : Math.round((svc.price || 0) * (cfg.commission_rate || 0));
+                          <div className={`${b}__sec-head-row`}>
+                            <div>
+                              <h4 className={`${b}__sec-title`}>Servicios activos</h4>
+                              <p className={`${b}__sec-hint`}>Solo aparecen los servicios que este miembro realiza. Para agregar más, actívalo desde el módulo Servicios.</p>
+                            </div>
+                          </div>
+                          {(() => {
+                            const enabledSvcs = services.filter(svc => serviceCommissions[svc.id]?.is_enabled);
+                            if (enabledSvcs.length === 0) {
                               return (
-                                <div key={svc.id} className={`${b}__comm-row ${cfg.is_enabled ? `${b}__comm-row--on` : ''}`}>
-                                  <div className={`${b}__comm-svc`}>
-                                    <strong>{svc.name}</strong>
-                                    <span>{formatCOP(svc.price)} · {svc.category || 'Sin categoría'}</span>
-                                  </div>
-                                  {cfg.is_enabled && (
-                                    <>
+                                <div className={`${b}__comm-empty`}>
+                                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                  <strong>Aún no realiza ningún servicio</strong>
+                                  <span>Ve al módulo <em>Servicios</em>, abre cualquier servicio y actívalo en la pestaña <em>Configurar comisiones</em>.</span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className={`${b}__comm-list`}>
+                                {enabledSvcs.map(svc => {
+                                  const cfg = serviceCommissions[svc.id];
+                                  const earn = cfg.commission_type === 'fixed'
+                                    ? (cfg.commission_amount || 0)
+                                    : Math.round((svc.price || 0) * (cfg.commission_rate || 0));
+                                  return (
+                                    <div key={svc.id} className={`${b}__comm-row ${b}__comm-row--on`}>
+                                      <div className={`${b}__comm-svc`}>
+                                        <strong>{svc.name}</strong>
+                                        <span>{formatCOP(svc.price)} · {svc.category || 'Sin categoría'}</span>
+                                      </div>
                                       <div className={`${b}__comm-type`}>
                                         <button type="button" className={cfg.commission_type === 'percentage' ? `${b}__comm-type-btn--active` : ''}
                                           onClick={() => updateCommissionForService(svc.id, { commission_type: 'percentage' })}>%</button>
@@ -915,17 +928,17 @@ const Team = () => {
                                         <span>Gana</span>
                                         <strong>{formatCOP(earn)}</strong>
                                       </div>
-                                    </>
-                                  )}
-                                  {!cfg.is_enabled && <span className={`${b}__comm-disabled`}>No realiza este servicio</span>}
-                                  <button type="button" className={`${b}__toggle ${cfg.is_enabled ? `${b}__toggle--on` : ''}`}
-                                    onClick={() => updateCommissionForService(svc.id, { is_enabled: !cfg.is_enabled })}>
-                                    <span className={`${b}__toggle-knob`} />
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                      <button type="button" className={`${b}__toggle ${b}__toggle--on`}
+                                        onClick={() => updateCommissionForService(svc.id, { is_enabled: false })}
+                                        title="Desactivar este servicio">
+                                        <span className={`${b}__toggle-knob`} />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
                         </section>
                       </>
                     )}

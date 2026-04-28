@@ -760,6 +760,17 @@ def get_service_commissions(service_id: int, db: Session = Depends(get_db), user
             return int(c.commission_amount or 0)
         return int(service.price * (c.commission_rate or 0.0))
 
+    # Determine enabled state defensively:
+    #   - If a StaffServiceCommission row exists: treat as enabled unless explicitly False
+    #     (legacy rows may have NULL which previously displayed as disabled by mistake)
+    #   - OR if the staff is in service.staff_ids JSON (legacy source of truth)
+    legacy_staff_ids = set(service.staff_ids or [])
+    def _is_enabled(staff_id):
+        c = commission_map.get(staff_id)
+        if c is not None:
+            return c.is_enabled is not False  # True or NULL → True; only explicit False = False
+        return staff_id in legacy_staff_ids
+
     return {
         "service_id": service_id,
         "service_name": service.name,
@@ -770,7 +781,7 @@ def get_service_commissions(service_id: int, db: Session = Depends(get_db), user
                 "staff_name": s.name,
                 "staff_role": s.role,
                 "staff_photo_url": s.photo_url,
-                "is_enabled": True if (commission_map.get(s.id) and commission_map[s.id].is_enabled) else False,
+                "is_enabled": _is_enabled(s.id),
                 "commission_type": (commission_map[s.id].commission_type if commission_map.get(s.id) else 'percentage'),
                 "commission_rate": (commission_map[s.id].commission_rate if commission_map.get(s.id) else 0.0),
                 "commission_amount": (commission_map[s.id].commission_amount if commission_map.get(s.id) else 0) or 0,

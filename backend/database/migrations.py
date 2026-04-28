@@ -617,6 +617,17 @@ def run_migrations(engine):
     except Exception as e:
         print(f"[MIGRATION] staff_service_commission table: {e}")
 
+    # --- backfill staff_service_commission.is_enabled (NULL -> true) ---
+    # is_enabled column was added later; existing rows were NULL which the UI
+    # treats as disabled, hiding services that the staff actually does.
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(
+                "UPDATE public.staff_service_commission SET is_enabled = true WHERE is_enabled IS NULL"
+            ))
+    except Exception as e:
+        print(f"[MIGRATION] backfill is_enabled: {e}")
+
     # --- staff_loan table (préstamos y abonos a colaboradores) ---
     try:
         with engine.begin() as conn:
