@@ -239,8 +239,11 @@ const staffService = {
   // ─── Clients attended (detail) ──────────────────────
   getClientsDetail: async (id, params = {}) => {
     const q = new URLSearchParams();
-    if (params.date_from) q.set('date_from', params.date_from);
-    if (params.date_to) q.set('date_to', params.date_to);
+    // Accept both `from`/`to` (frontend convention) and `date_from`/`date_to` (backend names)
+    const df = params.date_from || params.from;
+    const dt = params.date_to || params.to;
+    if (df) q.set('date_from', df);
+    if (dt) q.set('date_to', dt);
     if (params.limit) q.set('limit', params.limit);
     const qs = q.toString();
     const res = await fetch(`${API_BASE}/${id}/clients-detail${qs ? '?' + qs : ''}`, { credentials: 'include' });
@@ -251,8 +254,10 @@ const staffService = {
   // ─── Commissions earned (per service) ───────────────
   getCommissionsSummary: async (id, params = {}) => {
     const q = new URLSearchParams();
-    if (params.date_from) q.set('date_from', params.date_from);
-    if (params.date_to) q.set('date_to', params.date_to);
+    const df = params.date_from || params.from;
+    const dt = params.date_to || params.to;
+    if (df) q.set('date_from', df);
+    if (dt) q.set('date_to', dt);
     const qs = q.toString();
     const res = await fetch(`${API_BASE}/${id}/commissions-summary${qs ? '?' + qs : ''}`, { credentials: 'include' });
     if (!res.ok) throw new Error('Error al cargar comisiones');

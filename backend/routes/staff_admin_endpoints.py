@@ -158,7 +158,8 @@ def clients_attended_detail(
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    """Returns full list of visits this staff has attended with client info, ticket, total, etc."""
+    """Returns full list of services this staff has attended.
+    Sources: VisitHistory (paid sales) + Appointment (completed/paid). Merged by date."""
     tid = safe_tid(user, db)
 
     # Verify the staff belongs to this tenant (security)
@@ -167,66 +168,125 @@ def clients_attended_detail(
         if not staff_check:
             raise HTTPException(404, "Colaborador no encontrado")
 
-    # Tenant filter — allow legacy rows where visit_history.tenant_id is NULL
-    # (column was added later; security still enforced via staff_id ownership above)
-    q = db.query(VisitHistory).filter(VisitHistory.staff_id == staff_id)
-    if tid:
-        q = q.filter(or_(VisitHistory.tenant_id == tid, VisitHistory.tenant_id.is_(None)))
+    dfrom = None
+    dto = None
     if date_from:
-        try:
-            q = q.filter(VisitHistory.visit_date >= date.fromisoformat(date_from))
-        except Exception:
-            pass
+        try: dfrom = date.fromisoformat(date_from)
+        except Exception: pass
     if date_to:
-        try:
-            q = q.filter(VisitHistory.visit_date <= date.fromisoformat(date_to))
-        except Exception:
-            pass
+        try: dto = date.fromisoformat(date_to)
+        except Exception: pass
 
-    visits = q.order_by(VisitHistory.visit_date.desc(), VisitHistory.id.desc()).limit(limit).all()
+    # ── Source 1: VisitHistory (paid checkouts) ──
+    v_q = db.query(VisitHistory).filter(VisitHistory.staff_id == staff_id)
+    if tid:
+        v_q = v_q.filter(or_(VisitHistory.tenant_id == tid, VisitHistory.tenant_id.is_(None)))
+    if dfrom: v_q = v_q.filter(VisitHistory.visit_date >= dfrom)
+    if dto: v_q = v_q.filter(VisitHistory.visit_date <= dto)
+    visits = v_q.order_by(VisitHistory.visit_date.desc()).limit(limit).all()
+
+    # ── Source 2: Appointments (completed) — fallback for businesses that don't checkout ──
+    a_q = db.query(Appointment).filter(
+        Appointment.staff_id == staff_id,
+        Appointment.status.in_(["completed", "paid"]),
+    )
+    if tid:
+        a_q = a_q.filter(or_(Appointment.tenant_id == tid, Appointment.tenant_id.is_(None)))
+    if dfrom: a_q = a_q.filter(Appointment.date >= dfrom)
+    if dto: a_q = a_q.filter(Appointment.date <= dto)
+    apts = a_q.order_by(Appointment.date.desc()).limit(limit).all()
+
+    # Build a set of (client_id, date, service_id) keys from VisitHistory so we don't double-count
+    # appointments that already have a corresponding visit record
+    visit_keys = {(v.client_id, v.visit_date, v.service_id) for v in visits if v.client_id}
 
     # Pre-fetch clients
-    client_ids = list({v.client_id for v in visits if v.client_id})
+    client_ids = list({v.client_id for v in visits if v.client_id} | {a.client_id for a in apts if a.client_id})
     client_map = {c.id: c for c in db.query(Client).filter(Client.id.in_(client_ids)).all()} if client_ids else {}
 
-    # Visit count per client (lifetime, scoped to tenant)
+    # Pre-fetch services
+    svc_ids = list({v.service_id for v in visits if v.service_id} | {a.service_id for a in apts if a.service_id})
+    svc_map = {s.id: s for s in db.query(Service).filter(Service.id.in_(svc_ids)).all()} if svc_ids else {}
+
+    # Visit count per client (lifetime — count appointments + visits, dedup'd by date)
     visit_count_per_client = {}
     if client_ids:
-        rows = db.query(VisitHistory.client_id, func.count(VisitHistory.id))
+        # Lifetime appointments
+        apt_count_q = db.query(Appointment.client_id, func.count(Appointment.id)).filter(
+            Appointment.client_id.in_(client_ids),
+            Appointment.status.in_(["completed", "paid"]),
+        )
         if tid:
-            rows = rows.filter(VisitHistory.tenant_id == tid)
-        rows = rows.filter(VisitHistory.client_id.in_(client_ids)).group_by(VisitHistory.client_id).all()
-        visit_count_per_client = {cid: cnt for cid, cnt in rows}
+            apt_count_q = apt_count_q.filter(or_(Appointment.tenant_id == tid, Appointment.tenant_id.is_(None)))
+        for cid, cnt in apt_count_q.group_by(Appointment.client_id).all():
+            visit_count_per_client[cid] = cnt
 
     items = []
     total_amount = 0
+
+    # Add visits
     for v in visits:
         c = client_map.get(v.client_id)
+        svc = svc_map.get(v.service_id)
         amt = v.amount or 0
         total_amount += amt
         items.append({
-            "id": v.id,
+            "id": f"v-{v.id}",
             "date": v.visit_date.isoformat() if v.visit_date else None,
             "client_id": v.client_id,
-            "client_name": c.name if c else (v.client_name if hasattr(v, 'client_name') else 'Sin registro'),
+            "client_name": c.name if c else 'Sin registro',
             "client_phone": c.phone if c else None,
             "client_ticket": c.client_id if c else None,
             "client_visits": visit_count_per_client.get(v.client_id, 0),
             "service_id": v.service_id,
-            "service_name": v.service_name,
+            "service_name": v.service_name or (svc.name if svc else "Servicio"),
             "amount": amt,
             "tip": getattr(v, 'tip', 0) or 0,
             "payment_method": v.payment_method,
             "status": v.status,
             "notes": v.notes,
+            "source": "visit",
         })
+
+    # Add appointments (skipping ones already captured as visits)
+    for a in apts:
+        key = (a.client_id, a.date, a.service_id)
+        if key in visit_keys:
+            continue
+        c = client_map.get(a.client_id)
+        svc = svc_map.get(a.service_id)
+        amt = int(a.price or 0)
+        total_amount += amt
+        items.append({
+            "id": f"a-{a.id}",
+            "date": a.date.isoformat() if a.date else None,
+            "client_id": a.client_id,
+            "client_name": c.name if c else (a.client_name or 'Sin registro'),
+            "client_phone": c.phone if c else None,
+            "client_ticket": c.client_id if c else None,
+            "client_visits": visit_count_per_client.get(a.client_id, 0),
+            "service_id": a.service_id,
+            "service_name": svc.name if svc else "Servicio",
+            "amount": amt,
+            "tip": 0,
+            "payment_method": None,
+            "status": a.status,
+            "notes": getattr(a, 'notes', None),
+            "source": "appointment",
+        })
+
+    # Sort merged list by date desc
+    items.sort(key=lambda x: x.get('date') or '', reverse=True)
+    items = items[:limit]
+
+    unique_clients = len({it['client_id'] for it in items if it['client_id']})
 
     return {
         "items": items,
         "summary": {
             "total_visits": len(items),
             "total_amount": total_amount,
-            "unique_clients": len(client_ids),
+            "unique_clients": unique_clients,
         },
     }
 
