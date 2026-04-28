@@ -1747,73 +1747,122 @@ function CatalogPane({
 
   return (
     <div className={`${b}__catalog`}>
-      {/* LEFT — catalog */}
+      {/* LEFT — catalog with vertical category rail + image-first grid */}
       <div className={`${b}__catalog-left`}>
-        <div className={`${b}__catalog-search`}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input
-            type="text"
-            value={catalogSearch}
-            onChange={(e) => setCatalogSearch(e.target.value)}
-            placeholder={`Buscador inteligente — ${isProducts ? 'productos' : 'servicios'}...`}
-          />
+        {/* Top: search bar + count chip */}
+        <div className={`${b}__catalog-topbar`}>
+          <div className={`${b}__catalog-search`}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input
+              type="text"
+              value={catalogSearch}
+              onChange={(e) => setCatalogSearch(e.target.value)}
+              placeholder={`Buscar ${isProducts ? 'producto' : 'servicio'}, categoría...`}
+            />
+          </div>
+          <span className={`${b}__catalog-count`}>
+            {filtered.length} {isProducts ? 'producto' : 'servicio'}{filtered.length === 1 ? '' : 's'}
+          </span>
         </div>
 
-        <div className={`${b}__catalog-cats`}>
-          {categories.map(cat => (
-            <button
-              key={cat}
-              type="button"
-              className={`${b}__catalog-cat ${catalogCategory === cat ? `${b}__catalog-cat--active` : ''}`}
-              onClick={() => setCatalogCategory(cat)}
-            >
-              {cat === 'all' ? 'TODOS' : cat.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        {/* MAIN GRID: vertical category rail (left) + image-dominant cards (right) */}
+        <div className={`${b}__catalog-main`}>
+          <aside className={`${b}__catalog-rail`}>
+            {categories.map(cat => {
+              const count = cat === 'all'
+                ? allItems.length
+                : allItems.filter(i => (i.category || '').toLowerCase() === cat.toLowerCase()).length;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`${b}__catalog-rail-item ${catalogCategory === cat ? `${b}__catalog-rail-item--active` : ''}`}
+                  onClick={() => setCatalogCategory(cat)}
+                >
+                  <span className={`${b}__catalog-rail-dot`} />
+                  <span className={`${b}__catalog-rail-text`}>{cat === 'all' ? 'Todos' : cat}</span>
+                  <span className={`${b}__catalog-rail-count`}>{count}</span>
+                </button>
+              );
+            })}
+          </aside>
 
-        <div className={`${b}__catalog-grid`}>
-          {filtered.length === 0 ? (
-            <div className={`${b}__catalog-empty`}>Sin resultados</div>
-          ) : filtered.map(it => {
-            const inNewCart = isProducts
-              ? formProducts.some(p => p.product_id === it.id)
-              : formItems.some(i => i.service_id === it.id);
-            const inExistingOrder = !inNewCart && inOrderIds.has(it.id);
-            const outOfStock = isProducts && (Number(it.stock) || 0) <= 0;
-            const isDisabled = inNewCart || inExistingOrder || outOfStock;
-            const initials = (it.name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-            const badgeLabel = outOfStock ? 'Sin stock'
-              : inExistingOrder ? 'Ya en la orden'
-              : 'En carrito';
-            return (
-              <div key={it.id} className={`${b}__catalog-card ${isDisabled ? `${b}__catalog-card--in` : ''} ${inExistingOrder ? `${b}__catalog-card--existing` : ''}`}>
-                <div className={`${b}__catalog-card-thumb`}>{initials}</div>
-                <div className={`${b}__catalog-card-info`}>
-                  <span className={`${b}__catalog-card-name`}>{it.name}</span>
-                  <span className={`${b}__catalog-card-cat`}>{it.category || (isProducts ? 'Producto' : 'Servicio')}</span>
-                  {!isProducts && it.duration_minutes && <span className={`${b}__catalog-card-meta`}>{it.duration_minutes} min</span>}
-                  {isProducts && typeof it.stock === 'number' && <span className={`${b}__catalog-card-meta`}>Stock: {it.stock}</span>}
-                </div>
-                <div className={`${b}__catalog-card-foot`}>
-                  <span className={`${b}__catalog-card-price`}>{formatCOP(it.price || 0)}</span>
-                  <button
-                    type="button"
-                    className={`${b}__catalog-card-add ${isDisabled ? `${b}__catalog-card-add--in` : ''}`}
-                    onClick={() => addToCart(it)}
-                    disabled={isDisabled}
-                    title={inExistingOrder ? `Ya está en la orden ${existingOpenOrder?.ticket_number || ''}` : ''}
-                  >
-                    {isDisabled ? (
-                      <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> {badgeLabel}</>
-                    ) : (
-                      <>+ Agregar</>
-                    )}
-                  </button>
-                </div>
+          <div className={`${b}__catalog-grid`}>
+            {filtered.length === 0 ? (
+              <div className={`${b}__catalog-empty`}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+                <strong>Sin resultados</strong>
+                <span>Cambia el filtro o intenta otro término</span>
               </div>
-            );
-          })}
+            ) : filtered.map(it => {
+              const inNewCart = isProducts
+                ? formProducts.some(p => p.product_id === it.id)
+                : formItems.some(i => i.service_id === it.id);
+              const inExistingOrder = !inNewCart && inOrderIds.has(it.id);
+              const outOfStock = isProducts && (Number(it.stock) || 0) <= 0;
+              const isDisabled = inNewCart || inExistingOrder || outOfStock;
+              const initials = (it.name || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+              const photo = it.photo_url || it.image_url || null;
+              const badgeLabel = outOfStock ? 'Sin stock'
+                : inExistingOrder ? 'Ya en la orden'
+                : 'En carrito';
+              const tile = (() => {
+                if (isDisabled) return inExistingOrder ? `${b}__catalog-tile--existing` : `${b}__catalog-tile--in`;
+                return '';
+              })();
+              return (
+                <div key={it.id} className={`${b}__catalog-tile ${tile}`}>
+                  <div className={`${b}__catalog-tile-media`}>
+                    {photo
+                      ? <img src={photo} alt={it.name} />
+                      : <span className={`${b}__catalog-tile-initials`}>{initials}</span>}
+                    {(it.category) && (
+                      <span className={`${b}__catalog-tile-badge`}>{it.category}</span>
+                    )}
+                    {outOfStock && <span className={`${b}__catalog-tile-stock`}>Sin stock</span>}
+                  </div>
+
+                  <div className={`${b}__catalog-tile-body`}>
+                    <h4 className={`${b}__catalog-tile-name`}>{it.name}</h4>
+                    <div className={`${b}__catalog-tile-meta`}>
+                      {!isProducts && it.duration_minutes && (
+                        <span>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          {it.duration_minutes} min
+                        </span>
+                      )}
+                      {isProducts && typeof it.stock === 'number' && (
+                        <span>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                          Stock: {it.stock}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className={`${b}__catalog-tile-foot`}>
+                      <span className={`${b}__catalog-tile-price`}>{formatCOP(it.price || 0)}</span>
+                      <button
+                        type="button"
+                        className={`${b}__catalog-tile-add ${isDisabled ? `${b}__catalog-tile-add--in` : ''}`}
+                        onClick={() => addToCart(it)}
+                        disabled={isDisabled}
+                        title={inExistingOrder ? `Ya está en la orden ${existingOpenOrder?.ticket_number || ''}` : ''}
+                      >
+                        {isDisabled ? (
+                          <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> {badgeLabel}</>
+                        ) : (
+                          <>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Agregar
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
